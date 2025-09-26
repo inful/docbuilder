@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -598,162 +597,32 @@ func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
 func (g *Generator) processMarkdownFile(file docs.DocFile) ([]byte, error) {
 	content := string(file.Content)
 
-	// Rewrite internal markdown links: [text](./foo.md) -> [text](./foo)
-	// Also handle anchors: [text](foo.md#section) -> [text](foo#section)
-	// We only touch relative links (starting with ./, ../, or no leading scheme/ slash) and ending in .md or .markdown
-	linkRe := regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?P<link>[^)]+)\)`)
-	content = linkRe.ReplaceAllStringFunc(content, func(m string) string {
-		matches := linkRe.FindStringSubmatch(m)
-		if len(matches) != 3 { return m }
-		text := matches[1]
-		link := matches[2]
-		// Skip if absolute (http://, https://) or starts with # or mailto: or leading /
-		low := strings.ToLower(link)
-		if strings.HasPrefix(low, "http://") || strings.HasPrefix(low, "https://") || strings.HasPrefix(low, "mailto:") || strings.HasPrefix(link, "#") || strings.HasPrefix(link, "/") {
-			return m
-		}
-		// Separate anchor
-		anchor := ""
-		if idx := strings.IndexByte(link, '#'); idx >= 0 {
-			anchor = link[idx:]
-			link = link[:idx]
-		}
-		lowerPath := strings.ToLower(link)
-		if strings.HasSuffix(lowerPath, ".md") || strings.HasSuffix(lowerPath, ".markdown") {
-			trimmed := link[:len(link)-3]
-			if strings.HasSuffix(lowerPath, ".markdown") {
-				trimmed = link[:len(link)-9]
-			}
-			// Avoid turning README into empty (leave README -> README)
-			if trimmed == "" { return m }
-			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
-		}
-		return m
-	})
+	// Link rewriting extracted for testability
+	content = RewriteRelativeMarkdownLinks(content)
 
 	// Parse existing front matter if present
-	frontMatter := make(map[string]interface{})
-
-	// Check if file already has front matter
+	existing := map[string]interface{}{}
 	if strings.HasPrefix(content, "---\n") {
-		// Find end of front matter
 		endIndex := strings.Index(content[4:], "\n---\n")
 		if endIndex > 0 {
-			// Extract existing front matter
 			fmContent := content[4 : endIndex+4]
-			if err := yaml.Unmarshal([]byte(fmContent), &frontMatter); err != nil {
+			if err := yaml.Unmarshal([]byte(fmContent), &existing); err != nil {
 				slog.Warn("Failed to parse existing front matter", "file", file.RelativePath, "error", err)
 			}
-			// Remove front matter from content
 			content = content[endIndex+8:]
 		}
 	}
 
-	// Add/update Hugo-specific front matter
-	if frontMatter["title"] == nil && file.Name != "index" {
-		frontMatter["title"] = strings.ReplaceAll(titleCase(file.Name), "-", " ")
-	}
-
-	if frontMatter["date"] == nil {
-		frontMatter["date"] = time.Now().Format("2006-01-02T15:04:05-07:00")
-	}
-
-	frontMatter["repository"] = file.Repository
-
-	if file.Section != "" {
-		frontMatter["section"] = file.Section
-	}
-
-	// Add metadata from repository configuration
-	for key, value := range file.Metadata {
-		if frontMatter[key] == nil {
-			frontMatter[key] = value
-		}
-	}
-
-	// Try to populate editURL if using Hextra and not already set.
-	// Strategy:
-	// - If site params has params.editURL.base, Hextra will auto-append the page path; we can skip per-page editURL.
-	// - Otherwise, build a best-effort URL from the repo URL, branch, and the file's path within the repository.
-	if g.config.Hugo.Theme == "hextra" {
-		// Respect existing editURL in page front matter
-		if _, exists := frontMatter["editURL"]; !exists {
-			// If site-wide params specify editURL.base, let the theme handle it.
-			// Here we only set per-page editURL if there is no site base configured.
-			hasSiteEditBase := false
-			if g.config.Hugo.Params != nil {
-				if v, ok := g.config.Hugo.Params["editURL"]; ok {
-					if m, ok := v.(map[string]any); ok {
-						if b, ok := m["base"].(string); ok && b != "" {
-							hasSiteEditBase = true
-						}
-					}
-				}
-			}
-
-			if !hasSiteEditBase {
-				// Find repository config to get URL and branch
-				var repoCfg *config.Repository
-				for i := range g.config.Repositories {
-					if g.config.Repositories[i].Name == file.Repository {
-						repoCfg = &g.config.Repositories[i]
-						break
-					}
-				}
-				if repoCfg != nil {
-					branch := repoCfg.Branch
-					if branch == "" {
-						branch = "main"
-					}
-					// Compute repo-relative path: docs base (file.DocsBase) + RelativePath
-					// Normalize docs base when it's "." or empty
-					repoRel := file.RelativePath
-					if base := strings.TrimSpace(file.DocsBase); base != "" && base != "." {
-						repoRel = filepath.ToSlash(filepath.Join(base, repoRel))
-					} else {
-						repoRel = filepath.ToSlash(repoRel)
-					}
-
-					// Build edit URL for common hosts; default to appending /edit/branch
-					editURL := ""
-					if strings.Contains(repoCfg.URL, "github.com") {
-						// Ensure we have an https URL form
-						url := repoCfg.URL
-						url = strings.TrimSuffix(url, ".git")
-						// If someone used SSH form, transform to https
-						// e.g., git@github.com:owner/repo.git -> https://github.com/owner/repo
-						if strings.HasPrefix(url, "git@github.com:") {
-							url = strings.TrimPrefix(url, "git@github.com:")
-							url = "https://github.com/" + url
-						}
-						editURL = fmt.Sprintf("%s/edit/%s/%s", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "gitlab.com") {
-						// GitLab edit URL pattern
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						if strings.HasPrefix(url, "git@gitlab.com:") {
-							url = strings.TrimPrefix(url, "git@gitlab.com:")
-							url = "https://gitlab.com/" + url
-						}
-						editURL = fmt.Sprintf("%s/-/edit/%s/%s", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "bitbucket.org") {
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						editURL = fmt.Sprintf("%s/src/%s/%s?mode=edit", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "git.home.luguber.info") {
-						// Gitea/Gogs style (common private Git servers). Many support /_edit/{branch}/{path}
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						editURL = fmt.Sprintf("%s/_edit/%s/%s", url, branch, repoRel)
-					}
-
-					if editURL != "" {
-						frontMatter["editURL"] = editURL
-					}
-				}
-			}
-		}
-	}
+	// Delegate to front matter builder
+	fmMap := BuildFrontMatter(FrontMatterInput{
+		File:     file,
+		Existing: existing,
+		Config:   g.config,
+		Now:      time.Now(),
+	})
 
 	// Generate new front matter
-	fmData, err := yaml.Marshal(frontMatter)
+	fmData, err := yaml.Marshal(fmMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal front matter: %w", err)
 	}
