@@ -69,6 +69,11 @@ type BuildStatusInfo struct {
 	LastBuildSummary string            `json:"last_build_summary,omitempty"`
 	LastBuildErrors  []string          `json:"last_build_errors,omitempty"`
 	LastBuildWarnings []string         `json:"last_build_warnings,omitempty"`
+	RenderedPages     *int             `json:"rendered_pages,omitempty"`
+	ClonedRepositories *int            `json:"cloned_repositories,omitempty"`
+	FailedRepositories *int            `json:"failed_repositories,omitempty"`
+	StaticRendered    *bool            `json:"static_rendered,omitempty"`
+	StageCounts       map[string]map[string]int `json:"stage_counts,omitempty"` // stage -> {success,warning,fatal,canceled}
 }
 
 // SystemMetrics provides system resource information
@@ -126,6 +131,17 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 						}
 						status.BuildStatus.LastBuildOutcome = br.Outcome
 						status.BuildStatus.LastBuildSummary = br.Summary()
+						if br.RenderedPages > 0 { rp := br.RenderedPages; status.BuildStatus.RenderedPages = &rp }
+						if br.ClonedRepositories > 0 { cr := br.ClonedRepositories; status.BuildStatus.ClonedRepositories = &cr }
+						if br.FailedRepositories > 0 { fr := br.FailedRepositories; status.BuildStatus.FailedRepositories = &fr }
+						if br.StaticRendered { sr := true; status.BuildStatus.StaticRendered = &sr }
+						if len(br.StageCounts) > 0 {
+							m := make(map[string]map[string]int, len(br.StageCounts))
+							for stage, sc := range br.StageCounts {
+								m[stage] = map[string]int{"success": sc.Success, "warning": sc.Warning, "fatal": sc.Fatal, "canceled": sc.Canceled}
+							}
+							status.BuildStatus.StageCounts = m
+						}
 						if len(br.Errors) > 0 {
 							for _, e := range br.Errors {
 								msg := e.Error()
