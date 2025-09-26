@@ -395,6 +395,22 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 		job.Metadata = make(map[string]interface{})
 	}
 	job.Metadata["build_report"] = report
+	// Emit basic metrics if daemon metrics collector attached (best-effort via metadata injection earlier)
+	if mcAny, ok := job.Metadata["metrics_collector"]; ok {
+		if mc, ok2 := mcAny.(interface{ IncrementCounter(string) }); ok2 {
+			mc.IncrementCounter("build_completed_total")
+			switch report.Outcome {
+			case "failed":
+				mc.IncrementCounter("build_failed_total")
+			case "warning":
+				mc.IncrementCounter("build_warning_total")
+			case "canceled":
+				mc.IncrementCounter("build_canceled_total")
+			case "success":
+				mc.IncrementCounter("build_success_total")
+			}
+		}
+	}
 
 	slog.Info("Site build completed", "output", outDir, "public_exists", dirExists(filepath.Join(outDir, "public")))
 	return nil

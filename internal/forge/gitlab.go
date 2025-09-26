@@ -352,7 +352,7 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		Branch:     branch,
 		Commits:    commits,
 		Timestamp:  time.Now(),
-		Metadata: map[string]string{"ref": pushEvent.Ref},
+		Metadata:   map[string]string{"ref": pushEvent.Ref},
 	}, nil
 }
 

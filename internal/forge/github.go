@@ -290,10 +290,10 @@ func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 
 // githubPushEvent represents a GitHub push event
 type githubPushEvent struct {
-	Ref        string         `json:"ref"`
+	Ref        string          `json:"ref"`
 	Repository json.RawMessage `json:"repository"` // decode later to handle id as string/int
-	Commits    []githubCommit `json:"commits"`
-	HeadCommit githubCommit   `json:"head_commit"`
+	Commits    []githubCommit  `json:"commits"`
+	HeadCommit githubCommit    `json:"head_commit"`
 }
 
 // githubCommit represents a GitHub commit

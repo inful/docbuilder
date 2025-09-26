@@ -23,7 +23,10 @@ func TestGenerateSiteWithReport(t *testing.T) {
 	if rep.End.IsZero() {
 		t.Fatalf("report end time not set")
 	}
-	if !strings.Contains(rep.Summary(), "repos=1") {
+       if !strings.Contains(rep.Summary(), "repos=1") || rep.Outcome == "" {
 		t.Fatalf("summary unexpected: %s", rep.Summary())
 	}
+       if rep.RenderedPages == 0 {
+	       t.Fatalf("expected rendered pages > 0, got %d", rep.RenderedPages)
+       }
 }

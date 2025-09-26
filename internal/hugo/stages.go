@@ -23,18 +23,24 @@ const (
 
 // StageError is a structured error carrying category and underlying cause.
 type StageError struct {
-	Kind StageErrorKind
+	Kind  StageErrorKind
 	Stage string
-	Err  error
+	Err   error
 }
 
 func (e *StageError) Error() string { return fmt.Sprintf("%s stage %s: %v", e.Kind, e.Stage, e.Err) }
 func (e *StageError) Unwrap() error { return e.Err }
 
 // Helpers to classify errors.
-func newFatalStageError(stage string, err error) *StageError   { return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err} }
-func newWarnStageError(stage string, err error) *StageError    { return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err} }
-func newCanceledStageError(stage string, err error) *StageError { return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err} }
+func newFatalStageError(stage string, err error) *StageError {
+	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
+}
+func newWarnStageError(stage string, err error) *StageError {
+	return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err}
+}
+func newCanceledStageError(stage string, err error) *StageError {
+	return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err}
+}
 
 // BuildState carries mutable state and metrics across stages.
 type BuildState struct {
@@ -57,7 +63,10 @@ func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *
 }
 
 // runStages executes stages in order, recording timing and stopping on first fatal error.
-func runStages(ctx context.Context, bs *BuildState, stages []struct { name string; fn Stage }) error {
+func runStages(ctx context.Context, bs *BuildState, stages []struct {
+	name string
+	fn   Stage
+}) error {
 	for _, st := range stages {
 		select {
 		case <-ctx.Done():
@@ -77,6 +86,17 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct { name strin
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
 				bs.Report.StageErrorKinds[st.name] = string(se.Kind)
+				// update stage counts
+				sc := bs.Report.StageCounts[st.name]
+				switch se.Kind {
+				case StageErrorWarning:
+					sc.Warning++
+				case StageErrorCanceled:
+					sc.Canceled++
+				case StageErrorFatal:
+					sc.Fatal++
+				}
+				bs.Report.StageCounts[st.name] = sc
 				switch se.Kind {
 				case StageErrorWarning:
 					bs.Report.Warnings = append(bs.Report.Warnings, se)
@@ -92,9 +112,17 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct { name strin
 				// Wrap unknown errors as fatal by default.
 				se = newFatalStageError(st.name, err)
 				bs.Report.StageErrorKinds[st.name] = string(se.Kind)
+				sc := bs.Report.StageCounts[st.name]
+				sc.Fatal++
+				bs.Report.StageCounts[st.name] = sc
 				bs.Report.Errors = append(bs.Report.Errors, se)
 				return se
 			}
+		} else {
+			// success path
+			sc := bs.Report.StageCounts[st.name]
+			sc.Success++
+			bs.Report.StageCounts[st.name] = sc
 		}
 	}
 	return nil
@@ -111,10 +139,14 @@ func stageGenerateConfig(ctx context.Context, bs *BuildState) error {
 }
 
 func stageLayouts(ctx context.Context, bs *BuildState) error {
-	if bs.Generator.config.Hugo.Theme == "" { // fallback layouts only when no theme set
-		return bs.Generator.generateBasicLayouts()
+	if bs.Generator.config.Hugo.Theme != "" {
+		// Theme provided: no fallback layouts necessary.
+		// Add no-op statement to avoid staticcheck empty branch warning.
+		var _ = bs.Generator.config.Hugo.Theme
+		return nil
 	}
-	return nil
+	// No theme configured: generate basic fallback layouts.
+	return bs.Generator.generateBasicLayouts()
 }
 
 func stageCopyContent(ctx context.Context, bs *BuildState) error {
@@ -126,14 +158,13 @@ func stageIndexes(ctx context.Context, bs *BuildState) error {
 }
 
 func stageRunHugo(ctx context.Context, bs *BuildState) error {
-	if shouldRunHugo() {
-		if err := bs.Generator.runHugoBuild(); err != nil {
-			// Treat hugo runtime failure as warning (site content still copied & usable without static render)
-			return newWarnStageError("run_hugo", fmt.Errorf("hugo build failed: %w", err))
-		}
-	} else {
-		// Absence of hugo binary when requested could be considered a warning only if run was intended.
-		// We intentionally do not warn if DOCBUILDER_RUN_HUGO is off.
+	if !shouldRunHugo() {
+		// Running Hugo disabled by flag; no operation.
+		return nil
+	}
+	if err := bs.Generator.runHugoBuild(); err != nil {
+		// Treat hugo runtime failure as warning (site content still copied & usable without static render)
+		return newWarnStageError("run_hugo", fmt.Errorf("hugo build failed: %w", err))
 	}
 	return nil
 }

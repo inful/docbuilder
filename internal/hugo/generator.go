@@ -12,6 +12,8 @@ import (
 type Generator struct {
 	config    *config.Config
 	outputDir string
+	// optional instrumentation callbacks (not exported)
+	onPageRendered func()
 }
 
 // NewGenerator creates a new Hugo site generator
@@ -42,6 +44,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		repoSet[f.Repository] = struct{}{}
 	}
 	report := newBuildReport(len(repoSet), len(docFiles))
+	// instrumentation hook to count rendered pages
+	g.onPageRendered = func() { report.RenderedPages++ }
 
 	bs := newBuildState(g, docFiles, report)
 
@@ -67,6 +71,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		report.StageDurations[k] = v
 	}
 
+	report.deriveOutcome()
 	report.finish()
 	slog.Info("Hugo site generation completed", "output", g.outputDir, "repos", report.Repositories, "files", report.Files, "errors", len(report.Errors))
 	return report, nil
