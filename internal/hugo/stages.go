@@ -285,6 +285,12 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			}()
 		}
 		wg.Wait()
+		// If canceled after goroutines, propagate
+		select {
+		case <-ctx.Done():
+			return newCanceledStageError("clone_repos", ctx.Err())
+		default:
+		}
 	}
 
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
@@ -301,6 +307,11 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	if len(bs.RepoPaths) == 0 {
 		// No repos cloned; treat as warning to reflect empty input rather than fatal.
 		return newWarnStageError("discover_docs", fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
+	}
+	select {
+	case <-ctx.Done():
+		return newCanceledStageError("discover_docs", ctx.Err())
+	default:
 	}
 	discovery := docs.NewDiscovery(bs.Repositories)
 	docFiles, err := discovery.DiscoverDocs(bs.RepoPaths)

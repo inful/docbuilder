@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
+	ctx := context.Background()
 	pipeline := NewTransformerPipeline(
 		&FrontMatterParser{},
 		&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
@@ -19,6 +21,11 @@ func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
 		&FinalFrontMatterSerializer{},
 	)
 	for _, file := range docFiles {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("content copy canceled: %w", ctx.Err())
+		default:
+		}
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
