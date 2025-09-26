@@ -345,7 +345,13 @@ func stageLayouts(ctx context.Context, bs *BuildState) error {
 }
 
 func stageCopyContent(ctx context.Context, bs *BuildState) error {
-	return bs.Generator.copyContentFiles(bs.Docs)
+	if err := bs.Generator.copyContentFiles(ctx, bs.Docs); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return newCanceledStageError("copy_content", err)
+		}
+		return err
+	}
+	return nil
 }
 
 func stageIndexes(ctx context.Context, bs *BuildState) error {
