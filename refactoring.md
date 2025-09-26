@@ -140,9 +140,9 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [ ] Wire selection via config/env
 
 ### 19. Repository Parallel Cloning
-- [ ] Bounded worker pool (n = configurable)
-- [ ] Preserve error collection; partial success continues
-- [ ] Metrics: clone duration histogram & concurrency gauge
+- [x] Bounded worker pool (n = configurable via `build.clone_concurrency`)
+- [x] Preserve error collection; partial success continues
+- [x] Metrics: clone duration histogram & concurrency gauge (per‑repo duration + results + concurrency gauge)
 
 ### 20. Enhanced Link Rewriter (AST Based)
 - [ ] Optional goldmark-based parser to avoid false positives in code blocks
@@ -202,42 +202,47 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-27)
-Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8, 9 (core implementation); unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges; initial retry scaffold.
-Pending: Theme constants, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, configurable retry policy & metrics, parallel cloning, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
-Risk Level: Low – Observability foundation in place; next structural abstractions isolated.
+Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8, 9 (core implementation); unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges; initial retry scaffold; parallel cloning with configurable concurrency + clone metrics.
+Pending: Theme constants, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, configurable retry policy & metrics, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
+Risk Level: Low – Core pipeline stabilized; remaining work centers on polish & operability.
 
-### Proposed Next Step (Updated 2025-09-27 After Builder Integration)
-Implement Repository Parallel Cloning (Phase 4 item 19) with instrumentation.
+### Proposed Next Step (Updated 2025-09-27 After Parallel Cloning)
+Implement configurable retry policy & retry metrics (Phase 2 item 9 remaining sub-items + Phase 3 metrics extensions).
 
 Why This Order:
-- Now that the Builder abstraction isolates pipeline execution, adding concurrency to the clone step won’t tangle with queue concerns.
-- Parallel cloning provides immediate wall-clock improvement for multi-repo builds.
-- Instrumentation (clone duration histogram, concurrency gauge) leverages existing metrics foundation.
+- Retry scaffold already exists; extending it delivers immediate resilience benefits.
+- Builds on existing `StageError.Transient()` classification—low incremental risk.
+- Surfaces operability signals (retry counts, exhaustion) before deeper features (search index, report persistence).
 
 Scope:
-1. Introduce a parallel clone stage variant: detect `clone_repos` stage and dispatch repository clone tasks to a worker pool (configurable `ConcurrentClones`, default 4 or min(#repos,4)).
-2. Maintain ordered results; collect errors per repo (aggregate into StageError if any fail). Partial success allowed.
-3. Add metrics:
-   - Histogram `docbuilder_clone_repo_duration_seconds` (per repo) with labels: `result` (success|failed).
-   - Gauge `docbuilder_clone_concurrency` (current workers active) via GaugeFunc.
-4. Integrate transient handling: network/auth failures remain transient for retry policy (already covered by StageError.Transient()).
-5. Config: add `build.concurrent_clones` (int) under existing config (fallback to 1 = current behavior if not set).
+1. Config additions under `build`:
+   - `max_retries` (default 2 for transient stages)
+   - `retry_backoff` (string: fixed|linear|exponential, default linear)
+   - `retry_initial_delay` (duration, default 1s)
+   - `retry_max_delay` (cap for exponential; default 30s)
+2. Implement backoff strategies (fixed = constant, linear = n*initial, exponential = initial*2^(n-1) with cap).
+3. Metrics:
+   - Counter `docbuilder_build_retries_total{stage}`
+   - Counter `docbuilder_build_retry_exhausted_total{stage}`
+   - Histogram `docbuilder_retry_delay_seconds` (optional; sample actual applied delays)
+4. Logging: include `attempt`, `max_retries`, `stage`, `transient=true|false` for each retry.
+5. Update daemon status to expose last build retry summary (total retries, exhausted flag) inside `BuildReport` (add fields `Retries`, `RetriesExhausted`).
 6. Tests:
-   - Unit test with a mock Git client simulating varied latency & one failure.
-   - Ensure StageDurations for `clone_repos` still recorded (duration of full parallel stage, not sum of repos).
-   - Verify metrics emission using a test recorder.
-7. Update documentation (README + roadmap) and mark roadmap item 19 partially / fully done.
+   - Unit test forcing transient clone failure then success on retry.
+   - Test permanent error: ensure no retry beyond first attempt.
+   - Test exponential backoff (assert growing delays within tolerance using a fake clock or injected sleeper interface).
+7. Documentation updates (README metrics table, config section, roadmap checkboxes).
 
 Acceptance Criteria:
-- All existing tests pass; new clone concurrency tests added.
-- No regression in build output (content & hugo.yaml identical for sequential vs parallel).
-- Metrics for clone stage & concurrency visible when Prometheus enabled.
-- Configuration gracefully falls back when `concurrent_clones` omitted or set to 1.
+- Configurable retries applied only to transiently classified StageErrors.
+- Metrics counters increment as expected; no cardinality explosion.
+- Backoff honors caps; cancellation interrupts waiting.
+- All existing tests remain green; new retry tests cover success-after-retry & exhaustion paths.
 
 Follow-On After This Step:
-- Add retry metrics & configurable retry policy.
-- Implement queue wait time histogram and stage failure transient labeling metrics.
-- Persist last successful BuildReport to disk for post-restart visibility.
+- Queue wait time histogram & transient/permanent failure metrics.
+- Cancellation checks in long loops (content copy, discovery).
+- Persist last successful BuildReport to disk (operability improvement).
 
 ---
 ## Quick Start Sequence (Recommended)
