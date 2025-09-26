@@ -66,10 +66,13 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Refine stage naming & separation: added `clone_repos` & `discover_docs` as first-class stages (full pipeline supported via `GenerateFullSite`)
 
 ### 9. Builder Interface
-- [ ] Define `type Builder interface { Build(ctx context.Context, job *BuildJob) error }`
-- [ ] Implement `SiteBuilder` using pipeline
-- [ ] Refactor `BuildQueue.executeBuild` to delegate to injected `Builder`
-- [ ] Add constructor wiring in daemon initialization
+- [x] Define `type Builder interface { Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) }` (2025-09-27)
+- [x] Implement `SiteBuilder` using pipeline (2025-09-27)
+- [x] Refactor `BuildQueue.executeBuild` to delegate to injected `Builder` (2025-09-27)
+- [x] Added initial retry scaffold (linear backoff, transient detection) (2025-09-27)
+- [ ] Expose configurable retries in config (max_retries, backoff strategy)
+- [ ] Emit retry metrics (`build_retries_total`, `build_retry_exhausted_total`)
+- [ ] Tests for retry behavior (transient vs permanent, exhaustion)
 
 ### 10. Logging Context Standardization
 - [ ] Add helper `logger := slog.With("job_id", job.ID)`
@@ -199,43 +202,41 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-27)
-Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8; unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges.
-Pending: Theme constants, builder interface, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, retry scaffolding (leveraging transient), parallel cloning, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
+Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8, 9 (core implementation); unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges; initial retry scaffold.
+Pending: Theme constants, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, configurable retry policy & metrics, parallel cloning, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
 Risk Level: Low – Observability foundation in place; next structural abstractions isolated.
 
-### Proposed Next Step (Updated 2025-09-27 Post-Metrics & Transient Completion)
-Implement the Builder interface abstraction (Phase 2 item 9) plus minimal retry scaffolding using existing transient classification.
+### Proposed Next Step (Updated 2025-09-27 After Builder Integration)
+Implement Repository Parallel Cloning (Phase 4 item 19) with instrumentation.
 
 Why This Order:
-- Decouples build execution from queue logic, simplifying future retry & parallelization features.
-- Keeps retry implementation small (wrapper around Builder) while avoiding invasive pipeline changes.
-- Establishes a seam for injecting alternative builders (e.g., experimental parallel clone or distributed executor) without refactoring the queue later.
+- Now that the Builder abstraction isolates pipeline execution, adding concurrency to the clone step won’t tangle with queue concerns.
+- Parallel cloning provides immediate wall-clock improvement for multi-repo builds.
+- Instrumentation (clone duration histogram, concurrency gauge) leverages existing metrics foundation.
 
 Scope:
-1. Define `type Builder interface { Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) }` (returning report directly).
-2. Implement `SiteBuilder` wrapping existing `GenerateFullSite` / `GenerateSiteWithReport` depending on job type.
-3. Refactor `BuildQueue.executeBuild` to:
-   - Construct context (with timeout if configured in future).
-   - Call injected `Builder`.
-   - Attach returned report to job metadata.
-4. Introduce simple retry policy (max N attempts, backoff) for transient failures:
-   - If final stage error contains any `StageError` where `Transient()==true`, retry.
-   - Emit retry attempt count into job metadata + metrics collector (new counters: `build_retries_total`, `build_retry_exhausted_total`).
-5. Wire builder & retry configuration in daemon initialization (defaults: retries disabled (0) → no behavior change).
+1. Introduce a parallel clone stage variant: detect `clone_repos` stage and dispatch repository clone tasks to a worker pool (configurable `ConcurrentClones`, default 4 or min(#repos,4)).
+2. Maintain ordered results; collect errors per repo (aggregate into StageError if any fail). Partial success allowed.
+3. Add metrics:
+   - Histogram `docbuilder_clone_repo_duration_seconds` (per repo) with labels: `result` (success|failed).
+   - Gauge `docbuilder_clone_concurrency` (current workers active) via GaugeFunc.
+4. Integrate transient handling: network/auth failures remain transient for retry policy (already covered by StageError.Transient()).
+5. Config: add `build.concurrent_clones` (int) under existing config (fallback to 1 = current behavior if not set).
 6. Tests:
-   - Unit test: transient error triggers retry (mock builder failing once then succeeding).
-   - Unit test: permanent error does not retry.
-   - Unit test: exceeded retries marks job failed and increments exhausted counter.
-7. Update roadmap checkboxes (Phase 2 item 9, partial for retry scaffolding & metrics additions under Phase 3 / new subsection) and README (short Retry section referencing transient classification).
+   - Unit test with a mock Git client simulating varied latency & one failure.
+   - Ensure StageDurations for `clone_repos` still recorded (duration of full parallel stage, not sum of repos).
+   - Verify metrics emission using a test recorder.
+7. Update documentation (README + roadmap) and mark roadmap item 19 partially / fully done.
 
 Acceptance Criteria:
-- All existing tests pass; new builder & retry tests green.
-- No change to successful build output (content & hugo.yaml) aside from added metadata/metrics.
-- Build queue logs show retry attempts with structured fields: `attempt`, `max_attempts`, `transient=true`.
+- All existing tests pass; new clone concurrency tests added.
+- No regression in build output (content & hugo.yaml identical for sequential vs parallel).
+- Metrics for clone stage & concurrency visible when Prometheus enabled.
+- Configuration gracefully falls back when `concurrent_clones` omitted or set to 1.
 
 Follow-On After This Step:
-- Implement parallel cloning (Phase 4 item 19) leveraging decoupled Builder.
-- Add queue wait time histogram and transient/permanent failure counters.
+- Add retry metrics & configurable retry policy.
+- Implement queue wait time histogram and stage failure transient labeling metrics.
 - Persist last successful BuildReport to disk for post-restart visibility.
 
 ---
