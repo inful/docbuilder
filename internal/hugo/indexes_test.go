@@ -49,7 +49,10 @@ func TestGenerateIndexPages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read repo index: %v", err)
 	}
-	if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { /* lenient */
+	if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { // lenient: tolerate missing specific phrase but ensure file has some content
+		if len(strings.TrimSpace(string(rb))) == 0 {
+				 t.Fatalf("repo index unexpectedly empty")
+		}
 	}
 	if !strings.Contains(string(rb), "alpha/") || !strings.Contains(string(rb), "beta/") {
 		t.Fatalf("repo index missing file links: %s", string(rb))
@@ -66,6 +69,7 @@ func TestGenerateIndexPages(t *testing.T) {
 	}
 
 	// Basic date presence
-	if !strings.Contains(string(rb), time.Now().Format("2006")) { /* not strict; ignore for determinism */
+	if !strings.Contains(string(rb), time.Now().Format("2006")) { // not strict; log only
+		t.Logf("year not present in repo index (non-fatal)")
 	}
 }

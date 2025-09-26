@@ -219,13 +219,13 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	job.cancel = cancel
 	defer cancel()
 
-    // Mark job as running (all state mutations under lock to avoid races with observers)
-    startTime := time.Now()
-    bq.mu.Lock()
-    job.StartedAt = &startTime
-    job.Status = BuildStatusRunning
-    bq.active[job.ID] = job
-    bq.mu.Unlock()
+	// Mark job as running (all state mutations under lock to avoid races with observers)
+	startTime := time.Now()
+	bq.mu.Lock()
+	job.StartedAt = &startTime
+	job.Status = BuildStatusRunning
+	bq.active[job.ID] = job
+	bq.mu.Unlock()
 
 	slog.Info("Build job started", "job_id", job.ID, "type", job.Type, "worker", workerID)
 

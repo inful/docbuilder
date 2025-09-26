@@ -134,24 +134,24 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 	}
 	// wait until job finishes
 	for {
-        time.Sleep(10 * time.Millisecond)
-        snap, ok := bq.JobSnapshot(job.ID)
-        if ok && snap.CompletedAt != nil {
-            if snap.Status != BuildStatusCompleted {
-                t.Fatalf("expected completed, got %s", snap.Status)
-            }
-            break
-        }
-        if ctx.Err() != nil {
-            t.Fatalf("timeout waiting for job completion")
-        }
-    }
-    if fr.getRetry("clone_repos") != 1 {
-        t.Fatalf("expected 1 retry metric, got %d", fr.getRetry("clone_repos"))
-    }
-    if fr.getExhausted("clone_repos") != 0 {
-        t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
-    }
+		time.Sleep(10 * time.Millisecond)
+		snap, ok := bq.JobSnapshot(job.ID)
+		if ok && snap.CompletedAt != nil {
+			if snap.Status != BuildStatusCompleted {
+				t.Fatalf("expected completed, got %s", snap.Status)
+			}
+			break
+		}
+		if ctx.Err() != nil {
+			t.Fatalf("timeout waiting for job completion")
+		}
+	}
+	if fr.getRetry("clone_repos") != 1 {
+		t.Fatalf("expected 1 retry metric, got %d", fr.getRetry("clone_repos"))
+	}
+	if fr.getExhausted("clone_repos") != 0 {
+		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
+	}
 }
 
 func TestRetryExhausted(t *testing.T) {
@@ -178,24 +178,24 @@ func TestRetryExhausted(t *testing.T) {
 		t.Fatalf("enqueue: %v", err)
 	}
 	for {
-        time.Sleep(10 * time.Millisecond)
-        snap, ok := bq.JobSnapshot(job.ID)
-        if ok && snap.CompletedAt != nil {
-            if snap.Status != BuildStatusFailed {
-                t.Fatalf("expected failed, got %s", snap.Status)
-            }
-            break
-        }
-        if ctx.Err() != nil {
-            t.Fatalf("timeout waiting for job completion")
-        }
-    }
-    if fr.getRetry("clone_repos") != 2 {
-        t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry("clone_repos"))
-    }
-    if fr.getExhausted("clone_repos") != 1 {
-        t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted("clone_repos"))
-    }
+		time.Sleep(10 * time.Millisecond)
+		snap, ok := bq.JobSnapshot(job.ID)
+		if ok && snap.CompletedAt != nil {
+			if snap.Status != BuildStatusFailed {
+				t.Fatalf("expected failed, got %s", snap.Status)
+			}
+			break
+		}
+		if ctx.Err() != nil {
+			t.Fatalf("timeout waiting for job completion")
+		}
+	}
+	if fr.getRetry("clone_repos") != 2 {
+		t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry("clone_repos"))
+	}
+	if fr.getExhausted("clone_repos") != 1 {
+		t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted("clone_repos"))
+	}
 }
 
 func TestNoRetryOnPermanent(t *testing.T) {
@@ -217,21 +217,21 @@ func TestNoRetryOnPermanent(t *testing.T) {
 		t.Fatalf("enqueue: %v", err)
 	}
 	for {
-        time.Sleep(10 * time.Millisecond)
-        snap, ok := bq.JobSnapshot(job.ID)
-        if ok && snap.CompletedAt != nil {
-            break
-        }
-        if ctx.Err() != nil {
-            t.Fatalf("timeout waiting for job completion")
-        }
-    }
-    if fr.getRetry("clone_repos") != 0 {
-        t.Fatalf("expected 0 retries, got %d", fr.getRetry("clone_repos"))
-    }
-    if fr.getExhausted("clone_repos") != 0 {
-        t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
-    }
+		time.Sleep(10 * time.Millisecond)
+		snap, ok := bq.JobSnapshot(job.ID)
+		if ok && snap.CompletedAt != nil {
+			break
+		}
+		if ctx.Err() != nil {
+			t.Fatalf("timeout waiting for job completion")
+		}
+	}
+	if fr.getRetry("clone_repos") != 0 {
+		t.Fatalf("expected 0 retries, got %d", fr.getRetry("clone_repos"))
+	}
+	if fr.getExhausted("clone_repos") != 0 {
+		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
+	}
 }
 
 func TestExponentialBackoffCapped(t *testing.T) {

@@ -1,11 +1,17 @@
 package daemon
 
 import (
-	"context"
-	"log/slog"
-	"net/http"
-	"time"
+    "context"
+    "log/slog"
+    "net/http"
+    "time"
 )
+
+// requestIDContextKey is the unexported type used as key for request IDs in context.
+// Using a distinct type avoids collisions and satisfies staticcheck SA1029.
+type requestIDContextKey struct{}
+
+var requestIDKey = requestIDContextKey{}
 
 // LoggingMiddleware provides structured request logging with metrics
 type LoggingMiddleware struct {
@@ -41,14 +47,13 @@ func (rw *logResponseWriter) Write(b []byte) (int, error) {
 
 // Handler wraps an HTTP handler with structured logging and metrics
 func (lm *LoggingMiddleware) Handler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        start := time.Now()
 
-		// Create request ID for tracing
-		requestID := generateRequestID()
-		type ctxKey string
-		ctx := context.WithValue(r.Context(), ctxKey("request_id"), requestID)
-		r = r.WithContext(ctx)
+        // Create request ID for tracing
+        requestID := generateRequestID()
+        ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+        r = r.WithContext(ctx)
 
 		// Wrap response writer to capture status and size
 		rw := &logResponseWriter{

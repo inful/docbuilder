@@ -21,8 +21,12 @@ func TestDocumentationDiscovery(t *testing.T) {
 	docsDir := filepath.Join(repoDir, "docs")
 
 	// Create directories
-	os.MkdirAll(filepath.Join(docsDir, "api"), 0755)
-	os.MkdirAll(filepath.Join(docsDir, "guides"), 0755)
+	if err := os.MkdirAll(filepath.Join(docsDir, "api"), 0755); err != nil {
+		t.Fatalf("mkdir api: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(docsDir, "guides"), 0755); err != nil {
+		t.Fatalf("mkdir guides: %v", err)
+	}
 
 	// Create test markdown files
 	testFiles := map[string]string{
