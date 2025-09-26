@@ -62,7 +62,7 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Orchestrator with timing & error handling (`runStages`)
 - [x] Timings recorded & exposed via `BuildReport.StageDurations` and daemon status
 - [x] Integrated into `GenerateSiteWithReport` (daemon uses context-aware variant)
-- [ ] Refine stage naming to match original design (CloneRepos/DiscoverDocs separation) (optional)
+- [x] Refine stage naming & separation: added `clone_repos` & `discover_docs` as first-class stages (full pipeline supported via `GenerateFullSite`)
 
 ### 9. Builder Interface
 - [ ] Define `type Builder interface { Build(ctx context.Context, job *BuildJob) error }`
@@ -102,7 +102,7 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Stage durations populated
 - [x] Report stored in job metadata & surfaced (stage timings)
 - [x] Populate: renderedPages (during copy stage)
-- [ ] Populate: clonedRepos, failedRepos (partial – counters incremented, initial default still set; formal stage timing pending)
+- [x] Populate: clonedRepos, failedRepos (accurate counts via `clone_repos` stage; default prefill removed)
 - [ ] Add docsCount alias or clarify semantics with Files
 - [x] Add staticRendered flag (set on successful Hugo execution and exposed via status)
 - [ ] Persist last successful report for dedicated admin retrieval endpoint
@@ -187,39 +187,36 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-26)
-Completed: Phase 1 item 1 (optional subtask deferred), item 5 (core), Phase 2 items 6, 7 (except golden test), 8 (initial stage runner), structured stage errors, domain sentinel errors (clone/discovery/hugo) integrated, context cancellation (Phase 3 item 13 partial), stage timings exposed, build report enrichment (rendered pages, outcome, stage counts, staticRendered), basic build metrics counters (outcome) emitted, status endpoint shows outcome/summary/errors/warnings/rendered pages/stage counts/static render flag/clone stats (partial clone accuracy).
-Pending: Precise cloned/failed repo accounting (initial default override cleanup), RepositoryFilter object, V2→legacy conversion helper, domain retry semantics (transient vs permanent), cancellation checks in long loops, docsCount alias, report persistence endpoint, front matter typing, golden tests, per-stage metrics export & histograms, formal clone/discovery stages for timing, repository filtering, retry logic scaffolding, stage duration histograms.
-Risk Level: Low – All tests green; recent additions purely additive. Minor technical debt: clone metrics initialization & lack of formal clone/discovery stages.
+Completed: Phase 1 item 1 (optional subtask deferred), item 5 (core), Phase 2 items 6, 7 (except golden test), 8 (clone_repos & discover_docs integrated), structured stage errors, domain sentinel errors, context cancellation (partial), stage timings, build report enrichment (rendered pages, outcome, stage counts, staticRendered, precise clone/fail counts), basic build outcome metrics, status endpoint surfaces enriched fields.
+Pending: RepositoryFilter object (Phase 1 item 2), V2→legacy conversion helper, domain transient/permanent classification, cancellation checks in clone/content/discovery loops, docsCount alias vs Files, report persistence endpoint, front matter typing, golden tests, per-stage metrics export (stage counts + histograms), skipped repository metrics, retry logic scaffolding, histogram instrumentation for new stages.
+Risk Level: Low – Tests green; new stages working. Technical debt: lack of filtering & skip metrics; metrics histograms not yet implemented.
 
 ### Proposed Next Step
-Formalize pre-content stages (CloneRepos, DiscoverDocs) and introduce `RepositoryFilter`.
+Implement `RepositoryFilter` and skipped repository metrics + tests.
 
 Rationale:
-- Current clone/discovery logic lives inside build queue without timing or standardized error recording; elevating them to first-class stages improves observability and paves the way for retry/backoff and parallel cloning.
-- Formal stages let us remove the provisional default of `ClonedRepositories = total` and ensure accurate counters (success vs failure) plus duration metrics.
-- RepositoryFilter (include/exclude patterns, archived skip, required paths) reduces unnecessary clone/discovery work and yields cleaner status output.
-- Establishing these early stages now avoids rework before we add histogram metrics and retry semantics.
+- Filtering before cloning reduces wasted network/time and gives operators clarity on why certain repos are omitted.
+- Skipped count plus reasons (logged) improves diagnostics and complements existing cloned/failed metrics.
+- Lays groundwork for retry classification (we won’t attempt to clone excluded repos) and future parallel cloning.
 
 Execution Outline:
-1. Add two new stages before `prepare_output`: `clone_repos`, `discover_docs` (implemented within generator or a thin wrapper orchestrator) capturing durations and StageCounts.
-2. Move clone loop from `BuildQueue.executeBuild` into `stageCloneRepos`; populate `BuildState` with repo paths and update `BuildReport.ClonedRepositories` / `FailedRepositories` precisely (no default prefill).
-3. Implement `RepositoryFilter` (Phase 1 item 2): precompiled patterns, `Include()` method returning (bool, reason). Apply filter prior to cloning to skip repos early and record skipped count (optional new field `SkippedRepositories`).
-4. Adjust `BuildReport` initialization: start cloned/failed/skipped counters at 0; remove current default assignment.
-5. Update status endpoint to include optional `skipped_repositories` and ensure clone metrics reflect new logic.
-6. Add tests: (a) repository clone failure increments failed & outcome possibly still success if others succeed; (b) filter exclusion yields skip count; (c) discover_docs stage cancellation propagates with canceled outcome.
-7. Update metrics collector (if available) to increment per-stage counters for clone/discovery and record duration histograms (stub if histogram infra not yet done).
-8. Update this roadmap and package docs describing new stages and filtering.
+1. Add `internal/repository/filter.go` defining `RepositoryFilter` with include/exclude pattern compilation (glob -> regex), optional tag/metadata checks.
+2. Add `Include(repo config.Repository) (bool, string)` returning decision & reason (reason for exclusion).
+3. Integrate filter into `GenerateFullSite` path: preprocess `repositories` slice producing filtered list + skipped counter.
+4. Extend `BuildReport` with `SkippedRepositories` and update status endpoint (omit field when zero).
+5. Tests: (a) include-all default; (b) exclude by name glob; (c) mixed include/exclude precedence; (d) skip counted and reason returned; (e) pipeline with all skipped yields warning in `clone_repos` (no attempts).
+6. Update roadmap & docs to reflect new struct and field.
+7. (Optional) Emit metric `repositories_skipped_total`.
 
 Acceptance Criteria:
-- `BuildReport` shows accurate clone/discovery durations and counts (cloned, failed, optional skipped).
-- Status JSON includes these counters (and omitted when zero).
-- Existing downstream Hugo stages unaffected; all tests pass; new tests cover failures & filtering.
-- Removal of default cloned=total behavior (validated in test).
+- Filtered build only clones expected repositories; skipped count accurate; tests cover edge cases.
+- BuildReport & status show `skipped_repositories` when >0.
+- No regression in existing tests; new tests green.
 
 Follow-on After This Step:
-- Add per-stage histogram metrics (duration_seconds) & counts export.
-- Implement retry semantics for transient clone errors using sentinel domain errors.
-- Introduce parallel cloning worker pool (Phase 4 item 19) once baseline metrics stable.
+- Add per-stage histograms & metrics export.
+- Implement transient error classification & retry plan.
+- Introduce parallel cloning worker pool.
 
 ---
 ## Quick Start Sequence (Recommended)
