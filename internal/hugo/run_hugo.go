@@ -19,10 +19,10 @@ func shouldRunHugo() bool {
 // runHugoBuild executes `hugo` inside the output directory to produce the static site under public/.
 func (g *Generator) runHugoBuild() error {
     cmd := exec.Command("hugo")
-    cmd.Dir = g.outputDir
+    cmd.Dir = g.finalRoot() // run only against finalized site
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    slog.Info("Running Hugo binary to render static site", "dir", g.outputDir)
+    slog.Info("Running Hugo binary to render static site", "dir", g.finalRoot())
     if err := cmd.Run(); err != nil { return fmt.Errorf("hugo command failed: %w", err) }
     return nil
 }

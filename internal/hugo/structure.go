@@ -20,10 +20,7 @@ func (g *Generator) createHugoStructure() error {
 		"assets",
 		"archetypes",
 	}
-	root := g.outputDir
-	if g.stageDir != "" { // prefer staging root if set
-		root = g.stageDir
-	}
+	root := g.buildRoot()
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
 		if err := os.MkdirAll(path, 0755); err != nil {
