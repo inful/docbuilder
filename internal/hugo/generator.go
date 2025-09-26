@@ -575,76 +575,47 @@ func (g *Generator) addHextraParams(params map[string]interface{}) {
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
+	pipeline := NewTransformerPipeline(
+		&FrontMatterParser{},
+		&RelativeLinkRewriter{},
+		&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
+		&FinalFrontMatterSerializer{},
+	)
+
 	for _, file := range docFiles {
-		// Load file content if not already loaded
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
-
-		// Process front matter and content
-		processedContent, err := g.processMarkdownFile(file)
-		if err != nil {
-			return fmt.Errorf("failed to process file %s: %w", file.Path, err)
+		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+		if err := pipeline.Run(p); err != nil {
+			return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
 		}
-
-		// Write to Hugo content directory
 		outputPath := filepath.Join(g.outputDir, file.GetHugoPath())
-
-		// Create directory if it doesn't exist
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", outputPath, err)
 		}
-
-		if err := os.WriteFile(outputPath, processedContent, 0644); err != nil {
+		if err := os.WriteFile(outputPath, p.Raw, 0644); err != nil {
 			return fmt.Errorf("failed to write file %s: %w", outputPath, err)
 		}
-
-		slog.Debug("Copied content file",
-			"source", file.RelativePath,
-			"destination", file.GetHugoPath())
+		slog.Debug("Copied content file", "source", file.RelativePath, "destination", file.GetHugoPath())
 	}
-
 	slog.Info("Copied all content files", "count", len(docFiles))
 	return nil
 }
 
 // processMarkdownFile processes a markdown file and adds Hugo front matter
+// processMarkdownFile deprecated: replaced by transformer pipeline inside copyContentFiles.
+// TODO: remove after callers (if any external) are migrated.
 func (g *Generator) processMarkdownFile(file docs.DocFile) ([]byte, error) {
-	content := string(file.Content)
-
-	// Link rewriting extracted for testability
-	content = RewriteRelativeMarkdownLinks(content)
-
-	// Parse existing front matter if present
-	existing := map[string]interface{}{}
-	if strings.HasPrefix(content, "---\n") {
-		endIndex := strings.Index(content[4:], "\n---\n")
-		if endIndex > 0 {
-			fmContent := content[4 : endIndex+4]
-			if err := yaml.Unmarshal([]byte(fmContent), &existing); err != nil {
-				slog.Warn("Failed to parse existing front matter", "file", file.RelativePath, "error", err)
-			}
-			content = content[endIndex+8:]
-		}
-	}
-
-	// Delegate to front matter builder
-	fmMap := BuildFrontMatter(FrontMatterInput{
-		File:     file,
-		Existing: existing,
-		Config:   g.config,
-		Now:      time.Now(),
-	})
-
-	// Generate new front matter
-	fmData, err := yaml.Marshal(fmMap)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal front matter: %w", err)
-	}
-
-	// Combine front matter and content
-	result := fmt.Sprintf("---\n%s---\n%s", string(fmData), content)
-	return []byte(result), nil
+	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+	pipeline := NewTransformerPipeline(
+		&FrontMatterParser{},
+		&RelativeLinkRewriter{},
+		&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
+		&FinalFrontMatterSerializer{},
+	)
+	if err := pipeline.Run(p); err != nil { return nil, err }
+	return p.Raw, nil
 }
 
 // generateIndexPages creates index pages for sections and the main site
