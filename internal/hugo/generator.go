@@ -44,39 +44,53 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 
 // GenerateSite creates a complete Hugo site from discovered documentation
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
+	_, err := g.GenerateSiteWithReport(docFiles)
+	return err
+}
+
+// GenerateSiteWithReport performs site generation and returns a BuildReport with metrics.
+func (g *Generator) GenerateSiteWithReport(docFiles []docs.DocFile) (*BuildReport, error) {
 	slog.Info("Starting Hugo site generation", "output", g.outputDir, "files", len(docFiles))
+	repoSet := map[string]struct{}{}
+	for _, f := range docFiles { repoSet[f.Repository] = struct{}{} }
+	report := newBuildReport(len(repoSet), len(docFiles))
+
+	// Helper to record an error but continue (non-fatal phases)
+	addErr := func(err error) {
+		if err != nil { report.Errors = append(report.Errors, err); slog.Warn("Generation phase error", "error", err) }
+	}
 
 	// Create Hugo directory structure
 	if err := g.createHugoStructure(); err != nil {
-		return fmt.Errorf("failed to create Hugo structure: %w", err)
+		return nil, fmt.Errorf("failed to create Hugo structure: %w", err)
 	}
 
 	// Generate Hugo configuration
 	if err := g.generateHugoConfig(); err != nil {
-		return fmt.Errorf("failed to generate Hugo config: %w", err)
+		return nil, fmt.Errorf("failed to generate Hugo config: %w", err)
 	}
 
 	// Generate basic layouts if no theme is specified
 	if g.config.Hugo.Theme == "" {
 		if err := g.generateBasicLayouts(); err != nil {
-			return fmt.Errorf("failed to generate layouts: %w", err)
+			return nil, fmt.Errorf("failed to generate layouts: %w", err)
 		}
 	}
 
 	// Copy documentation files to content directory
 	if err := g.copyContentFiles(docFiles); err != nil {
-		return fmt.Errorf("failed to copy content files: %w", err)
+		return nil, fmt.Errorf("failed to copy content files: %w", err)
 	}
 
 	// Generate index pages
 	if err := g.generateIndexPages(docFiles); err != nil {
-		return fmt.Errorf("failed to generate index pages: %w", err)
+		return nil, fmt.Errorf("failed to generate index pages: %w", err)
 	}
 
-	// Optionally execute Hugo to render static site
+	// Optionally execute Hugo to render static site (non-fatal)
 	if shouldRunHugo() {
 		if err := g.runHugoBuild(); err != nil {
-			slog.Warn("Hugo build failed (site sources still generated)", "error", err)
+			addErr(fmt.Errorf("hugo build failed: %w", err))
 		} else {
 			slog.Info("Hugo static site build completed", "public", filepath.Join(g.outputDir, "public"))
 		}
@@ -84,8 +98,9 @@ func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 		slog.Info("Skipping Hugo executable run (set DOCBUILDER_RUN_HUGO=1 to enable)")
 	}
 
-	slog.Info("Hugo site generation completed", "output", g.outputDir)
-	return nil
+	report.finish()
+	slog.Info("Hugo site generation completed", "output", g.outputDir, "repos", report.Repositories, "files", report.Files, "errors", len(report.Errors))
+	return report, nil
 }
 
 // shouldRunHugo determines if we should invoke the external hugo binary.
