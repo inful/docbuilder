@@ -14,7 +14,9 @@ import (
 
 // generateHugoConfig creates the Hugo configuration file
 func (g *Generator) generateHugoConfig() error {
-    configPath := filepath.Join(g.outputDir, "hugo.yaml")
+	root := g.outputDir
+	if g.stageDir != "" { root = g.stageDir }
+	configPath := filepath.Join(root, "hugo.yaml")
 
 	params := make(map[string]interface{})
 	if g.config.Hugo.Params != nil {
@@ -62,7 +64,7 @@ func (g *Generator) generateHugoConfig() error {
 	if g.config.Hugo.Theme == config.ThemeHextra { // math passthrough
 		if m, ok := hugoConfig["markup"].(map[string]interface{}); ok {
 			gm, _ := m["goldmark"].(map[string]interface{})
-            if gm == nil {
+			if gm == nil {
 				gm = map[string]interface{}{}
 				m["goldmark"] = gm
 			}
@@ -74,7 +76,7 @@ func (g *Generator) generateHugoConfig() error {
 			ext["passthrough"] = map[string]interface{}{
 				"delimiters": map[string]interface{}{
 					"block":  [][]string{{"\\[", "\\]"}, {"$$", "$$"}},
-                    "inline": [][]string{{"\\(", "\\)"}},
+					"inline": [][]string{{"\\(", "\\)"}},
 				},
 				"enable": true,
 			}
@@ -85,7 +87,7 @@ func (g *Generator) generateHugoConfig() error {
 		hugoConfig["outputs"] = map[string]interface{}{"home": []string{"HTML", "RSS", "JSON"}}
 	}
 
-    // Menu handling
+	// Menu handling
 	if g.config.Hugo.Theme == config.ThemeHextra {
 		if g.config.Hugo.Menu == nil {
 			mainMenu := []map[string]interface{}{
@@ -93,7 +95,7 @@ func (g *Generator) generateHugoConfig() error {
 				{"name": "Theme", "weight": 98, "params": map[string]interface{}{"type": "theme-toggle", "label": false}},
 			}
 			for _, repo := range g.config.Repositories { // add GitHub icon if any
-                if strings.Contains(repo.URL, "github.com") {
+				if strings.Contains(repo.URL, "github.com") {
 					mainMenu = append(mainMenu, map[string]interface{}{"name": "GitHub", "weight": 99, "url": repo.URL, "params": map[string]interface{}{"icon": "github"}})
 					break
 				}
@@ -110,7 +112,7 @@ func (g *Generator) generateHugoConfig() error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal Hugo config: %w", err)
 	}
-    if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write Hugo config: %w", err)
 	}
 
