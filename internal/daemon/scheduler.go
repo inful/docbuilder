@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // generateID creates a simple unique ID
@@ -128,7 +130,7 @@ func (s *Scheduler) AddSchedule(schedule *Schedule) error {
 	s.schedules[schedule.ID] = schedule
 	s.mu.Unlock()
 
-	slog.Info("Schedule added", "id", schedule.ID, "name", schedule.Name, "next_run", schedule.NextRun)
+	slog.Info("Schedule added", logfields.ScheduleID(schedule.ID), logfields.ScheduleName(schedule.Name), slog.Any("next_run", schedule.NextRun))
 	return nil
 }
 
@@ -142,7 +144,7 @@ func (s *Scheduler) RemoveSchedule(id string) error {
 	}
 
 	delete(s.schedules, id)
-	slog.Info("Schedule removed", "id", id)
+	slog.Info("Schedule removed", logfields.ScheduleID(id))
 	return nil
 }
 
@@ -185,7 +187,7 @@ func (s *Scheduler) EnableSchedule(id string) error {
 	schedule.Enabled = true
 	s.calculateNextRun(schedule)
 
-	slog.Info("Schedule enabled", "id", id, "next_run", schedule.NextRun)
+	slog.Info("Schedule enabled", logfields.ScheduleID(id), slog.Any("next_run", schedule.NextRun))
 	return nil
 }
 
@@ -202,7 +204,7 @@ func (s *Scheduler) DisableSchedule(id string) error {
 	schedule.Enabled = false
 	schedule.NextRun = nil
 
-	slog.Info("Schedule disabled", "id", id)
+	slog.Info("Schedule disabled", logfields.ScheduleID(id))
 	return nil
 }
 
@@ -244,7 +246,7 @@ func (s *Scheduler) checkSchedules() {
 
 // executeSchedule executes a scheduled task
 func (s *Scheduler) executeSchedule(schedule *Schedule, now time.Time) {
-	slog.Info("Executing scheduled task", "id", schedule.ID, "name", schedule.Name)
+	slog.Info("Executing scheduled task", logfields.ScheduleID(schedule.ID), logfields.ScheduleName(schedule.Name))
 
 	// Update last run time
 	schedule.LastRun = &now
@@ -265,18 +267,14 @@ func (s *Scheduler) executeSchedule(schedule *Schedule, now time.Time) {
 	if err := s.buildQueue.Enqueue(job); err != nil {
 		schedule.ErrorCount++
 		schedule.LastError = fmt.Sprintf("Failed to enqueue build job: %v", err)
-		slog.Error("Failed to enqueue scheduled build",
-			"schedule_id", schedule.ID,
-			"error", err)
+		slog.Error("Failed to enqueue scheduled build", logfields.ScheduleID(schedule.ID), slog.String("error", err.Error()))
 	}
 
 	// Calculate next run time
 	if err := s.calculateNextRun(schedule); err != nil {
 		schedule.ErrorCount++
 		schedule.LastError = fmt.Sprintf("Failed to calculate next run: %v", err)
-		slog.Error("Failed to calculate next run for schedule",
-			"schedule_id", schedule.ID,
-			"error", err)
+		slog.Error("Failed to calculate next run for schedule", logfields.ScheduleID(schedule.ID), slog.String("error", err.Error()))
 		// Disable the schedule if we can't calculate the next run
 		schedule.Enabled = false
 	}
