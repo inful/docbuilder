@@ -3,9 +3,11 @@ package hugo
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"gopkg.in/yaml.v3"
 )
@@ -97,4 +99,66 @@ func (s *FinalFrontMatterSerializer) Transform(p *Page) error {
 	combined := fmt.Sprintf("---\n%s---\n%s", string(fmData), p.Content)
 	p.Raw = []byte(combined)
 	return nil
+}
+
+// EditLinkInjector ensures an editURL exists (when theme expects it) after front matter build but before serialization.
+// It mirrors the logic in BuildFrontMatter but only runs if editURL is still absent; this allows it to be inserted
+// flexibly in future pipelines without duplicating site-level param logic.
+type EditLinkInjector struct{ ConfigProvider func() *Generator }
+
+func (e *EditLinkInjector) Name() string { return "edit_link_injector" }
+func (e *EditLinkInjector) Transform(p *Page) error {
+	if p.FrontMatter == nil { // nothing to do
+		return nil
+	}
+	if _, exists := p.FrontMatter["editURL"]; exists { // respect existing
+		return nil
+	}
+	gen := e.ConfigProvider()
+	if gen == nil || gen.config == nil || gen.config.Hugo.Theme != "hextra" { // currently only hextra per-page logic
+		return nil
+	}
+	// Re-run minimal subset of logic from BuildFrontMatter (consider refactor to shared helper later)
+	cfg := gen.config
+	// Suppress if site base set
+	if cfg.Hugo.Params != nil {
+		if v, ok := cfg.Hugo.Params["editURL"]; ok {
+			if m, ok := v.(map[string]any); ok {
+				if b, ok := m["base"].(string); ok && b != "" {
+					return nil
+				}
+			}
+		}
+	}
+	var repoCfg *config.Repository
+	for i := range cfg.Repositories {
+		if cfg.Repositories[i].Name == p.File.Repository {
+			repoCfg = &cfg.Repositories[i]
+			break
+		}
+	}
+	if repoCfg == nil { return nil }
+	branch := repoCfg.Branch
+	if branch == "" { branch = "main" }
+	repoRel := p.File.RelativePath
+	if base := strings.TrimSpace(p.File.DocsBase); base != "" && base != "." {
+ 		repoRel = filepath.ToSlash(filepath.Join(base, repoRel))
+ 	} else {
+ 		repoRel = filepath.ToSlash(repoRel)
+ 	}
+ 	url := strings.TrimSuffix(repoCfg.URL, ".git")
+ 	var editURL string
+ 	if strings.Contains(repoCfg.URL, "github.com") {
+ 		if strings.HasPrefix(url, "git@github.com:") { url = "https://github.com/" + strings.TrimPrefix(url, "git@github.com:") }
+ 		editURL = fmt.Sprintf("%s/edit/%s/%s", url, branch, repoRel)
+ 	} else if strings.Contains(repoCfg.URL, "gitlab.com") {
+ 		if strings.HasPrefix(url, "git@gitlab.com:") { url = "https://gitlab.com/" + strings.TrimPrefix(url, "git@gitlab.com:") }
+ 		editURL = fmt.Sprintf("%s/-/edit/%s/%s", url, branch, repoRel)
+ 	} else if strings.Contains(repoCfg.URL, "bitbucket.org") {
+ 		editURL = fmt.Sprintf("%s/src/%s/%s?mode=edit", url, branch, repoRel)
+ 	} else if strings.Contains(repoCfg.URL, "git.home.luguber.info") {
+ 		editURL = fmt.Sprintf("%s/_edit/%s/%s", url, branch, repoRel)
+ 	}
+ 	if editURL != "" { p.FrontMatter["editURL"] = editURL }
+ 	return nil
 }
