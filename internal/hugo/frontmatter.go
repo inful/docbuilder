@@ -28,7 +28,15 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 
 	// Title
 	if fm["title"] == nil && in.File.Name != "index" {
-		fm["title"] = strings.ReplaceAll(titleCase(in.File.Name), "-", " ")
+		// Convert kebab or snake to Title Case: getting-started -> Getting Started
+		base := in.File.Name
+		base = strings.ReplaceAll(base, "_", "-")
+		parts := strings.Split(base, "-")
+		for i, part := range parts {
+			if part == "" { continue }
+			parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
+		}
+		fm["title"] = strings.Join(parts, " ")
 	}
 	// Date
 	if fm["date"] == nil {
