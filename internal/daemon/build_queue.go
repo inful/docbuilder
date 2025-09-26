@@ -13,6 +13,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 )
 
 // BuildType represents the type of build job
@@ -349,7 +350,8 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 		slog.Info("Cloning repository", "name", r.Name, "url", r.URL)
 		p, err := gitClient.CloneRepository(r)
 		if err != nil {
-			slog.Error("Repository clone failed", "name", r.Name, "error", err)
+			wrapped := fmt.Errorf("%w: %v", build.ErrClone, err)
+			slog.Error("Repository clone failed", "name", r.Name, "error", wrapped)
 			// track failed clone in build report if available
 			if job.Metadata != nil {
 				if brRaw, ok := job.Metadata["build_report"]; ok {
@@ -378,7 +380,7 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	discovery := docs.NewDiscovery(reposAny)
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
 	if err != nil {
-		return fmt.Errorf("documentation discovery failed: %w", err)
+		return fmt.Errorf("%w: %v", build.ErrDiscovery, err)
 	}
 	slog.Info("Documentation discovery complete", "files", len(docFiles))
 
@@ -407,7 +409,7 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	}
 	report, err := gen.GenerateSiteWithReportContext(ctx, docFiles)
 	if err != nil {
-		return fmt.Errorf("hugo generation failed: %w", err)
+		return fmt.Errorf("%w: %v", build.ErrHugo, err)
 	}
 
 	// Store stage timings in job metadata for status/observability.
