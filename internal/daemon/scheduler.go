@@ -47,15 +47,8 @@ type Schedule struct {
 	CreatedAt  time.Time              `json:"created_at"`
 }
 
-// CronExpression parses and validates cron expressions
-type CronExpression struct {
-	minute   []int // 0-59
-	hour     []int // 0-23
-	day      []int // 1-31
-	month    []int // 1-12
-	weekday  []int // 0-6 (Sunday = 0)
-	original string
-}
+// NOTE: A full cron expression struct/parser was previously stubbed here but removed
+// due to being unused. The simplified validator + common pattern matcher remain.
 
 // Scheduler manages scheduled tasks and executes them at the appropriate times
 type Scheduler struct {
@@ -185,7 +178,11 @@ func (s *Scheduler) EnableSchedule(id string) error {
 	}
 
 	schedule.Enabled = true
-	s.calculateNextRun(schedule)
+	if err := s.calculateNextRun(schedule); err != nil {
+		schedule.Enabled = false // disable if we cannot compute next run
+		slog.Error("Failed to enable schedule (next run calc)", logfields.ScheduleID(id), slog.String("error", err.Error()))
+		return fmt.Errorf("failed to calculate next run: %w", err)
+	}
 
 	slog.Info("Schedule enabled", logfields.ScheduleID(id), slog.Any("next_run", schedule.NextRun))
 	return nil

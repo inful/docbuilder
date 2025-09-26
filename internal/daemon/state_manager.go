@@ -212,7 +212,10 @@ func (sm *StateManager) GetState() *DaemonState {
 	// Return a deep copy to prevent external modifications
 	data, _ := json.Marshal(sm.state)
 	var stateCopy DaemonState
-	json.Unmarshal(data, &stateCopy)
+	if err := json.Unmarshal(data, &stateCopy); err != nil {
+		slog.Error("failed to deep copy daemon state", "error", err)
+		return &DaemonState{}
+	}
 
 	return &stateCopy
 }
@@ -248,7 +251,10 @@ func (sm *StateManager) GetRepository(url string) *RepoState {
 		// Return a copy
 		data, _ := json.Marshal(repo)
 		var repoCopy RepoState
-		json.Unmarshal(data, &repoCopy)
+		if err := json.Unmarshal(data, &repoCopy); err != nil {
+            slog.Error("failed to deep copy repository state", "url", url, "error", err)
+            return nil
+        }
 		return &repoCopy
 	}
 
@@ -265,7 +271,10 @@ func (sm *StateManager) ListRepositories() []*RepoState {
 		// Return copies
 		data, _ := json.Marshal(repo)
 		var repoCopy RepoState
-		json.Unmarshal(data, &repoCopy)
+		if err := json.Unmarshal(data, &repoCopy); err != nil {
+            slog.Error("failed to deep copy repository in list", "error", err)
+            continue
+        }
 		repos = append(repos, &repoCopy)
 	}
 
@@ -334,7 +343,10 @@ func (sm *StateManager) GetBuild(id string) *BuildState {
 		// Return a copy
 		data, _ := json.Marshal(build)
 		var buildCopy BuildState
-		json.Unmarshal(data, &buildCopy)
+		if err := json.Unmarshal(data, &buildCopy); err != nil {
+            slog.Error("failed to deep copy build state", "id", id, "error", err)
+            return nil
+        }
 		return &buildCopy
 	}
 
@@ -372,7 +384,10 @@ func (sm *StateManager) GetSchedule(id string) *Schedule {
 		// Return a copy
 		data, _ := json.Marshal(schedule)
 		var scheduleCopy Schedule
-		json.Unmarshal(data, &scheduleCopy)
+		if err := json.Unmarshal(data, &scheduleCopy); err != nil {
+            slog.Error("failed to deep copy schedule state", "id", id, "error", err)
+            return nil
+        }
 		return &scheduleCopy
 	}
 
@@ -405,7 +420,10 @@ func (sm *StateManager) GetStatistics() *DaemonStats {
 	// Return a copy
 	data, _ := json.Marshal(sm.state.Statistics)
 	var statsCopy DaemonStats
-	json.Unmarshal(data, &statsCopy)
+	if err := json.Unmarshal(data, &statsCopy); err != nil {
+        slog.Error("failed to deep copy statistics", "error", err)
+        return &DaemonStats{}
+    }
 
 	// Update uptime
 	statsCopy.Uptime = time.Since(sm.state.StartTime).Seconds()

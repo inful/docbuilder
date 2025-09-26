@@ -257,8 +257,7 @@ func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 			Status: "healthy",
 		}
 
-		// Version info (best-effort, avoid long blocking): only use already-known manager state if available
-		if d.versionService != nil { /* future: fetch cached version metadata (intentionally no-op for now) */ }
+		// Version info (future: integrate with versionService for cached metadata)
 
 		// Placeholder LastSync from cached discovery timestamp
 		if d.lastDiscovery != nil {
