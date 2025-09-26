@@ -208,12 +208,10 @@ make dev
 
 ## Metrics & Observability
 
-DocBuilder exposes build and runtime metrics in two forms:
+DocBuilder exposes build and runtime metrics in two forms (both available when metrics are enabled in config):
 
-1. JSON metrics snapshot (`/metrics` and `/metrics/detailed` on the admin port) – always available when metrics are enabled in config.
-2. Prometheus metrics endpoint (`/metrics/prometheus`) – available only when:
-   - Built with the `prometheus` build tag, and
-   - `monitoring.metrics.enabled: true` in configuration.
+1. JSON metrics snapshot (`/metrics` and `/metrics/detailed` on the admin port).
+2. Prometheus metrics endpoint (`/metrics/prometheus`). Prometheus support is now always compiled in (build tags removed).
 
 ### Prometheus Metrics
 
@@ -230,8 +228,10 @@ DocBuilder exposes build and runtime metrics in two forms:
 | `docbuilder_clone_repo_duration_seconds` | histogram | `repo`,`result` | Per-repository clone duration (result = success or failed). |
 | `docbuilder_clone_repo_results_total` | counter | `result` | Clone attempts by outcome (success or failed). |
 | `docbuilder_clone_concurrency` | gauge | (none) | Effective clone concurrency used in the last `clone_repos` stage. |
+| `docbuilder_build_retries_total` | counter | `stage` | Count of individual retry attempts for transient failures (excludes initial attempt). |
+| `docbuilder_build_retry_exhausted_total` | counter | `stage` | Count of stages where all retry attempts were exhausted without success. |
 
-Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) provide active concurrency visibility.
+Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) provide active concurrency visibility. Retry attempt and exhaustion counters aid alerting around instability.
 
 ### Transient Error Classification
 
@@ -249,15 +249,14 @@ monitoring:
     path: /metrics   # JSON endpoint base path
 ```
 
-Build with Prometheus support:
+Example scrape:
 
 ```fish
-go build -tags=prometheus ./cmd/docbuilder
 ./docbuilder daemon -c config.yaml
-curl http://localhost:8082/metrics/prometheus
+curl http://localhost:8082/metrics/prometheus | head -40
 ```
 
-If not built with the `prometheus` tag, `/metrics/prometheus` is omitted automatically.
+Disable metrics at runtime (JSON + Prometheus) by setting `monitoring.metrics.enabled: false`.
 
 ### JSON Metrics Endpoints
 
@@ -274,9 +273,8 @@ Prometheus metric names are prefixed with `docbuilder_` and use `_seconds` suffi
 ### Planned Additions
 
 - Histogram bucket tuning / custom buckets via config.
-- Transient vs permanent failure counters.
-- Retry attempt counters (after full retry policy exposure in config).
-- Optional reduction of per-repo metric cardinality (toggle labels or aggregation).
+- Transient vs permanent failure counters (per-stage labeled separation).
+- Aggregation / sampling modes to reduce per-repository metric cardinality.
 
 ### Build Performance Tuning
 
@@ -288,3 +286,21 @@ build:
 ```
 
 Values <1 are coerced to 1. Oversized values are capped at the number of repositories in the build. Metrics reflect the effective concurrency.
+
+### Retry Policy Configuration
+
+Retry settings apply to transient stage failures (e.g., network clone issues):
+
+```yaml
+build:
+  max_retries: 2              # number of retry attempts after the first try (default 2)
+  retry_backoff: exponential  # fixed | linear | exponential (default linear)
+  retry_initial_delay: 1s     # starting delay before first retry (default 1s)
+  retry_max_delay: 30s        # cap for exponential growth (default 30s)
+```
+
+Metrics:
+- `docbuilder_build_retries_total{stage="clone_repos"}` increments per retry attempt.
+- `docbuilder_build_retry_exhausted_total{stage="clone_repos"}` increments when all retries fail.
+
+`BuildReport` also includes `retries` and `retries_exhausted` aggregates for post-build introspection.
