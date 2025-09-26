@@ -5,6 +5,7 @@ import (
     "log/slog"
     "os"
     "path/filepath"
+    "time"
 )
 
 // createHugoStructure creates the basic Hugo directory structure
@@ -19,12 +20,62 @@ func (g *Generator) createHugoStructure() error {
         "assets",
         "archetypes",
     }
-    for _, dir := range dirs {
-        path := filepath.Join(g.outputDir, dir)
+	root := g.outputDir
+	if g.stageDir != "" { // prefer staging root if set
+		root = g.stageDir
+	}
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir)
         if err := os.MkdirAll(path, 0755); err != nil {
             return fmt.Errorf("failed to create directory %s: %w", path, err)
         }
     }
-    slog.Debug("Created Hugo directory structure", "output", g.outputDir)
+	slog.Debug("Created Hugo directory structure", "root", root)
+    return nil
+}
+
+// beginStaging creates an isolated staging directory for atomic build output.
+func (g *Generator) beginStaging() error {
+    // create sibling staging dir: <output>.staging-<ts>
+    ts := time.Now().UnixNano()
+    stage := fmt.Sprintf("%s.staging-%d", g.outputDir, ts)
+    if err := os.MkdirAll(stage, 0755); err != nil {
+        return fmt.Errorf("create staging dir: %w", err)
+    }
+    g.stageDir = stage
+    slog.Debug("Initialized staging directory", "staging", stage, "final", g.outputDir)
+    return nil
+}
+
+// finalizeStaging atomically promotes staging directory to final output location.
+// Strategy:
+//   1. Move existing outputDir (if exists) to outputDir.prev (overwrite if already there).
+//   2. Rename staging -> outputDir.
+//   3. Remove previous backup asynchronously best-effort.
+func (g *Generator) finalizeStaging() error {
+    if g.stageDir == "" {
+        return fmt.Errorf("no staging directory initialized")
+    }
+    prev := g.outputDir + ".prev"
+    // Remove old backup if present
+    if _, err := os.Stat(prev); err == nil {
+        _ = os.RemoveAll(prev)
+    }
+    if _, err := os.Stat(g.outputDir); err == nil {
+        if err := os.Rename(g.outputDir, prev); err != nil {
+            return fmt.Errorf("backup existing output: %w", err)
+        }
+    }
+    if err := os.Rename(g.stageDir, g.outputDir); err != nil {
+        return fmt.Errorf("promote staging: %w", err)
+    }
+    g.stageDir = ""
+    // Remove previous backup asynchronously (non-critical)
+    go func(p string) {
+        if err := os.RemoveAll(p); err != nil {
+            slog.Warn("Failed to remove previous backup", "path", p, "error", err)
+        }
+    }(prev)
+    slog.Info("Promoted staging directory", "output", g.outputDir)
     return nil
 }
