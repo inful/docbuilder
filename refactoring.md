@@ -81,11 +81,11 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 11. Metrics per Stage
 - [x] Add success/failure counters per stage (captured in `BuildReport.StageCounts`)
 - [x] Export basic build outcome counters (success/failed/warning/canceled) via metrics collector hook
-- [ ] Expose per-stage counts & rendered pages in status/metrics endpoints (partial – currently only outcome & timings surfaced)
+- [x] Expose per-stage counts & rendered pages in status endpoint (metrics export for stage counts still pending)
 
 ### 12. Structured Errors
 - [x] Stage-level structured errors (`StageError` with kinds fatal|warning|canceled)
-- [ ] Define domain sentinel errors (e.g., `ErrClone`, `ErrDiscovery`, `ErrHugo`) for retry semantics
+- [x] Define domain sentinel errors (e.g., `ErrClone`, `ErrDiscovery`, `ErrHugo`) for retry semantics (wrapping implemented in clone/discovery/hugo paths)
 - [ ] Distinguish transient vs permanent for retry logic (future)
 
 ### 13. Context Cancellation Checks
@@ -102,9 +102,9 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Stage durations populated
 - [x] Report stored in job metadata & surfaced (stage timings)
 - [x] Populate: renderedPages (during copy stage)
-- [ ] Populate: clonedRepos, failedRepos (placeholder currently defaults cloned=total, failed=0)
+- [ ] Populate: clonedRepos, failedRepos (partial – counters incremented, initial default still set; formal stage timing pending)
 - [ ] Add docsCount alias or clarify semantics with Files
-- [ ] Add staticRendered flag (depends on Hugo runner abstraction)
+- [x] Add staticRendered flag (set on successful Hugo execution and exposed via status)
 - [ ] Persist last successful report for dedicated admin retrieval endpoint
 
 ---
@@ -187,36 +187,39 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-26)
-Completed: Phase 1 item 1 (optional subtask deferred), items 5 (core), Phase 2 items 6, 7 (except golden test), 8 (initial stage runner), structured stage errors (Phase 3 item 12 partial), context cancellation (Phase 3 item 13 partial), stage timings exposed, build report enrichment (rendered pages, outcome, stage counts), basic build metrics counters (outcome) emitted, status endpoint now shows outcome/summary/errors/warnings.
-Pending: Exposing per-stage counts via status, cloned/failed repo counts, staticRendered flag, golden tests, sentinel domain errors, repository filtering object, V2→legacy conversion helper, domain retry semantics, front matter typing, stage duration histograms.
-Risk Level: Low – All tests green, structured error layer adds clarity without breaking external APIs.
+Completed: Phase 1 item 1 (optional subtask deferred), item 5 (core), Phase 2 items 6, 7 (except golden test), 8 (initial stage runner), structured stage errors, domain sentinel errors (clone/discovery/hugo) integrated, context cancellation (Phase 3 item 13 partial), stage timings exposed, build report enrichment (rendered pages, outcome, stage counts, staticRendered), basic build metrics counters (outcome) emitted, status endpoint shows outcome/summary/errors/warnings/rendered pages/stage counts/static render flag/clone stats (partial clone accuracy).
+Pending: Precise cloned/failed repo accounting (initial default override cleanup), RepositoryFilter object, V2→legacy conversion helper, domain retry semantics (transient vs permanent), cancellation checks in long loops, docsCount alias, report persistence endpoint, front matter typing, golden tests, per-stage metrics export & histograms, formal clone/discovery stages for timing, repository filtering, retry logic scaffolding, stage duration histograms.
+Risk Level: Low – All tests green; recent additions purely additive. Minor technical debt: clone metrics initialization & lack of formal clone/discovery stages.
 
 ### Proposed Next Step
-Expose per-stage counts & repository clone stats, then introduce sentinel domain errors for retry semantics.
+Formalize pre-content stages (CloneRepos, DiscoverDocs) and introduce `RepositoryFilter`.
 
 Rationale:
-- We now internally capture stage counts; surfacing them (and rendered pages) closes the visibility gap.
-- Adding cloned/failed repo metrics aligns operators’ mental model with early pipeline health (before Hugo stages).
-- Sentinel errors next allow classification (clone vs discovery vs hugo) enabling targeted retries and clearer status reporting.
+- Current clone/discovery logic lives inside build queue without timing or standardized error recording; elevating them to first-class stages improves observability and paves the way for retry/backoff and parallel cloning.
+- Formal stages let us remove the provisional default of `ClonedRepositories = total` and ensure accurate counters (success vs failure) plus duration metrics.
+- RepositoryFilter (include/exclude patterns, archived skip, required paths) reduces unnecessary clone/discovery work and yields cleaner status output.
+- Establishing these early stages now avoids rework before we add histogram metrics and retry semantics.
 
 Execution Outline:
-1. Enhance clone loop to increment cloned/failed repo counters (populate `BuildReport.ClonedRepositories` / `FailedRepositories`).
-2. Add `staticRendered` boolean to report (true only if Hugo stage ran & succeeded) and expose in status.
-3. Extend status JSON to include: rendered_pages, stage_counts (success/warning/fatal per stage), cloned_repos, failed_repos.
-4. Define sentinel errors (`ErrClone`, `ErrDiscovery`, `ErrHugo`) and wrap existing errors at source sites; adjust StageError to carry underlying domain classification (optional field or via error unwrap).
-5. Emit metrics: per-stage success/warning/fatal counters & build_duration histogram (reuse MetricsCollector histograms).
-6. Add tests: (a) simulated clone failure increments failed counter; (b) warning in run_hugo reflects in StageCounts and status serialization.
-7. Update docs (this file + package comment) to reflect new exported observability fields.
+1. Add two new stages before `prepare_output`: `clone_repos`, `discover_docs` (implemented within generator or a thin wrapper orchestrator) capturing durations and StageCounts.
+2. Move clone loop from `BuildQueue.executeBuild` into `stageCloneRepos`; populate `BuildState` with repo paths and update `BuildReport.ClonedRepositories` / `FailedRepositories` precisely (no default prefill).
+3. Implement `RepositoryFilter` (Phase 1 item 2): precompiled patterns, `Include()` method returning (bool, reason). Apply filter prior to cloning to skip repos early and record skipped count (optional new field `SkippedRepositories`).
+4. Adjust `BuildReport` initialization: start cloned/failed/skipped counters at 0; remove current default assignment.
+5. Update status endpoint to include optional `skipped_repositories` and ensure clone metrics reflect new logic.
+6. Add tests: (a) repository clone failure increments failed & outcome possibly still success if others succeed; (b) filter exclusion yields skip count; (c) discover_docs stage cancellation propagates with canceled outcome.
+7. Update metrics collector (if available) to increment per-stage counters for clone/discovery and record duration histograms (stub if histogram infra not yet done).
+8. Update this roadmap and package docs describing new stages and filtering.
 
 Acceptance Criteria:
-- Status endpoint shows new fields (counts & clone stats) when a build has occurred.
-- Tests green with new assertions for StageCounts exposure and clone failure accounting.
-- No regressions in existing report summary string (only additive fields kept at end).
+- `BuildReport` shows accurate clone/discovery durations and counts (cloned, failed, optional skipped).
+- Status JSON includes these counters (and omitted when zero).
+- Existing downstream Hugo stages unaffected; all tests pass; new tests cover failures & filtering.
+- Removal of default cloned=total behavior (validated in test).
 
 Follow-on After This Step:
-- Implement RepositoryFilter (Phase 1 item 2) to prune discovery set early.
-- Add golden page test (Phase 4 item 25) with stable front matter before typing refactor.
-- Introduce HugoRunner abstraction (Phase 4 item 18) to finalize staticRendered semantics.
+- Add per-stage histogram metrics (duration_seconds) & counts export.
+- Implement retry semantics for transient clone errors using sentinel domain errors.
+- Introduce parallel cloning worker pool (Phase 4 item 19) once baseline metrics stable.
 
 ---
 ## Quick Start Sequence (Recommended)
