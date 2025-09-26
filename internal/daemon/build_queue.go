@@ -385,7 +385,7 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
 		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
 	}
-	report, err := gen.GenerateSiteWithReport(docFiles)
+	report, err := gen.GenerateSiteWithReportContext(ctx, docFiles)
 	if err != nil {
 		return fmt.Errorf("hugo generation failed: %w", err)
 	}
