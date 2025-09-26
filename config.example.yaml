@@ -1,0 +1,35 @@
+# Example configuration for docbuilder
+repositories:
+  - url: https://git.home.luguber.info/inful/go-test-project.git
+    name: go-test-project
+    branch: main
+    paths:
+      - docs
+    auth:
+      type: token
+      token: "${GIT_ACCESS_TOKEN}"
+hugo:
+  title: "My Documentation Site"
+  description: "Aggregated documentation from multiple repositories"
+  base_url: "https://docs.example.com"
+  theme: "hextra"
+  params:
+    search:
+      enable: true
+      type: flexsearch
+    theme:
+      default: system
+      displayToggle: true
+    mermaid: {}
+  menu:
+    main:
+      - name: "Home"
+        url: "/"
+        weight: 10
+      - name: "API"
+        url: "/api/"
+        weight: 20
+
+output:
+  directory: "./site"
+  clean: true

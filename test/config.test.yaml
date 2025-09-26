@@ -1,0 +1,19 @@
+# Test configuration file
+repositories:
+  - url: https://git.home.luguber.info/inful/go-test-project.git
+    name: go-test-project
+    branch: main
+    paths:
+      - docs
+    auth:
+      type: token
+      token: "${GIT_ACCESS_TOKEN}"
+
+hugo:
+  title: "Test Documentation Site"
+  description: "Test build with Hugo documentation"
+  base_url: "https://test.example.com"
+
+output:
+  directory: "./test-site"
+  clean: true
