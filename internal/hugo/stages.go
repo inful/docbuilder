@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 )
 
 // Stage is a discrete unit of work in the site build.
@@ -164,7 +165,7 @@ func stageRunHugo(ctx context.Context, bs *BuildState) error {
 	}
 	if err := bs.Generator.runHugoBuild(); err != nil {
 		// Treat hugo runtime failure as warning (site content still copied & usable without static render)
-		return newWarnStageError("run_hugo", fmt.Errorf("hugo build failed: %w", err))
+		return newWarnStageError("run_hugo", fmt.Errorf("%w: %v", build.ErrHugo, err))
 	}
 	// mark successful static render
 	bs.Report.StaticRendered = true
