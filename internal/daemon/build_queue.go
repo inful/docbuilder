@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
-	"time"
 	"sync"
+	"time"
 
-	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
@@ -72,6 +69,9 @@ type BuildQueue struct {
 	historySize int
 	stopChan    chan struct{}
 	wg          sync.WaitGroup
+	builder     Builder
+	// retry policy (simple for now)
+	maxRetries  int
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -91,6 +91,8 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		history:     make([]*BuildJob, 0),
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
+		builder:     NewSiteBuilder(),
+		maxRetries:  0,
 	}
 }
 
@@ -243,153 +245,33 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 
 // executeBuild performs the actual build process
 func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
-	// TODO: Implement actual build logic
-	// For now, simulate build work
-
-	switch job.Type {
-	case BuildTypeManual:
-		return bq.executeManualBuild(ctx, job)
-	case BuildTypeScheduled:
-		return bq.executeScheduledBuild(ctx, job)
-	case BuildTypeWebhook:
-		return bq.executeWebhookBuild(ctx, job)
-	case BuildTypeDiscovery:
-		return bq.executeDiscoveryBuild(ctx, job)
-	default:
-		return fmt.Errorf("unsupported build type: %s", job.Type)
-	}
-}
-
-// executeManualBuild handles manually triggered builds
-func (bq *BuildQueue) executeManualBuild(ctx context.Context, job *BuildJob) error {
-	slog.Info("Executing manual build", "job_id", job.ID)
-	return bq.performSiteBuild(ctx, job)
-}
-
-// executeScheduledBuild handles cron-triggered builds
-func (bq *BuildQueue) executeScheduledBuild(ctx context.Context, job *BuildJob) error {
-	slog.Info("Executing scheduled build", "job_id", job.ID)
-	return bq.performSiteBuild(ctx, job)
-}
-
-// executeWebhookBuild handles webhook-triggered builds
-func (bq *BuildQueue) executeWebhookBuild(ctx context.Context, job *BuildJob) error {
-	slog.Info("Executing webhook build", "job_id", job.ID)
-	return bq.performSiteBuild(ctx, job)
-}
-
-// executeDiscoveryBuild handles auto-builds after discovery
-func (bq *BuildQueue) executeDiscoveryBuild(ctx context.Context, job *BuildJob) error {
-	slog.Info("Executing discovery build", "job_id", job.ID)
-	return bq.performSiteBuild(ctx, job)
-}
-
-// performSiteBuild encapsulates the actual build process: cloning repositories, discovering docs,
-// generating the Hugo site, and running a static render. This is invoked for all build types.
-func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error {
-	// Access daemon via closure capturing (BuildQueue currently doesn't have direct pointer to daemon config).
-	// We rely on job.Metadata carrying a *config.V2Config reference injected by the daemon when enqueuing.
-	rawCfg, ok := job.Metadata["v2_config"].(*cfg.V2Config)
-	if !ok || rawCfg == nil {
-		return fmt.Errorf("missing v2 configuration in job metadata")
-	}
-
-	// Prepare output directory
-	outDir := rawCfg.Output.Directory
-	if outDir == "" {
-		outDir = "./site"
-	}
-
-	// Clean output if requested (daemon defaults enforce clean true)
-	if rawCfg.Output.Clean {
-		if err := os.RemoveAll(outDir); err != nil {
-			slog.Warn("Failed to clean output directory", "dir", outDir, "error", err)
+	// Route all build types through unified builder; specialization can evolve inside builder if needed.
+	attempts := 0
+	for {
+		attempts++
+		report, err := bq.builder.Build(ctx, job)
+		if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
+		if report != nil { job.Metadata["build_report"] = report }
+		if err == nil {
+			return nil
 		}
-	}
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
-	}
-
-	// Build a temporary workspace for cloning
-	workspaceRoot := filepath.Join(outDir, "_workspace")
-	if err := os.MkdirAll(workspaceRoot, 0755); err != nil {
-		return fmt.Errorf("failed to create workspace: %w", err)
-	}
-
-    reposAny, ok := job.Metadata["repositories"].([]cfg.Repository)
-    if !ok {
-        if ra, ok2 := job.Metadata["repositories"].([]interface{}); ok2 {
-            casted := make([]cfg.Repository, 0, len(ra))
-            for _, v := range ra {
-                if r, ok3 := v.(cfg.Repository); ok3 {
-                    casted = append(casted, r)
-                }
-            }
-            reposAny = casted
-        }
-    }
-    if len(reposAny) == 0 {
-        slog.Warn("No repositories in job metadata; proceeding with empty set")
-    }
-
-	// Convert v2 config to legacy config.Config expected by Hugo generator
-	legacy := &cfg.Config{
-		Hugo: cfg.HugoConfig{
-			Theme:       rawCfg.Hugo.Theme,
-			BaseURL:     rawCfg.Hugo.BaseURL,
-			Title:       rawCfg.Hugo.Title,
-			Description: rawCfg.Hugo.Description,
-			Params:      rawCfg.Hugo.Params,
-			Menu:        rawCfg.Hugo.Menu,
-		},
-		Output: cfg.OutputConfig{
-			Directory: outDir,
-			Clean:     rawCfg.Output.Clean,
-		},
-		Repositories: reposAny,
-	}
-
-	gen := hugo.NewGenerator(legacy, outDir)
-	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
-		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
-	}
-	// Use new full pipeline (clone + discovery inside generator stages)
-	workspaceDir := filepath.Join(outDir, "_workspace")
-	report, err := gen.GenerateFullSite(ctx, reposAny, workspaceDir)
-	if err != nil {
-		slog.Error("Full site generation encountered error", "error", err)
-	}
-
-	// Store stage timings in job metadata for status/observability.
-	if job.Metadata == nil {
-		job.Metadata = make(map[string]interface{})
-	}
-	job.Metadata["build_report"] = report
-	// Emit basic metrics if daemon metrics collector attached (best-effort via metadata injection earlier)
-	if mcAny, ok := job.Metadata["metrics_collector"]; ok {
-		if mc, ok2 := mcAny.(interface{ IncrementCounter(string) }); ok2 {
-			mc.IncrementCounter("build_completed_total")
-			switch report.Outcome {
-			case "failed":
-				mc.IncrementCounter("build_failed_total")
-			case "warning":
-				mc.IncrementCounter("build_warning_total")
-			case "canceled":
-				mc.IncrementCounter("build_canceled_total")
-			case "success":
-				mc.IncrementCounter("build_success_total")
+		// Determine if retry is allowed (placeholder: look for transient StageError in report)
+		transient := false
+		if report != nil && len(report.Errors) > 0 {
+			for _, e := range report.Errors {
+				if se, ok := e.(*hugo.StageError); ok && se.Transient() { transient = true; break }
 			}
 		}
+		if !transient || attempts > bq.maxRetries {
+			if transient && attempts > bq.maxRetries { slog.Warn("Transient error but retries exhausted", "job_id", job.ID, "attempts", attempts) }
+			return err
+		}
+		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "max_retries", bq.maxRetries, "error", err)
+		time.Sleep(time.Duration(attempts) * time.Second) // simple linear backoff
 	}
-
-	slog.Info("Site build completed", "output", outDir, "public_exists", dirExists(filepath.Join(outDir, "public")))
-	return nil
 }
 
-func dirExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}
+// (Legacy per-type build wrapper methods removed; Builder abstraction handles all types.)
 
 // addToHistory adds a completed job to the history, maintaining the size limit
 func (bq *BuildQueue) addToHistory(job *BuildJob) {
