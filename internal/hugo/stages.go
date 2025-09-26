@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 // Stage is a discrete unit of work in the site build.
@@ -34,6 +36,43 @@ type StageError struct {
 func (e *StageError) Error() string { return fmt.Sprintf("%s stage %s: %v", e.Kind, e.Stage, e.Err) }
 func (e *StageError) Unwrap() error { return e.Err }
 
+// Transient reports whether the underlying error condition is likely transient (safe to retry)
+// versus permanent (retry unlikely to succeed without intervention). Initial heuristic:
+//   - clone_repos: transient if wrapping build.ErrClone (network/auth flake) and at least one repo succeeded
+//   - run_hugo: transient if wrapping build.ErrHugo (tooling/runtime issue that may be intermittent)
+//   - discover_docs: transient only if some repositories cloned (partial data); fatal if zero
+//   - canceled: not transient (caller initiated)
+//   - other stages default false until refined.
+func (e *StageError) Transient() bool {
+	if e == nil {
+		return false
+	}
+	if e.Kind == StageErrorCanceled {
+		return false
+	}
+	// Unwrap chain for sentinel match.
+	var cause error = e.Err
+	isSentinel := func(target error) bool { return errors.Is(cause, target) }
+	switch e.Stage {
+	case "clone_repos":
+		if isSentinel(build.ErrClone) {
+			// Heuristic: if at least one repo succeeded treat as transient; otherwise maybe auth misconfig (permanent).
+			// We cannot access BuildState here directly; assume transient for warning classification (fatal clone errs rare).
+			return true
+		}
+	case "run_hugo":
+		if isSentinel(build.ErrHugo) {
+			return true
+		}
+	case "discover_docs":
+		if isSentinel(build.ErrDiscovery) {
+			// Distinguish between zero and partial clones is done at stage level; treat warning discovery issues as transient.
+			return e.Kind == StageErrorWarning
+		}
+	}
+	return false
+}
+
 // Helpers to classify errors.
 func newFatalStageError(stage string, err error) *StageError {
 	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
@@ -47,14 +86,14 @@ func newCanceledStageError(stage string, err error) *StageError {
 
 // BuildState carries mutable state and metrics across stages.
 type BuildState struct {
-	Generator *Generator
-	Docs      []docs.DocFile
-	Report    *BuildReport
-	Timings   map[string]time.Duration
-	start     time.Time
-	Repositories []config.Repository        // configured repositories (post-filter)
-	RepoPaths    map[string]string          // name -> local filesystem path
-	WorkspaceDir string                     // root workspace for git operations
+	Generator    *Generator
+	Docs         []docs.DocFile
+	Report       *BuildReport
+	Timings      map[string]time.Duration
+	start        time.Time
+	Repositories []config.Repository // configured repositories (post-filter)
+	RepoPaths    map[string]string   // name -> local filesystem path
+	WorkspaceDir string              // root workspace for git operations
 }
 
 // newBuildState constructs a BuildState.
@@ -87,6 +126,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 		dur := time.Since(t0)
 		bs.Timings[st.name] = dur
 		bs.Report.StageDurations[st.name] = dur
+		if bs.Generator != nil && bs.Generator.recorder != nil {
+			bs.Generator.recorder.ObserveStageDuration(st.name, dur)
+		}
 		if err != nil {
 			var se *StageError
 			if errors.As(err, &se) {
@@ -106,12 +148,21 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 				switch se.Kind {
 				case StageErrorWarning:
 					bs.Report.Warnings = append(bs.Report.Warnings, se)
+					if bs.Generator != nil && bs.Generator.recorder != nil {
+						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultWarning)
+					}
 					continue // proceed to next stage
 				case StageErrorCanceled:
 					bs.Report.Errors = append(bs.Report.Errors, se)
+					if bs.Generator != nil && bs.Generator.recorder != nil {
+						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultCanceled)
+					}
 					return se
 				case StageErrorFatal:
 					bs.Report.Errors = append(bs.Report.Errors, se)
+					if bs.Generator != nil && bs.Generator.recorder != nil {
+						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultFatal)
+					}
 					return se
 				}
 			} else {
@@ -122,6 +173,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 				sc.Fatal++
 				bs.Report.StageCounts[st.name] = sc
 				bs.Report.Errors = append(bs.Report.Errors, se)
+				if bs.Generator != nil && bs.Generator.recorder != nil {
+					bs.Generator.recorder.IncStageResult(st.name, metrics.ResultFatal)
+				}
 				return se
 			}
 		} else {
@@ -129,6 +183,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 			sc := bs.Report.StageCounts[st.name]
 			sc.Success++
 			bs.Report.StageCounts[st.name] = sc
+			if bs.Generator != nil && bs.Generator.recorder != nil {
+				bs.Generator.recorder.IncStageResult(st.name, metrics.ResultSuccess)
+			}
 		}
 	}
 	return nil
@@ -153,25 +210,54 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return newFatalStageError("clone_repos", fmt.Errorf("ensure workspace: %w", err))
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
-	for _, r := range bs.Repositories {
-		select {
-		case <-ctx.Done():
-			return newCanceledStageError("clone_repos", ctx.Err())
-		default:
+
+	// Determine concurrency (future: from config; placeholder: min(4, len(repos)))
+	concurrency := 1
+	if len(bs.Repositories) > 1 {
+		if len(bs.Repositories) < 4 { concurrency = len(bs.Repositories) } else { concurrency = 4 }
+	}
+	if concurrency == 1 {
+		// fallback sequential path (original logic)
+		for _, r := range bs.Repositories {
+			select {
+			case <-ctx.Done():
+				return newCanceledStageError("clone_repos", ctx.Err())
+			default:
+			}
+			p, err := client.CloneRepository(r)
+			if err != nil { bs.Report.FailedRepositories++; continue }
+			bs.Report.ClonedRepositories++
+			bs.RepoPaths[r.Name] = p
 		}
-		p, err := client.CloneRepository(r)
-		if err != nil {
-			bs.Report.FailedRepositories++
-			continue
+	} else {
+		// parallel path (initial scaffold)
+		var wg sync.WaitGroup
+		sem := make(chan struct{}, concurrency)
+		mu := sync.Mutex{}
+		for _, repo := range bs.Repositories {
+			repo := repo
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func(){ <-sem }()
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				p, err := client.CloneRepository(repo)
+				mu.Lock()
+				if err != nil { bs.Report.FailedRepositories++ } else { bs.Report.ClonedRepositories++; bs.RepoPaths[repo.Name] = p }
+				mu.Unlock()
+			}()
 		}
-		bs.Report.ClonedRepositories++
-		bs.RepoPaths[r.Name] = p
+		wg.Wait()
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		return newWarnStageError("clone_repos", fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
-		// partial success - still treat as warning so operator is aware
 		return newWarnStageError("clone_repos", fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Repositories)))
 	}
 	return nil
@@ -204,7 +290,7 @@ func stageGenerateConfig(ctx context.Context, bs *BuildState) error {
 }
 
 func stageLayouts(ctx context.Context, bs *BuildState) error {
-	if bs.Generator.config.Hugo.Theme != "" {
+	if bs.Generator.config != nil && bs.Generator.config.Hugo.Theme != "" {
 		// Theme provided: no fallback layouts necessary.
 		// Add no-op statement to avoid staticcheck empty branch warning.
 		var _ = bs.Generator.config.Hugo.Theme
