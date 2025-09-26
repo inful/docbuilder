@@ -73,8 +73,8 @@ type BuildQueue struct {
 	wg          sync.WaitGroup
 	builder     Builder
 	// retry policy
-	retryCfg   config.BuildConfig
-	recorder   metrics.Recorder
+	retryCfg config.BuildConfig
+	recorder metrics.Recorder
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -102,12 +102,14 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 
 // ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
-    bq.retryCfg = cfg
+	bq.retryCfg = cfg
 }
 
 // SetRecorder injects a metrics recorder for retry metrics (optional).
 func (bq *BuildQueue) SetRecorder(r metrics.Recorder) {
-	if r == nil { r = metrics.NoopRecorder{} }
+	if r == nil {
+		r = metrics.NoopRecorder{}
+	}
 	bq.recorder = r
 }
 
@@ -217,14 +219,13 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	job.cancel = cancel
 	defer cancel()
 
-	// Mark job as running
-	startTime := time.Now()
-	job.StartedAt = &startTime
-	job.Status = BuildStatusRunning
-
-	bq.mu.Lock()
-	bq.active[job.ID] = job
-	bq.mu.Unlock()
+    // Mark job as running (all state mutations under lock to avoid races with observers)
+    startTime := time.Now()
+    bq.mu.Lock()
+    job.StartedAt = &startTime
+    job.Status = BuildStatusRunning
+    bq.active[job.ID] = job
+    bq.mu.Unlock()
 
 	slog.Info("Build job started", "job_id", job.ID, "type", job.Type, "worker", workerID)
 
@@ -233,28 +234,33 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 
 	// Mark job as completed
 	endTime := time.Now()
-	job.CompletedAt = &endTime
-	job.Duration = endTime.Sub(*job.StartedAt)
-
 	bq.mu.Lock()
+	job.CompletedAt = &endTime
+	if job.StartedAt != nil {
+		job.Duration = endTime.Sub(*job.StartedAt)
+	}
 	delete(bq.active, job.ID)
 	bq.addToHistory(job)
-	bq.mu.Unlock()
-
 	if err != nil {
 		job.Status = BuildStatusFailed
 		job.Error = err.Error()
+	} else {
+		job.Status = BuildStatusCompleted
+	}
+	duration := job.Duration
+	bq.mu.Unlock()
+
+	if err != nil {
 		slog.Error("Build job failed",
 			"job_id", job.ID,
 			"type", job.Type,
-			"duration", job.Duration,
+			"duration", duration,
 			"error", err)
 	} else {
-		job.Status = BuildStatusCompleted
 		slog.Info("Build job completed",
 			"job_id", job.ID,
 			"type", job.Type,
-			"duration", job.Duration)
+			"duration", duration)
 	}
 }
 
@@ -263,13 +269,21 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	// Route all build types through unified builder.
 	attempts := 0
 	maxRetries := bq.retryCfg.MaxRetries
-	if maxRetries < 0 { maxRetries = 0 }
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
 	initialDelay, _ := time.ParseDuration(bq.retryCfg.RetryInitialDelay)
-	if initialDelay <= 0 { initialDelay = time.Second }
+	if initialDelay <= 0 {
+		initialDelay = time.Second
+	}
 	maxDelay, _ := time.ParseDuration(bq.retryCfg.RetryMaxDelay)
-	if maxDelay <= 0 { maxDelay = 30 * time.Second }
+	if maxDelay <= 0 {
+		maxDelay = 30 * time.Second
+	}
 	backoffMode := bq.retryCfg.RetryBackoff
-	if backoffMode == "" { backoffMode = "linear" }
+	if backoffMode == "" {
+		backoffMode = "linear"
+	}
 
 	totalRetries := 0
 	exhausted := false
@@ -277,7 +291,9 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	for {
 		attempts++
 		report, err := bq.builder.Build(ctx, job)
-		if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
+		if job.Metadata == nil {
+			job.Metadata = make(map[string]interface{})
+		}
 		if report != nil {
 			job.Metadata["build_report"] = report
 		}
@@ -338,19 +354,23 @@ func computeBackoffDelay(mode string, initial, max time.Duration, retryCount int
 		return initial
 	case "exponential":
 		d := initial * (1 << (retryCount - 1))
-		if d > max { return max }
+		if d > max {
+			return max
+		}
 		return d
 	default: // linear
 		d := time.Duration(retryCount) * initial
-		if d > max { return max }
+		if d > max {
+			return max
+		}
 		return d
 	}
 }
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
 func extractRecorder(report *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
-    // Currently we only have fallback; future: attempt to derive from report metadata if embedded.
-    return fallback
+	// Currently we only have fallback; future: attempt to derive from report metadata if embedded.
+	return fallback
 }
 
 // (Legacy per-type build wrapper methods removed; Builder abstraction handles all types.)
@@ -365,4 +385,21 @@ func (bq *BuildQueue) addToHistory(job *BuildJob) {
 		copy(bq.history, bq.history[len(bq.history)-bq.historySize:])
 		bq.history = bq.history[:bq.historySize]
 	}
+}
+
+// JobSnapshot returns a copy of the job (searching active then history) under lock for race-free observation in tests/handlers.
+func (bq *BuildQueue) JobSnapshot(id string) (*BuildJob, bool) {
+	bq.mu.RLock()
+	defer bq.mu.RUnlock()
+	if j, ok := bq.active[id]; ok {
+		cp := *j
+		return &cp, true
+	}
+	for _, j := range bq.history {
+		if j.ID == id {
+			cp := *j
+			return &cp, true
+		}
+	}
+	return nil, false
 }
