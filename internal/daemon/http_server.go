@@ -345,7 +345,7 @@ func (s *HTTPServer) handleDaemonStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil { slog.Error("failed to encode daemon status", "error", err) }
 }
 
 // Daemon configuration endpoint
@@ -359,7 +359,7 @@ func (s *HTTPServer) handleDaemonConfig(w http.ResponseWriter, r *http.Request) 
 	sanitized := s.sanitizeConfig(s.config)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sanitized)
+	if err := json.NewEncoder(w).Encode(sanitized); err != nil { slog.Error("failed to encode daemon config", "error", err) }
 }
 
 // Trigger discovery endpoint
@@ -377,7 +377,7 @@ func (s *HTTPServer) handleTriggerDiscovery(w http.ResponseWriter, r *http.Reque
 			"job_id": jobID,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil { slog.Error("failed to encode discovery trigger response", "error", err) }
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -398,7 +398,7 @@ func (s *HTTPServer) handleTriggerBuild(w http.ResponseWriter, r *http.Request) 
 			"job_id": jobID,
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil { slog.Error("failed to encode build trigger response", "error", err) }
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -419,7 +419,7 @@ func (s *HTTPServer) handleBuildStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil { slog.Error("failed to encode build status", "error", err) }
 }
 
 // Repositories endpoint
@@ -437,7 +437,7 @@ func (s *HTTPServer) handleRepositories(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(repos)
+	if err := json.NewEncoder(w).Encode(repos); err != nil { slog.Error("failed to encode repositories", "error", err) }
 }
 
 // sanitizeConfig removes sensitive information from configuration

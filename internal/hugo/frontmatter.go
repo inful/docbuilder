@@ -1,11 +1,11 @@
 package hugo
 
 import (
-	"strings"
-	"time"
+    "strings"
+    "time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
+    "git.home.luguber.info/inful/docbuilder/internal/config"
+    "git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 // FrontMatterInput bundles inputs required to build or augment front matter.
@@ -64,12 +64,6 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 	return fm
 }
 
-// parseExistingFrontMatter is a helper that returns existing map or empty when nil.
-func parseExistingFrontMatter(m map[string]any) map[string]any {
-	if m == nil {
-		return map[string]any{}
-	}
-	return m
-}
+// parseExistingFrontMatter removed (unused)
 
 // (Future) Additional front matter transformations can compose here.
