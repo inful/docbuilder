@@ -3,6 +3,7 @@ package hugo
 import (
 	"context"
 	"log/slog"
+	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -78,3 +79,37 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 }
 
 // (Helper methods split into separate files for maintainability.)
+
+// GenerateFullSite clones repositories, discovers documentation, then executes the standard generation stages.
+// repositories: list of repositories to process. workspaceDir: directory for git operations (created if missing).
+func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.Repository, workspaceDir string) (*BuildReport, error) {
+	report := newBuildReport(0, 0) // counts filled after discovery
+	g.onPageRendered = func() { report.RenderedPages++ }
+	bs := newBuildState(g, nil, report)
+	bs.Repositories = repositories
+	bs.WorkspaceDir = filepath.Clean(workspaceDir)
+
+	stages := []struct{ name string; fn Stage }{
+		{"prepare_output", stagePrepareOutput},
+		{"clone_repos", stageCloneRepos},
+		{"discover_docs", stageDiscoverDocs},
+		{"generate_config", stageGenerateConfig},
+		{"layouts", stageLayouts},
+		{"copy_content", stageCopyContent},
+		{"indexes", stageIndexes},
+		{"run_hugo", stageRunHugo},
+		{"post_process", stagePostProcess},
+	}
+	if err := runStages(ctx, bs, stages); err != nil {
+		// derive outcome even on error for observability
+		report.deriveOutcome()
+		report.finish()
+		return report, err
+	}
+	for k, v := range bs.Timings {
+		report.StageDurations[k] = v
+	}
+	report.deriveOutcome()
+	report.finish()
+	return report, nil
+}
