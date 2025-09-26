@@ -94,6 +94,10 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	if err := g.finalizeStaging(); err != nil {
 		return nil, fmt.Errorf("finalize staging: %w", err)
 	}
+	// Persist report (best effort) inside final output directory
+	if err := report.Persist(g.outputDir); err != nil {
+		slog.Warn("Failed to persist build report", "error", err)
+	}
 	// record build-level metrics
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
@@ -183,6 +187,9 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	report.finish()
 	if err := g.finalizeStaging(); err != nil {
 		return report, fmt.Errorf("finalize staging: %w", err)
+	}
+	if err := report.Persist(g.outputDir); err != nil {
+		slog.Warn("Failed to persist build report", "error", err)
 	}
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
