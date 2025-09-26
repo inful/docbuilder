@@ -44,16 +44,18 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ## Phase 2: Structural Decomposition (Generator & Build Pipeline) (★)
 
 ### 6. Split `generator.go`
-- [ ] Create files: `generator.go`, `config_writer.go`, `modules.go`, `content_copy.go`, `indexes.go`, `links.go`
-- [ ] Move related functions without behavior change
-- [ ] Add package doc comment summarizing responsibilities
+- [x] Create files: `generator.go`, `config_writer.go`, `modules.go`, `content_copy.go`, `indexes.go`, `links.go`, `params.go`, `run_hugo.go`, `structure.go`, `utilities.go`
+- [x] Move related functions without behavior change
+- [ ] Add package doc comment summarizing responsibilities (pending minor doc polish)
 
 ### 7. Content Transformation Pipeline
-- [ ] Define `Page` struct (front matter, content, path, metadata)
-- [ ] Interface `ContentTransformer` with `Name()` + `Transform(ctx, *Page) error`
-- [ ] Implement: `FrontMatterInjector`, `RelativeLinkRewriter`, `EditLinkInjector`
-- [ ] Integrate pipeline into `copyContentFiles`
-- [ ] Tests: pipeline ordering & idempotency
+- [x] Define `Page` struct (front matter, content, path, metadata)
+- [x] Interface `ContentTransformer` with `Name()` + `Transform(*Page) error`
+- [x] Implement: `FrontMatterParser`, `FrontMatterBuilder`, `RelativeLinkRewriter`, `FinalFrontMatterSerializer` (EditLink injection still pending)
+- [x] Integrate pipeline into content copy (initial integration; preserves original behavior)
+- [x] Tests: ordering & idempotency (adjusted expectation for reserialized front matter)
+- [ ] Implement `EditLinkInjector` transformer (deferred until after stage runner to centralize repo metadata usage)
+- [ ] Add golden test for representative transformed page (planned with Phase 4 item 25)
 
 ### 8. Build Pipeline Stages
 - [ ] `BuildState` struct (config, repos, paths, doc files, timings, report)
@@ -178,32 +180,40 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-26)
-Completed: Phase 1 items 1 (except optional), partial 5. Front matter & link logic extracted and tested. Report exposed.
-In Progress (upcoming): Phase 2 kickoff (file split + pipeline scaffolding).
-Risk Level: Low – output parity maintained by integration tests.
+Completed: Phase 1 item 1 (optional subtask deferred), partial 5. Phase 2 item 6 (file split) completed; Phase 2 item 7 largely implemented (core pipeline + transformers + tests). Webhook & config validation hardening completed alongside refactor.
+Pending: Finish package doc comment (6), add EditLinkInjector, golden tests, and begin stage runner (Phase 2 item 8).
+Risk Level: Low – All tests green, pipeline preserves content semantics.
 
 ### Proposed Next Step
-Proceed with Phase 2 Item 6 (split `generator.go`) BEFORE introducing the full transformer pipeline. Rationale:
-- Smaller diff risk while tests already assert front matter, link rewriting, and overall generation smoke.
-- Prepares clearer insertion points for pipeline (Item 7) without mixing concerns in a single large commit.
+Advance to Phase 2 Item 8 (Build Pipeline Stages) now that generator decomposition and core content transformation pipeline are in place.
 
-Execution Outline:
-1. Create new files: `config_writer.go`, `modules.go`, `content_copy.go`, `indexes.go` under `internal/hugo`.
-2. Move functions:
-	- `generateHugoConfig` -> config_writer.go
-	- `ensureGoModForModules`, `ensureThemeVersionRequires`, `addDocsyParams`, `addHextraParams` -> modules.go
-	- `copyContentFiles`, `processMarkdownFile` -> content_copy.go (temporarily keep processMarkdownFile until transformer pipeline exists)
-	- `generateIndexPages`, `generateMainIndex`, `generateRepositoryIndexes`, `generateSectionIndexes` -> indexes.go
-3. Leave thin orchestration in `generator.go` calling relocated functions.
-4. Re-run tests to confirm no behavioral drift.
-5. Commit with `[refactor]` conventional prefix to preserve changelog mapping potential.
+Rationale:
+- Establishing explicit stage boundaries (PrepareOutput, CloneRepos, DiscoverDocs, GenerateScaffold, RunHugo, PostProcess) will let us attach timing + metrics (prereq for Phase 3 items 11 & 15) and simplify future parallelization (Phase 4 item 19).
+- The current monolithic build orchestration still mixes concerns; isolating stages enables easier retries, partial failures, and structured error categorization (Phase 3 item 12).
+- Adding the stage runner before introducing more transformers (e.g. EditLinkInjector) prevents further growth of legacy orchestration paths we will soon replace.
 
-Acceptance Criteria for Step:
-- All moved functions retain identical signatures & behavior.
-- No change to produced `hugo.yaml` or content files (validated by existing integration test; consider adding golden test later in Phase 4 item 25).
-- No new exported symbols unless necessary; internal package remains stable.
+Execution Outline (Incremental):
+1. Introduce `BuildState` struct capturing: config, repos, discovered docs, start time, per-stage timings map, report pointer.
+2. Define `type Stage func(ctx context.Context, st *BuildState) error` and simple runner `Run(ctx, stages...)` that records duration + error.
+3. Carve existing logic into initial stages (minimal code movement only):
+	- PrepareOutput: ensure directories clean/created.
+	- CloneRepos: reuse existing repository cloning logic (wrap existing calls).
+	- DiscoverDocs: wrap discovery package call, populate state.
+	- GenerateScaffold: current Hugo scaffolding (config writing, modules, indexes, content copy via pipeline).
+	- RunHugo: existing hugo execution logic.
+	- PostProcess: placeholder (no-op initially) reserved for search/index tasks.
+4. Replace body of current build method with stage runner; preserve old function signature for external callers.
+5. Update `BuildReport` population to collect stage durations; keep fields backward compatible.
+6. Tests: extend existing integration test to assert non-zero duration for at least one stage and that total duration >= sum of individual durations - small epsilon.
+7. Commit labeled `[refactor(pipeline)]`.
 
-After Step 6: Implement Item 7 (Content Transformation Pipeline) by replacing `processMarkdownFile` internals with pipeline invocation, using existing `BuildFrontMatter` & `RewriteRelativeMarkdownLinks` as first transformers.
+Acceptance Criteria:
+- All existing tests pass (output parity maintained).
+- New stage runner test green (timings captured, order preserved).
+- No change to public CLI behavior or config schema.
+- BuildReport remains serializable without breaking existing consumers.
+
+Follow-on (after successful integration): Implement `EditLinkInjector` as an additional transformer referencing repo metadata from BuildState and add golden test for a transformed file (Phase 2 item 7 remaining subtask + Phase 4 item 25 synergy).
 
 ---
 ## Quick Start Sequence (Recommended)
