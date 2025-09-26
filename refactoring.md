@@ -37,8 +37,8 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 5. Basic Build Report Struct
 - [x] Introduce `BuildReport` (counts, duration, errors; staticRendered pending)
 - [x] Populate in current build path via `GenerateSiteWithReport`
-- [ ] Attach to job metadata / daemon (Not started)
-- [ ] Expose via admin/status endpoint (Not started)
+- [x] Attach to job metadata / daemon
+- [x] Expose via admin/status endpoint (stage timings now visible; warnings/errors exposure pending)
 
 ---
 ## Phase 2: Structural Decomposition (Generator & Build Pipeline) (★)
@@ -46,23 +46,23 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 6. Split `generator.go`
 - [x] Create files: `generator.go`, `config_writer.go`, `modules.go`, `content_copy.go`, `indexes.go`, `links.go`, `params.go`, `run_hugo.go`, `structure.go`, `utilities.go`
 - [x] Move related functions without behavior change
-- [ ] Add package doc comment summarizing responsibilities (pending minor doc polish)
+- [x] Add package doc comment summarizing responsibilities
 
 ### 7. Content Transformation Pipeline
 - [x] Define `Page` struct (front matter, content, path, metadata)
 - [x] Interface `ContentTransformer` with `Name()` + `Transform(*Page) error`
-- [x] Implement: `FrontMatterParser`, `FrontMatterBuilder`, `RelativeLinkRewriter`, `FinalFrontMatterSerializer` (EditLink injection still pending)
+- [x] Implement: `FrontMatterParser`, `FrontMatterBuilder`, `EditLinkInjector`, `RelativeLinkRewriter`, `FinalFrontMatterSerializer`
 - [x] Integrate pipeline into content copy (initial integration; preserves original behavior)
 - [x] Tests: ordering & idempotency (adjusted expectation for reserialized front matter)
-- [ ] Implement `EditLinkInjector` transformer (deferred until after stage runner to centralize repo metadata usage)
 - [ ] Add golden test for representative transformed page (planned with Phase 4 item 25)
 
 ### 8. Build Pipeline Stages
-- [ ] `BuildState` struct (config, repos, paths, doc files, timings, report)
-- [ ] Stages: `PrepareOutput`, `CloneRepos`, `DiscoverDocs`, `GenerateScaffold`, `RunHugo`, `PostProcess`
-- [ ] Orchestrator `Run(ctx, stages...)`
-- [ ] Ensure timings recorded per stage
-- [ ] Replace body of `performSiteBuild` with stage runner
+- [x] `BuildState` struct (config, repos, paths, doc files, timings, report)
+- [x] Stages implemented (current set: prepare_output, generate_config, layouts, copy_content, indexes, run_hugo, post_process)
+- [x] Orchestrator with timing & error handling (`runStages`)
+- [x] Timings recorded & exposed via `BuildReport.StageDurations` and daemon status
+- [x] Integrated into `GenerateSiteWithReport` (daemon uses context-aware variant)
+- [ ] Refine stage naming to match original design (CloneRepos/DiscoverDocs separation) (optional)
 
 ### 9. Builder Interface
 - [ ] Define `type Builder interface { Build(ctx context.Context, job *BuildJob) error }`
@@ -79,18 +79,19 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ## Phase 3: Operability & Observability
 
 ### 11. Metrics per Stage
-- [ ] Add timing + success/failure counters per stage
+- [ ] Add success/failure counters per stage (timings exist)
 - [ ] Export to metrics collector (existing `MetricsCollector` integration)
-- [ ] Include metrics snapshot in admin API
+- [ ] Include metrics snapshot in admin API (stage timings partially surfaced)
 
 ### 12. Structured Errors
-- [ ] Define sentinel errors (e.g., `ErrClone`, `ErrDiscovery`, `ErrHugo`)
-- [ ] Wrap with `fmt.Errorf("clone repo %s: %w", name, err)`
+- [x] Stage-level structured errors (`StageError` with kinds fatal|warning|canceled)
+- [ ] Define domain sentinel errors (e.g., `ErrClone`, `ErrDiscovery`, `ErrHugo`) for retry semantics
 - [ ] Distinguish transient vs permanent for retry logic (future)
 
 ### 13. Context Cancellation Checks
-- [ ] Add cancellation checks in long loops: clone, copy content, discovery
-- [ ] Add test using context cancellation to ensure early stop
+- [x] Context-aware site generation (`GenerateSiteWithReportContext`)
+- [x] Cancellation test to ensure early abort
+- [ ] Add cancellation checks in long loops: clone, copy content, discovery (partial)
 
 ### 14. Timeouts for Forge Operations
 - [ ] Wrap forge calls with `context.WithTimeout`
@@ -98,8 +99,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [ ] Log slow operations exceeding threshold
 
 ### 15. Build Report Enrichment
-- [ ] Populate: clonedRepos, failedRepos, docsCount, staticRendered, stageDurations
-- [ ] Persist last successful report for admin retrieval
+- [x] Stage durations populated
+- [x] Report stored in job metadata & surfaced (stage timings)
+- [ ] Populate: clonedRepos, failedRepos, docsCount (beyond Files), staticRendered flag
+- [ ] Persist last successful report for dedicated admin retrieval endpoint
 
 ---
 ## Phase 4: Quality & Extensibility
@@ -108,6 +111,7 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [ ] Replace map usage with struct(s)
 - [ ] Use yaml tags for stability
 - [ ] Add tests verifying YAML output unchanged (golden)
+- [ ] Consider builder pattern for incremental assembly
 
 ### 17. Index Page DRY Refactor
 - [ ] Generalize main/repo/section generation with shared builder
@@ -180,40 +184,34 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-26)
-Completed: Phase 1 item 1 (optional subtask deferred), partial 5. Phase 2 item 6 (file split) completed; Phase 2 item 7 largely implemented (core pipeline + transformers + tests). Webhook & config validation hardening completed alongside refactor.
-Pending: Finish package doc comment (6), add EditLinkInjector, golden tests, and begin stage runner (Phase 2 item 8).
-Risk Level: Low – All tests green, pipeline preserves content semantics.
+Completed: Phase 1 item 1 (optional subtask deferred), items 5 (core), Phase 2 items 6, 7 (except golden test), 8 (initial stage runner), structured stage errors (Phase 3 item 12 partial), context cancellation (Phase 3 item 13 partial), stage timings exposed. Edit link logic unified & injected. Daemon status now shows per-stage durations.
+Pending: Golden tests, metrics counters (Phase 3 item 11), sentinel domain errors, enrichment fields in BuildReport, front matter typing, repository filtering object, V2→legacy conversion helper, stage-level metrics export, distinguishing transient vs permanent errors.
+Risk Level: Low – All tests green, structured error layer adds clarity without breaking external APIs.
 
 ### Proposed Next Step
-Advance to Phase 2 Item 8 (Build Pipeline Stages) now that generator decomposition and core content transformation pipeline are in place.
+Implement Build Report enrichment & metrics counters (Phase 3 items 11 & 15 partial) to surface warning/error classification and per-stage success metrics, enabling operational visibility before deeper schema or front matter typing changes.
 
 Rationale:
-- Establishing explicit stage boundaries (PrepareOutput, CloneRepos, DiscoverDocs, GenerateScaffold, RunHugo, PostProcess) will let us attach timing + metrics (prereq for Phase 3 items 11 & 15) and simplify future parallelization (Phase 4 item 19).
-- The current monolithic build orchestration still mixes concerns; isolating stages enables easier retries, partial failures, and structured error categorization (Phase 3 item 12).
-- Adding the stage runner before introducing more transformers (e.g. EditLinkInjector) prevents further growth of legacy orchestration paths we will soon replace.
+- We already capture durations and error kinds; adding counters & enriched fields (clonedRepos, failedRepos, docsCount, staticRendered) leverages existing state with minimal risk.
+- Improves observability for operators (faster diagnosis of hugo warnings vs fatal failures) and sets foundation for retry logic and SLO tracking.
+- Completing metrics exposure now reduces future refactor churn when adding parallel cloning or search indexing.
 
-Execution Outline (Incremental):
-1. Introduce `BuildState` struct capturing: config, repos, discovered docs, start time, per-stage timings map, report pointer.
-2. Define `type Stage func(ctx context.Context, st *BuildState) error` and simple runner `Run(ctx, stages...)` that records duration + error.
-3. Carve existing logic into initial stages (minimal code movement only):
-	- PrepareOutput: ensure directories clean/created.
-	- CloneRepos: reuse existing repository cloning logic (wrap existing calls).
-	- DiscoverDocs: wrap discovery package call, populate state.
-	- GenerateScaffold: current Hugo scaffolding (config writing, modules, indexes, content copy via pipeline).
-	- RunHugo: existing hugo execution logic.
-	- PostProcess: placeholder (no-op initially) reserved for search/index tasks.
-4. Replace body of current build method with stage runner; preserve old function signature for external callers.
-5. Update `BuildReport` population to collect stage durations; keep fields backward compatible.
-6. Tests: extend existing integration test to assert non-zero duration for at least one stage and that total duration >= sum of individual durations - small epsilon.
-7. Commit labeled `[refactor(pipeline)]`.
+Execution Outline:
+1. Extend `BuildReport` with clonedRepos / failedRepos (populate in cloning logic) and staticRendered (true only if hugo run success & binary present).
+2. Introduce per-stage metrics recording hook; integrate with `MetricsCollector` (increment success/failure counters, record histogram durations).
+3. Surface warnings & error kind counts in daemon status JSON (augment existing `BuildStatusInfo`).
+4. Add tests asserting enrichment fields present and counters increment on simulated warning/failure.
+5. Update documentation (refactoring.md & hugo package comment) referencing enrichment fields.
 
 Acceptance Criteria:
-- All existing tests pass (output parity maintained).
-- New stage runner test green (timings captured, order preserved).
-- No change to public CLI behavior or config schema.
-- BuildReport remains serializable without breaking existing consumers.
+- Existing tests pass; new tests cover enrichment & metrics logging path (can mock metrics collector or use in-memory counters).
+- Daemon status includes stage success/failure counts and last build warning count.
+- No change to CLI external behavior; only additive API fields.
 
-Follow-on (after successful integration): Implement `EditLinkInjector` as an additional transformer referencing repo metadata from BuildState and add golden test for a transformed file (Phase 2 item 7 remaining subtask + Phase 4 item 25 synergy).
+Follow-on After This Step:
+- Add domain sentinel errors (clone/discovery/hugo) for retry semantics.
+- Implement repository filtering object (Phase 1 item 2) to simplify forge discovery scoping.
+- Add golden page test (Phase 4 item 25) once front matter enrichment stabilized.
 
 ---
 ## Quick Start Sequence (Recommended)
