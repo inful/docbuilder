@@ -4,8 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
+
+	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 // BuildType represents the type of build job
@@ -258,67 +265,137 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 // executeManualBuild handles manually triggered builds
 func (bq *BuildQueue) executeManualBuild(ctx context.Context, job *BuildJob) error {
 	slog.Info("Executing manual build", "job_id", job.ID)
-
-	// Simulate build work
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(2 * time.Second):
-		// TODO: Implement actual Hugo site generation
-		return nil
-	}
+	return bq.performSiteBuild(ctx, job)
 }
 
 // executeScheduledBuild handles cron-triggered builds
 func (bq *BuildQueue) executeScheduledBuild(ctx context.Context, job *BuildJob) error {
 	slog.Info("Executing scheduled build", "job_id", job.ID)
-
-	// Simulate build work
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(5 * time.Second):
-		// TODO: Implement discovery + build flow
-		return nil
-	}
+	return bq.performSiteBuild(ctx, job)
 }
 
 // executeWebhookBuild handles webhook-triggered builds
 func (bq *BuildQueue) executeWebhookBuild(ctx context.Context, job *BuildJob) error {
 	slog.Info("Executing webhook build", "job_id", job.ID)
-
-	// Extract webhook information from metadata
-	if repo, ok := job.Metadata["repository"].(string); ok {
-		slog.Info("Building for repository", "repository", repo)
-	}
-
-	// Simulate build work
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(3 * time.Second):
-		// TODO: Implement targeted repository build
-		return nil
-	}
+	return bq.performSiteBuild(ctx, job)
 }
 
 // executeDiscoveryBuild handles auto-builds after discovery
 func (bq *BuildQueue) executeDiscoveryBuild(ctx context.Context, job *BuildJob) error {
 	slog.Info("Executing discovery build", "job_id", job.ID)
+	return bq.performSiteBuild(ctx, job)
+}
 
-	// Extract discovery result from metadata
-	if result, ok := job.Metadata["discovery_result"]; ok {
-		slog.Info("Building with discovery result", "type", fmt.Sprintf("%T", result))
+// performSiteBuild encapsulates the actual build process: cloning repositories, discovering docs,
+// generating the Hugo site, and running a static render. This is invoked for all build types.
+func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error {
+	// Access daemon via closure capturing (BuildQueue currently doesn't have direct pointer to daemon config).
+	// We rely on job.Metadata carrying a *config.V2Config reference injected by the daemon when enqueuing.
+	rawCfg, ok := job.Metadata["v2_config"].(*cfg.V2Config)
+	if !ok || rawCfg == nil {
+		return fmt.Errorf("missing v2 configuration in job metadata")
 	}
 
-	// Simulate build work
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(7 * time.Second):
-		// TODO: Implement full site rebuild with discovered repositories
-		return nil
+	// Prepare output directory
+	outDir := rawCfg.Output.Directory
+	if outDir == "" {
+		outDir = "./site"
 	}
+
+	// Clean output if requested (daemon defaults enforce clean true)
+	if rawCfg.Output.Clean {
+		if err := os.RemoveAll(outDir); err != nil {
+			slog.Warn("Failed to clean output directory", "dir", outDir, "error", err)
+		}
+	}
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Build a temporary workspace for cloning
+	workspaceRoot := filepath.Join(outDir, "_workspace")
+	if err := os.MkdirAll(workspaceRoot, 0755); err != nil {
+		return fmt.Errorf("failed to create workspace: %w", err)
+	}
+	gitClient := git.NewClient(workspaceRoot)
+	if err := gitClient.EnsureWorkspace(); err != nil {
+		return fmt.Errorf("failed to ensure workspace: %w", err)
+	}
+
+	reposAny, ok := job.Metadata["repositories"].([]cfg.Repository)
+	if !ok {
+		// Try slice of interface (possible encoding differences)
+		if ra, ok2 := job.Metadata["repositories"].([]interface{}); ok2 {
+			casted := make([]cfg.Repository, 0, len(ra))
+			for _, v := range ra {
+				if r, ok3 := v.(cfg.Repository); ok3 {
+					casted = append(casted, r)
+				}
+			}
+			reposAny = casted
+		}
+	}
+	if len(reposAny) == 0 {
+		slog.Warn("No repositories in job metadata; proceeding with empty set")
+	}
+
+	repoPaths := make(map[string]string, len(reposAny))
+	for _, r := range reposAny {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		slog.Info("Cloning repository", "name", r.Name, "url", r.URL)
+		p, err := gitClient.CloneRepository(r)
+		if err != nil {
+			slog.Error("Repository clone failed", "name", r.Name, "error", err)
+			continue
+		}
+		repoPaths[r.Name] = p
+	}
+
+	discovery := docs.NewDiscovery(reposAny)
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		return fmt.Errorf("documentation discovery failed: %w", err)
+	}
+	slog.Info("Documentation discovery complete", "files", len(docFiles))
+
+	// Convert v2 config to legacy config.Config expected by Hugo generator
+	legacy := &cfg.Config{
+		Hugo: cfg.HugoConfig{
+			Theme:       rawCfg.Hugo.Theme,
+			BaseURL:     rawCfg.Hugo.BaseURL,
+			Title:       rawCfg.Hugo.Title,
+			Description: rawCfg.Hugo.Description,
+			Params:      rawCfg.Hugo.Params,
+			Menu:        rawCfg.Hugo.Menu,
+		},
+		Output: cfg.OutputConfig{
+			Directory: outDir,
+			Clean:     rawCfg.Output.Clean,
+		},
+		Repositories: reposAny,
+	}
+
+	gen := hugo.NewGenerator(legacy, outDir)
+
+	// Force static render in daemon builds regardless of env gating
+	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
+		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
+	}
+	if err := gen.GenerateSite(docFiles); err != nil {
+		return fmt.Errorf("hugo generation failed: %w", err)
+	}
+
+	slog.Info("Site build completed", "output", outDir, "public_exists", dirExists(filepath.Join(outDir, "public")))
+	return nil
+}
+
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 // addToHistory adds a completed job to the history, maintaining the size limit

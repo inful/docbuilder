@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
@@ -140,17 +142,61 @@ func (c *ForgejoClient) ListOrganizations(ctx context.Context) ([]*Organization,
 
 // ListRepositories returns repositories for specified organizations
 func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
-	var allRepos []*Repository
+	repoMap := make(map[string]*Repository)
 
-	for _, org := range organizations {
-		repos, err := c.getOrgRepositories(ctx, org)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get repositories for org %s: %w", org, err)
+	userRepos, err := c.listUserRepositories(ctx)
+	if err != nil {
+		slog.Warn("Forgejo: failed to list user repositories", "forge", c.GetName(), "error", err)
+	} else {
+		for _, r := range userRepos {
+			repoMap[r.FullName] = r
 		}
-		allRepos = append(allRepos, repos...)
 	}
 
+	for _, org := range organizations {
+		repos, oerr := c.getOrgRepositories(ctx, org)
+		if oerr != nil {
+			slog.Warn("Forgejo: skipping organization due to error", "forge", c.GetName(), "organization", org, "error", oerr)
+			continue
+		}
+		for _, r := range repos {
+			repoMap[r.FullName] = r
+		}
+	}
+
+	var allRepos []*Repository
+	for _, r := range repoMap {
+		allRepos = append(allRepos, r)
+	}
 	return allRepos, nil
+}
+
+func (c *ForgejoClient) listUserRepositories(ctx context.Context) ([]*Repository, error) {
+	var all []*Repository
+	page := 1
+	limit := 50
+	for {
+		endpoint := fmt.Sprintf("/user/repos?page=%d&limit=%d", page, limit)
+		req, err := c.newRequest(ctx, "GET", endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		var forgejoRepos []forgejoRepo
+		if err := c.doRequest(req, &forgejoRepos); err != nil {
+			return nil, err
+		}
+		if len(forgejoRepos) == 0 {
+			break
+		}
+		for _, fRepo := range forgejoRepos {
+			all = append(all, c.convertForgejoRepo(&fRepo))
+		}
+		if len(forgejoRepos) < limit {
+			break
+		}
+		page++
+	}
+	return all, nil
 }
 
 // getOrgRepositories gets all repositories for an organization
@@ -432,6 +478,7 @@ func (c *ForgejoClient) convertForgejoRepo(fRepo *forgejoRepo) *Repository {
 			"owner":      fRepo.Owner.Username,
 			"owner_name": fRepo.Owner.FullName,
 			"fork":       strconv.FormatBool(fRepo.Fork),
+			"forge_name": c.GetName(),
 		},
 	}
 }
@@ -445,11 +492,30 @@ func (c *ForgejoClient) splitFullName(fullName string) (owner, repo string) {
 }
 
 func (c *ForgejoClient) newRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Request, error) {
+	// Normalize endpoint so we don't accidentally discard the /api/v1 prefix when using path.Join.
+	// path.Join("/api/v1", "/user/orgs") -> "/user/orgs" (BUG) so we must trim the leading slash.
+	cleanEndpoint := strings.TrimPrefix(endpoint, "/")
+
+	// Split query string from path (we were previously passing query params inside endpoint and they were
+	// treated as part of the path, producing %3F in final URL and 404s from Forgejo). Keep raw query separate.
+	var rawQuery string
+	if idx := strings.Index(cleanEndpoint, "?"); idx != -1 {
+		rawQuery = cleanEndpoint[idx+1:]
+		cleanEndpoint = cleanEndpoint[:idx]
+	}
+
 	u, err := url.Parse(c.apiURL)
 	if err != nil {
 		return nil, err
 	}
-	u.Path = path.Join(u.Path, endpoint)
+
+	// Ensure apiURL path and endpoint are joined correctly preserving existing base path
+	basePath := strings.TrimSuffix(u.Path, "/")
+	u.Path = path.Join(basePath, cleanEndpoint)
+	if rawQuery != "" {
+		// Preserve original query ordering/content (no re-encoding beyond necessary)
+		u.RawQuery = rawQuery
+	}
 
 	var req *http.Request
 	if body != nil {
@@ -481,12 +547,14 @@ func (c *ForgejoClient) doRequest(req *http.Request, result interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("Forgejo API error: %s", resp.Status)
+		// Read and truncate body for diagnostics (avoid large/error HTML pages flooding logs)
+		limitedBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		// Best effort to make body single-line
+		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
+		return fmt.Errorf("Forgejo API error: %s url=%s body=%q", resp.Status, req.URL.String(), bodyStr)
 	}
 
 	if result != nil {

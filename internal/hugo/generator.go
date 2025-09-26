@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -72,7 +74,44 @@ func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 		return fmt.Errorf("failed to generate index pages: %w", err)
 	}
 
+	// Optionally execute Hugo to render static site
+	if shouldRunHugo() {
+		if err := g.runHugoBuild(); err != nil {
+			slog.Warn("Hugo build failed (site sources still generated)", "error", err)
+		} else {
+			slog.Info("Hugo static site build completed", "public", filepath.Join(g.outputDir, "public"))
+		}
+	} else {
+		slog.Info("Skipping Hugo executable run (set DOCBUILDER_RUN_HUGO=1 to enable)")
+	}
+
 	slog.Info("Hugo site generation completed", "output", g.outputDir)
+	return nil
+}
+
+// shouldRunHugo determines if we should invoke the external hugo binary.
+// Enabled when DOCBUILDER_RUN_HUGO=1 and hugo binary exists in PATH, unless DOCBUILDER_SKIP_HUGO=1.
+func shouldRunHugo() bool {
+	if os.Getenv("DOCBUILDER_SKIP_HUGO") == "1" {
+		return false
+	}
+	if os.Getenv("DOCBUILDER_RUN_HUGO") != "1" {
+		return false
+	}
+	_, err := exec.LookPath("hugo")
+	return err == nil
+}
+
+// runHugoBuild executes `hugo` inside the output directory to produce the static site under public/.
+func (g *Generator) runHugoBuild() error {
+	cmd := exec.Command("hugo")
+	cmd.Dir = g.outputDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	slog.Info("Running Hugo binary to render static site", "dir", g.outputDir)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("hugo command failed: %w", err)
+	}
 	return nil
 }
 
@@ -262,25 +301,58 @@ func (g *Generator) generateHugoConfig() error {
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work
 func (g *Generator) ensureGoModForModules() error {
 	goModPath := filepath.Join(g.outputDir, "go.mod")
+
+	deriveModuleName := func() string {
+		moduleName := "docbuilder-site"
+		if g.config.Hugo.BaseURL != "" {
+			s := strings.TrimPrefix(strings.TrimPrefix(g.config.Hugo.BaseURL, "https://"), "http://")
+			host := s
+			if idx := strings.IndexByte(s, '/'); idx >= 0 {
+				host = s[:idx]
+			}
+			// Strip port if present (e.g., localhost:8080)
+			if p := strings.IndexByte(host, ':'); p >= 0 {
+				host = host[:p]
+			}
+			if host != "" {
+				moduleName = strings.ReplaceAll(host, ".", "-")
+			}
+		}
+		return moduleName
+	}
+
 	if _, err := os.Stat(goModPath); err == nil {
-		// Already exists
+		// Already exists – validate module line; rewrite if invalid (e.g., contains ':')
+		b, readErr := os.ReadFile(goModPath)
+		if readErr == nil {
+			lines := strings.SplitN(string(b), "\n", 2)
+			if len(lines) > 0 && strings.HasPrefix(lines[0], "module ") {
+				existing := strings.TrimSpace(strings.TrimPrefix(lines[0], "module "))
+				if strings.Contains(existing, ":") { // invalid char for module path
+					sanitized := deriveModuleName()
+					rest := ""
+					if len(lines) > 1 {
+						rest = lines[1]
+					}
+					newContent := fmt.Sprintf("module %s\n", sanitized)
+					if !strings.Contains(rest, "go ") {
+						newContent += "\ngo 1.21\n"
+					} else {
+						newContent += rest
+					}
+					if writeErr := os.WriteFile(goModPath, []byte(newContent), 0644); writeErr != nil {
+						slog.Warn("Failed to rewrite invalid go.mod module line", "error", writeErr)
+					} else {
+						slog.Debug("Rewrote go.mod with sanitized module name", "path", goModPath, "module", sanitized)
+					}
+				}
+			}
+		}
 		// Still ensure required theme versions are present
 		return g.ensureThemeVersionRequires(goModPath)
 	}
 
-	// Derive a simple module name from baseURL host if possible
-	moduleName := "docbuilder-site"
-	if g.config.Hugo.BaseURL != "" {
-		s := strings.TrimPrefix(strings.TrimPrefix(g.config.Hugo.BaseURL, "https://"), "http://")
-		host := s
-		if idx := strings.IndexByte(s, '/'); idx >= 0 {
-			host = s[:idx]
-		}
-		if host != "" {
-			moduleName = strings.ReplaceAll(host, ".", "-")
-		}
-	}
-
+	moduleName := deriveModuleName()
 	content := fmt.Sprintf("module %s\n\ngo 1.21\n", moduleName)
 	if err := os.WriteFile(goModPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write go.mod: %w", err)
@@ -526,6 +598,39 @@ func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
 func (g *Generator) processMarkdownFile(file docs.DocFile) ([]byte, error) {
 	content := string(file.Content)
 
+	// Rewrite internal markdown links: [text](./foo.md) -> [text](./foo)
+	// Also handle anchors: [text](foo.md#section) -> [text](foo#section)
+	// We only touch relative links (starting with ./, ../, or no leading scheme/ slash) and ending in .md or .markdown
+	linkRe := regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?P<link>[^)]+)\)`)
+	content = linkRe.ReplaceAllStringFunc(content, func(m string) string {
+		matches := linkRe.FindStringSubmatch(m)
+		if len(matches) != 3 { return m }
+		text := matches[1]
+		link := matches[2]
+		// Skip if absolute (http://, https://) or starts with # or mailto: or leading /
+		low := strings.ToLower(link)
+		if strings.HasPrefix(low, "http://") || strings.HasPrefix(low, "https://") || strings.HasPrefix(low, "mailto:") || strings.HasPrefix(link, "#") || strings.HasPrefix(link, "/") {
+			return m
+		}
+		// Separate anchor
+		anchor := ""
+		if idx := strings.IndexByte(link, '#'); idx >= 0 {
+			anchor = link[idx:]
+			link = link[:idx]
+		}
+		lowerPath := strings.ToLower(link)
+		if strings.HasSuffix(lowerPath, ".md") || strings.HasSuffix(lowerPath, ".markdown") {
+			trimmed := link[:len(link)-3]
+			if strings.HasSuffix(lowerPath, ".markdown") {
+				trimmed = link[:len(link)-9]
+			}
+			// Avoid turning README into empty (leave README -> README)
+			if trimmed == "" { return m }
+			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
+		}
+		return m
+	})
+
 	// Parse existing front matter if present
 	frontMatter := make(map[string]interface{})
 
@@ -714,6 +819,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 
 	content += "## Repositories\n\n"
 	for repoName, files := range repoGroups {
+		// Use extensionless pretty URL (directory) for repository root
 		content += fmt.Sprintf("- [%s](./%s/) (%d files)\n", repoName, repoName, len(files))
 	}
 
@@ -775,10 +881,12 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 				title := titleCase(strings.ReplaceAll(file.Name, "-", " "))
 				var relativePath string
 				if file.Section != "" {
-					relativePath = filepath.Join(file.Section, file.Name+file.Extension)
+					relativePath = filepath.Join(file.Section, file.Name) // drop extension for pretty URL
 				} else {
-					relativePath = file.Name + file.Extension
+					relativePath = file.Name // drop extension
 				}
+				// Normalize to forward slashes for Hugo even on Windows
+				relativePath = filepath.ToSlash(relativePath) + "/"
 				content += fmt.Sprintf("- [%s](./%s)\n", title, relativePath)
 			}
 			content += "\n"
@@ -839,7 +947,8 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 
 			for _, file := range files {
 				title := titleCase(strings.ReplaceAll(file.Name, "-", " "))
-				content += fmt.Sprintf("- [%s](./%s)\n", title, file.Name+file.Extension)
+				// Use extensionless pretty link with trailing slash for consistency
+				content += fmt.Sprintf("- [%s](./%s/)\n", title, file.Name)
 			}
 
 			if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
