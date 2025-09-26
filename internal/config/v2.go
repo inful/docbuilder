@@ -273,10 +273,12 @@ func validateV2Config(config *V2Config) error {
 			return fmt.Errorf("forge %s must have authentication configured", forge.Name)
 		}
 
-		// Organizations/Groups optional: if both empty we enter auto-discovery mode (all accessible orgs/groups)
-		// Previously this was a hard validation error. Allowing it improves usability for first-time setup.
-		// We retain explicit lists when provided to limit scope.
-		// (No action needed here; discovery layer checks emptiness and enumerates.)
+		// Require at least one organization or group to be specified. This keeps discovery bounded
+		// and matches test expectations for explicit configuration (auto-discovery can be added
+		// later behind a dedicated flag to avoid surprising large scans).
+		if len(forge.Organizations) == 0 && len(forge.Groups) == 0 {
+			return fmt.Errorf("forge %s must have at least one organization or group configured", forge.Name)
+		}
 	}
 
 	// Validate versioning strategy

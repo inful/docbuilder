@@ -280,6 +280,8 @@ func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 	switch eventType {
 	case "push", "Push Hook":
 		return c.parsePushEvent(payload)
+	case "tag_push", "Tag Push Hook":
+		return c.parseTagPushEvent(payload)
 	case "repository", "Repository Update Hook":
 		return c.parseRepositoryEvent(payload)
 	default:
@@ -328,11 +330,10 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
 		return nil, err
 	}
-
-	// Extract branch name from ref (refs/heads/main -> main)
+	if pushEvent.Project.ID == 0 { // zero value detection via ID
+		return nil, fmt.Errorf("missing project in push event")
+	}
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
-
-	// Convert commits
 	var commits []WebhookCommit
 	for _, commit := range pushEvent.Commits {
 		commits = append(commits, WebhookCommit{
@@ -345,16 +346,33 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 			Removed:   commit.Removed,
 		})
 	}
-
 	return &WebhookEvent{
 		Type:       WebhookEventPush,
 		Repository: c.convertGitLabProject(&pushEvent.Project),
 		Branch:     branch,
 		Commits:    commits,
 		Timestamp:  time.Now(),
-		Metadata: map[string]string{
-			"ref": pushEvent.Ref,
-		},
+		Metadata: map[string]string{"ref": pushEvent.Ref},
+	}, nil
+}
+
+// parseTagPushEvent parses a GitLab tag push event
+func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) {
+	var pushEvent gitlabPushEvent
+	if err := json.Unmarshal(payload, &pushEvent); err != nil {
+		return nil, err
+	}
+	if pushEvent.Project.ID == 0 {
+		return nil, fmt.Errorf("missing project in tag push event")
+	}
+	// Extract tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
+	tag := strings.TrimPrefix(pushEvent.Ref, "refs/tags/")
+	return &WebhookEvent{
+		Type:       WebhookEventTag,
+		Repository: c.convertGitLabProject(&pushEvent.Project),
+		Branch:     tag, // reuse Branch field to carry the tag reference (could extend struct later)
+		Timestamp:  time.Now(),
+		Metadata:   map[string]string{"ref": pushEvent.Ref, "tag": tag},
 	}, nil
 }
 
@@ -365,24 +383,17 @@ func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 		return nil, err
 	}
 
-	// GitLab repository events are less standardized, need to handle based on content
-	event := &WebhookEvent{
-		Type:      WebhookEventRepository,
-		Timestamp: time.Now(),
-		Changes:   make(map[string]string),
-		Metadata:  make(map[string]string),
-	}
-
-	// Extract what we can from the generic event
+	event := &WebhookEvent{Type: WebhookEventRepository, Timestamp: time.Now(), Changes: make(map[string]string), Metadata: make(map[string]string)}
 	if project, ok := repoEvent["project"].(map[string]interface{}); ok {
 		if projectData, err := json.Marshal(project); err == nil {
-			var gitlabProject gitlabProject
-			if err := json.Unmarshal(projectData, &gitlabProject); err == nil {
-				event.Repository = c.convertGitLabProject(&gitlabProject)
+			var gProj gitlabProject
+			if err := json.Unmarshal(projectData, &gProj); err == nil {
+				event.Repository = c.convertGitLabProject(&gProj)
 			}
 		}
+	} else {
+		return nil, fmt.Errorf("missing project in repository event")
 	}
-
 	return event, nil
 }
 

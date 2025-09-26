@@ -3,6 +3,7 @@ package forge
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -250,18 +251,29 @@ func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, b
 
 // ValidateWebhook validates GitHub webhook signature
 func (c *GitHubClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
-	// GitHub sends signature as "sha256=<hash>"
-	if !strings.HasPrefix(signature, "sha256=") {
+	if signature == "" || secret == "" {
 		return false
 	}
 
-	expectedSignature := signature[7:] // Remove "sha256=" prefix
+	// Preferred SHA-256 format: sha256=<hash>
+	if strings.HasPrefix(signature, "sha256=") {
+		expected := signature[len("sha256="):]
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write(payload)
+		calc := hex.EncodeToString(mac.Sum(nil))
+		return hmac.Equal([]byte(expected), []byte(calc))
+	}
 
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(payload)
-	calculatedSignature := hex.EncodeToString(mac.Sum(nil))
+	// Fallback legacy SHA-1 format: sha1=<hash>
+	if strings.HasPrefix(signature, "sha1=") {
+		expected := signature[len("sha1="):]
+		mac := hmac.New(sha1.New, []byte(secret))
+		mac.Write(payload)
+		calc := hex.EncodeToString(mac.Sum(nil))
+		return hmac.Equal([]byte(expected), []byte(calc))
+	}
 
-	return hmac.Equal([]byte(expectedSignature), []byte(calculatedSignature))
+	return false
 }
 
 // ParseWebhookEvent parses GitHub webhook payload
@@ -279,7 +291,7 @@ func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 // githubPushEvent represents a GitHub push event
 type githubPushEvent struct {
 	Ref        string         `json:"ref"`
-	Repository githubRepo     `json:"repository"`
+	Repository json.RawMessage `json:"repository"` // decode later to handle id as string/int
 	Commits    []githubCommit `json:"commits"`
 	HeadCommit githubCommit   `json:"head_commit"`
 }
@@ -305,6 +317,27 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		return nil, err
 	}
 
+	if len(pushEvent.Repository) == 0 {
+		return nil, fmt.Errorf("missing repository in push event")
+	}
+
+	// Decode repository allowing id to be string or int
+	var repoMap map[string]interface{}
+	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
+		return nil, err
+	}
+	// Normalize id to int if it's a string
+	if rawID, ok := repoMap["id"].(string); ok {
+		if intID, convErr := strconv.Atoi(rawID); convErr == nil {
+			repoMap["id"] = intID
+		}
+	}
+	repoBytes, _ := json.Marshal(repoMap)
+	var repo githubRepo
+	if err := json.Unmarshal(repoBytes, &repo); err != nil {
+		return nil, err
+	}
+
 	// Extract branch name from ref (refs/heads/main -> main)
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 
@@ -324,7 +357,7 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 	return &WebhookEvent{
 		Type:       WebhookEventPush,
-		Repository: c.convertGitHubRepo(&pushEvent.Repository),
+		Repository: c.convertGitHubRepo(&repo),
 		Branch:     branch,
 		Commits:    commits,
 		Timestamp:  time.Now(),
@@ -337,8 +370,8 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 // githubRepositoryEvent represents a GitHub repository event
 type githubRepositoryEvent struct {
-	Action     string     `json:"action"`
-	Repository githubRepo `json:"repository"`
+	Action     string          `json:"action"`
+	Repository json.RawMessage `json:"repository"`
 	Changes    struct {
 		Repository struct {
 			Name struct {
@@ -355,9 +388,28 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 		return nil, err
 	}
 
+	if len(repoEvent.Repository) == 0 {
+		return nil, fmt.Errorf("missing repository in repository event")
+	}
+
+	var repoMap map[string]interface{}
+	if err := json.Unmarshal(repoEvent.Repository, &repoMap); err != nil {
+		return nil, err
+	}
+	if rawID, ok := repoMap["id"].(string); ok {
+		if intID, convErr := strconv.Atoi(rawID); convErr == nil {
+			repoMap["id"] = intID
+		}
+	}
+	repoBytes, _ := json.Marshal(repoMap)
+	var repo githubRepo
+	if err := json.Unmarshal(repoBytes, &repo); err != nil {
+		return nil, err
+	}
+
 	event := &WebhookEvent{
 		Type:       WebhookEventRepository,
-		Repository: c.convertGitHubRepo(&repoEvent.Repository),
+		Repository: c.convertGitHubRepo(&repo),
 		Action:     repoEvent.Action,
 		Timestamp:  time.Now(),
 		Changes:    make(map[string]string),
@@ -366,10 +418,9 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 		},
 	}
 
-	// Handle repository renames
 	if repoEvent.Action == "renamed" && repoEvent.Changes.Repository.Name.From != "" {
 		event.Changes["name_from"] = repoEvent.Changes.Repository.Name.From
-		event.Changes["name_to"] = repoEvent.Repository.Name
+		event.Changes["name_to"] = repo.Name
 	}
 
 	return event, nil
