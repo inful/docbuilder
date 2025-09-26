@@ -75,4 +75,5 @@ func (g *Generator) GenerateSiteWithReport(docFiles []docs.DocFile) (*BuildRepor
 	slog.Info("Hugo site generation completed", "output", g.outputDir, "repos", report.Repositories, "files", report.Files, "errors", len(report.Errors))
 	return report, nil
 }
+
 // (Helper methods split into separate files for maintainability.)

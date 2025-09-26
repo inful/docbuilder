@@ -33,7 +33,9 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 		base = strings.ReplaceAll(base, "_", "-")
 		parts := strings.Split(base, "-")
 		for i, part := range parts {
-			if part == "" { continue }
+			if part == "" {
+				continue
+			}
 			parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
 		}
 		fm["title"] = strings.Join(parts, " ")

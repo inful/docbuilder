@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -56,6 +57,9 @@ func (c *ForgejoClient) GetType() ForgeType {
 
 // GetName returns the configured name
 func (c *ForgejoClient) GetName() string {
+	if c == nil || c.config == nil {
+		return ""
+	}
 	return c.config.Name
 }
 
@@ -300,10 +304,30 @@ func (c *ForgejoClient) checkPathExists(ctx context.Context, owner, repo, path, 
 
 // ValidateWebhook validates Forgejo webhook signature (Gitea-style HMAC-SHA1)
 func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
+	if signature == "" || secret == "" {
+		return false
+	}
+	// Preferred GitHub-compatible sha256=<hash>
+	if strings.HasPrefix(signature, "sha256=") {
+		expected := signature[len("sha256="):]
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write(payload)
+		calc := hex.EncodeToString(mac.Sum(nil))
+		return hmac.Equal([]byte(expected), []byte(calc))
+	}
+	// Legacy raw SHA1 (some older Forgejo/Gitea setups)
+	if strings.HasPrefix(signature, "sha1=") {
+		expected := signature[len("sha1="):]
+		mac := hmac.New(sha1.New, []byte(secret))
+		mac.Write(payload)
+		calc := hex.EncodeToString(mac.Sum(nil))
+		return hmac.Equal([]byte(expected), []byte(calc))
+	}
+	// Bare SHA1 hash fallback (no prefix)
 	mac := hmac.New(sha1.New, []byte(secret))
 	mac.Write(payload)
-	expectedMAC := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(signature), []byte(expectedMAC))
+	calc := hex.EncodeToString(mac.Sum(nil))
+	return hmac.Equal([]byte(signature), []byte(calc))
 }
 
 // ParseWebhookEvent parses Forgejo webhook payload
@@ -321,7 +345,7 @@ func (c *ForgejoClient) ParseWebhookEvent(payload []byte, eventType string) (*We
 // forgejoPushEvent represents a Forgejo push event
 type forgejoPushEvent struct {
 	Ref        string          `json:"ref"`
-	Repository forgejoRepo     `json:"repository"`
+	Repository json.RawMessage `json:"repository"`
 	Commits    []forgejoCommit `json:"commits"`
 	HeadCommit forgejoCommit   `json:"head_commit"`
 	Pusher     forgejoUser     `json:"pusher"`
@@ -352,10 +376,27 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		return nil, err
 	}
 
-	// Extract branch name from ref (refs/heads/main -> main)
+	if len(pushEvent.Repository) == 0 {
+		return nil, fmt.Errorf("missing repository in push event")
+	}
+
+	var repoMap map[string]interface{}
+	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
+		return nil, err
+	}
+	if rawID, ok := repoMap["id"].(string); ok {
+		if intID, convErr := strconv.Atoi(rawID); convErr == nil {
+			repoMap["id"] = intID
+		}
+	}
+	repoBytes, _ := json.Marshal(repoMap)
+	var repo forgejoRepo
+	if err := json.Unmarshal(repoBytes, &repo); err != nil {
+		return nil, err
+	}
+
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 
-	// Convert commits
 	var commits []WebhookCommit
 	for _, commit := range pushEvent.Commits {
 		commits = append(commits, WebhookCommit{
@@ -371,7 +412,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 	return &WebhookEvent{
 		Type:       WebhookEventPush,
-		Repository: c.convertForgejoRepo(&pushEvent.Repository),
+		Repository: c.convertForgejoRepo(&repo),
 		Branch:     branch,
 		Commits:    commits,
 		Timestamp:  time.Now(),
@@ -460,6 +501,10 @@ func (c *ForgejoClient) GetEditURL(repo *Repository, filePath string, branch str
 // Helper methods
 
 func (c *ForgejoClient) convertForgejoRepo(fRepo *forgejoRepo) *Repository {
+	forgeName := ""
+	if c != nil && c.config != nil {
+		forgeName = c.GetName()
+	}
 	return &Repository{
 		ID:            strconv.Itoa(fRepo.ID),
 		Name:          fRepo.Name,
@@ -478,7 +523,7 @@ func (c *ForgejoClient) convertForgejoRepo(fRepo *forgejoRepo) *Repository {
 			"owner":      fRepo.Owner.Username,
 			"owner_name": fRepo.Owner.FullName,
 			"fork":       strconv.FormatBool(fRepo.Fork),
-			"forge_name": c.GetName(),
+			"forge_name": forgeName,
 		},
 	}
 }

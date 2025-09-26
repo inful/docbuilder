@@ -1,13 +1,13 @@
 package hugo
 
 import (
-    "fmt"
-    "log/slog"
-    "strings"
-    "time"
+	"fmt"
+	"log/slog"
+	"strings"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/docs"
-    "gopkg.in/yaml.v3"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"gopkg.in/yaml.v3"
 )
 
 // Page is the in-memory representation of a markdown document being transformed.
@@ -91,7 +91,9 @@ type FinalFrontMatterSerializer struct{}
 func (s *FinalFrontMatterSerializer) Name() string { return "front_matter_serialize" }
 func (s *FinalFrontMatterSerializer) Transform(p *Page) error {
 	fmData, err := yaml.Marshal(p.FrontMatter)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	combined := fmt.Sprintf("---\n%s---\n%s", string(fmData), p.Content)
 	p.Raw = []byte(combined)
 	return nil
