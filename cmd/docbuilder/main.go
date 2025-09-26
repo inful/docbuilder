@@ -42,7 +42,28 @@ var CLI struct {
 }
 
 func main() {
-	ctx := kong.Parse(&CLI)
+	parser := kong.Must(&CLI,
+		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
+	)
+	ctx, err := parser.Parse(os.Args[1:])
+	if err != nil {
+		// If no args provided, show help and exit 0
+		if len(os.Args) == 1 {
+			fmt.Fprintln(os.Stdout, "DocBuilder - multi-repository documentation generator")
+			fmt.Fprintln(os.Stdout, "Usage: docbuilder <command> [options]")
+			fmt.Fprintln(os.Stdout, "")
+			fmt.Fprintln(os.Stdout, "Commands:")
+			fmt.Fprintln(os.Stdout, "  build      Build documentation site from configured repositories")
+			fmt.Fprintln(os.Stdout, "  discover   Discover documentation files without building")
+			fmt.Fprintln(os.Stdout, "  init       Initialize a new configuration file")
+			fmt.Fprintln(os.Stdout, "  daemon     Start daemon mode for continuous updates")
+			fmt.Fprintln(os.Stdout, "")
+			fmt.Fprintln(os.Stdout, "Run 'docbuilder <command> --help' for command-specific options.")
+			return
+		}
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Set up logging
 	logLevel := slog.LevelInfo
@@ -58,37 +79,22 @@ func main() {
 	// Execute command
 	switch ctx.Command() {
 	case "build":
-		// Support v2 config with auto-discovery. If file is v2 and repositories empty, perform forge discovery.
-		isV2, _ := config.IsV2Config(CLI.Config)
-		if isV2 {
-			v2cfg, err := config.LoadV2(CLI.Config)
-			if err != nil {
-				slog.Error("Failed to load V2 configuration", "error", err)
+		cfg, err := config.Load(CLI.Config)
+		if err != nil {
+			slog.Error("Failed to load configuration", "error", err)
+			os.Exit(1)
+		}
+		if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+			if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
+				cfg.Repositories = repos
+			} else {
+				slog.Error("Auto-discovery failed", "error", err)
 				os.Exit(1)
 			}
-			legacyCfg := &config.Config{Hugo: v2cfg.Hugo, Output: v2cfg.Output}
-			if len(legacyCfg.Repositories) == 0 && len(v2cfg.Forges) > 0 {
-				if repos, err := autoDiscoverRepositories(context.Background(), v2cfg); err == nil {
-					legacyCfg.Repositories = repos
-				} else {
-					slog.Error("Auto-discovery failed", "error", err)
-					os.Exit(1)
-				}
-			}
-			if err := runBuild(legacyCfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
-				slog.Error("Build failed", "error", err)
-				os.Exit(1)
-			}
-		} else {
-			cfg, err := config.Load(CLI.Config)
-			if err != nil {
-				slog.Error("Failed to load configuration", "error", err)
-				os.Exit(1)
-			}
-			if err := runBuild(cfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
-				slog.Error("Build failed", "error", err)
-				os.Exit(1)
-			}
+		}
+		if err := runBuild(cfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
+			slog.Error("Build failed", "error", err)
+			os.Exit(1)
 		}
 	case "init":
 		if err := runInit(CLI.Config, CLI.Init.Force); err != nil {
@@ -96,40 +102,26 @@ func main() {
 			os.Exit(1)
 		}
 	case "discover":
-		isV2, _ := config.IsV2Config(CLI.Config)
-		if isV2 {
-			v2cfg, err := config.LoadV2(CLI.Config)
-			if err != nil {
-				slog.Error("Failed to load V2 configuration", "error", err)
-				os.Exit(1)
-			}
-			legacyCfg := &config.Config{Hugo: v2cfg.Hugo, Output: v2cfg.Output}
-			if len(legacyCfg.Repositories) == 0 && len(v2cfg.Forges) > 0 {
-				if repos, err := autoDiscoverRepositories(context.Background(), v2cfg); err == nil {
-					legacyCfg.Repositories = repos
-				} else {
-					slog.Error("Auto-discovery failed", "error", err)
-					os.Exit(1)
-				}
-			}
-			if err := runDiscover(legacyCfg, CLI.Discover.Repository); err != nil {
-				slog.Error("Discover failed", "error", err)
-				os.Exit(1)
-			}
-		} else {
-			cfg, err := config.Load(CLI.Config)
-			if err != nil {
-				slog.Error("Failed to load configuration", "error", err)
-				os.Exit(1)
-			}
-			if err := runDiscover(cfg, CLI.Discover.Repository); err != nil {
-				slog.Error("Discover failed", "error", err)
+		cfg, err := config.Load(CLI.Config)
+		if err != nil {
+			slog.Error("Failed to load configuration", "error", err)
+			os.Exit(1)
+		}
+		if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+			if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
+				cfg.Repositories = repos
+			} else {
+				slog.Error("Auto-discovery failed", "error", err)
 				os.Exit(1)
 			}
 		}
+		if err := runDiscover(cfg, CLI.Discover.Repository); err != nil {
+			slog.Error("Discover failed", "error", err)
+			os.Exit(1)
+		}
 	case "daemon":
 		// Load V2 configuration for daemon command
-		cfg, err := config.LoadV2(CLI.Config)
+		cfg, err := config.Load(CLI.Config)
 		if err != nil {
 			slog.Error("Failed to load V2 configuration", "error", err)
 			os.Exit(1)
@@ -230,8 +222,8 @@ func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bo
 }
 
 func runInit(configPath string, force bool) error {
-	slog.Info("Initializing configuration", "path", configPath, "force", force)
-	return config.Init(configPath, force)
+	slog.Info("Initializing v2 configuration", "path", configPath, "force", force)
+	return config.InitV2(configPath, force)
 }
 
 func runDiscover(cfg *config.Config, specificRepo string) error {
@@ -308,7 +300,7 @@ func runDiscover(cfg *config.Config, specificRepo string) error {
 	return nil
 }
 
-func runDaemon(cfg *config.V2Config, dataDir string) error {
+func runDaemon(cfg *config.Config, dataDir string) error {
 	slog.Info("Starting daemon mode", "data_dir", dataDir)
 
 	// Create main context for the daemon
@@ -352,7 +344,7 @@ func runDaemon(cfg *config.V2Config, dataDir string) error {
 }
 
 // autoDiscoverRepositories builds a forge manager from v2 config and returns converted repositories.
-func autoDiscoverRepositories(ctx context.Context, v2cfg *config.V2Config) ([]config.Repository, error) {
+func autoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]config.Repository, error) {
 	manager := forge.NewForgeManager()
 
 	// Instantiate forge clients

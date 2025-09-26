@@ -17,7 +17,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	// Arrange temporary output dir
 	outDir := t.TempDir()
 
-	cfg := &config.Config{
+	cfg := &config.V2Config{
 		Hugo: config.HugoConfig{Title: "Test Site", Theme: "hextra"},
 		Repositories: []config.Repository{
 			{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}},
@@ -85,7 +85,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 // Guard against accidental reliance on real time by verifying that BuildFrontMatter uses injected time.
 func TestBuildFrontMatter_TimeInjection(t *testing.T) {
 	ts := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	file := docs.DocFile{Repository: "repo", Name: "page"}
 	fm := BuildFrontMatter(FrontMatterInput{File: file, Config: cfg, Now: ts})
 	if v, _ := fm["date"].(string); !strings.Contains(v, "2030-01-02") {

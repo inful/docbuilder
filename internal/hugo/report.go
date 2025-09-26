@@ -16,13 +16,13 @@ type BuildReport struct {
 	StageDurations  map[string]time.Duration
 	StageErrorKinds map[string]string // stage -> error kind (fatal|warning|canceled)
 	// Enrichment fields (incremental observability additions)
-	ClonedRepositories int                   // repositories successfully cloned or validated
-	FailedRepositories int                   // repositories that failed to clone/auth
-	SkippedRepositories int                  // repositories filtered out before cloning
-	RenderedPages      int                   // markdown pages successfully processed & written
-	StageCounts        map[string]StageCount // per-stage classification counts
-	Outcome            string                // derived overall outcome: success|warning|failed|canceled
-	StaticRendered     bool                  // true if Hugo static site render executed successfully
+	ClonedRepositories  int                   // repositories successfully cloned or validated
+	FailedRepositories  int                   // repositories that failed to clone/auth
+	SkippedRepositories int                   // repositories filtered out before cloning
+	RenderedPages       int                   // markdown pages successfully processed & written
+	StageCounts         map[string]StageCount // per-stage classification counts
+	Outcome             string                // derived overall outcome: success|warning|failed|canceled
+	StaticRendered      bool                  // true if Hugo static site render executed successfully
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)

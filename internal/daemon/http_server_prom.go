@@ -20,11 +20,15 @@ var (
 	daemonBuildsFailedTotal = prom.NewCounter(prom.CounterOpts{Namespace: "docbuilder", Name: "daemon_builds_failed_total", Help: "Failed builds processed by daemon"})
 	// Gauges (scrape-time via GaugeFunc)
 	daemonActiveJobsGauge = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_active_jobs", Help: "Number of build jobs currently running"}, func() float64 {
-		if defaultDaemonInstance == nil { return 0 }
+		if defaultDaemonInstance == nil {
+			return 0
+		}
 		return float64(atomic.LoadInt32(&defaultDaemonInstance.activeJobs))
 	})
 	daemonQueueLengthGauge = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_queue_length", Help: "Current queued build jobs waiting for workers"}, func() float64 {
-		if defaultDaemonInstance == nil { return 0 }
+		if defaultDaemonInstance == nil {
+			return 0
+		}
 		return float64(atomic.LoadInt32(&defaultDaemonInstance.queueLength))
 	})
 	// Last build snapshot gauges
@@ -45,15 +49,23 @@ func init() {
 
 // updateDaemonPromMetrics copies selected counters from in-memory collector to Prometheus counters.
 func updateDaemonPromMetrics(d *Daemon) {
-	if d == nil || d.metrics == nil { return }
+	if d == nil || d.metrics == nil {
+		return
+	}
 	snap := d.metrics.GetSnapshot()
 	if v, ok := snap.Counters["build_completed_total"]; ok {
 		prev := atomicLoadInt64(&lastCompleted)
-		if v > prev { daemonBuildsTotal.Add(float64(v - prev)); atomicStoreInt64(&lastCompleted, v) }
+		if v > prev {
+			daemonBuildsTotal.Add(float64(v - prev))
+			atomicStoreInt64(&lastCompleted, v)
+		}
 	}
 	if v, ok := snap.Counters["build_failed_total"]; ok {
 		prev := atomicLoadInt64(&lastFailed)
-		if v > prev { daemonBuildsFailedTotal.Add(float64(v - prev)); atomicStoreInt64(&lastFailed, v) }
+		if v > prev {
+			daemonBuildsFailedTotal.Add(float64(v - prev))
+			atomicStoreInt64(&lastFailed, v)
+		}
 	}
 	// Update snapshot gauges from last build report (best effort)
 	if d.buildQueue != nil {
@@ -75,7 +87,7 @@ var lastFailed int64
 var lastRenderedPages int64
 var lastRepositories int64
 
-func atomicLoadInt64(p *int64) int64 { return atomic.LoadInt64(p) }
+func atomicLoadInt64(p *int64) int64     { return atomic.LoadInt64(p) }
 func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }
 
 // prometheusOptionalHandler returns handler and periodically syncs daemon metrics.

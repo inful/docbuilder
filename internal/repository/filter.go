@@ -1,11 +1,11 @@
 package repository
 
 import (
-    "fmt"
-    "regexp"
-    "strings"
+	"fmt"
+	"regexp"
+	"strings"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // RepositoryFilter decides whether repositories should be included in a build.
@@ -20,34 +20,50 @@ func NewFilter(includeGlobs, excludeGlobs []string) (*RepositoryFilter, error) {
 	compile := func(globs []string) ([]*regexp.Regexp, error) {
 		out := make([]*regexp.Regexp, 0, len(globs))
 		for _, g := range globs {
-			if strings.TrimSpace(g) == "" { continue }
+			if strings.TrimSpace(g) == "" {
+				continue
+			}
 			// convert glob to regex using filepath.Match semantics approximation
 			pattern := globToRegex(g)
 			r, err := regexp.Compile(pattern)
-			if err != nil { return nil, fmt.Errorf("compile glob %s: %w", g, err) }
+			if err != nil {
+				return nil, fmt.Errorf("compile glob %s: %w", g, err)
+			}
 			out = append(out, r)
 		}
 		return out, nil
 	}
 	incs, err := compile(includeGlobs)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	excs, err := compile(excludeGlobs)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	return &RepositoryFilter{include: incs, exclude: excs}, nil
 }
 
 // Include returns true if repo passes the filter along with an exclusion reason if false.
 func (f *RepositoryFilter) Include(repo config.Repository) (bool, string) {
 	name := repo.Name
-	if f == nil { return true, "" }
+	if f == nil {
+		return true, ""
+	}
 	// Exclusion precedence first
 	for _, rx := range f.exclude {
-		if rx.MatchString(name) { return false, "excluded_by_pattern" }
+		if rx.MatchString(name) {
+			return false, "excluded_by_pattern"
+		}
 	}
 	// Include patterns: if none defined -> include
-	if len(f.include) == 0 { return true, "" }
+	if len(f.include) == 0 {
+		return true, ""
+	}
 	for _, rx := range f.include {
-		if rx.MatchString(name) { return true, "" }
+		if rx.MatchString(name) {
+			return true, ""
+		}
 	}
 	return false, "not_in_includes"
 }

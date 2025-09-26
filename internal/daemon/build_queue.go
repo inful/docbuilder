@@ -71,7 +71,7 @@ type BuildQueue struct {
 	wg          sync.WaitGroup
 	builder     Builder
 	// retry policy (simple for now)
-	maxRetries  int
+	maxRetries int
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -250,8 +250,12 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	for {
 		attempts++
 		report, err := bq.builder.Build(ctx, job)
-		if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
-		if report != nil { job.Metadata["build_report"] = report }
+		if job.Metadata == nil {
+			job.Metadata = make(map[string]interface{})
+		}
+		if report != nil {
+			job.Metadata["build_report"] = report
+		}
 		if err == nil {
 			return nil
 		}
@@ -259,11 +263,16 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		transient := false
 		if report != nil && len(report.Errors) > 0 {
 			for _, e := range report.Errors {
-				if se, ok := e.(*hugo.StageError); ok && se.Transient() { transient = true; break }
+				if se, ok := e.(*hugo.StageError); ok && se.Transient() {
+					transient = true
+					break
+				}
 			}
 		}
 		if !transient || attempts > bq.maxRetries {
-			if transient && attempts > bq.maxRetries { slog.Warn("Transient error but retries exhausted", "job_id", job.ID, "attempts", attempts) }
+			if transient && attempts > bq.maxRetries {
+				slog.Warn("Transient error but retries exhausted", "job_id", job.ID, "attempts", attempts)
+			}
 			return err
 		}
 		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "max_retries", bq.maxRetries, "error", err)

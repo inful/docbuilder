@@ -23,7 +23,7 @@
 // linting, etc.) to be slotted in with minimal coupling.
 //
 // The package purposefully avoids global state; all configuration flows in via
-// config.Config provided to NewGenerator. Long‑term enhancements (cancellation,
+// Config provided to NewGenerator. Long‑term enhancements (cancellation,
 // tracing hooks, structured stage error types) can build upon the existing
 // Stage + BuildReport abstractions without altering public call semantics.
 package hugo

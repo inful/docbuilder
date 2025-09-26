@@ -19,12 +19,12 @@ type HTTPServer struct {
 	docsServer    *http.Server
 	webhookServer *http.Server
 	adminServer   *http.Server
-	config        *config.V2Config
+	config        *config.Config
 	daemon        *Daemon // Reference to main daemon service
 }
 
 // NewHTTPServer creates a new HTTP server manager
-func NewHTTPServer(cfg *config.V2Config, daemon *Daemon) *HTTPServer {
+func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
 	return &HTTPServer{
 		config: cfg,
 		daemon: daemon,
@@ -184,9 +184,10 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 	// Metrics endpoint
 	if s.config.Monitoring.Metrics.Enabled {
 		mux.HandleFunc(s.config.Monitoring.Metrics.Path, s.handleMetrics)
-		// Add new comprehensive metrics endpoint
 		mux.HandleFunc("/metrics/detailed", s.daemon.metrics.MetricsHandler)
-		mux.HandleFunc("/metrics/prometheus", s.daemon.metrics.PrometheusHandler)
+		if h := prometheusOptionalHandler(); h != nil {
+			mux.Handle("/metrics/prometheus", h)
+		}
 	}
 
 	// Administrative endpoints
@@ -216,6 +217,11 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 
 	return nil
 }
+
+// prometheusOptionalHandler returns a metrics HTTP handler when the prometheus
+// build tag is enabled; otherwise returns nil. Implemented in a separate file
+// with the tag for the real handler.
+// (Fallback implementation moved to tagged file; here we declare only when prometheus tag NOT set.)
 
 // Middleware for request logging
 func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
@@ -437,7 +443,7 @@ func (s *HTTPServer) handleRepositories(w http.ResponseWriter, r *http.Request) 
 }
 
 // sanitizeConfig removes sensitive information from configuration
-func (s *HTTPServer) sanitizeConfig(cfg *config.V2Config) map[string]interface{} {
+func (s *HTTPServer) sanitizeConfig(cfg *config.Config) map[string]interface{} {
 	sanitized := map[string]interface{}{
 		"version": cfg.Version,
 		"hugo": map[string]interface{}{

@@ -10,7 +10,7 @@ import (
 
 // TestPipeline_Idempotency ensures that running the pipeline twice does not duplicate front matter.
 func TestPipeline_Idempotency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 
 	original := "---\ncustom: keep\n---\n# Heading\n\nLink to [Doc](doc.md)."
@@ -45,7 +45,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 
 // TestPipeline_Order verifies that front matter parsing happens before building.
 func TestPipeline_Order(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 	existing := "---\ncustom: val\n---\nBody"
 	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Extension: ".md", Content: []byte(existing)}
@@ -65,7 +65,7 @@ func TestPipeline_Order(t *testing.T) {
 
 // TestMalformedFrontMatter ensures invalid YAML front matter does not break build.
 func TestMalformedFrontMatter(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 	malformed := "---\n:bad yaml\n---\n# T\n"
 	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Extension: ".md", Content: []byte(malformed)}
@@ -82,7 +82,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 
 // TestDateConsistency ensures BuildFrontMatter uses Now injection indirectly through builder.
 func TestDateConsistency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Extension: ".md", Content: []byte("Body")}
 	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
