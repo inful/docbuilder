@@ -53,6 +53,14 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			continue
 		}
 
+		// Check for .docignore file in repository root
+		if hasDocIgnore, err := d.checkDocIgnore(repoPath); err != nil {
+			slog.Warn("Failed to check .docignore", "repository", repoName, "error", err)
+		} else if hasDocIgnore {
+			slog.Info("Skipping repository due to .docignore file", "repository", repoName)
+			continue
+		}
+
 		slog.Info("Discovering documentation", "repository", repoName, "paths", repo.Paths)
 
 		for _, docsPath := range repo.Paths {
@@ -233,4 +241,18 @@ func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 	}
 
 	return result
+}
+
+// checkDocIgnore checks if a repository has a .docignore file in its root
+func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
+	docIgnorePath := filepath.Join(repoPath, ".docignore")
+
+	if _, err := os.Stat(docIgnorePath); err == nil {
+		slog.Debug("Found .docignore file", "path", docIgnorePath)
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("failed to check .docignore file: %w", err)
+	}
 }
