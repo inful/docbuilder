@@ -32,7 +32,11 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		if err := pipeline.Run(p); err != nil {
 			return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
 		}
-		outputPath := filepath.Join(g.outputDir, file.GetHugoPath())
+		root := g.outputDir
+		if g.stageDir != "" {
+			root = g.stageDir
+		}
+		outputPath := filepath.Join(root, file.GetHugoPath())
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", outputPath, err)
 		}
