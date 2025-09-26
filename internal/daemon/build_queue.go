@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 // BuildType represents the type of build job
@@ -73,6 +74,7 @@ type BuildQueue struct {
 	builder     Builder
 	// retry policy
 	retryCfg   config.BuildConfig
+	recorder   metrics.Recorder
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -94,12 +96,19 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		stopChan:    make(chan struct{}),
 		builder:     NewSiteBuilder(),
 		retryCfg:    config.BuildConfig{},
+		recorder:    metrics.NoopRecorder{},
 	}
 }
 
 // ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
     bq.retryCfg = cfg
+}
+
+// SetRecorder injects a metrics recorder for retry metrics (optional).
+func (bq *BuildQueue) SetRecorder(r metrics.Recorder) {
+	if r == nil { r = metrics.NoopRecorder{} }
+	bq.recorder = r
 }
 
 // Start begins processing jobs with the configured number of workers
@@ -299,16 +308,18 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 					report.Retries = totalRetries
 					report.RetriesExhausted = true
 				}
-				if recorder := extractRecorder(report); recorder != nil && transientStage != "" {
-					recorder.IncBuildRetryExhausted(transientStage)
+				rec := extractRecorder(report, bq.recorder)
+				if rec != nil && transientStage != "" {
+					rec.IncBuildRetryExhausted(transientStage)
 				}
 			}
 			return err
 		}
 		// perform retry
 		totalRetries++
-		if recorder := extractRecorder(report); recorder != nil && transientStage != "" {
-			recorder.IncBuildRetry(transientStage)
+		rec := extractRecorder(report, bq.recorder)
+		if rec != nil && transientStage != "" {
+			rec.IncBuildRetry(transientStage)
 		}
 		delay := computeBackoffDelay(backoffMode, initialDelay, maxDelay, totalRetries)
 		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "retry", totalRetries, "max_retries", maxRetries, "stage", transientStage, "delay", delay, "error", err)
@@ -337,10 +348,9 @@ func computeBackoffDelay(mode string, initial, max time.Duration, retryCount int
 }
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
-func extractRecorder(report *hugo.BuildReport) interface{ IncBuildRetry(string); IncBuildRetryExhausted(string) } {
-	// We don't have direct access to generator here; future improvement could thread recorder through job.
-	// For now, no-op returning nil (retry metrics recorded at queue level not feasible without passing recorder).
-	return nil
+func extractRecorder(report *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
+    // Currently we only have fallback; future: attempt to derive from report metadata if embedded.
+    return fallback
 }
 
 // (Legacy per-type build wrapper methods removed; Builder abstraction handles all types.)

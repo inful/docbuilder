@@ -99,7 +99,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Initialize build queue first (scheduler needs it)
 	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds)
-	// Configure retry policy from build config
+	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
 	daemon.buildQueue.ConfigureRetry(cfg.Build)
 
 	// Initialize scheduler (after build queue)
