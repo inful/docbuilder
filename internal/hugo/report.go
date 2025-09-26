@@ -25,4 +25,3 @@ func (r *BuildReport) Summary() string {
 	dur := r.End.Sub(r.Start)
 	return fmt.Sprintf("repos=%d files=%d duration=%s errors=%d", r.Repositories, r.Files, dur.Truncate(time.Millisecond), len(r.Errors))
 }
-

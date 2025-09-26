@@ -1,0 +1,39 @@
+repositories:
+    - url: https://github.com/go-git/go-git.git
+      name: go-git
+      branch: master
+      paths:
+        - "."
+      auth:
+        type: none
+    - url: https://github.com/alecthomas/kong.git
+      name: kong
+      branch: master
+      paths:
+        - "."
+      auth:
+        type: none
+    - url: https://git.home.luguber.info/inful/go-test-project.git
+      name: go-test-project
+      branch: main
+      paths:
+        - docs
+      auth:
+        type: token
+        token: "${GIT_ACCESS_TOKEN}"
+hugo:
+  theme: "hextra"
+  base_url: https://example.com
+  title: Test Documentation Site
+  description: Test aggregated documentation using Hextra theme
+  params:
+    search:
+      enable: true
+      type: flexsearch
+    theme:
+      default: system
+      displayToggle: true
+    mermaid: {}
+output:
+  directory: ./test-site-hextra
+  clean: true
