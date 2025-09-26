@@ -1,8 +1,4 @@
-//go:build !prometheus
-
 package daemon
 
-import m "git.home.luguber.info/inful/docbuilder/internal/metrics"
-
-// resolvePrometheusRecorder returns nil when prometheus tag not set.
-func resolvePrometheusRecorder() m.Recorder { return nil }
+// (Deprecated fallback) Previously returned nil when Prometheus build tag was disabled.
+// Prometheus is now always compiled in; see prometheus_resolver.go for implementation.

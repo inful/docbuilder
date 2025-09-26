@@ -1,5 +1,3 @@
-//go:build prometheus
-
 package daemon
 
 import (
@@ -9,5 +7,5 @@ import (
 
 var siteBuildRegistry = prom.NewRegistry()
 
-// resolvePrometheusRecorder returns a Prometheus-backed metrics recorder when tag enabled.
+// resolvePrometheusRecorder returns a Prometheus-backed metrics recorder (always built-in now).
 func resolvePrometheusRecorder() m.Recorder { return m.NewPrometheusRecorder(siteBuildRegistry) }
