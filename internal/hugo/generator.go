@@ -24,7 +24,7 @@ type Generator struct {
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-    return &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
+	return &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
 }
 
 // SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.
@@ -79,7 +79,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	}
 
 	if err := runStages(ctx, bs, stages); err != nil {
-		// do not promote staging directory on failure
+		// cleanup staging dir on failure
+		g.abortStaging()
 		return nil, err
 	}
 
@@ -90,9 +91,9 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	report.deriveOutcome()
 	report.finish()
-    if err := g.finalizeStaging(); err != nil {
-        return nil, fmt.Errorf("finalize staging: %w", err)
-    }
+	if err := g.finalizeStaging(); err != nil {
+		return nil, fmt.Errorf("finalize staging: %w", err)
+	}
 	// record build-level metrics
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
@@ -168,20 +169,21 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		{"run_hugo", stageRunHugo},
 		{"post_process", stagePostProcess},
 	}
-    if err := runStages(ctx, bs, stages); err != nil {
-        // derive outcome even on error for observability; do not finalize staging
-        report.deriveOutcome()
-        report.finish()
-        return report, err
-    }
+	if err := runStages(ctx, bs, stages); err != nil {
+		// derive outcome even on error for observability; cleanup staging
+		report.deriveOutcome()
+		report.finish()
+		g.abortStaging()
+		return report, err
+	}
 	for k, v := range bs.Timings {
 		report.StageDurations[k] = v
 	}
 	report.deriveOutcome()
 	report.finish()
-    if err := g.finalizeStaging(); err != nil {
-        return report, fmt.Errorf("finalize staging: %w", err)
-    }
+	if err := g.finalizeStaging(); err != nil {
+		return report, fmt.Errorf("finalize staging: %w", err)
+	}
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
 		g.recorder.IncBuildOutcome(report.Outcome)
