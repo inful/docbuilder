@@ -33,7 +33,7 @@ func (c *capturingRecorder) IncStageResult(stage string, r metrics.ResultLabel) 
 	}
 	m[r]++
 }
-func (c *capturingRecorder) IncBuildOutcome(o string) { c.outcomes[o]++ }
+func (c *capturingRecorder) IncBuildOutcome(o string)                             { c.outcomes[o]++ }
 func (c *capturingRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
 func (c *capturingRecorder) IncCloneRepoResult(bool)                              {}
 func (c *capturingRecorder) SetCloneConcurrency(int)                              {}

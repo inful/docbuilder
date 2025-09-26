@@ -258,11 +258,7 @@ func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 		}
 
 		// Version info (best-effort, avoid long blocking): only use already-known manager state if available
-		if d.versionService != nil {
-			// Attempt to get cached versions from manager without triggering new network operations
-			// (Assuming VersionManager interface has a GetVersions-like method; if not, skip live versions here.)
-			// Fallback: we skip live discovery to keep /status fast.
-		}
+		if d.versionService != nil { /* future: fetch cached version metadata (intentionally no-op for now) */ }
 
 		// Placeholder LastSync from cached discovery timestamp
 		if d.lastDiscovery != nil {

@@ -46,7 +46,8 @@ func (lm *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		// Create request ID for tracing
 		requestID := generateRequestID()
-		ctx := context.WithValue(r.Context(), "request_id", requestID)
+		type ctxKey string
+		ctx := context.WithValue(r.Context(), ctxKey("request_id"), requestID)
 		r = r.WithContext(ctx)
 
 		// Wrap response writer to capture status and size
