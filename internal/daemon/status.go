@@ -58,13 +58,17 @@ type VersionSummary struct {
 
 // BuildStatusInfo tracks build queue and execution status
 type BuildStatusInfo struct {
-	QueueLength      int32      `json:"queue_length"`
-	ActiveJobs       int32      `json:"active_jobs"`
-	CompletedBuilds  int64      `json:"completed_builds"`
-	FailedBuilds     int64      `json:"failed_builds"`
-	LastBuildTime    *time.Time `json:"last_build_time"`
-	AverageBuildTime string     `json:"average_build_time"`
+	QueueLength      int32             `json:"queue_length"`
+	ActiveJobs       int32             `json:"active_jobs"`
+	CompletedBuilds  int64             `json:"completed_builds"`
+	FailedBuilds     int64             `json:"failed_builds"`
+	LastBuildTime    *time.Time        `json:"last_build_time"`
+	AverageBuildTime string            `json:"average_build_time"`
 	LastBuildStages  map[string]string `json:"last_build_stages,omitempty"` // stage -> duration
+	LastBuildOutcome string            `json:"last_build_outcome,omitempty"`
+	LastBuildSummary string            `json:"last_build_summary,omitempty"`
+	LastBuildErrors  []string          `json:"last_build_errors,omitempty"`
+	LastBuildWarnings []string         `json:"last_build_warnings,omitempty"`
 }
 
 // SystemMetrics provides system resource information
@@ -112,13 +116,30 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 			last := history[len(history)-1]
 			if last != nil && last.Metadata != nil {
 				if brRaw, ok := last.Metadata["build_report"]; ok {
-					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil && len(br.StageDurations) > 0 {
-						stages := make(map[string]string, len(br.StageDurations))
-						for k, v := range br.StageDurations {
-							// Millisecond precision is sufficient and keeps payload small
-							stages[k] = v.Truncate(time.Millisecond).String()
+					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
+						if len(br.StageDurations) > 0 {
+							stages := make(map[string]string, len(br.StageDurations))
+							for k, v := range br.StageDurations {
+								stages[k] = v.Truncate(time.Millisecond).String()
+							}
+							status.BuildStatus.LastBuildStages = stages
 						}
-						status.BuildStatus.LastBuildStages = stages
+						status.BuildStatus.LastBuildOutcome = br.Outcome
+						status.BuildStatus.LastBuildSummary = br.Summary()
+						if len(br.Errors) > 0 {
+							for _, e := range br.Errors {
+								msg := e.Error()
+								if len(msg) > 300 { msg = msg[:300] + "…" }
+								status.BuildStatus.LastBuildErrors = append(status.BuildStatus.LastBuildErrors, msg)
+							}
+						}
+						if len(br.Warnings) > 0 {
+							for _, w := range br.Warnings {
+								msg := w.Error()
+								if len(msg) > 300 { msg = msg[:300] + "…" }
+								status.BuildStatus.LastBuildWarnings = append(status.BuildStatus.LastBuildWarnings, msg)
+							}
+						}
 					}
 				}
 			}

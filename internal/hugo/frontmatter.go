@@ -1,8 +1,6 @@
 package hugo
 
 import (
-	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -56,65 +54,10 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 		}
 	}
 
-	// Hextra per-page editURL generation (copied from previous inline logic)
-	if in.Config != nil && in.Config.Hugo.Theme == "hextra" {
-		if _, exists := fm["editURL"]; !exists { // respect existing
-			hasSiteEditBase := false
-			if in.Config.Hugo.Params != nil {
-				if v, ok := in.Config.Hugo.Params["editURL"]; ok {
-					if m, ok := v.(map[string]any); ok {
-						if b, ok := m["base"].(string); ok && b != "" {
-							hasSiteEditBase = true
-						}
-					}
-				}
-			}
-			if !hasSiteEditBase {
-				var repoCfg *config.Repository
-				for i := range in.Config.Repositories {
-					if in.Config.Repositories[i].Name == in.File.Repository {
-						repoCfg = &in.Config.Repositories[i]
-						break
-					}
-				}
-				if repoCfg != nil {
-					branch := repoCfg.Branch
-					if branch == "" {
-						branch = "main"
-					}
-					repoRel := in.File.RelativePath
-					if base := strings.TrimSpace(in.File.DocsBase); base != "" && base != "." {
-						repoRel = filepath.ToSlash(filepath.Join(base, repoRel))
-					} else {
-						repoRel = filepath.ToSlash(repoRel)
-					}
-					editURL := ""
-					if strings.Contains(repoCfg.URL, "github.com") {
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						if strings.HasPrefix(url, "git@github.com:") {
-							url = strings.TrimPrefix(url, "git@github.com:")
-							url = "https://github.com/" + url
-						}
-						editURL = fmt.Sprintf("%s/edit/%s/%s", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "gitlab.com") {
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						if strings.HasPrefix(url, "git@gitlab.com:") {
-							url = strings.TrimPrefix(url, "git@gitlab.com:")
-							url = "https://gitlab.com/" + url
-						}
-						editURL = fmt.Sprintf("%s/-/edit/%s/%s", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "bitbucket.org") {
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						editURL = fmt.Sprintf("%s/src/%s/%s?mode=edit", url, branch, repoRel)
-					} else if strings.Contains(repoCfg.URL, "git.home.luguber.info") {
-						url := strings.TrimSuffix(repoCfg.URL, ".git")
-						editURL = fmt.Sprintf("%s/_edit/%s/%s", url, branch, repoRel)
-					}
-					if editURL != "" {
-						fm["editURL"] = editURL
-					}
-				}
-			}
+	// Per-page edit URL (Hextra only) if not already present
+	if _, exists := fm["editURL"]; !exists {
+		if edit := generatePerPageEditURL(in.Config, in.File); edit != "" {
+			fm["editURL"] = edit
 		}
 	}
 

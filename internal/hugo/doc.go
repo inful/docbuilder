@@ -1,6 +1,6 @@
 // Package hugo implements the Hugo site generation pipeline for DocBuilder.
 //
-// Architecture
+// # Architecture
 //
 // The generator composes a series of high‑level build "stages" (prepare_output,
 // generate_config, layouts, copy_content, indexes, run_hugo, post_process).
@@ -11,11 +11,11 @@
 //
 // Within the copy_content stage a finer grained transformation pipeline runs
 // per markdown file. The pipeline currently includes:
-//   1. FrontMatterParser             – parse any existing front matter
-//   2. FrontMatterBuilder            – synthesize canonical front matter
-//   3. EditLinkInjector              – inject per‑page repository edit URLs
-//   4. RelativeLinkRewriter          – rewrite intra‑repo relative links
-//   5. FinalFrontMatterSerializer    – serialize the merged front matter
+//  1. FrontMatterParser             – parse any existing front matter
+//  2. FrontMatterBuilder            – synthesize canonical front matter
+//  3. EditLinkInjector              – inject per‑page repository edit URLs
+//  4. RelativeLinkRewriter          – rewrite intra‑repo relative links
+//  5. FinalFrontMatterSerializer    – serialize the merged front matter
 //
 // This two‑tier design (coarse build stages + per‑file transformers) keeps
 // responsibilities isolated, makes incremental refactors safer, and allows
