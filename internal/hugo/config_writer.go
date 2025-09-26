@@ -14,9 +14,7 @@ import (
 
 // generateHugoConfig creates the Hugo configuration file
 func (g *Generator) generateHugoConfig() error {
-	root := g.outputDir
-	if g.stageDir != "" { root = g.stageDir }
-	configPath := filepath.Join(root, "hugo.yaml")
+	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
 
 	params := make(map[string]interface{})
 	if g.config.Hugo.Params != nil {

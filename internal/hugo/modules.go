@@ -12,7 +12,7 @@ import (
 
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work
 func (g *Generator) ensureGoModForModules() error {
-	goModPath := filepath.Join(g.outputDir, "go.mod")
+	goModPath := filepath.Join(g.buildRoot(), "go.mod")
 	deriveModuleName := func() string {
 		moduleName := "docbuilder-site"
 		if g.config.Hugo.BaseURL != "" {
