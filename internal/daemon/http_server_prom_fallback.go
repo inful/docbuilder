@@ -1,8 +1,5 @@
-//go:build !prometheus
-
 package daemon
 
-import "net/http"
-
-// prometheusOptionalHandler fallback when prometheus build tag not set.
-func prometheusOptionalHandler() http.Handler { return nil }
+// (Deprecated fallback) Previously provided a nil handler when Prometheus build tag was absent.
+// Build tags have been removed; the real implementation in http_server_prom.go is always used.
+// This file intentionally left without symbols to avoid redeclarations.

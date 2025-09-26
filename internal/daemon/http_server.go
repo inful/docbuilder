@@ -218,10 +218,8 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 	return nil
 }
 
-// prometheusOptionalHandler returns a metrics HTTP handler when the prometheus
-// build tag is enabled; otherwise returns nil. Implemented in a separate file
-// with the tag for the real handler.
-// (Fallback implementation moved to tagged file; here we declare only when prometheus tag NOT set.)
+// prometheusOptionalHandler returns the Prometheus metrics handler. Previously
+// this was gated behind a build tag; it now always returns a handler.
 
 // Middleware for request logging
 func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
