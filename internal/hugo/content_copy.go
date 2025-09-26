@@ -11,8 +11,7 @@ import (
 )
 
 // copyContentFiles copies documentation files to Hugo content directory
-func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
-	ctx := context.Background()
+func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
 	pipeline := NewTransformerPipeline(
 		&FrontMatterParser{},
 		&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
@@ -23,7 +22,7 @@ func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
 	for _, file := range docFiles {
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("content copy canceled: %w", ctx.Err())
+			return ctx.Err()
 		default:
 		}
 		if err := file.LoadContent(); err != nil {
