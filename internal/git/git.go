@@ -212,3 +212,17 @@ func (c *Client) CleanWorkspace() error {
 	slog.Info("Workspace cleaned", "path", c.workspaceDir)
 	return nil
 }
+
+// CheckDocIgnore checks if a repository has a .docignore file in its root
+func (c *Client) CheckDocIgnore(repoPath string) (bool, error) {
+	docIgnorePath := filepath.Join(repoPath, ".docignore")
+
+	if _, err := os.Stat(docIgnorePath); err == nil {
+		slog.Debug("Found .docignore file", "path", docIgnorePath)
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("failed to check .docignore file: %w", err)
+	}
+}
