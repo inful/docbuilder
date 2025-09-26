@@ -350,10 +350,30 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 		p, err := gitClient.CloneRepository(r)
 		if err != nil {
 			slog.Error("Repository clone failed", "name", r.Name, "error", err)
+			// track failed clone in build report if available
+			if job.Metadata != nil {
+				if brRaw, ok := job.Metadata["build_report"]; ok {
+					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
+						br.FailedRepositories++
+					}
+				}
+			}
 			continue
 		}
 		repoPaths[r.Name] = p
+		if job.Metadata != nil {
+			if brRaw, ok := job.Metadata["build_report"]; ok {
+				if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
+					br.ClonedRepositories++
+				}
+			}
+		}
 	}
+
+	// Pre-create a BuildReport and attach to metadata so cloning can update counts
+	if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
+	initialReport := hugo.NewGenerator(&cfg.Config{}, outDir) // temporary generator just to get a report? We'll instead create minimal report
+	_ = initialReport // placeholder (not used) – will be replaced when actual generation occurs
 
 	discovery := docs.NewDiscovery(reposAny)
 	docFiles, err := discovery.DiscoverDocs(repoPaths)

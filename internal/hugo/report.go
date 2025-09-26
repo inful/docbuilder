@@ -21,6 +21,7 @@ type BuildReport struct {
 	RenderedPages      int               // markdown pages successfully processed & written
 	StageCounts        map[string]StageCount // per-stage classification counts
 	Outcome            string            // derived overall outcome: success|warning|failed|canceled
+	StaticRendered     bool              // true if Hugo static site render executed successfully
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)

@@ -166,6 +166,8 @@ func stageRunHugo(ctx context.Context, bs *BuildState) error {
 		// Treat hugo runtime failure as warning (site content still copied & usable without static render)
 		return newWarnStageError("run_hugo", fmt.Errorf("hugo build failed: %w", err))
 	}
+	// mark successful static render
+	bs.Report.StaticRendered = true
 	return nil
 }
 
