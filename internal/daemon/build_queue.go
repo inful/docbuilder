@@ -385,9 +385,16 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
 		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
 	}
-	if err := gen.GenerateSite(docFiles); err != nil {
+	report, err := gen.GenerateSiteWithReport(docFiles)
+	if err != nil {
 		return fmt.Errorf("hugo generation failed: %w", err)
 	}
+
+	// Store stage timings in job metadata for status/observability.
+	if job.Metadata == nil {
+		job.Metadata = make(map[string]interface{})
+	}
+	job.Metadata["build_report"] = report
 
 	slog.Info("Site build completed", "output", outDir, "public_exists", dirExists(filepath.Join(outDir, "public")))
 	return nil
