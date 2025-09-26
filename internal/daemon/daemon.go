@@ -27,7 +27,7 @@ const (
 
 // Daemon represents the main daemon service
 type Daemon struct {
-	config    *config.V2Config
+	config    *config.Config
 	status    atomic.Value // DaemonStatus
 	startTime time.Time
 	stopChan  chan struct{}
@@ -58,12 +58,12 @@ type Daemon struct {
 
 // NewDaemon creates a new daemon instance
 // NewDaemon creates a new daemon instance
-func NewDaemon(cfg *config.V2Config) (*Daemon, error) {
+func NewDaemon(cfg *config.Config) (*Daemon, error) {
 	return NewDaemonWithConfigFile(cfg, "")
 }
 
 // NewDaemonWithConfigFile creates a new daemon instance with config file watching
-func NewDaemonWithConfigFile(cfg *config.V2Config, configFilePath string) (*Daemon, error) {
+func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration is required")
 	}
@@ -138,6 +138,10 @@ func NewDaemonWithConfigFile(cfg *config.V2Config, configFilePath string) (*Daem
 	return daemon, nil
 }
 
+// defaultDaemonInstance is used by optional Prometheus integration to pull metrics
+// into the Prometheus registry when the build tag is enabled.
+var defaultDaemonInstance *Daemon
+
 // Start starts the daemon and all its components
 func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Lock()
@@ -153,6 +157,8 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.metrics.IncrementCounter("daemon_starts")
 	d.metrics.SetGauge("daemon_status", int64(1)) // 1 = starting
 
+	// Set global reference for metrics bridge (prometheus build only uses it).
+	defaultDaemonInstance = d
 	slog.Info("Starting DocBuilder daemon", "version", "2.0")
 
 	// Load persistent state
@@ -457,7 +463,7 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 }
 
 // GetConfig returns the current daemon configuration
-func (d *Daemon) GetConfig() *config.V2Config {
+func (d *Daemon) GetConfig() *config.Config {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.config
@@ -487,7 +493,7 @@ func (d *Daemon) safeRunDiscovery() {
 }
 
 // ReloadConfig reloads the daemon configuration and restarts affected services
-func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.V2Config) error {
+func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.Config) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -515,7 +521,7 @@ func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.V2Config) e
 }
 
 // reloadForgeManager updates the forge manager with new forge configurations
-func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *config.V2Config) error {
+func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *config.Config) error {
 	// Create new forge manager
 	newForgeManager := forge.NewForgeManager()
 	for _, forgeConfig := range newConfig.Forges {
@@ -537,7 +543,7 @@ func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *c
 }
 
 // reloadVersionService updates the version service with new versioning configuration
-func (d *Daemon) reloadVersionService(ctx context.Context, oldConfig, newConfig *config.V2Config) error {
+func (d *Daemon) reloadVersionService(ctx context.Context, oldConfig, newConfig *config.Config) error {
 	// Create new version configuration
 	versionConfig := &versioning.VersionConfig{
 		Strategy:    versioning.StrategyDefaultOnly,

@@ -7,6 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
 )
 
@@ -16,14 +17,22 @@ type Generator struct {
 	outputDir string
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
+	recorder       metrics.Recorder
 }
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	return &Generator{
-		config:    cfg,
-		outputDir: outputDir,
+	return &Generator{config: cfg, outputDir: outputDir, recorder: metrics.NoopRecorder{}}
+}
+
+// SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.
+func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
+	if r == nil {
+		g.recorder = metrics.NoopRecorder{}
+		return g
 	}
+	g.recorder = r
+	return g
 }
 
 // GenerateSite creates a complete Hugo site from discovered documentation
@@ -75,6 +84,11 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	report.deriveOutcome()
 	report.finish()
+	// record build-level metrics
+	if g.recorder != nil {
+		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
+		g.recorder.IncBuildOutcome(report.Outcome)
+	}
 	slog.Info("Hugo site generation completed", "output", g.outputDir, "repos", report.Repositories, "files", report.Files, "errors", len(report.Errors))
 	return report, nil
 }
@@ -95,16 +109,28 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 			if m, ok2 := raw.(map[string]any); ok2 {
 				var includes, excludes []string
 				if v, ok := m["include"].([]any); ok {
-					for _, it := range v { if s, ok := it.(string); ok { includes = append(includes, s) } }
+					for _, it := range v {
+						if s, ok := it.(string); ok {
+							includes = append(includes, s)
+						}
+					}
 				}
 				if v, ok := m["exclude"].([]any); ok {
-					for _, it := range v { if s, ok := it.(string); ok { excludes = append(excludes, s) } }
+					for _, it := range v {
+						if s, ok := it.(string); ok {
+							excludes = append(excludes, s)
+						}
+					}
 				}
 				if len(includes) > 0 || len(excludes) > 0 {
 					if f, err := repository.NewFilter(includes, excludes); err == nil {
 						filtered := make([]config.Repository, 0, len(repositories))
 						for _, r := range repositories {
-							if ok, _ := f.Include(r); ok { filtered = append(filtered, r) } else { report.SkippedRepositories++ }
+							if ok, _ := f.Include(r); ok {
+								filtered = append(filtered, r)
+							} else {
+								report.SkippedRepositories++
+							}
 						}
 						repositories = filtered
 					}
@@ -141,5 +167,9 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	report.deriveOutcome()
 	report.finish()
+	if g.recorder != nil {
+		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
+		g.recorder.IncBuildOutcome(report.Outcome)
+	}
 	return report, nil
 }

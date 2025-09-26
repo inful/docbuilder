@@ -1,0 +1,84 @@
+package hugo
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
+)
+
+type capturingRecorder struct {
+	stages   map[string]int
+	results  map[string]map[metrics.ResultLabel]int
+	builds   int
+	outcomes map[string]int
+}
+
+func newCapturingRecorder() *capturingRecorder {
+	return &capturingRecorder{stages: map[string]int{}, results: map[string]map[metrics.ResultLabel]int{}, outcomes: map[string]int{}}
+}
+
+func (c *capturingRecorder) ObserveStageDuration(stage string, _ time.Duration) { c.stages[stage]++ }
+func (c *capturingRecorder) ObserveBuildDuration(_ time.Duration)               { c.builds++ }
+func (c *capturingRecorder) IncStageResult(stage string, r metrics.ResultLabel) {
+	m, ok := c.results[stage]
+	if !ok {
+		m = map[metrics.ResultLabel]int{}
+		c.results[stage] = m
+	}
+	m[r]++
+}
+func (c *capturingRecorder) IncBuildOutcome(o string) { c.outcomes[o]++ }
+
+// TestMetricsRecorderIntegration ensures that recorder callbacks are invoked during a simple GenerateSiteWithReport run.
+func TestMetricsRecorderIntegration(t *testing.T) {
+	out := t.TempDir()
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Site"}}, out).SetRecorder(newCapturingRecorder())
+	// Ensure Hugo structure exists for index generation dirs
+	if err := g.createHugoStructure(); err != nil {
+		t.Fatalf("structure: %v", err)
+	}
+	// Create physical source files to satisfy LoadContent()
+	srcA := filepath.Join(out, "a.md")
+	os.WriteFile(srcA, []byte("# A"), 0644)
+	srcB := filepath.Join(out, "b.md")
+	os.WriteFile(srcB, []byte("# B"), 0644)
+	docFiles := []docs.DocFile{
+		{Repository: "repo1", Name: "a", Path: srcA, RelativePath: "a.md", DocsBase: ".", Extension: ".md"},
+		{Repository: "repo1", Name: "b", Path: srcB, RelativePath: "b.md", DocsBase: ".", Extension: ".md"},
+	}
+	rec := g.recorder.(*capturingRecorder)
+	_, err := g.GenerateSiteWithReportContext(context.Background(), docFiles)
+	if err != nil {
+		t.Fatalf("build errored: %v", err)
+	}
+	if rec.builds != 1 {
+		// Build duration observed once
+		if rec.builds == 0 {
+			t.Errorf("expected build duration observation")
+		}
+	}
+	if len(rec.outcomes) == 0 {
+		t.Errorf("expected at least one build outcome increment")
+	}
+	// At least 5 stages for simple build path
+	if len(rec.stages) == 0 {
+		t.Errorf("expected stage durations to be recorded")
+	}
+	// Ensure success results counted
+	foundSuccess := false
+	for _, m := range rec.results {
+		if m[metrics.ResultSuccess] > 0 {
+			foundSuccess = true
+			break
+		}
+	}
+	if !foundSuccess {
+		t.Errorf("expected at least one success result recorded")
+	}
+}

@@ -18,7 +18,7 @@ func failingWarnStage(ctx context.Context, bs *BuildState) error {
 }
 
 func TestRunStages_ErrorClassification(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.V2Config{}
 	gen := NewGenerator(cfg, t.TempDir())
 	report := newBuildReport(0, 0)
 	bs := newBuildState(gen, nil, report)
@@ -50,7 +50,7 @@ func TestRunStages_ErrorClassification(t *testing.T) {
 }
 
 func TestRunStages_Canceled(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.V2Config{}
 	gen := NewGenerator(cfg, t.TempDir())
 	report := newBuildReport(0, 0)
 	bs := newBuildState(gen, nil, report)
@@ -73,7 +73,7 @@ func TestRunStages_Canceled(t *testing.T) {
 }
 
 func TestRunStages_TimingRecordedOnWarning(t *testing.T) {
-	cfg := &config.Config{}
+	cfg := &config.V2Config{}
 	gen := NewGenerator(cfg, t.TempDir())
 	report := newBuildReport(0, 0)
 	bs := newBuildState(gen, nil, report)

@@ -211,26 +211,46 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
 
-	// Determine concurrency (future: from config; placeholder: min(4, len(repos)))
-	concurrency := 1
-	if len(bs.Repositories) > 1 {
-		if len(bs.Repositories) < 4 { concurrency = len(bs.Repositories) } else { concurrency = 4 }
+	// Determine requested concurrency from config (build section) with safe bounds.
+	requested := 1
+	if bs.Generator != nil && bs.Generator.config.Build.CloneConcurrency > 0 {
+		requested = bs.Generator.config.Build.CloneConcurrency
 	}
+	if requested > len(bs.Repositories) {
+		requested = len(bs.Repositories)
+	}
+	if requested < 1 {
+		requested = 1
+	}
+	concurrency := requested
+	if bs.Generator != nil && bs.Generator.recorder != nil {
+		bs.Generator.recorder.SetCloneConcurrency(concurrency)
+	}
+
+	// Fast path sequential
 	if concurrency == 1 {
-		// fallback sequential path (original logic)
 		for _, r := range bs.Repositories {
 			select {
 			case <-ctx.Done():
 				return newCanceledStageError("clone_repos", ctx.Err())
 			default:
 			}
+			start := time.Now()
 			p, err := client.CloneRepository(r)
-			if err != nil { bs.Report.FailedRepositories++; continue }
-			bs.Report.ClonedRepositories++
-			bs.RepoPaths[r.Name] = p
+			dur := time.Since(start)
+			success := err == nil
+			if err != nil {
+				bs.Report.FailedRepositories++
+			} else {
+				bs.Report.ClonedRepositories++
+				bs.RepoPaths[r.Name] = p
+			}
+			if bs.Generator != nil && bs.Generator.recorder != nil {
+				bs.Generator.recorder.ObserveCloneRepoDuration(r.Name, dur, success)
+				bs.Generator.recorder.IncCloneRepoResult(success)
+			}
 		}
 	} else {
-		// parallel path (initial scaffold)
 		var wg sync.WaitGroup
 		sem := make(chan struct{}, concurrency)
 		mu := sync.Mutex{}
@@ -239,21 +259,34 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				sem <- struct{}{}
-				defer func(){ <-sem }()
 				select {
 				case <-ctx.Done():
 					return
 				default:
 				}
+				sem <- struct{}{}
+				start := time.Now()
 				p, err := client.CloneRepository(repo)
+				dur := time.Since(start)
+				success := err == nil
 				mu.Lock()
-				if err != nil { bs.Report.FailedRepositories++ } else { bs.Report.ClonedRepositories++; bs.RepoPaths[repo.Name] = p }
+				if err != nil {
+					bs.Report.FailedRepositories++
+				} else {
+					bs.Report.ClonedRepositories++
+					bs.RepoPaths[repo.Name] = p
+				}
 				mu.Unlock()
+				if bs.Generator != nil && bs.Generator.recorder != nil {
+					bs.Generator.recorder.ObserveCloneRepoDuration(repo.Name, dur, success)
+					bs.Generator.recorder.IncCloneRepoResult(success)
+				}
+				<-sem
 			}()
 		}
 		wg.Wait()
 	}
+
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		return newWarnStageError("clone_repos", fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}

@@ -175,7 +175,7 @@ func (cw *ConfigWatcher) performReload(ctx context.Context) error {
 	slog.Info("Reloading configuration", "config_path", cw.configPath)
 
 	// Load the new configuration
-	newConfig, err := config.LoadV2(cw.configPath)
+	newConfig, err := config.Load(cw.configPath)
 	if err != nil {
 		return fmt.Errorf("failed to load new configuration: %w", err)
 	}

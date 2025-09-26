@@ -8,16 +8,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// V2Config represents the v2 configuration format for daemon mode
-type V2Config struct {
+// Config represents the unified (v2) configuration format for daemon and direct modes.
+type Config struct {
 	Version    string            `yaml:"version"`
 	Daemon     *DaemonConfig     `yaml:"daemon,omitempty"`
+	Build      BuildConfig       `yaml:"build,omitempty"`
 	Forges     []*ForgeConfig    `yaml:"forges"`
 	Filtering  *FilteringConfig  `yaml:"filtering,omitempty"`
 	Versioning *VersioningConfig `yaml:"versioning,omitempty"`
 	Hugo       HugoConfig        `yaml:"hugo"`
 	Monitoring *MonitoringConfig `yaml:"monitoring,omitempty"`
 	Output     OutputConfig      `yaml:"output"`
+	// Optional explicit repository list (direct mode) – replaces legacy v1 top‑level repositories.
+	// When present, these are used directly for build/discover operations. If empty and forges are
+	// configured, auto‑discovery can populate repositories dynamically.
+	Repositories []Repository `yaml:"repositories,omitempty"`
 }
 
 // ForgeConfig represents configuration for a specific forge instance
@@ -110,8 +115,9 @@ type MonitoringLogging struct {
 	Format string `yaml:"format"`
 }
 
-// LoadV2 loads v2 configuration from the specified file
-func LoadV2(configPath string) (*V2Config, error) {
+// (Deprecated comment retained for context) Previous: LoadV2 loads v2 configuration from the specified file.
+// Load loads a configuration file (version 2.x).
+func Load(configPath string) (*Config, error) {
 	// Load .env file if it exists
 	if err := loadEnvFile(); err != nil {
 		// Don't fail if .env doesn't exist, just log it
@@ -130,7 +136,7 @@ func LoadV2(configPath string) (*V2Config, error) {
 	// Expand environment variables in the YAML content
 	expandedData := os.ExpandEnv(string(data))
 
-	var config V2Config
+	var config Config
 	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal v2 config: %w", err)
 	}
@@ -141,20 +147,24 @@ func LoadV2(configPath string) (*V2Config, error) {
 	}
 
 	// Apply defaults
-	if err := applyV2Defaults(&config); err != nil {
+	if err := applyDefaults(&config); err != nil {
 		return nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
 
 	// Validate configuration
-	if err := validateV2Config(&config); err != nil {
+	if err := validateConfig(&config); err != nil {
 		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
 	return &config, nil
 }
 
-// applyV2Defaults applies default values to v2 configuration
-func applyV2Defaults(config *V2Config) error {
+// applyDefaults applies default values to configuration
+func applyDefaults(config *Config) error {
+	// Build defaults
+	if config.Build.CloneConcurrency <= 0 {
+		config.Build.CloneConcurrency = 4
+	}
 	// Hugo defaults
 	if config.Hugo.Title == "" {
 		config.Hugo.Title = "Documentation Portal"
@@ -240,11 +250,21 @@ func applyV2Defaults(config *V2Config) error {
 		config.Monitoring.Logging.Format = "json"
 	}
 
+	// Explicit repository defaults (paths/branch) mirroring legacy behavior
+	for i := range config.Repositories {
+		if len(config.Repositories[i].Paths) == 0 {
+			config.Repositories[i].Paths = []string{"docs"}
+		}
+		if config.Repositories[i].Branch == "" {
+			config.Repositories[i].Branch = "main"
+		}
+	}
+
 	return nil
 }
 
-// validateV2Config validates the v2 configuration
-func validateV2Config(config *V2Config) error {
+// validateConfig validates the configuration
+func validateConfig(config *Config) error {
 	// Validate forges
 	if len(config.Forges) == 0 {
 		return fmt.Errorf("at least one forge must be configured")
@@ -296,14 +316,16 @@ func validateV2Config(config *V2Config) error {
 	return nil
 }
 
-// InitV2 creates a new v2 configuration file with example content
-func InitV2(configPath string, force bool) error {
+// (Deprecated comment retained) Previously: InitV2 creates a new v2 configuration file with example content.
+// Init writes an example configuration file (version 2.0).
+func Init(configPath string, force bool) error {
 	if _, err := os.Stat(configPath); err == nil && !force {
 		return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
 	}
 
-	exampleConfig := V2Config{
+	exampleConfig := Config{
 		Version: "2.0",
+		Build: BuildConfig{CloneConcurrency: 4},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
 				DocsPort:    8080,
@@ -373,6 +395,15 @@ func InitV2(configPath string, force bool) error {
 			Directory: "./site",
 			Clean:     true,
 		},
+		// Example explicit repositories block (optional; forge discovery may also be used)
+		Repositories: []Repository{
+			{
+				URL:    "https://github.com/example/repo1.git",
+				Name:   "repo1",
+				Branch: "main",
+				Paths:  []string{"docs"},
+			},
+		},
 	}
 
 	data, err := yaml.Marshal(&exampleConfig)
@@ -387,8 +418,9 @@ func InitV2(configPath string, force bool) error {
 	return nil
 }
 
-// IsV2Config checks if a configuration file is v2 format by reading the version field
-func IsV2Config(configPath string) (bool, error) {
+// (Deprecated) Previously: IsV2Config checks if a configuration file is v2 format by reading the version field.
+// IsConfigVersion returns true if the config file version field starts with 2.
+func IsConfigVersion(configPath string) (bool, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return false, fmt.Errorf("configuration file not found: %s", configPath)
 	}
@@ -413,3 +445,23 @@ func IsV2Config(configPath string) (bool, error) {
 
 	return strings.HasPrefix(versionCheck.Version, "2."), nil
 }
+
+// ------------------------------------------------------------
+// Backwards compatibility (temporary) – deprecated aliases.
+// ------------------------------------------------------------
+
+// V2Config is deprecated; use Config.
+// Deprecated: use Config.
+type V2Config = Config
+
+// LoadV2 is deprecated; use Load.
+// Deprecated: use Load.
+func LoadV2(path string) (*Config, error) { return Load(path) }
+
+// InitV2 is deprecated; use Init.
+// Deprecated: use Init.
+func InitV2(path string, force bool) error { return Init(path, force) }
+
+// IsV2Config is deprecated; use IsConfigVersion.
+// Deprecated: use IsConfigVersion.
+func IsV2Config(path string) (bool, error) { return IsConfigVersion(path) }

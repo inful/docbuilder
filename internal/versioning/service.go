@@ -48,7 +48,7 @@ func (vs *VersionService) DiscoverRepositoryVersions(repoURL string) (*VersionDi
 }
 
 // GetVersioningConfig creates a VersionConfig from V2Config
-func GetVersioningConfig(v2Config *config.V2Config) *VersionConfig {
+func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 	if v2Config.Versioning == nil {
 		// Return default configuration
 		return &VersionConfig{

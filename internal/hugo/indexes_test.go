@@ -13,7 +13,7 @@ import (
 
 func TestGenerateIndexPages(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Site", Theme: "hextra"}}
+	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "Site", Theme: "hextra"}}
 	gen := NewGenerator(cfg, out)
 	files := []docs.DocFile{
 		{Repository: "repoA", Name: "alpha", RelativePath: "alpha.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("A")},
