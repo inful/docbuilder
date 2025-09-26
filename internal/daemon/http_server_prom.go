@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	m "git.home.luguber.info/inful/docbuilder/internal/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 	promcollect "github.com/prometheus/client_golang/prometheus/collectors"
@@ -26,12 +27,19 @@ var (
 		if defaultDaemonInstance == nil { return 0 }
 		return float64(atomic.LoadInt32(&defaultDaemonInstance.queueLength))
 	})
+	// Last build snapshot gauges
+	daemonLastBuildRenderedPages = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_rendered_pages", Help: "Pages rendered in most recent completed build"}, func() float64 {
+		return float64(atomic.LoadInt64(&lastRenderedPages))
+	})
+	daemonLastBuildRepositories = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_repositories", Help: "Repositories processed in most recent completed build"}, func() float64 {
+		return float64(atomic.LoadInt64(&lastRepositories))
+	})
 )
 
 // register base collectors once
 func init() {
 	promRegistry.MustRegister(daemonBuildsTotal, daemonBuildsFailedTotal)
-	promRegistry.MustRegister(daemonActiveJobsGauge, daemonQueueLengthGauge)
+	promRegistry.MustRegister(daemonActiveJobsGauge, daemonQueueLengthGauge, daemonLastBuildRenderedPages, daemonLastBuildRepositories)
 	promRegistry.MustRegister(promcollect.NewGoCollector(), promcollect.NewProcessCollector(promcollect.ProcessCollectorOpts{}))
 }
 
@@ -40,8 +48,6 @@ func updateDaemonPromMetrics(d *Daemon) {
 	if d == nil || d.metrics == nil { return }
 	snap := d.metrics.GetSnapshot()
 	if v, ok := snap.Counters["build_completed_total"]; ok {
-		// Prometheus counters are monotonically increasing; compute delta naive (approx) by adding difference.
-		// For simplicity (first pass) just set via Add difference from a stored last value in custom metric map.
 		prev := atomicLoadInt64(&lastCompleted)
 		if v > prev { daemonBuildsTotal.Add(float64(v - prev)); atomicStoreInt64(&lastCompleted, v) }
 	}
@@ -49,10 +55,25 @@ func updateDaemonPromMetrics(d *Daemon) {
 		prev := atomicLoadInt64(&lastFailed)
 		if v > prev { daemonBuildsFailedTotal.Add(float64(v - prev)); atomicStoreInt64(&lastFailed, v) }
 	}
+	// Update snapshot gauges from last build report (best effort)
+	if d.buildQueue != nil {
+		if history := d.buildQueue.GetHistory(); len(history) > 0 {
+			if last := history[len(history)-1]; last != nil && last.Metadata != nil {
+				if brRaw, ok := last.Metadata["build_report"]; ok {
+					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
+						atomic.StoreInt64(&lastRenderedPages, int64(br.RenderedPages))
+						atomic.StoreInt64(&lastRepositories, int64(br.Repositories))
+					}
+				}
+			}
+		}
+	}
 }
 
 var lastCompleted int64
 var lastFailed int64
+var lastRenderedPages int64
+var lastRepositories int64
 
 func atomicLoadInt64(p *int64) int64 { return atomic.LoadInt64(p) }
 func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }
