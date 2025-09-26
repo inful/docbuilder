@@ -24,14 +24,15 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Provide `Include(repo *Repository) (bool, reason string)` (method signature adapted to value param)
 - [x] Unit tests: include-all default, exclude pattern, precedence (archived/.docignore/required_paths filtering deferred – handled elsewhere)
 
-### 3. V2 → Legacy Config Conversion
-- [ ] Add `ToLegacy()` method on `*V2Config`
-- [ ] Replace ad-hoc conversion in `performSiteBuild`
-- [ ] Test: ensure field parity (theme, params, menu, output dir)
+### 3. Legacy Config Removal (Completed)
+- [x] Remove legacy v1 config structs & loader
+- [x] Introduce unified `Config` (formerly `V2Config`) with backward-compatible aliases
+- [x] Update generator/daemon/CLI/tests to use unified config
+- [-] `ToLegacy()` no longer required (strategy changed: v1 removed instead of dual-conversion)
 
 ### 4. Theme Constants & Date Formats
 - [ ] Add constants `ThemeDocsy`, `ThemeHextra`
-- [ ] Replace magic strings in generator
+- [ ] Replace magic strings in generator (partial: still string literals)
 - [ ] Add `const TimeFormatRFC3339 = time.RFC3339` (or reuse directly) for consistency
 
 ### 5. Basic Build Report Struct
@@ -80,18 +81,27 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 
 ### 11. Metrics per Stage
 - [x] Add success/failure counters per stage (captured in `BuildReport.StageCounts`)
-- [x] Export basic build outcome counters (success/failed/warning/canceled) via metrics collector hook
-- [x] Expose per-stage counts & rendered pages in status endpoint (metrics export for stage counts still pending)
+- [x] Export basic build outcome counters (success/failed/warning/canceled) via metrics collector hook (placeholder; full exporter TBD)
+- [x] Expose per-stage counts & rendered pages in status endpoint
+- [x] Introduce `metrics.Recorder` interface + integration (stage duration + result emission) (2025-09-27)
+ - [x] Add Prometheus histograms: total build duration & per-stage duration (2025-09-27)
+ - [x] Implement Prometheus exporter (labeled counters + histograms) & HTTP exposure (build tag `prometheus`) (2025-09-27)
+ - [x] Bridge daemon in‑memory counters to Prometheus (`daemon_builds_total`, `daemon_builds_failed_total`) (2025-09-27)
+ - [x] Add runtime gauges: `daemon_active_jobs`, `daemon_queue_length` (2025-09-27)
+ - [x] Add snapshot gauges: `daemon_last_build_rendered_pages`, `daemon_last_build_repositories` (2025-09-27)
+ - [ ] Expose transient/permanent failure counters (`stage_failures_total{transient=}`) (planned)
+ - [ ] Queue wait time histogram (`build_queue_wait_seconds`) (planned)
 
 ### 12. Structured Errors
 - [x] Stage-level structured errors (`StageError` with kinds fatal|warning|canceled)
-- [x] Define domain sentinel errors (e.g., `ErrClone`, `ErrDiscovery`, `ErrHugo`) for retry semantics (wrapping implemented in clone/discovery/hugo paths)
-- [ ] Distinguish transient vs permanent for retry logic (future)
+- [x] Domain sentinel errors (`ErrClone`, `ErrDiscovery`, `ErrHugo`)
+ - [x] Transient vs permanent classification helper (`StageError.Transient()`) + tests (2025-09-27)
+ - [ ] Emit transient/permanent labeled metrics (see Phase 3 item 11 planned counters)
 
 ### 13. Context Cancellation Checks
 - [x] Context-aware site generation (`GenerateSiteWithReportContext`)
-- [x] Cancellation test to ensure early abort
-- [ ] Add cancellation checks in long loops: clone, copy content, discovery (partial)
+- [x] Cancellation test ensures early abort
+- [ ] Add cancellation checks in long loops: clone (partial), copy content, discovery
 
 ### 14. Timeouts for Forge Operations
 - [ ] Wrap forge calls with `context.WithTimeout`
@@ -101,10 +111,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 15. Build Report Enrichment
 - [x] Stage durations populated
 - [x] Report stored in job metadata & surfaced (stage timings)
-- [x] Populate: renderedPages (during copy stage)
-- [x] Populate: clonedRepos, failedRepos (accurate counts via `clone_repos` stage; default prefill removed)
-- [ ] Add docsCount alias or clarify semantics with Files
-- [x] Add staticRendered flag (set on successful Hugo execution and exposed via status)
+- [x] renderedPages incremented via instrumentation hook
+- [x] cloned/failed/skipped repository counts accurate
+- [ ] Add `DocsCount` field (alias to Files) for clarity
+- [x] `StaticRendered` flag recorded and exposed
 - [ ] Persist last successful report for dedicated admin retrieval endpoint
 
 ---
@@ -129,23 +139,24 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 19. Repository Parallel Cloning
 - [ ] Bounded worker pool (n = configurable)
 - [ ] Preserve error collection; partial success continues
-- [ ] Metrics: clone duration histogram
+- [ ] Metrics: clone duration histogram & concurrency gauge
 
 ### 20. Enhanced Link Rewriter (AST Based)
 - [ ] Optional goldmark-based parser to avoid false positives in code blocks
 - [ ] Fallback to regex if parser fails
 
 ### 21. Search Index Stage (Future Feature)
-- [ ] Add stub `PostProcess` stage example
-- [ ] Reserve extension point for indexing
+- [ ] Extend `post_process` stage or add new `index_search` stage
+- [ ] Reserve extension point for indexing backend adapters
 
 ---
 ## Phase 5: Tooling, Docs & Governance
 
 ### 22. golangci-lint Integration
-- [ ] Add `.golangci.yml` with selected linters (errcheck, staticcheck, revive, gocyclo threshold)
+- [ ] Add `.golangci.yml` (errcheck, staticcheck, revive, gocyclo threshold)
 - [ ] Add `make lint` target
-- [ ] Fix initial violations or suppress with justification
+- [ ] Fix violations / justify suppressions
+- [ ] Add CI job for lint
 
 ### 23. Architecture Documentation
 - [ ] Add `docs/architecture.md` summarizing pipeline, components, data flow
@@ -154,6 +165,7 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ### 24. CLI Reference Automation
 - [ ] Generate `docs/cli.md` from Kong help output
 - [ ] Add CI step to detect drift
+- [ ] Optionally embed version/commit info (`docbuilder version` command)
 
 ### 25. Golden Tests
 - [ ] Create `test/golden/` fixtures (index pages, sample transformed page)
@@ -165,7 +177,7 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 
 ---
 ## Optional / Deferred Ideas
-- [ ] Multi-theme simultaneous generation (one content, multiple themes)
+- [-] Multi-theme simultaneous generation (one content, multiple themes)
 - [ ] Pluggable storage backend for repo cache (S3, local FS abstraction)
 - [ ] Webhook signature validation & retries
 - [ ] Diff-based incremental rebuild (only changed repos)
@@ -186,36 +198,45 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - `RewriteRelativeMarkdownLinks` chosen over planned `RewriteInternalLinks` for clarity; doc updated.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
-### Current Status Summary (2025-09-26)
-Completed: Phase 1 items 1 (optional subtask deferred) & 2 (filter include/exclude), item 5, Phase 2 items 6, 7 (except golden test), 8 (clone & discovery stages), structured stage errors, domain sentinel errors, context cancellation (partial), stage timings, build report enrichment (rendered pages, outcome, stage counts, staticRendered, precise clone/fail/skip counts), basic build outcome metrics, status endpoint surfaces enriched fields including skipped_repositories.
-Pending: V2→legacy conversion helper, transient/permanent error classification, additional cancellation checks, docsCount alias, report persistence endpoint, front matter typing, golden tests, per-stage metrics export (stage histograms + counters), retry logic scaffolding, parallel cloning workers, lint integration, ToLegacy tests, repository attribute-based filtering (.docignore / archived) centralization.
-Risk Level: Low – Tests green; filter & skip metrics integrated. Technical debt: missing histograms & retry semantics; config conversion still ad hoc.
+### Current Status Summary (2025-09-27)
+Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8; unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges.
+Pending: Theme constants, builder interface, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, retry scaffolding (leveraging transient), parallel cloning, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
+Risk Level: Low – Observability foundation in place; next structural abstractions isolated.
 
-### Proposed Next Step
-Add per-stage histogram metrics & V2→Legacy conversion helper (`ToLegacy()`), then classify transient errors.
+### Proposed Next Step (Updated 2025-09-27 Post-Metrics & Transient Completion)
+Implement the Builder interface abstraction (Phase 2 item 9) plus minimal retry scaffolding using existing transient classification.
 
-Rationale:
-- Histograms (build_duration_seconds, stage_duration_seconds{stage=...}) unlock SLO/alerting and trend analysis; we already collect raw durations.
-- Formal `ToLegacy()` removes duplicated config translation logic in build queue and centralizes conversion validation.
-- Establishing transient vs permanent classification early prevents ad hoc retry logic later.
+Why This Order:
+- Decouples build execution from queue logic, simplifying future retry & parallelization features.
+- Keeps retry implementation small (wrapper around Builder) while avoiding invasive pipeline changes.
+- Establishes a seam for injecting alternative builders (e.g., experimental parallel clone or distributed executor) without refactoring the queue later.
 
-Execution Outline:
-1. Implement `(*V2Config) ToLegacy() (*config.Config, error)` producing legacy structure; add parity test comparing fields (theme, base URL, params, menu, output dir, repositories length/names).
-2. Add metrics recording in `runStages`: record per-stage duration histogram via metrics collector interface (guard if collector nil). Introduce metrics names: `docbuilder_stage_duration_seconds` (labels: stage), `docbuilder_build_duration_seconds`.
-3. Emit per-stage success/warning/fatal counters via metrics: `docbuilder_stage_result_total{stage, result}`.
-4. Add `StageError` helper `IsTransient()` stub (initially hard-coded mapping: clone errors transient, discovery maybe transient, hugo runtime transient) to be refined later.
-5. Tests: (a) invoke a minimal build and assert metrics collector received expected counter increments (use a fake collector); (b) parity test for `ToLegacy()`.
-6. Update `refactoring.md` and architecture docs to reference new metrics and conversion helper.
+Scope:
+1. Define `type Builder interface { Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) }` (returning report directly).
+2. Implement `SiteBuilder` wrapping existing `GenerateFullSite` / `GenerateSiteWithReport` depending on job type.
+3. Refactor `BuildQueue.executeBuild` to:
+   - Construct context (with timeout if configured in future).
+   - Call injected `Builder`.
+   - Attach returned report to job metadata.
+4. Introduce simple retry policy (max N attempts, backoff) for transient failures:
+   - If final stage error contains any `StageError` where `Transient()==true`, retry.
+   - Emit retry attempt count into job metadata + metrics collector (new counters: `build_retries_total`, `build_retry_exhausted_total`).
+5. Wire builder & retry configuration in daemon initialization (defaults: retries disabled (0) → no behavior change).
+6. Tests:
+   - Unit test: transient error triggers retry (mock builder failing once then succeeding).
+   - Unit test: permanent error does not retry.
+   - Unit test: exceeded retries marks job failed and increments exhausted counter.
+7. Update roadmap checkboxes (Phase 2 item 9, partial for retry scaffolding & metrics additions under Phase 3 / new subsection) and README (short Retry section referencing transient classification).
 
 Acceptance Criteria:
-- Metrics collector (when provided) receives stage duration observations and counters for each stage executed.
-- `ToLegacy()` parity test passes; build queue uses it (single conversion site).
-- No regression in existing tests; added tests cover metrics emission and config conversion.
+- All existing tests pass; new builder & retry tests green.
+- No change to successful build output (content & hugo.yaml) aside from added metadata/metrics.
+- Build queue logs show retry attempts with structured fields: `attempt`, `max_attempts`, `transient=true`.
 
-Follow-on After This Step:
-- Implement retry scaffolding using transient classification.
-- Add parallel cloning worker pool (bounded, metrics for concurrency).
-- Persist last successful `BuildReport` endpoint.
+Follow-On After This Step:
+- Implement parallel cloning (Phase 4 item 19) leveraging decoupled Builder.
+- Add queue wait time histogram and transient/permanent failure counters.
+- Persist last successful BuildReport to disk for post-restart visibility.
 
 ---
 ## Quick Start Sequence (Recommended)
