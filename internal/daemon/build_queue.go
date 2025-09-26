@@ -1,16 +1,16 @@
 package daemon
 
 import (
-	"context"
-	"fmt"
-	"log/slog"
-	"sync"
-	"time"
+    "context"
+    "fmt"
+    "log/slog"
+    "sync"
+    "time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
+    "git.home.luguber.info/inful/docbuilder/internal/config"
+    "git.home.luguber.info/inful/docbuilder/internal/hugo"
+    "git.home.luguber.info/inful/docbuilder/internal/logfields"
+    "git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 // BuildType represents the type of build job
@@ -73,8 +73,9 @@ type BuildQueue struct {
 	stopChan    chan struct{}
 	wg          sync.WaitGroup
 	builder     Builder
-	// retry policy
-	retryCfg config.BuildConfig
+	// retry policy configuration (source) + derived policy
+	retryCfg   config.BuildConfig
+	retryPolicy RetryPolicy
 	recorder metrics.Recorder
 }
 
@@ -88,22 +89,26 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 	}
 
 	return &BuildQueue{
-		jobs:        make(chan *BuildJob, maxSize),
-		workers:     workers,
-		maxSize:     maxSize,
-		active:      make(map[string]*BuildJob),
-		history:     make([]*BuildJob, 0),
-		historySize: 50, // Keep last 50 completed jobs
-		stopChan:    make(chan struct{}),
-		builder:     NewSiteBuilder(),
-		retryCfg:    config.BuildConfig{},
-		recorder:    metrics.NoopRecorder{},
+		jobs:         make(chan *BuildJob, maxSize),
+		workers:      workers,
+		maxSize:      maxSize,
+		active:       make(map[string]*BuildJob),
+		history:      make([]*BuildJob, 0),
+		historySize:  50, // Keep last 50 completed jobs
+		stopChan:     make(chan struct{}),
+		builder:      NewSiteBuilder(),
+		retryCfg:     config.BuildConfig{},
+		retryPolicy:  DefaultRetryPolicy(),
+		recorder:     metrics.NoopRecorder{},
 	}
 }
 
 // ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
 	bq.retryCfg = cfg
+	initial, _ := time.ParseDuration(cfg.RetryInitialDelay)
+	max, _ := time.ParseDuration(cfg.RetryMaxDelay)
+	bq.retryPolicy = NewRetryPolicy(cfg.RetryBackoff, initial, max, cfg.MaxRetries)
 }
 
 // SetRecorder injects a metrics recorder for retry metrics (optional).
@@ -260,25 +265,10 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 
 // executeBuild performs the actual build process
 func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
-	// Route all build types through unified builder.
+	// Route all build types through unified builder using retryPolicy.
 	attempts := 0
-	maxRetries := bq.retryCfg.MaxRetries
-	if maxRetries < 0 {
-		maxRetries = 0
-	}
-	initialDelay, _ := time.ParseDuration(bq.retryCfg.RetryInitialDelay)
-	if initialDelay <= 0 {
-		initialDelay = time.Second
-	}
-	maxDelay, _ := time.ParseDuration(bq.retryCfg.RetryMaxDelay)
-	if maxDelay <= 0 {
-		maxDelay = 30 * time.Second
-	}
-	backoffMode := bq.retryCfg.RetryBackoff
-	if backoffMode == "" {
-		backoffMode = "linear"
-	}
-
+	policy := bq.retryPolicy
+	if policy.Initial <= 0 { policy = DefaultRetryPolicy() } // fallback safety
 	totalRetries := 0
 	exhausted := false
 
@@ -311,8 +301,8 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 				}
 			}
 		}
-		if !transient || totalRetries >= maxRetries {
-			if transient && totalRetries >= maxRetries {
+		if !transient || totalRetries >= policy.MaxRetries {
+			if transient && totalRetries >= policy.MaxRetries {
 				slog.Warn("Transient error but retries exhausted", logfields.JobID(job.ID), slog.Int("attempts", attempts))
 				if report != nil {
 					report.Retries = totalRetries
@@ -331,8 +321,8 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		if rec != nil && transientStage != "" {
 			rec.IncBuildRetry(transientStage)
 		}
-		delay := computeBackoffDelay(backoffMode, initialDelay, maxDelay, totalRetries)
-		slog.Warn("Transient build error, retrying", logfields.JobID(job.ID), slog.Int("attempt", attempts), slog.Int("retry", totalRetries), slog.Int("max_retries", maxRetries), logfields.Stage(transientStage), slog.Duration("delay", delay), slog.String("error", err.Error()))
+		delay := policy.Delay(totalRetries)
+		slog.Warn("Transient build error, retrying", logfields.JobID(job.ID), slog.Int("attempt", attempts), slog.Int("retry", totalRetries), slog.Int("max_retries", policy.MaxRetries), logfields.Stage(transientStage), slog.Duration("delay", delay), slog.String("error", err.Error()))
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
@@ -341,24 +331,10 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	}
 }
 
-// computeBackoffDelay returns delay for nth retry (retryCount starts at 1 for first retry attempt after initial failure)
+// computeBackoffDelay deprecated: use RetryPolicy.Delay (kept temporarily for test backwards compatibility)
+// Deprecated: will be removed after tests migrate fully.
 func computeBackoffDelay(mode string, initial, max time.Duration, retryCount int) time.Duration {
-	switch mode {
-	case "fixed":
-		return initial
-	case "exponential":
-		d := initial * (1 << (retryCount - 1))
-		if d > max {
-			return max
-		}
-		return d
-	default: // linear
-		d := time.Duration(retryCount) * initial
-		if d > max {
-			return max
-		}
-		return d
-	}
+    return NewRetryPolicy(mode, initial, max, 0).Delay(retryCount)
 }
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
