@@ -7,6 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/repository"
 )
 
 // Generator handles Hugo site generation
@@ -86,10 +87,39 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	report := newBuildReport(0, 0) // counts filled after discovery
 	g.onPageRendered = func() { report.RenderedPages++ }
 	bs := newBuildState(g, nil, report)
+
+	// Apply repository filter if config has patterns (future extension: config fields).
+	// Placeholder: look for params under g.config.Hugo.Params["filter"] map with keys include/exclude.
+	if g.config != nil && g.config.Hugo.Params != nil {
+		if raw, ok := g.config.Hugo.Params["filter"]; ok {
+			if m, ok2 := raw.(map[string]any); ok2 {
+				var includes, excludes []string
+				if v, ok := m["include"].([]any); ok {
+					for _, it := range v { if s, ok := it.(string); ok { includes = append(includes, s) } }
+				}
+				if v, ok := m["exclude"].([]any); ok {
+					for _, it := range v { if s, ok := it.(string); ok { excludes = append(excludes, s) } }
+				}
+				if len(includes) > 0 || len(excludes) > 0 {
+					if f, err := repository.NewFilter(includes, excludes); err == nil {
+						filtered := make([]config.Repository, 0, len(repositories))
+						for _, r := range repositories {
+							if ok, _ := f.Include(r); ok { filtered = append(filtered, r) } else { report.SkippedRepositories++ }
+						}
+						repositories = filtered
+					}
+				}
+			}
+		}
+	}
+
 	bs.Repositories = repositories
 	bs.WorkspaceDir = filepath.Clean(workspaceDir)
 
-	stages := []struct{ name string; fn Stage }{
+	stages := []struct {
+		name string
+		fn   Stage
+	}{
 		{"prepare_output", stagePrepareOutput},
 		{"clone_repos", stageCloneRepos},
 		{"discover_docs", stageDiscoverDocs},

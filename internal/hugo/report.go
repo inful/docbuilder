@@ -18,6 +18,7 @@ type BuildReport struct {
 	// Enrichment fields (incremental observability additions)
 	ClonedRepositories int                   // repositories successfully cloned or validated
 	FailedRepositories int                   // repositories that failed to clone/auth
+	SkippedRepositories int                  // repositories filtered out before cloning
 	RenderedPages      int                   // markdown pages successfully processed & written
 	StageCounts        map[string]StageCount // per-stage classification counts
 	Outcome            string                // derived overall outcome: success|warning|failed|canceled
