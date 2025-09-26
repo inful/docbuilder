@@ -275,6 +275,8 @@ DocBuilder exposes build and runtime metrics in two forms:
 | `docbuilder_build_outcomes_total` | counter | `outcome` | Final build outcomes: `success`, `warning`, `failed`, `canceled`. |
 | `docbuilder_daemon_active_jobs` | gauge | (none) | Number of build jobs currently executing. |
 | `docbuilder_daemon_queue_length` | gauge | (none) | Number of queued build jobs waiting for a worker. |
+| `docbuilder_daemon_last_build_rendered_pages` | gauge | (none) | Pages rendered in the most recently completed build (snapshot). |
+| `docbuilder_daemon_last_build_repositories` | gauge | (none) | Repositories processed in the most recently completed build (snapshot). |
 
 Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Future versions may export these as Prometheus gauges. Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) are already exposed for active concurrency visibility.
 
