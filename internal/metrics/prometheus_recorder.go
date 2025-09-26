@@ -11,14 +11,16 @@ import (
 
 // PrometheusRecorder implements Recorder using Prometheus metrics.
 type PrometheusRecorder struct {
-	once          sync.Once
-	stageDuration *prom.HistogramVec
-	buildDuration prom.Histogram
-	stageResults  *prom.CounterVec
-	buildOutcome  *prom.CounterVec
-	cloneDuration *prom.HistogramVec
-	cloneResults  *prom.CounterVec
+	once             sync.Once
+	stageDuration    *prom.HistogramVec
+	buildDuration    prom.Histogram
+	stageResults     *prom.CounterVec
+	buildOutcome     *prom.CounterVec
+	cloneDuration    *prom.HistogramVec
+	cloneResults     *prom.CounterVec
 	cloneConcurrency prom.Gauge
+	retries          *prom.CounterVec
+	retriesExhausted *prom.CounterVec
 }
 
 // NewPrometheusRecorder constructs and registers Prometheus metrics (idempotent).
@@ -66,7 +68,17 @@ func NewPrometheusRecorder(reg *prom.Registry) *PrometheusRecorder {
 			Name:      "clone_concurrency",
 			Help:      "Observed clone concurrency for the last build stage",
 		})
-		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency)
+		pr.retries = prom.NewCounterVec(prom.CounterOpts{
+			Namespace: "docbuilder",
+			Name:      "build_retries_total",
+			Help:      "Total build stage retries (transient failures)",
+		}, []string{"stage"})
+		pr.retriesExhausted = prom.NewCounterVec(prom.CounterOpts{
+			Namespace: "docbuilder",
+			Name:      "build_retry_exhausted_total",
+			Help:      "Count of stages where retries were exhausted", 
+		}, []string{"stage"})
+		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted)
 	})
 	return pr
 }
@@ -123,4 +135,18 @@ func (p *PrometheusRecorder) SetCloneConcurrency(n int) {
 		return
 	}
 	p.cloneConcurrency.Set(float64(n))
+}
+
+func (p *PrometheusRecorder) IncBuildRetry(stage string) {
+	if p == nil || p.retries == nil {
+		return
+	}
+	p.retries.WithLabelValues(stage).Inc()
+}
+
+func (p *PrometheusRecorder) IncBuildRetryExhausted(stage string) {
+	if p == nil || p.retriesExhausted == nil {
+		return
+	}
+	p.retriesExhausted.WithLabelValues(stage).Inc()
 }

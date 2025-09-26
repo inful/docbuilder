@@ -165,6 +165,21 @@ func applyDefaults(config *Config) error {
 	if config.Build.CloneConcurrency <= 0 {
 		config.Build.CloneConcurrency = 4
 	}
+	if config.Build.MaxRetries < 0 {
+		config.Build.MaxRetries = 0
+	}
+	if config.Build.MaxRetries == 0 { // default 2 retries (3 total attempts) unless explicitly set >0
+		config.Build.MaxRetries = 2
+	}
+	if config.Build.RetryBackoff == "" {
+		config.Build.RetryBackoff = "linear"
+	}
+	if config.Build.RetryInitialDelay == "" {
+		config.Build.RetryInitialDelay = "1s"
+	}
+	if config.Build.RetryMaxDelay == "" {
+		config.Build.RetryMaxDelay = "30s"
+	}
 	// Hugo defaults
 	if config.Hugo.Title == "" {
 		config.Hugo.Title = "Documentation Portal"
@@ -325,7 +340,7 @@ func Init(configPath string, force bool) error {
 
 	exampleConfig := Config{
 		Version: "2.0",
-		Build: BuildConfig{CloneConcurrency: 4},
+		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: "linear", RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
 				DocsPort:    8080,

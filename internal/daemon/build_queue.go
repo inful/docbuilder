@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
@@ -70,8 +71,8 @@ type BuildQueue struct {
 	stopChan    chan struct{}
 	wg          sync.WaitGroup
 	builder     Builder
-	// retry policy (simple for now)
-	maxRetries int
+	// retry policy
+	retryCfg   config.BuildConfig
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -92,8 +93,13 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
 		builder:     NewSiteBuilder(),
-		maxRetries:  0,
+		retryCfg:    config.BuildConfig{},
 	}
+}
+
+// ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
+func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
+    bq.retryCfg = cfg
 }
 
 // Start begins processing jobs with the configured number of workers
@@ -245,39 +251,96 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 
 // executeBuild performs the actual build process
 func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
-	// Route all build types through unified builder; specialization can evolve inside builder if needed.
+	// Route all build types through unified builder.
 	attempts := 0
+	maxRetries := bq.retryCfg.MaxRetries
+	if maxRetries < 0 { maxRetries = 0 }
+	initialDelay, _ := time.ParseDuration(bq.retryCfg.RetryInitialDelay)
+	if initialDelay <= 0 { initialDelay = time.Second }
+	maxDelay, _ := time.ParseDuration(bq.retryCfg.RetryMaxDelay)
+	if maxDelay <= 0 { maxDelay = 30 * time.Second }
+	backoffMode := bq.retryCfg.RetryBackoff
+	if backoffMode == "" { backoffMode = "linear" }
+
+	totalRetries := 0
+	exhausted := false
+
 	for {
 		attempts++
 		report, err := bq.builder.Build(ctx, job)
-		if job.Metadata == nil {
-			job.Metadata = make(map[string]interface{})
-		}
+		if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
 		if report != nil {
 			job.Metadata["build_report"] = report
 		}
 		if err == nil {
+			// attach retry summary if present
+			if report != nil && totalRetries > 0 {
+				report.Retries = totalRetries
+				report.RetriesExhausted = exhausted
+			}
 			return nil
 		}
-		// Determine if retry is allowed (placeholder: look for transient StageError in report)
+		// Determine if retry is allowed (look for transient StageError in report)
 		transient := false
+		transientStage := ""
 		if report != nil && len(report.Errors) > 0 {
 			for _, e := range report.Errors {
 				if se, ok := e.(*hugo.StageError); ok && se.Transient() {
 					transient = true
+					transientStage = se.Stage
 					break
 				}
 			}
 		}
-		if !transient || attempts > bq.maxRetries {
-			if transient && attempts > bq.maxRetries {
+		if !transient || totalRetries >= maxRetries {
+			if transient && totalRetries >= maxRetries {
 				slog.Warn("Transient error but retries exhausted", "job_id", job.ID, "attempts", attempts)
+				if report != nil {
+					report.Retries = totalRetries
+					report.RetriesExhausted = true
+				}
+				if recorder := extractRecorder(report); recorder != nil && transientStage != "" {
+					recorder.IncBuildRetryExhausted(transientStage)
+				}
 			}
 			return err
 		}
-		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "max_retries", bq.maxRetries, "error", err)
-		time.Sleep(time.Duration(attempts) * time.Second) // simple linear backoff
+		// perform retry
+		totalRetries++
+		if recorder := extractRecorder(report); recorder != nil && transientStage != "" {
+			recorder.IncBuildRetry(transientStage)
+		}
+		delay := computeBackoffDelay(backoffMode, initialDelay, maxDelay, totalRetries)
+		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "retry", totalRetries, "max_retries", maxRetries, "stage", transientStage, "delay", delay, "error", err)
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
+}
+
+// computeBackoffDelay returns delay for nth retry (retryCount starts at 1 for first retry attempt after initial failure)
+func computeBackoffDelay(mode string, initial, max time.Duration, retryCount int) time.Duration {
+	switch mode {
+	case "fixed":
+		return initial
+	case "exponential":
+		d := initial * (1 << (retryCount - 1))
+		if d > max { return max }
+		return d
+	default: // linear
+		d := time.Duration(retryCount) * initial
+		if d > max { return max }
+		return d
+	}
+}
+
+// extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
+func extractRecorder(report *hugo.BuildReport) interface{ IncBuildRetry(string); IncBuildRetryExhausted(string) } {
+	// We don't have direct access to generator here; future improvement could thread recorder through job.
+	// For now, no-op returning nil (retry metrics recorded at queue level not feasible without passing recorder).
+	return nil
 }
 
 // (Legacy per-type build wrapper methods removed; Builder abstraction handles all types.)

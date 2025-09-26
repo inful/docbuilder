@@ -23,15 +23,19 @@ type Recorder interface {
 	ObserveCloneRepoDuration(repo string, d time.Duration, success bool)
 	IncCloneRepoResult(success bool)
 	SetCloneConcurrency(n int)
+	IncBuildRetry(stage string)
+	IncBuildRetryExhausted(stage string)
 }
 
 // NoopRecorder is a Recorder that does nothing (default when metrics not configured).
 type NoopRecorder struct{}
 
-func (NoopRecorder) ObserveStageDuration(string, time.Duration) {}
-func (NoopRecorder) ObserveBuildDuration(time.Duration)         {}
-func (NoopRecorder) IncStageResult(string, ResultLabel)         {}
-func (NoopRecorder) IncBuildOutcome(string)                     {}
+func (NoopRecorder) ObserveStageDuration(string, time.Duration)           {}
+func (NoopRecorder) ObserveBuildDuration(time.Duration)                   {}
+func (NoopRecorder) IncStageResult(string, ResultLabel)                   {}
+func (NoopRecorder) IncBuildOutcome(string)                               {}
 func (NoopRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
-func (NoopRecorder) IncCloneRepoResult(bool)                    {}
-func (NoopRecorder) SetCloneConcurrency(int)                    {}
+func (NoopRecorder) IncCloneRepoResult(bool)                              {}
+func (NoopRecorder) SetCloneConcurrency(int)                              {}
+func (NoopRecorder) IncBuildRetry(string)                                 {}
+func (NoopRecorder) IncBuildRetryExhausted(string)                        {}

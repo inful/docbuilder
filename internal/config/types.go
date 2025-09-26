@@ -40,9 +40,14 @@ type HugoConfig struct {
 // Additional fields (retry limits, timeouts, etc.) can be added iteratively without
 // breaking existing configurations. All zero values trigger sensible defaults.
 type BuildConfig struct {
-    // CloneConcurrency caps the number of repositories cloned in parallel within a single build.
-    // Defaults to 4; values <1 are coerced to 1; values larger than the repo count are bounded.
-    CloneConcurrency int `yaml:"clone_concurrency,omitempty"`
+	// CloneConcurrency caps the number of repositories cloned in parallel within a single build.
+	// Defaults to 4; values <1 are coerced to 1; values larger than the repo count are bounded.
+	CloneConcurrency int `yaml:"clone_concurrency,omitempty"`
+	// Retry policy fields (apply to transient build failures at stage granularity)
+	MaxRetries        int    `yaml:"max_retries,omitempty"`          // total retry attempts after first attempt (default 2)
+	RetryBackoff      string `yaml:"retry_backoff,omitempty"`        // fixed|linear|exponential (default linear)
+	RetryInitialDelay string `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
+	RetryMaxDelay     string `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
 }
 
 // Menu represents a Hugo menu item
