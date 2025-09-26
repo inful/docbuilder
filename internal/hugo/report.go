@@ -23,6 +23,8 @@ type BuildReport struct {
 	StageCounts         map[string]StageCount // per-stage classification counts
 	Outcome             string                // derived overall outcome: success|warning|failed|canceled
 	StaticRendered      bool                  // true if Hugo static site render executed successfully
+	Retries             int                   // total retry attempts (all stages combined)
+	RetriesExhausted    bool                  // true if any stage exhausted retry budget
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
