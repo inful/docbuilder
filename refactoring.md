@@ -19,10 +19,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [ ] Optional: guard code blocks (avoid rewriting inside fenced blocks) (Deferred – regex adequate for now)
 
 ### 2. Filtering Logic Object
-- [ ] Introduce `RepositoryFilter` struct holding compiled include/exclude patterns
-- [ ] Precompile wildcard patterns to regex once
-- [ ] Provide `Include(repo *Repository) (bool, reason string)`
-- [ ] Unit tests: full include, exclude, archived, .docignore, required_paths disabled
+- [x] Introduce `RepositoryFilter` struct holding compiled include/exclude patterns
+- [x] Precompile wildcard patterns to regex once
+- [x] Provide `Include(repo *Repository) (bool, reason string)` (method signature adapted to value param)
+- [x] Unit tests: include-all default, exclude pattern, precedence (archived/.docignore/required_paths filtering deferred – handled elsewhere)
 
 ### 3. V2 → Legacy Config Conversion
 - [ ] Add `ToLegacy()` method on `*V2Config`
@@ -187,36 +187,35 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-26)
-Completed: Phase 1 item 1 (optional subtask deferred), item 5 (core), Phase 2 items 6, 7 (except golden test), 8 (clone_repos & discover_docs integrated), structured stage errors, domain sentinel errors, context cancellation (partial), stage timings, build report enrichment (rendered pages, outcome, stage counts, staticRendered, precise clone/fail counts), basic build outcome metrics, status endpoint surfaces enriched fields.
-Pending: RepositoryFilter object (Phase 1 item 2), V2→legacy conversion helper, domain transient/permanent classification, cancellation checks in clone/content/discovery loops, docsCount alias vs Files, report persistence endpoint, front matter typing, golden tests, per-stage metrics export (stage counts + histograms), skipped repository metrics, retry logic scaffolding, histogram instrumentation for new stages.
-Risk Level: Low – Tests green; new stages working. Technical debt: lack of filtering & skip metrics; metrics histograms not yet implemented.
+Completed: Phase 1 items 1 (optional subtask deferred) & 2 (filter include/exclude), item 5, Phase 2 items 6, 7 (except golden test), 8 (clone & discovery stages), structured stage errors, domain sentinel errors, context cancellation (partial), stage timings, build report enrichment (rendered pages, outcome, stage counts, staticRendered, precise clone/fail/skip counts), basic build outcome metrics, status endpoint surfaces enriched fields including skipped_repositories.
+Pending: V2→legacy conversion helper, transient/permanent error classification, additional cancellation checks, docsCount alias, report persistence endpoint, front matter typing, golden tests, per-stage metrics export (stage histograms + counters), retry logic scaffolding, parallel cloning workers, lint integration, ToLegacy tests, repository attribute-based filtering (.docignore / archived) centralization.
+Risk Level: Low – Tests green; filter & skip metrics integrated. Technical debt: missing histograms & retry semantics; config conversion still ad hoc.
 
 ### Proposed Next Step
-Implement `RepositoryFilter` and skipped repository metrics + tests.
+Add per-stage histogram metrics & V2→Legacy conversion helper (`ToLegacy()`), then classify transient errors.
 
 Rationale:
-- Filtering before cloning reduces wasted network/time and gives operators clarity on why certain repos are omitted.
-- Skipped count plus reasons (logged) improves diagnostics and complements existing cloned/failed metrics.
-- Lays groundwork for retry classification (we won’t attempt to clone excluded repos) and future parallel cloning.
+- Histograms (build_duration_seconds, stage_duration_seconds{stage=...}) unlock SLO/alerting and trend analysis; we already collect raw durations.
+- Formal `ToLegacy()` removes duplicated config translation logic in build queue and centralizes conversion validation.
+- Establishing transient vs permanent classification early prevents ad hoc retry logic later.
 
 Execution Outline:
-1. Add `internal/repository/filter.go` defining `RepositoryFilter` with include/exclude pattern compilation (glob -> regex), optional tag/metadata checks.
-2. Add `Include(repo config.Repository) (bool, string)` returning decision & reason (reason for exclusion).
-3. Integrate filter into `GenerateFullSite` path: preprocess `repositories` slice producing filtered list + skipped counter.
-4. Extend `BuildReport` with `SkippedRepositories` and update status endpoint (omit field when zero).
-5. Tests: (a) include-all default; (b) exclude by name glob; (c) mixed include/exclude precedence; (d) skip counted and reason returned; (e) pipeline with all skipped yields warning in `clone_repos` (no attempts).
-6. Update roadmap & docs to reflect new struct and field.
-7. (Optional) Emit metric `repositories_skipped_total`.
+1. Implement `(*V2Config) ToLegacy() (*config.Config, error)` producing legacy structure; add parity test comparing fields (theme, base URL, params, menu, output dir, repositories length/names).
+2. Add metrics recording in `runStages`: record per-stage duration histogram via metrics collector interface (guard if collector nil). Introduce metrics names: `docbuilder_stage_duration_seconds` (labels: stage), `docbuilder_build_duration_seconds`.
+3. Emit per-stage success/warning/fatal counters via metrics: `docbuilder_stage_result_total{stage, result}`.
+4. Add `StageError` helper `IsTransient()` stub (initially hard-coded mapping: clone errors transient, discovery maybe transient, hugo runtime transient) to be refined later.
+5. Tests: (a) invoke a minimal build and assert metrics collector received expected counter increments (use a fake collector); (b) parity test for `ToLegacy()`.
+6. Update `refactoring.md` and architecture docs to reference new metrics and conversion helper.
 
 Acceptance Criteria:
-- Filtered build only clones expected repositories; skipped count accurate; tests cover edge cases.
-- BuildReport & status show `skipped_repositories` when >0.
-- No regression in existing tests; new tests green.
+- Metrics collector (when provided) receives stage duration observations and counters for each stage executed.
+- `ToLegacy()` parity test passes; build queue uses it (single conversion site).
+- No regression in existing tests; added tests cover metrics emission and config conversion.
 
 Follow-on After This Step:
-- Add per-stage histograms & metrics export.
-- Implement transient error classification & retry plan.
-- Introduce parallel cloning worker pool.
+- Implement retry scaffolding using transient classification.
+- Add parallel cloning worker pool (bounded, metrics for concurrency).
+- Persist last successful `BuildReport` endpoint.
 
 ---
 ## Quick Start Sequence (Recommended)
