@@ -35,59 +35,6 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 
 ## Configuration (Unified v2)
 
-The only supported configuration format is version 2 (`version: "2.0"`). The earlier v1 format (no `version` key, top-level `repositories:`) has been removed.
-
-### Environment Variables
-
-The application automatically loads environment variables from `.env` and `.env.local` files.
-
-### Example Configuration
-
-Minimal config combining forge + explicit repositories:
-
-```yaml
-version: "2.0"
-- `docbuilder daemon` – continuous sync & build mode
-# docbuilder
-
-A Go utility for creating documentation sites from multiple Git repositories using Hugo.
-
-## Features
-
-- Clone documentation from multiple Git repositories
-- Support for various authentication methods (SSH, tokens, basic auth)
-- Generate Hugo-compatible static sites
-- Optional automatic rendering (invoke the Hugo binary) to produce a ready-to-serve `public/` folder
-- Environment variable support with `.env` files
-- Incremental builds for faster updates
-- Auto-discover repositories (v2 config) across all organizations accessible to the token (Forgejo)
-- Theme-aware configuration (Hextra & Docsy) using Hugo Modules
-
-## Quick Start
-
-1. **Build the application**:
-   ```bash
-   make build
-   ```
-
-2. **Initialize configuration**:
-   ```bash
-   ./bin/docbuilder init
-   ```
-
-3. **Set up environment variables** (optional):
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   ```
-
-4. **Build documentation site**:
-   ```bash
-   ./bin/docbuilder build -v
-   ```
-
-## Configuration
-
 ### Environment Variables
 
 The application automatically loads environment variables from `.env` and `.env.local` files. Example:
@@ -99,7 +46,7 @@ GIT_ACCESS_TOKEN=your_git_access_token_here
 
 ### Configuration File
 
-Example `config.yaml`:
+Example minimal `config.yaml` (direct build mode):
 
 ```yaml
 repositories:
@@ -122,13 +69,13 @@ output:
   clean: true
 ```
 
-### Daemon (V2) Configuration & Auto-Discovery
+### Daemon (v2) Configuration & Discovery
 
 When running the daemon (`docbuilder daemon`) you use the v2 config format (version: "2.0").
 Organizations / groups for a forge are OPTIONAL. If you omit both `organizations:` and `groups:` the daemon enters
 an auto-discovery mode: it enumerates all organizations/groups your token can access and then lists their repositories.
 
-Minimal Forgejo example with auto-discovery:
+Forge example with scoped discovery:
 
 ```yaml
 version: "2.0"
@@ -157,27 +104,29 @@ output:
   clean: true
 ```
 
-Notes:
+Key notes:
+
 - Provide explicit `organizations` / `groups` to limit scope and speed up discovery.
-- Auto-discovery may increase API calls if you have access to many organizations.
 - Per-forge discovery errors are exposed at `/status?format=json` under `discovery_errors`.
-- To include repositories even if they have no matching documentation paths, set `required_paths: []` (empty array) which disables pruning.
+- To include repositories even if they have no matching documentation paths, set `required_paths: []`.
+- The `build` section (see below) controls performance knobs like clone concurrency.
 
 ### Static Site Rendering (Running Hugo Automatically)
 
 By default DocBuilder only scaffolds a Hugo project (content + `hugo.yaml`). To also produce a pre-built static site (`site/public/`) you can opt in via environment variables:
 
-```
+```bash
 DOCBUILDER_RUN_HUGO=1 docbuilder build -c config.yaml
 ```
 
 You can skip execution explicitly (useful in CI matrix) with:
 
-```
+```bash
 DOCBUILDER_SKIP_HUGO=1 docbuilder build -c config.yaml
 ```
 
 Precedence:
+ 
 1. If `DOCBUILDER_SKIP_HUGO=1` -> never run.
 2. Else if `DOCBUILDER_RUN_HUGO=1` -> run.
 3. Else -> scaffold only.
@@ -189,12 +138,13 @@ Hugo must be installed and on `PATH`. If the build fails, the scaffolded site re
 When `hugo.theme` is set to `hextra` or `docsy`, DocBuilder configures Hugo Modules automatically:
 
 - Creates / maintains a minimal `go.mod` (sanitizes module name from `base_url` host; ports are stripped).
-- Adds theme-specific params (search, edit links, UI defaults, offline search for Docsy, FlexSearch config for Hextra).
+- Adds theme-specific params (search, edit links, UI defaults, offline search for the Docsy theme, FlexSearch config for Hextra).
 - Avoids using the legacy `theme` filesystem lookup; relies on modules for reproducible builds.
 
 Pinning:
+
 - Hextra is pinned to a stable version in `go.mod` automatically.
-- Docsy currently floats (you can pin manually by editing `go.mod`).
+- The Docsy theme currently floats (you can pin manually by editing `go.mod`).
 
 ### Edit Links
 
@@ -277,8 +227,11 @@ DocBuilder exposes build and runtime metrics in two forms:
 | `docbuilder_daemon_queue_length` | gauge | (none) | Number of queued build jobs waiting for a worker. |
 | `docbuilder_daemon_last_build_rendered_pages` | gauge | (none) | Pages rendered in the most recently completed build (snapshot). |
 | `docbuilder_daemon_last_build_repositories` | gauge | (none) | Repositories processed in the most recently completed build (snapshot). |
+| `docbuilder_clone_repo_duration_seconds` | histogram | `repo`,`result` | Per-repository clone duration (result = success or failed). |
+| `docbuilder_clone_repo_results_total` | counter | `result` | Clone attempts by outcome (success or failed). |
+| `docbuilder_clone_concurrency` | gauge | (none) | Effective clone concurrency used in the last `clone_repos` stage. |
 
-Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Future versions may export these as Prometheus gauges. Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) are already exposed for active concurrency visibility.
+Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) provide active concurrency visibility.
 
 ### Transient Error Classification
 
@@ -322,5 +275,16 @@ Prometheus metric names are prefixed with `docbuilder_` and use `_seconds` suffi
 
 - Histogram bucket tuning / custom buckets via config.
 - Transient vs permanent failure counters.
-- Retry attempt counters once automated retry is implemented.
-- Clone concurrency gauges for upcoming parallel clone feature.
+- Retry attempt counters (after full retry policy exposure in config).
+- Optional reduction of per-repo metric cardinality (toggle labels or aggregation).
+
+### Build Performance Tuning
+
+`build.clone_concurrency` limits parallel repository clone operations per build (default 4). Example:
+
+```yaml
+build:
+  clone_concurrency: 6   # bounded automatically by repository count
+```
+
+Values <1 are coerced to 1. Oversized values are capped at the number of repositories in the build. Metrics reflect the effective concurrency.
