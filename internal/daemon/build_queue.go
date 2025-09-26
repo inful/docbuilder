@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
@@ -156,7 +157,7 @@ func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 
 	select {
 	case bq.jobs <- job:
-		slog.Info("Build job enqueued", "job_id", job.ID, "type", job.Type, "priority", job.Priority)
+		slog.Info("Build job enqueued", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.JobPriority(int(job.Priority)))
 		return nil
 	default:
 		return fmt.Errorf("build queue is full")
@@ -227,7 +228,7 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.active[job.ID] = job
 	bq.mu.Unlock()
 
-	slog.Info("Build job started", "job_id", job.ID, "type", job.Type, "worker", workerID)
+	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.String("worker", workerID))
 
 	// Execute the build
 	err := bq.executeBuild(jobCtx, job)
@@ -251,16 +252,9 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.mu.Unlock()
 
 	if err != nil {
-		slog.Error("Build job failed",
-			"job_id", job.ID,
-			"type", job.Type,
-			"duration", duration,
-			"error", err)
+		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), slog.String("error", err.Error()))
 	} else {
-		slog.Info("Build job completed",
-			"job_id", job.ID,
-			"type", job.Type,
-			"duration", duration)
+		slog.Info("Build job completed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration))
 	}
 }
 
@@ -319,7 +313,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		}
 		if !transient || totalRetries >= maxRetries {
 			if transient && totalRetries >= maxRetries {
-				slog.Warn("Transient error but retries exhausted", "job_id", job.ID, "attempts", attempts)
+				slog.Warn("Transient error but retries exhausted", logfields.JobID(job.ID), slog.Int("attempts", attempts))
 				if report != nil {
 					report.Retries = totalRetries
 					report.RetriesExhausted = true
@@ -338,7 +332,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 			rec.IncBuildRetry(transientStage)
 		}
 		delay := computeBackoffDelay(backoffMode, initialDelay, maxDelay, totalRetries)
-		slog.Warn("Transient build error, retrying", "job_id", job.ID, "attempt", attempts, "retry", totalRetries, "max_retries", maxRetries, "stage", transientStage, "delay", delay, "error", err)
+		slog.Warn("Transient build error, retrying", logfields.JobID(job.ID), slog.Int("attempt", attempts), slog.Int("retry", totalRetries), slog.Int("max_retries", maxRetries), logfields.Stage(transientStage), slog.Duration("delay", delay), slog.String("error", err.Error()))
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
