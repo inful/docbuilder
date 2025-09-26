@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"gopkg.in/yaml.v3"
 )
 
 // generateHugoConfig creates the Hugo configuration file
 func (g *Generator) generateHugoConfig() error {
-	configPath := filepath.Join(g.outputDir, "hugo.yaml")
+    configPath := filepath.Join(g.outputDir, "hugo.yaml")
 
 	params := make(map[string]interface{})
 	if g.config.Hugo.Params != nil {
@@ -21,9 +22,9 @@ func (g *Generator) generateHugoConfig() error {
 	}
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
-	if g.config.Hugo.Theme == "docsy" {
+	if g.config.Hugo.Theme == config.ThemeDocsy {
 		g.addDocsyParams(params)
-	} else if g.config.Hugo.Theme == "hextra" {
+	} else if g.config.Hugo.Theme == config.ThemeHextra {
 		g.addHextraParams(params)
 	}
 
@@ -49,19 +50,19 @@ func (g *Generator) generateHugoConfig() error {
 
 	if g.config.Hugo.Theme != "" {
 		switch g.config.Hugo.Theme {
-		case "docsy":
+		case config.ThemeDocsy:
 			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
-		case "hextra":
+		case config.ThemeHextra:
 			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
 		default:
 			hugoConfig["theme"] = g.config.Hugo.Theme
 		}
 	}
 
-	if g.config.Hugo.Theme == "hextra" { // math passthrough
+	if g.config.Hugo.Theme == config.ThemeHextra { // math passthrough
 		if m, ok := hugoConfig["markup"].(map[string]interface{}); ok {
 			gm, _ := m["goldmark"].(map[string]interface{})
-			if gm == nil {
+            if gm == nil {
 				gm = map[string]interface{}{}
 				m["goldmark"] = gm
 			}
@@ -73,26 +74,26 @@ func (g *Generator) generateHugoConfig() error {
 			ext["passthrough"] = map[string]interface{}{
 				"delimiters": map[string]interface{}{
 					"block":  [][]string{{"\\[", "\\]"}, {"$$", "$$"}},
-					"inline": [][]string{{"\\(", "\\)"}},
+                    "inline": [][]string{{"\\(", "\\)"}},
 				},
 				"enable": true,
 			}
 		}
 	}
 
-	if g.config.Hugo.Theme == "docsy" { // offline search JSON
+	if g.config.Hugo.Theme == config.ThemeDocsy { // offline search JSON
 		hugoConfig["outputs"] = map[string]interface{}{"home": []string{"HTML", "RSS", "JSON"}}
 	}
 
-	// Menu handling
-	if g.config.Hugo.Theme == "hextra" {
+    // Menu handling
+	if g.config.Hugo.Theme == config.ThemeHextra {
 		if g.config.Hugo.Menu == nil {
 			mainMenu := []map[string]interface{}{
 				{"name": "Search", "weight": 4, "params": map[string]interface{}{"type": "search"}},
 				{"name": "Theme", "weight": 98, "params": map[string]interface{}{"type": "theme-toggle", "label": false}},
 			}
 			for _, repo := range g.config.Repositories { // add GitHub icon if any
-				if strings.Contains(repo.URL, "github.com") {
+                if strings.Contains(repo.URL, "github.com") {
 					mainMenu = append(mainMenu, map[string]interface{}{"name": "GitHub", "weight": 99, "url": repo.URL, "params": map[string]interface{}{"icon": "github"}})
 					break
 				}
@@ -109,11 +110,11 @@ func (g *Generator) generateHugoConfig() error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal Hugo config: %w", err)
 	}
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+    if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write Hugo config: %w", err)
 	}
 
-	if g.config.Hugo.Theme == "docsy" || g.config.Hugo.Theme == "hextra" {
+	if g.config.Hugo.Theme == config.ThemeDocsy || g.config.Hugo.Theme == config.ThemeHextra {
 		if err := g.ensureGoModForModules(); err != nil {
 			slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 		}
