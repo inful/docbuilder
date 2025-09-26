@@ -14,7 +14,9 @@ import (
 // generateID creates a simple unique ID
 func generateID() string {
 	bytes := make([]byte, 8)
-	rand.Read(bytes)
+	if _, err := rand.Read(bytes); err != nil { // extremely unlikely; fallback to timestamp string
+		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+	}
 	return hex.EncodeToString(bytes)
 }
 
