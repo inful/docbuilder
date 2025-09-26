@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/build"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 // Stage is a discrete unit of work in the site build.
@@ -50,6 +52,9 @@ type BuildState struct {
 	Report    *BuildReport
 	Timings   map[string]time.Duration
 	start     time.Time
+	Repositories []config.Repository        // configured repositories (post-filter)
+	RepoPaths    map[string]string          // name -> local filesystem path
+	WorkspaceDir string                     // root workspace for git operations
 }
 
 // newBuildState constructs a BuildState.
@@ -133,6 +138,65 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 
 func stagePrepareOutput(ctx context.Context, bs *BuildState) error { // currently no-op beyond structure creation
 	return bs.Generator.createHugoStructure()
+}
+
+// stageCloneRepos clones all repositories into the workspace directory, updating clone/failure counts.
+func stageCloneRepos(ctx context.Context, bs *BuildState) error {
+	if len(bs.Repositories) == 0 {
+		return nil
+	}
+	if bs.WorkspaceDir == "" {
+		return newFatalStageError("clone_repos", fmt.Errorf("workspace directory not set"))
+	}
+	client := git.NewClient(bs.WorkspaceDir)
+	if err := client.EnsureWorkspace(); err != nil {
+		return newFatalStageError("clone_repos", fmt.Errorf("ensure workspace: %w", err))
+	}
+	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
+	for _, r := range bs.Repositories {
+		select {
+		case <-ctx.Done():
+			return newCanceledStageError("clone_repos", ctx.Err())
+		default:
+		}
+		p, err := client.CloneRepository(r)
+		if err != nil {
+			bs.Report.FailedRepositories++
+			continue
+		}
+		bs.Report.ClonedRepositories++
+		bs.RepoPaths[r.Name] = p
+	}
+	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
+		return newWarnStageError("clone_repos", fmt.Errorf("%w: all clones failed", build.ErrClone))
+	}
+	if bs.Report.FailedRepositories > 0 {
+		// partial success - still treat as warning so operator is aware
+		return newWarnStageError("clone_repos", fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Repositories)))
+	}
+	return nil
+}
+
+// stageDiscoverDocs walks cloned repositories to enumerate documentation files.
+func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
+	if len(bs.RepoPaths) == 0 {
+		// No repos cloned; treat as warning to reflect empty input rather than fatal.
+		return newWarnStageError("discover_docs", fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
+	}
+	discovery := docs.NewDiscovery(bs.Repositories)
+	docFiles, err := discovery.DiscoverDocs(bs.RepoPaths)
+	if err != nil {
+		return newFatalStageError("discover_docs", fmt.Errorf("%w: %v", build.ErrDiscovery, err))
+	}
+	bs.Docs = docFiles
+	// update top-level report file count & repository count (may exclude failed clones)
+	repoSet := map[string]struct{}{}
+	for _, f := range docFiles {
+		repoSet[f.Repository] = struct{}{}
+	}
+	bs.Report.Repositories = len(repoSet)
+	bs.Report.Files = len(docFiles)
+	return nil
 }
 
 func stageGenerateConfig(ctx context.Context, bs *BuildState) error {

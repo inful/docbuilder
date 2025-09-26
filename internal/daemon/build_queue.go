@@ -6,14 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
+	"sync"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 )
 
 // BuildType represents the type of build job
@@ -318,71 +315,22 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	if err := os.MkdirAll(workspaceRoot, 0755); err != nil {
 		return fmt.Errorf("failed to create workspace: %w", err)
 	}
-	gitClient := git.NewClient(workspaceRoot)
-	if err := gitClient.EnsureWorkspace(); err != nil {
-		return fmt.Errorf("failed to ensure workspace: %w", err)
-	}
 
-	reposAny, ok := job.Metadata["repositories"].([]cfg.Repository)
-	if !ok {
-		// Try slice of interface (possible encoding differences)
-		if ra, ok2 := job.Metadata["repositories"].([]interface{}); ok2 {
-			casted := make([]cfg.Repository, 0, len(ra))
-			for _, v := range ra {
-				if r, ok3 := v.(cfg.Repository); ok3 {
-					casted = append(casted, r)
-				}
-			}
-			reposAny = casted
-		}
-	}
-	if len(reposAny) == 0 {
-		slog.Warn("No repositories in job metadata; proceeding with empty set")
-	}
-
-	repoPaths := make(map[string]string, len(reposAny))
-	for _, r := range reposAny {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-		slog.Info("Cloning repository", "name", r.Name, "url", r.URL)
-		p, err := gitClient.CloneRepository(r)
-		if err != nil {
-			wrapped := fmt.Errorf("%w: %v", build.ErrClone, err)
-			slog.Error("Repository clone failed", "name", r.Name, "error", wrapped)
-			// track failed clone in build report if available
-			if job.Metadata != nil {
-				if brRaw, ok := job.Metadata["build_report"]; ok {
-					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
-						br.FailedRepositories++
-					}
-				}
-			}
-			continue
-		}
-		repoPaths[r.Name] = p
-		if job.Metadata != nil {
-			if brRaw, ok := job.Metadata["build_report"]; ok {
-				if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
-					br.ClonedRepositories++
-				}
-			}
-		}
-	}
-
-	// Pre-create a BuildReport and attach to metadata so cloning can update counts
-	if job.Metadata == nil { job.Metadata = make(map[string]interface{}) }
-	initialReport := hugo.NewGenerator(&cfg.Config{}, outDir) // temporary generator just to get a report? We'll instead create minimal report
-	_ = initialReport // placeholder (not used) – will be replaced when actual generation occurs
-
-	discovery := docs.NewDiscovery(reposAny)
-	docFiles, err := discovery.DiscoverDocs(repoPaths)
-	if err != nil {
-		return fmt.Errorf("%w: %v", build.ErrDiscovery, err)
-	}
-	slog.Info("Documentation discovery complete", "files", len(docFiles))
+    reposAny, ok := job.Metadata["repositories"].([]cfg.Repository)
+    if !ok {
+        if ra, ok2 := job.Metadata["repositories"].([]interface{}); ok2 {
+            casted := make([]cfg.Repository, 0, len(ra))
+            for _, v := range ra {
+                if r, ok3 := v.(cfg.Repository); ok3 {
+                    casted = append(casted, r)
+                }
+            }
+            reposAny = casted
+        }
+    }
+    if len(reposAny) == 0 {
+        slog.Warn("No repositories in job metadata; proceeding with empty set")
+    }
 
 	// Convert v2 config to legacy config.Config expected by Hugo generator
 	legacy := &cfg.Config{
@@ -402,14 +350,14 @@ func (bq *BuildQueue) performSiteBuild(ctx context.Context, job *BuildJob) error
 	}
 
 	gen := hugo.NewGenerator(legacy, outDir)
-
-	// Force static render in daemon builds regardless of env gating
 	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
 		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
 	}
-	report, err := gen.GenerateSiteWithReportContext(ctx, docFiles)
+	// Use new full pipeline (clone + discovery inside generator stages)
+	workspaceDir := filepath.Join(outDir, "_workspace")
+	report, err := gen.GenerateFullSite(ctx, reposAny, workspaceDir)
 	if err != nil {
-		return fmt.Errorf("%w: %v", build.ErrHugo, err)
+		slog.Error("Full site generation encountered error", "error", err)
 	}
 
 	// Store stage timings in job metadata for status/observability.

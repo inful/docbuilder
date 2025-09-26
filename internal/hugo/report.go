@@ -16,19 +16,19 @@ type BuildReport struct {
 	StageDurations  map[string]time.Duration
 	StageErrorKinds map[string]string // stage -> error kind (fatal|warning|canceled)
 	// Enrichment fields (incremental observability additions)
-	ClonedRepositories int               // repositories successfully cloned or validated
-	FailedRepositories int               // repositories that failed to clone/auth
-	RenderedPages      int               // markdown pages successfully processed & written
+	ClonedRepositories int                   // repositories successfully cloned or validated
+	FailedRepositories int                   // repositories that failed to clone/auth
+	RenderedPages      int                   // markdown pages successfully processed & written
 	StageCounts        map[string]StageCount // per-stage classification counts
-	Outcome            string            // derived overall outcome: success|warning|failed|canceled
-	StaticRendered     bool              // true if Hugo static site render executed successfully
+	Outcome            string                // derived overall outcome: success|warning|failed|canceled
+	StaticRendered     bool                  // true if Hugo static site render executed successfully
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
 type StageCount struct {
-	Success int
-	Warning int
-	Fatal   int
+	Success  int
+	Warning  int
+	Fatal    int
 	Canceled int
 }
 
@@ -40,8 +40,7 @@ func newBuildReport(repos, files int) *BuildReport {
 		StageDurations:  make(map[string]time.Duration),
 		StageErrorKinds: make(map[string]string),
 		StageCounts:     make(map[string]StageCount),
-		// ClonedRepositories defaults to repos (best-effort until clone metrics added)
-		ClonedRepositories: repos,
+		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
 }
 
