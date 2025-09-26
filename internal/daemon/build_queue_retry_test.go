@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	bld "git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
@@ -65,7 +66,19 @@ func (m *mockBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRepo
 
 // helper to create a transient StageError in a report
 func transientReport(stage string) (*hugo.BuildReport, error) {
-	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorWarning, Err: errors.New("transient")}
+	// Use sentinel errors from internal/build to trigger transient classification.
+	var underlying error
+	switch stage {
+	case "clone_repos":
+		underlying = bld.ErrClone
+	case "run_hugo":
+		underlying = bld.ErrHugo
+	case "discover_docs":
+		underlying = bld.ErrDiscovery
+	default:
+		underlying = errors.New("transient")
+	}
+	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorWarning, Err: underlying}
 	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[string]string{}}
 	r.Errors = append(r.Errors, se)
 	return r, se
