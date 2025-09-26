@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -271,8 +270,7 @@ func (s *HTTPServer) handleDocsStatus(w http.ResponseWriter, r *http.Request) {
 		"timestamp":   time.Now().UTC(),
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(status); err != nil { //nolint:errcheck
+	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
 		slog.Error("Failed to write daemon status response", "error", err)
 	}
 }
@@ -297,8 +295,7 @@ func (s *HTTPServer) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 		health["active_jobs"] = s.daemon.GetActiveJobs()
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(health); err != nil { //nolint:errcheck
+	if err := writeJSONPretty(w, r, http.StatusOK, health); err != nil {
 		slog.Error("Failed to write health response", "error", err)
 	}
 }
@@ -319,8 +316,7 @@ func (s *HTTPServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
 		"repositories_total":      0, // TODO: Count managed repositories
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(metrics); err != nil { //nolint:errcheck
+	if err := writeJSONPretty(w, r, http.StatusOK, metrics); err != nil {
 		slog.Error("Failed to write metrics response", "error", err)
 	}
 }
@@ -344,8 +340,7 @@ func (s *HTTPServer) handleDaemonStatus(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(status); err != nil { slog.Error("failed to encode daemon status", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil { slog.Error("failed to encode daemon status", "error", err) }
 }
 
 // Daemon configuration endpoint
@@ -358,8 +353,7 @@ func (s *HTTPServer) handleDaemonConfig(w http.ResponseWriter, r *http.Request) 
 	// Return sanitized configuration (no secrets)
 	sanitized := s.sanitizeConfig(s.config)
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(sanitized); err != nil { slog.Error("failed to encode daemon config", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, sanitized); err != nil { slog.Error("failed to encode daemon config", "error", err) }
 }
 
 // Trigger discovery endpoint
@@ -376,8 +370,7 @@ func (s *HTTPServer) handleTriggerDiscovery(w http.ResponseWriter, r *http.Reque
 			"status": "triggered",
 			"job_id": jobID,
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil { slog.Error("failed to encode discovery trigger response", "error", err) }
+		if err := writeJSON(w, http.StatusOK, response); err != nil { slog.Error("failed to encode discovery trigger response", "error", err) }
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -397,8 +390,7 @@ func (s *HTTPServer) handleTriggerBuild(w http.ResponseWriter, r *http.Request) 
 			"status": "triggered",
 			"job_id": jobID,
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil { slog.Error("failed to encode build trigger response", "error", err) }
+		if err := writeJSON(w, http.StatusOK, response); err != nil { slog.Error("failed to encode build trigger response", "error", err) }
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -418,8 +410,7 @@ func (s *HTTPServer) handleBuildStatus(w http.ResponseWriter, r *http.Request) {
 		"last_build":   nil, // TODO: Get last build info
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(status); err != nil { slog.Error("failed to encode build status", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil { slog.Error("failed to encode build status", "error", err) }
 }
 
 // Repositories endpoint
@@ -436,8 +427,7 @@ func (s *HTTPServer) handleRepositories(w http.ResponseWriter, r *http.Request) 
 		"last_discovery": nil, // TODO: Get last discovery time
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(repos); err != nil { slog.Error("failed to encode repositories", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, repos); err != nil { slog.Error("failed to encode repositories", "error", err) }
 }
 
 // sanitizeConfig removes sensitive information from configuration
