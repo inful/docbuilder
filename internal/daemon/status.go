@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
@@ -63,6 +64,7 @@ type BuildStatusInfo struct {
 	FailedBuilds     int64      `json:"failed_builds"`
 	LastBuildTime    *time.Time `json:"last_build_time"`
 	AverageBuildTime string     `json:"average_build_time"`
+	LastBuildStages  map[string]string `json:"last_build_stages,omitempty"` // stage -> duration
 }
 
 // SystemMetrics provides system resource information
@@ -102,6 +104,25 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 		ActiveJobs:    d.activeJobs,
 		LastBuildTime: d.lastBuild,
 		// TODO: Add more metrics from build queue
+	}
+
+	// Extract most recent build stage timings (best-effort)
+	if d.buildQueue != nil {
+		if history := d.buildQueue.GetHistory(); len(history) > 0 {
+			last := history[len(history)-1]
+			if last != nil && last.Metadata != nil {
+				if brRaw, ok := last.Metadata["build_report"]; ok {
+					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil && len(br.StageDurations) > 0 {
+						stages := make(map[string]string, len(br.StageDurations))
+						for k, v := range br.StageDurations {
+							// Millisecond precision is sufficient and keeps payload small
+							stages[k] = v.Truncate(time.Millisecond).String()
+						}
+						status.BuildStatus.LastBuildStages = stages
+					}
+				}
+			}
+		}
 	}
 
 	// Repository status with version information
