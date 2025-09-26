@@ -1,0 +1,314 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test DocBuilder Init",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder init",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Init",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder init",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Init",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder init",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Build",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder -v build --output ./test-site",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Build V2",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder -v build --output ./test-site",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Build V3",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder -v build --output ./test-site",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder Build V4",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder -v build --output ./test-site",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Hugo Development Server",
+			"type": "shell",
+			"command": "cd test-site && hugo server --port 1314",
+			"isBackground": true,
+			"group": "test"
+		},
+		{
+			"label": "Test DocBuilder with Docsy",
+			"type": "shell",
+			"command": "go run ./cmd/docbuilder -v build",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Hugo Docsy Server",
+			"type": "shell",
+			"command": "cd site && hugo server --port 1315",
+			"isBackground": true,
+			"group": "test"
+		},
+		{
+			"label": "Rebuild Docsy Site",
+			"type": "shell",
+			"command": "rm -rf site && go run ./cmd/docbuilder -v build",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Hugo Docsy Server V2",
+			"type": "shell",
+			"command": "cd site && hugo server --port 1315",
+			"isBackground": true,
+			"group": "test"
+		},
+		{
+			"label": "Initialize Go Module",
+			"type": "shell",
+			"command": "cd site && go mod init documentation-site && go mod tidy",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Go Mod Tidy",
+			"type": "shell",
+			"command": "cd site && go mod tidy",
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Build DocBuilder with Docsy Theme",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder -dir /tmp/docbuilder-docsy-test -config /tmp/docbuilder-test-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Build DocBuilder with Docsy Theme",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -o /tmp/docbuilder-docsy-test -c /tmp/docbuilder-test-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Build DocBuilder with Docsy Theme",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -o /tmp/docbuilder-docsy-test -c /tmp/docbuilder-test-config.yaml -v",
+			"group": "build"
+		},
+		{
+			"label": "Create test config",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder init -c /tmp/docbuilder-test-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Build with Docsy",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -o /tmp/docbuilder-docsy-test -c /tmp/docbuilder-test-config.yaml -v",
+			"group": "build"
+		},
+		{
+			"label": "Test Hugo Generator",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && printf 'package main\n\nimport (\n\t\"fmt\"\n\t\"git.home.luguber.info/inful/docbuilder/internal/config\"\n\t\"git.home.luguber.info/inful/docbuilder/internal/hugo\"\n)\n\nfunc main() {\n\tcfg := &config.Config{}\n\tcfg.Init()\n\tgenerator := hugo.NewGenerator(cfg, \"/tmp/docbuilder-docsy-test\")\n\tif err := generator.GenerateSite([]interface{}{}); err != nil {\n\t\tfmt.Printf(\"Error: %%v\\n\", err)\n\t} else {\n\t\tfmt.Println(\"Hugo site generated successfully\")\n\t}\n}' > /tmp/test-hugo.go && go run /tmp/test-hugo.go",
+			"group": "build"
+		},
+		{
+			"label": "Create Hugo site",
+			"type": "shell",
+			"command": "mkdir -p /tmp/docsy-test && cd /tmp/docsy-test && hugo new site . --force",
+			"group": "build"
+		},
+		{
+			"label": "Add Docsy theme",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && echo 'theme = \"docsy\"' >> hugo.toml && git submodule add https://github.com/google/docsy.git themes/docsy",
+			"group": "build"
+		},
+		{
+			"label": "Setup git and clone Docsy",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && git init && git clone --depth 1 https://github.com/google/docsy.git themes/docsy",
+			"group": "build"
+		},
+		{
+			"label": "Add Docsy config",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && echo '[params]\n[params.ui]\n[params.ui.navbar_logo] = true\n[params.ui.sidebar_search_disable] = false\n[params.links]\n[[params.links.user]]\nname = \"GitHub\"\nurl = \"https://github.com/example/repo\"\nicon = \"fab fa-github\"\ndesc = \"Development takes place here!\"\n[params.version] = \"main\"\n[params.github_repo] = \"https://github.com/example/repo\"' > docsy-config.toml && cat hugo.toml docsy-config.toml > hugo-combined.toml && mv hugo-combined.toml hugo.toml",
+			"group": "build"
+		},
+		{
+			"label": "Test Hugo server with Docsy",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && mkdir -p content/en && echo '---\\ntitle: \"Welcome to DocBuilder with Docsy\"\\ndate: 2024-01-01\\n---\\n\\n# Welcome to DocBuilder\\n\\nThis is a test documentation site generated by DocBuilder using the Docsy theme.' > content/en/_index.md && hugo server --port 1314 --bind 0.0.0.0",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Fix Hugo config",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && cat > hugo.toml << 'EOF'\nbaseURL = 'https://example.org/'\nlanguageCode = 'en-us'\ntitle = 'My New Hugo Site'\ntheme = 'docsy'\n\n[params]\nversion = 'main'\ngithub_repo = 'https://github.com/example/repo'\n\n[params.ui]\nnavbar_logo = true\nsidebar_search_disable = false\n\n[[params.links.user]]\nname = 'GitHub'\nurl = 'https://github.com/example/repo'\nicon = 'fab fa-github'\ndesc = 'Development takes place here!'\nEOF",
+			"group": "build"
+		},
+		{
+			"label": "Create proper Hugo config",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && printf \"baseURL = 'https://example.org/'\\nlanguageCode = 'en-us'\\ntitle = 'My New Hugo Site'\\ntheme = 'docsy'\\n\\n[params]\\nversion = 'main'\\ngithub_repo = 'https://github.com/example/repo'\\n\\n[params.ui]\\nnavbar_logo = true\\nsidebar_search_disable = false\\n\\n[[params.links.user]]\\nname = 'GitHub'\\nurl = 'https://github.com/example/repo'\\nicon = 'fab fa-github'\\ndesc = 'Development takes place here!'\" > hugo.toml",
+			"group": "build"
+		},
+		{
+			"label": "Test Docsy Hugo server",
+			"type": "shell",
+			"command": "cd /tmp/docsy-test && hugo server --port 1314 --bind 0.0.0.0",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Check generated site",
+			"type": "shell",
+			"command": "ls -la /tmp/docbuilder-docsy-test",
+			"group": "build"
+		},
+		{
+			"label": "Create test repository",
+			"type": "shell",
+			"command": "mkdir -p /tmp/test-docs-repo && cd /tmp/test-docs-repo && git init && mkdir -p docs && echo '# Test Documentation\\n\\nThis is a test documentation file for DocBuilder with Docsy theme.' > docs/README.md && echo '# API Guide\\n\\n## Overview\\n\\nThis is the API documentation.' > docs/api-guide.md && git add . && git -c user.name='Test' -c user.email='test@example.com' commit -m 'Initial docs'",
+			"group": "build"
+		},
+		{
+			"label": "Create test config",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && printf \"repositories:\\n  - url: /tmp/test-docs-repo\\n    name: test-docs\\n    branch: main\\n    paths: [docs]\\nhugo:\\n  title: 'Local Test Documentation'\\n  description: 'Testing DocBuilder with Docsy theme using local repository'\\n  base_url: 'http://localhost:1316'\\n  theme: 'docsy'\\noutput:\\n  directory: './test-site'\\n  clean: true\" > test-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Test with local repo",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c test-config.yaml -v",
+			"group": "build"
+		},
+		{
+			"label": "Check test config",
+			"type": "shell",
+			"command": "ls -la test-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Create/refresh local test repo for Hextra",
+			"type": "shell",
+			"command": "mkdir -p /tmp/test-docs-repo/docs && cd /tmp/test-docs-repo && git init || true && printf \"# Test Documentation\\n\\nThis is a test file for Hextra.\\n\" > docs/README.md && printf \"# API Guide\\n\\nSome API content.\\n\" > docs/api.md && git add . && git -c user.name='Test' -c user.email='test@example.com' commit -m 'Add hextra test docs' || true",
+			"group": "build"
+		},
+		{
+			"label": "Write Hextra config",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && printf \"repositories:\\n  - url: /tmp/test-docs-repo\\n    name: test-docs\\n    branch: main\\n    paths: [docs]\\nhugo:\\n  title: 'Hextra Test Documentation'\\n  description: 'Testing DocBuilder with Hextra theme using a local repo'\\n  base_url: 'http://localhost:1316'\\n  theme: 'hextra'\\noutput:\\n  directory: './hextra-site'\\n  clean: true\\n\" > hextra-config.yaml",
+			"group": "build"
+		},
+		{
+			"label": "Build Hextra site",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && rm -rf hextra-site && go run ./cmd/docbuilder build -c hextra-config.yaml -v",
+			"group": "build"
+		},
+		{
+			"label": "Serve Hextra site",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder/site && hugo server --port 1316 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and serve Hextra",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && hugo server --port 1316 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild and serve Hextra (no JSON output)",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && hugo server --port 1316 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild Hextra with richer defaults and serve",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && grep -n \"search:\" -n hugo.yaml || true && grep -n \"menu:\" hugo.yaml || true && hugo server --port 1320 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with math passthrough for Hextra and serve",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && grep -n \"math:\" hugo.yaml || true && hugo server --port 1321 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild Hextra ensuring docs layout and serve",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && grep -n \"type: docs\" -R content || true && hugo server --port 1322 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild with cascade type=docs for Hextra and serve",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c hextra-config.yaml -v && cd site && sed -n '1,60p' content/_index.md && hugo server --port 1323 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Build Hextra (config.yaml)",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c ./config.yaml -v",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Serve Hextra (config.yaml site)",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder/site && hugo server --port 1326 --bind 127.0.0.1",
+			"isBackground": true,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild site to inject per-page editURL",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c ./config.yaml -v",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "Rebuild site to enable edit link by default",
+			"type": "shell",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && go run ./cmd/docbuilder build -c ./config.yaml -v",
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}
