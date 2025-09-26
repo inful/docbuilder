@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work
@@ -72,7 +74,7 @@ func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 		return err
 	}
 	s := string(b)
-	if g.config.Hugo.Theme == "hextra" { // pin version
+	if g.config.Hugo.Theme == config.ThemeHextra { // pin version
 		const hextraModule = "github.com/imfing/hextra"
 		const hextraVersion = "v0.11.0"
 		if !strings.Contains(s, hextraModule) {

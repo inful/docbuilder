@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -185,7 +186,7 @@ func applyDefaults(config *Config) error {
 		config.Hugo.Title = "Documentation Portal"
 	}
 	if config.Hugo.Theme == "" {
-		config.Hugo.Theme = "hextra"
+		config.Hugo.Theme = ThemeHextra
 	}
 
 	// Output defaults
@@ -326,6 +327,27 @@ func validateConfig(config *Config) error {
 		if !validStrategies[config.Versioning.Strategy] {
 			return fmt.Errorf("invalid versioning strategy: %s", config.Versioning.Strategy)
 		}
+	}
+
+	// Validate retry configuration
+	switch config.Build.RetryBackoff {
+	case "fixed", "linear", "exponential":
+	default:
+		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", config.Build.RetryBackoff)
+	}
+	if _, err := time.ParseDuration(config.Build.RetryInitialDelay); err != nil {
+		return fmt.Errorf("invalid retry_initial_delay: %s: %w", config.Build.RetryInitialDelay, err)
+	}
+	if _, err := time.ParseDuration(config.Build.RetryMaxDelay); err != nil {
+		return fmt.Errorf("invalid retry_max_delay: %s: %w", config.Build.RetryMaxDelay, err)
+	}
+	initDur, _ := time.ParseDuration(config.Build.RetryInitialDelay)
+	maxDur, _ := time.ParseDuration(config.Build.RetryMaxDelay)
+	if maxDur < initDur {
+		return fmt.Errorf("retry_max_delay (%s) must be >= retry_initial_delay (%s)", config.Build.RetryMaxDelay, config.Build.RetryInitialDelay)
+	}
+	if config.Build.MaxRetries < 0 {
+		return fmt.Errorf("max_retries cannot be negative: %d", config.Build.MaxRetries)
 	}
 
 	return nil
