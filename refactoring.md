@@ -70,9 +70,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Implement `SiteBuilder` using pipeline (2025-09-27)
 - [x] Refactor `BuildQueue.executeBuild` to delegate to injected `Builder` (2025-09-27)
 - [x] Added initial retry scaffold (linear backoff, transient detection) (2025-09-27)
-- [ ] Expose configurable retries in config (max_retries, backoff strategy)
-- [ ] Emit retry metrics (`build_retries_total`, `build_retry_exhausted_total`)
-- [ ] Tests for retry behavior (transient vs permanent, exhaustion)
+ - [x] Expose configurable retries in config (max_retries, backoff strategy, delays)
+ - [x] Emit retry metrics (`build_retries_total`, `build_retry_exhausted_total`)
+ - [x] Tests for retry behavior (transient vs permanent, exhaustion, exponential cap)
+ - [x] Race-free retry implementation (job state locking + snapshot accessor) (2025-09-27)
 
 ### 10. Logging Context Standardization
 - [ ] Add helper `logger := slog.With("job_id", job.ID)`
@@ -89,9 +90,11 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [x] Introduce `metrics.Recorder` interface + integration (stage duration + result emission) (2025-09-27)
  - [x] Add Prometheus histograms: total build duration & per-stage duration (2025-09-27)
  - [x] Implement Prometheus exporter (labeled counters + histograms) & HTTP exposure (build tag `prometheus`) (2025-09-27)
+ - [x] Remove build tag; Prometheus always enabled (2025-09-27)
  - [x] Bridge daemon in‑memory counters to Prometheus (`daemon_builds_total`, `daemon_builds_failed_total`) (2025-09-27)
  - [x] Add runtime gauges: `daemon_active_jobs`, `daemon_queue_length` (2025-09-27)
  - [x] Add snapshot gauges: `daemon_last_build_rendered_pages`, `daemon_last_build_repositories` (2025-09-27)
+ - [x] Retry counters: `docbuilder_build_retries_total`, `docbuilder_build_retry_exhausted_total` (2025-09-27)
  - [ ] Expose transient/permanent failure counters (`stage_failures_total{transient=}`) (planned)
  - [ ] Queue wait time histogram (`build_queue_wait_seconds`) (planned)
 
@@ -202,47 +205,49 @@ Record decisions (e.g., skipping AST parser) inline with a short rationale.
 - Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
 
 ### Current Status Summary (2025-09-27)
-Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8, 9 (core implementation); unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (histograms, counters), daemon counter bridge, runtime & snapshot gauges; initial retry scaffold; parallel cloning with configurable concurrency + clone metrics.
-Pending: Theme constants, logging context standardization, transient/permanent labeled metrics, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, configurable retry policy & metrics, queue wait histogram, lint + CI, search indexing extension, filtering enhancements (.docignore / archived centralization), version command, CLI reference automation.
+Completed: Phase 1 items 1,2,5; Phase 2 items 6,7 (golden test pending), 8, 9 (builder + configurable retries + metrics + tests + race fix); unified config & legacy removal; structured errors & sentinel domains; transient classification with tests; stage timings & counts; build report enrichment (rendered pages, clone/fail/skip, outcome, staticRendered, retry summary); status endpoint enrichment; metrics recorder abstraction; Prometheus exporter (always on) with histograms/counters; daemon counter bridge; runtime & snapshot gauges; parallel cloning with configurable concurrency + clone metrics; data race remediation in retry path.
+Pending: Theme constants, logging context standardization, transient/permanent labeled metrics, queue wait histogram, additional cancellation points, DocsCount alias, report persistence, front matter typing, golden fixtures, lint + CI, search indexing extension, filtering enhancements (doc ignore patterns / archived centralization), version command, CLI reference automation.
 Risk Level: Low – Core pipeline stabilized; remaining work centers on polish & operability.
 
-### Proposed Next Step (Updated 2025-09-27 After Parallel Cloning)
-Implement configurable retry policy & retry metrics (Phase 2 item 9 remaining sub-items + Phase 3 metrics extensions).
+### Proposed Next Step (Updated 2025-09-27 After Retry Implementation)
+Implement transient vs permanent failure labeling & queue wait observability (Phase 3 item 11 planned counters + logging context standardization from item 10).
 
 Why This Order:
-- Retry scaffold already exists; extending it delivers immediate resilience benefits.
-- Builds on existing `StageError.Transient()` classification—low incremental risk.
-- Surfaces operability signals (retry counts, exhaustion) before deeper features (search index, report persistence).
+- Builds directly on existing `StageError.Transient()` logic (low risk, high clarity for operators).
+- Adds immediate diagnostic power for noisy stages before deeper feature work (front matter typing, golden tests).
+- Logging context standardization amplifies value of new metrics by ensuring correlation in logs.
 
 Scope:
-1. Config additions under `build`:
-   - `max_retries` (default 2 for transient stages)
-   - `retry_backoff` (string: fixed|linear|exponential, default linear)
-   - `retry_initial_delay` (duration, default 1s)
-   - `retry_max_delay` (cap for exponential; default 30s)
-2. Implement backoff strategies (fixed = constant, linear = n*initial, exponential = initial*2^(n-1) with cap).
-3. Metrics:
-   - Counter `docbuilder_build_retries_total{stage}`
-   - Counter `docbuilder_build_retry_exhausted_total{stage}`
-   - Histogram `docbuilder_retry_delay_seconds` (optional; sample actual applied delays)
-4. Logging: include `attempt`, `max_retries`, `stage`, `transient=true|false` for each retry.
-5. Update daemon status to expose last build retry summary (total retries, exhausted flag) inside `BuildReport` (add fields `Retries`, `RetriesExhausted`).
-6. Tests:
-   - Unit test forcing transient clone failure then success on retry.
-   - Test permanent error: ensure no retry beyond first attempt.
-   - Test exponential backoff (assert growing delays within tolerance using a fake clock or injected sleeper interface).
-7. Documentation updates (README metrics table, config section, roadmap checkboxes).
+1. Metrics:
+   - Add counter `docbuilder_stage_failures_total{stage,transient="true|false"}` incremented on each stage error classification.
+   - Add histogram `docbuilder_build_queue_wait_seconds` measuring time from enqueue to start (instrument in `Enqueue` & first state transition to running).
+2. Logging Context (Phase 2 item 10):
+   - Introduce helper `log := slog.With("job_id", job.ID)`; propagate into builder/stages.
+   - Ensure retry warnings and stage errors include `stage`, `attempt`, `retry`, `transient` labels.
+3. Config Validation Hardening:
+   - Validate retry config values at load (non-negative, allowed backoff enum, max_delay >= initial).
+   - Emit warnings & fall back to defaults when invalid.
+4. Status / Report Enhancements:
+   - Surface per-stage transient vs permanent failure counts in admin status (aggregate last build + cumulative since start).
+5. Tests:
+   - Unit tests for failure metric labeling (transient vs permanent) using fake recorder.
+   - Queue wait test: enqueue job, delay worker start or artificially sleep before start to assert histogram observation (can expose a test seam / dependency injection for time source if needed).
+   - Config validation tests: invalid values fallback.
+6. Documentation:
+   - README metrics section: add new counters/histogram table entries.
+   - Update roadmap checkboxes (mark items complete) and add rationale in Recent Decisions.
 
 Acceptance Criteria:
-- Configurable retries applied only to transiently classified StageErrors.
-- Metrics counters increment as expected; no cardinality explosion.
-- Backoff honors caps; cancellation interrupts waiting.
-- All existing tests remain green; new retry tests cover success-after-retry & exhaustion paths.
+- Each stage error increments exactly one labeled failure counter.
+- Queue wait histogram records >0 observations in test scenario.
+- Invalid retry config values trigger warnings and default substitution without panic.
+- No data races (verified with `-race`).
+- Existing tests all green; new tests cover metrics & validation paths.
 
 Follow-On After This Step:
-- Queue wait time histogram & transient/permanent failure metrics.
-- Cancellation checks in long loops (content copy, discovery).
-- Persist last successful BuildReport to disk (operability improvement).
+- Cancellation checks in long-running loops (content copy, discovery).
+- Persist last successful `BuildReport` to disk with retrieval endpoint.
+- Golden fixtures for transformed pages.
 
 ---
 ## Quick Start Sequence (Recommended)
