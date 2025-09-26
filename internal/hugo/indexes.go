@@ -28,7 +28,9 @@ func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
 }
 
 func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
-	indexPath := filepath.Join(g.outputDir, "content", "_index.md")
+	root := g.outputDir
+	if g.stageDir != "" { root = g.stageDir }
+	indexPath := filepath.Join(root, "content", "_index.md")
 	repoGroups := make(map[string][]docs.DocFile)
 	for _, file := range docFiles {
 		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
@@ -59,7 +61,9 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
 	}
 	for repoName, files := range repoGroups {
-		indexPath := filepath.Join(g.outputDir, "content", repoName, "_index.md")
+	root := g.outputDir
+	if g.stageDir != "" { root = g.stageDir }
+	indexPath := filepath.Join(root, "content", repoName, "_index.md")
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
@@ -117,7 +121,9 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	}
 	for repoName, sections := range sectionGroups {
 		for sectionName, files := range sections {
-			indexPath := filepath.Join(g.outputDir, "content", repoName, sectionName, "_index.md")
+			root := g.outputDir
+			if g.stageDir != "" { root = g.stageDir }
+			indexPath := filepath.Join(root, "content", repoName, sectionName, "_index.md")
 			if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 			}
