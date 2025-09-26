@@ -19,6 +19,56 @@ A Go utility for creating documentation sites from multiple Git repositories usi
    ```bash
    make build
    ```
+2. **Initialize configuration**:
+   ```bash
+   ./bin/docbuilder init
+   ```
+3. **Set up environment variables** (optional):
+   ```bash
+   cp .env.example .env
+   # Edit .env with your credentials
+   ```
+4. **Build documentation site**:
+   ```bash
+   ./bin/docbuilder build -v
+   ```
+
+## Configuration (Unified v2)
+
+The only supported configuration format is version 2 (`version: "2.0"`). The earlier v1 format (no `version` key, top-level `repositories:`) has been removed.
+
+### Environment Variables
+
+The application automatically loads environment variables from `.env` and `.env.local` files.
+
+### Example Configuration
+
+Minimal config combining forge + explicit repositories:
+
+```yaml
+version: "2.0"
+- `docbuilder daemon` – continuous sync & build mode
+# docbuilder
+
+A Go utility for creating documentation sites from multiple Git repositories using Hugo.
+
+## Features
+
+- Clone documentation from multiple Git repositories
+- Support for various authentication methods (SSH, tokens, basic auth)
+- Generate Hugo-compatible static sites
+- Optional automatic rendering (invoke the Hugo binary) to produce a ready-to-serve `public/` folder
+- Environment variable support with `.env` files
+- Incremental builds for faster updates
+- Auto-discover repositories (v2 config) across all organizations accessible to the token (Forgejo)
+- Theme-aware configuration (Hextra & Docsy) using Hugo Modules
+
+## Quick Start
+
+1. **Build the application**:
+   ```bash
+   make build
+   ```
 
 2. **Initialize configuration**:
    ```bash
@@ -205,3 +255,70 @@ make fmt
 # Development cycle
 make dev
 ```
+
+## Metrics & Observability
+
+DocBuilder exposes build and runtime metrics in two forms:
+
+1. JSON metrics snapshot (`/metrics` and `/metrics/detailed` on the admin port) – always available when metrics are enabled in config.
+2. Prometheus metrics endpoint (`/metrics/prometheus`) – available only when:
+   - Built with the `prometheus` build tag, and
+   - `monitoring.metrics.enabled: true` in configuration.
+
+### Prometheus Metrics
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `docbuilder_build_duration_seconds` | histogram | (none) | Total wall clock time of a full site build (from first stage start to completion). |
+| `docbuilder_stage_duration_seconds` | histogram | `stage` | Duration of individual pipeline stages (e.g. `clone_repos`, `discover_docs`, `copy_content`, `run_hugo`). |
+| `docbuilder_stage_results_total` | counter | `stage`, `result` | Count of stage executions by result (`success`, `warning`, `fatal`, `canceled`). |
+| `docbuilder_build_outcomes_total` | counter | `outcome` | Final build outcomes: `success`, `warning`, `failed`, `canceled`. |
+| `docbuilder_daemon_active_jobs` | gauge | (none) | Number of build jobs currently executing. |
+| `docbuilder_daemon_queue_length` | gauge | (none) | Number of queued build jobs waiting for a worker. |
+
+Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Future versions may export these as Prometheus gauges. Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) are already exposed for active concurrency visibility.
+
+### Transient Error Classification
+
+Each stage error is heuristically classified as transient or permanent (e.g., network clone failures, intermittent Hugo build issues). This classification is used internally for future retry logic and may later surface as labeled metrics.
+
+### Enabling Metrics
+
+Configuration snippet enabling metrics:
+
+```yaml
+version: "2.0"
+monitoring:
+  metrics:
+    enabled: true
+    path: /metrics   # JSON endpoint base path
+```
+
+Build with Prometheus support:
+
+```fish
+go build -tags=prometheus ./cmd/docbuilder
+./docbuilder daemon -c config.yaml
+curl http://localhost:8082/metrics/prometheus
+```
+
+If not built with the `prometheus` tag, `/metrics/prometheus` is omitted automatically.
+
+### JSON Metrics Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/metrics` | Compact JSON snapshot (counters, gauges, basic histograms). |
+| `/metrics/detailed` | Extended JSON including histogram summaries & system metrics (goroutines, memory). |
+| `/api/daemon/status` | Includes latest build report with per-stage timings & counts. |
+
+### Metric Naming Conventions
+
+Prometheus metric names are prefixed with `docbuilder_` and use `_seconds` suffix for duration histograms. Stage label values mirror internal stage identifiers.
+
+### Planned Additions
+
+- Histogram bucket tuning / custom buckets via config.
+- Transient vs permanent failure counters.
+- Retry attempt counters once automated retry is implemented.
+- Clone concurrency gauges for upcoming parallel clone feature.
