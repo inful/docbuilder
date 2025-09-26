@@ -1,51 +1,71 @@
 package hugo
 
 import (
-    "os"
-    "path/filepath"
-    "strings"
-    "testing"
-    "time"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    "git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 func TestGenerateIndexPages(t *testing.T) {
-    out := t.TempDir()
-    cfg := &config.Config{Hugo: config.HugoConfig{Title: "Site", Theme: "hextra"}}
-    gen := NewGenerator(cfg, out)
-    files := []docs.DocFile{
-        {Repository: "repoA", Name: "alpha", RelativePath: "alpha.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("A")},
-        {Repository: "repoA", Name: "beta", RelativePath: "beta.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("B")},
-        {Repository: "repoA", Name: "root", RelativePath: "root.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("R")},
-        {Repository: "repoB", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("I")},
-    }
+	out := t.TempDir()
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Site", Theme: "hextra"}}
+	gen := NewGenerator(cfg, out)
+	files := []docs.DocFile{
+		{Repository: "repoA", Name: "alpha", RelativePath: "alpha.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("A")},
+		{Repository: "repoA", Name: "beta", RelativePath: "beta.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("B")},
+		{Repository: "repoA", Name: "root", RelativePath: "root.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("R")},
+		{Repository: "repoB", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("I")},
+	}
 
-    // Need structure for indexes (skip full generation) -> just call generateIndexPages after structure creation
-    if err := gen.createHugoStructure(); err != nil { t.Fatalf("structure: %v", err) }
-    if err := gen.generateIndexPages(files); err != nil { t.Fatalf("generate indexes: %v", err) }
+	// Need structure for indexes (skip full generation) -> just call generateIndexPages after structure creation
+	if err := gen.createHugoStructure(); err != nil {
+		t.Fatalf("structure: %v", err)
+	}
+	if err := gen.generateIndexPages(files); err != nil {
+		t.Fatalf("generate indexes: %v", err)
+	}
 
-    // Main index
-    mainIdx := filepath.Join(out, "content", "_index.md")
-    b, err := os.ReadFile(mainIdx)
-    if err != nil { t.Fatalf("read main index: %v", err) }
-    if !strings.Contains(string(b), "Repositories") { t.Fatalf("main index missing repositories header: %s", string(b)) }
-    if !strings.Contains(string(b), "repoA") || !strings.Contains(string(b), "repoB") { t.Fatalf("main index missing repo links: %s", string(b)) }
+	// Main index
+	mainIdx := filepath.Join(out, "content", "_index.md")
+	b, err := os.ReadFile(mainIdx)
+	if err != nil {
+		t.Fatalf("read main index: %v", err)
+	}
+	if !strings.Contains(string(b), "Repositories") {
+		t.Fatalf("main index missing repositories header: %s", string(b))
+	}
+	if !strings.Contains(string(b), "repoA") || !strings.Contains(string(b), "repoB") {
+		t.Fatalf("main index missing repo links: %s", string(b))
+	}
 
-    // Repo index
-    repoIdx := filepath.Join(out, "content", "repoA", "_index.md")
-    rb, err := os.ReadFile(repoIdx)
-    if err != nil { t.Fatalf("read repo index: %v", err) }
-    if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { /* lenient */ }
-    if !strings.Contains(string(rb), "alpha/") || !strings.Contains(string(rb), "beta/") { t.Fatalf("repo index missing file links: %s", string(rb)) }
+	// Repo index
+	repoIdx := filepath.Join(out, "content", "repoA", "_index.md")
+	rb, err := os.ReadFile(repoIdx)
+	if err != nil {
+		t.Fatalf("read repo index: %v", err)
+	}
+	if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { /* lenient */
+	}
+	if !strings.Contains(string(rb), "alpha/") || !strings.Contains(string(rb), "beta/") {
+		t.Fatalf("repo index missing file links: %s", string(rb))
+	}
 
-    // Section index
-    secIdx := filepath.Join(out, "content", "repoA", "section1", "_index.md")
-    sb, err := os.ReadFile(secIdx)
-    if err != nil { t.Fatalf("read section index: %v", err) }
-    if !strings.Contains(string(sb), "Alpha") || !strings.Contains(string(sb), "Beta") { t.Fatalf("section index missing file entries: %s", string(sb)) }
+	// Section index
+	secIdx := filepath.Join(out, "content", "repoA", "section1", "_index.md")
+	sb, err := os.ReadFile(secIdx)
+	if err != nil {
+		t.Fatalf("read section index: %v", err)
+	}
+	if !strings.Contains(string(sb), "Alpha") || !strings.Contains(string(sb), "Beta") {
+		t.Fatalf("section index missing file entries: %s", string(sb))
+	}
 
-    // Basic date presence
-    if !strings.Contains(string(rb), time.Now().Format("2006")) { /* not strict; ignore for determinism */ }
+	// Basic date presence
+	if !strings.Contains(string(rb), time.Now().Format("2006")) { /* not strict; ignore for determinism */
+	}
 }

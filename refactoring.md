@@ -13,10 +13,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ## Phase 1: Safety & Test Foundations (High ROI, Low Risk)
 
 ### 1. Link Rewriting Isolation (★)
-- [ ] Extract link rewrite logic into `internal/hugo/links.go`
-- [ ] Provide function `RewriteInternalLinks(content []byte) []byte`
-- [ ] Add unit tests (cases: anchor links, already extensionless, code fence ignoring, image refs)
-- [ ] Optional: guard code blocks (avoid rewriting inside fenced blocks)
+- [x] Extract link rewrite logic into `internal/hugo/links.go`
+- [x] Provide function `RewriteRelativeMarkdownLinks(content string) string` (name differs from draft but equivalent)
+- [x] Add unit tests (anchors, extension removal, images untouched, relative path variants)
+- [ ] Optional: guard code blocks (avoid rewriting inside fenced blocks) (Deferred – regex adequate for now)
 
 ### 2. Filtering Logic Object
 - [ ] Introduce `RepositoryFilter` struct holding compiled include/exclude patterns
@@ -35,9 +35,10 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 - [ ] Add `const TimeFormatRFC3339 = time.RFC3339` (or reuse directly) for consistency
 
 ### 5. Basic Build Report Struct
-- [ ] Introduce `BuildReport` (counts, duration, staticRendered)
-- [ ] Populate in current build path (even pre-pipeline) and attach to job metadata
-- [ ] Expose via admin/status endpoint
+- [x] Introduce `BuildReport` (counts, duration, errors; staticRendered pending)
+- [x] Populate in current build path via `GenerateSiteWithReport`
+- [ ] Attach to job metadata / daemon (Not started)
+- [ ] Expose via admin/status endpoint (Not started)
 
 ---
 ## Phase 2: Structural Decomposition (Generator & Build Pipeline) (★)
@@ -170,6 +171,39 @@ Structured plan to improve maintainability, testability, and extensibility. Use 
 ---
 ## Progress Tracking Notes
 Record decisions (e.g., skipping AST parser) inline with a short rationale.
+
+### Recent Decisions
+- Code block–aware link rewriting deferred (low immediate risk; revisit with AST in Phase 4 item 20).
+- `RewriteRelativeMarkdownLinks` chosen over planned `RewriteInternalLinks` for clarity; doc updated.
+- Build report currently excludes `staticRendered` until pipeline/runner abstraction (Phase 3 & 18) clarifies final render success semantics.
+
+### Current Status Summary (2025-09-26)
+Completed: Phase 1 items 1 (except optional), partial 5. Front matter & link logic extracted and tested. Report exposed.
+In Progress (upcoming): Phase 2 kickoff (file split + pipeline scaffolding).
+Risk Level: Low – output parity maintained by integration tests.
+
+### Proposed Next Step
+Proceed with Phase 2 Item 6 (split `generator.go`) BEFORE introducing the full transformer pipeline. Rationale:
+- Smaller diff risk while tests already assert front matter, link rewriting, and overall generation smoke.
+- Prepares clearer insertion points for pipeline (Item 7) without mixing concerns in a single large commit.
+
+Execution Outline:
+1. Create new files: `config_writer.go`, `modules.go`, `content_copy.go`, `indexes.go` under `internal/hugo`.
+2. Move functions:
+	- `generateHugoConfig` -> config_writer.go
+	- `ensureGoModForModules`, `ensureThemeVersionRequires`, `addDocsyParams`, `addHextraParams` -> modules.go
+	- `copyContentFiles`, `processMarkdownFile` -> content_copy.go (temporarily keep processMarkdownFile until transformer pipeline exists)
+	- `generateIndexPages`, `generateMainIndex`, `generateRepositoryIndexes`, `generateSectionIndexes` -> indexes.go
+3. Leave thin orchestration in `generator.go` calling relocated functions.
+4. Re-run tests to confirm no behavioral drift.
+5. Commit with `[refactor]` conventional prefix to preserve changelog mapping potential.
+
+Acceptance Criteria for Step:
+- All moved functions retain identical signatures & behavior.
+- No change to produced `hugo.yaml` or content files (validated by existing integration test; consider adding golden test later in Phase 4 item 25).
+- No new exported symbols unless necessary; internal package remains stable.
+
+After Step 6: Implement Item 7 (Content Transformation Pipeline) by replacing `processMarkdownFile` internals with pipeline invocation, using existing `BuildFrontMatter` & `RewriteRelativeMarkdownLinks` as first transformers.
 
 ---
 ## Quick Start Sequence (Recommended)
