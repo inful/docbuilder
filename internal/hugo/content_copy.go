@@ -13,8 +13,9 @@ import (
 func (g *Generator) copyContentFiles(docFiles []docs.DocFile) error {
     pipeline := NewTransformerPipeline(
         &FrontMatterParser{},
-        &RelativeLinkRewriter{},
         &FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
+        &EditLinkInjector{ConfigProvider: func() *Generator { return g }},
+        &RelativeLinkRewriter{},
         &FinalFrontMatterSerializer{},
     )
     for _, file := range docFiles {
@@ -35,8 +36,9 @@ func (g *Generator) processMarkdownFile(file docs.DocFile) ([]byte, error) {
     p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
     pipeline := NewTransformerPipeline(
         &FrontMatterParser{},
-        &RelativeLinkRewriter{},
         &FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
+        &EditLinkInjector{ConfigProvider: func() *Generator { return g }},
+        &RelativeLinkRewriter{},
         &FinalFrontMatterSerializer{},
     )
     if err := pipeline.Run(p); err != nil { return nil, err }
