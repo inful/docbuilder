@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -90,6 +91,8 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client ForgeClien
 	targetOrgs = append(targetOrgs, forgeConfig.Groups...)
 
 	if len(targetOrgs) == 0 {
+		// If no specific orgs/groups configured, enter auto-discovery mode and enumerate all accessible organizations
+		slog.Info("Entering auto-discovery mode (no organizations/groups configured)", "forge", client.GetName())
 		// If no specific orgs configured, discover all accessible ones
 		orgs, err := client.ListOrganizations(ctx)
 		if err != nil {
@@ -115,6 +118,7 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client ForgeClien
 	}
 
 	// Check documentation status and apply filtering
+	originalCount := len(repositories)
 	var validRepos []*Repository
 	var filteredRepos []*Repository
 
@@ -140,6 +144,23 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client ForgeClien
 				"repository", repo.FullName,
 				"reason", ds.getFilterReason(repo))
 		}
+	}
+
+	if originalCount > 0 && len(validRepos) == 0 {
+		if len(ds.filtering.IncludePatterns) > 0 {
+			for _, p := range ds.filtering.IncludePatterns {
+				if strings.Contains(p, "/") {
+					slog.Warn("All repositories filtered: include_patterns contains path-like pattern which won't match repository names", "pattern", p)
+					break
+				}
+			}
+		}
+		slog.Warn("All repositories filtered out by configuration",
+			"forge", client.GetName(),
+			"total_before", originalCount,
+			"required_paths", ds.filtering.RequiredPaths,
+			"include_patterns", ds.filtering.IncludePatterns,
+			"exclude_patterns", ds.filtering.ExcludePatterns)
 	}
 
 	return validRepos, organizations, filteredRepos, nil

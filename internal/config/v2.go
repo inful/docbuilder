@@ -200,11 +200,12 @@ func applyV2Defaults(config *V2Config) error {
 		}
 	}
 
-	// Filtering defaults
+	// Filtering defaults: only set RequiredPaths if filtering is nil OR RequiredPaths is nil (not explicitly empty)
 	if config.Filtering == nil {
 		config.Filtering = &FilteringConfig{}
 	}
-	if len(config.Filtering.RequiredPaths) == 0 {
+	// Distinguish between nil slice and explicitly empty slice: if user wrote required_paths: [] we keep it empty
+	if config.Filtering.RequiredPaths == nil {
 		config.Filtering.RequiredPaths = []string{"docs"}
 	}
 	if len(config.Filtering.IgnoreFiles) == 0 {
@@ -272,10 +273,10 @@ func validateV2Config(config *V2Config) error {
 			return fmt.Errorf("forge %s must have authentication configured", forge.Name)
 		}
 
-		// Validate organizations/groups
-		if len(forge.Organizations) == 0 && len(forge.Groups) == 0 {
-			return fmt.Errorf("forge %s must have at least one organization or group configured", forge.Name)
-		}
+		// Organizations/Groups optional: if both empty we enter auto-discovery mode (all accessible orgs/groups)
+		// Previously this was a hard validation error. Allowing it improves usability for first-time setup.
+		// We retain explicit lists when provided to limit scope.
+		// (No action needed here; discovery layer checks emptiness and enumerates.)
 	}
 
 	// Validate versioning strategy

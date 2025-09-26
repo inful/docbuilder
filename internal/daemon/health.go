@@ -1,0 +1,253 @@
+package daemon
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+)
+
+// HealthStatus represents the overall health of the daemon
+type HealthStatus string
+
+const (
+	HealthStatusHealthy   HealthStatus = "healthy"
+	HealthStatusDegraded  HealthStatus = "degraded"
+	HealthStatusUnhealthy HealthStatus = "unhealthy"
+)
+
+// HealthCheck represents a single health check
+type HealthCheck struct {
+	Name        string        `json:"name"`
+	Status      HealthStatus  `json:"status"`
+	Message     string        `json:"message,omitempty"`
+	Duration    time.Duration `json:"duration"`
+	LastChecked time.Time     `json:"last_checked"`
+}
+
+// HealthResponse represents the complete health check response
+type HealthResponse struct {
+	Status    HealthStatus  `json:"status"`
+	Timestamp time.Time     `json:"timestamp"`
+	Uptime    string        `json:"uptime"`
+	Version   string        `json:"version"`
+	Checks    []HealthCheck `json:"checks"`
+}
+
+// PerformHealthChecks executes all health checks and returns the overall status
+func (d *Daemon) PerformHealthChecks() *HealthResponse {
+	startTime := time.Now()
+
+	var checks []HealthCheck
+	overallStatus := HealthStatusHealthy
+
+	// Check daemon status
+	daemonCheck := d.checkDaemonHealth()
+	checks = append(checks, daemonCheck)
+	if daemonCheck.Status != HealthStatusHealthy {
+		overallStatus = HealthStatusDegraded
+	}
+
+	// Check HTTP servers
+	httpCheck := d.checkHTTPHealth()
+	checks = append(checks, httpCheck)
+	if httpCheck.Status != HealthStatusHealthy {
+		overallStatus = HealthStatusDegraded
+	}
+
+	// Check build queue
+	queueCheck := d.checkBuildQueueHealth()
+	checks = append(checks, queueCheck)
+	if queueCheck.Status != HealthStatusHealthy && overallStatus == HealthStatusHealthy {
+		overallStatus = HealthStatusDegraded
+	}
+
+	// Check forge connectivity
+	forgeCheck := d.checkForgeHealth()
+	checks = append(checks, forgeCheck)
+	if forgeCheck.Status != HealthStatusHealthy && overallStatus == HealthStatusHealthy {
+		overallStatus = HealthStatusDegraded
+	}
+
+	// Check storage/state manager
+	storageCheck := d.checkStorageHealth()
+	checks = append(checks, storageCheck)
+	if storageCheck.Status != HealthStatusHealthy {
+		if overallStatus == HealthStatusHealthy {
+			overallStatus = HealthStatusDegraded
+		}
+	}
+
+	// Record health check metrics
+	d.metrics.IncrementCounter("health_checks_total")
+	d.metrics.RecordHistogram("health_check_duration_seconds", time.Since(startTime).Seconds())
+	if overallStatus == HealthStatusHealthy {
+		d.metrics.IncrementCounter("health_checks_healthy")
+	} else {
+		d.metrics.IncrementCounter("health_checks_unhealthy")
+	}
+
+	return &HealthResponse{
+		Status:    overallStatus,
+		Timestamp: time.Now(),
+		Uptime:    time.Since(d.startTime).String(),
+		Version:   "2.0.0",
+		Checks:    checks,
+	}
+}
+
+// checkDaemonHealth verifies the daemon is in a healthy state
+func (d *Daemon) checkDaemonHealth() HealthCheck {
+	start := time.Now()
+
+	status := d.GetStatus()
+	check := HealthCheck{
+		Name:        "daemon_status",
+		LastChecked: time.Now(),
+		Duration:    time.Since(start),
+	}
+
+	switch status {
+	case StatusRunning:
+		check.Status = HealthStatusHealthy
+		check.Message = "Daemon is running normally"
+	case StatusStarting:
+		check.Status = HealthStatusDegraded
+		check.Message = "Daemon is still starting up"
+	case StatusStopping:
+		check.Status = HealthStatusDegraded
+		check.Message = "Daemon is shutting down"
+	case StatusError:
+		check.Status = HealthStatusUnhealthy
+		check.Message = "Daemon is in error state"
+	default:
+		check.Status = HealthStatusUnhealthy
+		check.Message = "Daemon is in unknown state"
+	}
+
+	return check
+}
+
+// checkHTTPHealth verifies HTTP servers are responsive
+func (d *Daemon) checkHTTPHealth() HealthCheck {
+	start := time.Now()
+
+	check := HealthCheck{
+		Name:        "http_servers",
+		LastChecked: time.Now(),
+		Duration:    time.Since(start),
+	}
+
+	if d.httpServer == nil {
+		check.Status = HealthStatusUnhealthy
+		check.Message = "HTTP server not initialized"
+		return check
+	}
+
+	// For now, assume healthy if server exists
+	// TODO: Add actual connectivity checks
+	check.Status = HealthStatusHealthy
+	check.Message = "HTTP servers are running"
+
+	return check
+}
+
+// checkBuildQueueHealth verifies the build queue is functional
+func (d *Daemon) checkBuildQueueHealth() HealthCheck {
+	start := time.Now()
+
+	check := HealthCheck{
+		Name:        "build_queue",
+		LastChecked: time.Now(),
+		Duration:    time.Since(start),
+	}
+
+	if d.buildQueue == nil {
+		check.Status = HealthStatusUnhealthy
+		check.Message = "Build queue not initialized"
+		return check
+	}
+
+	queueLength := d.buildQueue.Length()
+
+	if queueLength > 100 {
+		check.Status = HealthStatusDegraded
+		check.Message = "Build queue is getting full"
+	} else if queueLength > 50 {
+		check.Status = HealthStatusDegraded
+		check.Message = "Build queue has moderate load"
+	} else {
+		check.Status = HealthStatusHealthy
+		check.Message = "Build queue is operating normally"
+	}
+
+	return check
+}
+
+// checkForgeHealth verifies forge connectivity
+func (d *Daemon) checkForgeHealth() HealthCheck {
+	start := time.Now()
+
+	check := HealthCheck{
+		Name:        "forge_connectivity",
+		LastChecked: time.Now(),
+		Duration:    time.Since(start),
+	}
+
+	if d.forgeManager == nil {
+		check.Status = HealthStatusUnhealthy
+		check.Message = "Forge manager not initialized"
+		return check
+	}
+
+	// For now, assume healthy if forge manager exists
+	// TODO: Add actual forge connectivity tests
+	check.Status = HealthStatusHealthy
+	check.Message = "Forge connections appear healthy"
+
+	return check
+}
+
+// checkStorageHealth verifies storage and state management
+func (d *Daemon) checkStorageHealth() HealthCheck {
+	start := time.Now()
+
+	check := HealthCheck{
+		Name:        "storage_state",
+		LastChecked: time.Now(),
+		Duration:    time.Since(start),
+	}
+
+	if d.stateManager == nil {
+		check.Status = HealthStatusDegraded
+		check.Message = "State manager not initialized"
+		return check
+	}
+
+	// TODO: Add actual storage health checks (disk space, permissions, etc.)
+	check.Status = HealthStatusHealthy
+	check.Message = "Storage and state management operational"
+
+	return check
+}
+
+// EnhancedHealthHandler serves detailed health information
+func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, r *http.Request) {
+	health := d.PerformHealthChecks()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+
+	// Set HTTP status code based on health
+	switch health.Status {
+	case HealthStatusHealthy:
+		w.WriteHeader(http.StatusOK)
+	case HealthStatusDegraded:
+		w.WriteHeader(http.StatusOK) // Still OK, but with warnings
+	case HealthStatusUnhealthy:
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
+
+	if err := json.NewEncoder(w).Encode(health); err != nil {
+		http.Error(w, "Failed to encode health response", http.StatusInternalServerError)
+	}
+}

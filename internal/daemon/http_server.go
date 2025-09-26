@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -93,24 +94,13 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 // startDocsServer starts the documentation serving server
 func (s *HTTPServer) startDocsServer(ctx context.Context) error {
 	mux := http.NewServeMux()
-
-	// Serve static documentation files
-	docRoot := s.config.Output.Directory
-	if docRoot == "" {
-		docRoot = "./site"
-	}
-
-	// Convert to absolute path
-	if !filepath.IsAbs(docRoot) {
-		absPath, err := filepath.Abs(docRoot)
-		if err != nil {
-			return fmt.Errorf("failed to resolve docs path: %w", err)
-		}
-		docRoot = absPath
-	}
-
-	fileServer := http.FileServer(http.Dir(docRoot))
-	mux.Handle("/", s.loggingMiddleware(fileServer))
+	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
+	// This lets us begin serving immediately (before a static render completes) while automatically
+	// switching to the fully rendered site once available—without restarting the daemon.
+	mux.Handle("/", s.loggingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		root := s.resolveDocsRoot()
+		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
+	})))
 
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.handleDocsStatus)
@@ -130,6 +120,27 @@ func (s *HTTPServer) startDocsServer(ctx context.Context) error {
 	}()
 
 	return nil
+}
+
+// resolveDocsRoot picks the directory to serve. Preference order:
+// 1. <outputDir>/public if it exists (Hugo static render completed)
+// 2. <outputDir> (Hugo project scaffold / in-progress)
+func (s *HTTPServer) resolveDocsRoot() string {
+	out := s.config.Output.Directory
+	if out == "" {
+		out = "./site"
+	}
+	// Normalize to absolute path once; failures just return original path
+	if !filepath.IsAbs(out) {
+		if abs, err := filepath.Abs(out); err == nil {
+			out = abs
+		}
+	}
+	public := filepath.Join(out, "public")
+	if st, err := os.Stat(public); err == nil && st.IsDir() {
+		return public
+	}
+	return out
 }
 
 // startWebhookServer starts the webhook handling server
@@ -167,10 +178,15 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 
 	// Health check endpoint
 	mux.HandleFunc(s.config.Monitoring.Health.Path, s.handleHealthCheck)
+	// Add enhanced health check endpoint
+	mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
 
 	// Metrics endpoint
 	if s.config.Monitoring.Metrics.Enabled {
 		mux.HandleFunc(s.config.Monitoring.Metrics.Path, s.handleMetrics)
+		// Add new comprehensive metrics endpoint
+		mux.HandleFunc("/metrics/detailed", s.daemon.metrics.MetricsHandler)
+		mux.HandleFunc("/metrics/prometheus", s.daemon.metrics.PrometheusHandler)
 	}
 
 	// Administrative endpoints
@@ -180,6 +196,9 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 	mux.HandleFunc("/api/build/trigger", s.handleTriggerBuild)
 	mux.HandleFunc("/api/build/status", s.handleBuildStatus)
 	mux.HandleFunc("/api/repositories", s.handleRepositories)
+
+	// Status page endpoint (HTML and JSON)
+	mux.HandleFunc("/status", s.daemon.StatusHandler)
 
 	s.adminServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.AdminPort),
@@ -249,7 +268,9 @@ func (s *HTTPServer) handleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(status)
+	if err := json.NewEncoder(w).Encode(status); err != nil { //nolint:errcheck
+		slog.Error("Failed to write daemon status response", "error", err)
+	}
 }
 
 // Health check endpoint
@@ -273,7 +294,9 @@ func (s *HTTPServer) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(health)
+	if err := json.NewEncoder(w).Encode(health); err != nil { //nolint:errcheck
+		slog.Error("Failed to write health response", "error", err)
+	}
 }
 
 // Metrics endpoint (placeholder)
@@ -293,7 +316,9 @@ func (s *HTTPServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	if err := json.NewEncoder(w).Encode(metrics); err != nil { //nolint:errcheck
+		slog.Error("Failed to write metrics response", "error", err)
+	}
 }
 
 // Daemon status endpoint
@@ -483,7 +508,9 @@ func (s *HTTPServer) handleWebhookRequest(w http.ResponseWriter, r *http.Request
 
 	// For now, just acknowledge receipt
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil { //nolint:errcheck
+		slog.Error("Failed to write OK response", "error", err)
+	}
 }
 
 func (s *HTTPServer) detectForgeType(r *http.Request) string {

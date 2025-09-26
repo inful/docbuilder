@@ -12,6 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
@@ -57,15 +58,37 @@ func main() {
 	// Execute command
 	switch ctx.Command() {
 	case "build":
-		// Load configuration for build command
-		cfg, err := config.Load(CLI.Config)
-		if err != nil {
-			slog.Error("Failed to load configuration", "error", err)
-			os.Exit(1)
-		}
-		if err := runBuild(cfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
-			slog.Error("Build failed", "error", err)
-			os.Exit(1)
+		// Support v2 config with auto-discovery. If file is v2 and repositories empty, perform forge discovery.
+		isV2, _ := config.IsV2Config(CLI.Config)
+		if isV2 {
+			v2cfg, err := config.LoadV2(CLI.Config)
+			if err != nil {
+				slog.Error("Failed to load V2 configuration", "error", err)
+				os.Exit(1)
+			}
+			legacyCfg := &config.Config{Hugo: v2cfg.Hugo, Output: v2cfg.Output}
+			if len(legacyCfg.Repositories) == 0 && len(v2cfg.Forges) > 0 {
+				if repos, err := autoDiscoverRepositories(context.Background(), v2cfg); err == nil {
+					legacyCfg.Repositories = repos
+				} else {
+					slog.Error("Auto-discovery failed", "error", err)
+					os.Exit(1)
+				}
+			}
+			if err := runBuild(legacyCfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
+				slog.Error("Build failed", "error", err)
+				os.Exit(1)
+			}
+		} else {
+			cfg, err := config.Load(CLI.Config)
+			if err != nil {
+				slog.Error("Failed to load configuration", "error", err)
+				os.Exit(1)
+			}
+			if err := runBuild(cfg, CLI.Build.Output, CLI.Build.Incremental, CLI.Verbose); err != nil {
+				slog.Error("Build failed", "error", err)
+				os.Exit(1)
+			}
 		}
 	case "init":
 		if err := runInit(CLI.Config, CLI.Init.Force); err != nil {
@@ -73,15 +96,36 @@ func main() {
 			os.Exit(1)
 		}
 	case "discover":
-		// Load configuration for discover command
-		cfg, err := config.Load(CLI.Config)
-		if err != nil {
-			slog.Error("Failed to load configuration", "error", err)
-			os.Exit(1)
-		}
-		if err := runDiscover(cfg, CLI.Discover.Repository); err != nil {
-			slog.Error("Discover failed", "error", err)
-			os.Exit(1)
+		isV2, _ := config.IsV2Config(CLI.Config)
+		if isV2 {
+			v2cfg, err := config.LoadV2(CLI.Config)
+			if err != nil {
+				slog.Error("Failed to load V2 configuration", "error", err)
+				os.Exit(1)
+			}
+			legacyCfg := &config.Config{Hugo: v2cfg.Hugo, Output: v2cfg.Output}
+			if len(legacyCfg.Repositories) == 0 && len(v2cfg.Forges) > 0 {
+				if repos, err := autoDiscoverRepositories(context.Background(), v2cfg); err == nil {
+					legacyCfg.Repositories = repos
+				} else {
+					slog.Error("Auto-discovery failed", "error", err)
+					os.Exit(1)
+				}
+			}
+			if err := runDiscover(legacyCfg, CLI.Discover.Repository); err != nil {
+				slog.Error("Discover failed", "error", err)
+				os.Exit(1)
+			}
+		} else {
+			cfg, err := config.Load(CLI.Config)
+			if err != nil {
+				slog.Error("Failed to load configuration", "error", err)
+				os.Exit(1)
+			}
+			if err := runDiscover(cfg, CLI.Discover.Repository); err != nil {
+				slog.Error("Discover failed", "error", err)
+				os.Exit(1)
+			}
 		}
 	case "daemon":
 		// Load V2 configuration for daemon command
@@ -271,8 +315,8 @@ func runDaemon(cfg *config.V2Config, dataDir string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	// Create and start the daemon
-	d, err := daemon.NewDaemon(cfg)
+	// Create and start the daemon with config file watching
+	d, err := daemon.NewDaemonWithConfigFile(cfg, CLI.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create daemon: %w", err)
 	}
@@ -305,4 +349,42 @@ func runDaemon(cfg *config.V2Config, dataDir string) error {
 
 	slog.Info("Daemon stopped successfully")
 	return nil
+}
+
+// autoDiscoverRepositories builds a forge manager from v2 config and returns converted repositories.
+func autoDiscoverRepositories(ctx context.Context, v2cfg *config.V2Config) ([]config.Repository, error) {
+	manager := forge.NewForgeManager()
+
+	// Instantiate forge clients
+	for _, f := range v2cfg.Forges {
+		var client forge.ForgeClient
+		var err error
+		switch f.Type {
+		case string(forge.ForgeTypeForgejo):
+			client, err = forge.NewForgejoClient(f)
+		// Future: add github/gitlab here
+		default:
+			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
+			continue
+		}
+		if err != nil {
+			slog.Error("Failed to create forge client", "forge", f.Name, "error", err)
+			continue
+		}
+		manager.AddForge(f, client)
+	}
+
+	filtering := v2cfg.Filtering
+	if filtering == nil {
+		filtering = &config.FilteringConfig{}
+	}
+
+	service := forge.NewDiscoveryService(manager, filtering)
+	result, err := service.DiscoverAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	repos := service.ConvertToConfigRepositories(result.Repositories, manager)
+	slog.Info("Auto-discovery completed", "repositories", len(repos))
+	return repos, nil
 }
