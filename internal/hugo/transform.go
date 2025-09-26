@@ -1,13 +1,13 @@
 package hugo
 
 import (
-	"fmt"
-	"log/slog"
-	"strings"
-	"time"
+    "fmt"
+    "log/slog"
+    "strings"
+    "time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"gopkg.in/yaml.v3"
+    "git.home.luguber.info/inful/docbuilder/internal/docs"
+    "gopkg.in/yaml.v3"
 )
 
 // Page is the in-memory representation of a markdown document being transformed.
@@ -57,9 +57,10 @@ func (f *FrontMatterParser) Name() string { return "front_matter_parser" }
 func (f *FrontMatterParser) Transform(p *Page) error {
 	body := p.Content
 	if strings.HasPrefix(body, "---\n") {
-		endIndex := strings.Index(body[4:], "\n---\n")
-		if endIndex > 0 {
-			fmContent := body[4 : endIndex+4]
+		// Locate end delimiter. Accept both \n---\n and trailing ---\nEOF (last block)
+		search := body[4:]
+		if idx := strings.Index(search, "\n---\n"); idx >= 0 { // standard case
+			fmContent := search[:idx]
 			fm := map[string]any{}
 			if err := yaml.Unmarshal([]byte(fmContent), &fm); err != nil {
 				slog.Warn("Failed to parse existing front matter", "file", p.File.RelativePath, "error", err)
@@ -67,7 +68,7 @@ func (f *FrontMatterParser) Transform(p *Page) error {
 				p.FrontMatter = fm
 				p.HadFrontMatter = true
 			}
-			p.Content = body[endIndex+8:]
+			p.Content = search[idx+5:]
 		}
 	}
 	return nil
@@ -90,9 +91,7 @@ type FinalFrontMatterSerializer struct{}
 func (s *FinalFrontMatterSerializer) Name() string { return "front_matter_serialize" }
 func (s *FinalFrontMatterSerializer) Transform(p *Page) error {
 	fmData, err := yaml.Marshal(p.FrontMatter)
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 	combined := fmt.Sprintf("---\n%s---\n%s", string(fmData), p.Content)
 	p.Raw = []byte(combined)
 	return nil

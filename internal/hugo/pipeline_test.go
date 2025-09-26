@@ -37,8 +37,9 @@ func TestPipeline_Idempotency(t *testing.T) {
 	}
 	secondOutput := string(p2.Raw)
 
-	if strings.Count(secondOutput, "---\n") != 1 {
-		t.Fatalf("front matter duplicated after second run: %s", secondOutput)
+	// Expect exactly two delimiters: opening and closing front matter
+	if strings.Count(secondOutput, "---\n") != 2 {
+		t.Fatalf("unexpected front matter delimiter count after second run: %d output: %s", strings.Count(secondOutput, "---\n"), secondOutput)
 	}
 }
 
