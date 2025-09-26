@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -29,6 +34,10 @@ var CLI struct {
 	Discover struct {
 		Repository string `short:"r" help:"Specific repository to discover (optional)"`
 	} `cmd:"" help:"Discover documentation files without building"`
+
+	Daemon struct {
+		DataDir string `short:"d" help:"Data directory for daemon state" default:"./daemon-data"`
+	} `cmd:"" help:"Start the daemon mode for continuous documentation updates"`
 }
 
 func main() {
@@ -72,6 +81,17 @@ func main() {
 		}
 		if err := runDiscover(cfg, CLI.Discover.Repository); err != nil {
 			slog.Error("Discover failed", "error", err)
+			os.Exit(1)
+		}
+	case "daemon":
+		// Load V2 configuration for daemon command
+		cfg, err := config.LoadV2(CLI.Config)
+		if err != nil {
+			slog.Error("Failed to load V2 configuration", "error", err)
+			os.Exit(1)
+		}
+		if err := runDaemon(cfg, CLI.Daemon.DataDir); err != nil {
+			slog.Error("Daemon failed", "error", err)
 			os.Exit(1)
 		}
 	}
@@ -241,5 +261,48 @@ func runDiscover(cfg *config.Config, specificRepo string) error {
 		}
 	}
 
+	return nil
+}
+
+func runDaemon(cfg *config.V2Config, dataDir string) error {
+	slog.Info("Starting daemon mode", "data_dir", dataDir)
+
+	// Create main context for the daemon
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	// Create and start the daemon
+	d, err := daemon.NewDaemon(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create daemon: %w", err)
+	}
+
+	// Start daemon in a goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		errChan <- d.Start(ctx)
+	}()
+
+	slog.Info("Daemon started, waiting for shutdown signal...")
+
+	// Wait for either error or shutdown signal
+	select {
+	case err := <-errChan:
+		if err != nil {
+			return fmt.Errorf("daemon error: %w", err)
+		}
+	case <-ctx.Done():
+		slog.Info("Shutdown signal received, stopping daemon...")
+	}
+
+	// Stop daemon gracefully
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer stopCancel()
+
+	if err := d.Stop(stopCtx); err != nil {
+		return fmt.Errorf("failed to stop daemon: %w", err)
+	}
+
+	slog.Info("Daemon stopped successfully")
 	return nil
 }

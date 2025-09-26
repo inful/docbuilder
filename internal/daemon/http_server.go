@@ -1,0 +1,504 @@
+package daemon
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+)
+
+// HTTPServer manages HTTP endpoints for the daemon
+type HTTPServer struct {
+	docsServer    *http.Server
+	webhookServer *http.Server
+	adminServer   *http.Server
+	config        *config.V2Config
+	daemon        *Daemon // Reference to main daemon service
+}
+
+// NewHTTPServer creates a new HTTP server manager
+func NewHTTPServer(cfg *config.V2Config, daemon *Daemon) *HTTPServer {
+	return &HTTPServer{
+		config: cfg,
+		daemon: daemon,
+	}
+}
+
+// Start initializes and starts all HTTP servers
+func (s *HTTPServer) Start(ctx context.Context) error {
+	if s.config.Daemon == nil {
+		return fmt.Errorf("daemon configuration required for HTTP servers")
+	}
+
+	// Start documentation server
+	if err := s.startDocsServer(ctx); err != nil {
+		return fmt.Errorf("failed to start docs server: %w", err)
+	}
+
+	// Start webhook server
+	if err := s.startWebhookServer(ctx); err != nil {
+		return fmt.Errorf("failed to start webhook server: %w", err)
+	}
+
+	// Start admin server
+	if err := s.startAdminServer(ctx); err != nil {
+		return fmt.Errorf("failed to start admin server: %w", err)
+	}
+
+	slog.Info("HTTP servers started",
+		"docs_port", s.config.Daemon.HTTP.DocsPort,
+		"webhook_port", s.config.Daemon.HTTP.WebhookPort,
+		"admin_port", s.config.Daemon.HTTP.AdminPort)
+
+	return nil
+}
+
+// Stop gracefully shuts down all HTTP servers
+func (s *HTTPServer) Stop(ctx context.Context) error {
+	var errs []error
+
+	// Stop servers in reverse order
+	if s.adminServer != nil {
+		if err := s.adminServer.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("admin server shutdown: %w", err))
+		}
+	}
+
+	if s.webhookServer != nil {
+		if err := s.webhookServer.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("webhook server shutdown: %w", err))
+		}
+	}
+
+	if s.docsServer != nil {
+		if err := s.docsServer.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("docs server shutdown: %w", err))
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("shutdown errors: %v", errs)
+	}
+
+	slog.Info("HTTP servers stopped")
+	return nil
+}
+
+// startDocsServer starts the documentation serving server
+func (s *HTTPServer) startDocsServer(ctx context.Context) error {
+	mux := http.NewServeMux()
+
+	// Serve static documentation files
+	docRoot := s.config.Output.Directory
+	if docRoot == "" {
+		docRoot = "./site"
+	}
+
+	// Convert to absolute path
+	if !filepath.IsAbs(docRoot) {
+		absPath, err := filepath.Abs(docRoot)
+		if err != nil {
+			return fmt.Errorf("failed to resolve docs path: %w", err)
+		}
+		docRoot = absPath
+	}
+
+	fileServer := http.FileServer(http.Dir(docRoot))
+	mux.Handle("/", s.loggingMiddleware(fileServer))
+
+	// API endpoint for documentation status
+	mux.HandleFunc("/api/status", s.handleDocsStatus)
+
+	s.docsServer = &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.DocsPort),
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	go func() {
+		if err := s.docsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Documentation server error", "error", err)
+		}
+	}()
+
+	return nil
+}
+
+// startWebhookServer starts the webhook handling server
+func (s *HTTPServer) startWebhookServer(ctx context.Context) error {
+	mux := http.NewServeMux()
+
+	// Webhook endpoints for each forge type
+	mux.HandleFunc("/webhooks/github", s.handleGitHubWebhook)
+	mux.HandleFunc("/webhooks/gitlab", s.handleGitLabWebhook)
+	mux.HandleFunc("/webhooks/forgejo", s.handleForgejoWebhook)
+
+	// Generic webhook endpoint (auto-detects forge type)
+	mux.HandleFunc("/webhook", s.handleGenericWebhook)
+
+	s.webhookServer = &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.WebhookPort),
+		Handler:      s.loggingMiddleware(mux),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	go func() {
+		if err := s.webhookServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Webhook server error", "error", err)
+		}
+	}()
+
+	return nil
+}
+
+// startAdminServer starts the administrative API server
+func (s *HTTPServer) startAdminServer(ctx context.Context) error {
+	mux := http.NewServeMux()
+
+	// Health check endpoint
+	mux.HandleFunc(s.config.Monitoring.Health.Path, s.handleHealthCheck)
+
+	// Metrics endpoint
+	if s.config.Monitoring.Metrics.Enabled {
+		mux.HandleFunc(s.config.Monitoring.Metrics.Path, s.handleMetrics)
+	}
+
+	// Administrative endpoints
+	mux.HandleFunc("/api/daemon/status", s.handleDaemonStatus)
+	mux.HandleFunc("/api/daemon/config", s.handleDaemonConfig)
+	mux.HandleFunc("/api/discovery/trigger", s.handleTriggerDiscovery)
+	mux.HandleFunc("/api/build/trigger", s.handleTriggerBuild)
+	mux.HandleFunc("/api/build/status", s.handleBuildStatus)
+	mux.HandleFunc("/api/repositories", s.handleRepositories)
+
+	s.adminServer = &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.AdminPort),
+		Handler:      s.loggingMiddleware(mux),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	go func() {
+		if err := s.adminServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Admin server error", "error", err)
+		}
+	}()
+
+	return nil
+}
+
+// Middleware for request logging
+func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Wrap the response writer to capture status code
+		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(wrapped, r)
+
+		duration := time.Since(start)
+
+		slog.Info("HTTP request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", wrapped.statusCode,
+			"duration", duration,
+			"user_agent", r.UserAgent(),
+			"remote_addr", r.RemoteAddr)
+	})
+}
+
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+// Documentation status endpoint
+func (s *HTTPServer) handleDocsStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	status := map[string]interface{}{
+		"status":      "ok",
+		"title":       s.config.Hugo.Title,
+		"description": s.config.Hugo.Description,
+		"theme":       s.config.Hugo.Theme,
+		"base_url":    s.config.Hugo.BaseURL,
+		"output_dir":  s.config.Output.Directory,
+		"timestamp":   time.Now().UTC(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+// Health check endpoint
+func (s *HTTPServer) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	health := map[string]interface{}{
+		"status":    "healthy",
+		"timestamp": time.Now().UTC(),
+		"version":   "2.0", // TODO: Get from build info
+		"uptime":    time.Since(s.daemon.startTime).Seconds(),
+	}
+
+	// Check daemon health
+	if s.daemon != nil {
+		health["daemon_status"] = s.daemon.GetStatus()
+		health["active_jobs"] = s.daemon.GetActiveJobs()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(health)
+}
+
+// Metrics endpoint (placeholder)
+func (s *HTTPServer) handleMetrics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement Prometheus-style metrics
+	metrics := map[string]interface{}{
+		"http_requests_total":     0, // TODO: Implement counters
+		"active_jobs":             s.daemon.GetActiveJobs(),
+		"last_discovery_duration": 0, // TODO: Track discovery timing
+		"last_build_duration":     0, // TODO: Track build timing
+		"repositories_total":      0, // TODO: Count managed repositories
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+}
+
+// Daemon status endpoint
+func (s *HTTPServer) handleDaemonStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	status := map[string]interface{}{
+		"status":     s.daemon.GetStatus(),
+		"uptime":     time.Since(s.daemon.startTime).Seconds(),
+		"start_time": s.daemon.startTime,
+		"config": map[string]interface{}{
+			"forges_count":      len(s.config.Forges),
+			"sync_schedule":     s.config.Daemon.Sync.Schedule,
+			"concurrent_builds": s.config.Daemon.Sync.ConcurrentBuilds,
+			"queue_size":        s.config.Daemon.Sync.QueueSize,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+// Daemon configuration endpoint
+func (s *HTTPServer) handleDaemonConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Return sanitized configuration (no secrets)
+	sanitized := s.sanitizeConfig(s.config)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sanitized)
+}
+
+// Trigger discovery endpoint
+func (s *HTTPServer) handleTriggerDiscovery(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement discovery triggering
+	if s.daemon != nil {
+		jobID := s.daemon.TriggerDiscovery()
+		response := map[string]interface{}{
+			"status": "triggered",
+			"job_id": jobID,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
+	}
+}
+
+// Trigger build endpoint
+func (s *HTTPServer) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement build triggering
+	if s.daemon != nil {
+		jobID := s.daemon.TriggerBuild()
+		response := map[string]interface{}{
+			"status": "triggered",
+			"job_id": jobID,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
+	}
+}
+
+// Build status endpoint
+func (s *HTTPServer) handleBuildStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement build status tracking
+	status := map[string]interface{}{
+		"queue_length": s.daemon.GetQueueLength(),
+		"active_jobs":  s.daemon.GetActiveJobs(),
+		"last_build":   nil, // TODO: Get last build info
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
+// Repositories endpoint
+func (s *HTTPServer) handleRepositories(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement repository listing from state
+	repos := map[string]interface{}{
+		"repositories":   []interface{}{}, // TODO: Get from daemon state
+		"total":          0,
+		"last_discovery": nil, // TODO: Get last discovery time
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(repos)
+}
+
+// sanitizeConfig removes sensitive information from configuration
+func (s *HTTPServer) sanitizeConfig(cfg *config.V2Config) map[string]interface{} {
+	sanitized := map[string]interface{}{
+		"version": cfg.Version,
+		"hugo": map[string]interface{}{
+			"title":       cfg.Hugo.Title,
+			"description": cfg.Hugo.Description,
+			"base_url":    cfg.Hugo.BaseURL,
+			"theme":       cfg.Hugo.Theme,
+		},
+		"output": cfg.Output,
+		"daemon": map[string]interface{}{
+			"http":    cfg.Daemon.HTTP,
+			"sync":    cfg.Daemon.Sync,
+			"storage": cfg.Daemon.Storage,
+		},
+		"filtering":  cfg.Filtering,
+		"versioning": cfg.Versioning,
+		"monitoring": cfg.Monitoring,
+	}
+
+	// Add forge info without sensitive data
+	var forges []map[string]interface{}
+	for _, forge := range cfg.Forges {
+		sanitizedForge := map[string]interface{}{
+			"name":          forge.Name,
+			"type":          forge.Type,
+			"api_url":       forge.APIURL,
+			"base_url":      forge.BaseURL,
+			"organizations": forge.Organizations,
+			"groups":        forge.Groups,
+		}
+		forges = append(forges, sanitizedForge)
+	}
+	sanitized["forges"] = forges
+
+	return sanitized
+}
+
+// Webhook handlers (stubs for now)
+func (s *HTTPServer) handleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
+	s.handleWebhookRequest(w, r, "github")
+}
+
+func (s *HTTPServer) handleGitLabWebhook(w http.ResponseWriter, r *http.Request) {
+	s.handleWebhookRequest(w, r, "gitlab")
+}
+
+func (s *HTTPServer) handleForgejoWebhook(w http.ResponseWriter, r *http.Request) {
+	s.handleWebhookRequest(w, r, "forgejo")
+}
+
+func (s *HTTPServer) handleGenericWebhook(w http.ResponseWriter, r *http.Request) {
+	// Auto-detect forge type from headers
+	forgeType := s.detectForgeType(r)
+	s.handleWebhookRequest(w, r, forgeType)
+}
+
+func (s *HTTPServer) handleWebhookRequest(w http.ResponseWriter, r *http.Request, forgeType string) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement webhook processing with daemon
+	slog.Info("Webhook received",
+		"forge_type", forgeType,
+		"content_length", r.ContentLength,
+		"user_agent", r.UserAgent())
+
+	// For now, just acknowledge receipt
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+func (s *HTTPServer) detectForgeType(r *http.Request) string {
+	// Detect based on headers and user agent
+	userAgent := strings.ToLower(r.UserAgent())
+
+	if strings.Contains(userAgent, "github") || r.Header.Get("X-GitHub-Event") != "" {
+		return "github"
+	}
+	if strings.Contains(userAgent, "gitlab") || r.Header.Get("X-Gitlab-Event") != "" {
+		return "gitlab"
+	}
+	if strings.Contains(userAgent, "forgejo") || strings.Contains(userAgent, "gitea") {
+		return "forgejo"
+	}
+
+	return "unknown"
+}
