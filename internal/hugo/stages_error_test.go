@@ -35,10 +35,10 @@ func TestRunStages_ErrorClassification(t *testing.T) {
 	if len(report.Errors) != 1 {
 		t.Fatalf("expected 1 fatal error, got %d", len(report.Errors))
 	}
-	if report.StageErrorKinds["warn_stage"] != string(StageErrorWarning) {
-		t.Fatalf("warn_stage kind mismatch")
+	if report.StageErrorKinds[StageName("warn_stage")] != StageErrorWarning {
+		 t.Fatalf("expected warning kind recorded")
 	}
-	if report.StageErrorKinds["fatal_stage"] != string(StageErrorFatal) {
+	if report.StageErrorKinds[StageName("fatal_stage")] != StageErrorFatal {
 		t.Fatalf("fatal_stage kind mismatch")
 	}
 }
@@ -58,7 +58,7 @@ func TestRunStages_Canceled(t *testing.T) {
 	if len(report.Errors) != 1 {
 		t.Fatalf("expected 1 canceled error recorded, got %d", len(report.Errors))
 	}
-	if report.StageErrorKinds["prepare_output"] != string(StageErrorCanceled) {
+	if report.StageErrorKinds[StagePrepareOutput] != StageErrorCanceled {
 		t.Fatalf("expected canceled kind for prepare_output")
 	}
 }
@@ -76,8 +76,8 @@ func TestRunStages_TimingRecordedOnWarning(t *testing.T) {
 	if _, ok := report.StageDurations["warn_stage"]; !ok {
 		t.Fatalf("expected timing recorded for warn_stage")
 	}
-	if report.StageErrorKinds["warn_stage"] != string(StageErrorWarning) {
-		t.Fatalf("expected warning kind recorded")
+	if report.StageErrorKinds[StageName("warn_stage")] != StageErrorWarning {
+		 t.Fatalf("expected warning kind recorded")
 	}
 	// Sanity check timing value
 	if report.StageDurations["warn_stage"] <= 0 || report.StageDurations["warn_stage"] > 1*time.Second {

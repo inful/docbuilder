@@ -20,7 +20,7 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
     se := newWarnStageError(StageCloneRepos, errors.New("wrapper: "+build.ErrClone.Error()))
     report.Errors = nil
     report.Warnings = append(report.Warnings, se)
-    report.StageErrorKinds[string(StageCloneRepos)] = string(se.Kind)
+    report.StageErrorKinds[StageCloneRepos] = se.Kind
     report.recordStageResult(StageCloneRepos, StageResultWarning, nil)
     // emulate runStages logic for issue creation
     issue := ReportIssue{Stage: StageCloneRepos, Message: se.Error(), Transient: se.Transient(), Severity: SeverityWarning}
@@ -39,7 +39,7 @@ func TestIssueTaxonomyHugoWarning(t *testing.T) {
     report := newBuildReport(0, 0)
     // Simulate a hugo run warning
     se := newWarnStageError(StageRunHugo, errors.New("wrap: "+build.ErrHugo.Error()))
-    report.StageErrorKinds[string(StageRunHugo)] = string(se.Kind)
+    report.StageErrorKinds[StageRunHugo] = se.Kind
     report.Warnings = append(report.Warnings, se)
     report.recordStageResult(StageRunHugo, StageResultWarning, nil)
     issue := ReportIssue{Stage: StageRunHugo, Message: se.Error(), Transient: se.Transient(), Severity: SeverityWarning, Code: IssueHugoExecution}

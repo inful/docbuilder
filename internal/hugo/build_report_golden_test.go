@@ -14,7 +14,7 @@ func TestBuildReportGolden(t *testing.T) {
 	r.ClonedRepositories = 2
 	r.RenderedPages = 5
 	r.StageDurations["prepare_output"] = 10 * time.Millisecond
-	r.StageErrorKinds["prepare_output"] = "" // no error
+	r.StageErrorKinds[StagePrepareOutput] = "" // no error
 	r.recordStageResult(StagePrepareOutput, StageResultSuccess, nil)
 	r.finish()
 	r.deriveOutcome()
