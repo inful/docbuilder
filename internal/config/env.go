@@ -7,43 +7,25 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// loadEnvFile loads environment variables honoring precedence:
-// 1. Existing process env (never overwritten)
-// 2. .env (base)
-// 3. .env.local (overrides .env if present)
-// Returns nil if neither file exists (non-fatal for callers).
+// loadEnvFile loads environment variables using the first existing file among
+// .env then .env.local. This preserves the original behavior (only one file used)
+// while delegating parsing to godotenv. Existing process environment variables
+// are never overwritten (godotenv.Load semantics).
 func loadEnvFile() error {
-	loadedAny := false
-	if _, err := os.Stat(".env"); err == nil {
-		if err := loadSingleEnvFile(".env"); err != nil {
-			return fmt.Errorf("failed parsing .env: %w", err)
+	envPaths := []string{".env", ".env.local"}
+	for _, p := range envPaths {
+		if _, err := os.Stat(p); err == nil {
+			if err := godotenv.Load(p); err != nil {
+				return fmt.Errorf("failed loading %s: %w", p, err)
+			}
+			fmt.Fprintf(os.Stderr, "Loaded environment variables from %s\n", p)
+			return nil
 		}
-		fmt.Fprintf(os.Stderr, "Loaded environment variables from .env\n")
-		loadedAny = true
 	}
-	if _, err := os.Stat(".env.local"); err == nil {
-		if err := loadSingleEnvFile(".env.local"); err != nil {
-			return fmt.Errorf("failed parsing .env.local: %w", err)
-		}
-		fmt.Fprintf(os.Stderr, "Loaded environment variables from .env.local (overrides)\n")
-		loadedAny = true
-	}
-	if !loadedAny {
-		return fmt.Errorf("no .env file found")
-	}
-	return nil
+	return fmt.Errorf("no .env file found")
 }
 
-// loadSingleEnvFile parses a single env file using godotenv while respecting existing process vars.
-func loadSingleEnvFile(filename string) error {
-	values, err := godotenv.Read(filename)
-	if err != nil {
-		return err
-	}
-	for k, v := range values {
-		if os.Getenv(k) == "" { // never override existing process env
-			_ = os.Setenv(k, v)
-		}
-	}
-	return nil
-}
+// Retained for potential future multi-file merging needs; currently unused after behavior restoration.
+// If later we support layered overrides (.env then .env.local) we can reintroduce a variant using godotenv.Read.
+// Keeping stub for clarity and minimal diff footprint.
+func loadSingleEnvFile(filename string) error { return godotenv.Load(filename) }
