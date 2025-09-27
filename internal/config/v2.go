@@ -202,6 +202,8 @@ func applyDefaults(config *Config) error {
 	if config.Build.RetryMaxDelay == "" {
 		config.Build.RetryMaxDelay = "30s"
 	}
+	// Note: Build.WorkspaceDir default derived later in builder (depends on output.directory)
+
 	// Hugo defaults
 	if config.Hugo.Title == "" {
 		config.Hugo.Title = "Documentation Portal"
