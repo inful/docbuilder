@@ -111,6 +111,12 @@ func (r *EditLinkResolver) Resolve(file docs.DocFile) string {
         }
     }
 
+    // Fallback: if still unknown but we have a fullname, treat as Forgejo/Gitea-style self-hosted instance
+    // This preserves previous behavior where tests expected Gitea-style edit links without explicit forge config.
+    if forgeType == "" && fullName != "" {
+        forgeType = config.ForgeForgejo
+    }
+
     if forgeType == "" || fullName == "" {
         return ""
     }
