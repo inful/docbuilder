@@ -10,8 +10,12 @@ import (
 )
 
 // fake stage functions for testing classification
-func failingFatalStage(ctx context.Context, bs *BuildState) error { return newFatalStageError(StageName("fatal_stage"), errors.New("boom")) }
-func failingWarnStage(ctx context.Context, bs *BuildState) error  { return newWarnStageError(StageName("warn_stage"), errors.New("soft")) }
+func failingFatalStage(ctx context.Context, bs *BuildState) error {
+	return newFatalStageError(StageName("fatal_stage"), errors.New("boom"))
+}
+func failingWarnStage(ctx context.Context, bs *BuildState) error {
+	return newWarnStageError(StageName("warn_stage"), errors.New("soft"))
+}
 
 func TestRunStages_ErrorClassification(t *testing.T) {
 	cfg := &config.V2Config{}
