@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // DocFile represents a discovered documentation file
@@ -55,7 +56,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 		// Check for .docignore file in repository root
 		if hasDocIgnore, err := d.checkDocIgnore(repoPath); err != nil {
-			slog.Warn("Failed to check .docignore", slog.String("repository", repoName), slog.String("error", err.Error()))
+			slog.Warn("Failed to check .docignore", slog.String("repository", repoName), logfields.Error(err))
 		} else if hasDocIgnore {
 			slog.Info("Skipping repository due to .docignore file", slog.String("repository", repoName))
 			continue
