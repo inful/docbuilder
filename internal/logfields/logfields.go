@@ -41,21 +41,24 @@ func ScheduleID(id string) slog.Attr  { return slog.String(KeyScheduleID, id) }
 func ScheduleName(n string) slog.Attr { return slog.String(KeySchedule, n) }
 func Repository(r string) slog.Attr   { return slog.String(KeyRepo, r) }
 func Section(s string) slog.Attr      { return slog.String(KeySection, s) }
+
 // Additional common context helpers
-func Path(p string) slog.Attr         { return slog.String(KeyPath, p) }
-func File(f string) slog.Attr         { return slog.String(KeyFile, f) }
-func Worker(id string) slog.Attr      { return slog.String(KeyWorker, id) }
-func Method(m string) slog.Attr       { return slog.String(KeyMethod, m) }
-func UserAgent(ua string) slog.Attr   { return slog.String(KeyUserAgent, ua) }
-func RemoteAddr(a string) slog.Attr   { return slog.String(KeyRemoteAddr, a) }
-func RequestID(id string) slog.Attr   { return slog.String(KeyRequestID, id) }
-func Status(code int) slog.Attr       { return slog.Int(KeyStatus, code) }
-func ResponseSize(sz int) slog.Attr   { return slog.Int(KeyResponseSz, sz) }
-func ForgeType(t string) slog.Attr    { return slog.String(KeyForgeType, t) }
+func Path(p string) slog.Attr          { return slog.String(KeyPath, p) }
+func File(f string) slog.Attr          { return slog.String(KeyFile, f) }
+func Worker(id string) slog.Attr       { return slog.String(KeyWorker, id) }
+func Method(m string) slog.Attr        { return slog.String(KeyMethod, m) }
+func UserAgent(ua string) slog.Attr    { return slog.String(KeyUserAgent, ua) }
+func RemoteAddr(a string) slog.Attr    { return slog.String(KeyRemoteAddr, a) }
+func RequestID(id string) slog.Attr    { return slog.String(KeyRequestID, id) }
+func Status(code int) slog.Attr        { return slog.Int(KeyStatus, code) }
+func ResponseSize(sz int) slog.Attr    { return slog.Int(KeyResponseSz, sz) }
+func ForgeType(t string) slog.Attr     { return slog.String(KeyForgeType, t) }
 func ContentLength(cl int64) slog.Attr { return slog.Int64(KeyContentLen, cl) }
-func Name(n string) slog.Attr         { return slog.String(KeyName, n) }
-func URL(u string) slog.Attr          { return slog.String(KeyURL, u) }
+func Name(n string) slog.Attr          { return slog.String(KeyName, n) }
+func URL(u string) slog.Attr           { return slog.String(KeyURL, u) }
 func Error(err error) slog.Attr {
-	if err == nil { return slog.String(KeyError, "") }
+	if err == nil {
+		return slog.String(KeyError, "")
+	}
 	return slog.String(KeyError, err.Error())
 }

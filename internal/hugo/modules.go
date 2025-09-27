@@ -1,14 +1,14 @@
 package hugo
 
 import (
-    "fmt"
-    "log/slog"
-    "os"
-    "path/filepath"
-    "strings"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    "git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work

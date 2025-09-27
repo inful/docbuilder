@@ -29,7 +29,7 @@ const (
 // StageError is a structured error carrying category and underlying cause.
 type StageError struct {
 	Kind  StageErrorKind
-	Stage string
+	Stage StageName
 	Err   error
 }
 
@@ -54,17 +54,17 @@ func (e *StageError) Transient() bool {
 	var cause error = e.Err
 	isSentinel := func(target error) bool { return errors.Is(cause, target) }
 	switch e.Stage {
-	case "clone_repos":
+	case StageCloneRepos:
 		if isSentinel(build.ErrClone) {
 			// Heuristic: if at least one repo succeeded treat as transient; otherwise maybe auth misconfig (permanent).
 			// We cannot access BuildState here directly; assume transient for warning classification (fatal clone errs rare).
 			return true
 		}
-	case "run_hugo":
+	case StageRunHugo:
 		if isSentinel(build.ErrHugo) {
 			return true
 		}
-	case "discover_docs":
+	case StageDiscoverDocs:
 		if isSentinel(build.ErrDiscovery) {
 			// Distinguish between zero and partial clones is done at stage level; treat warning discovery issues as transient.
 			return e.Kind == StageErrorWarning
@@ -74,15 +74,9 @@ func (e *StageError) Transient() bool {
 }
 
 // Helpers to classify errors.
-func newFatalStageError(stage string, err error) *StageError {
-	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
-}
-func newWarnStageError(stage string, err error) *StageError {
-	return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err}
-}
-func newCanceledStageError(stage string, err error) *StageError {
-	return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err}
-}
+func newFatalStageError(stage StageName, err error) *StageError    { return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err} }
+func newWarnStageError(stage StageName, err error) *StageError     { return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err} }
+func newCanceledStageError(stage StageName, err error) *StageError { return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err} }
 
 // BuildState carries mutable state and metrics across stages.
 type BuildState struct {
@@ -108,34 +102,31 @@ func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *
 }
 
 // runStages executes stages in order, recording timing and stopping on first fatal error.
-func runStages(ctx context.Context, bs *BuildState, stages []struct {
-	name string
-	fn   Stage
-}) error {
+func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 	for _, st := range stages {
 		select {
 		case <-ctx.Done():
-			se := newCanceledStageError(st.name, ctx.Err())
+			se := newCanceledStageError(st.Name, ctx.Err())
 			bs.Report.Errors = append(bs.Report.Errors, se)
-			bs.Report.StageErrorKinds[st.name] = string(se.Kind)
+			bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
 			return se
 		default:
 		}
 		t0 := time.Now()
-		err := st.fn(ctx, bs)
+		err := st.Fn(ctx, bs)
 		dur := time.Since(t0)
-		bs.Timings[st.name] = dur
-		bs.Report.StageDurations[st.name] = dur
+		bs.Timings[string(st.Name)] = dur
+		bs.Report.StageDurations[string(st.Name)] = dur
 		if bs.Generator != nil && bs.Generator.recorder != nil {
-			bs.Generator.recorder.ObserveStageDuration(st.name, dur)
+			bs.Generator.recorder.ObserveStageDuration(string(st.Name), dur)
 		}
 		if err != nil {
 			var se *StageError
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
-				bs.Report.StageErrorKinds[st.name] = string(se.Kind)
+				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
 				// update stage counts
-				sc := bs.Report.StageCounts[st.name]
+				sc := bs.Report.StageCounts[string(st.Name)]
 				switch se.Kind {
 				case StageErrorWarning:
 					sc.Warning++
@@ -144,47 +135,47 @@ func runStages(ctx context.Context, bs *BuildState, stages []struct {
 				case StageErrorFatal:
 					sc.Fatal++
 				}
-				bs.Report.StageCounts[st.name] = sc
+				bs.Report.StageCounts[string(st.Name)] = sc
 				switch se.Kind {
 				case StageErrorWarning:
 					bs.Report.Warnings = append(bs.Report.Warnings, se)
 					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultWarning)
+						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultWarning)
 					}
 					continue // proceed to next stage
 				case StageErrorCanceled:
 					bs.Report.Errors = append(bs.Report.Errors, se)
 					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultCanceled)
+						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultCanceled)
 					}
 					return se
 				case StageErrorFatal:
 					bs.Report.Errors = append(bs.Report.Errors, se)
 					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(st.name, metrics.ResultFatal)
+						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultFatal)
 					}
 					return se
 				}
 			} else {
 				// Wrap unknown errors as fatal by default.
-				se = newFatalStageError(st.name, err)
-				bs.Report.StageErrorKinds[st.name] = string(se.Kind)
-				sc := bs.Report.StageCounts[st.name]
+				se = newFatalStageError(st.Name, err)
+				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
+				sc := bs.Report.StageCounts[string(st.Name)]
 				sc.Fatal++
-				bs.Report.StageCounts[st.name] = sc
+				bs.Report.StageCounts[string(st.Name)] = sc
 				bs.Report.Errors = append(bs.Report.Errors, se)
 				if bs.Generator != nil && bs.Generator.recorder != nil {
-					bs.Generator.recorder.IncStageResult(st.name, metrics.ResultFatal)
+					bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultFatal)
 				}
 				return se
 			}
 		} else {
 			// success path
-			sc := bs.Report.StageCounts[st.name]
+			sc := bs.Report.StageCounts[string(st.Name)]
 			sc.Success++
-			bs.Report.StageCounts[st.name] = sc
+			bs.Report.StageCounts[string(st.Name)] = sc
 			if bs.Generator != nil && bs.Generator.recorder != nil {
-				bs.Generator.recorder.IncStageResult(st.name, metrics.ResultSuccess)
+				bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultSuccess)
 			}
 		}
 	}
@@ -203,7 +194,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return nil
 	}
 	if bs.WorkspaceDir == "" {
-		return newFatalStageError("clone_repos", fmt.Errorf("workspace directory not set"))
+		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
 	}
 	client := git.NewClient(bs.WorkspaceDir)
 	if err := client.EnsureWorkspace(); err != nil {
@@ -232,7 +223,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		for _, r := range bs.Repositories {
 			select {
 			case <-ctx.Done():
-				return newCanceledStageError("clone_repos", ctx.Err())
+				return newCanceledStageError(StageCloneRepos, ctx.Err())
 			default:
 			}
 			start := time.Now()
@@ -288,16 +279,16 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		// If canceled after goroutines, propagate
 		select {
 		case <-ctx.Done():
-			return newCanceledStageError("clone_repos", ctx.Err())
+			return newCanceledStageError(StageCloneRepos, ctx.Err())
 		default:
 		}
 	}
 
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return newWarnStageError("clone_repos", fmt.Errorf("%w: all clones failed", build.ErrClone))
+		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return newWarnStageError("clone_repos", fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Repositories)))
+		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Repositories)))
 	}
 	return nil
 }
@@ -306,17 +297,17 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	if len(bs.RepoPaths) == 0 {
 		// No repos cloned; treat as warning to reflect empty input rather than fatal.
-		return newWarnStageError("discover_docs", fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
+		return newWarnStageError(StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
 	}
 	select {
 	case <-ctx.Done():
-		return newCanceledStageError("discover_docs", ctx.Err())
+		return newCanceledStageError(StageDiscoverDocs, ctx.Err())
 	default:
 	}
 	discovery := docs.NewDiscovery(bs.Repositories)
 	docFiles, err := discovery.DiscoverDocs(bs.RepoPaths)
 	if err != nil {
-		return newFatalStageError("discover_docs", fmt.Errorf("%w: %v", build.ErrDiscovery, err))
+		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %v", build.ErrDiscovery, err))
 	}
 	bs.Docs = docFiles
 	// update top-level report file count & repository count (may exclude failed clones)
@@ -347,7 +338,7 @@ func stageLayouts(ctx context.Context, bs *BuildState) error {
 func stageCopyContent(ctx context.Context, bs *BuildState) error {
 	if err := bs.Generator.copyContentFiles(ctx, bs.Docs); err != nil {
 		if errors.Is(err, context.Canceled) {
-			return newCanceledStageError("copy_content", err)
+			return newCanceledStageError(StageCopyContent, err)
 		}
 		return err
 	}
@@ -365,7 +356,7 @@ func stageRunHugo(ctx context.Context, bs *BuildState) error {
 	}
 	if err := bs.Generator.runHugoBuild(); err != nil {
 		// Treat hugo runtime failure as warning (site content still copied & usable without static render)
-		return newWarnStageError("run_hugo", fmt.Errorf("%w: %v", build.ErrHugo, err))
+		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", build.ErrHugo, err))
 	}
 	// mark successful static render
 	bs.Report.StaticRendered = true

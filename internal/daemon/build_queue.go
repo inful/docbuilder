@@ -298,7 +298,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 			for _, e := range report.Errors {
 				if se, ok := e.(*hugo.StageError); ok && se.Transient() {
 					transient = true
-					transientStage = se.Stage
+					transientStage = string(se.Stage)
 					break
 				}
 			}

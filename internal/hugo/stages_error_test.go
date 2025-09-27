@@ -10,12 +10,8 @@ import (
 )
 
 // fake stage functions for testing classification
-func failingFatalStage(ctx context.Context, bs *BuildState) error {
-	return newFatalStageError("fatal_stage", errors.New("boom"))
-}
-func failingWarnStage(ctx context.Context, bs *BuildState) error {
-	return newWarnStageError("warn_stage", errors.New("soft"))
-}
+func failingFatalStage(ctx context.Context, bs *BuildState) error { return newFatalStageError(StageName("fatal_stage"), errors.New("boom")) }
+func failingWarnStage(ctx context.Context, bs *BuildState) error  { return newWarnStageError(StageName("warn_stage"), errors.New("soft")) }
 
 func TestRunStages_ErrorClassification(t *testing.T) {
 	cfg := &config.V2Config{}
@@ -23,13 +19,7 @@ func TestRunStages_ErrorClassification(t *testing.T) {
 	report := newBuildReport(0, 0)
 	bs := newBuildState(gen, nil, report)
 
-	stages := []struct {
-		name string
-		fn   Stage
-	}{
-		{"warn_stage", failingWarnStage},
-		{"fatal_stage", failingFatalStage},
-	}
+	stages := []StageDef{{StageName("warn_stage"), failingWarnStage}, {StageName("fatal_stage"), failingFatalStage}}
 
 	err := runStages(context.Background(), bs, stages)
 	if err == nil {
@@ -57,10 +47,7 @@ func TestRunStages_Canceled(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := runStages(ctx, bs, []struct {
-		name string
-		fn   Stage
-	}{{"prepare_output", stagePrepareOutput}})
+	err := runStages(ctx, bs, []StageDef{{StagePrepareOutput, stagePrepareOutput}})
 	if err == nil {
 		t.Fatalf("expected canceled error")
 	}
@@ -78,10 +65,7 @@ func TestRunStages_TimingRecordedOnWarning(t *testing.T) {
 	report := newBuildReport(0, 0)
 	bs := newBuildState(gen, nil, report)
 
-	stages := []struct {
-		name string
-		fn   Stage
-	}{{"warn_stage", failingWarnStage}}
+	stages := []StageDef{{StageName("warn_stage"), failingWarnStage}}
 	if err := runStages(context.Background(), bs, stages); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

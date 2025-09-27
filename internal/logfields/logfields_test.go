@@ -36,31 +36,48 @@ func TestHelperKeyNames(t *testing.T) {
 		a := tc.attr.(slog.Attr)
 		if a.Key != tc.attrKey {
 			// Key drift would break log ingestion schemas.
-			 t.Fatalf("%s: expected key %s, got %s", tc.name, tc.attrKey, a.Key)
+			t.Fatalf("%s: expected key %s, got %s", tc.name, tc.attrKey, a.Key)
 		}
 		if got := a.Value.String(); got != tc.attrVal { // Value is slog.Value
-			 t.Fatalf("%s: expected value %s, got %v", tc.name, tc.attrVal, got)
+			t.Fatalf("%s: expected value %s, got %v", tc.name, tc.attrVal, got)
 		}
 	}
 }
 
 // TestNumericHelpers verifies keys for numeric & float helpers.
 func TestNumericHelpers(t *testing.T) {
-	if v := JobPriority(5); v.Key != KeyJobPriority { t.Fatalf("JobPriority key mismatch: %s", v.Key) }
-	if v := Status(200); v.Key != KeyStatus { t.Fatalf("Status key mismatch: %s", v.Key) }
-	if v := ResponseSize(42); v.Key != KeyResponseSz { t.Fatalf("ResponseSize key mismatch: %s", v.Key) }
-	if v := DurationMS(12.5); v.Key != KeyDurationMS { t.Fatalf("DurationMS key mismatch: %s", v.Key) }
-	if v := ContentLength(1234); v.Key != KeyContentLen { t.Fatalf("ContentLength key mismatch: %s", v.Key) }
+	if v := JobPriority(5); v.Key != KeyJobPriority {
+		t.Fatalf("JobPriority key mismatch: %s", v.Key)
+	}
+	if v := Status(200); v.Key != KeyStatus {
+		t.Fatalf("Status key mismatch: %s", v.Key)
+	}
+	if v := ResponseSize(42); v.Key != KeyResponseSz {
+		t.Fatalf("ResponseSize key mismatch: %s", v.Key)
+	}
+	if v := DurationMS(12.5); v.Key != KeyDurationMS {
+		t.Fatalf("DurationMS key mismatch: %s", v.Key)
+	}
+	if v := ContentLength(1234); v.Key != KeyContentLen {
+		t.Fatalf("ContentLength key mismatch: %s", v.Key)
+	}
 }
 
 // TestErrorHelper ensures Error() handles nil and non-nil errors predictably.
 func TestErrorHelper(t *testing.T) {
 	attr := Error(nil)
-	if attr.Key != KeyError { t.Fatalf("Error key mismatch: %s", attr.Key) }
-	if attr.Value.String() != "" { t.Fatalf("Expected empty error string, got %s", attr.Value.String()) }
+	if attr.Key != KeyError {
+		t.Fatalf("Error key mismatch: %s", attr.Key)
+	}
+	if attr.Value.String() != "" {
+		t.Fatalf("Expected empty error string, got %s", attr.Value.String())
+	}
 	attr = Error(errTest{})
-	if attr.Value.String() != "err-test" { t.Fatalf("Expected 'err-test', got %s", attr.Value.String()) }
+	if attr.Value.String() != "err-test" {
+		t.Fatalf("Expected 'err-test', got %s", attr.Value.String())
+	}
 }
 
 type errTest struct{}
+
 func (e errTest) Error() string { return "err-test" }
