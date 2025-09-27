@@ -110,15 +110,15 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	bs := newBuildState(g, docFiles, report)
 
-	stages := []StageDef{
-		{StagePrepareOutput, stagePrepareOutput},
-		{StageGenerateConfig, stageGenerateConfig},
-		{StageLayouts, stageLayouts},
-		{StageCopyContent, stageCopyContent},
-		{StageIndexes, stageIndexes},
-		{StageRunHugo, stageRunHugo},
-		{StagePostProcess, stagePostProcess},
-	}
+	stages := NewPipeline().
+		Add(StagePrepareOutput, stagePrepareOutput).
+		Add(StageGenerateConfig, stageGenerateConfig).
+		Add(StageLayouts, stageLayouts).
+		Add(StageCopyContent, stageCopyContent).
+		Add(StageIndexes, stageIndexes).
+		Add(StageRunHugo, stageRunHugo).
+		Add(StagePostProcess, stagePostProcess).
+		Build()
 
 	if err := runStages(ctx, bs, stages); err != nil {
 		// cleanup staging dir on failure
@@ -203,17 +203,17 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	bs.Repositories = repositories
 	bs.WorkspaceDir = filepath.Clean(workspaceDir)
 
-	stages := []StageDef{
-		{StagePrepareOutput, stagePrepareOutput},
-		{StageCloneRepos, stageCloneRepos},
-		{StageDiscoverDocs, stageDiscoverDocs},
-		{StageGenerateConfig, stageGenerateConfig},
-		{StageLayouts, stageLayouts},
-		{StageCopyContent, stageCopyContent},
-		{StageIndexes, stageIndexes},
-		{StageRunHugo, stageRunHugo},
-		{StagePostProcess, stagePostProcess},
-	}
+	stages := NewPipeline().
+		Add(StagePrepareOutput, stagePrepareOutput).
+		Add(StageCloneRepos, stageCloneRepos).
+		Add(StageDiscoverDocs, stageDiscoverDocs).
+		Add(StageGenerateConfig, stageGenerateConfig).
+		Add(StageLayouts, stageLayouts).
+		Add(StageCopyContent, stageCopyContent).
+		Add(StageIndexes, stageIndexes).
+		Add(StageRunHugo, stageRunHugo).
+		Add(StagePostProcess, stagePostProcess).
+		Build()
 	if err := runStages(ctx, bs, stages); err != nil {
 		// derive outcome even on error for observability; cleanup staging
 		report.deriveOutcome()
