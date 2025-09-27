@@ -308,8 +308,33 @@ func validateConfig(config *Config) error {
 		if forge.Auth == nil {
 			return fmt.Errorf("forge %s must have authentication configured", forge.Name)
 		}
+		if forge.Auth != nil {
+			switch forge.Auth.Type {
+			case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
+				// ok; semantic checks done by individual clients
+			default:
+				return fmt.Errorf("forge %s: unsupported auth type: %s", forge.Name, forge.Auth.Type)
+			}
+			// Minimal semantic validation now (clients perform stricter checks when constructing)
+			// Token presence is validated lazily by forge clients / git operations to permit env placeholders.
+		}
 
 		// Require at least one organization or group to be specified. This keeps discovery bounded
+	// Validate explicit repository auth blocks (if provided)
+	for _, repo := range config.Repositories {
+		if repo.Auth != nil {
+			switch repo.Auth.Type {
+			case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
+				// valid
+			default:
+				return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
+			}
+			// Token emptiness allowed (environment may supply later)
+			if repo.Auth.Type == AuthTypeBasic && (repo.Auth.Username == "" || repo.Auth.Password == "") {
+				return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
+			}
+		}
+	}
 		// and matches test expectations for explicit configuration (auto-discovery can be added
 		// later behind a dedicated flag to avoid surprising large scans).
 		if len(forge.Organizations) == 0 && len(forge.Groups) == 0 {

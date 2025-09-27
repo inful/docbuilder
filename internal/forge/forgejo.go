@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API)
@@ -28,21 +29,21 @@ type ForgejoClient struct {
 }
 
 // NewForgejoClient creates a new Forgejo client
-func NewForgejoClient(config *ForgeConfig) (*ForgejoClient, error) {
-	if config.Type != string(ForgeTypeForgejo) {
-		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", config.Type)
+func NewForgejoClient(fg *ForgeConfig) (*ForgejoClient, error) {
+	if fg.Type != string(ForgeTypeForgejo) {
+		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
 	}
 
 	client := &ForgejoClient{
-		config:     config,
+		config:     fg,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		apiURL:     config.APIURL,
-		baseURL:    config.BaseURL,
+		apiURL:     fg.APIURL,
+		baseURL:    fg.BaseURL,
 	}
 
 	// Extract token from auth config
-	if config.Auth != nil && config.Auth.Type == "token" {
-		client.token = config.Auth.Token
+	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
+		client.token = fg.Auth.Token
 	} else {
 		return nil, fmt.Errorf("Forgejo client requires token authentication")
 	}

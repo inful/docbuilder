@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // GitHubClient implements ForgeClient for GitHub
@@ -26,16 +28,16 @@ type GitHubClient struct {
 }
 
 // NewGitHubClient creates a new GitHub client
-func NewGitHubClient(config *ForgeConfig) (*GitHubClient, error) {
-	if config.Type != string(ForgeTypeGitHub) {
-		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", config.Type)
+func NewGitHubClient(fg *ForgeConfig) (*GitHubClient, error) {
+	if fg.Type != string(ForgeTypeGitHub) {
+		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
 	}
 
 	client := &GitHubClient{
-		config:     config,
+		config:     fg,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		apiURL:     config.APIURL,
-		baseURL:    config.BaseURL,
+		apiURL:     fg.APIURL,
+		baseURL:    fg.BaseURL,
 	}
 
 	// Set default URLs if not provided
@@ -47,8 +49,8 @@ func NewGitHubClient(config *ForgeConfig) (*GitHubClient, error) {
 	}
 
 	// Extract token from auth config
-	if config.Auth != nil && config.Auth.Type == "token" {
-		client.token = config.Auth.Token
+	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
+		client.token = fg.Auth.Token
 	} else {
 		return nil, fmt.Errorf("GitHub client requires token authentication")
 	}

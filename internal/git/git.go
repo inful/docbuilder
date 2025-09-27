@@ -148,38 +148,27 @@ func (c *Client) updateExistingRepo(repoPath string, repo config.Repository) (st
 // getAuthentication creates authentication based on config
 func (c *Client) getAuthentication(auth *config.AuthConfig) (transport.AuthMethod, error) {
 	switch auth.Type {
-	case "none", "":
+	case config.AuthTypeNone, "":
 		return nil, nil // No authentication needed for public repositories
-
-	case "ssh":
+	case config.AuthTypeSSH:
 		if auth.KeyPath == "" {
 			auth.KeyPath = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 		}
-
 		publicKeys, err := ssh.NewPublicKeysFromFile("git", auth.KeyPath, "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to load SSH key from %s: %w", auth.KeyPath, err)
 		}
 		return publicKeys, nil
-
-	case "token":
+	case config.AuthTypeToken:
 		if auth.Token == "" {
 			return nil, fmt.Errorf("token authentication requires a token")
 		}
-		return &http.BasicAuth{
-			Username: "token", // GitHub/GitLab use "token" as username
-			Password: auth.Token,
-		}, nil
-
-	case "basic":
+		return &http.BasicAuth{Username: "token", Password: auth.Token}, nil
+	case config.AuthTypeBasic:
 		if auth.Username == "" || auth.Password == "" {
 			return nil, fmt.Errorf("basic authentication requires username and password")
 		}
-		return &http.BasicAuth{
-			Username: auth.Username,
-			Password: auth.Password,
-		}, nil
-
+		return &http.BasicAuth{Username: auth.Username, Password: auth.Password}, nil
 	default:
 		return nil, fmt.Errorf("unsupported authentication type: %s", auth.Type)
 	}
