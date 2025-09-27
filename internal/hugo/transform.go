@@ -116,7 +116,11 @@ func (e *EditLinkInjector) Transform(p *Page) error {
 	if gen == nil {
 		return nil
 	}
-	if edit := generatePerPageEditURL(gen.config, p.File); edit != "" {
+	if gen.editLinkResolver != nil {
+		if edit := gen.editLinkResolver.Resolve(p.File); edit != "" {
+			p.FrontMatter["editURL"] = edit
+		}
+	} else if edit := generatePerPageEditURL(gen.config, p.File); edit != "" { // fallback safety
 		p.FrontMatter["editURL"] = edit
 	}
 	return nil
