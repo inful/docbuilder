@@ -88,7 +88,9 @@ func resultFromStageErrorKind(k StageErrorKind) StageResult {
 
 // severityFromStageErrorKind maps StageErrorKind to IssueSeverity.
 func severityFromStageErrorKind(k StageErrorKind) IssueSeverity {
-	if k == StageErrorWarning { return SeverityWarning }
+	if k == StageErrorWarning {
+		return SeverityWarning
+	}
 	return SeverityError
 }
 
@@ -125,36 +127,50 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 				} else {
 					code = IssueCloneFailure
 				}
-			} else { code = IssueCloneFailure }
+			} else {
+				code = IssueCloneFailure
+			}
 		case StageDiscoverDocs:
 			if errors.Is(se.Err, build.ErrDiscovery) {
-				if len(bs.RepoPaths) == 0 { code = IssueNoRepositories } else { code = IssueDiscoveryFailure }
-			} else { code = IssueDiscoveryFailure }
+				if len(bs.RepoPaths) == 0 {
+					code = IssueNoRepositories
+				} else {
+					code = IssueDiscoveryFailure
+				}
+			} else {
+				code = IssueDiscoveryFailure
+			}
 		case StageRunHugo:
-			if errors.Is(se.Err, build.ErrHugo) { code = IssueHugoExecution } else { code = IssueHugoExecution }
+			if errors.Is(se.Err, build.ErrHugo) {
+				code = IssueHugoExecution
+			} else {
+				code = IssueHugoExecution
+			}
 		default:
-			if se.Kind == StageErrorCanceled { code = IssueCanceled }
+			if se.Kind == StageErrorCanceled {
+				code = IssueCanceled
+			}
 		}
 		return StageOutcome{
-			Stage: stage,
-			Error: se,
-			Result: resultFromStageErrorKind(se.Kind),
+			Stage:     stage,
+			Error:     se,
+			Result:    resultFromStageErrorKind(se.Kind),
 			IssueCode: code,
-			Severity: severityFromStageErrorKind(se.Kind),
+			Severity:  severityFromStageErrorKind(se.Kind),
 			Transient: se.Transient(),
-			Abort: se.Kind == StageErrorFatal || se.Kind == StageErrorCanceled,
+			Abort:     se.Kind == StageErrorFatal || se.Kind == StageErrorCanceled,
 		}
 	}
 	// Unknown error: wrap as fatal with generic code.
 	se = newFatalStageError(stage, err)
 	return StageOutcome{
-		Stage: stage,
-		Error: se,
-		Result: StageResultFatal,
+		Stage:     stage,
+		Error:     se,
+		Result:    StageResultFatal,
 		IssueCode: IssueGenericStageError,
-		Severity: SeverityError,
+		Severity:  SeverityError,
 		Transient: false,
-		Abort: true,
+		Abort:     true,
 	}
 }
 
@@ -218,7 +234,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 		}
 		bs.Report.recordStageResult(st.Name, out.Result, bs.Generator.recorder)
 		if out.Abort {
-			if out.Error != nil { return out.Error }
+			if out.Error != nil {
+				return out.Error
+			}
 			return fmt.Errorf("stage %s aborted", st.Name)
 		}
 	}
@@ -245,86 +263,80 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
 
-	// Determine requested concurrency from config (build section) with safe bounds.
-	requested := 1
+	// Normalize requested concurrency.
+	concurrency := 1
 	if bs.Generator != nil && bs.Generator.config.Build.CloneConcurrency > 0 {
-		requested = bs.Generator.config.Build.CloneConcurrency
+		concurrency = bs.Generator.config.Build.CloneConcurrency
 	}
-	if requested > len(bs.Repositories) {
-		requested = len(bs.Repositories)
+	if concurrency > len(bs.Repositories) {
+		concurrency = len(bs.Repositories)
 	}
-	if requested < 1 {
-		requested = 1
+	if concurrency < 1 { // defensive after normalization
+		concurrency = 1
 	}
-	concurrency := requested
 	if bs.Generator != nil && bs.Generator.recorder != nil {
 		bs.Generator.recorder.SetCloneConcurrency(concurrency)
 	}
 
-	// Fast path sequential
-	if concurrency == 1 {
-		for _, r := range bs.Repositories {
+	// Single unified worker pool (also covers sequential when concurrency==1).
+	type cloneTask struct{ repo config.Repository }
+	tasks := make(chan cloneTask)
+	var wg sync.WaitGroup
+	var mu sync.Mutex // protects report counters & RepoPaths
+
+	worker := func() {
+		defer wg.Done()
+		for task := range tasks { // exit when channel closed
+			// Pre-clone cancellation check
 			select {
 			case <-ctx.Done():
-				return newCanceledStageError(StageCloneRepos, ctx.Err())
+				return
 			default:
 			}
 			start := time.Now()
-			p, err := client.CloneRepository(r)
+			p, err := client.CloneRepository(task.repo)
 			dur := time.Since(start)
 			success := err == nil
-			if err != nil {
-				bs.Report.FailedRepositories++
-			} else {
+			mu.Lock()
+			if success {
 				bs.Report.ClonedRepositories++
-				bs.RepoPaths[r.Name] = p
+				bs.RepoPaths[task.repo.Name] = p
+			} else {
+				bs.Report.FailedRepositories++
 			}
+			mu.Unlock()
 			if bs.Generator != nil && bs.Generator.recorder != nil {
-				bs.Generator.recorder.ObserveCloneRepoDuration(r.Name, dur, success)
+				bs.Generator.recorder.ObserveCloneRepoDuration(task.repo.Name, dur, success)
 				bs.Generator.recorder.IncCloneRepoResult(success)
 			}
 		}
-	} else {
-		var wg sync.WaitGroup
-		sem := make(chan struct{}, concurrency)
-		mu := sync.Mutex{}
-		for _, repo := range bs.Repositories {
-			repo := repo
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-				sem <- struct{}{}
-				start := time.Now()
-				p, err := client.CloneRepository(repo)
-				dur := time.Since(start)
-				success := err == nil
-				mu.Lock()
-				if err != nil {
-					bs.Report.FailedRepositories++
-				} else {
-					bs.Report.ClonedRepositories++
-					bs.RepoPaths[repo.Name] = p
-				}
-				mu.Unlock()
-				if bs.Generator != nil && bs.Generator.recorder != nil {
-					bs.Generator.recorder.ObserveCloneRepoDuration(repo.Name, dur, success)
-					bs.Generator.recorder.IncCloneRepoResult(success)
-				}
-				<-sem
-			}()
-		}
-		wg.Wait()
-		// If canceled after goroutines, propagate
+	}
+
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go worker()
+	}
+
+	// Feed tasks (respecting cancellation before enqueue where possible).
+	for _, r := range bs.Repositories {
 		select {
 		case <-ctx.Done():
+			// Stop producing more tasks; workers drain nothing further.
+			close(tasks)
+			wg.Wait()
 			return newCanceledStageError(StageCloneRepos, ctx.Err())
 		default:
 		}
+		tasks <- cloneTask{repo: r}
+	}
+	close(tasks)
+	wg.Wait()
+
+	// Late cancellation check (context could be canceled while workers finishing last repo).
+	select {
+	case <-ctx.Done():
+		return newCanceledStageError(StageCloneRepos, ctx.Err())
+	default:
 	}
 
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {

@@ -20,7 +20,7 @@ const (
 
 // BuildReport captures high-level metrics about a site generation run.
 type BuildReport struct {
-	SchemaVersion    int // explicit schema version for forward-compatible consumers (serialized via BuildReportSerializable)
+	SchemaVersion   int // explicit schema version for forward-compatible consumers (serialized via BuildReportSerializable)
 	Repositories    int
 	Files           int
 	Start           time.Time
@@ -64,14 +64,14 @@ func (r *BuildReport) AddIssue(code ReportIssueCode, stage StageName, severity I
 type ReportIssueCode string
 
 const (
-	IssueCloneFailure        ReportIssueCode = "CLONE_FAILURE"
-	IssuePartialClone        ReportIssueCode = "PARTIAL_CLONE"
-	IssueDiscoveryFailure    ReportIssueCode = "DISCOVERY_FAILURE"
-	IssueNoRepositories      ReportIssueCode = "NO_REPOSITORIES"
-	IssueHugoExecution       ReportIssueCode = "HUGO_EXECUTION"
-	IssueCanceled            ReportIssueCode = "BUILD_CANCELED"
-	IssueAllClonesFailed     ReportIssueCode = "ALL_CLONES_FAILED"
-	IssueGenericStageError   ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
+	IssueCloneFailure      ReportIssueCode = "CLONE_FAILURE"
+	IssuePartialClone      ReportIssueCode = "PARTIAL_CLONE"
+	IssueDiscoveryFailure  ReportIssueCode = "DISCOVERY_FAILURE"
+	IssueNoRepositories    ReportIssueCode = "NO_REPOSITORIES"
+	IssueHugoExecution     ReportIssueCode = "HUGO_EXECUTION"
+	IssueCanceled          ReportIssueCode = "BUILD_CANCELED"
+	IssueAllClonesFailed   ReportIssueCode = "ALL_CLONES_FAILED"
+	IssueGenericStageError ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
 )
 
 // IssueSeverity represents normalized severity levels.
@@ -102,7 +102,7 @@ type StageCount struct {
 
 func newBuildReport(repos, files int) *BuildReport {
 	return &BuildReport{
-		SchemaVersion: 1,
+		SchemaVersion:   1,
 		Repositories:    repos,
 		Files:           files,
 		Start:           time.Now(),
@@ -200,7 +200,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 	}
 
 	s := &BuildReportSerializable{
-		SchemaVersion:      r.SchemaVersion,
+		SchemaVersion:       r.SchemaVersion,
 		Repositories:        r.Repositories,
 		Files:               r.Files,
 		Start:               r.Start,
@@ -231,7 +231,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 
 // BuildReportSerializable mirrors BuildReport but with string errors for JSON output.
 type BuildReportSerializable struct {
-	SchemaVersion        int                      `json:"schema_version"`
+	SchemaVersion       int                      `json:"schema_version"`
 	Repositories        int                      `json:"repositories"`
 	Files               int                      `json:"files"`
 	Start               time.Time                `json:"start"`
@@ -249,5 +249,5 @@ type BuildReportSerializable struct {
 	StaticRendered      bool                     `json:"static_rendered"`
 	Retries             int                      `json:"retries"`
 	RetriesExhausted    bool                     `json:"retries_exhausted"`
-	Issues              []ReportIssue           `json:"issues"`
+	Issues              []ReportIssue            `json:"issues"`
 }
