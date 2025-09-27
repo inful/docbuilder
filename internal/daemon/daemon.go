@@ -308,9 +308,9 @@ func (d *Daemon) TriggerDiscovery() string {
 		defer cancel()
 
 		if err := d.runDiscovery(ctx); err != nil {
-				slog.Error("Discovery failed", logfields.JobID(jobID), slog.String("error", err.Error()))
-			} else {
-				slog.Info("Discovery completed", logfields.JobID(jobID))
+			slog.Error("Discovery failed", logfields.JobID(jobID), logfields.Error(err))
+		} else {
+			slog.Info("Discovery completed", logfields.JobID(jobID))
 		}
 	}()
 
@@ -333,7 +333,7 @@ func (d *Daemon) TriggerBuild() string {
 	}
 
 	if err := d.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue build job", logfields.JobID(jobID), slog.String("error", err.Error()))
+		slog.Error("Failed to enqueue build job", logfields.JobID(jobID), logfields.Error(err))
 		return ""
 	}
 
@@ -457,7 +457,7 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 		}
 
 		if err := d.buildQueue.Enqueue(job); err != nil {
-			slog.Error("Failed to enqueue auto-build", slog.String("error", err.Error()))
+			slog.Error("Failed to enqueue auto-build", logfields.Error(err))
 		}
 	}
 

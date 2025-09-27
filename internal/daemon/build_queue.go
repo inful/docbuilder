@@ -1,16 +1,16 @@
 package daemon
 
 import (
-    "context"
-    "fmt"
-    "log/slog"
-    "sync"
-    "time"
+	"context"
+	"fmt"
+	"log/slog"
+	"sync"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    "git.home.luguber.info/inful/docbuilder/internal/hugo"
-    "git.home.luguber.info/inful/docbuilder/internal/logfields"
-    "git.home.luguber.info/inful/docbuilder/internal/metrics"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 // BuildType represents the type of build job
@@ -74,9 +74,9 @@ type BuildQueue struct {
 	wg          sync.WaitGroup
 	builder     Builder
 	// retry policy configuration (source) + derived policy
-	retryCfg   config.BuildConfig
+	retryCfg    config.BuildConfig
 	retryPolicy RetryPolicy
-	recorder metrics.Recorder
+	recorder    metrics.Recorder
 }
 
 // NewBuildQueue creates a new build queue with the specified size and worker count
@@ -89,17 +89,17 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 	}
 
 	return &BuildQueue{
-		jobs:         make(chan *BuildJob, maxSize),
-		workers:      workers,
-		maxSize:      maxSize,
-		active:       make(map[string]*BuildJob),
-		history:      make([]*BuildJob, 0),
-		historySize:  50, // Keep last 50 completed jobs
-		stopChan:     make(chan struct{}),
-		builder:      NewSiteBuilder(),
-		retryCfg:     config.BuildConfig{},
-		retryPolicy:  DefaultRetryPolicy(),
-		recorder:     metrics.NoopRecorder{},
+		jobs:        make(chan *BuildJob, maxSize),
+		workers:     workers,
+		maxSize:     maxSize,
+		active:      make(map[string]*BuildJob),
+		history:     make([]*BuildJob, 0),
+		historySize: 50, // Keep last 50 completed jobs
+		stopChan:    make(chan struct{}),
+		builder:     NewSiteBuilder(),
+		retryCfg:    config.BuildConfig{},
+		retryPolicy: DefaultRetryPolicy(),
+		recorder:    metrics.NoopRecorder{},
 	}
 }
 
@@ -257,7 +257,7 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.mu.Unlock()
 
 	if err != nil {
-		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), slog.String("error", err.Error()))
+		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), logfields.Error(err))
 	} else {
 		slog.Info("Build job completed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration))
 	}
@@ -268,7 +268,9 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	// Route all build types through unified builder using retryPolicy.
 	attempts := 0
 	policy := bq.retryPolicy
-	if policy.Initial <= 0 { policy = DefaultRetryPolicy() } // fallback safety
+	if policy.Initial <= 0 {
+		policy = DefaultRetryPolicy()
+	} // fallback safety
 	totalRetries := 0
 	exhausted := false
 
@@ -322,7 +324,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 			rec.IncBuildRetry(transientStage)
 		}
 		delay := policy.Delay(totalRetries)
-		slog.Warn("Transient build error, retrying", logfields.JobID(job.ID), slog.Int("attempt", attempts), slog.Int("retry", totalRetries), slog.Int("max_retries", policy.MaxRetries), logfields.Stage(transientStage), slog.Duration("delay", delay), slog.String("error", err.Error()))
+		slog.Warn("Transient build error, retrying", logfields.JobID(job.ID), slog.Int("attempt", attempts), slog.Int("retry", totalRetries), slog.Int("max_retries", policy.MaxRetries), logfields.Stage(transientStage), slog.Duration("delay", delay), logfields.Error(err))
 		select {
 		case <-time.After(delay):
 		case <-ctx.Done():
@@ -330,7 +332,6 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		}
 	}
 }
-
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
 func extractRecorder(report *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
