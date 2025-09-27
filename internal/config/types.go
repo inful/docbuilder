@@ -105,6 +105,9 @@ type BuildConfig struct {
 	// if the local branch has diverged. CleanUntracked removes untracked files after a successful update. Both default false.
 	HardResetOnDiverge bool `yaml:"hard_reset_on_diverge,omitempty"`
 	CleanUntracked     bool `yaml:"clean_untracked,omitempty"`
+	// WorkspaceDir, when set, specifies the directory to use for cloning repositories during builds.
+	// If empty, a default of <output.directory>/_workspace is used (ephemeral unless output.clean=false).
+	WorkspaceDir string `yaml:"workspace_dir,omitempty"`
 }
 
 // CloneStrategy enumerates strategies for handling existing repository directories.

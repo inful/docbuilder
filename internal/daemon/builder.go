@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -71,10 +72,23 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 		return nil, fmt.Errorf("create output dir: %w", err)
 	}
 
-	workspaceDir := filepath.Join(outDir, "_workspace")
+	workspaceDir := cloneCfg.Build.WorkspaceDir
+	if workspaceDir == "" {
+		workspaceDir = filepath.Join(outDir, "_workspace")
+	}
+	// Only auto-clean workspace if it resides under the output directory and output.clean is enabled.
+	if cloneCfg.Output.Clean {
+		if rel, err := filepath.Rel(outDir, workspaceDir); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			// Ensure directory fresh
+			if err := os.RemoveAll(workspaceDir); err != nil {
+				slog.Warn("Failed to clean workspace directory", "dir", workspaceDir, "error", err)
+			}
+		}
+	}
 	if err := os.MkdirAll(workspaceDir, 0755); err != nil {
 		return nil, fmt.Errorf("create workspace: %w", err)
 	}
+	slog.Info("Using workspace directory", "dir", workspaceDir, "configured", cloneCfg.Build.WorkspaceDir != "")
 
 	gen := hugo.NewGenerator(&cloneCfg, outDir)
 	// Recorder is optionally injected earlier by queue/daemon (prometheus tag variant).
