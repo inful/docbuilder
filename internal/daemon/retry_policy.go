@@ -3,24 +3,23 @@ package daemon
 import (
 	"fmt"
 	"time"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // RetryPolicy encapsulates retry/backoff settings for transient build stage failures.
 // It is immutable after construction.
 type RetryPolicy struct {
-	Mode       string        // fixed|linear|exponential
+	Mode       config.RetryBackoffMode // fixed|linear|exponential
 	Initial    time.Duration // base delay
 	Max        time.Duration // cap for growth
 	MaxRetries int           // maximum retry attempts after the first failure
 }
 
 // DefaultRetryPolicy returns a sensible default policy (linear, 1s initial, 30s cap, 2 retries).
-func DefaultRetryPolicy() RetryPolicy {
-	return RetryPolicy{Mode: "linear", Initial: time.Second, Max: 30 * time.Second, MaxRetries: 2}
-}
+func DefaultRetryPolicy() RetryPolicy { return RetryPolicy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 30 * time.Second, MaxRetries: 2} }
 
 // NewRetryPolicy builds a policy from raw config fields; zero/invalid values fall back to defaults.
-func NewRetryPolicy(mode string, initial, max time.Duration, maxRetries int) RetryPolicy {
+func NewRetryPolicy(mode config.RetryBackoffMode, initial, max time.Duration, maxRetries int) RetryPolicy {
 	p := DefaultRetryPolicy()
 	if maxRetries >= 0 {
 		p.MaxRetries = maxRetries
@@ -31,13 +30,13 @@ func NewRetryPolicy(mode string, initial, max time.Duration, maxRetries int) Ret
 	if max > 0 {
 		p.Max = max
 	}
-	switch mode {
-	case "fixed", "linear", "exponential":
-		p.Mode = mode
-	case "":
-		// keep default
-	default:
-		// leave default mode, but we could log later when logger accessible.
+	if mode != "" {
+		switch mode {
+		case config.RetryBackoffFixed, config.RetryBackoffLinear, config.RetryBackoffExponential:
+			p.Mode = mode
+		default:
+			// unknown -> keep default
+		}
 	}
 	if p.Initial > p.Max {
 		p.Initial = p.Max
@@ -51,9 +50,9 @@ func (p RetryPolicy) Delay(retryCount int) time.Duration {
 		return 0
 	}
 	switch p.Mode {
-	case "fixed":
+	case config.RetryBackoffFixed:
 		return p.Initial
-	case "exponential":
+	case config.RetryBackoffExponential:
 		d := p.Initial * (1 << (retryCount - 1))
 		if d > p.Max {
 			return p.Max

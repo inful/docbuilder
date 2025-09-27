@@ -122,7 +122,7 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 	}}
 	bq := NewBuildQueue(10, 1)
 	bq.builder = mb
-	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: "fixed", RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
+	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
 	bq.SetRecorder(fr)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -168,7 +168,7 @@ func TestRetryExhausted(t *testing.T) {
 	}}
 	bq := NewBuildQueue(10, 1)
 	bq.builder = mb
-	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 2, RetryBackoff: "linear", RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
+	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 2, RetryBackoff: config.RetryBackoffLinear, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
 	bq.SetRecorder(fr)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -207,7 +207,7 @@ func TestNoRetryOnPermanent(t *testing.T) {
 	}{{frpt, ferr}}}
 	bq := NewBuildQueue(10, 1)
 	bq.builder = mb
-	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: "exponential", RetryInitialDelay: "1ms", RetryMaxDelay: "4ms"})
+	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffExponential, RetryInitialDelay: "1ms", RetryMaxDelay: "4ms"})
 	bq.SetRecorder(fr)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -243,7 +243,7 @@ func TestExponentialBackoffCapped(t *testing.T) {
 		retry int
 		want  time.Duration
 	}{{1, 1 * time.Millisecond}, {2, 2 * time.Millisecond}, {3, 4 * time.Millisecond}, {4, 4 * time.Millisecond}}
-	pol := NewRetryPolicy("exponential", initial, max, 5)
+	pol := NewRetryPolicy(config.RetryBackoffExponential, initial, max, 5)
 	for _, c := range cases {
 		got := pol.Delay(c.retry)
 		if got != c.want {
@@ -253,22 +253,22 @@ func TestExponentialBackoffCapped(t *testing.T) {
 }
 
 func TestRetryPolicyValidationAndModes(t *testing.T) {
-	p := NewRetryPolicy("", 0, 0, -1) // triggers defaults except maxRetries negative ignored
+	p := NewRetryPolicy("", 0, 0, -1) // empty stays default (string literal acceptable for zero value)
 	if err := p.Validate(); err != nil {
 		t.Fatalf("default policy should validate: %v", err)
 	}
 	if p.Mode != "linear" {
 		t.Fatalf("expected default mode linear got %s", p.Mode)
 	}
-	fixed := NewRetryPolicy("fixed", 10*time.Millisecond, 20*time.Millisecond, 3)
+	fixed := NewRetryPolicy(config.RetryBackoffFixed, 10*time.Millisecond, 20*time.Millisecond, 3)
 	if d := fixed.Delay(2); d != 10*time.Millisecond {
 		t.Fatalf("fixed mode should not scale: got %v", d)
 	}
-	linear := NewRetryPolicy("linear", 5*time.Millisecond, 12*time.Millisecond, 3)
+	linear := NewRetryPolicy(config.RetryBackoffLinear, 5*time.Millisecond, 12*time.Millisecond, 3)
 	if d := linear.Delay(3); d != 12*time.Millisecond {
 		t.Fatalf("linear capping failed expected 12ms got %v", d)
 	}
-	exp := NewRetryPolicy("exponential", 2*time.Millisecond, 10*time.Millisecond, 5)
+	exp := NewRetryPolicy(config.RetryBackoffExponential, 2*time.Millisecond, 10*time.Millisecond, 5)
 	if exp.Delay(4) != 10*time.Millisecond {
 		t.Fatalf("exponential cap failed: %v", exp.Delay(4))
 	}
