@@ -35,6 +35,7 @@ type ForgeConfig struct {
 	BaseURL       string                 `yaml:"base_url"`      // Web base URL (for edit links)
 	Organizations []string               `yaml:"organizations"` // Organizations to scan (GitHub)
 	Groups        []string               `yaml:"groups"`        // Groups to scan (GitLab/Forgejo)
+	AutoDiscover  bool                   `yaml:"auto_discover"` // Enable full auto-discovery when no org/group listed
 	Auth          *AuthConfig            `yaml:"auth"`          // Authentication config
 	Webhook       *WebhookConfig         `yaml:"webhook"`       // Webhook configuration
 	Options       map[string]interface{} `yaml:"options"`       // Forge-specific options
@@ -395,14 +396,14 @@ func validateConfig(config *Config) error {
 		// set if options.auto_discover is explicitly true.
 		emptyScopes := len(forge.Organizations) == 0 && len(forge.Groups) == 0
 		if emptyScopes {
-			allowAuto := false
-			if forge.Options != nil {
+			allowAuto := forge.AutoDiscover
+			if !allowAuto && forge.Options != nil { // legacy/options-based flag
 				if v, ok := forge.Options["auto_discover"]; ok {
 					if b, ok2 := v.(bool); ok2 && b { allowAuto = true }
 				}
 			}
 			if !allowAuto {
-				return fmt.Errorf("forge %s must have at least one organization or group configured (or set options.auto_discover=true)", forge.Name)
+				return fmt.Errorf("forge %s must have at least one organization or group configured (or set auto_discover=true)", forge.Name)
 			}
 		}
 	}

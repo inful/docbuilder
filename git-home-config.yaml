@@ -7,10 +7,10 @@ forges:
     type: "forgejo"
     api_url: "https://git.home.luguber.info/api/v1"
     base_url: "https://git.home.luguber.info/"
-    organizations: ["inful"]  # Need at least one organization
+    auto_discover: true  # Enumerate all accessible orgs/groups (explicit org list not required)
     auth:
       type: "token"
-      token: ${GIT_ACCESS_TOKEN}"  # Placeholder token for testing
+      token: "${GIT_ACCESS_TOKEN}"  # Placeholder token for testing
     webhook:
       secret: "test-webhook-secret"
       path: "/webhook/github"
