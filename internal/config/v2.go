@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -217,6 +218,15 @@ func applyDefaults(config *Config) error {
 		config.Output.Directory = "./site"
 	}
 	config.Output.Clean = true // Always clean in daemon mode
+
+	// Warn if user configured workspace_dir equal to output directory (can cause clone artifacts in final site)
+	if config.Build.WorkspaceDir != "" {
+		wd := filepath.Clean(config.Build.WorkspaceDir)
+		od := filepath.Clean(config.Output.Directory)
+		if wd == od {
+			fmt.Fprintf(os.Stderr, "Warning: build.workspace_dir (%s) matches output.directory (%s); this may mix git working trees with generated site artifacts. Consider using a separate directory.\n", wd, od)
+		}
+	}
 
 	// Daemon defaults
 	if config.Daemon != nil {
