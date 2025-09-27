@@ -42,6 +42,16 @@ func RegisterTheme(t Theme) { if t == nil { return }; regMu.Lock(); if _, ok := 
 // Get retrieves a theme by name.
 func Get(name config.Theme) Theme { regMu.RLock(); defer regMu.RUnlock(); return reg[name] }
 
+// NullThemeFeatures is returned when a theme is not found/unsupported; provides safe defaults.
+var NullThemeFeatures = ThemeFeatures{}
+
+// NullTheme is a no-op theme implementation used internally for unknown themes.
+type NullTheme struct{}
+func (NullTheme) Name() config.Theme { return "" }
+func (NullTheme) Features() ThemeFeatures { return NullThemeFeatures }
+func (NullTheme) ApplyParams(_ ParamContext, _ map[string]any) {}
+func (NullTheme) CustomizeRoot(_ ParamContext, _ map[string]any) {}
+
 // TitleCase helper (localized to avoid importing hugo package).
 func TitleCase(s string) string {
     if s == "" { return s }
