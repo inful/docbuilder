@@ -43,35 +43,14 @@ type ThemeFeatures struct {
 // deriveThemeFeatures inspects configuration and returns normalized feature flags.
 func (g *Generator) deriveThemeFeatures() ThemeFeatures {
 	// Backwards-compatible public method retained; now caches computation.
-	if g.cachedThemeFeatures != nil {
-		return *g.cachedThemeFeatures
+	if g.cachedThemeFeatures != nil { return *g.cachedThemeFeatures }
+	if th := g.activeTheme(); th != nil {
+		feats := th.Features()
+		g.cachedThemeFeatures = &feats
+		return feats
 	}
-	t := g.config.Hugo.ThemeType()
-	feats := ThemeFeatures{Name: t}
-	switch t {
-	case config.ThemeHextra:
-		feats.UsesModules = true
-		feats.ModulePath = "github.com/imfing/hextra"
-		feats.ModuleVersion = "v0.11.0"
-		feats.EnableMathPassthrough = true
-		feats.EnableOfflineSearchJSON = false // Hextra's offline search handled via params; no outputs JSON needed
-		feats.AutoMainMenu = true
-		feats.SupportsPerPageEditLinks = true
-		feats.DefaultSearchType = "flexsearch"
-		feats.ProvidesMermaidSupport = true
-	case config.ThemeDocsy:
-		feats.UsesModules = true
-		feats.ModulePath = "github.com/google/docsy"
-		// (Optional) we could pin a version here later; leave blank for now.
-		feats.EnableMathPassthrough = false
-		feats.EnableOfflineSearchJSON = true
-		feats.AutoMainMenu = false
-		feats.SupportsPerPageEditLinks = false
-		feats.DefaultSearchType = "" // docsy uses its own search implementation / config
-		feats.ProvidesMermaidSupport = false
-	default:
-		// unknown/custom theme - no special features
-	}
+	// Fallback legacy path (unknown/custom theme)
+	feats := ThemeFeatures{Name: g.config.Hugo.ThemeType()}
 	g.cachedThemeFeatures = &feats
 	return feats
 }
