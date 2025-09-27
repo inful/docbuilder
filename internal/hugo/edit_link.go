@@ -50,54 +50,77 @@ func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
 	} else {
 		repoRel = filepath.ToSlash(repoRel)
 	}
-	// Normalize clone URL (strip .git, convert SSH to https for known providers)
-	raw := strings.TrimSuffix(repoCfg.URL, ".git")
+	cloneURL := strings.TrimSuffix(repoCfg.URL, ".git")
 
-	// Resolve forge type & base URL from configured forges first (authoritative)
-	forgeType, forgeBase := resolveForgeForRepository(cfg, raw)
+	// Prefer explicit forge_type tag + full_name tag if discovery populated them.
+	var forgeType config.ForgeType
+	var fullName string
+	if repoCfg.Tags != nil {
+		if t, ok := repoCfg.Tags["forge_type"]; ok {
+			forgeType = config.NormalizeForgeType(t)
+		}
+		if fn, ok := repoCfg.Tags["full_name"]; ok && fn != "" {
+			fullName = fn
+		}
+	}
 
-	// Fallback legacy heuristics if forge not resolved (keeps backward compat for bitbucket or unconfigured public forges)
+	// If full_name wasn't tagged, attempt to extract it from common SSH/HTTPS patterns for github/gitlab/forgejo
+	if fullName == "" {
+		// Convert SSH to HTTPS for parsing
+		normalized := cloneURL
+		if strings.HasPrefix(normalized, "git@") {
+			parts := strings.SplitN(strings.TrimPrefix(normalized, "git@"), ":", 2)
+			if len(parts) == 2 {
+				normalized = fmt.Sprintf("https://%s/%s", parts[0], parts[1])
+			}
+		}
+		if u, err := url.Parse(normalized); err == nil {
+			fullName = strings.Trim(strings.TrimSuffix(u.Path, ".git"), "/")
+		}
+	}
+
+	// If forge type unknown, try to resolve via configured forges, else heuristic host mapping.
 	if forgeType == "" {
-		switch {
-		case strings.Contains(raw, "github.com"):
-			forgeType = config.ForgeGitHub
-			forgeBase = "https://github.com"
-		case strings.Contains(raw, "gitlab.com"):
-			forgeType = config.ForgeGitLab
-			forgeBase = "https://gitlab.com"
-		case strings.Contains(raw, "bitbucket.org"):
-			// Bitbucket not (yet) a supported ForgeType; preserve existing behavior
-			return fmt.Sprintf("%s/src/%s/%s?mode=edit", raw, branch, repoRel)
+		ft, base := resolveForgeForRepository(cfg, cloneURL)
+		forgeType = ft
+		if forgeType != "" && base != "" {
+			// Reconstruct canonical clone base + fullName
+			cloneURL = strings.TrimSuffix(base, "/") + "/" + fullName
+		} else {
+			switch {
+			case strings.Contains(cloneURL, "github.com"):
+				forgeType = config.ForgeGitHub
+				if strings.HasPrefix(cloneURL, "git@github.com:") {
+					cloneURL = "https://github.com/" + strings.TrimPrefix(cloneURL, "git@github.com:")
+				}
+			case strings.Contains(cloneURL, "gitlab.com"):
+				forgeType = config.ForgeGitLab
+				if strings.HasPrefix(cloneURL, "git@gitlab.com:") {
+					cloneURL = "https://gitlab.com/" + strings.TrimPrefix(cloneURL, "git@gitlab.com:")
+				}
+			case strings.Contains(cloneURL, "bitbucket.org"):
+				return fmt.Sprintf("%s/src/%s/%s?mode=edit", cloneURL, branch, repoRel)
+			}
 		}
 	}
 
-	// SSH to https translation for github / gitlab when not matched via config
-	if forgeType == config.ForgeGitHub && strings.HasPrefix(raw, "git@github.com:") {
-		raw = "https://github.com/" + strings.TrimPrefix(raw, "git@github.com:")
-	} else if forgeType == config.ForgeGitLab && strings.HasPrefix(raw, "git@gitlab.com:") {
-		raw = "https://gitlab.com/" + strings.TrimPrefix(raw, "git@gitlab.com:")
-	}
-
-	// If we have an authoritative forgeBase, attempt to rewrite raw to use it exactly
-	if forgeBase != "" {
-		if u, err := url.Parse(raw); err == nil {
-			// Expect path like /org/repo or org/repo (ssh converted)
-			path := strings.TrimPrefix(u.Path, "/")
-			// Some raw may already include host/path (https); unify
-			raw = fmt.Sprintf("%s/%s", strings.TrimSuffix(forgeBase, "/"), path)
-		}
+	if forgeType == "" || fullName == "" {
+		return "" // insufficient data
 	}
 
 	switch forgeType {
 	case config.ForgeGitHub:
-		return fmt.Sprintf("%s/edit/%s/%s", raw, branch, repoRel)
+		return fmt.Sprintf("https://github.com/%s/edit/%s/%s", fullName, branch, repoRel)
 	case config.ForgeGitLab:
-		return fmt.Sprintf("%s/-/edit/%s/%s", raw, branch, repoRel)
+		return fmt.Sprintf("https://gitlab.com/%s/-/edit/%s/%s", fullName, branch, repoRel)
 	case config.ForgeForgejo:
-		return fmt.Sprintf("%s/_edit/%s/%s", raw, branch, repoRel)
-	default:
-		return ""
+		// Attempt to locate matching forge base URL for canonical host (supports self-host instances)
+		if ft, base := resolveForgeForRepository(cfg, cloneURL); ft == config.ForgeForgejo && base != "" {
+			return fmt.Sprintf("%s/%s/_edit/%s/%s", strings.TrimSuffix(base, "/"), fullName, branch, repoRel)
+		}
+		return fmt.Sprintf("%s/_edit/%s/%s", cloneURL, branch, repoRel)
 	}
+	return ""
 }
 
 // resolveForgeForRepository attempts to match a repository clone URL against configured forge base URLs
