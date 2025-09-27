@@ -20,6 +20,7 @@ const (
 
 // BuildReport captures high-level metrics about a site generation run.
 type BuildReport struct {
+	SchemaVersion    int // explicit schema version for forward-compatible consumers (serialized via BuildReportSerializable)
 	Repositories    int
 	Files           int
 	Start           time.Time
@@ -29,16 +30,50 @@ type BuildReport struct {
 	StageDurations  map[string]time.Duration
 	StageErrorKinds map[string]string // stage -> error kind (fatal|warning|canceled)
 	// Enrichment fields (incremental observability additions)
-	ClonedRepositories  int                   // repositories successfully cloned or validated
-	FailedRepositories  int                   // repositories that failed to clone/auth
-	SkippedRepositories int                   // repositories filtered out before cloning
-	RenderedPages       int                   // markdown pages successfully processed & written
+	ClonedRepositories  int                      // repositories successfully cloned or validated
+	FailedRepositories  int                      // repositories that failed to clone/auth
+	SkippedRepositories int                      // repositories filtered out before cloning
+	RenderedPages       int                      // markdown pages successfully processed & written
 	StageCounts         map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
-	Outcome             string                // derived overall outcome (string form for legacy JSON; use OutcomeT for typed)
-	StaticRendered      bool                  // true if Hugo static site render executed successfully
-	Retries             int                   // total retry attempts (all stages combined)
-	RetriesExhausted    bool                  // true if any stage exhausted retry budget
-	OutcomeT            BuildOutcome          // typed outcome mirror (source of truth)
+	Outcome             string                   // derived overall outcome (string form for legacy JSON; use OutcomeT for typed)
+	StaticRendered      bool                     // true if Hugo static site render executed successfully
+	Retries             int                      // total retry attempts (all stages combined)
+	RetriesExhausted    bool                     // true if any stage exhausted retry budget
+	OutcomeT            BuildOutcome             // typed outcome mirror (source of truth)
+	// Issues captures structured machine-parsable issue taxonomy entries (warnings & errors) for future automation.
+	Issues []ReportIssue // not yet populated widely; additive structure
+}
+
+// ReportIssueCode enumerates machine-parseable issue identifiers.
+// These codes are stable contract and should only be appended (no reuse on removal).
+type ReportIssueCode string
+
+const (
+	IssueCloneFailure        ReportIssueCode = "CLONE_FAILURE"
+	IssuePartialClone        ReportIssueCode = "PARTIAL_CLONE"
+	IssueDiscoveryFailure    ReportIssueCode = "DISCOVERY_FAILURE"
+	IssueNoRepositories      ReportIssueCode = "NO_REPOSITORIES"
+	IssueHugoExecution       ReportIssueCode = "HUGO_EXECUTION"
+	IssueCanceled            ReportIssueCode = "BUILD_CANCELED"
+	IssueAllClonesFailed     ReportIssueCode = "ALL_CLONES_FAILED"
+)
+
+// IssueSeverity represents normalized severity levels.
+type IssueSeverity string
+
+const (
+	SeverityError   IssueSeverity = "error"
+	SeverityWarning IssueSeverity = "warning"
+)
+
+// ReportIssue is a structured taxonomy entry describing a discrete problem encountered.
+// Message is human-friendly; Code + Stage allow automated handling; Transient hints retry suitability.
+type ReportIssue struct {
+	Code      ReportIssueCode `json:"code"`
+	Stage     StageName       `json:"stage"`
+	Severity  IssueSeverity   `json:"severity"`
+	Message   string          `json:"message"`
+	Transient bool            `json:"transient"`
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
@@ -51,6 +86,7 @@ type StageCount struct {
 
 func newBuildReport(repos, files int) *BuildReport {
 	return &BuildReport{
+		SchemaVersion: 1,
 		Repositories:    repos,
 		Files:           files,
 		Start:           time.Now(),
@@ -143,6 +179,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 	}
 
 	s := &BuildReportSerializable{
+		SchemaVersion:      r.SchemaVersion,
 		Repositories:        r.Repositories,
 		Files:               r.Files,
 		Start:               r.Start,
@@ -160,6 +197,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		StaticRendered:      r.StaticRendered,
 		Retries:             r.Retries,
 		RetriesExhausted:    r.RetriesExhausted,
+		Issues:              r.Issues, // already JSON-friendly
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -172,6 +210,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 
 // BuildReportSerializable mirrors BuildReport but with string errors for JSON output.
 type BuildReportSerializable struct {
+	SchemaVersion        int                      `json:"schema_version"`
 	Repositories        int                      `json:"repositories"`
 	Files               int                      `json:"files"`
 	Start               time.Time                `json:"start"`
@@ -189,4 +228,5 @@ type BuildReportSerializable struct {
 	StaticRendered      bool                     `json:"static_rendered"`
 	Retries             int                      `json:"retries"`
 	RetriesExhausted    bool                     `json:"retries_exhausted"`
+	Issues              []ReportIssue           `json:"issues"`
 }
