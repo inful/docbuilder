@@ -52,7 +52,7 @@ func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
 	}
 	cloneURL := strings.TrimSuffix(repoCfg.URL, ".git")
 
-	// Prefer explicit forge_type tag + full_name tag if discovery populated them.
+	// Gather tagged metadata if present.
 	var forgeType config.ForgeType
 	var fullName string
 	if repoCfg.Tags != nil {
@@ -64,9 +64,14 @@ func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
 		}
 	}
 
-	// If full_name wasn't tagged, attempt to extract it from common SSH/HTTPS patterns for github/gitlab/forgejo
+	// Resolve against configured forges to obtain canonical base_url (works for all supported forge types including self-hosted).
+	resolvedType, resolvedBase := resolveForgeForRepository(cfg, cloneURL)
+	if forgeType == "" {
+		forgeType = resolvedType
+	}
+
+	// Derive full name if not provided.
 	if fullName == "" {
-		// Convert SSH to HTTPS for parsing
 		normalized := cloneURL
 		if strings.HasPrefix(normalized, "git@") {
 			parts := strings.SplitN(strings.TrimPrefix(normalized, "git@"), ":", 2)
@@ -79,46 +84,54 @@ func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
 		}
 	}
 
-	// If forge type unknown, try to resolve via configured forges, else heuristic host mapping.
+	// If still no forge type, attempt heuristic host mapping (includes Bitbucket special case)
 	if forgeType == "" {
-		ft, base := resolveForgeForRepository(cfg, cloneURL)
-		forgeType = ft
-		if forgeType != "" && base != "" {
-			// Reconstruct canonical clone base + fullName
-			cloneURL = strings.TrimSuffix(base, "/") + "/" + fullName
-		} else {
-			switch {
-			case strings.Contains(cloneURL, "github.com"):
-				forgeType = config.ForgeGitHub
-				if strings.HasPrefix(cloneURL, "git@github.com:") {
-					cloneURL = "https://github.com/" + strings.TrimPrefix(cloneURL, "git@github.com:")
-				}
-			case strings.Contains(cloneURL, "gitlab.com"):
-				forgeType = config.ForgeGitLab
-				if strings.HasPrefix(cloneURL, "git@gitlab.com:") {
-					cloneURL = "https://gitlab.com/" + strings.TrimPrefix(cloneURL, "git@gitlab.com:")
-				}
-			case strings.Contains(cloneURL, "bitbucket.org"):
+		switch {
+		case strings.Contains(cloneURL, "github."):
+			forgeType = config.ForgeGitHub
+		case strings.Contains(cloneURL, "gitlab."):
+			forgeType = config.ForgeGitLab
+		case strings.Contains(cloneURL, "bitbucket.org"):
+			if fullName != "" {
 				return fmt.Sprintf("%s/src/%s/%s?mode=edit", cloneURL, branch, repoRel)
 			}
+			return ""
+		case strings.Contains(cloneURL, "forgejo") || strings.Contains(cloneURL, "gitea"):
+			forgeType = config.ForgeForgejo
 		}
 	}
 
 	if forgeType == "" || fullName == "" {
-		return "" // insufficient data
+		return ""
 	}
+
+	// Determine base URL precedence: resolved forge base, else derive from cloneURL host, else public defaults.
+	base := resolvedBase
+	if base == "" {
+		// Attempt to parse cloneURL to extract host for self-hosted enterprise cases even if forge config missing (fallback safety)
+		if u, err := url.Parse(cloneURL); err == nil && u.Scheme != "" && u.Host != "" {
+			base = fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+		}
+		if base == "" { // absolute last resort defaults (public SaaS)
+			switch forgeType {
+			case config.ForgeGitHub:
+				base = "https://github.com"
+			case config.ForgeGitLab:
+				base = "https://gitlab.com"
+			case config.ForgeForgejo:
+				base = cloneURL // will be combined below
+			}
+		}
+	}
+	base = strings.TrimSuffix(base, "/")
 
 	switch forgeType {
 	case config.ForgeGitHub:
-		return fmt.Sprintf("https://github.com/%s/edit/%s/%s", fullName, branch, repoRel)
+		return fmt.Sprintf("%s/%s/edit/%s/%s", base, fullName, branch, repoRel)
 	case config.ForgeGitLab:
-		return fmt.Sprintf("https://gitlab.com/%s/-/edit/%s/%s", fullName, branch, repoRel)
+		return fmt.Sprintf("%s/%s/-/edit/%s/%s", base, fullName, branch, repoRel)
 	case config.ForgeForgejo:
-		// Attempt to locate matching forge base URL for canonical host (supports self-host instances)
-		if ft, base := resolveForgeForRepository(cfg, cloneURL); ft == config.ForgeForgejo && base != "" {
-			return fmt.Sprintf("%s/%s/_edit/%s/%s", strings.TrimSuffix(base, "/"), fullName, branch, repoRel)
-		}
-		return fmt.Sprintf("%s/_edit/%s/%s", cloneURL, branch, repoRel)
+		return fmt.Sprintf("%s/%s/_edit/%s/%s", base, fullName, branch, repoRel)
 	}
 	return ""
 }
