@@ -1,21 +1,21 @@
 package forge
 
 import (
-	"context"
-	"crypto/hmac"
-	"crypto/sha1"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-	"path"
-	"strconv"
-	"strings"
-	"time"
+    "context"
+    "crypto/hmac"
+    "crypto/sha1"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "net/url"
+    "path"
+    "strconv"
+    "strings"
+    "time"
 
-	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+    cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // GitHubClient implements ForgeClient for GitHub
@@ -29,9 +29,9 @@ type GitHubClient struct {
 
 // NewGitHubClient creates a new GitHub client
 func NewGitHubClient(fg *ForgeConfig) (*GitHubClient, error) {
-	if fg.Type != string(ForgeTypeGitHub) {
-		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
-	}
+    if fg.Type != cfg.ForgeGitHub {
+        return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
+    }
 
 	client := &GitHubClient{
 		config:     fg,
@@ -59,9 +59,7 @@ func NewGitHubClient(fg *ForgeConfig) (*GitHubClient, error) {
 }
 
 // GetType returns the forge type
-func (c *GitHubClient) GetType() ForgeType {
-	return ForgeTypeGitHub
-}
+func (c *GitHubClient) GetType() cfg.ForgeType { return cfg.ForgeGitHub }
 
 // GetName returns the configured name
 func (c *GitHubClient) GetName() string {

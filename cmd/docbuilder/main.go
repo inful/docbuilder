@@ -352,9 +352,12 @@ func autoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]conf
 		var client forge.ForgeClient
 		var err error
 		switch f.Type {
-		case string(forge.ForgeTypeForgejo):
+		case config.ForgeForgejo:
 			client, err = forge.NewForgejoClient(f)
-		// Future: add github/gitlab here
+		case config.ForgeGitHub:
+			client, err = forge.NewGitHubClient(f)
+		case config.ForgeGitLab:
+			client, err = forge.NewGitLabClient(f)
 		default:
 			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
 			continue

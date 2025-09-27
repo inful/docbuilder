@@ -87,6 +87,29 @@ type BuildConfig struct {
 	RetryMaxDelay     string           `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
 }
 
+// ForgeType enumerates supported forge providers.
+type ForgeType string
+
+const (
+	ForgeGitHub  ForgeType = "github"
+	ForgeGitLab  ForgeType = "gitlab"
+	ForgeForgejo ForgeType = "forgejo"
+)
+
+// NormalizeForgeType canonicalizes a forge type string (case-insensitive) or returns empty if unknown.
+func NormalizeForgeType(raw string) ForgeType {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(ForgeGitHub):
+		return ForgeGitHub
+	case string(ForgeGitLab):
+		return ForgeGitLab
+	case string(ForgeForgejo):
+		return ForgeForgejo
+	default:
+		return ""
+	}
+}
+
 // VersioningStrategy enumerates supported multi-version selection strategies.
 type VersioningStrategy string
 
@@ -138,6 +161,50 @@ type Menu struct {
 	Name   string `yaml:"name"`
 	URL    string `yaml:"url"`
 	Weight int    `yaml:"weight,omitempty"`
+}
+
+// LogLevel enumerates supported logging levels (subset; mapping to slog or zap later).
+type LogLevel string
+
+const (
+	LogLevelDebug LogLevel = "debug"
+	LogLevelInfo  LogLevel = "info"
+	LogLevelWarn  LogLevel = "warn"
+	LogLevelError LogLevel = "error"
+)
+
+func NormalizeLogLevel(raw string) LogLevel {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(LogLevelDebug):
+		return LogLevelDebug
+	case string(LogLevelInfo):
+		return LogLevelInfo
+	case string(LogLevelWarn):
+		return LogLevelWarn
+	case string(LogLevelError):
+		return LogLevelError
+	default:
+		return ""
+	}
+}
+
+// LogFormat enumerates supported log output formats.
+type LogFormat string
+
+const (
+	LogFormatJSON LogFormat = "json"
+	LogFormatText LogFormat = "text"
+)
+
+func NormalizeLogFormat(raw string) LogFormat {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(LogFormatJSON):
+		return LogFormatJSON
+	case string(LogFormatText):
+		return LogFormatText
+	default:
+		return ""
+	}
 }
 
 // OutputConfig represents output configuration

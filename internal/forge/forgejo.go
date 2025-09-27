@@ -1,23 +1,23 @@
 package forge
 
 import (
-	"context"
-	"crypto/hmac"
-	"crypto/sha1"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
-	"net/url"
-	"path"
-	"strconv"
-	"strings"
-	"time"
+    "context"
+    "crypto/hmac"
+    "crypto/sha1"
+    "crypto/sha256"
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "io"
+    "log/slog"
+    "net/http"
+    "net/url"
+    "path"
+    "strconv"
+    "strings"
+    "time"
 
-	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+    cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API)
@@ -31,9 +31,9 @@ type ForgejoClient struct {
 
 // NewForgejoClient creates a new Forgejo client
 func NewForgejoClient(fg *ForgeConfig) (*ForgejoClient, error) {
-	if fg.Type != string(ForgeTypeForgejo) {
-		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
-	}
+    if fg.Type != cfg.ForgeForgejo {
+        return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
+    }
 
 	client := &ForgejoClient{
 		config:     fg,
@@ -53,9 +53,7 @@ func NewForgejoClient(fg *ForgeConfig) (*ForgejoClient, error) {
 }
 
 // GetType returns the forge type
-func (c *ForgejoClient) GetType() ForgeType {
-	return ForgeTypeForgejo
-}
+func (c *ForgejoClient) GetType() cfg.ForgeType { return cfg.ForgeForgejo }
 
 // GetName returns the configured name
 func (c *ForgejoClient) GetName() string {
