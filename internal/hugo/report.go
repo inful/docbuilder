@@ -33,7 +33,7 @@ type BuildReport struct {
 	FailedRepositories  int                   // repositories that failed to clone/auth
 	SkippedRepositories int                   // repositories filtered out before cloning
 	RenderedPages       int                   // markdown pages successfully processed & written
-	StageCounts         map[string]StageCount // per-stage classification counts
+	StageCounts         map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
 	Outcome             string                // derived overall outcome (string form for legacy JSON; use OutcomeT for typed)
 	StaticRendered      bool                  // true if Hugo static site render executed successfully
 	Retries             int                   // total retry attempts (all stages combined)
@@ -56,7 +56,7 @@ func newBuildReport(repos, files int) *BuildReport {
 		Start:           time.Now(),
 		StageDurations:  make(map[string]time.Duration),
 		StageErrorKinds: make(map[string]string),
-		StageCounts:     make(map[string]StageCount),
+		StageCounts:     make(map[StageName]StageCount),
 		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
 }
@@ -136,6 +136,12 @@ func (r *BuildReport) Persist(root string) error {
 
 // sanitizedCopy returns a shallow copy with error fields converted to strings for JSON friendliness.
 func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
+	// Convert typed stage counts to string-keyed map for JSON stability.
+	stageCounts := make(map[string]StageCount, len(r.StageCounts))
+	for k, v := range r.StageCounts {
+		stageCounts[string(k)] = v
+	}
+
 	s := &BuildReportSerializable{
 		Repositories:        r.Repositories,
 		Files:               r.Files,
@@ -149,7 +155,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		FailedRepositories:  r.FailedRepositories,
 		SkippedRepositories: r.SkippedRepositories,
 		RenderedPages:       r.RenderedPages,
-		StageCounts:         r.StageCounts,
+		StageCounts:         stageCounts,
 		Outcome:             r.Outcome, // legacy string form retained
 		StaticRendered:      r.StaticRendered,
 		Retries:             r.Retries,

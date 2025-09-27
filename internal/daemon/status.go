@@ -155,7 +155,7 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 						if len(br.StageCounts) > 0 {
 							m := make(map[string]map[string]int, len(br.StageCounts))
 							for stage, sc := range br.StageCounts {
-								m[stage] = map[string]int{"success": sc.Success, "warning": sc.Warning, "fatal": sc.Fatal, "canceled": sc.Canceled}
+								m[string(stage)] = map[string]int{"success": sc.Success, "warning": sc.Warning, "fatal": sc.Fatal, "canceled": sc.Canceled}
 							}
 							status.BuildStatus.StageCounts = m
 						}
