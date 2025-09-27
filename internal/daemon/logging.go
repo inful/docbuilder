@@ -1,10 +1,12 @@
 package daemon
 
 import (
-    "context"
-    "log/slog"
-    "net/http"
-    "time"
+	"context"
+	"log/slog"
+	"net/http"
+	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // requestIDContextKey is the unexported type used as key for request IDs in context.
@@ -47,13 +49,13 @@ func (rw *logResponseWriter) Write(b []byte) (int, error) {
 
 // Handler wraps an HTTP handler with structured logging and metrics
 func (lm *LoggingMiddleware) Handler(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 
-        // Create request ID for tracing
-        requestID := generateRequestID()
-        ctx := context.WithValue(r.Context(), requestIDKey, requestID)
-        r = r.WithContext(ctx)
+		// Create request ID for tracing
+		requestID := generateRequestID()
+		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		r = r.WithContext(ctx)
 
 		// Wrap response writer to capture status and size
 		rw := &logResponseWriter{
@@ -70,11 +72,11 @@ func (lm *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 
 		// Log request start
 		slog.Info("HTTP request started",
-			"request_id", requestID,
-			"method", r.Method,
-			"path", r.URL.Path,
-			"remote_addr", r.RemoteAddr,
-			"user_agent", r.UserAgent())
+			logfields.RequestID(requestID),
+			logfields.Method(r.Method),
+			logfields.Path(r.URL.Path),
+			logfields.RemoteAddr(r.RemoteAddr),
+			logfields.UserAgent(r.UserAgent()))
 
 		// Process request
 		next.ServeHTTP(rw, r)
@@ -109,13 +111,13 @@ func (lm *LoggingMiddleware) Handler(next http.Handler) http.Handler {
 		}
 
 		slog.Log(context.Background(), logLevel, "HTTP request completed",
-			"request_id", requestID,
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", rw.status,
-			"duration_ms", float64(duration.Nanoseconds())/1e6,
-			"response_size", rw.size,
-			"remote_addr", r.RemoteAddr)
+			logfields.RequestID(requestID),
+			logfields.Method(r.Method),
+			logfields.Path(r.URL.Path),
+			logfields.Status(rw.status),
+			slog.Float64("duration_ms", float64(duration.Nanoseconds())/1e6),
+			logfields.ResponseSize(rw.size),
+			logfields.RemoteAddr(r.RemoteAddr))
 	})
 }
 

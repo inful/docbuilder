@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // HTTPServer manages HTTP endpoints for the daemon
@@ -233,12 +234,12 @@ func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		slog.Info("HTTP request",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.Int("status", wrapped.statusCode),
+			logfields.Method(r.Method),
+			logfields.Path(r.URL.Path),
+			logfields.Status(wrapped.statusCode),
 			slog.Duration("duration", duration),
-			slog.String("user_agent", r.UserAgent()),
-			slog.String("remote_addr", r.RemoteAddr))
+			logfields.UserAgent(r.UserAgent()),
+			logfields.RemoteAddr(r.RemoteAddr))
 	})
 }
 
@@ -340,7 +341,9 @@ func (s *HTTPServer) handleDaemonStatus(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil { slog.Error("failed to encode daemon status", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
+		slog.Error("failed to encode daemon status", "error", err)
+	}
 }
 
 // Daemon configuration endpoint
@@ -353,7 +356,9 @@ func (s *HTTPServer) handleDaemonConfig(w http.ResponseWriter, r *http.Request) 
 	// Return sanitized configuration (no secrets)
 	sanitized := s.sanitizeConfig(s.config)
 
-	if err := writeJSONPretty(w, r, http.StatusOK, sanitized); err != nil { slog.Error("failed to encode daemon config", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, sanitized); err != nil {
+		slog.Error("failed to encode daemon config", "error", err)
+	}
 }
 
 // Trigger discovery endpoint
@@ -370,7 +375,9 @@ func (s *HTTPServer) handleTriggerDiscovery(w http.ResponseWriter, r *http.Reque
 			"status": "triggered",
 			"job_id": jobID,
 		}
-		if err := writeJSON(w, http.StatusOK, response); err != nil { slog.Error("failed to encode discovery trigger response", "error", err) }
+		if err := writeJSON(w, http.StatusOK, response); err != nil {
+			slog.Error("failed to encode discovery trigger response", "error", err)
+		}
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -390,7 +397,9 @@ func (s *HTTPServer) handleTriggerBuild(w http.ResponseWriter, r *http.Request) 
 			"status": "triggered",
 			"job_id": jobID,
 		}
-		if err := writeJSON(w, http.StatusOK, response); err != nil { slog.Error("failed to encode build trigger response", "error", err) }
+		if err := writeJSON(w, http.StatusOK, response); err != nil {
+			slog.Error("failed to encode build trigger response", "error", err)
+		}
 	} else {
 		http.Error(w, "Daemon not available", http.StatusServiceUnavailable)
 	}
@@ -410,7 +419,9 @@ func (s *HTTPServer) handleBuildStatus(w http.ResponseWriter, r *http.Request) {
 		"last_build":   nil, // TODO: Get last build info
 	}
 
-	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil { slog.Error("failed to encode build status", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
+		slog.Error("failed to encode build status", "error", err)
+	}
 }
 
 // Repositories endpoint
@@ -427,7 +438,9 @@ func (s *HTTPServer) handleRepositories(w http.ResponseWriter, r *http.Request) 
 		"last_discovery": nil, // TODO: Get last discovery time
 	}
 
-	if err := writeJSONPretty(w, r, http.StatusOK, repos); err != nil { slog.Error("failed to encode repositories", "error", err) }
+	if err := writeJSONPretty(w, r, http.StatusOK, repos); err != nil {
+		slog.Error("failed to encode repositories", "error", err)
+	}
 }
 
 // sanitizeConfig removes sensitive information from configuration
@@ -498,7 +511,7 @@ func (s *HTTPServer) handleWebhookRequest(w http.ResponseWriter, r *http.Request
 	slog.Info("Webhook received",
 		slog.String("forge_type", forgeType),
 		slog.Int64("content_length", r.ContentLength),
-		slog.String("user_agent", r.UserAgent()))
+		logfields.UserAgent(r.UserAgent()))
 
 	// For now, just acknowledge receipt
 	w.WriteHeader(http.StatusOK)

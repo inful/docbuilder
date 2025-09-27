@@ -18,6 +18,12 @@ const (
 	KeyPath        = "path"
 	KeyFile        = "file"
 	KeyWorker      = "worker"
+	KeyMethod      = "method"
+	KeyUserAgent   = "user_agent"
+	KeyRemoteAddr  = "remote_addr"
+	KeyRequestID   = "request_id"
+	KeyStatus      = "status"
+	KeyResponseSz  = "response_size"
 )
 
 // Simple helpers returning slog.Attr. Keeping each granular means callers can compose.
@@ -35,6 +41,12 @@ func Section(s string) slog.Attr      { return slog.String(KeySection, s) }
 func Path(p string) slog.Attr         { return slog.String(KeyPath, p) }
 func File(f string) slog.Attr         { return slog.String(KeyFile, f) }
 func Worker(id string) slog.Attr      { return slog.String(KeyWorker, id) }
+func Method(m string) slog.Attr       { return slog.String(KeyMethod, m) }
+func UserAgent(ua string) slog.Attr   { return slog.String(KeyUserAgent, ua) }
+func RemoteAddr(a string) slog.Attr   { return slog.String(KeyRemoteAddr, a) }
+func RequestID(id string) slog.Attr   { return slog.String(KeyRequestID, id) }
+func Status(code int) slog.Attr       { return slog.Int(KeyStatus, code) }
+func ResponseSize(sz int) slog.Attr   { return slog.Int(KeyResponseSz, sz) }
 func Error(err error) slog.Attr {
 	if err == nil { return slog.String(KeyError, "") }
 	return slog.String(KeyError, err.Error())
