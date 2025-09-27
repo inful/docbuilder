@@ -92,6 +92,72 @@ func severityFromStageErrorKind(k StageErrorKind) IssueSeverity {
 	return SeverityError
 }
 
+// StageOutcome is a normalized classification of a single stage execution.
+// It encapsulates the (possibly nil) StageError, mapped result, derived issue code
+// and whether the pipeline should abort after this stage.
+type StageOutcome struct {
+	Stage     StageName
+	Error     *StageError
+	Result    StageResult
+	IssueCode ReportIssueCode
+	Severity  IssueSeverity
+	Transient bool
+	Abort     bool // true for fatal or canceled errors
+}
+
+// classifyStageResult converts a raw error from a stage into a StageOutcome with
+// fully derived fields (result, severity, issue code, abort flag). Success is a nil error.
+func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcome {
+	if err == nil {
+		return StageOutcome{Stage: stage, Result: StageResultSuccess}
+	}
+	var se *StageError
+	if errors.As(err, &se) {
+		// Map issue code using existing heuristics.
+		code := IssueGenericStageError
+		switch se.Stage {
+		case StageCloneRepos:
+			if errors.Is(se.Err, build.ErrClone) {
+				if bs.Report.ClonedRepositories == 0 {
+					code = IssueAllClonesFailed
+				} else if bs.Report.FailedRepositories > 0 {
+					code = IssuePartialClone
+				} else {
+					code = IssueCloneFailure
+				}
+			} else { code = IssueCloneFailure }
+		case StageDiscoverDocs:
+			if errors.Is(se.Err, build.ErrDiscovery) {
+				if len(bs.RepoPaths) == 0 { code = IssueNoRepositories } else { code = IssueDiscoveryFailure }
+			} else { code = IssueDiscoveryFailure }
+		case StageRunHugo:
+			if errors.Is(se.Err, build.ErrHugo) { code = IssueHugoExecution } else { code = IssueHugoExecution }
+		default:
+			if se.Kind == StageErrorCanceled { code = IssueCanceled }
+		}
+		return StageOutcome{
+			Stage: stage,
+			Error: se,
+			Result: resultFromStageErrorKind(se.Kind),
+			IssueCode: code,
+			Severity: severityFromStageErrorKind(se.Kind),
+			Transient: se.Transient(),
+			Abort: se.Kind == StageErrorFatal || se.Kind == StageErrorCanceled,
+		}
+	}
+	// Unknown error: wrap as fatal with generic code.
+	se = newFatalStageError(stage, err)
+	return StageOutcome{
+		Stage: stage,
+		Error: se,
+		Result: StageResultFatal,
+		IssueCode: IssueGenericStageError,
+		Severity: SeverityError,
+		Transient: false,
+		Abort: true,
+	}
+}
+
 // Helpers to classify errors.
 func newFatalStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
@@ -129,9 +195,12 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 	for _, st := range stages {
 		select {
 		case <-ctx.Done():
+			// Treat as canceled stage outcome.
 			se := newCanceledStageError(st.Name, ctx.Err())
-			bs.Report.Errors = append(bs.Report.Errors, se)
+			out := StageOutcome{Stage: st.Name, Error: se, Result: StageResultCanceled, IssueCode: IssueCanceled, Severity: SeverityError, Transient: false, Abort: true}
 			bs.Report.StageErrorKinds[st.Name] = se.Kind
+			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, se.Error(), out.Transient, se)
+			bs.Report.recordStageResult(out.Stage, out.Result, bs.Generator.recorder)
 			return se
 		default:
 		}
@@ -142,53 +211,15 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 		if bs.Generator != nil && bs.Generator.recorder != nil {
 			bs.Generator.recorder.ObserveStageDuration(string(st.Name), dur)
 		}
-		if err != nil {
-			var se *StageError
-			if errors.As(err, &se) {
-				// StageError path
-				bs.Report.StageErrorKinds[st.Name] = se.Kind
-				severity := severityFromStageErrorKind(se.Kind)
-				code := IssueGenericStageError
-				switch se.Stage {
-				case StageCloneRepos:
-					if errors.Is(se.Err, build.ErrClone) {
-						if bs.Report.ClonedRepositories == 0 {
-							code = IssueAllClonesFailed
-						} else if bs.Report.FailedRepositories > 0 {
-							code = IssuePartialClone
-						} else {
-							code = IssueCloneFailure
-						}
-					} else { code = IssueCloneFailure }
-				case StageDiscoverDocs:
-					if errors.Is(se.Err, build.ErrDiscovery) {
-						if len(bs.RepoPaths) == 0 { code = IssueNoRepositories } else { code = IssueDiscoveryFailure }
-					} else { code = IssueDiscoveryFailure }
-				case StageRunHugo:
-					if errors.Is(se.Err, build.ErrHugo) { code = IssueHugoExecution } else { code = IssueHugoExecution }
-				default:
-					if se.Kind == StageErrorCanceled { code = IssueCanceled }
-				}
-				bs.Report.AddIssue(code, st.Name, severity, se.Error(), se.Transient(), se)
-				// update stage counts & metrics
-				bs.Report.recordStageResult(st.Name, resultFromStageErrorKind(se.Kind), bs.Generator.recorder)
-				switch se.Kind {
-				case StageErrorWarning:
-					continue // proceed
-				case StageErrorCanceled, StageErrorFatal:
-					return se
-				}
-			} else {
-				// Wrap unknown errors as fatal by default with generic code.
-				se = newFatalStageError(st.Name, err)
-				bs.Report.StageErrorKinds[st.Name] = se.Kind
-				bs.Report.recordStageResult(st.Name, StageResultFatal, bs.Generator.recorder)
-				bs.Report.AddIssue(IssueGenericStageError, st.Name, SeverityError, se.Error(), false, se)
-				return se
-			}
-		} else {
-			// success path
-			bs.Report.recordStageResult(st.Name, StageResultSuccess, bs.Generator.recorder)
+		out := classifyStageResult(st.Name, err, bs)
+		if out.Error != nil { // error path
+			bs.Report.StageErrorKinds[st.Name] = out.Error.Kind
+			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, out.Error.Error(), out.Transient, out.Error)
+		}
+		bs.Report.recordStageResult(st.Name, out.Result, bs.Generator.recorder)
+		if out.Abort {
+			if out.Error != nil { return out.Error }
+			return fmt.Errorf("stage %s aborted", st.Name)
 		}
 	}
 	return nil
