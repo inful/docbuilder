@@ -108,7 +108,6 @@ type BuildState struct {
 	Generator    *Generator
 	Docs         []docs.DocFile
 	Report       *BuildReport
-	Timings      map[string]time.Duration
 	start        time.Time
 	Repositories []config.Repository // configured repositories (post-filter)
 	RepoPaths    map[string]string   // name -> local filesystem path
@@ -121,7 +120,6 @@ func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *
 		Generator: g,
 		Docs:      docFiles,
 		Report:    report,
-		Timings:   make(map[string]time.Duration),
 		start:     time.Now(),
 	}
 }
@@ -140,7 +138,6 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 		t0 := time.Now()
 		err := st.Fn(ctx, bs)
 		dur := time.Since(t0)
-		bs.Timings[string(st.Name)] = dur
 		bs.Report.StageDurations[string(st.Name)] = dur
 		if bs.Generator != nil && bs.Generator.recorder != nil {
 			bs.Generator.recorder.ObserveStageDuration(string(st.Name), dur)

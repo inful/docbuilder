@@ -81,10 +81,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		return nil, err
 	}
 
-	// transfer timings into report (keep separate to allow future aggregation logic)
-	for k, v := range bs.Timings {
-		report.StageDurations[k] = v
-	}
+	// Stage durations already written directly to report.
 
 	report.deriveOutcome()
 	report.finish()
@@ -179,9 +176,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		g.abortStaging()
 		return report, err
 	}
-	for k, v := range bs.Timings {
-		report.StageDurations[k] = v
-	}
+	// Stage durations already written directly to report.
 	report.deriveOutcome()
 	report.finish()
 	if err := g.finalizeStaging(); err != nil {
