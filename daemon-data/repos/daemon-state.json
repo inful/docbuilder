@@ -1,7 +1,7 @@
 {
   "version": "2.0.0",
-  "start_time": "2025-09-28T00:35:41.973528+02:00",
-  "last_update": "2025-09-28T00:35:57.61294+02:00",
+  "start_time": "2025-09-28T00:42:45.718188+02:00",
+  "last_update": "2025-09-28T00:48:15.715201+02:00",
   "status": "starting",
   "repositories": {},
   "builds": {},
@@ -10,10 +10,10 @@
     "total_builds": 0,
     "successful_builds": 0,
     "failed_builds": 0,
-    "total_discoveries": 0,
+    "total_discoveries": 6,
     "documents_found": 0,
     "average_build_time_seconds": 0,
     "last_stat_reset": "2025-09-28T00:25:39.634835+02:00",
-    "uptime_seconds": 15.639682916
+    "uptime_seconds": 330.002729
   }
 }
