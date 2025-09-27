@@ -24,10 +24,12 @@ func (g *Generator) generateHugoConfig() error {
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
 	features := g.deriveThemeFeatures()
-	if features.Name == config.ThemeDocsy {
-		g.addDocsyParams(params)
-	} else if features.Name == config.ThemeHextra {
-		g.addHextraParams(params)
+	if th := g.activeTheme(); th != nil {
+		th.ApplyParams(g, params)
+	} else {
+		// Legacy fallback: retain existing conditional to avoid regression for unregistered themes.
+		if features.Name == config.ThemeDocsy { g.addDocsyParams(params) } 
+		if features.Name == config.ThemeHextra { g.addHextraParams(params) }
 	}
 
 	hugoConfig := map[string]interface{}{
@@ -83,6 +85,9 @@ func (g *Generator) generateHugoConfig() error {
 	if features.EnableOfflineSearchJSON { // offline search JSON
 		hugoConfig["outputs"] = map[string]interface{}{"home": []string{"HTML", "RSS", "JSON"}}
 	}
+
+	// Allow theme hook to mutate root after core assembly.
+	if th := g.activeTheme(); th != nil { th.CustomizeRoot(g, hugoConfig) }
 
 	// Menu handling
 	if features.AutoMainMenu {
