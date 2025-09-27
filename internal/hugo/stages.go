@@ -113,7 +113,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 		case <-ctx.Done():
 			se := newCanceledStageError(st.Name, ctx.Err())
 			bs.Report.Errors = append(bs.Report.Errors, se)
-			bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
+			bs.Report.StageErrorKinds[st.Name] = se.Kind
 			return se
 		default:
 		}
@@ -129,7 +129,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			var se *StageError
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
-				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
+				bs.Report.StageErrorKinds[st.Name] = se.Kind
 				// Populate issue taxonomy entry
 				issue := ReportIssue{Stage: st.Name, Message: se.Error(), Transient: se.Transient()}
 				// map severity
@@ -204,7 +204,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			} else {
 				// Wrap unknown errors as fatal by default.
 				se = newFatalStageError(st.Name, err)
-				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
+				bs.Report.StageErrorKinds[st.Name] = se.Kind
 				bs.Report.recordStageResult(st.Name, StageResultFatal, bs.Generator.recorder)
 				bs.Report.Issues = append(bs.Report.Issues, ReportIssue{Code: ReportIssueCode(fmt.Sprintf("UNKNOWN_%s_ERROR", st.Name)), Stage: st.Name, Severity: SeverityError, Message: se.Error(), Transient: false})
 				bs.Report.Errors = append(bs.Report.Errors, se)

@@ -28,7 +28,7 @@ type BuildReport struct {
 	Errors          []error // fatal errors causing build abortion (at most one today)
 	Warnings        []error // non-fatal issues (e.g., hugo binary missing, partial failures)
 	StageDurations  map[string]time.Duration
-	StageErrorKinds map[string]string // stage -> error kind (fatal|warning|canceled)
+	StageErrorKinds map[StageName]StageErrorKind // stage -> error kind (fatal|warning|canceled)
 	// Enrichment fields (incremental observability additions)
 	ClonedRepositories  int                      // repositories successfully cloned or validated
 	FailedRepositories  int                      // repositories that failed to clone/auth
@@ -91,7 +91,7 @@ func newBuildReport(repos, files int) *BuildReport {
 		Files:           files,
 		Start:           time.Now(),
 		StageDurations:  make(map[string]time.Duration),
-		StageErrorKinds: make(map[string]string),
+		StageErrorKinds: make(map[StageName]StageErrorKind),
 		StageCounts:     make(map[StageName]StageCount),
 		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
@@ -177,6 +177,11 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 	for k, v := range r.StageCounts {
 		stageCounts[string(k)] = v
 	}
+	// Convert typed error kinds map
+	sek := make(map[string]string, len(r.StageErrorKinds))
+	for k, v := range r.StageErrorKinds {
+		sek[string(k)] = string(v)
+	}
 
 	s := &BuildReportSerializable{
 		SchemaVersion:      r.SchemaVersion,
@@ -187,7 +192,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		Errors:              make([]string, len(r.Errors)),
 		Warnings:            make([]string, len(r.Warnings)),
 		StageDurations:      r.StageDurations,
-		StageErrorKinds:     r.StageErrorKinds,
+		StageErrorKinds:     sek,
 		ClonedRepositories:  r.ClonedRepositories,
 		FailedRepositories:  r.FailedRepositories,
 		SkippedRepositories: r.SkippedRepositories,

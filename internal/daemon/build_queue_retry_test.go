@@ -91,7 +91,7 @@ func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 		underlying = errors.New("transient")
 	}
 	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorWarning, Err: underlying}
-	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[string]string{}}
+	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[hugo.StageName]hugo.StageErrorKind{}}
 	r.Errors = append(r.Errors, se)
 	return r, se
 }
@@ -99,7 +99,7 @@ func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 // helper to create a fatal (non-transient) StageError report
 func fatalReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorFatal, Err: errors.New("fatal")}
-	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[string]string{}}
+	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[hugo.StageName]hugo.StageErrorKind{}}
 	r.Errors = append(r.Errors, se)
 	return r, se
 }
@@ -147,10 +147,10 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 		}
 	}
 	if fr.getRetry(string(hugo.StageCloneRepos)) != 1 {
-			t.Fatalf("expected 1 retry metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 1 retry metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
 	if fr.getExhausted(string(hugo.StageCloneRepos)) != 0 {
-			t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
@@ -191,10 +191,10 @@ func TestRetryExhausted(t *testing.T) {
 		}
 	}
 	if fr.getRetry(string(hugo.StageCloneRepos)) != 2 {
-			t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
 	if fr.getExhausted(string(hugo.StageCloneRepos)) != 1 {
-			t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
@@ -227,10 +227,10 @@ func TestNoRetryOnPermanent(t *testing.T) {
 		}
 	}
 	if fr.getRetry(string(hugo.StageCloneRepos)) != 0 {
-			t.Fatalf("expected 0 retries, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 0 retries, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
 	if fr.getExhausted(string(hugo.StageCloneRepos)) != 0 {
-			t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
+		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
