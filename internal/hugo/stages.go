@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -258,6 +261,16 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
 	}
 	client := git.NewClient(bs.WorkspaceDir)
+	if bs.Generator != nil {
+		client = client.WithBuildConfig(&bs.Generator.config.Build)
+	}
+
+	strategy := config.CloneStrategyFresh
+	if bs.Generator != nil {
+		if s := bs.Generator.config.Build.CloneStrategy; s != "" {
+			strategy = s
+		}
+	}
 	if err := client.EnsureWorkspace(); err != nil {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
@@ -294,7 +307,27 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			default:
 			}
 			start := time.Now()
-			p, err := client.CloneRepository(task.repo)
+			var (
+				p   string
+				err error
+			)
+			// Determine if we should attempt update based on strategy.
+			attemptUpdate := false
+			switch strategy {
+			case config.CloneStrategyUpdate:
+				attemptUpdate = true
+			case config.CloneStrategyAuto:
+				// If directory exists, try update; else fresh clone.
+				repoPath := filepath.Join(bs.WorkspaceDir, task.repo.Name)
+				if _, statErr := os.Stat(filepath.Join(repoPath, ".git")); statErr == nil {
+					attemptUpdate = true
+				}
+			}
+			if attemptUpdate {
+				p, err = client.UpdateRepository(task.repo)
+			} else {
+				p, err = client.CloneRepository(task.repo)
+			}
 			dur := time.Since(start)
 			success := err == nil
 			mu.Lock()
@@ -303,6 +336,15 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 				bs.RepoPaths[task.repo.Name] = p
 			} else {
 				bs.Report.FailedRepositories++
+				// Attach structured issue immediately for permanent git errors (non-transient) with granular code.
+				if bs.Report != nil {
+					code := classifyGitFailure(err)
+					sev := SeverityError
+					// Mark transient=false because classifyGitFailure only returns granular permanent codes; generic clone failures handled later.
+					if code != "" {
+						bs.Report.AddIssue(code, StageCloneRepos, sev, err.Error(), false, err)
+					}
+				}
 			}
 			mu.Unlock()
 			if bs.Generator != nil && bs.Generator.recorder != nil {
@@ -377,6 +419,28 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 
 func stageGenerateConfig(ctx context.Context, bs *BuildState) error {
 	return bs.Generator.generateHugoConfig()
+}
+
+// classifyGitFailure inspects an error string (best-effort) for permanent git failure signatures
+// to map them onto granular issue codes. Only returns codes for permanent, non-transient conditions.
+func classifyGitFailure(err error) ReportIssueCode {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	l := strings.ToLower(msg)
+	switch {
+	case strings.Contains(l, "authentication failed") || strings.Contains(l, "authentication required") || strings.Contains(l, "invalid username or password") || strings.Contains(l, "authorization failed"):
+		return IssueAuthFailure
+	case strings.Contains(l, "repository not found") || strings.Contains(l, "not found") && strings.Contains(l, "repository"):
+		return IssueRepoNotFound
+	case strings.Contains(l, "unsupported protocol"):
+		return IssueUnsupportedProto
+	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
+		return IssueRemoteDiverged
+	default:
+		return ""
+	}
 }
 
 func stageLayouts(ctx context.Context, bs *BuildState) error {

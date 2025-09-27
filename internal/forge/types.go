@@ -1,20 +1,20 @@
 package forge
 
 import (
-    "context"
-    "fmt"
-    "time"
+	"context"
+	"fmt"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // ForgeType mirrors config.ForgeType for backwards compatibility in forge package.
 type ForgeType = config.ForgeType
 
 const (
-    ForgeTypeGitHub  ForgeType = ForgeType(config.ForgeGitHub)
-    ForgeTypeGitLab  ForgeType = ForgeType(config.ForgeGitLab)
-    ForgeTypeForgejo ForgeType = ForgeType(config.ForgeForgejo)
+	ForgeTypeGitHub  ForgeType = ForgeType(config.ForgeGitHub)
+	ForgeTypeGitLab  ForgeType = ForgeType(config.ForgeGitLab)
+	ForgeTypeForgejo ForgeType = ForgeType(config.ForgeForgejo)
 )
 
 // Repository represents a repository discovered from a forge

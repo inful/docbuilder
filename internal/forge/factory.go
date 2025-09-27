@@ -2,21 +2,22 @@ package forge
 
 import (
 	"fmt"
+
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // NewForgeClient creates a new forge client based on the configuration
 func NewForgeClient(config *ForgeConfig) (ForgeClient, error) {
-    switch config.Type {
-    case cfg.ForgeGitHub:
-        return NewGitHubClient(config)
-    case cfg.ForgeGitLab:
-        return NewGitLabClient(config)
-    case cfg.ForgeForgejo:
-        return NewForgejoClient(config)
-    default:
-        return nil, fmt.Errorf("unsupported forge type: %s", config.Type)
-    }
+	switch config.Type {
+	case cfg.ForgeGitHub:
+		return NewGitHubClient(config)
+	case cfg.ForgeGitLab:
+		return NewGitLabClient(config)
+	case cfg.ForgeForgejo:
+		return NewForgejoClient(config)
+	default:
+		return nil, fmt.Errorf("unsupported forge type: %s", config.Type)
+	}
 }
 
 // CreateForgeManager creates a forge manager with the provided configurations

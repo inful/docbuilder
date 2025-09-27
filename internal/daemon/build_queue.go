@@ -11,6 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
+	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
 
 // BuildType represents the type of build job
@@ -75,7 +76,7 @@ type BuildQueue struct {
 	builder     Builder
 	// retry policy configuration (source) + derived policy
 	retryCfg    config.BuildConfig
-	retryPolicy RetryPolicy
+	retryPolicy retry.Policy
 	recorder    metrics.Recorder
 }
 
@@ -97,8 +98,8 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
 		builder:     NewSiteBuilder(),
-		retryCfg:    config.BuildConfig{},
-		retryPolicy: DefaultRetryPolicy(),
+	retryCfg:    config.BuildConfig{},
+	retryPolicy: retry.DefaultPolicy(),
 		recorder:    metrics.NoopRecorder{},
 	}
 }
@@ -108,7 +109,7 @@ func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
 	bq.retryCfg = cfg
 	initial, _ := time.ParseDuration(cfg.RetryInitialDelay)
 	max, _ := time.ParseDuration(cfg.RetryMaxDelay)
-	bq.retryPolicy = NewRetryPolicy(cfg.RetryBackoff, initial, max, cfg.MaxRetries)
+	bq.retryPolicy = retry.NewPolicy(cfg.RetryBackoff, initial, max, cfg.MaxRetries)
 }
 
 // SetRecorder injects a metrics recorder for retry metrics (optional).
@@ -269,7 +270,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	attempts := 0
 	policy := bq.retryPolicy
 	if policy.Initial <= 0 {
-		policy = DefaultRetryPolicy()
+		policy = retry.DefaultPolicy()
 	} // fallback safety
 	totalRetries := 0
 	exhausted := false

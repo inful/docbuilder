@@ -122,9 +122,9 @@ output:
 		t.Errorf("Forge name = %v, want test-github", forge.Name)
 	}
 
-		if forge.Type != ForgeGitHub {
-			t.Errorf("Forge type = %v, want %s", forge.Type, ForgeGitHub)
-		}
+	if forge.Type != ForgeGitHub {
+		t.Errorf("Forge type = %v, want %s", forge.Type, ForgeGitHub)
+	}
 
 	if len(forge.Organizations) != 1 || forge.Organizations[0] != "test-org" {
 		t.Errorf("Forge organizations = %v, want [test-org]", forge.Organizations)
