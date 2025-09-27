@@ -130,6 +130,55 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
+				// Populate issue taxonomy entry
+				issue := ReportIssue{Stage: st.Name, Message: se.Error(), Transient: se.Transient()}
+				// map severity
+				switch se.Kind {
+				case StageErrorWarning:
+					issue.Severity = SeverityWarning
+				case StageErrorCanceled:
+					issue.Severity = SeverityError
+				case StageErrorFatal:
+					issue.Severity = SeverityError
+				}
+				// map code by sentinel / kind
+				switch se.Stage {
+				case StageCloneRepos:
+					if errors.Is(se.Err, build.ErrClone) {
+						if bs.Report.ClonedRepositories == 0 {
+							issue.Code = IssueAllClonesFailed
+						} else if bs.Report.FailedRepositories > 0 {
+							issue.Code = IssuePartialClone
+						} else {
+							issue.Code = IssueCloneFailure
+						}
+					} else {
+						issue.Code = IssueCloneFailure
+					}
+				case StageDiscoverDocs:
+					if errors.Is(se.Err, build.ErrDiscovery) {
+						if len(bs.RepoPaths) == 0 {
+							issue.Code = IssueNoRepositories
+						} else {
+							issue.Code = IssueDiscoveryFailure
+						}
+					} else {
+						issue.Code = IssueDiscoveryFailure
+					}
+				case StageRunHugo:
+					if errors.Is(se.Err, build.ErrHugo) {
+						issue.Code = IssueHugoExecution
+					} else {
+						issue.Code = IssueHugoExecution
+					}
+				default:
+					if se.Kind == StageErrorCanceled {
+						issue.Code = IssueCanceled
+					} else {
+						// leave empty to avoid over-specifying; could add generic code later
+					}
+				}
+				bs.Report.Issues = append(bs.Report.Issues, issue)
 				// update stage counts & metrics
 				var res StageResult
 				switch se.Kind {
@@ -157,6 +206,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 				se = newFatalStageError(st.Name, err)
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
 				bs.Report.recordStageResult(st.Name, StageResultFatal, bs.Generator.recorder)
+				bs.Report.Issues = append(bs.Report.Issues, ReportIssue{Code: ReportIssueCode(fmt.Sprintf("UNKNOWN_%s_ERROR", st.Name)), Stage: st.Name, Severity: SeverityError, Message: se.Error(), Transient: false})
 				bs.Report.Errors = append(bs.Report.Errors, se)
 				return se
 			}
