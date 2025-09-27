@@ -6,6 +6,7 @@ require (
 	github.com/alecthomas/kong v0.8.1
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-git/go-git/v5 v5.11.0
+	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.18.0
 	gopkg.in/yaml.v3 v3.0.1
 )
