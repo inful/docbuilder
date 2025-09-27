@@ -436,7 +436,7 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 
 // GetEditURL returns the GitLab edit URL for a file
 func (c *GitLabClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return fmt.Sprintf("%s/%s/-/edit/%s/%s", c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(ForgeTypeGitLab, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods

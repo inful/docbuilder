@@ -463,7 +463,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 
 // GetEditURL returns the GitHub edit URL for a file
 func (c *GitHubClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return fmt.Sprintf("%s/%s/edit/%s/%s", c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(ForgeTypeGitHub, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods
