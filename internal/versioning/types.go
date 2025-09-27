@@ -101,8 +101,8 @@ type VersionFilter struct {
 
 // GitReference represents a Git branch or tag reference
 type GitReference struct {
-	Name      string    `json:"name"`       // Reference name (branch/tag)
-	Type      string    `json:"type"`       // "branch" or "tag"
-	CommitSHA string    `json:"commit_sha"` // Target commit SHA
-	CreatedAt time.Time `json:"created_at"` // When ref was created
+	Name      string      `json:"name"`       // Reference name (branch/tag)
+	Type      VersionType `json:"type"`       // branch or tag (typed)
+	CommitSHA string      `json:"commit_sha"` // Target commit SHA
+	CreatedAt time.Time   `json:"created_at"` // When ref was created
 }

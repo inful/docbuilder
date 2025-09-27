@@ -221,25 +221,25 @@ func (vm *DefaultVersionManager) getGitReferences(repoURL string) ([]*GitReferen
 	references := []*GitReference{
 		{
 			Name:      "main",
-			Type:      "branch",
+			Type:      VersionTypeBranch,
 			CommitSHA: "abc123",
 			CreatedAt: time.Now().Add(-30 * 24 * time.Hour),
 		},
 		{
 			Name:      "develop",
-			Type:      "branch",
+			Type:      VersionTypeBranch,
 			CommitSHA: "def456",
 			CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
 		},
 		{
 			Name:      "v1.0.0",
-			Type:      "tag",
+			Type:      VersionTypeTag,
 			CommitSHA: "ghi789",
 			CreatedAt: time.Now().Add(-14 * 24 * time.Hour),
 		},
 		{
 			Name:      "v1.1.0",
-			Type:      "tag",
+			Type:      VersionTypeTag,
 			CommitSHA: "jkl012",
 			CreatedAt: time.Now().Add(-3 * 24 * time.Hour),
 		},
@@ -255,7 +255,7 @@ func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitRef
 
 	for _, candidate := range defaultCandidates {
 		for _, ref := range refs {
-			if ref.Type == "branch" && ref.Name == candidate {
+			if ref.Type == VersionTypeBranch && ref.Name == candidate {
 				return candidate, nil
 			}
 		}
@@ -263,7 +263,7 @@ func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitRef
 
 	// If no common default found, use the first branch
 	for _, ref := range refs {
-		if ref.Type == "branch" {
+		if ref.Type == VersionTypeBranch {
 			return ref.Name, nil
 		}
 	}
@@ -292,14 +292,14 @@ func (vm *DefaultVersionManager) convertReferenceToVersion(ref *GitReference, co
 
 	switch config.Strategy {
 	case StrategyDefaultOnly:
-		include = ref.Type == "branch" && ref.Name == defaultBranch
+		include = ref.Type == VersionTypeBranch && ref.Name == defaultBranch
 	case StrategyBranches:
-		include = ref.Type == "branch" && vm.matchesPatterns(ref.Name, config.BranchPatterns)
+		include = ref.Type == VersionTypeBranch && vm.matchesPatterns(ref.Name, config.BranchPatterns)
 	case StrategyTags:
-		include = ref.Type == "tag" && vm.matchesPatterns(ref.Name, config.TagPatterns)
+		include = ref.Type == VersionTypeTag && vm.matchesPatterns(ref.Name, config.TagPatterns)
 	case StrategyBranchesAndTags:
-		include = (ref.Type == "branch" && vm.matchesPatterns(ref.Name, config.BranchPatterns)) ||
-			(ref.Type == "tag" && vm.matchesPatterns(ref.Name, config.TagPatterns))
+		include = (ref.Type == VersionTypeBranch && vm.matchesPatterns(ref.Name, config.BranchPatterns)) ||
+			(ref.Type == VersionTypeTag && vm.matchesPatterns(ref.Name, config.TagPatterns))
 	}
 
 	if !include {
@@ -309,10 +309,10 @@ func (vm *DefaultVersionManager) convertReferenceToVersion(ref *GitReference, co
 	// Create version
 	version := &Version{
 		Name:         ref.Name,
-		Type:         VersionType(ref.Type),
-		DisplayName:  vm.generateDisplayName(ref.Name, ref.Type),
-		IsDefault:    ref.Type == "branch" && ref.Name == defaultBranch,
-		Path:         vm.generateVersionPath(ref.Name, ref.Type, defaultBranch),
+		Type:         ref.Type,
+		DisplayName:  vm.generateDisplayName(ref.Name, string(ref.Type)),
+		IsDefault:    ref.Type == VersionTypeBranch && ref.Name == defaultBranch,
+		Path:         vm.generateVersionPath(ref.Name, string(ref.Type), defaultBranch),
 		CommitSHA:    ref.CommitSHA,
 		CreatedAt:    ref.CreatedAt,
 		LastModified: time.Now(), // Would be updated during documentation processing
