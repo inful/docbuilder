@@ -3,6 +3,7 @@ package daemon
 import (
 	"fmt"
 	"time"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
@@ -10,13 +11,15 @@ import (
 // It is immutable after construction.
 type RetryPolicy struct {
 	Mode       config.RetryBackoffMode // fixed|linear|exponential
-	Initial    time.Duration // base delay
-	Max        time.Duration // cap for growth
-	MaxRetries int           // maximum retry attempts after the first failure
+	Initial    time.Duration           // base delay
+	Max        time.Duration           // cap for growth
+	MaxRetries int                     // maximum retry attempts after the first failure
 }
 
 // DefaultRetryPolicy returns a sensible default policy (linear, 1s initial, 30s cap, 2 retries).
-func DefaultRetryPolicy() RetryPolicy { return RetryPolicy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 30 * time.Second, MaxRetries: 2} }
+func DefaultRetryPolicy() RetryPolicy {
+	return RetryPolicy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 30 * time.Second, MaxRetries: 2}
+}
 
 // NewRetryPolicy builds a policy from raw config fields; zero/invalid values fall back to defaults.
 func NewRetryPolicy(mode config.RetryBackoffMode, initial, max time.Duration, maxRetries int) RetryPolicy {

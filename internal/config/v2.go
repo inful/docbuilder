@@ -85,7 +85,7 @@ type FilteringConfig struct {
 
 // VersioningConfig represents multi-version documentation configuration
 type VersioningConfig struct {
-	Strategy           string   `yaml:"strategy"`              // "branches_and_tags", "branches_only", "tags_only"
+	Strategy           VersioningStrategy `yaml:"strategy"`              // typed: branches_and_tags|branches_only|tags_only
 	DefaultBranchOnly  bool     `yaml:"default_branch_only"`   // Only build default branch
 	BranchPatterns     []string `yaml:"branch_patterns"`       // Branch patterns to include
 	TagPatterns        []string `yaml:"tag_patterns"`          // Tag patterns to include
@@ -249,7 +249,17 @@ func applyDefaults(config *Config) error {
 		config.Versioning = &VersioningConfig{}
 	}
 	if config.Versioning.Strategy == "" {
-		config.Versioning.Strategy = "branches_and_tags"
+		// Only apply default if user omitted the field entirely.
+		config.Versioning.Strategy = StrategyBranchesAndTags
+	} else {
+		orig := config.Versioning.Strategy
+		norm := NormalizeVersioningStrategy(string(config.Versioning.Strategy))
+		if norm != "" {
+			config.Versioning.Strategy = norm
+		} else {
+			// Preserve original invalid value so validateConfig can raise an error.
+			config.Versioning.Strategy = VersioningStrategy(orig)
+		}
 	}
 	if config.Versioning.MaxVersionsPerRepo == 0 {
 		config.Versioning.MaxVersionsPerRepo = 10
@@ -350,12 +360,7 @@ func validateConfig(config *Config) error {
 
 	// Validate versioning strategy
 	if config.Versioning != nil {
-		validStrategies := map[string]bool{
-			"branches_and_tags": true,
-			"branches_only":     true,
-			"tags_only":         true,
-		}
-		if !validStrategies[config.Versioning.Strategy] {
+		if config.Versioning.Strategy != StrategyBranchesAndTags && config.Versioning.Strategy != StrategyBranchesOnly && config.Versioning.Strategy != StrategyTagsOnly {
 			return fmt.Errorf("invalid versioning strategy: %s", config.Versioning.Strategy)
 		}
 	}
@@ -434,7 +439,7 @@ func Init(configPath string, force bool) error {
 			IgnoreFiles:   []string{".docignore"},
 		},
 		Versioning: &VersioningConfig{
-			Strategy:           "branches_and_tags",
+			Strategy:           StrategyBranchesAndTags,
 			DefaultBranchOnly:  false,
 			BranchPatterns:     []string{"main", "master", "develop"},
 			TagPatterns:        []string{"v*.*.*"},

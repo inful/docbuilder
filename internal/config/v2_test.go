@@ -140,8 +140,8 @@ output:
 	}
 
 	// Test versioning
-	if config.Versioning.Strategy != "branches_and_tags" {
-		t.Errorf("Versioning strategy = %v, want branches_and_tags", config.Versioning.Strategy)
+	if config.Versioning.Strategy != StrategyBranchesAndTags {
+		t.Errorf("Versioning strategy = %v, want %s", config.Versioning.Strategy, StrategyBranchesAndTags)
 	}
 
 	if config.Versioning.MaxVersionsPerRepo != 15 {
@@ -216,8 +216,8 @@ hugo:
 	}
 
 	// Versioning should have defaults
-	if config.Versioning.Strategy != "branches_and_tags" {
-		t.Errorf("Default versioning strategy = %v, want branches_and_tags", config.Versioning.Strategy)
+	if config.Versioning.Strategy != StrategyBranchesAndTags {
+		t.Errorf("Default versioning strategy = %v, want %s", config.Versioning.Strategy, StrategyBranchesAndTags)
 	}
 
 	if config.Versioning.MaxVersionsPerRepo != 10 {

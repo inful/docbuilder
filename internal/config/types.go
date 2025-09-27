@@ -81,10 +81,33 @@ type BuildConfig struct {
 	// Defaults to 4; values <1 are coerced to 1; values larger than the repo count are bounded.
 	CloneConcurrency int `yaml:"clone_concurrency,omitempty"`
 	// Retry policy fields (apply to transient build failures at stage granularity)
-	MaxRetries        int             `yaml:"max_retries,omitempty"`         // total retry attempts after first attempt (default 2)
+	MaxRetries        int              `yaml:"max_retries,omitempty"`         // total retry attempts after first attempt (default 2)
 	RetryBackoff      RetryBackoffMode `yaml:"retry_backoff,omitempty"`       // fixed|linear|exponential (default linear)
-	RetryInitialDelay string          `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
-	RetryMaxDelay     string          `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
+	RetryInitialDelay string           `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
+	RetryMaxDelay     string           `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
+}
+
+// VersioningStrategy enumerates supported multi-version selection strategies.
+type VersioningStrategy string
+
+const (
+	StrategyBranchesAndTags VersioningStrategy = "branches_and_tags"
+	StrategyBranchesOnly    VersioningStrategy = "branches_only"
+	StrategyTagsOnly        VersioningStrategy = "tags_only"
+)
+
+// NormalizeVersioningStrategy returns a canonical typed strategy or empty string if unknown.
+func NormalizeVersioningStrategy(raw string) VersioningStrategy {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(StrategyBranchesAndTags):
+		return StrategyBranchesAndTags
+	case string(StrategyBranchesOnly):
+		return StrategyBranchesOnly
+	case string(StrategyTagsOnly):
+		return StrategyTagsOnly
+	default:
+		return ""
+	}
 }
 
 // RetryBackoffMode enumerates supported backoff strategies for retries.
