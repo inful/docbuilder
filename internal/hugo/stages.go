@@ -131,8 +131,8 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
-				// update stage counts
-				sc := bs.Report.StageCounts[string(st.Name)]
+				// update stage counts (typed key)
+				sc := bs.Report.StageCounts[st.Name]
 				switch se.Kind {
 				case StageErrorWarning:
 					sc.Warning++
@@ -141,7 +141,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 				case StageErrorFatal:
 					sc.Fatal++
 				}
-				bs.Report.StageCounts[string(st.Name)] = sc
+				bs.Report.StageCounts[st.Name] = sc
 				switch se.Kind {
 				case StageErrorWarning:
 					bs.Report.Warnings = append(bs.Report.Warnings, se)
@@ -166,9 +166,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 				// Wrap unknown errors as fatal by default.
 				se = newFatalStageError(st.Name, err)
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
-				sc := bs.Report.StageCounts[string(st.Name)]
+				sc := bs.Report.StageCounts[st.Name]
 				sc.Fatal++
-				bs.Report.StageCounts[string(st.Name)] = sc
+				bs.Report.StageCounts[st.Name] = sc
 				bs.Report.Errors = append(bs.Report.Errors, se)
 				if bs.Generator != nil && bs.Generator.recorder != nil {
 					bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultFatal)
@@ -177,9 +177,9 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			}
 		} else {
 			// success path
-			sc := bs.Report.StageCounts[string(st.Name)]
+			sc := bs.Report.StageCounts[st.Name]
 			sc.Success++
-			bs.Report.StageCounts[string(st.Name)] = sc
+			bs.Report.StageCounts[st.Name] = sc
 			if bs.Generator != nil && bs.Generator.recorder != nil {
 				bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultSuccess)
 			}
