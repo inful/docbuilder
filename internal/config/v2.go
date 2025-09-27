@@ -173,7 +173,13 @@ func applyDefaults(config *Config) error {
 		config.Build.MaxRetries = 2
 	}
 	if config.Build.RetryBackoff == "" {
-		config.Build.RetryBackoff = "linear"
+		config.Build.RetryBackoff = RetryBackoffLinear
+	} else {
+		// normalize any user-provided raw string (in case future loaders bypass yaml tag typing)
+		config.Build.RetryBackoff = NormalizeRetryBackoff(string(config.Build.RetryBackoff))
+		if config.Build.RetryBackoff == "" { // fallback to default if unknown
+			config.Build.RetryBackoff = RetryBackoffLinear
+		}
 	}
 	if config.Build.RetryInitialDelay == "" {
 		config.Build.RetryInitialDelay = "1s"
@@ -356,7 +362,7 @@ func validateConfig(config *Config) error {
 
 	// Validate retry configuration
 	switch config.Build.RetryBackoff {
-	case "fixed", "linear", "exponential":
+	case RetryBackoffFixed, RetryBackoffLinear, RetryBackoffExponential:
 	default:
 		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", config.Build.RetryBackoff)
 	}
@@ -387,7 +393,7 @@ func Init(configPath string, force bool) error {
 
 	exampleConfig := Config{
 		Version: "2.0",
-		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: "linear", RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
+		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
 				DocsPort:    8080,

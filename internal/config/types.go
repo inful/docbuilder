@@ -81,10 +81,33 @@ type BuildConfig struct {
 	// Defaults to 4; values <1 are coerced to 1; values larger than the repo count are bounded.
 	CloneConcurrency int `yaml:"clone_concurrency,omitempty"`
 	// Retry policy fields (apply to transient build failures at stage granularity)
-	MaxRetries        int    `yaml:"max_retries,omitempty"`         // total retry attempts after first attempt (default 2)
-	RetryBackoff      string `yaml:"retry_backoff,omitempty"`       // fixed|linear|exponential (default linear)
-	RetryInitialDelay string `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
-	RetryMaxDelay     string `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
+	MaxRetries        int             `yaml:"max_retries,omitempty"`         // total retry attempts after first attempt (default 2)
+	RetryBackoff      RetryBackoffMode `yaml:"retry_backoff,omitempty"`       // fixed|linear|exponential (default linear)
+	RetryInitialDelay string          `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
+	RetryMaxDelay     string          `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
+}
+
+// RetryBackoffMode enumerates supported backoff strategies for retries.
+type RetryBackoffMode string
+
+const (
+	RetryBackoffFixed       RetryBackoffMode = "fixed"
+	RetryBackoffLinear      RetryBackoffMode = "linear"
+	RetryBackoffExponential RetryBackoffMode = "exponential"
+)
+
+// NormalizeRetryBackoff converts arbitrary user input (case-insensitive) into a typed mode, returning empty string for unknown.
+func NormalizeRetryBackoff(raw string) RetryBackoffMode {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(RetryBackoffFixed):
+		return RetryBackoffFixed
+	case string(RetryBackoffLinear):
+		return RetryBackoffLinear
+	case string(RetryBackoffExponential):
+		return RetryBackoffExponential
+	default:
+		return ""
+	}
 }
 
 // Menu represents a Hugo menu item

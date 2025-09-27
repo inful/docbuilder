@@ -25,7 +25,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 			}{{tr, terr}, {&hugo.BuildReport{}, nil}}}
 			bq := NewBuildQueue(5, 1)
 			bq.builder = mb
-			bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: "fixed", RetryInitialDelay: "1ms", RetryMaxDelay: "2ms"})
+			bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "2ms"})
 			bq.SetRecorder(fr)
 			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 			defer cancel()
@@ -60,7 +60,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 			}{{frpt, ferr}}}
 			bq := NewBuildQueue(5, 1)
 			bq.builder = mb
-			bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: "linear", RetryInitialDelay: "1ms", RetryMaxDelay: "2ms"})
+			bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffLinear, RetryInitialDelay: "1ms", RetryMaxDelay: "2ms"})
 			bq.SetRecorder(fr)
 			ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
 			defer cancel()
