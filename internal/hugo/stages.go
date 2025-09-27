@@ -72,6 +72,26 @@ func (e *StageError) Transient() bool {
 	return false
 }
 
+// resultFromStageErrorKind maps a StageErrorKind to a StageResult.
+func resultFromStageErrorKind(k StageErrorKind) StageResult {
+	switch k {
+	case StageErrorWarning:
+		return StageResultWarning
+	case StageErrorCanceled:
+		return StageResultCanceled
+	case StageErrorFatal:
+		return StageResultFatal
+	default:
+		return StageResultFatal
+	}
+}
+
+// severityFromStageErrorKind maps StageErrorKind to IssueSeverity.
+func severityFromStageErrorKind(k StageErrorKind) IssueSeverity {
+	if k == StageErrorWarning { return SeverityWarning }
+	return SeverityError
+}
+
 // Helpers to classify errors.
 func newFatalStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
@@ -128,86 +148,45 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 		if err != nil {
 			var se *StageError
 			if errors.As(err, &se) {
-				// Already a StageError; record classification.
+				// StageError path
 				bs.Report.StageErrorKinds[st.Name] = se.Kind
-				// Populate issue taxonomy entry
-				issue := ReportIssue{Stage: st.Name, Message: se.Error(), Transient: se.Transient()}
-				// map severity
-				switch se.Kind {
-				case StageErrorWarning:
-					issue.Severity = SeverityWarning
-				case StageErrorCanceled:
-					issue.Severity = SeverityError
-				case StageErrorFatal:
-					issue.Severity = SeverityError
-				}
-				// map code by sentinel / kind
+				severity := severityFromStageErrorKind(se.Kind)
+				code := IssueGenericStageError
 				switch se.Stage {
 				case StageCloneRepos:
 					if errors.Is(se.Err, build.ErrClone) {
 						if bs.Report.ClonedRepositories == 0 {
-							issue.Code = IssueAllClonesFailed
+							code = IssueAllClonesFailed
 						} else if bs.Report.FailedRepositories > 0 {
-							issue.Code = IssuePartialClone
+							code = IssuePartialClone
 						} else {
-							issue.Code = IssueCloneFailure
+							code = IssueCloneFailure
 						}
-					} else {
-						issue.Code = IssueCloneFailure
-					}
+					} else { code = IssueCloneFailure }
 				case StageDiscoverDocs:
 					if errors.Is(se.Err, build.ErrDiscovery) {
-						if len(bs.RepoPaths) == 0 {
-							issue.Code = IssueNoRepositories
-						} else {
-							issue.Code = IssueDiscoveryFailure
-						}
-					} else {
-						issue.Code = IssueDiscoveryFailure
-					}
+						if len(bs.RepoPaths) == 0 { code = IssueNoRepositories } else { code = IssueDiscoveryFailure }
+					} else { code = IssueDiscoveryFailure }
 				case StageRunHugo:
-					if errors.Is(se.Err, build.ErrHugo) {
-						issue.Code = IssueHugoExecution
-					} else {
-						issue.Code = IssueHugoExecution
-					}
+					if errors.Is(se.Err, build.ErrHugo) { code = IssueHugoExecution } else { code = IssueHugoExecution }
 				default:
-					if se.Kind == StageErrorCanceled {
-						issue.Code = IssueCanceled
-					} else {
-						// leave empty to avoid over-specifying; could add generic code later
-					}
+					if se.Kind == StageErrorCanceled { code = IssueCanceled }
 				}
-				bs.Report.Issues = append(bs.Report.Issues, issue)
+				bs.Report.AddIssue(code, st.Name, severity, se.Error(), se.Transient(), se)
 				// update stage counts & metrics
-				var res StageResult
+				bs.Report.recordStageResult(st.Name, resultFromStageErrorKind(se.Kind), bs.Generator.recorder)
 				switch se.Kind {
 				case StageErrorWarning:
-					res = StageResultWarning
-				case StageErrorCanceled:
-					res = StageResultCanceled
-				case StageErrorFatal:
-					res = StageResultFatal
-				}
-				bs.Report.recordStageResult(st.Name, res, bs.Generator.recorder)
-				switch se.Kind {
-				case StageErrorWarning:
-					bs.Report.Warnings = append(bs.Report.Warnings, se)
-					continue // proceed to next stage
-				case StageErrorCanceled:
-					bs.Report.Errors = append(bs.Report.Errors, se)
-					return se
-				case StageErrorFatal:
-					bs.Report.Errors = append(bs.Report.Errors, se)
+					continue // proceed
+				case StageErrorCanceled, StageErrorFatal:
 					return se
 				}
 			} else {
-				// Wrap unknown errors as fatal by default.
+				// Wrap unknown errors as fatal by default with generic code.
 				se = newFatalStageError(st.Name, err)
 				bs.Report.StageErrorKinds[st.Name] = se.Kind
 				bs.Report.recordStageResult(st.Name, StageResultFatal, bs.Generator.recorder)
-				bs.Report.Issues = append(bs.Report.Issues, ReportIssue{Code: ReportIssueCode(fmt.Sprintf("UNKNOWN_%s_ERROR", st.Name)), Stage: st.Name, Severity: SeverityError, Message: se.Error(), Transient: false})
-				bs.Report.Errors = append(bs.Report.Errors, se)
+				bs.Report.AddIssue(IssueGenericStageError, st.Name, SeverityError, se.Error(), false, se)
 				return se
 			}
 		} else {
