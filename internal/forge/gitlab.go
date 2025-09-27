@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // GitLabClient implements ForgeClient for GitLab
@@ -22,16 +23,16 @@ type GitLabClient struct {
 }
 
 // NewGitLabClient creates a new GitLab client
-func NewGitLabClient(config *ForgeConfig) (*GitLabClient, error) {
-	if config.Type != string(ForgeTypeGitLab) {
-		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", config.Type)
+func NewGitLabClient(fg *ForgeConfig) (*GitLabClient, error) {
+	if fg.Type != string(ForgeTypeGitLab) {
+		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
 	}
 
 	client := &GitLabClient{
-		config:     config,
+		config:     fg,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
-		apiURL:     config.APIURL,
-		baseURL:    config.BaseURL,
+		apiURL:     fg.APIURL,
+		baseURL:    fg.BaseURL,
 	}
 
 	// Set default URLs if not provided
@@ -43,8 +44,8 @@ func NewGitLabClient(config *ForgeConfig) (*GitLabClient, error) {
 	}
 
 	// Extract token from auth config
-	if config.Auth != nil && config.Auth.Type == "token" {
-		client.token = config.Auth.Token
+	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
+		client.token = fg.Auth.Token
 	} else {
 		return nil, fmt.Errorf("GitLab client requires token authentication")
 	}
