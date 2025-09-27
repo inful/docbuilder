@@ -140,7 +140,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, relativePath string, m
 		files = append(files, docFile)
 
 		slog.Debug("Discovered documentation file",
-			slog.String("file", relPath),
+			logfields.File(relPath),
 			slog.String("repository", repoName),
 			slog.String("section", section))
 

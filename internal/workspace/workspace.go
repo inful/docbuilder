@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // Manager handles temporary workspace operations
@@ -34,7 +36,7 @@ func (m *Manager) Create() error {
 	}
 
 	m.tempDir = tempDir
-	slog.Info("Created workspace", slog.String("path", tempDir))
+	slog.Info("Created workspace", logfields.Path(tempDir))
 	return nil
 }
 
@@ -53,7 +55,7 @@ func (m *Manager) Cleanup() error {
 		return fmt.Errorf("failed to cleanup workspace: %w", err)
 	}
 
-	slog.Info("Cleaned up workspace", slog.String("path", m.tempDir))
+	slog.Info("Cleaned up workspace", logfields.Path(m.tempDir))
 	m.tempDir = ""
 	return nil
 }

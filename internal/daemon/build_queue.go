@@ -233,7 +233,7 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.active[job.ID] = job
 	bq.mu.Unlock()
 
-	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.String("worker", workerID))
+	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.Worker(workerID))
 
 	// Execute the build
 	err := bq.executeBuild(jobCtx, job)

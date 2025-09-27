@@ -15,6 +15,9 @@ const (
 	KeyRepo        = "repository"
 	KeySection     = "section"
 	KeyError       = "error"
+	KeyPath        = "path"
+	KeyFile        = "file"
+	KeyWorker      = "worker"
 )
 
 // Simple helpers returning slog.Attr. Keeping each granular means callers can compose.
@@ -28,6 +31,10 @@ func ScheduleID(id string) slog.Attr  { return slog.String(KeyScheduleID, id) }
 func ScheduleName(n string) slog.Attr { return slog.String(KeySchedule, n) }
 func Repository(r string) slog.Attr   { return slog.String(KeyRepo, r) }
 func Section(s string) slog.Attr      { return slog.String(KeySection, s) }
+// Additional common context helpers
+func Path(p string) slog.Attr         { return slog.String(KeyPath, p) }
+func File(f string) slog.Attr         { return slog.String(KeyFile, f) }
+func Worker(id string) slog.Attr      { return slog.String(KeyWorker, id) }
 func Error(err error) slog.Attr {
 	if err == nil { return slog.String(KeyError, "") }
 	return slog.String(KeyError, err.Error())
