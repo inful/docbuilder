@@ -27,42 +27,56 @@ func (c *Client) WithBuildConfig(cfg *appcfg.BuildConfig) *Client { c.buildCfg =
 
 // CloneRepository clones a repository to the workspace (with retry wrapper if enabled).
 func (c *Client) CloneRepository(repo appcfg.Repository) (string, error) {
-	if c.inRetry { return c.cloneOnce(repo) }
+	if c.inRetry {
+		return c.cloneOnce(repo)
+	}
 	return c.withRetry("clone", repo.Name, func() (string, error) { return c.cloneOnce(repo) })
 }
 
 func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
-	if err := os.RemoveAll(repoPath); err != nil { return "", fmt.Errorf("failed to remove existing directory: %w", err) }
+	if err := os.RemoveAll(repoPath); err != nil {
+		return "", fmt.Errorf("failed to remove existing directory: %w", err)
+	}
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL, Progress: os.Stdout}
 	if repo.Branch != "" {
 		cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
 		cloneOptions.SingleBranch = true
 	}
-	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 { cloneOptions.Depth = c.buildCfg.ShallowDepth }
+	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
+		cloneOptions.Depth = c.buildCfg.ShallowDepth
+	}
 	if repo.Auth != nil {
 		auth, err := c.getAuthentication(repo.Auth)
-		if err != nil { return "", fmt.Errorf("failed to setup authentication: %w", err) }
+		if err != nil {
+			return "", fmt.Errorf("failed to setup authentication: %w", err)
+		}
 		cloneOptions.Auth = auth
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
-	if err != nil { return "", fmt.Errorf("failed to clone repository %s: %w", repo.URL, err) }
+	if err != nil {
+		return "", fmt.Errorf("failed to clone repository %s: %w", repo.URL, err)
+	}
 	if ref, herr := repository.Head(); herr == nil {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), slog.String("commit", ref.Hash().String()[:8]), logfields.Path(repoPath))
 	} else {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), logfields.Path(repoPath))
 	}
 	if c.buildCfg != nil && c.buildCfg.PruneNonDocPaths {
-		if err := c.pruneNonDocTopLevel(repoPath, repo); err != nil { slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error())) }
+		if err := c.pruneNonDocTopLevel(repoPath, repo); err != nil {
+			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
+		}
 	}
 	return repoPath, nil
 }
 
 // UpdateRepository updates an existing repository or clones if missing.
 func (c *Client) UpdateRepository(repo appcfg.Repository) (string, error) {
-	if c.inRetry { return c.updateOnce(repo) }
+	if c.inRetry {
+		return c.updateOnce(repo)
+	}
 	return c.withRetry("update", repo.Name, func() (string, error) { return c.updateOnce(repo) })
 }
 

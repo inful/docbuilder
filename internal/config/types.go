@@ -80,11 +80,57 @@ type BuildConfig struct {
 	// CloneConcurrency caps the number of repositories cloned in parallel within a single build.
 	// Defaults to 4; values <1 are coerced to 1; values larger than the repo count are bounded.
 	CloneConcurrency int `yaml:"clone_concurrency,omitempty"`
+	// CloneStrategy selects how the clone stage treats existing repositories. fresh (default) always reclones,
+	// update attempts to incrementally update existing checkouts (or clones if missing), auto chooses update when the
+	// repository directory exists and fresh otherwise. This is an initial feature gate; future strategies may include
+	// mirror caching or sparse checkout.
+	CloneStrategy CloneStrategy `yaml:"clone_strategy,omitempty"`
+	// ShallowDepth, when >0, performs shallow clones limited to the specified number of commits (git --depth semantics).
+	// 0 (default) means full history. Applies to initial clone and subsequent fetch operations (best-effort) for updates.
+	ShallowDepth int `yaml:"shallow_depth,omitempty"`
+	// PruneNonDocPaths when true removes top-level directories in each cloned repository that are not part of any
+	// configured documentation path for that repository (and preserves .git). This reduces workspace size and speeds
+	// discovery for mono-repos. Only the first path segment of each docs path is preserved (e.g. for docs/api, keeps docs/).
+	// Disabled by default because it may remove supporting assets referenced by docs.
+	PruneNonDocPaths bool `yaml:"prune_non_doc_paths,omitempty"`
+	// PruneAllow is a list of additional top-level file or directory names to always preserve when pruning
+	// non-doc paths (e.g. ["README.md", "LICENSE", "assets"]). Only consulted when PruneNonDocPaths is true.
+	PruneAllow []string `yaml:"prune_allow,omitempty"`
+	// PruneDeny is a list of top-level file or directory names to always remove even if they would otherwise
+	// be preserved (except for .git which is never removed). Deny takes precedence over allow.
+	PruneDeny []string `yaml:"prune_deny,omitempty"`
 	// Retry policy fields (apply to transient build failures at stage granularity)
 	MaxRetries        int              `yaml:"max_retries,omitempty"`         // total retry attempts after first attempt (default 2)
 	RetryBackoff      RetryBackoffMode `yaml:"retry_backoff,omitempty"`       // fixed|linear|exponential (default linear)
 	RetryInitialDelay string           `yaml:"retry_initial_delay,omitempty"` // duration string (default 1s)
 	RetryMaxDelay     string           `yaml:"retry_max_delay,omitempty"`     // cap for exponential (default 30s)
+	// Divergence / hygiene options (future expansion): when hard reset is true we will hard reset to origin/<branch>
+	// if the local branch has diverged. CleanUntracked removes untracked files after a successful update. Both default false.
+	HardResetOnDiverge bool `yaml:"hard_reset_on_diverge,omitempty"`
+	CleanUntracked     bool `yaml:"clean_untracked,omitempty"`
+}
+
+// CloneStrategy enumerates strategies for handling existing repository directories.
+type CloneStrategy string
+
+const (
+	CloneStrategyFresh  CloneStrategy = "fresh"
+	CloneStrategyUpdate CloneStrategy = "update"
+	CloneStrategyAuto   CloneStrategy = "auto"
+)
+
+// NormalizeCloneStrategy canonicalizes user input returning empty string if unknown.
+func NormalizeCloneStrategy(raw string) CloneStrategy {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(CloneStrategyFresh):
+		return CloneStrategyFresh
+	case string(CloneStrategyUpdate):
+		return CloneStrategyUpdate
+	case string(CloneStrategyAuto):
+		return CloneStrategyAuto
+	default:
+		return ""
+	}
 }
 
 // ForgeType enumerates supported forge providers.

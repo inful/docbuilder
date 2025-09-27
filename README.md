@@ -278,14 +278,91 @@ Prometheus metric names are prefixed with `docbuilder_` and use `_seconds` suffi
 
 ### Build Performance Tuning
 
-`build.clone_concurrency` limits parallel repository clone operations per build (default 4). Example:
+`build` section houses performance & hygiene controls for repository acquisition and workspace optimization.
+
+Supported fields:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `clone_concurrency` | int | 4 | Max repositories cloned/updated in parallel. Bounded to repo count; coerced to >=1. |
+| `clone_strategy` | enum | `fresh` | How to treat existing repo directories: `fresh` (always reclone), `update` (incremental fetch + fast‑forward/hard reset), `auto` (update if dir exists else clone). |
+| `shallow_depth` | int | 0 | If >0 performs shallow clones/fetches limited to that many commits (git `--depth`). 0 = full history. |
+| `prune_non_doc_paths` | bool | false | Remove top‑level entries not part of any configured docs path segment (plus those allowed via `prune_allow`). Reduces workspace size. |
+| `prune_allow` | []string | (empty) | Extra top‑level names or glob patterns to always keep when pruning (e.g. `LICENSE*`, `README.*`, `assets`). |
+| `prune_deny` | []string | (empty) | Top‑level names or glob patterns to always remove (except `.git`). Takes precedence over allow + docs roots. |
+| `hard_reset_on_diverge` | bool | false | If true and local branch diverged from origin, perform hard reset to remote head; else update fails with divergence error. |
+| `clean_untracked` | bool | false | After a successful fast‑forward or hard reset, remove untracked files/dirs (like `git clean -fdx` sans ignored semantics). |
+| `max_retries` | int | 2 | Extra retry attempts for transient clone/update failures (see retry settings below). |
+| `retry_backoff` | enum | `linear` | Backoff mode: `fixed`, `linear`, or `exponential`. |
+| `retry_initial_delay` | duration | `1s` | Initial retry delay. |
+| `retry_max_delay` | duration | `30s` | Maximum backoff delay cap. |
+
+Example configuration demonstrating all knobs:
 
 ```yaml
 build:
-  clone_concurrency: 6   # bounded automatically by repository count
+  clone_concurrency: 6            # bounded automatically by repository count
+  clone_strategy: auto            # auto-update existing repos, clone missing ones
+  shallow_depth: 10               # keep only last 10 commits (faster network + less storage)
+  prune_non_doc_paths: true       # strip unrelated top-level dirs
+  prune_allow:                    # keep these extra roots / files (glob supported)
+    - LICENSE*
+    - README.*
+    - assets
+  prune_deny:                     # always remove even if would be allowed
+    - test
+    - "*.bak"
+  hard_reset_on_diverge: true     # forcefully realign if local diverged
+  clean_untracked: true           # hygiene after update
+  max_retries: 3                  # retry transient failures 3 times
+  retry_backoff: exponential
+  retry_initial_delay: 1s
+  retry_max_delay: 45s
 ```
 
-Values <1 are coerced to 1. Oversized values are capped at the number of repositories in the build. Metrics reflect the effective concurrency.
+Notes & semantics:
+
+- Clone Strategy
+  - `fresh`: Always reclone (ensures pristine state; slowest for large repos).
+  - `update`: Reuse existing checkout; fetch, then fast‑forward or (if diverged) either hard reset (when enabled) or fail.
+  - `auto`: Choose `update` when directory exists else `fresh` (practical default in long‑running daemon scenarios).
+- Shallow Clones
+  - Reduces bandwidth & disk; only latest N commits are fetched. Some features (e.g., generating links to deep history) may be limited.
+  - Subsequent fetches reapply depth (best effort); no automatic deepening is performed yet.
+- Pruning (`prune_non_doc_paths`)
+  - Only removes top‑level entries. Docs roots are derived from the first path segment of each configured repo `paths` entry (e.g. `docs/api` => keep `docs/`).
+  - Precedence: `.git` always kept → explicit deny (exact or glob) → docs roots → explicit allow (exact or glob) → removal.
+  - Glob patterns support `*`, `?`, and character classes (`[]`) using Go's `filepath.Match` semantics.
+  - Use with caution: assets outside allowed roots that are still referenced by Markdown may break links if removed.
+- Divergence Handling
+  - When `hard_reset_on_diverge` is true, local divergent branches are forcefully aligned to `origin/<branch>` using a hard reset.
+  - When false, divergence surfaces as a stage error (reported in build issues) so you can investigate unexpected local mutations.
+- Cleaning
+  - `clean_untracked` removes untracked files after fast‑forward or hard reset updates—helpful when previous builds left generated artifacts inside repo directories.
+- Retry Policy
+  - Applies to clone/update operations; permanent failures (auth, repo not found, unsupported protocol) short‑circuit retries.
+  - Metrics differentiate retries vs exhausted attempts (`docbuilder_build_retries_total`, `docbuilder_build_retry_exhausted_total`).
+
+Minimal incremental-friendly snippet:
+
+```yaml
+build:
+  clone_strategy: auto
+  shallow_depth: 5
+  prune_non_doc_paths: true
+  prune_allow: [LICENSE*, README.*]
+```
+
+Disable all optimizations (legacy full clone behavior):
+
+```yaml
+build:
+  clone_strategy: fresh
+  shallow_depth: 0
+  prune_non_doc_paths: false
+```
+
+If you encounter mysterious missing images or includes after enabling pruning, re-run with `prune_non_doc_paths: false` to confirm pruning as the cause, then add needed top-level directories or file globs to `prune_allow`.
 
 ### Retry Policy Configuration
 
@@ -304,3 +381,49 @@ Metrics:
 - `docbuilder_build_retry_exhausted_total{stage="clone_repos"}` increments when all retries fail.
 
 `BuildReport` also includes `retries` and `retries_exhausted` aggregates for post-build introspection.
+
+### Sample (Expanded) Direct Build Config
+
+Below is an extended example combining repository definitions, Hugo settings, and the new build tuning options:
+
+```yaml
+repositories:
+  - url: https://git.example.com/org/service-a.git
+    name: service-a
+    branch: main
+    paths: [docs]
+    auth:
+      type: token
+      token: ${GIT_ACCESS_TOKEN}
+  - url: https://git.example.com/org/monorepo.git
+    name: monorepo
+    branch: main
+    paths: [docs, documentation/guides]
+    auth:
+      type: token
+      token: ${GIT_ACCESS_TOKEN}
+
+build:
+  clone_strategy: auto
+  clone_concurrency: 6
+  shallow_depth: 8
+  prune_non_doc_paths: true
+  prune_allow: [LICENSE*, README.*]
+  prune_deny: ["*.bak", tmp]
+  hard_reset_on_diverge: true
+  clean_untracked: true
+  max_retries: 3
+  retry_backoff: exponential
+  retry_initial_delay: 1s
+  retry_max_delay: 30s
+
+hugo:
+  title: Unified Docs
+  description: Combined service & monorepo documentation
+  base_url: https://docs.example.com
+  theme: hextra
+
+output:
+  directory: ./site
+  clean: true
+```

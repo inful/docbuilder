@@ -72,6 +72,11 @@ const (
 	IssueCanceled          ReportIssueCode = "BUILD_CANCELED"
 	IssueAllClonesFailed   ReportIssueCode = "ALL_CLONES_FAILED"
 	IssueGenericStageError ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
+	// New granular git-related permanent failure codes (non-transient) used when retry classification deems permanent.
+	IssueAuthFailure      ReportIssueCode = "AUTH_FAILURE"
+	IssueRepoNotFound     ReportIssueCode = "REPO_NOT_FOUND"
+	IssueUnsupportedProto ReportIssueCode = "UNSUPPORTED_PROTOCOL"
+	IssueRemoteDiverged   ReportIssueCode = "REMOTE_DIVERGED" // used when divergence detected and hard reset disabled
 )
 
 // IssueSeverity represents normalized severity levels.

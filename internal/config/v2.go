@@ -28,8 +28,8 @@ type Config struct {
 
 // ForgeConfig represents configuration for a specific forge instance
 type ForgeConfig struct {
-    Name          string                 `yaml:"name"`          // Friendly name for this forge
-    Type          ForgeType              `yaml:"type"`          // Typed forge kind
+	Name          string                 `yaml:"name"`          // Friendly name for this forge
+	Type          ForgeType              `yaml:"type"`          // Typed forge kind
 	APIURL        string                 `yaml:"api_url"`       // API base URL
 	BaseURL       string                 `yaml:"base_url"`      // Web base URL (for edit links)
 	Organizations []string               `yaml:"organizations"` // Organizations to scan (GitHub)
@@ -112,8 +112,8 @@ type MonitoringHealth struct {
 
 // MonitoringLogging represents logging configuration
 type MonitoringLogging struct {
-    Level  LogLevel  `yaml:"level"`
-    Format LogFormat `yaml:"format"`
+	Level  LogLevel  `yaml:"level"`
+	Format LogFormat `yaml:"format"`
 }
 
 // (Deprecated comment retained for context) Previous: LoadV2 loads v2 configuration from the specified file.
@@ -165,6 +165,21 @@ func applyDefaults(config *Config) error {
 	// Build defaults
 	if config.Build.CloneConcurrency <= 0 {
 		config.Build.CloneConcurrency = 4
+	}
+	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
+	if config.Build.ShallowDepth < 0 {
+		config.Build.ShallowDepth = 0
+	}
+	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
+	if config.Build.CloneStrategy == "" {
+		config.Build.CloneStrategy = CloneStrategyFresh
+	} else {
+		cs := NormalizeCloneStrategy(string(config.Build.CloneStrategy))
+		if cs != "" {
+			config.Build.CloneStrategy = cs
+		} else {
+			config.Build.CloneStrategy = CloneStrategyFresh // fallback
+		}
 	}
 	if config.Build.MaxRetries < 0 {
 		config.Build.MaxRetries = 0
@@ -279,13 +294,17 @@ func applyDefaults(config *Config) error {
 		config.Monitoring.Logging.Level = LogLevelInfo
 	} else {
 		lvl := NormalizeLogLevel(string(config.Monitoring.Logging.Level))
-		if lvl != "" { config.Monitoring.Logging.Level = lvl }
+		if lvl != "" {
+			config.Monitoring.Logging.Level = lvl
+		}
 	}
 	if config.Monitoring.Logging.Format == "" {
 		config.Monitoring.Logging.Format = LogFormatJSON
 	} else {
 		fmtVal := NormalizeLogFormat(string(config.Monitoring.Logging.Format))
-		if fmtVal != "" { config.Monitoring.Logging.Format = fmtVal }
+		if fmtVal != "" {
+			config.Monitoring.Logging.Format = fmtVal
+		}
 	}
 
 	// Explicit repository defaults (paths/branch) mirroring legacy behavior
@@ -378,6 +397,12 @@ func validateConfig(config *Config) error {
 	case RetryBackoffFixed, RetryBackoffLinear, RetryBackoffExponential:
 	default:
 		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", config.Build.RetryBackoff)
+	}
+	// Validate clone strategy
+	switch config.Build.CloneStrategy {
+	case CloneStrategyFresh, CloneStrategyUpdate, CloneStrategyAuto:
+	default:
+		return fmt.Errorf("invalid clone_strategy: %s (allowed: fresh|update|auto)", config.Build.CloneStrategy)
 	}
 	if _, err := time.ParseDuration(config.Build.RetryInitialDelay); err != nil {
 		return fmt.Errorf("invalid retry_initial_delay: %s: %w", config.Build.RetryInitialDelay, err)

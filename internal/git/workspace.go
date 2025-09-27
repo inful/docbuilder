@@ -1,33 +1,46 @@
 package git
 
 import (
-    "fmt"
-    "log/slog"
-    "os"
-    "path/filepath"
+	"fmt"
+	"log/slog"
+	"os"
+	"path/filepath"
 
-    "git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 func (c *Client) EnsureWorkspace() error {
-    if err := os.MkdirAll(c.workspaceDir, 0755); err != nil { return fmt.Errorf("failed to create workspace directory: %w", err) }
-    return nil
+	if err := os.MkdirAll(c.workspaceDir, 0755); err != nil {
+		return fmt.Errorf("failed to create workspace directory: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) CleanWorkspace() error {
-    entries, err := os.ReadDir(c.workspaceDir)
-    if err != nil {
-        if os.IsNotExist(err) { return nil }
-        return fmt.Errorf("failed to read workspace directory: %w", err)
-    }
-    for _, e := range entries {
-        if err := os.RemoveAll(filepath.Join(c.workspaceDir, e.Name())); err != nil { return fmt.Errorf("remove %s: %w", e.Name(), err) }
-    }
-    slog.Info("Workspace cleaned", logfields.Path(c.workspaceDir))
-    return nil
+	entries, err := os.ReadDir(c.workspaceDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read workspace directory: %w", err)
+	}
+	for _, e := range entries {
+		if err := os.RemoveAll(filepath.Join(c.workspaceDir, e.Name())); err != nil {
+			return fmt.Errorf("remove %s: %w", e.Name(), err)
+		}
+	}
+	slog.Info("Workspace cleaned", logfields.Path(c.workspaceDir))
+	return nil
 }
 
 func (c *Client) CheckDocIgnore(repoPath string) (bool, error) {
-    path := filepath.Join(repoPath, ".docignore")
-    if _, err := os.Stat(path); err == nil { slog.Debug("Found .docignore file", logfields.Path(path)); return true, nil } else if os.IsNotExist(err) { return false, nil } else { return false, fmt.Errorf("failed to check .docignore file: %w", err) }
+	path := filepath.Join(repoPath, ".docignore")
+	if _, err := os.Stat(path); err == nil {
+		slog.Debug("Found .docignore file", logfields.Path(path))
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, fmt.Errorf("failed to check .docignore file: %w", err)
+	}
 }

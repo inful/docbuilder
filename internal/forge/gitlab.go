@@ -1,17 +1,17 @@
 package forge
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "net/url"
-    "path"
-    "strconv"
-    "strings"
-    "time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"path"
+	"strconv"
+	"strings"
+	"time"
 
-    cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // GitLabClient implements ForgeClient for GitLab
@@ -25,9 +25,9 @@ type GitLabClient struct {
 
 // NewGitLabClient creates a new GitLab client
 func NewGitLabClient(fg *ForgeConfig) (*GitLabClient, error) {
-    if fg.Type != cfg.ForgeGitLab {
-        return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
-    }
+	if fg.Type != cfg.ForgeGitLab {
+		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
+	}
 
 	client := &GitLabClient{
 		config:     fg,

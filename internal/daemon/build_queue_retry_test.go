@@ -11,6 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
+	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
 
 // fakeRecorder captures retry metrics for assertions.
@@ -243,7 +244,7 @@ func TestExponentialBackoffCapped(t *testing.T) {
 		retry int
 		want  time.Duration
 	}{{1, 1 * time.Millisecond}, {2, 2 * time.Millisecond}, {3, 4 * time.Millisecond}, {4, 4 * time.Millisecond}}
-	pol := NewRetryPolicy(config.RetryBackoffExponential, initial, max, 5)
+	pol := retry.NewPolicy(config.RetryBackoffExponential, initial, max, 5)
 	for _, c := range cases {
 		got := pol.Delay(c.retry)
 		if got != c.want {
@@ -253,22 +254,22 @@ func TestExponentialBackoffCapped(t *testing.T) {
 }
 
 func TestRetryPolicyValidationAndModes(t *testing.T) {
-	p := NewRetryPolicy("", 0, 0, -1) // empty stays default (string literal acceptable for zero value)
+	p := retry.NewPolicy("", 0, 0, -1) // empty stays default (string literal acceptable for zero value)
 	if err := p.Validate(); err != nil {
 		t.Fatalf("default policy should validate: %v", err)
 	}
 	if p.Mode != "linear" {
 		t.Fatalf("expected default mode linear got %s", p.Mode)
 	}
-	fixed := NewRetryPolicy(config.RetryBackoffFixed, 10*time.Millisecond, 20*time.Millisecond, 3)
+	fixed := retry.NewPolicy(config.RetryBackoffFixed, 10*time.Millisecond, 20*time.Millisecond, 3)
 	if d := fixed.Delay(2); d != 10*time.Millisecond {
 		t.Fatalf("fixed mode should not scale: got %v", d)
 	}
-	linear := NewRetryPolicy(config.RetryBackoffLinear, 5*time.Millisecond, 12*time.Millisecond, 3)
+	linear := retry.NewPolicy(config.RetryBackoffLinear, 5*time.Millisecond, 12*time.Millisecond, 3)
 	if d := linear.Delay(3); d != 12*time.Millisecond {
 		t.Fatalf("linear capping failed expected 12ms got %v", d)
 	}
-	exp := NewRetryPolicy(config.RetryBackoffExponential, 2*time.Millisecond, 10*time.Millisecond, 5)
+	exp := retry.NewPolicy(config.RetryBackoffExponential, 2*time.Millisecond, 10*time.Millisecond, 5)
 	if exp.Delay(4) != 10*time.Millisecond {
 		t.Fatalf("exponential cap failed: %v", exp.Delay(4))
 	}
