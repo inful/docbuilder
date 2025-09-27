@@ -1,10 +1,24 @@
 # Example configuration for docbuilder
+forges:
+  - name: "company-github"
+    type: github
+    api_url: https://api.github.com
+    base_url: https://github.com
+    organizations:
+      - your-org
+    # To enumerate every accessible org instead of listing them explicitly, you may remove
+    # organizations: and set options.auto_discover: true (use with caution for large tokens):
+    # options:
+    #   auto_discover: true
+    auth:
+      type: token
+      token: "${GITHUB_TOKEN}"
+
 repositories:
   - url: https://git.home.luguber.info/inful/go-test-project.git
     name: go-test-project
     branch: main
-    paths:
-      - docs
+    paths: [docs]
     auth:
       type: token
       token: "${GIT_ACCESS_TOKEN}"

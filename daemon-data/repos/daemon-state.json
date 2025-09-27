@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "start_time": "2025-09-28T00:25:39.634835+02:00",
+  "last_update": "2025-09-28T00:25:46.752091+02:00",
+  "status": "starting",
+  "repositories": {},
+  "builds": {},
+  "schedules": {},
+  "statistics": {
+    "total_builds": 0,
+    "successful_builds": 0,
+    "failed_builds": 0,
+    "total_discoveries": 0,
+    "documents_found": 0,
+    "average_build_time_seconds": 0,
+    "last_stat_reset": "2025-09-28T00:25:39.634835+02:00",
+    "uptime_seconds": 7.117217292
+  }
+}

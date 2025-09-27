@@ -391,9 +391,19 @@ func validateConfig(config *Config) error {
 			}
 		}
 		// and matches test expectations for explicit configuration (auto-discovery can be added
-		// later behind a dedicated flag to avoid surprising large scans).
-		if len(forge.Organizations) == 0 && len(forge.Groups) == 0 {
-			return fmt.Errorf("forge %s must have at least one organization or group configured", forge.Name)
+		// later behind a dedicated flag to avoid surprising large scans). We now allow an empty
+		// set if options.auto_discover is explicitly true.
+		emptyScopes := len(forge.Organizations) == 0 && len(forge.Groups) == 0
+		if emptyScopes {
+			allowAuto := false
+			if forge.Options != nil {
+				if v, ok := forge.Options["auto_discover"]; ok {
+					if b, ok2 := v.(bool); ok2 && b { allowAuto = true }
+				}
+			}
+			if !allowAuto {
+				return fmt.Errorf("forge %s must have at least one organization or group configured (or set options.auto_discover=true)", forge.Name)
+			}
 		}
 	}
 
