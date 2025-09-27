@@ -26,6 +26,8 @@ const (
 	KeyResponseSz  = "response_size"
 	KeyForgeType   = "forge_type"
 	KeyContentLen  = "content_length"
+	KeyName        = "name"
+	KeyURL         = "url"
 )
 
 // Simple helpers returning slog.Attr. Keeping each granular means callers can compose.
@@ -51,6 +53,8 @@ func Status(code int) slog.Attr       { return slog.Int(KeyStatus, code) }
 func ResponseSize(sz int) slog.Attr   { return slog.Int(KeyResponseSz, sz) }
 func ForgeType(t string) slog.Attr    { return slog.String(KeyForgeType, t) }
 func ContentLength(cl int64) slog.Attr { return slog.Int64(KeyContentLen, cl) }
+func Name(n string) slog.Attr         { return slog.String(KeyName, n) }
+func URL(u string) slog.Attr          { return slog.String(KeyURL, u) }
 func Error(err error) slog.Attr {
 	if err == nil { return slog.String(KeyError, "") }
 	return slog.String(KeyError, err.Error())

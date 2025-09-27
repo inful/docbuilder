@@ -1,18 +1,18 @@
 package git
 
 import (
-	"fmt"
-	"log/slog"
-	"os"
-	"path/filepath"
+    "fmt"
+    "log/slog"
+    "os"
+    "path/filepath"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+    "git.home.luguber.info/inful/docbuilder/internal/config"
+    "git.home.luguber.info/inful/docbuilder/internal/logfields"
+    "github.com/go-git/go-git/v5"
+    "github.com/go-git/go-git/v5/plumbing"
+    "github.com/go-git/go-git/v5/plumbing/transport"
+    "github.com/go-git/go-git/v5/plumbing/transport/http"
+    "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 // Client handles Git operations
@@ -31,7 +31,7 @@ func NewClient(workspaceDir string) *Client {
 func (c *Client) CloneRepository(repo config.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 
-	slog.Debug("Cloning repository", "url", repo.URL, "name", repo.Name, "branch", repo.Branch, logfields.Path(repoPath))
+	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 
 	// Remove existing directory if it exists
 	if err := os.RemoveAll(repoPath); err != nil {
@@ -69,14 +69,14 @@ func (c *Client) CloneRepository(repo config.Repository) (string, error) {
 	ref, err := repository.Head()
 	if err == nil {
 		slog.Info("Repository cloned successfully",
-			"name", repo.Name,
-			"url", repo.URL,
-			"commit", ref.Hash().String()[:8],
+			logfields.Name(repo.Name),
+			logfields.URL(repo.URL),
+			slog.String("commit", ref.Hash().String()[:8]),
 			logfields.Path(repoPath))
 	} else {
 		slog.Info("Repository cloned successfully",
-			"name", repo.Name,
-			"url", repo.URL,
+			logfields.Name(repo.Name),
+			logfields.URL(repo.URL),
 			logfields.Path(repoPath))
 	}
 
@@ -89,12 +89,12 @@ func (c *Client) UpdateRepository(repo config.Repository) (string, error) {
 
 	// Check if repository already exists
 	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err == nil {
-		slog.Debug("Updating existing repository", "name", repo.Name, logfields.Path(repoPath))
+		slog.Debug("Updating existing repository", logfields.Name(repo.Name), logfields.Path(repoPath))
 		return c.updateExistingRepo(repoPath, repo)
 	}
 
 	// Repository doesn't exist, clone it
-	slog.Debug("Repository doesn't exist, cloning", "name", repo.Name)
+	slog.Debug("Repository doesn't exist, cloning", logfields.Name(repo.Name))
 	return c.CloneRepository(repo)
 }
 
@@ -134,12 +134,12 @@ func (c *Client) updateExistingRepo(repoPath string, repo config.Repository) (st
 
 	// Log update result
 	if err == git.NoErrAlreadyUpToDate {
-		slog.Info("Repository already up to date", "name", repo.Name)
+		slog.Info("Repository already up to date", logfields.Name(repo.Name))
 	} else {
 		ref, _ := repository.Head()
 		slog.Info("Repository updated successfully",
-			"name", repo.Name,
-			"commit", ref.Hash().String()[:8])
+			logfields.Name(repo.Name),
+			slog.String("commit", ref.Hash().String()[:8]))
 	}
 
 	return repoPath, nil
