@@ -495,7 +495,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 
 // GetEditURL returns the Forgejo edit URL for a file
 func (c *ForgejoClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return fmt.Sprintf("%s/%s/_edit/%s/%s", c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(ForgeTypeForgejo, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods

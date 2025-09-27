@@ -8,6 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
 // generatePerPageEditURL returns a theme-specific edit URL for a doc file or empty string if it should not be generated.
@@ -125,15 +126,7 @@ func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
 	}
 	base = strings.TrimSuffix(base, "/")
 
-	switch forgeType {
-	case config.ForgeGitHub:
-		return fmt.Sprintf("%s/%s/edit/%s/%s", base, fullName, branch, repoRel)
-	case config.ForgeGitLab:
-		return fmt.Sprintf("%s/%s/-/edit/%s/%s", base, fullName, branch, repoRel)
-	case config.ForgeForgejo:
-		return fmt.Sprintf("%s/%s/_edit/%s/%s", base, fullName, branch, repoRel)
-	}
-	return ""
+	return forge.GenerateEditURL(forgeType, base, fullName, branch, repoRel)
 }
 
 // resolveForgeForRepository attempts to match a repository clone URL against configured forge base URLs
