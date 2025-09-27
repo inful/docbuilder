@@ -206,18 +206,8 @@ func (sm *StateManager) scheduleSave() {
 
 // GetState returns a copy of the current daemon state
 func (sm *StateManager) GetState() *DaemonState {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-
-	// Return a deep copy to prevent external modifications
-	data, _ := json.Marshal(sm.state)
-	var stateCopy DaemonState
-	if err := json.Unmarshal(data, &stateCopy); err != nil {
-		slog.Error("failed to deep copy daemon state", "error", err)
-		return &DaemonState{}
-	}
-
-	return &stateCopy
+	sm.mu.RLock(); defer sm.mu.RUnlock()
+	return CopyDaemonState(sm.state)
 }
 
 // UpdateStatus updates the daemon status
@@ -248,14 +238,7 @@ func (sm *StateManager) GetRepository(url string) *RepoState {
 	defer sm.mu.RUnlock()
 
 	if repo, exists := sm.state.Repositories[url]; exists {
-		// Return a copy
-		data, _ := json.Marshal(repo)
-		var repoCopy RepoState
-		if err := json.Unmarshal(data, &repoCopy); err != nil {
-            slog.Error("failed to deep copy repository state", "url", url, "error", err)
-            return nil
-        }
-		return &repoCopy
+		return CopyRepoState(repo)
 	}
 
 	return nil
@@ -267,16 +250,7 @@ func (sm *StateManager) ListRepositories() []*RepoState {
 	defer sm.mu.RUnlock()
 
 	repos := make([]*RepoState, 0, len(sm.state.Repositories))
-	for _, repo := range sm.state.Repositories {
-		// Return copies
-		data, _ := json.Marshal(repo)
-		var repoCopy RepoState
-		if err := json.Unmarshal(data, &repoCopy); err != nil {
-            slog.Error("failed to deep copy repository in list", "error", err)
-            continue
-        }
-		repos = append(repos, &repoCopy)
-	}
+	for _, repo := range sm.state.Repositories { repos = append(repos, CopyRepoState(repo)) }
 
 	return repos
 }
@@ -339,16 +313,7 @@ func (sm *StateManager) GetBuild(id string) *BuildState {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	if build, exists := sm.state.Builds[id]; exists {
-		// Return a copy
-		data, _ := json.Marshal(build)
-		var buildCopy BuildState
-		if err := json.Unmarshal(data, &buildCopy); err != nil {
-            slog.Error("failed to deep copy build state", "id", id, "error", err)
-            return nil
-        }
-		return &buildCopy
-	}
+	if build, exists := sm.state.Builds[id]; exists { return CopyBuildState(build) }
 
 	return nil
 }
@@ -380,16 +345,7 @@ func (sm *StateManager) GetSchedule(id string) *Schedule {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	if schedule, exists := sm.state.Schedules[id]; exists {
-		// Return a copy
-		data, _ := json.Marshal(schedule)
-		var scheduleCopy Schedule
-		if err := json.Unmarshal(data, &scheduleCopy); err != nil {
-            slog.Error("failed to deep copy schedule state", "id", id, "error", err)
-            return nil
-        }
-		return &scheduleCopy
-	}
+	if schedule, exists := sm.state.Schedules[id]; exists { return CopySchedule(schedule) }
 
 	return nil
 }
@@ -414,21 +370,11 @@ func (sm *StateManager) RecordDiscovery(repoURL string, documentCount int) {
 
 // GetStatistics returns current daemon statistics
 func (sm *StateManager) GetStatistics() *DaemonStats {
-	sm.mu.RLock()
-	defer sm.mu.RUnlock()
-
-	// Return a copy
-	data, _ := json.Marshal(sm.state.Statistics)
-	var statsCopy DaemonStats
-	if err := json.Unmarshal(data, &statsCopy); err != nil {
-        slog.Error("failed to deep copy statistics", "error", err)
-        return &DaemonStats{}
-    }
-
-	// Update uptime
+	sm.mu.RLock(); defer sm.mu.RUnlock()
+	statsCopy := CopyDaemonStats(sm.state.Statistics)
+	if statsCopy == nil { return &DaemonStats{} }
 	statsCopy.Uptime = time.Since(sm.state.StartTime).Seconds()
-
-	return &statsCopy
+	return statsCopy
 }
 
 // SetConfiguration stores configuration data
