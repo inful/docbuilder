@@ -122,9 +122,9 @@ output:
 		t.Errorf("Forge name = %v, want test-github", forge.Name)
 	}
 
-	if forge.Type != "github" {
-		t.Errorf("Forge type = %v, want github", forge.Type)
-	}
+		if forge.Type != ForgeGitHub {
+			t.Errorf("Forge type = %v, want %s", forge.Type, ForgeGitHub)
+		}
 
 	if len(forge.Organizations) != 1 || forge.Organizations[0] != "test-org" {
 		t.Errorf("Forge organizations = %v, want [test-org]", forge.Organizations)
@@ -153,8 +153,8 @@ output:
 		t.Errorf("Metrics path = %v, want /custom-metrics", config.Monitoring.Metrics.Path)
 	}
 
-	if config.Monitoring.Logging.Level != "debug" {
-		t.Errorf("Logging level = %v, want debug", config.Monitoring.Logging.Level)
+	if config.Monitoring.Logging.Level != LogLevelDebug {
+		t.Errorf("Logging level = %v, want %s", config.Monitoring.Logging.Level, LogLevelDebug)
 	}
 }
 

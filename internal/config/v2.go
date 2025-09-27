@@ -28,8 +28,8 @@ type Config struct {
 
 // ForgeConfig represents configuration for a specific forge instance
 type ForgeConfig struct {
-	Name          string                 `yaml:"name"`          // Friendly name for this forge
-	Type          string                 `yaml:"type"`          // Type of forge (github, gitlab, forgejo)
+    Name          string                 `yaml:"name"`          // Friendly name for this forge
+    Type          ForgeType              `yaml:"type"`          // Typed forge kind
 	APIURL        string                 `yaml:"api_url"`       // API base URL
 	BaseURL       string                 `yaml:"base_url"`      // Web base URL (for edit links)
 	Organizations []string               `yaml:"organizations"` // Organizations to scan (GitHub)
@@ -86,10 +86,10 @@ type FilteringConfig struct {
 // VersioningConfig represents multi-version documentation configuration
 type VersioningConfig struct {
 	Strategy           VersioningStrategy `yaml:"strategy"`              // typed: branches_and_tags|branches_only|tags_only
-	DefaultBranchOnly  bool     `yaml:"default_branch_only"`   // Only build default branch
-	BranchPatterns     []string `yaml:"branch_patterns"`       // Branch patterns to include
-	TagPatterns        []string `yaml:"tag_patterns"`          // Tag patterns to include
-	MaxVersionsPerRepo int      `yaml:"max_versions_per_repo"` // Maximum versions to keep per repo
+	DefaultBranchOnly  bool               `yaml:"default_branch_only"`   // Only build default branch
+	BranchPatterns     []string           `yaml:"branch_patterns"`       // Branch patterns to include
+	TagPatterns        []string           `yaml:"tag_patterns"`          // Tag patterns to include
+	MaxVersionsPerRepo int                `yaml:"max_versions_per_repo"` // Maximum versions to keep per repo
 }
 
 // MonitoringConfig represents monitoring and observability configuration
@@ -112,8 +112,8 @@ type MonitoringHealth struct {
 
 // MonitoringLogging represents logging configuration
 type MonitoringLogging struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"format"`
+    Level  LogLevel  `yaml:"level"`
+    Format LogFormat `yaml:"format"`
 }
 
 // (Deprecated comment retained for context) Previous: LoadV2 loads v2 configuration from the specified file.
@@ -276,10 +276,16 @@ func applyDefaults(config *Config) error {
 		config.Monitoring.Health.Path = "/health"
 	}
 	if config.Monitoring.Logging.Level == "" {
-		config.Monitoring.Logging.Level = "info"
+		config.Monitoring.Logging.Level = LogLevelInfo
+	} else {
+		lvl := NormalizeLogLevel(string(config.Monitoring.Logging.Level))
+		if lvl != "" { config.Monitoring.Logging.Level = lvl }
 	}
 	if config.Monitoring.Logging.Format == "" {
-		config.Monitoring.Logging.Format = "json"
+		config.Monitoring.Logging.Format = LogFormatJSON
+	} else {
+		fmtVal := NormalizeLogFormat(string(config.Monitoring.Logging.Format))
+		if fmtVal != "" { config.Monitoring.Logging.Format = fmtVal }
 	}
 
 	// Explicit repository defaults (paths/branch) mirroring legacy behavior
@@ -312,13 +318,15 @@ func validateConfig(config *Config) error {
 		}
 		forgeNames[forge.Name] = true
 
-		// Validate forge type
-		switch forge.Type {
-		case "github", "gitlab", "forgejo":
-			// Valid types
-		default:
+		// Normalize & validate forge type
+		if forge.Type == "" { // empty is invalid
 			return fmt.Errorf("unsupported forge type: %s", forge.Type)
 		}
+		norm := NormalizeForgeType(string(forge.Type))
+		if norm == "" {
+			return fmt.Errorf("unsupported forge type: %s", forge.Type)
+		}
+		forge.Type = norm
 
 		// Validate authentication
 		if forge.Auth == nil {

@@ -222,7 +222,7 @@ func CreateMockOrganization(id, name, displayName, orgType string) *Organization
 }
 
 // CreateMockForgeConfig creates a mock forge configuration
-func CreateMockForgeConfig(name, forgeType string, orgs, groups []string) *config.ForgeConfig {
+func CreateMockForgeConfig(name string, forgeType config.ForgeType, orgs, groups []string) *config.ForgeConfig {
 	return &config.ForgeConfig{
 		Name:          name,
 		Type:          forgeType,
