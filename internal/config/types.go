@@ -56,7 +56,7 @@ type Theme string
 // Theme constants to avoid magic strings across generator logic.
 const (
 	ThemeHextra Theme = "hextra"
-	ThemeDocsy Theme = "docsy"
+	ThemeDocsy  Theme = "docsy"
 )
 
 // ThemeType returns the normalized typed theme value (lowercasing the raw string).

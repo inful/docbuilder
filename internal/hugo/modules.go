@@ -76,9 +76,9 @@ func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 	s := string(b)
 	features := g.deriveThemeFeatures()
 	if features.UsesModules && features.ModulePath != "" && features.ModuleVersion != "" {
-        if !strings.Contains(s, features.ModulePath) { // naive containment sufficient for pin presence
-            s += fmt.Sprintf("\nrequire %s %s\n", features.ModulePath, features.ModuleVersion)
-        }
-    }
+		if !strings.Contains(s, features.ModulePath) { // naive containment sufficient for pin presence
+			s += fmt.Sprintf("\nrequire %s %s\n", features.ModulePath, features.ModuleVersion)
+		}
+	}
 	return os.WriteFile(goModPath, []byte(s), 0644)
 }

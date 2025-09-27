@@ -24,14 +24,14 @@ type Generator struct {
 
 // ThemeFeatures describes capability flags & module path for the selected theme.
 type ThemeFeatures struct {
-	Name                   config.Theme
-	UsesModules            bool
-	ModulePath             string
-	ModuleVersion          string // optional semantic version/pseudo-version for pinning (if empty, no require added)
-	EnableMathPassthrough  bool
-	EnableOfflineSearchJSON bool
-	AutoMainMenu           bool // if true and no explicit menu, we inject default main menu
-	SupportsPerPageEditLinks bool // theme encourages per-page edit link generation (Hextra true)
+	Name                     config.Theme
+	UsesModules              bool
+	ModulePath               string
+	ModuleVersion            string // optional semantic version/pseudo-version for pinning (if empty, no require added)
+	EnableMathPassthrough    bool
+	EnableOfflineSearchJSON  bool
+	AutoMainMenu             bool   // if true and no explicit menu, we inject default main menu
+	SupportsPerPageEditLinks bool   // theme encourages per-page edit link generation (Hextra true)
 	DefaultSearchType        string // e.g., flexsearch (hextra) or empty (docsy's built-in)
 	ProvidesMermaidSupport   bool   // whether theme bundles mermaid assets (Hextra true via params scaffold)
 }
