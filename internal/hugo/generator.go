@@ -27,9 +27,13 @@ type ThemeFeatures struct {
 	Name                   config.Theme
 	UsesModules            bool
 	ModulePath             string
+	ModuleVersion          string // optional semantic version/pseudo-version for pinning (if empty, no require added)
 	EnableMathPassthrough  bool
 	EnableOfflineSearchJSON bool
 	AutoMainMenu           bool // if true and no explicit menu, we inject default main menu
+	SupportsPerPageEditLinks bool // theme encourages per-page edit link generation (Hextra true)
+	DefaultSearchType        string // e.g., flexsearch (hextra) or empty (docsy's built-in)
+	ProvidesMermaidSupport   bool   // whether theme bundles mermaid assets (Hextra true via params scaffold)
 }
 
 // deriveThemeFeatures inspects configuration and returns normalized feature flags.
@@ -40,15 +44,23 @@ func (g *Generator) deriveThemeFeatures() ThemeFeatures {
 	case config.ThemeHextra:
 		feats.UsesModules = true
 		feats.ModulePath = "github.com/imfing/hextra"
+		feats.ModuleVersion = "v0.11.0"
 		feats.EnableMathPassthrough = true
 		feats.EnableOfflineSearchJSON = false // Hextra's offline search handled via params; no outputs JSON needed
 		feats.AutoMainMenu = true
+		feats.SupportsPerPageEditLinks = true
+		feats.DefaultSearchType = "flexsearch"
+		feats.ProvidesMermaidSupport = true
 	case config.ThemeDocsy:
 		feats.UsesModules = true
 		feats.ModulePath = "github.com/google/docsy"
+		// (Optional) we could pin a version here later; leave blank for now.
 		feats.EnableMathPassthrough = false
 		feats.EnableOfflineSearchJSON = true
 		feats.AutoMainMenu = false
+		feats.SupportsPerPageEditLinks = false
+		feats.DefaultSearchType = "" // docsy uses its own search implementation / config
+		feats.ProvidesMermaidSupport = false
 	default:
 		// unknown/custom theme - no special features
 	}

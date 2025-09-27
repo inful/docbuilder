@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -75,12 +74,11 @@ func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 		return err
 	}
 	s := string(b)
-	if g.config.Hugo.ThemeType() == config.ThemeHextra { // pin version
-		const hextraModule = "github.com/imfing/hextra"
-		const hextraVersion = "v0.11.0"
-		if !strings.Contains(s, hextraModule) {
-			s += fmt.Sprintf("\nrequire %s %s\n", hextraModule, hextraVersion)
-		}
-	}
+	features := g.deriveThemeFeatures()
+	if features.UsesModules && features.ModulePath != "" && features.ModuleVersion != "" {
+        if !strings.Contains(s, features.ModulePath) { // naive containment sufficient for pin presence
+            s += fmt.Sprintf("\nrequire %s %s\n", features.ModulePath, features.ModuleVersion)
+        }
+    }
 	return os.WriteFile(goModPath, []byte(s), 0644)
 }
