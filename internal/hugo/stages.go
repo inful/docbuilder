@@ -74,9 +74,15 @@ func (e *StageError) Transient() bool {
 }
 
 // Helpers to classify errors.
-func newFatalStageError(stage StageName, err error) *StageError    { return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err} }
-func newWarnStageError(stage StageName, err error) *StageError     { return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err} }
-func newCanceledStageError(stage StageName, err error) *StageError { return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err} }
+func newFatalStageError(stage StageName, err error) *StageError {
+	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
+}
+func newWarnStageError(stage StageName, err error) *StageError {
+	return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err}
+}
+func newCanceledStageError(stage StageName, err error) *StageError {
+	return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err}
+}
 
 // BuildState carries mutable state and metrics across stages.
 type BuildState struct {
@@ -198,7 +204,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	}
 	client := git.NewClient(bs.WorkspaceDir)
 	if err := client.EnsureWorkspace(); err != nil {
-		return newFatalStageError("clone_repos", fmt.Errorf("ensure workspace: %w", err))
+		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
 

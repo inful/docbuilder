@@ -2,6 +2,16 @@ package metrics
 
 import "time"
 
+// BuildOutcomeLabel is used for build outcome metrics dimensions.
+type BuildOutcomeLabel string
+
+const (
+	BuildOutcomeSuccess  BuildOutcomeLabel = "success"
+	BuildOutcomeWarning  BuildOutcomeLabel = "warning"
+	BuildOutcomeFailed   BuildOutcomeLabel = "failed"
+	BuildOutcomeCanceled BuildOutcomeLabel = "canceled"
+)
+
 // ResultLabel enumerates stage result categories for counters.
 type ResultLabel string
 
@@ -19,7 +29,7 @@ type Recorder interface {
 	ObserveStageDuration(stage string, d time.Duration)
 	ObserveBuildDuration(d time.Duration)
 	IncStageResult(stage string, result ResultLabel)
-	IncBuildOutcome(outcome string) // outcome: success|warning|failed|canceled
+	IncBuildOutcome(outcome BuildOutcomeLabel) // outcome: success|warning|failed|canceled
 	ObserveCloneRepoDuration(repo string, d time.Duration, success bool)
 	IncCloneRepoResult(success bool)
 	SetCloneConcurrency(n int)
@@ -33,7 +43,7 @@ type NoopRecorder struct{}
 func (NoopRecorder) ObserveStageDuration(string, time.Duration)           {}
 func (NoopRecorder) ObserveBuildDuration(time.Duration)                   {}
 func (NoopRecorder) IncStageResult(string, ResultLabel)                   {}
-func (NoopRecorder) IncBuildOutcome(string)                               {}
+func (NoopRecorder) IncBuildOutcome(BuildOutcomeLabel)                   {}
 func (NoopRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
 func (NoopRecorder) IncCloneRepoResult(bool)                              {}
 func (NoopRecorder) SetCloneConcurrency(int)                              {}

@@ -8,6 +8,16 @@ import (
 	"time"
 )
 
+// BuildOutcome is the typed enumeration of final build result states.
+type BuildOutcome string
+
+const (
+	OutcomeSuccess  BuildOutcome = "success"
+	OutcomeWarning  BuildOutcome = "warning"
+	OutcomeFailed   BuildOutcome = "failed"
+	OutcomeCanceled BuildOutcome = "canceled"
+)
+
 // BuildReport captures high-level metrics about a site generation run.
 type BuildReport struct {
 	Repositories    int
@@ -24,10 +34,11 @@ type BuildReport struct {
 	SkippedRepositories int                   // repositories filtered out before cloning
 	RenderedPages       int                   // markdown pages successfully processed & written
 	StageCounts         map[string]StageCount // per-stage classification counts
-	Outcome             string                // derived overall outcome: success|warning|failed|canceled
+	Outcome             string                // derived overall outcome (string form for legacy JSON; use OutcomeT for typed)
 	StaticRendered      bool                  // true if Hugo static site render executed successfully
 	Retries             int                   // total retry attempts (all stages combined)
 	RetriesExhausted    bool                  // true if any stage exhausted retry budget
+	OutcomeT            BuildOutcome          // typed outcome mirror (source of truth)
 }
 
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
@@ -61,21 +72,26 @@ func (r *BuildReport) Summary() string {
 // deriveOutcome sets the Outcome field based on recorded errors/warnings
 func (r *BuildReport) deriveOutcome() {
 	if len(r.Errors) > 0 {
-		// Distinguish canceled vs failed
 		for _, e := range r.Errors {
 			if se, ok := e.(*StageError); ok && se.Kind == StageErrorCanceled {
-				r.Outcome = "canceled"
+				r.setOutcome(OutcomeCanceled)
 				return
 			}
 		}
-		r.Outcome = "failed"
+		r.setOutcome(OutcomeFailed)
 		return
 	}
 	if len(r.Warnings) > 0 {
-		r.Outcome = "warning"
+		r.setOutcome(OutcomeWarning)
 		return
 	}
-	r.Outcome = "success"
+	r.setOutcome(OutcomeSuccess)
+}
+
+// setOutcome sets both typed and legacy string forms.
+func (r *BuildReport) setOutcome(o BuildOutcome) {
+	r.OutcomeT = o
+	r.Outcome = string(o)
 }
 
 // Persist writes the report atomically into the provided root directory (final output dir, not staging).
@@ -134,7 +150,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		SkippedRepositories: r.SkippedRepositories,
 		RenderedPages:       r.RenderedPages,
 		StageCounts:         r.StageCounts,
-		Outcome:             r.Outcome,
+		Outcome:             r.Outcome, // legacy string form retained
 		StaticRendered:      r.StaticRendered,
 		Retries:             r.Retries,
 		RetriesExhausted:    r.RetriesExhausted,

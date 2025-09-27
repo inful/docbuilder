@@ -99,11 +99,11 @@ func (p *PrometheusRecorder) IncStageResult(stage string, result ResultLabel) {
 	}
 	p.stageResults.WithLabelValues(stage, string(result)).Inc()
 }
-func (p *PrometheusRecorder) IncBuildOutcome(outcome string) {
+func (p *PrometheusRecorder) IncBuildOutcome(outcome BuildOutcomeLabel) {
 	if p == nil || p.buildOutcome == nil {
 		return
 	}
-	p.buildOutcome.WithLabelValues(outcome).Inc()
+	p.buildOutcome.WithLabelValues(string(outcome)).Inc()
 }
 
 func (p *PrometheusRecorder) ObserveCloneRepoDuration(repo string, d time.Duration, success bool) {
