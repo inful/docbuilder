@@ -15,3 +15,7 @@ func titleCase(s string) string {
     }
     return strings.Join(words, " ")
 }
+
+// TitleCase exported helper for theme packages.
+func TitleCase(s string) string { return titleCase(s) }
+

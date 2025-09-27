@@ -22,74 +22,120 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 		return "", fmt.Errorf("worktree: %w", err)
 	}
 
+	// 1. Fetch remote refs
+	if err := c.fetchOrigin(repository, repo); err != nil {
+		return "", err
+	}
+
+	// 2. Resolve target branch
+	branch, err := resolveTargetBranch(repository, repo)
+	if err != nil {
+		return "", err
+	}
+
+	// 3. Checkout/create local branch & obtain refs
+	localRef, remoteRef, err := checkoutAndGetRefs(repository, wt, branch)
+	if err != nil {
+		return "", err
+	}
+
+	// 4. Fast-forward or handle divergence
+	if err := c.syncWithRemote(repository, wt, repo, branch, localRef, remoteRef); err != nil {
+		return "", err
+	}
+
+	// 5. Post-update hygiene (clean/prune)
+	c.postUpdateCleanup(wt, repoPath, repo)
+
+	// 6. Logging
+	logRepositoryUpdated(repository, repo, branch)
+	return repoPath, nil
+}
+
+// fetchOrigin performs a fetch of origin with appropriate depth/refspec and auth.
+func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository) error {
 	depth := 0
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
 		depth = c.buildCfg.ShallowDepth
 	}
-	fetchOpts := &git.FetchOptions{RemoteName: "origin", Tags: git.NoTags}
+	fetchOpts := &git.FetchOptions{RemoteName: "origin", Tags: git.NoTags, RefSpecs: []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}}
 	if depth > 0 {
 		fetchOpts.Depth = depth
 	}
-	fetchOpts.RefSpecs = []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}
 	if repo.Auth != nil {
-		auth, aerr := c.getAuthentication(repo.Auth)
-		if aerr != nil {
-			return "", aerr
+		auth, err := c.getAuthentication(repo.Auth)
+		if err != nil {
+			return err
 		}
 		fetchOpts.Auth = auth
 	}
 	if err := repository.Fetch(fetchOpts); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return "", fmt.Errorf("fetch: %w", err)
+		return fmt.Errorf("fetch: %w", err)
 	}
+	return nil
+}
 
-	branch := repo.Branch
-	if branch == "" {
-		if headRef, herr := repository.Head(); herr == nil && headRef.Name().IsBranch() {
-			branch = headRef.Name().Short()
-		} else {
-			if def, derr := resolveRemoteDefaultBranch(repository); derr == nil {
-				branch = def
-			} else {
-				branch = "main"
-			}
-		}
+// resolveTargetBranch determines the branch we should update/checkout following original precedence rules.
+func resolveTargetBranch(repository *git.Repository, repo appcfg.Repository) (string, error) {
+	if repo.Branch != "" {
+		return repo.Branch, nil
 	}
+	if headRef, err := repository.Head(); err == nil && headRef.Name().IsBranch() {
+		return headRef.Name().Short(), nil
+	}
+	if def, err := resolveRemoteDefaultBranch(repository); err == nil && def != "" {
+		return def, nil
+	}
+	return "main", nil
+}
+
+// checkoutAndGetRefs ensures the local branch exists and is checked out, returning local and remote refs.
+func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch string) (localRef, remoteRef *plumbing.Reference, err error) {
 	localBranchRef := plumbing.NewBranchReferenceName(branch)
 	remoteBranchRef := plumbing.NewRemoteReferenceName("origin", branch)
-	remoteRef, err := repository.Reference(remoteBranchRef, true)
+	remoteRef, err = repository.Reference(remoteBranchRef, true)
 	if err != nil {
-		return "", fmt.Errorf("remote ref: %w", err)
+		return nil, nil, fmt.Errorf("remote ref: %w", err)
 	}
 	localRef, lerr := repository.Reference(localBranchRef, true)
 	if lerr != nil { // create local branch
-		if err := wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Create: true, Force: true}); err != nil {
-			return "", fmt.Errorf("checkout new branch: %w", err)
+		if err = wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Create: true, Force: true}); err != nil {
+			return nil, nil, fmt.Errorf("checkout new branch: %w", err)
 		}
 		localRef, _ = repository.Reference(localBranchRef, true)
 	} else {
-		if err := wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Force: true}); err != nil {
-			return "", fmt.Errorf("checkout existing branch: %w", err)
+		if err = wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Force: true}); err != nil {
+			return nil, nil, fmt.Errorf("checkout existing branch: %w", err)
 		}
 	}
+	return localRef, remoteRef, nil
+}
+
+// syncWithRemote fast-forwards or hard-resets depending on divergence and config.
+func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
 	fastForwardPossible, ffErr := isAncestor(repository, localRef.Hash(), remoteRef.Hash())
 	if ffErr != nil {
 		slog.Warn("ancestor check failed", slog.String("error", ffErr.Error()))
 	}
 	if fastForwardPossible {
 		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
-			return "", fmt.Errorf("fast-forward reset: %w", err)
+			return fmt.Errorf("fast-forward reset: %w", err)
 		}
-	} else {
-		hardReset := c.buildCfg != nil && c.buildCfg.HardResetOnDiverge
-		if hardReset {
-			slog.Warn("diverged branch, hard resetting", logfields.Name(repo.Name), slog.String("branch", branch))
-			if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
-				return "", fmt.Errorf("hard reset: %w", err)
-			}
-		} else {
-			return "", fmt.Errorf("local branch diverged from remote (enable hard_reset_on_diverge to override)")
-		}
+		return nil
 	}
+	hardReset := c.buildCfg != nil && c.buildCfg.HardResetOnDiverge
+	if hardReset {
+		slog.Warn("diverged branch, hard resetting", logfields.Name(repo.Name), slog.String("branch", branch))
+		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
+			return fmt.Errorf("hard reset: %w", err)
+		}
+		return nil
+	}
+	return fmt.Errorf("local branch diverged from remote (enable hard_reset_on_diverge to override)")
+}
+
+// postUpdateCleanup applies optional workspace hygiene (clean untracked, prune non-doc paths).
+func (c *Client) postUpdateCleanup(wt *git.Worktree, repoPath string, repo appcfg.Repository) {
 	if c.buildCfg != nil && c.buildCfg.CleanUntracked {
 		if err := wt.Clean(&git.CleanOptions{Dir: true}); err != nil {
 			slog.Warn("clean untracked failed", slog.String("error", err.Error()))
@@ -100,12 +146,15 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
 		}
 	}
+}
+
+// logRepositoryUpdated logs repo update summary including short commit hash if available.
+func logRepositoryUpdated(repository *git.Repository, repo appcfg.Repository, branch string) {
 	if headRef, err := repository.Head(); err == nil {
 		slog.Info("Repository updated", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", headRef.Hash().String()[:8]))
 	} else {
 		slog.Info("Repository updated", logfields.Name(repo.Name), slog.String("branch", branch))
 	}
-	return repoPath, nil
 }
 
 func resolveRemoteDefaultBranch(repo *git.Repository) (string, error) {
