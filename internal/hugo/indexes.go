@@ -35,7 +35,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
 	}
 	frontMatter := map[string]interface{}{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": time.Now().Format("2006-01-02T15:04:05-07:00"), "type": "docs"}
-	if g.config.Hugo.Theme == config.ThemeHextra {
+	if g.config.Hugo.ThemeType() == config.ThemeHextra {
 		frontMatter["cascade"] = map[string]interface{}{"type": "docs"}
 	}
 	fmData, err := yaml.Marshal(frontMatter)

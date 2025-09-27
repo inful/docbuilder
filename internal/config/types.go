@@ -42,7 +42,7 @@ func (a *AuthConfig) IsZero() bool { return a == nil || a.Type == "" || a.Type =
 
 // HugoConfig represents Hugo-specific configuration (embedded in V2Config)
 type HugoConfig struct {
-	Theme       string            `yaml:"theme,omitempty"`
+	Theme       string            `yaml:"theme,omitempty"` // raw theme string from config; normalized via ThemeType()
 	BaseURL     string            `yaml:"base_url,omitempty"`
 	Title       string            `yaml:"title"`
 	Description string            `yaml:"description,omitempty"`
@@ -50,11 +50,28 @@ type HugoConfig struct {
 	Menu        map[string][]Menu `yaml:"menu,omitempty"`
 }
 
+// Theme is a typed enumeration of supported Hugo theme integrations.
+type Theme string
+
 // Theme constants to avoid magic strings across generator logic.
 const (
-	ThemeHextra = "hextra"
-	ThemeDocsy  = "docsy"
+	ThemeHextra Theme = "hextra"
+	ThemeDocsy Theme = "docsy"
 )
+
+// ThemeType returns the normalized typed theme value (lowercasing the raw string).
+// Unknown themes return "" so callers can branch safely.
+func (h HugoConfig) ThemeType() Theme {
+	s := strings.ToLower(strings.TrimSpace(h.Theme))
+	switch s {
+	case string(ThemeHextra):
+		return ThemeHextra
+	case string(ThemeDocsy):
+		return ThemeDocsy
+	default:
+		return ""
+	}
+}
 
 // BuildConfig holds build performance tuning knobs.
 // Additional fields (retry limits, timeouts, etc.) can be added iteratively without

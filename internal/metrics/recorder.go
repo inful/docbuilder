@@ -43,7 +43,7 @@ type NoopRecorder struct{}
 func (NoopRecorder) ObserveStageDuration(string, time.Duration)           {}
 func (NoopRecorder) ObserveBuildDuration(time.Duration)                   {}
 func (NoopRecorder) IncStageResult(string, ResultLabel)                   {}
-func (NoopRecorder) IncBuildOutcome(BuildOutcomeLabel)                   {}
+func (NoopRecorder) IncBuildOutcome(BuildOutcomeLabel)                    {}
 func (NoopRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
 func (NoopRecorder) IncCloneRepoResult(bool)                              {}
 func (NoopRecorder) SetCloneConcurrency(int)                              {}

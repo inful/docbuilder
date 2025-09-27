@@ -19,7 +19,9 @@ type capturingRecorder struct {
 	outcomes map[metrics.BuildOutcomeLabel]int
 }
 
-func newCapturingRecorder() *capturingRecorder { return &capturingRecorder{stages: map[string]int{}, results: map[string]map[metrics.ResultLabel]int{}, outcomes: map[metrics.BuildOutcomeLabel]int{}} }
+func newCapturingRecorder() *capturingRecorder {
+	return &capturingRecorder{stages: map[string]int{}, results: map[string]map[metrics.ResultLabel]int{}, outcomes: map[metrics.BuildOutcomeLabel]int{}}
+}
 
 func (c *capturingRecorder) ObserveStageDuration(stage string, _ time.Duration) { c.stages[stage]++ }
 func (c *capturingRecorder) ObserveBuildDuration(_ time.Duration)               { c.builds++ }
@@ -31,7 +33,7 @@ func (c *capturingRecorder) IncStageResult(stage string, r metrics.ResultLabel) 
 	}
 	m[r]++
 }
-func (c *capturingRecorder) IncBuildOutcome(o metrics.BuildOutcomeLabel)         { c.outcomes[o]++ }
+func (c *capturingRecorder) IncBuildOutcome(o metrics.BuildOutcomeLabel)          { c.outcomes[o]++ }
 func (c *capturingRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
 func (c *capturingRecorder) IncCloneRepoResult(bool)                              {}
 func (c *capturingRecorder) SetCloneConcurrency(int)                              {}
