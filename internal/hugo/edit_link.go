@@ -15,11 +15,12 @@ import (
 //   - Site-level params.editURL.base not set
 //   - Corresponding repository config is found
 //   - Repository URL matches a supported forge pattern (github, gitlab, bitbucket, gitea/forgejo)
+//
 // generatePerPageEditURL is retained for backward compatibility with existing callers.
 // It now delegates to the shared EditLinkResolver. Prefer using Generator.editLinkResolver or BuildFrontMatter logic directly.
 func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
-    resolver := NewEditLinkResolver(cfg)
-    return resolver.Resolve(file)
+	resolver := NewEditLinkResolver(cfg)
+	return resolver.Resolve(file)
 }
 
 // resolveForgeForRepository attempts to match a repository clone URL against configured forge base URLs

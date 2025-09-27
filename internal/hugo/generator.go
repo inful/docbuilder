@@ -43,14 +43,40 @@ type ThemeFeatures struct {
 // deriveThemeFeatures inspects configuration and returns normalized feature flags.
 func (g *Generator) deriveThemeFeatures() ThemeFeatures {
 	// Backwards-compatible public method retained; now caches computation.
-	if g.cachedThemeFeatures != nil { return *g.cachedThemeFeatures }
+	if g.cachedThemeFeatures != nil {
+		return *g.cachedThemeFeatures
+	}
 	if th := g.activeTheme(); th != nil {
 		feats := th.Features()
 		g.cachedThemeFeatures = &feats
 		return feats
 	}
-	// Fallback legacy path (unknown/custom theme)
-	feats := ThemeFeatures{Name: g.config.Hugo.ThemeType()}
+	// Fallback legacy path (unknown/custom theme or themes not yet registered due to WIP modularization).
+	name := g.config.Hugo.ThemeType()
+	var feats ThemeFeatures
+	switch name {
+	case config.ThemeDocsy:
+		feats = ThemeFeatures{
+			Name:                    name,
+			UsesModules:             true,
+			ModulePath:              "github.com/google/docsy",
+			EnableOfflineSearchJSON: true,
+		}
+	case config.ThemeHextra:
+		feats = ThemeFeatures{
+			Name:                     name,
+			UsesModules:              true,
+			ModulePath:               "github.com/imfing/hextra",
+			ModuleVersion:            "v0.11.0",
+			EnableMathPassthrough:    true,
+			AutoMainMenu:             true,
+			SupportsPerPageEditLinks: true,
+			DefaultSearchType:        "flexsearch",
+			ProvidesMermaidSupport:   true,
+		}
+	default:
+		feats = ThemeFeatures{Name: name}
+	}
 	g.cachedThemeFeatures = &feats
 	return feats
 }
@@ -62,6 +88,9 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	return g
 }
+
+// Config exposes the underlying configuration (read-only usage by themes).
+func (g *Generator) Config() *config.Config { return g.config }
 
 // SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.
 func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
