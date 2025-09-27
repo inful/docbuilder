@@ -21,7 +21,12 @@ func TestAutoDiscoverValidation(t *testing.T) {
 
     forgeAuto := &ForgeConfig{Name: "f2", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{"auto_discover": true}}
     if err := validateConfig(withForge(forgeAuto)); err != nil {
-        t.Fatalf("unexpected error with auto_discover=true: %v", err)
+        t.Fatalf("unexpected error with options.auto_discover=true: %v", err)
+    }
+
+    forgeAutoTop := &ForgeConfig{Name: "f4", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, AutoDiscover: true}
+    if err := validateConfig(withForge(forgeAutoTop)); err != nil {
+        t.Fatalf("unexpected error with top-level auto_discover: %v", err)
     }
 
     forgeFalse := &ForgeConfig{Name: "f3", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{"auto_discover": false}}
