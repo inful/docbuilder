@@ -20,6 +20,10 @@ type Generator struct {
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
 	recorder       metrics.Recorder
+	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
+	cachedThemeFeatures *ThemeFeatures
+	// editLinkResolver centralizes per-page edit link resolution
+	editLinkResolver *EditLinkResolver
 }
 
 // ThemeFeatures describes capability flags & module path for the selected theme.
@@ -38,6 +42,10 @@ type ThemeFeatures struct {
 
 // deriveThemeFeatures inspects configuration and returns normalized feature flags.
 func (g *Generator) deriveThemeFeatures() ThemeFeatures {
+	// Backwards-compatible public method retained; now caches computation.
+	if g.cachedThemeFeatures != nil {
+		return *g.cachedThemeFeatures
+	}
 	t := g.config.Hugo.ThemeType()
 	feats := ThemeFeatures{Name: t}
 	switch t {
@@ -64,12 +72,16 @@ func (g *Generator) deriveThemeFeatures() ThemeFeatures {
 	default:
 		// unknown/custom theme - no special features
 	}
+	g.cachedThemeFeatures = &feats
 	return feats
 }
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	return &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
+	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
+	// Initialize resolver eagerly (cheap) to simplify call sites.
+	g.editLinkResolver = NewEditLinkResolver(cfg)
+	return g
 }
 
 // SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.

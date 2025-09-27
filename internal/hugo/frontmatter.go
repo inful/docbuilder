@@ -56,6 +56,7 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 
 	// Per-page edit URL (Hextra only) if not already present
 	if _, exists := fm["editURL"]; !exists {
+		// use resolver (cheap to allocate if generator not available)
 		if edit := generatePerPageEditURL(in.Config, in.File); edit != "" {
 			fm["editURL"] = edit
 		}

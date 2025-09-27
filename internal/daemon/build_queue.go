@@ -98,8 +98,8 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
 		builder:     NewSiteBuilder(),
-	retryCfg:    config.BuildConfig{},
-	retryPolicy: retry.DefaultPolicy(),
+		retryCfg:    config.BuildConfig{},
+		retryPolicy: retry.DefaultPolicy(),
 		recorder:    metrics.NoopRecorder{},
 	}
 }
