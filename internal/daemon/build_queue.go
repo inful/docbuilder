@@ -331,11 +331,6 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	}
 }
 
-// computeBackoffDelay deprecated: use RetryPolicy.Delay (kept temporarily for test backwards compatibility)
-// Deprecated: will be removed after tests migrate fully.
-func computeBackoffDelay(mode string, initial, max time.Duration, retryCount int) time.Duration {
-    return NewRetryPolicy(mode, initial, max, 0).Delay(retryCount)
-}
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
 func extractRecorder(report *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
