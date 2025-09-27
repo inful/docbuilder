@@ -34,7 +34,7 @@ func (m *Manager) Create() error {
 	}
 
 	m.tempDir = tempDir
-	slog.Info("Created workspace", "path", tempDir)
+	slog.Info("Created workspace", slog.String("path", tempDir))
 	return nil
 }
 
@@ -53,7 +53,7 @@ func (m *Manager) Cleanup() error {
 		return fmt.Errorf("failed to cleanup workspace: %w", err)
 	}
 
-	slog.Info("Cleaned up workspace", "path", m.tempDir)
+	slog.Info("Cleaned up workspace", slog.String("path", m.tempDir))
 	m.tempDir = ""
 	return nil
 }

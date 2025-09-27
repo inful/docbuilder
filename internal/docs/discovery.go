@@ -55,22 +55,22 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 		// Check for .docignore file in repository root
 		if hasDocIgnore, err := d.checkDocIgnore(repoPath); err != nil {
-			slog.Warn("Failed to check .docignore", "repository", repoName, "error", err)
+			slog.Warn("Failed to check .docignore", slog.String("repository", repoName), slog.String("error", err.Error()))
 		} else if hasDocIgnore {
-			slog.Info("Skipping repository due to .docignore file", "repository", repoName)
+			slog.Info("Skipping repository due to .docignore file", slog.String("repository", repoName))
 			continue
 		}
 
-		slog.Info("Discovering documentation", "repository", repoName, "paths", repo.Paths)
+		slog.Info("Discovering documentation", slog.String("repository", repoName), slog.Any("paths", repo.Paths))
 
 		for _, docsPath := range repo.Paths {
 			fullDocsPath := filepath.Join(repoPath, docsPath)
 
 			if _, err := os.Stat(fullDocsPath); os.IsNotExist(err) {
 				slog.Warn("Documentation path not found",
-					"repository", repoName,
-					"path", docsPath,
-					"full_path", fullDocsPath)
+					slog.String("repository", repoName),
+					slog.String("path", docsPath),
+					slog.String("full_path", fullDocsPath))
 				continue
 			}
 
@@ -82,10 +82,10 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			d.docFiles = append(d.docFiles, files...)
 		}
 
-		slog.Info("Documentation discovered", "repository", repoName, "files", len(d.docFiles))
+		slog.Info("Documentation discovered", slog.String("repository", repoName), slog.Int("files", len(d.docFiles)))
 	}
 
-	slog.Info("Total documentation files discovered", "count", len(d.docFiles))
+	slog.Info("Total documentation files discovered", slog.Int("count", len(d.docFiles)))
 	return d.docFiles, nil
 }
 
@@ -139,9 +139,9 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, relativePath string, m
 		files = append(files, docFile)
 
 		slog.Debug("Discovered documentation file",
-			"file", relPath,
-			"repository", repoName,
-			"section", section)
+			slog.String("file", relPath),
+			slog.String("repository", repoName),
+			slog.String("section", section))
 
 		return nil
 	})
@@ -248,7 +248,7 @@ func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 	docIgnorePath := filepath.Join(repoPath, ".docignore")
 
 	if _, err := os.Stat(docIgnorePath); err == nil {
-		slog.Debug("Found .docignore file", "path", docIgnorePath)
+		slog.Debug("Found .docignore file", slog.String("path", docIgnorePath))
 		return true, nil
 	} else if os.IsNotExist(err) {
 		return false, nil

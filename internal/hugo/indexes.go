@@ -49,7 +49,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write main index: %w", err)
 	}
-	slog.Info("Generated main index page", "path", indexPath)
+	slog.Info("Generated main index page", slog.String("path", indexPath))
 	return nil
 }
 
@@ -99,7 +99,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 			return fmt.Errorf("failed to write repository index: %w", err)
 		}
-		slog.Debug("Generated repository index", "repository", repoName, "path", indexPath)
+		slog.Debug("Generated repository index", slog.String("repository", repoName), slog.String("path", indexPath))
 	}
 	return nil
 }
@@ -134,7 +134,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 				return fmt.Errorf("failed to write section index: %w", err)
 			}
-			slog.Debug("Generated section index", "repository", repoName, "section", sectionName, "path", indexPath)
+			slog.Debug("Generated section index", slog.String("repository", repoName), slog.String("section", sectionName), slog.String("path", indexPath))
 		}
 	}
 	return nil

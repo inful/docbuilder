@@ -51,7 +51,7 @@ func (g *Generator) GenerateSiteWithReport(docFiles []docs.DocFile) (*BuildRepor
 
 // GenerateSiteWithReportContext performs site generation honoring the provided context for cancellation.
 func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles []docs.DocFile) (*BuildReport, error) {
-	slog.Info("Starting Hugo site generation", "output", g.outputDir, "files", len(docFiles))
+	slog.Info("Starting Hugo site generation", slog.String("output", g.outputDir), slog.Int("files", len(docFiles)))
 	if err := g.beginStaging(); err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
 		g.recorder.IncBuildOutcome(report.Outcome)
 	}
-	slog.Info("Hugo site generation completed", "output", g.outputDir, "repos", report.Repositories, "files", report.Files, "errors", len(report.Errors))
+	slog.Info("Hugo site generation completed", slog.String("output", g.outputDir), slog.Int("repos", report.Repositories), slog.Int("files", report.Files), slog.Int("errors", len(report.Errors)))
 	return report, nil
 }
 

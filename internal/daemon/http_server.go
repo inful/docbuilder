@@ -52,9 +52,9 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	}
 
 	slog.Info("HTTP servers started",
-		"docs_port", s.config.Daemon.HTTP.DocsPort,
-		"webhook_port", s.config.Daemon.HTTP.WebhookPort,
-		"admin_port", s.config.Daemon.HTTP.AdminPort)
+		slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
+		slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
+		slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort))
 
 	return nil
 }
@@ -233,12 +233,12 @@ func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		slog.Info("HTTP request",
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", wrapped.statusCode,
-			"duration", duration,
-			"user_agent", r.UserAgent(),
-			"remote_addr", r.RemoteAddr)
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", wrapped.statusCode),
+			slog.Duration("duration", duration),
+			slog.String("user_agent", r.UserAgent()),
+			slog.String("remote_addr", r.RemoteAddr))
 	})
 }
 
@@ -496,9 +496,9 @@ func (s *HTTPServer) handleWebhookRequest(w http.ResponseWriter, r *http.Request
 
 	// TODO: Implement webhook processing with daemon
 	slog.Info("Webhook received",
-		"forge_type", forgeType,
-		"content_length", r.ContentLength,
-		"user_agent", r.UserAgent())
+		slog.String("forge_type", forgeType),
+		slog.Int64("content_length", r.ContentLength),
+		slog.String("user_agent", r.UserAgent()))
 
 	// For now, just acknowledge receipt
 	w.WriteHeader(http.StatusOK)
