@@ -11,7 +11,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 // Stage is a discrete unit of work in the site build.
@@ -131,58 +130,39 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			if errors.As(err, &se) {
 				// Already a StageError; record classification.
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
-				// update stage counts (typed key)
-				sc := bs.Report.StageCounts[st.Name]
+				// update stage counts & metrics
+				var res StageResult
 				switch se.Kind {
 				case StageErrorWarning:
-					sc.Warning++
+					res = StageResultWarning
 				case StageErrorCanceled:
-					sc.Canceled++
+					res = StageResultCanceled
 				case StageErrorFatal:
-					sc.Fatal++
+					res = StageResultFatal
 				}
-				bs.Report.StageCounts[st.Name] = sc
+				bs.Report.recordStageResult(st.Name, res, bs.Generator.recorder)
 				switch se.Kind {
 				case StageErrorWarning:
 					bs.Report.Warnings = append(bs.Report.Warnings, se)
-					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultWarning)
-					}
 					continue // proceed to next stage
 				case StageErrorCanceled:
 					bs.Report.Errors = append(bs.Report.Errors, se)
-					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultCanceled)
-					}
 					return se
 				case StageErrorFatal:
 					bs.Report.Errors = append(bs.Report.Errors, se)
-					if bs.Generator != nil && bs.Generator.recorder != nil {
-						bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultFatal)
-					}
 					return se
 				}
 			} else {
 				// Wrap unknown errors as fatal by default.
 				se = newFatalStageError(st.Name, err)
 				bs.Report.StageErrorKinds[string(st.Name)] = string(se.Kind)
-				sc := bs.Report.StageCounts[st.Name]
-				sc.Fatal++
-				bs.Report.StageCounts[st.Name] = sc
+				bs.Report.recordStageResult(st.Name, StageResultFatal, bs.Generator.recorder)
 				bs.Report.Errors = append(bs.Report.Errors, se)
-				if bs.Generator != nil && bs.Generator.recorder != nil {
-					bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultFatal)
-				}
 				return se
 			}
 		} else {
 			// success path
-			sc := bs.Report.StageCounts[st.Name]
-			sc.Success++
-			bs.Report.StageCounts[st.Name] = sc
-			if bs.Generator != nil && bs.Generator.recorder != nil {
-				bs.Generator.recorder.IncStageResult(string(st.Name), metrics.ResultSuccess)
-			}
+			bs.Report.recordStageResult(st.Name, StageResultSuccess, bs.Generator.recorder)
 		}
 	}
 	return nil
