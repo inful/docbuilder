@@ -6,6 +6,8 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 
 - Clone documentation from multiple Git repositories
 - Support for various authentication methods (SSH, tokens, basic auth)
+## Recommended Filesystem Layouts
+
 - Generate Hugo-compatible static sites
 - Optional automatic rendering (invoke the Hugo binary) to produce a ready-to-serve `public/` folder
 - Environment variable support with `.env` files
