@@ -303,7 +303,7 @@ func TestRepositoryToConfigRepository(t *testing.T) {
 		t.Error("ConfigRepository should have metadata tags")
 	}
 
-	expectedTags := []string{"forge_id", "full_name", "description", "private", "has_docs"}
+	expectedTags := []string{"forge_id", "full_name", "description", "private", "has_docs", "forge_type"}
 	for _, tag := range expectedTags {
 		if _, exists := configRepo.Tags[tag]; !exists {
 			t.Errorf("ConfigRepository should have tag %s", tag)

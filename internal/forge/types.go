@@ -177,6 +177,9 @@ func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Reposito
 			"private":      fmt.Sprintf("%t", r.Private),
 			"has_docs":     fmt.Sprintf("%t", r.HasDocs),
 			"last_updated": r.LastUpdated.Format(time.RFC3339),
+			// forge_type is injected later by discovery when we know the client type; added defensively here if metadata contains it
+			// leaving empty if absent avoids breaking existing configs but enables downstream hugo edit link logic to prefer explicit type.
+			"forge_type": r.Metadata["forge_type"],
 		},
 	}
 }
