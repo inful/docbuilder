@@ -2,25 +2,18 @@ package hugo
 
 import (
 	"testing"
-
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 )
 
-func TestRegisteredThemesOrFallback(t *testing.T) {
-	// During modularization we allow fallback (unregistered) themes as long as deriveThemeFeatures still returns the expected module path.
-	cases := []struct{ th config.Theme; expectPath string }{
-		{config.ThemeHextra, "github.com/imfing/hextra"},
-		{config.ThemeDocsy, "github.com/google/docsy"},
-	}
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Theme: string(config.ThemeHextra)}}, t.TempDir())
-	for _, c := range cases {
-		g.config.Hugo.Theme = string(c.th)
-		g.cachedThemeFeatures = nil // reset cache to force recompute
-		if got := getRegisteredTheme(c.th); got == nil {
-			feats := g.deriveThemeFeatures()
-			if feats.ModulePath != c.expectPath {
-				t.Fatalf("theme %s fallback module path = %q want %q", c.th, feats.ModulePath, c.expectPath)
-			}
-		}
-	}
+func TestThemesRegistered(t *testing.T) {
+    want := map[config.Theme]string{
+        config.ThemeHextra: "github.com/imfing/hextra",
+        config.ThemeDocsy:  "github.com/google/docsy",
+    }
+    for k, path := range want {
+        tm := th.Get(k)
+        if tm == nil { t.Fatalf("theme %s not registered", k) }
+        if tm.Features().ModulePath != path { t.Fatalf("theme %s path=%q want %q", k, tm.Features().ModulePath, path) }
+    }
 }

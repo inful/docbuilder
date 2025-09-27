@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
@@ -21,62 +24,21 @@ type Generator struct {
 	onPageRendered func()
 	recorder       metrics.Recorder
 	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
-	cachedThemeFeatures *ThemeFeatures
+	cachedThemeFeatures *th.ThemeFeatures
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
 }
 
-// ThemeFeatures describes capability flags & module path for the selected theme.
-type ThemeFeatures struct {
-	Name                     config.Theme
-	UsesModules              bool
-	ModulePath               string
-	ModuleVersion            string // optional semantic version/pseudo-version for pinning (if empty, no require added)
-	EnableMathPassthrough    bool
-	EnableOfflineSearchJSON  bool
-	AutoMainMenu             bool   // if true and no explicit menu, we inject default main menu
-	SupportsPerPageEditLinks bool   // theme encourages per-page edit link generation (Hextra true)
-	DefaultSearchType        string // e.g., flexsearch (hextra) or empty (docsy's built-in)
-	ProvidesMermaidSupport   bool   // whether theme bundles mermaid assets (Hextra true via params scaffold)
-}
+// activeTheme returns current registered theme.
+func (g *Generator) activeTheme() th.Theme { return th.Get(g.config.Hugo.ThemeType()) }
 
-// deriveThemeFeatures inspects configuration and returns normalized feature flags.
-func (g *Generator) deriveThemeFeatures() ThemeFeatures {
-	// Backwards-compatible public method retained; now caches computation.
-	if g.cachedThemeFeatures != nil {
-		return *g.cachedThemeFeatures
+// deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
+func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
+	if g.cachedThemeFeatures != nil { return *g.cachedThemeFeatures }
+	if tt := th.Get(g.config.Hugo.ThemeType()); tt != nil {
+		feats := tt.Features(); g.cachedThemeFeatures = &feats; return feats
 	}
-	if th := g.activeTheme(); th != nil {
-		feats := th.Features()
-		g.cachedThemeFeatures = &feats
-		return feats
-	}
-	// Fallback legacy path (unknown/custom theme or themes not yet registered due to WIP modularization).
-	name := g.config.Hugo.ThemeType()
-	var feats ThemeFeatures
-	switch name {
-	case config.ThemeDocsy:
-		feats = ThemeFeatures{
-			Name:                    name,
-			UsesModules:             true,
-			ModulePath:              "github.com/google/docsy",
-			EnableOfflineSearchJSON: true,
-		}
-	case config.ThemeHextra:
-		feats = ThemeFeatures{
-			Name:                     name,
-			UsesModules:              true,
-			ModulePath:               "github.com/imfing/hextra",
-			ModuleVersion:            "v0.11.0",
-			EnableMathPassthrough:    true,
-			AutoMainMenu:             true,
-			SupportsPerPageEditLinks: true,
-			DefaultSearchType:        "flexsearch",
-			ProvidesMermaidSupport:   true,
-		}
-	default:
-		feats = ThemeFeatures{Name: name}
-	}
+	feats := th.ThemeFeatures{Name: g.config.Hugo.ThemeType()}
 	g.cachedThemeFeatures = &feats
 	return feats
 }
