@@ -9,17 +9,17 @@ import (
 
 func TestStageErrorTransient(t *testing.T) {
 	cases := []struct {
-		stage string
+		stage StageName
 		err   error
 		kind  StageErrorKind
 		want  bool
 	}{
-		{"clone_repos", build.ErrClone, StageErrorWarning, true},
-		{"run_hugo", build.ErrHugo, StageErrorWarning, true},
-		{"discover_docs", build.ErrDiscovery, StageErrorWarning, true},
-		{"discover_docs", build.ErrDiscovery, StageErrorFatal, false},
-		{"generate_config", errors.New("cfg"), StageErrorFatal, false},
-		{"copy_content", errors.New("io"), StageErrorFatal, false},
+		{StageCloneRepos, build.ErrClone, StageErrorWarning, true},
+		{StageRunHugo, build.ErrHugo, StageErrorWarning, true},
+		{StageDiscoverDocs, build.ErrDiscovery, StageErrorWarning, true},
+		{StageDiscoverDocs, build.ErrDiscovery, StageErrorFatal, false},
+		{StageGenerateConfig, errors.New("cfg"), StageErrorFatal, false},
+		{StageCopyContent, errors.New("io"), StageErrorFatal, false},
 	}
 	for i, c := range cases {
 		se := &StageError{Stage: c.stage, Err: c.err, Kind: c.kind}

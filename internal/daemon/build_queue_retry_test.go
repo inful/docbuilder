@@ -28,7 +28,7 @@ func newFakeRecorder() *fakeRecorder {
 func (f *fakeRecorder) ObserveStageDuration(string, time.Duration)           {}
 func (f *fakeRecorder) ObserveBuildDuration(time.Duration)                   {}
 func (f *fakeRecorder) IncStageResult(string, metrics.ResultLabel)           {}
-func (f *fakeRecorder) IncBuildOutcome(string)                               {}
+func (f *fakeRecorder) IncBuildOutcome(metrics.BuildOutcomeLabel)            {}
 func (f *fakeRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
 func (f *fakeRecorder) IncCloneRepoResult(bool)                              {}
 func (f *fakeRecorder) SetCloneConcurrency(int)                              {}
@@ -77,15 +77,15 @@ func (m *mockBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRepo
 }
 
 // helper to create a transient StageError in a report
-func transientReport(stage string) (*hugo.BuildReport, error) {
+func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	// Use sentinel errors from internal/build to trigger transient classification.
 	var underlying error
 	switch stage {
-	case "clone_repos":
+	case hugo.StageCloneRepos:
 		underlying = bld.ErrClone
-	case "run_hugo":
+	case hugo.StageRunHugo:
 		underlying = bld.ErrHugo
-	case "discover_docs":
+	case hugo.StageDiscoverDocs:
 		underlying = bld.ErrDiscovery
 	default:
 		underlying = errors.New("transient")
@@ -97,7 +97,7 @@ func transientReport(stage string) (*hugo.BuildReport, error) {
 }
 
 // helper to create a fatal (non-transient) StageError report
-func fatalReport(stage string) (*hugo.BuildReport, error) {
+func fatalReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorFatal, Err: errors.New("fatal")}
 	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[string]string{}}
 	r.Errors = append(r.Errors, se)
@@ -112,7 +112,7 @@ func newJob(id string) *BuildJob {
 func TestRetrySucceedsAfterTransient(t *testing.T) {
 	fr := newFakeRecorder()
 	// First attempt transient failure, second succeeds
-	tr, terr := transientReport("clone_repos")
+	tr, terr := transientReport(hugo.StageCloneRepos)
 	mb := &mockBuilder{seq: []struct {
 		rep *hugo.BuildReport
 		err error
@@ -146,20 +146,20 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 			t.Fatalf("timeout waiting for job completion")
 		}
 	}
-	if fr.getRetry("clone_repos") != 1 {
-		t.Fatalf("expected 1 retry metric, got %d", fr.getRetry("clone_repos"))
+	if fr.getRetry(string(hugo.StageCloneRepos)) != 1 {
+			t.Fatalf("expected 1 retry metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
-	if fr.getExhausted("clone_repos") != 0 {
-		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
+	if fr.getExhausted(string(hugo.StageCloneRepos)) != 0 {
+			t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
 func TestRetryExhausted(t *testing.T) {
 	fr := newFakeRecorder()
 	// Always transient failure, exceed retries
-	tr1, terr1 := transientReport("clone_repos")
-	tr2, terr2 := transientReport("clone_repos")
-	tr3, terr3 := transientReport("clone_repos")
+	tr1, terr1 := transientReport(hugo.StageCloneRepos)
+	tr2, terr2 := transientReport(hugo.StageCloneRepos)
+	tr3, terr3 := transientReport(hugo.StageCloneRepos)
 	mb := &mockBuilder{seq: []struct {
 		rep *hugo.BuildReport
 		err error
@@ -190,17 +190,17 @@ func TestRetryExhausted(t *testing.T) {
 			t.Fatalf("timeout waiting for job completion")
 		}
 	}
-	if fr.getRetry("clone_repos") != 2 {
-		t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry("clone_repos"))
+	if fr.getRetry(string(hugo.StageCloneRepos)) != 2 {
+			t.Fatalf("expected 2 retry attempts metric, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
-	if fr.getExhausted("clone_repos") != 1 {
-		t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted("clone_repos"))
+	if fr.getExhausted(string(hugo.StageCloneRepos)) != 1 {
+			t.Fatalf("expected 1 exhausted metric, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
 func TestNoRetryOnPermanent(t *testing.T) {
 	fr := newFakeRecorder()
-	frpt, ferr := fatalReport("clone_repos")
+	frpt, ferr := fatalReport(hugo.StageCloneRepos)
 	mb := &mockBuilder{seq: []struct {
 		rep *hugo.BuildReport
 		err error
@@ -226,11 +226,11 @@ func TestNoRetryOnPermanent(t *testing.T) {
 			t.Fatalf("timeout waiting for job completion")
 		}
 	}
-	if fr.getRetry("clone_repos") != 0 {
-		t.Fatalf("expected 0 retries, got %d", fr.getRetry("clone_repos"))
+	if fr.getRetry(string(hugo.StageCloneRepos)) != 0 {
+			t.Fatalf("expected 0 retries, got %d", fr.getRetry(string(hugo.StageCloneRepos)))
 	}
-	if fr.getExhausted("clone_repos") != 0 {
-		t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted("clone_repos"))
+	if fr.getExhausted(string(hugo.StageCloneRepos)) != 0 {
+			t.Fatalf("expected 0 exhausted, got %d", fr.getExhausted(string(hugo.StageCloneRepos)))
 	}
 }
 
