@@ -44,6 +44,21 @@ type BuildReport struct {
 	Issues []ReportIssue // not yet populated widely; additive structure
 }
 
+// AddIssue appends a structured issue and (for backward compatibility) mirrors it into legacy
+// Errors/Warnings slices based on severity. Provide err=nil for purely informational issues.
+func (r *BuildReport) AddIssue(code ReportIssueCode, stage StageName, severity IssueSeverity, msg string, transient bool, err error) {
+	issue := ReportIssue{Code: code, Stage: stage, Severity: severity, Message: msg, Transient: transient}
+	r.Issues = append(r.Issues, issue)
+	if err != nil {
+		switch severity {
+		case SeverityError:
+			r.Errors = append(r.Errors, err)
+		case SeverityWarning:
+			r.Warnings = append(r.Warnings, err)
+		}
+	}
+}
+
 // ReportIssueCode enumerates machine-parseable issue identifiers.
 // These codes are stable contract and should only be appended (no reuse on removal).
 type ReportIssueCode string
@@ -56,6 +71,7 @@ const (
 	IssueHugoExecution       ReportIssueCode = "HUGO_EXECUTION"
 	IssueCanceled            ReportIssueCode = "BUILD_CANCELED"
 	IssueAllClonesFailed     ReportIssueCode = "ALL_CLONES_FAILED"
+	IssueGenericStageError   ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
 )
 
 // IssueSeverity represents normalized severity levels.
