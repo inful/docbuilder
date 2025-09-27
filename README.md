@@ -296,6 +296,7 @@ Supported fields:
 | `retry_backoff` | enum | `linear` | Backoff mode: `fixed`, `linear`, or `exponential`. |
 | `retry_initial_delay` | duration | `1s` | Initial retry delay. |
 | `retry_max_delay` | duration | `30s` | Maximum backoff delay cap. |
+| `workspace_dir` | string | `<output.directory>/_workspace` | Directory for cloning repositories during a build. If outside output dir it is not auto-cleaned; enables persistent clone cache. |
 
 Example configuration demonstrating all knobs:
 
@@ -318,6 +319,7 @@ build:
   retry_backoff: exponential
   retry_initial_delay: 1s
   retry_max_delay: 45s
+  workspace_dir: /var/cache/docbuilder/workspace   # persistent clone cache (NOT auto-cleaned)
 ```
 
 Notes & semantics:
@@ -351,6 +353,7 @@ build:
   shallow_depth: 5
   prune_non_doc_paths: true
   prune_allow: [LICENSE*, README.*]
+  # workspace_dir: ./site/_workspace  # (default) can be omitted
 ```
 
 Disable all optimizations (legacy full clone behavior):
@@ -360,6 +363,7 @@ build:
   clone_strategy: fresh
   shallow_depth: 0
   prune_non_doc_paths: false
+  # workspace_dir: ./site/_workspace
 ```
 
 If you encounter mysterious missing images or includes after enabling pruning, re-run with `prune_non_doc_paths: false` to confirm pruning as the cause, then add needed top-level directories or file globs to `prune_allow`.

@@ -8,6 +8,11 @@ repositories:
     auth:
       type: token
       token: "${GIT_ACCESS_TOKEN}"
+build:
+  # Optional persistent workspace for cloned repositories.
+  # If omitted defaults to ./site/_workspace.
+  # Place outside output.directory to persist clones between builds for faster incremental updates.
+  workspace_dir: ./site/_workspace
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"
