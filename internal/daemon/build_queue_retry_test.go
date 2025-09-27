@@ -245,11 +245,8 @@ func TestExponentialBackoffCapped(t *testing.T) {
 	}{{1, 1 * time.Millisecond}, {2, 2 * time.Millisecond}, {3, 4 * time.Millisecond}, {4, 4 * time.Millisecond}}
 	pol := NewRetryPolicy("exponential", initial, max, 5)
 	for _, c := range cases {
-		legacy := computeBackoffDelay("exponential", initial, max, c.retry)
 		got := pol.Delay(c.retry)
-		if got != c.want || legacy != got {
-			 t.Fatalf("retry %d: expected %v got policy=%v legacy=%v", c.retry, c.want, got, legacy)
-		}
+		if got != c.want { t.Fatalf("retry %d: expected %v got %v", c.retry, c.want, got) }
 	}
 }
 
