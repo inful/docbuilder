@@ -62,15 +62,15 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			continue
 		}
 
-		slog.Info("Discovering documentation", slog.String("repository", repoName), slog.Any("paths", repo.Paths))
+		slog.Info("Discovering documentation", logfields.Repository(repoName), slog.Any("paths", repo.Paths))
 
 		for _, docsPath := range repo.Paths {
 			fullDocsPath := filepath.Join(repoPath, docsPath)
 
 			if _, err := os.Stat(fullDocsPath); os.IsNotExist(err) {
 				slog.Warn("Documentation path not found",
-					slog.String("repository", repoName),
-					slog.String("path", docsPath),
+					logfields.Repository(repoName),
+					logfields.Path(docsPath),
 					slog.String("full_path", fullDocsPath))
 				continue
 			}
@@ -83,7 +83,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			d.docFiles = append(d.docFiles, files...)
 		}
 
-		slog.Info("Documentation discovered", slog.String("repository", repoName), slog.Int("files", len(d.docFiles)))
+		slog.Info("Documentation discovered", logfields.Repository(repoName), slog.Int("files", len(d.docFiles)))
 	}
 
 	slog.Info("Total documentation files discovered", slog.Int("count", len(d.docFiles)))
@@ -141,7 +141,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, relativePath string, m
 
 		slog.Debug("Discovered documentation file",
 			logfields.File(relPath),
-			slog.String("repository", repoName),
+			logfields.Repository(repoName),
 			slog.String("section", section))
 
 		return nil
@@ -249,7 +249,7 @@ func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 	docIgnorePath := filepath.Join(repoPath, ".docignore")
 
 	if _, err := os.Stat(docIgnorePath); err == nil {
-		slog.Debug("Found .docignore file", slog.String("path", docIgnorePath))
+		slog.Debug("Found .docignore file", logfields.Path(docIgnorePath))
 		return true, nil
 	} else if os.IsNotExist(err) {
 		return false, nil

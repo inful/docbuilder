@@ -80,8 +80,10 @@ func (r *BuildReport) deriveOutcome() {
 
 // Persist writes the report atomically into the provided root directory (final output dir, not staging).
 // It writes two files:
-//   build-report.json  (machine readable)
-//   build-report.txt   (human summary)
+//
+//	build-report.json  (machine readable)
+//	build-report.txt   (human summary)
+//
 // Best effort; errors are returned for caller logging but do not change build outcome.
 func (r *BuildReport) Persist(root string) error {
 	if r.End.IsZero() { // ensure finished
@@ -119,46 +121,50 @@ func (r *BuildReport) Persist(root string) error {
 // sanitizedCopy returns a shallow copy with error fields converted to strings for JSON friendliness.
 func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 	s := &BuildReportSerializable{
-		Repositories:       r.Repositories,
-		Files:              r.Files,
-		Start:              r.Start,
-		End:                r.End,
-		Errors:             make([]string, len(r.Errors)),
-		Warnings:           make([]string, len(r.Warnings)),
-		StageDurations:     r.StageDurations,
-		StageErrorKinds:    r.StageErrorKinds,
-		ClonedRepositories: r.ClonedRepositories,
-		FailedRepositories: r.FailedRepositories,
+		Repositories:        r.Repositories,
+		Files:               r.Files,
+		Start:               r.Start,
+		End:                 r.End,
+		Errors:              make([]string, len(r.Errors)),
+		Warnings:            make([]string, len(r.Warnings)),
+		StageDurations:      r.StageDurations,
+		StageErrorKinds:     r.StageErrorKinds,
+		ClonedRepositories:  r.ClonedRepositories,
+		FailedRepositories:  r.FailedRepositories,
 		SkippedRepositories: r.SkippedRepositories,
-		RenderedPages:      r.RenderedPages,
-		StageCounts:        r.StageCounts,
-		Outcome:            r.Outcome,
-		StaticRendered:     r.StaticRendered,
-		Retries:            r.Retries,
-		RetriesExhausted:   r.RetriesExhausted,
+		RenderedPages:       r.RenderedPages,
+		StageCounts:         r.StageCounts,
+		Outcome:             r.Outcome,
+		StaticRendered:      r.StaticRendered,
+		Retries:             r.Retries,
+		RetriesExhausted:    r.RetriesExhausted,
 	}
-	for i, e := range r.Errors { s.Errors[i] = e.Error() }
-	for i, w := range r.Warnings { s.Warnings[i] = w.Error() }
+	for i, e := range r.Errors {
+		s.Errors[i] = e.Error()
+	}
+	for i, w := range r.Warnings {
+		s.Warnings[i] = w.Error()
+	}
 	return s
 }
 
 // BuildReportSerializable mirrors BuildReport but with string errors for JSON output.
 type BuildReportSerializable struct {
-	Repositories       int                      `json:"repositories"`
-	Files              int                      `json:"files"`
-	Start              time.Time                `json:"start"`
-	End                time.Time                `json:"end"`
-	Errors             []string                 `json:"errors"`
-	Warnings           []string                 `json:"warnings"`
-	StageDurations     map[string]time.Duration `json:"stage_durations"`
-	StageErrorKinds    map[string]string        `json:"stage_error_kinds"`
-	ClonedRepositories int                      `json:"cloned_repositories"`
-	FailedRepositories int                      `json:"failed_repositories"`
-	SkippedRepositories int                     `json:"skipped_repositories"`
-	RenderedPages      int                      `json:"rendered_pages"`
-	StageCounts        map[string]StageCount    `json:"stage_counts"`
-	Outcome            string                   `json:"outcome"`
-	StaticRendered     bool                     `json:"static_rendered"`
-	Retries            int                      `json:"retries"`
-	RetriesExhausted   bool                     `json:"retries_exhausted"`
+	Repositories        int                      `json:"repositories"`
+	Files               int                      `json:"files"`
+	Start               time.Time                `json:"start"`
+	End                 time.Time                `json:"end"`
+	Errors              []string                 `json:"errors"`
+	Warnings            []string                 `json:"warnings"`
+	StageDurations      map[string]time.Duration `json:"stage_durations"`
+	StageErrorKinds     map[string]string        `json:"stage_error_kinds"`
+	ClonedRepositories  int                      `json:"cloned_repositories"`
+	FailedRepositories  int                      `json:"failed_repositories"`
+	SkippedRepositories int                      `json:"skipped_repositories"`
+	RenderedPages       int                      `json:"rendered_pages"`
+	StageCounts         map[string]StageCount    `json:"stage_counts"`
+	Outcome             string                   `json:"outcome"`
+	StaticRendered      bool                     `json:"static_rendered"`
+	Retries             int                      `json:"retries"`
+	RetriesExhausted    bool                     `json:"retries_exhausted"`
 }

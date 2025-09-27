@@ -206,7 +206,8 @@ func (sm *StateManager) scheduleSave() {
 
 // GetState returns a copy of the current daemon state
 func (sm *StateManager) GetState() *DaemonState {
-	sm.mu.RLock(); defer sm.mu.RUnlock()
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 	return CopyDaemonState(sm.state)
 }
 
@@ -250,7 +251,9 @@ func (sm *StateManager) ListRepositories() []*RepoState {
 	defer sm.mu.RUnlock()
 
 	repos := make([]*RepoState, 0, len(sm.state.Repositories))
-	for _, repo := range sm.state.Repositories { repos = append(repos, CopyRepoState(repo)) }
+	for _, repo := range sm.state.Repositories {
+		repos = append(repos, CopyRepoState(repo))
+	}
 
 	return repos
 }
@@ -313,7 +316,9 @@ func (sm *StateManager) GetBuild(id string) *BuildState {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	if build, exists := sm.state.Builds[id]; exists { return CopyBuildState(build) }
+	if build, exists := sm.state.Builds[id]; exists {
+		return CopyBuildState(build)
+	}
 
 	return nil
 }
@@ -345,7 +350,9 @@ func (sm *StateManager) GetSchedule(id string) *Schedule {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	if schedule, exists := sm.state.Schedules[id]; exists { return CopySchedule(schedule) }
+	if schedule, exists := sm.state.Schedules[id]; exists {
+		return CopySchedule(schedule)
+	}
 
 	return nil
 }
@@ -370,9 +377,12 @@ func (sm *StateManager) RecordDiscovery(repoURL string, documentCount int) {
 
 // GetStatistics returns current daemon statistics
 func (sm *StateManager) GetStatistics() *DaemonStats {
-	sm.mu.RLock(); defer sm.mu.RUnlock()
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 	statsCopy := CopyDaemonStats(sm.state.Statistics)
-	if statsCopy == nil { return &DaemonStats{} }
+	if statsCopy == nil {
+		return &DaemonStats{}
+	}
 	statsCopy.Uptime = time.Since(sm.state.StartTime).Seconds()
 	return statsCopy
 }

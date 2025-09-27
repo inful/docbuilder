@@ -1,11 +1,11 @@
 package hugo
 
 import (
-    "strings"
-    "time"
+	"strings"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    "git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 // FrontMatterInput bundles inputs required to build or augment front matter.
