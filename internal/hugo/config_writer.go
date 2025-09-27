@@ -49,16 +49,16 @@ func (g *Generator) generateHugoConfig() error {
 		"params": params,
 	}
 
-    if g.config.Hugo.Theme != "" {
-        switch g.config.Hugo.Theme {
-        case config.ThemeDocsy:
-            hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
-        case config.ThemeHextra:
-            hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
-        default:
-            hugoConfig["theme"] = g.config.Hugo.Theme
-        }
-    }
+	if g.config.Hugo.Theme != "" {
+		switch g.config.Hugo.Theme {
+		case config.ThemeDocsy:
+			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
+		case config.ThemeHextra:
+			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
+		default:
+			hugoConfig["theme"] = g.config.Hugo.Theme
+		}
+	}
 
 	if g.config.Hugo.Theme == config.ThemeHextra { // math passthrough
 		if m, ok := hugoConfig["markup"].(map[string]interface{}); ok {

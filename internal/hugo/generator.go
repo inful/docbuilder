@@ -65,17 +65,14 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	bs := newBuildState(g, docFiles, report)
 
-	stages := []struct {
-		name string
-		fn   Stage
-	}{
-		{"prepare_output", stagePrepareOutput},
-		{"generate_config", stageGenerateConfig},
-		{"layouts", stageLayouts},
-		{"copy_content", stageCopyContent},
-		{"indexes", stageIndexes},
-		{"run_hugo", stageRunHugo},
-		{"post_process", stagePostProcess},
+	stages := []StageDef{
+		{StagePrepareOutput, stagePrepareOutput},
+		{StageGenerateConfig, stageGenerateConfig},
+		{StageLayouts, stageLayouts},
+		{StageCopyContent, stageCopyContent},
+		{StageIndexes, stageIndexes},
+		{StageRunHugo, stageRunHugo},
+		{StagePostProcess, stagePostProcess},
 	}
 
 	if err := runStages(ctx, bs, stages); err != nil {
@@ -159,19 +156,16 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	bs.Repositories = repositories
 	bs.WorkspaceDir = filepath.Clean(workspaceDir)
 
-	stages := []struct {
-		name string
-		fn   Stage
-	}{
-		{"prepare_output", stagePrepareOutput},
-		{"clone_repos", stageCloneRepos},
-		{"discover_docs", stageDiscoverDocs},
-		{"generate_config", stageGenerateConfig},
-		{"layouts", stageLayouts},
-		{"copy_content", stageCopyContent},
-		{"indexes", stageIndexes},
-		{"run_hugo", stageRunHugo},
-		{"post_process", stagePostProcess},
+	stages := []StageDef{
+		{StagePrepareOutput, stagePrepareOutput},
+		{StageCloneRepos, stageCloneRepos},
+		{StageDiscoverDocs, stageDiscoverDocs},
+		{StageGenerateConfig, stageGenerateConfig},
+		{StageLayouts, stageLayouts},
+		{StageCopyContent, stageCopyContent},
+		{StageIndexes, stageIndexes},
+		{StageRunHugo, stageRunHugo},
+		{StagePostProcess, stagePostProcess},
 	}
 	if err := runStages(ctx, bs, stages); err != nil {
 		// derive outcome even on error for observability; cleanup staging

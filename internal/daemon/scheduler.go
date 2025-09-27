@@ -264,14 +264,14 @@ func (s *Scheduler) executeSchedule(schedule *Schedule, now time.Time) {
 	if err := s.buildQueue.Enqueue(job); err != nil {
 		schedule.ErrorCount++
 		schedule.LastError = fmt.Sprintf("Failed to enqueue build job: %v", err)
-			slog.Error("Failed to enqueue scheduled build", logfields.ScheduleID(schedule.ID), logfields.Error(err))
+		slog.Error("Failed to enqueue scheduled build", logfields.ScheduleID(schedule.ID), logfields.Error(err))
 	}
 
 	// Calculate next run time
 	if err := s.calculateNextRun(schedule); err != nil {
 		schedule.ErrorCount++
 		schedule.LastError = fmt.Sprintf("Failed to calculate next run: %v", err)
-			slog.Error("Failed to calculate next run for schedule", logfields.ScheduleID(schedule.ID), logfields.Error(err))
+		slog.Error("Failed to calculate next run for schedule", logfields.ScheduleID(schedule.ID), logfields.Error(err))
 		// Disable the schedule if we can't calculate the next run
 		schedule.Enabled = false
 	}
