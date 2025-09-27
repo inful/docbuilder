@@ -52,7 +52,7 @@ daemon:
     webhook_port: 8081   # Webhook receiver port  
     admin_port: 8082     # Admin/management API port
   sync:
-    schedule: "*/15 * * * *"  # Every 15 minutes
+    schedule: "*/2 * * * *"  # Every 15 minutes
     concurrent_builds: 2
     queue_size: 10
   storage:
