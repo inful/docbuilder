@@ -51,7 +51,7 @@ func TestGenerateIndexPages(t *testing.T) {
 	}
 	if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { // lenient: tolerate missing specific phrase but ensure file has some content
 		if len(strings.TrimSpace(string(rb))) == 0 {
-				 t.Fatalf("repo index unexpectedly empty")
+			t.Fatalf("repo index unexpectedly empty")
 		}
 	}
 	if !strings.Contains(string(rb), "alpha/") || !strings.Contains(string(rb), "beta/") {

@@ -6,8 +6,10 @@ package hugo
 
 // buildRoot returns the directory that active build stages should write into (staging if present, else final output).
 func (g *Generator) buildRoot() string {
-    if g.stageDir != "" { return g.stageDir }
-    return g.outputDir
+	if g.stageDir != "" {
+		return g.stageDir
+	}
+	return g.outputDir
 }
 
 // finalRoot returns the final output directory path (even if staging is active).

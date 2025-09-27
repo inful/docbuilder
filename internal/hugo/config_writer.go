@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,16 +49,16 @@ func (g *Generator) generateHugoConfig() error {
 		"params": params,
 	}
 
-	if g.config.Hugo.Theme != "" {
-		switch g.config.Hugo.Theme {
-		case config.ThemeDocsy:
-			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
-		case config.ThemeHextra:
-			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
-		default:
-			hugoConfig["theme"] = g.config.Hugo.Theme
-		}
-	}
+    if g.config.Hugo.Theme != "" {
+        switch g.config.Hugo.Theme {
+        case config.ThemeDocsy:
+            hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
+        case config.ThemeHextra:
+            hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
+        default:
+            hugoConfig["theme"] = g.config.Hugo.Theme
+        }
+    }
 
 	if g.config.Hugo.Theme == config.ThemeHextra { // math passthrough
 		if m, ok := hugoConfig["markup"].(map[string]interface{}); ok {
@@ -119,6 +120,6 @@ func (g *Generator) generateHugoConfig() error {
 			slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 		}
 	}
-	slog.Info("Generated Hugo configuration", "path", configPath)
+	slog.Info("Generated Hugo configuration", logfields.Path(configPath))
 	return nil
 }

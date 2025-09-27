@@ -509,8 +509,8 @@ func (s *HTTPServer) handleWebhookRequest(w http.ResponseWriter, r *http.Request
 
 	// TODO: Implement webhook processing with daemon
 	slog.Info("Webhook received",
-		slog.String("forge_type", forgeType),
-		slog.Int64("content_length", r.ContentLength),
+		logfields.ForgeType(forgeType),
+		logfields.ContentLength(r.ContentLength),
 		logfields.UserAgent(r.UserAgent()))
 
 	// For now, just acknowledge receipt

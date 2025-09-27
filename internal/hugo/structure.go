@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // createHugoStructure creates the basic Hugo directory structure
@@ -70,7 +72,7 @@ func (g *Generator) finalizeStaging() error {
 	// Remove previous backup asynchronously (non-critical)
 	go func(p string) {
 		if err := os.RemoveAll(p); err != nil {
-			slog.Warn("Failed to remove previous backup", "path", p, "error", err)
+			slog.Warn("Failed to remove previous backup", logfields.Path(p), "error", err)
 		}
 	}(prev)
 	slog.Info("Promoted staging directory", "output", g.outputDir)

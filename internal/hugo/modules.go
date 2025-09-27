@@ -1,13 +1,14 @@
 package hugo
 
 import (
-	"fmt"
-	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
+    "fmt"
+    "log/slog"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
+    "git.home.luguber.info/inful/docbuilder/internal/config"
+    "git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work
@@ -51,7 +52,7 @@ func (g *Generator) ensureGoModForModules() error {
 					if writeErr := os.WriteFile(goModPath, []byte(newContent), 0644); writeErr != nil {
 						slog.Warn("Failed to rewrite invalid go.mod module line", "error", writeErr)
 					} else {
-						slog.Debug("Rewrote go.mod with sanitized module name", "path", goModPath, "module", sanitized)
+						slog.Debug("Rewrote go.mod with sanitized module name", logfields.Path(goModPath), "module", sanitized)
 					}
 				}
 			}
@@ -63,7 +64,7 @@ func (g *Generator) ensureGoModForModules() error {
 	if err := os.WriteFile(goModPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write go.mod: %w", err)
 	}
-	slog.Debug("Created go.mod for Hugo Modules", "path", goModPath)
+	slog.Debug("Created go.mod for Hugo Modules", logfields.Path(goModPath))
 	return g.ensureThemeVersionRequires(goModPath)
 }
 

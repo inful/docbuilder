@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -30,7 +31,7 @@ func NewClient(workspaceDir string) *Client {
 func (c *Client) CloneRepository(repo config.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 
-	slog.Debug("Cloning repository", "url", repo.URL, "name", repo.Name, "branch", repo.Branch, "path", repoPath)
+	slog.Debug("Cloning repository", "url", repo.URL, "name", repo.Name, "branch", repo.Branch, logfields.Path(repoPath))
 
 	// Remove existing directory if it exists
 	if err := os.RemoveAll(repoPath); err != nil {
@@ -71,12 +72,12 @@ func (c *Client) CloneRepository(repo config.Repository) (string, error) {
 			"name", repo.Name,
 			"url", repo.URL,
 			"commit", ref.Hash().String()[:8],
-			"path", repoPath)
+			logfields.Path(repoPath))
 	} else {
 		slog.Info("Repository cloned successfully",
 			"name", repo.Name,
 			"url", repo.URL,
-			"path", repoPath)
+			logfields.Path(repoPath))
 	}
 
 	return repoPath, nil
@@ -88,7 +89,7 @@ func (c *Client) UpdateRepository(repo config.Repository) (string, error) {
 
 	// Check if repository already exists
 	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err == nil {
-		slog.Debug("Updating existing repository", "name", repo.Name, "path", repoPath)
+		slog.Debug("Updating existing repository", "name", repo.Name, logfields.Path(repoPath))
 		return c.updateExistingRepo(repoPath, repo)
 	}
 
@@ -209,7 +210,7 @@ func (c *Client) CleanWorkspace() error {
 		}
 	}
 
-	slog.Info("Workspace cleaned", "path", c.workspaceDir)
+	slog.Info("Workspace cleaned", logfields.Path(c.workspaceDir))
 	return nil
 }
 
@@ -218,7 +219,7 @@ func (c *Client) CheckDocIgnore(repoPath string) (bool, error) {
 	docIgnorePath := filepath.Join(repoPath, ".docignore")
 
 	if _, err := os.Stat(docIgnorePath); err == nil {
-		slog.Debug("Found .docignore file", "path", docIgnorePath)
+		slog.Debug("Found .docignore file", logfields.Path(docIgnorePath))
 		return true, nil
 	} else if os.IsNotExist(err) {
 		return false, nil
