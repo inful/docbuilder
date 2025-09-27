@@ -75,7 +75,7 @@ func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 		return err
 	}
 	s := string(b)
-	if g.config.Hugo.Theme == config.ThemeHextra { // pin version
+	if g.config.Hugo.ThemeType() == config.ThemeHextra { // pin version
 		const hextraModule = "github.com/imfing/hextra"
 		const hextraVersion = "v0.11.0"
 		if !strings.Contains(s, hextraModule) {

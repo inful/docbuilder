@@ -16,7 +16,7 @@ import (
 //   - Corresponding repository config is found
 //   - Repository URL matches a supported forge pattern (github, gitlab, bitbucket, gitea/forgejo)
 func generatePerPageEditURL(cfg *config.Config, file docs.DocFile) string {
-	if cfg == nil || cfg.Hugo.Theme != config.ThemeHextra {
+	if cfg == nil || cfg.Hugo.ThemeType() != config.ThemeHextra {
 		return ""
 	}
 	if cfg.Hugo.Params != nil { // site-level base suppression

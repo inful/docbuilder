@@ -74,7 +74,7 @@ func NewPrometheusRecorder(reg *prom.Registry) *PrometheusRecorder {
 		pr.retriesExhausted = prom.NewCounterVec(prom.CounterOpts{
 			Namespace: "docbuilder",
 			Name:      "build_retry_exhausted_total",
-			Help:      "Count of stages where retries were exhausted", 
+			Help:      "Count of stages where retries were exhausted",
 		}, []string{"stage"})
 		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted)
 	})

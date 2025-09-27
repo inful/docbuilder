@@ -186,7 +186,7 @@ func applyDefaults(config *Config) error {
 		config.Hugo.Title = "Documentation Portal"
 	}
 	if config.Hugo.Theme == "" {
-		config.Hugo.Theme = ThemeHextra
+		config.Hugo.Theme = string(ThemeHextra)
 	}
 
 	// Output defaults
@@ -320,21 +320,21 @@ func validateConfig(config *Config) error {
 		}
 
 		// Require at least one organization or group to be specified. This keeps discovery bounded
-	// Validate explicit repository auth blocks (if provided)
-	for _, repo := range config.Repositories {
-		if repo.Auth != nil {
-			switch repo.Auth.Type {
-			case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
-				// valid
-			default:
-				return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
-			}
-			// Token emptiness allowed (environment may supply later)
-			if repo.Auth.Type == AuthTypeBasic && (repo.Auth.Username == "" || repo.Auth.Password == "") {
-				return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
+		// Validate explicit repository auth blocks (if provided)
+		for _, repo := range config.Repositories {
+			if repo.Auth != nil {
+				switch repo.Auth.Type {
+				case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
+					// valid
+				default:
+					return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
+				}
+				// Token emptiness allowed (environment may supply later)
+				if repo.Auth.Type == AuthTypeBasic && (repo.Auth.Username == "" || repo.Auth.Password == "") {
+					return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
+				}
 			}
 		}
-	}
 		// and matches test expectations for explicit configuration (auto-discovery can be added
 		// later behind a dedicated flag to avoid surprising large scans).
 		if len(forge.Organizations) == 0 && len(forge.Groups) == 0 {
