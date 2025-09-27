@@ -11,6 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
@@ -161,7 +162,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	// Set global reference for metrics bridge (prometheus build only uses it).
 	defaultDaemonInstance = d
-	slog.Info("Starting DocBuilder daemon", "version", "2.0")
+	slog.Info("Starting DocBuilder daemon", slog.String("version", "2.0"))
 
 	// Load persistent state
 	if err := d.stateManager.Load(); err != nil {
@@ -195,11 +196,10 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.metrics.IncrementCounter("daemon_successful_starts")
 
 	slog.Info("DocBuilder daemon started successfully",
-		"uptime", 0,
-		"forges", len(d.config.Forges),
-		"docs_port", d.config.Daemon.HTTP.DocsPort,
-		"admin_port", d.config.Daemon.HTTP.AdminPort,
-		"webhook_port", d.config.Daemon.HTTP.WebhookPort)
+		slog.Int("forges", len(d.config.Forges)),
+		slog.Int("docs_port", d.config.Daemon.HTTP.DocsPort),
+		slog.Int("admin_port", d.config.Daemon.HTTP.AdminPort),
+		slog.Int("webhook_port", d.config.Daemon.HTTP.WebhookPort))
 
 	// Release lock before entering long-running loop to avoid blocking read operations (e.g., /status)
 	d.mu.Unlock()
@@ -266,7 +266,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	d.status.Store(StatusStopped)
 
 	uptime := time.Since(d.startTime)
-	slog.Info("DocBuilder daemon stopped", "uptime", uptime)
+	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
 
 	return nil
 }
@@ -302,15 +302,15 @@ func (d *Daemon) TriggerDiscovery() string {
 		atomic.AddInt32(&d.activeJobs, 1)
 		defer atomic.AddInt32(&d.activeJobs, -1)
 
-		slog.Info("Manual discovery triggered", "job_id", jobID)
+		slog.Info("Manual discovery triggered", logfields.JobID(jobID))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
 		if err := d.runDiscovery(ctx); err != nil {
-			slog.Error("Discovery failed", "job_id", jobID, "error", err)
-		} else {
-			slog.Info("Discovery completed", "job_id", jobID)
+				slog.Error("Discovery failed", logfields.JobID(jobID), slog.String("error", err.Error()))
+			} else {
+				slog.Info("Discovery completed", logfields.JobID(jobID))
 		}
 	}()
 
@@ -333,7 +333,7 @@ func (d *Daemon) TriggerBuild() string {
 	}
 
 	if err := d.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue build job", "job_id", jobID, "error", err)
+		slog.Error("Failed to enqueue build job", logfields.JobID(jobID), slog.String("error", err.Error()))
 		return ""
 	}
 
@@ -425,10 +425,10 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 	d.discoveryCacheMu.Unlock()
 
 	slog.Info("Repository discovery completed",
-		"duration", duration,
-		"repositories_found", len(result.Repositories),
-		"repositories_filtered", len(result.Filtered),
-		"errors", len(result.Errors))
+		slog.Duration("duration", duration),
+		slog.Int("repositories_found", len(result.Repositories)),
+		slog.Int("repositories_filtered", len(result.Filtered)),
+		slog.Int("errors", len(result.Errors)))
 
 	// Store discovery results in state
 	if d.stateManager != nil {
@@ -457,7 +457,7 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 		}
 
 		if err := d.buildQueue.Enqueue(job); err != nil {
-			slog.Error("Failed to enqueue auto-build", "error", err)
+			slog.Error("Failed to enqueue auto-build", slog.String("error", err.Error()))
 		}
 	}
 
@@ -540,7 +540,7 @@ func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *c
 	// Update discovery service
 	d.discovery = forge.NewDiscoveryService(newForgeManager, newConfig.Filtering)
 
-	slog.Info("Forge manager reloaded", "forge_count", len(newConfig.Forges))
+	slog.Info("Forge manager reloaded", slog.Int("forge_count", len(newConfig.Forges)))
 	return nil
 }
 

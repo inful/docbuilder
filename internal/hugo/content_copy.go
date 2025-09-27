@@ -39,13 +39,13 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		if err := os.WriteFile(outputPath, p.Raw, 0644); err != nil {
 			return fmt.Errorf("failed to write file %s: %w", outputPath, err)
 		}
-		slog.Debug("Copied content file", "source", file.RelativePath, "destination", file.GetHugoPath())
+		slog.Debug("Copied content file", slog.String("source", file.RelativePath), slog.String("destination", file.GetHugoPath()))
 		// We cannot directly access BuildReport here cleanly without refactor; use optional callback if set.
 		if g.onPageRendered != nil {
 			g.onPageRendered()
 		}
 	}
-	slog.Info("Copied all content files", "count", len(docFiles))
+	slog.Info("Copied all content files", slog.Int("count", len(docFiles)))
 	return nil
 }
 
