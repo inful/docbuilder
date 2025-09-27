@@ -50,7 +50,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 	for repoName, repoPath := range repoPaths {
 		repo, exists := d.repositories[repoName]
 		if !exists {
-			slog.Warn("Repository configuration not found", "name", repoName)
+			slog.Warn("Repository configuration not found", logfields.Name(repoName))
 			continue
 		}
 
