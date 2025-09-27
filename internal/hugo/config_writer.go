@@ -23,9 +23,10 @@ func (g *Generator) generateHugoConfig() error {
 	}
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
-	if g.config.Hugo.ThemeType() == config.ThemeDocsy {
+	features := g.deriveThemeFeatures()
+	if features.Name == config.ThemeDocsy {
 		g.addDocsyParams(params)
-	} else if g.config.Hugo.ThemeType() == config.ThemeHextra {
+	} else if features.Name == config.ThemeHextra {
 		g.addHextraParams(params)
 	}
 
@@ -50,17 +51,14 @@ func (g *Generator) generateHugoConfig() error {
 	}
 
 	if g.config.Hugo.Theme != "" {
-		switch g.config.Hugo.ThemeType() {
-		case config.ThemeDocsy:
-			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/google/docsy"}}}
-		case config.ThemeHextra:
-			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": "github.com/imfing/hextra"}}}
-		default:
+		if features.UsesModules && features.ModulePath != "" {
+			hugoConfig["module"] = map[string]interface{}{"imports": []map[string]interface{}{{"path": features.ModulePath}}}
+		} else {
 			hugoConfig["theme"] = g.config.Hugo.Theme
 		}
 	}
 
-	if g.config.Hugo.ThemeType() == config.ThemeHextra { // math passthrough
+	if features.EnableMathPassthrough { // math passthrough
 		if m, ok := hugoConfig["markup"].(map[string]interface{}); ok {
 			gm, _ := m["goldmark"].(map[string]interface{})
 			if gm == nil {
@@ -82,12 +80,12 @@ func (g *Generator) generateHugoConfig() error {
 		}
 	}
 
-	if g.config.Hugo.ThemeType() == config.ThemeDocsy { // offline search JSON
+	if features.EnableOfflineSearchJSON { // offline search JSON
 		hugoConfig["outputs"] = map[string]interface{}{"home": []string{"HTML", "RSS", "JSON"}}
 	}
 
 	// Menu handling
-	if g.config.Hugo.ThemeType() == config.ThemeHextra {
+	if features.AutoMainMenu {
 		if g.config.Hugo.Menu == nil {
 			mainMenu := []map[string]interface{}{
 				{"name": "Search", "weight": 4, "params": map[string]interface{}{"type": "search"}},
@@ -103,7 +101,7 @@ func (g *Generator) generateHugoConfig() error {
 		} else {
 			hugoConfig["menu"] = g.config.Hugo.Menu
 		}
-	} else if g.config.Hugo.Menu != nil { // non-hextra explicit menu
+	} else if g.config.Hugo.Menu != nil { // explicit menu retained
 		hugoConfig["menu"] = g.config.Hugo.Menu
 	}
 
@@ -115,7 +113,7 @@ func (g *Generator) generateHugoConfig() error {
 		return fmt.Errorf("failed to write Hugo config: %w", err)
 	}
 
-	if g.config.Hugo.ThemeType() == config.ThemeDocsy || g.config.Hugo.ThemeType() == config.ThemeHextra {
+	if features.UsesModules { // all current module-using themes
 		if err := g.ensureGoModForModules(); err != nil {
 			slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 		}

@@ -22,6 +22,39 @@ type Generator struct {
 	recorder       metrics.Recorder
 }
 
+// ThemeFeatures describes capability flags & module path for the selected theme.
+type ThemeFeatures struct {
+	Name                   config.Theme
+	UsesModules            bool
+	ModulePath             string
+	EnableMathPassthrough  bool
+	EnableOfflineSearchJSON bool
+	AutoMainMenu           bool // if true and no explicit menu, we inject default main menu
+}
+
+// deriveThemeFeatures inspects configuration and returns normalized feature flags.
+func (g *Generator) deriveThemeFeatures() ThemeFeatures {
+	t := g.config.Hugo.ThemeType()
+	feats := ThemeFeatures{Name: t}
+	switch t {
+	case config.ThemeHextra:
+		feats.UsesModules = true
+		feats.ModulePath = "github.com/imfing/hextra"
+		feats.EnableMathPassthrough = true
+		feats.EnableOfflineSearchJSON = false // Hextra's offline search handled via params; no outputs JSON needed
+		feats.AutoMainMenu = true
+	case config.ThemeDocsy:
+		feats.UsesModules = true
+		feats.ModulePath = "github.com/google/docsy"
+		feats.EnableMathPassthrough = false
+		feats.EnableOfflineSearchJSON = true
+		feats.AutoMainMenu = false
+	default:
+		// unknown/custom theme - no special features
+	}
+	return feats
+}
+
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	return &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
