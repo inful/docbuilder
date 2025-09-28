@@ -52,14 +52,6 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 	return "", fmt.Errorf("git %s failed after retries: %w", op, lastErr)
 }
 
-// computeBackoffDelay retained for backward-compatible unit tests; delegates to shared policy.
-func computeBackoffDelay(strategy string, attempt int, initial, max time.Duration) time.Duration {
-	if attempt < 0 {
-		attempt = 0
-	}
-	pol := retry.NewPolicy(appcfg.NormalizeRetryBackoff(strategy), initial, max, attempt+1)
-	return pol.Delay(attempt + 1)
-}
 
 func isPermanentGitError(err error) bool {
 	if err == nil {
@@ -82,5 +74,5 @@ func isPermanentGitError(err error) bool {
 	return false
 }
 
-// expose IsPermanentGitError for tests within package (computeBackoffDelay kept above)
+// expose IsPermanentGitError for tests within package
 var IsPermanentGitError = isPermanentGitError
