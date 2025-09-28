@@ -193,6 +193,20 @@ func (sm *StateManager) GetLastReportChecksum() string {
 	return ""
 }
 
+// SetLastGlobalDocFilesHash stores the global doc_files_hash from the last successful build.
+func (sm *StateManager) SetLastGlobalDocFilesHash(hash string) {
+    if hash == "" { return }
+    sm.SetConfiguration("last_global_doc_files_hash", hash)
+}
+
+// GetLastGlobalDocFilesHash retrieves the persisted global doc_files_hash.
+func (sm *StateManager) GetLastGlobalDocFilesHash() string {
+    if v, ok := sm.GetConfiguration("last_global_doc_files_hash"); ok {
+        if s, ok2 := v.(string); ok2 { return s }
+    }
+    return ""
+}
+
 // BuildState tracks the state of builds
 type BuildState struct {
 	ID            string                 `json:"id"`
