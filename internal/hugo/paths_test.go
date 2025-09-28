@@ -13,7 +13,7 @@ import (
 func TestPathHelpers_Contract(t *testing.T) {
 	base := t.TempDir()
 	out := filepath.Join(base, "site")
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, out)
 
 	// Initial (no staging)

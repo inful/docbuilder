@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestLoadV2Config(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	// Create a temporary v2 config file
 	configContent := `version: "2.0"
 daemon:
@@ -93,7 +93,7 @@ output:
 	tmpFile.Close()
 
 	// Test loading
-	config, err := LoadV2(tmpFile.Name())
+	config, err := Load(tmpFile.Name())
 	if err != nil {
 		t.Fatalf("LoadV2() error: %v", err)
 	}
@@ -158,7 +158,7 @@ output:
 	}
 }
 
-func TestV2ConfigDefaults(t *testing.T) {
+func TestConfigDefaults(t *testing.T) {
 	// Create minimal v2 config
 	configContent := `version: "2.0"
 forges:
@@ -183,7 +183,7 @@ hugo:
 	}
 	tmpFile.Close()
 
-	config, err := LoadV2(tmpFile.Name())
+	config, err := Load(tmpFile.Name())
 	if err != nil {
 		t.Fatalf("LoadV2() error: %v", err)
 	}
@@ -230,7 +230,7 @@ hugo:
 	}
 }
 
-func TestV2ConfigValidation(t *testing.T) {
+func TestConfigValidation(t *testing.T) {
 	tests := []struct {
 		name          string
 		configContent string
@@ -332,7 +332,7 @@ versioning:
 			}
 			tmpFile.Close()
 
-			_, err = LoadV2(tmpFile.Name())
+			_, err = Load(tmpFile.Name())
 			if err == nil {
 				t.Errorf("LoadV2() expected error, got nil")
 				return
@@ -345,7 +345,7 @@ versioning:
 	}
 }
 
-func TestInitV2(t *testing.T) {
+func TestInit(t *testing.T) {
 	tmpDir := os.TempDir()
 	configPath := tmpDir + "/test-init-v2.yaml"
 
@@ -353,7 +353,7 @@ func TestInitV2(t *testing.T) {
 	defer os.Remove(configPath)
 
 	// Test initialization
-	err := InitV2(configPath, false)
+	err := Init(configPath, false)
 	if err != nil {
 		t.Fatalf("InitV2() error: %v", err)
 	}
@@ -364,7 +364,7 @@ func TestInitV2(t *testing.T) {
 	}
 
 	// Test loading the initialized config
-	config, err := LoadV2(configPath)
+	config, err := Load(configPath)
 	if err != nil {
 		t.Fatalf("Failed to load initialized config: %v", err)
 	}
@@ -378,19 +378,19 @@ func TestInitV2(t *testing.T) {
 	}
 
 	// Test overwrite protection
-	err = InitV2(configPath, false)
+	err = Init(configPath, false)
 	if err == nil {
 		t.Error("InitV2() should fail when file exists and force=false")
 	}
 
 	// Test force overwrite
-	err = InitV2(configPath, true)
+	err = Init(configPath, true)
 	if err != nil {
 		t.Errorf("InitV2() with force should succeed: %v", err)
 	}
 }
 
-func TestIsV2Config(t *testing.T) {
+func TestIsConfigVersion(t *testing.T) {
 	tests := []struct {
 		name          string
 		configContent string
@@ -441,7 +441,7 @@ forges:
 			}
 			tmpFile.Close()
 
-			isV2, err := IsV2Config(tmpFile.Name())
+			isV2, err := IsConfigVersion(tmpFile.Name())
 
 			if tt.expectedError && err == nil {
 				t.Errorf("IsV2Config() expected error, got nil")
@@ -460,7 +460,7 @@ forges:
 	}
 
 	// Test non-existent file
-	isV2, err := IsV2Config("/non/existent/file.yaml")
+	isV2, err := IsConfigVersion("/non/existent/file.yaml")
 	if err == nil {
 		t.Error("IsV2Config() should error for non-existent file")
 	}
@@ -496,7 +496,7 @@ hugo:
 	}
 	tmpFile.Close()
 
-	config, err := LoadV2(tmpFile.Name())
+	config, err := Load(tmpFile.Name())
 	if err != nil {
 		t.Fatalf("LoadV2() error: %v", err)
 	}

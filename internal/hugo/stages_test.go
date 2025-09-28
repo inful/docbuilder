@@ -10,7 +10,7 @@ import (
 
 // Test that stage timings are recorded and sum is <= total duration.
 func TestStageRunnerTimings(t *testing.T) {
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 	doc := docs.DocFile{Repository: "repo1", Name: "readme", RelativePath: "README.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Title")}
 	report, err := gen.GenerateSiteWithReport([]docs.DocFile{doc})
