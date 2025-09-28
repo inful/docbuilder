@@ -123,7 +123,7 @@ func (p *Page) applyPatches() {
 	for k, v := range p.OriginalFrontMatter {
 		base[k] = v
 	}
-	// legacy FrontMatter injection removed; patches must be explicitly added by transformers
+	// Patches are applied in priority order; OriginalFrontMatter remains immutable baseline.
 	sort.SliceStable(p.Patches, func(i, j int) bool { return p.Patches[i].Priority < p.Patches[j].Priority })
 	for _, patch := range p.Patches {
 		if patch.Data == nil {
@@ -404,7 +404,7 @@ type MergeFrontMatterTransformer struct{}
 func (m *MergeFrontMatterTransformer) Name() string { return "front_matter_merge" }
 func (m *MergeFrontMatterTransformer) Transform(p *Page) error {
 	p.applyPatches()
-	// legacy FrontMatter field removed; consumers should use MergedFrontMatter
+	// After merge, downstream transformers should consult MergedFrontMatter.
 	return nil
 }
 
