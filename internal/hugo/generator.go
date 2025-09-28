@@ -173,6 +173,17 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		return nil, err
 	}
 
+	// Compute doc files hash (direct generation path bypasses discovery stage where this normally occurs)
+	if report.DocFilesHash == "" && len(docFiles) > 0 {
+		paths := make([]string, 0, len(docFiles))
+		for _, f := range docFiles { paths = append(paths, f.GetHugoPath()) }
+		// Simple insertion sort to avoid importing sort (small slice typical for tests)
+		for i := 1; i < len(paths); i++ { j := i; for j > 0 && paths[j-1] > paths[j] { paths[j-1], paths[j] = paths[j], paths[j-1]; j-- } }
+		h := sha256.New()
+		for _, p := range paths { _, _ = h.Write([]byte(p)); _, _ = h.Write([]byte{0}) }
+		report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
+	}
+
 	// Stage durations already written directly to report.
 
 	report.deriveOutcome()
