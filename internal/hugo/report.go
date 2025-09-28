@@ -48,6 +48,8 @@ type BuildReport struct {
 	// CloneStageSkipped is true when the pipeline did not include the clone_repos stage (direct generation path)
 	// and false when the clone stage was part of the pipeline (even if it processed zero repositories).
 	CloneStageSkipped bool
+	// DocFilesHash is a stable hash (sha256 hex) of the discovered documentation file Hugo paths (sorted) for cache invalidation decisions.
+	DocFilesHash string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -247,6 +249,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		SkipReason:          r.SkipReason,
 		IndexTemplates:      r.IndexTemplates,
 		CloneStageSkipped:   r.CloneStageSkipped,
+		DocFilesHash:        r.DocFilesHash,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -281,4 +284,5 @@ type BuildReportSerializable struct {
 	SkipReason          string                       `json:"skip_reason,omitempty"`
 	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
 	CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
+	DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
 }

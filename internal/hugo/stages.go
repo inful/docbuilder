@@ -2,11 +2,14 @@ package hugo
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -491,6 +494,21 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	}
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
+
+	// Compute stable hash of discovered doc file Hugo paths (sorted). Useful for external cache invalidation.
+	if bs.Report != nil {
+		paths := make([]string, 0, len(docFiles))
+		for _, f := range docFiles {
+			paths = append(paths, f.GetHugoPath())
+		}
+		sort.Strings(paths)
+		h := sha256.New()
+		for _, p := range paths {
+			_, _ = h.Write([]byte(p))
+			_, _ = h.Write([]byte{0}) // separator to avoid accidental boundary ambiguities
+		}
+		bs.Report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
+	}
 	return nil
 }
 

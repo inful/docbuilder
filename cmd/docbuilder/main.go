@@ -183,7 +183,7 @@ func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bo
 
 	// Discover documentation files
 	slog.Info("Starting documentation discovery")
-	discovery := docs.NewDiscovery(cfg.Repositories)
+	discovery := docs.NewDiscovery(cfg.Repositories, &cfg.Build)
 
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
 	if err != nil {
@@ -270,7 +270,7 @@ func runDiscover(cfg *config.Config, specificRepo string) error {
 	}
 
 	// Discover documentation files
-	discovery := docs.NewDiscovery(reposToProcess)
+	discovery := docs.NewDiscovery(reposToProcess, &cfg.Build)
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
 	if err != nil {
 		return err
