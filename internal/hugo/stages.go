@@ -495,6 +495,12 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
 
+	// If a state manager is attached via generator (opaque interface expectation) update preliminary per-repo doc counts & hashes.
+	if bs.Generator != nil && bs.Generator.config != nil {
+		// We attach state manager through an optional interface on Generator (metadata not directly stored). Look in config.Params for a hidden handle not ideal; instead expose a hook later. For now, attempt dynamic retrieval from environment variable key not implemented.
+		// Placeholder no-op: direct wiring done in daemon builder after full site generation.
+	}
+
 	// Compute stable hash of discovered doc file Hugo paths (sorted). Useful for external cache invalidation.
 	if bs.Report != nil {
 		paths := make([]string, 0, len(docFiles))
