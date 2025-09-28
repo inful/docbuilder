@@ -135,6 +135,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		repoSet[f.Repository] = struct{}{}
 	}
 	report := newBuildReport(len(repoSet), len(docFiles))
+	// Direct generation path bypasses clone stage entirely.
+	report.CloneStageSkipped = true
 	// instrumentation hook to count rendered pages
 	g.onPageRendered = func() { report.RenderedPages++ }
 
@@ -153,6 +155,10 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	if err := runStages(ctx, bs, stages); err != nil {
 		// cleanup staging dir on failure
 		g.abortStaging()
+		// If clone stage executed (presence of durations entry) flip flag.
+		if _, ok := report.StageDurations[string(StageCloneRepos)]; ok {
+			report.CloneStageSkipped = false
+		}
 		return nil, err
 	}
 
@@ -162,6 +168,9 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	report.finish()
 	if err := g.finalizeStaging(); err != nil {
 		return nil, fmt.Errorf("finalize staging: %w", err)
+	}
+	if _, ok := report.StageDurations[string(StageCloneRepos)]; ok {
+		report.CloneStageSkipped = false
 	}
 	// Persist report (best effort) inside final output directory
 	if err := report.Persist(g.outputDir); err != nil {
@@ -187,6 +196,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 // repositories: list of repositories to process. workspaceDir: directory for git operations (created if missing).
 func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.Repository, workspaceDir string) (*BuildReport, error) {
 	report := newBuildReport(0, 0) // counts filled after discovery
+	// By default full site path includes clone stage; mark skipped=false (may stay false)
+	report.CloneStageSkipped = false
 	if err := g.beginStaging(); err != nil {
 		return nil, err
 	}
