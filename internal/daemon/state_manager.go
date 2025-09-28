@@ -46,6 +46,7 @@ type RepoState struct {
 	BuildCount    int64                  `json:"build_count"`
 	ErrorCount    int64                  `json:"error_count"`
 	LastError     string                 `json:"last_error,omitempty"`
+	DocFilesHash  string                 `json:"doc_files_hash,omitempty"` // hash of doc file set for incremental detection
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -95,6 +96,39 @@ func (sm *StateManager) SetRepoDocumentCount(url string, count int) {
 	// Overwrite unconditionally; if callers want monotonic behavior they must enforce upstream.
 	rs.DocumentCount = count
 	sm.scheduleSave()
+}
+
+// SetRepoDocFilesHash sets the stable doc files hash for a repository.
+func (sm *StateManager) SetRepoDocFilesHash(url, hash string) {
+	if url == "" || hash == "" {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	rs, ok := sm.state.Repositories[url]
+	if !ok {
+		name := url
+		if slash := strings.LastIndex(url, "/"); slash >= 0 && slash+1 < len(url) {
+			name = strings.TrimSuffix(url[slash+1:], ".git")
+		}
+	rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
+		sm.state.Repositories[url] = rs
+	}
+	rs.DocFilesHash = hash
+	sm.scheduleSave()
+}
+
+// GetRepoDocFilesHash returns the stored doc files hash for a repository.
+func (sm *StateManager) GetRepoDocFilesHash(url string) string {
+	if url == "" {
+		return ""
+	}
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if rs, ok := sm.state.Repositories[url]; ok {
+		return rs.DocFilesHash
+	}
+	return ""
 }
 
 // SetRepoLastCommit updates the stored last commit for a repository (by URL) creating state if necessary.
