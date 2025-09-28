@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"log/slog"
 	"os"
@@ -37,21 +38,16 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": time.Now().Format("2006-01-02T15:04:05-07:00"), "type": "docs"}
 	if g.config.Hugo.ThemeType() == config.ThemeHextra { frontMatter["cascade"] = map[string]any{"type": "docs"} }
 	fmData, err := yaml.Marshal(frontMatter); if err != nil { return fmt.Errorf("failed to marshal front matter: %w", err) }
-	// User template (params.index_template)
+	// File-based template overrides
+	tplRaw := g.mustIndexTemplate("main")
+	ctx := buildIndexTemplateContext(g, docFiles, repoGroups, frontMatter)
+	tpl, err := template.New("main_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+	if err != nil { return fmt.Errorf("parse main index template: %w", err) }
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec main index template: %w", err) }
+	body := buf.String()
 	var content string
-	if tplRaw, ok := g.config.Hugo.Params["index_template"].(string); ok && strings.TrimSpace(tplRaw) != "" {
-		ctx := buildIndexTemplateContext(g, docFiles, repoGroups, frontMatter)
-		tpl, err := template.New("main_index").Funcs(template.FuncMap{"titleCase": titleCase}).Parse(tplRaw)
-		if err != nil { return fmt.Errorf("parse main index template: %w", err) }
-		var buf bytes.Buffer
-		if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec main index template: %w", err) }
-		body := buf.String()
-		if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
-	} else {
-		content = fmt.Sprintf("---\n%s---\n\n# %s\n\n%s\n\n", string(fmData), g.config.Hugo.Title, g.config.Hugo.Description)
-		content += "## Repositories\n\n"
-		for repoName, files := range repoGroups { content += fmt.Sprintf("- [%s](./%s/) (%d files)\n", repoName, repoName, len(files)) }
-	}
+	if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
 	if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil { return fmt.Errorf("failed to write main index: %w", err) }
 	slog.Info("Generated main index page", logfields.Path(indexPath))
 	return nil
@@ -67,30 +63,16 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		fmData, err := yaml.Marshal(frontMatter); if err != nil { return fmt.Errorf("failed to marshal front matter: %w", err) }
 		sectionGroups := make(map[string][]docs.DocFile)
 		for _, file := range files { s := file.Section; if s == "" { s = "root" }; sectionGroups[s] = append(sectionGroups[s], file) }
+		tplRaw := g.mustIndexTemplate("repository")
+		ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
+		ctx["Sections"] = sectionGroups
+	tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+		if err != nil { return fmt.Errorf("parse repository index template: %w", err) }
+		var buf bytes.Buffer
+		if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec repository index template: %w", err) }
+		body := buf.String()
 		var content string
-		if tplRaw, ok := g.config.Hugo.Params["repository_index_template"].(string); ok && strings.TrimSpace(tplRaw) != "" {
-			ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
-			ctx["Sections"] = sectionGroups
-			tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase}).Parse(tplRaw)
-			if err != nil { return fmt.Errorf("parse repository index template: %w", err) }
-			var buf bytes.Buffer
-			if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec repository index template: %w", err) }
-			body := buf.String()
-			if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
-		} else {
-			content = fmt.Sprintf("---\n%s---\n\n# %s Documentation\n\n", string(fmData), titleCase(repoName))
-			for section, sectionFiles := range sectionGroups {
-				if section == "root" { content += "## Documentation Files\n\n" } else { content += fmt.Sprintf("## %s\n\n", titleCase(section)) }
-				for _, file := range sectionFiles {
-					title := titleCase(strings.ReplaceAll(file.Name, "-", " "))
-					var relativePath string
-					if file.Section != "" { relativePath = filepath.Join(file.Section, file.Name) } else { relativePath = file.Name }
-					relativePath = filepath.ToSlash(relativePath) + "/"
-					content += fmt.Sprintf("- [%s](./%s)\n", title, relativePath)
-				}
-				content += "\n"
-			}
-		}
+		if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
 		if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil { return fmt.Errorf("failed to write repository index: %w", err) }
 		slog.Debug("Generated repository index", logfields.Repository(repoName), logfields.Path(indexPath))
 	}
@@ -116,24 +98,17 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			}
 			frontMatter := map[string]any{"title": fmt.Sprintf("%s - %s", titleCase(repoName), titleCase(sectionName)), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
 			fmData, err := yaml.Marshal(frontMatter); if err != nil { return fmt.Errorf("failed to marshal front matter: %w", err) }
+			tplRaw := g.mustIndexTemplate("section")
+			ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
+			ctx["SectionName"] = sectionName
+			ctx["Files"] = files
+			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+			if err != nil { return fmt.Errorf("parse section index template: %w", err) }
+			var buf bytes.Buffer
+			if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec section index template: %w", err) }
+			body := buf.String()
 			var content string
-			if tplRaw, ok := g.config.Hugo.Params["section_index_template"].(string); ok && strings.TrimSpace(tplRaw) != "" {
-				ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
-				ctx["SectionName"] = sectionName
-				ctx["Files"] = files
-				tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase}).Parse(tplRaw)
-				if err != nil { return fmt.Errorf("parse section index template: %w", err) }
-				var buf bytes.Buffer
-				if err := tpl.Execute(&buf, ctx); err != nil { return fmt.Errorf("exec section index template: %w", err) }
-				body := buf.String()
-				if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
-			} else {
-				content = fmt.Sprintf("---\n%s---\n\n# %s\n\n", string(fmData), titleCase(sectionName))
-				for _, file := range files {
-					title := titleCase(strings.ReplaceAll(file.Name, "-", " "))
-					content += fmt.Sprintf("- [%s](./%s/)\n", title, file.Name)
-				}
-			}
+			if !strings.HasPrefix(body, "---\n") { content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body) } else { content = body }
 			if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 				return fmt.Errorf("failed to write section index: %w", err)
 			}
@@ -162,4 +137,45 @@ func buildIndexTemplateContext(g *Generator, docFiles []docs.DocFile, repoGroups
 		"TotalRepositories": len(repoGroups),
 	}
 	return ctx
+}
+
+// loadIndexTemplate attempts to locate a template override for index pages.
+// Search order (first hit wins):
+//   1. <outputDir>/templates/index/<kind>.md.tmpl
+//   2. <outputDir>/templates/index/<kind>.tmpl
+//   3. <outputDir>/templates/<kind>_index.tmpl
+// Returns content or an error if no file found (caller treats missing as fallback trigger).
+func (g *Generator) loadIndexTemplate(kind string) (string, error) {
+	base := g.outputDir
+	candidates := []string{
+		filepath.Join(base, "templates", "index", kind+".md.tmpl"),
+		filepath.Join(base, "templates", "index", kind+".tmpl"),
+		filepath.Join(base, "templates", kind+"_index.tmpl"),
+	}
+	for _, p := range candidates {
+		b, err := os.ReadFile(p)
+		if err == nil {
+			slog.Debug("Loaded index template override", slog.String("kind", kind), logfields.Path(p))
+			return string(b), nil
+		}
+	}
+	return "", fmt.Errorf("no template override for kind %s", kind)
+}
+
+//go:embed templates_defaults/index/*.tmpl
+var embeddedIndexTemplates embed.FS
+
+// mustIndexTemplate returns either a user override template body or the embedded default.
+// Panics only if embedded defaults are missing (programmer error), not on user absence.
+func (g *Generator) mustIndexTemplate(kind string) string {
+	if raw, err := g.loadIndexTemplate(kind); err == nil && strings.TrimSpace(raw) != "" {
+		return raw
+	}
+	// fall back to embedded default
+	name := fmt.Sprintf("templates_defaults/index/%s.tmpl", kind)
+	b, err := embeddedIndexTemplates.ReadFile(name)
+	if err != nil {
+		panic(fmt.Sprintf("embedded default index template missing for kind %s: %v", kind, err))
+	}
+	return string(b)
 }

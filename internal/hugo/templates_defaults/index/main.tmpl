@@ -1,0 +1,9 @@
+# {{ .Site.Title }}
+
+{{ .Site.Description }}
+
+## Repositories
+
+{{ range $name, $files := .Repositories -}}
+- [{{$name}}](./{{$name}}/) ({{ len $files }} files)
+{{ end }}
