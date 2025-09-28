@@ -14,13 +14,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Automatic multi-forge content namespacing: when documentation is built from repositories spanning more than one forge type, Markdown is written under `content/<forge>/<repository>/...`; single-forge builds retain the previous `content/<repository>/...` layout. (`DocFile.Forge` field added.)
 - `BuildReport.CloneStageSkipped` to distinguish pipelines without a clone stage.
 - Index template reporting: `IndexTemplates` with source (embedded|file) and path.
 - Structured issue taxonomy via `ReportIssue` (`Issues` slice in `BuildReport`).
 
 ### Changed
 
-- Serialization logic derives `cloned_repositories` heuristically when clone stage skipped.
+- `cloned_repositories` is no longer heuristically derived when the clone stage is skipped; the value now reflects only actually cloned repositories (zero or omitted when no clone stage ran). If you previously relied on the fallback count, update any dashboards/scripts to tolerate zero.
 - Front matter merge logic now requires explicit patch injection (no implicit legacy mirroring).
 
 ### Migration Notes
@@ -30,6 +31,7 @@ All notable changes to this project will be documented in this file.
 3. Update any code/tests expecting `OutcomeT` to use `BuildReport.Outcome` (string value set from `BuildOutcome`).
 4. If relying on deprecated theme/Prometheus placeholders, migrate to the current metrics and theme module logic.
 5. Replace any direct usage of the removed `computeBackoffDelay` with `retry.NewPolicy(...).Delay(n)`.
+6. Adjust any tooling expecting a synthesized `cloned_repositories` count when skipping the clone stage; the heuristic has been removed for accuracy.
 
 ---
 
