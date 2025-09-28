@@ -50,7 +50,7 @@ func effectiveArrayStrategy(patchStrategy ArrayMergeStrategy, key string, hasExi
 	// If an explicit non-zero (Union or Append) provided, honor it.
 	if patchStrategy == ArrayUnion || patchStrategy == ArrayAppend { return patchStrategy }
 	// patchStrategy is ArrayReplace (zero). For taxonomy keys, prefer union if existing data present.
-	if key == "tags" || key == "categories" {
+	if key == "tags" || key == "categories" || key == "keywords" {
 		if hasExisting { return ArrayUnion }
 	}
 	return patchStrategy
@@ -78,14 +78,15 @@ type FrontMatterConflict struct {
 // Phase 1 implementation: simple ordered application onto a base copy.
 var reservedFrontMatterKeys = map[string]struct{}{
 	"title": {}, "description": {}, "weight": {}, "slug": {}, "aliases": {},
-	"date": {}, "lastmod": {}, "tags": {}, "categories": {}, "draft": {},
+	"date": {}, "lastmod": {}, "tags": {}, "categories": {}, "keywords": {}, "draft": {},
 	"editURL": {}, "toc": {}, "menu": {}, "repository": {}, "section": {},
 }
 
 // keys that are protected from overwrite (unless MergeReplace) - exclude taxonomy arrays to allow merging
 var reservedProtectedKeys = map[string]struct{}{
-    "title": {}, "description": {}, "weight": {}, "slug": {}, "aliases": {},
-    "date": {}, "lastmod": {}, "draft": {}, "editURL": {}, "toc": {}, "menu": {}, "repository": {}, "section": {},
+	"title": {}, "description": {}, "weight": {}, "slug": {}, "aliases": {},
+	"date": {}, "lastmod": {}, "draft": {}, "editURL": {}, "toc": {}, "menu": {}, "repository": {}, "section": {},
+	// taxonomy-ish / list metadata (tags, categories, keywords) excluded to allow merging
 }
 
 func (p *Page) applyPatches() {
