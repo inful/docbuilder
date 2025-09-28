@@ -1,19 +1,63 @@
 {
   "version": "2.0.0",
-  "start_time": "2025-09-28T00:42:45.718188+02:00",
-  "last_update": "2025-09-28T00:48:15.715201+02:00",
+  "start_time": "2025-09-28T02:31:30.152004+02:00",
+  "last_update": "2025-09-28T02:35:43.756806+02:00",
   "status": "starting",
-  "repositories": {},
+  "repositories": {
+    "https://git.home.luguber.info/inful/go-test-project.git": {
+      "url": "https://git.home.luguber.info/inful/go-test-project.git",
+      "name": "go-test-project",
+      "branch": "main",
+      "last_discovery": "2025-09-28T02:35:35.782407+02:00",
+      "last_commit": "699b90c032b35c1450ea400dd80ac8dd87975419",
+      "document_count": 0,
+      "build_count": 0,
+      "error_count": 0,
+      "metadata": {
+        "created": "2025-09-28T01:32:21.148407+02:00"
+      }
+    },
+    "https://git.home.luguber.info/inful/ingress-info-service.git": {
+      "url": "https://git.home.luguber.info/inful/ingress-info-service.git",
+      "name": "ingress-info-service",
+      "branch": "main",
+      "last_discovery": "2025-09-28T02:35:35.782411+02:00",
+      "last_commit": "4f846e62a1d8aa718b7de9211f70036c4f3f7027",
+      "document_count": 0,
+      "build_count": 0,
+      "error_count": 0,
+      "metadata": {
+        "created": "2025-09-28T01:32:21.14846+02:00"
+      }
+    },
+    "https://git.home.luguber.info/inful/project-dashboard-frontend.git": {
+      "url": "https://git.home.luguber.info/inful/project-dashboard-frontend.git",
+      "name": "project-dashboard-frontend",
+      "branch": "main",
+      "last_discovery": "2025-09-28T02:35:35.782411+02:00",
+      "last_commit": "1cf9dccf7027a817d54e72dd37b65d70d3e3db57",
+      "document_count": 0,
+      "build_count": 0,
+      "error_count": 0,
+      "metadata": {
+        "created": "2025-09-28T01:32:21.148508+02:00"
+      }
+    }
+  },
   "builds": {},
   "schedules": {},
   "statistics": {
     "total_builds": 0,
     "successful_builds": 0,
     "failed_builds": 0,
-    "total_discoveries": 6,
+    "total_discoveries": 132,
     "documents_found": 0,
     "average_build_time_seconds": 0,
     "last_stat_reset": "2025-09-28T00:25:39.634835+02:00",
-    "uptime_seconds": 330.002729
+    "uptime_seconds": 253.601616
+  },
+  "configuration": {
+    "last_config_hash": "f0b7d622e525a5294738e3008079c4361ec23bc351e5a11ad5853981ae145d78",
+    "last_report_checksum": "445f8ca7869b161af2dbe7b06d02209cd1171ad43c7bd5fc6b6d07fbb41950ce"
   }
 }

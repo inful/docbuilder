@@ -1,8 +1,8 @@
 package hextra
 
 import (
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 )
 
 type Theme struct{}

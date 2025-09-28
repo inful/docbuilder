@@ -59,3 +59,7 @@ daemon:
     state_file: "./daemon-data/daemon-state.json"
     repo_cache_dir: "./daemon-data/repos"
     output_dir: "./daemon-data/site"
+build:
+  clone_strategy: auto
+  skip_if_unchanged: true
+  clone_concurrency: 4

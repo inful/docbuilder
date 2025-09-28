@@ -112,6 +112,77 @@ Key notes:
 - Per-forge discovery errors are exposed at `/status?format=json` under `discovery_errors`.
 - To include repositories even if they have no matching documentation paths, set `required_paths: []`.
 - The `build` section (see below) controls performance knobs like clone concurrency.
+- Repository persistence decisions depend on `clone_strategy` plus the presence of `repo_cache_dir` (see Workspace & Cache Paths section below).
+
+### Workspace & Cache Paths (Daemon Mode)
+
+DocBuilder uses three distinct path roles when running the daemon:
+
+| Path | Source Setting | Purpose |
+|------|----------------|---------|
+| Output Directory | `output.directory` (or `daemon.storage.output_dir`) | Generated Hugo site + `public/` render (if Hugo run). Cleaned when `output.clean: true`. |
+| Repo Cache Directory | `daemon.storage.repo_cache_dir` | Persistent daemon state (`daemon-state.json`) and (for incremental strategies) parent for the working clone directory. |
+| Workspace Directory | `build.workspace_dir` or derived | Actual working checkouts used by the build pipeline (clone/update, doc discovery). |
+
+Workspace selection logic (effective when `build.workspace_dir` is NOT explicitly set):
+
+1. `clone_strategy: fresh` → `output.directory/_workspace` (ephemeral; removed if `output.clean: true`).
+2. `clone_strategy: update` or `auto` AND `repo_cache_dir` set → `repo_cache_dir/working` (persistent).
+3. Fallback (no `repo_cache_dir`) → sibling directory: `output.directory + "-workspace"` (persistent, not cleaned).
+
+If you explicitly set `build.workspace_dir`, that path is always used as-is.
+
+Rationale:
+
+- Separates transient build artifacts from long‑lived repository clones.
+- Keeps persistent clones out of the output tree so `output.clean` never erases them.
+- Enables quick incremental updates (`git fetch` + fast-forward) instead of full reclones.
+
+Startup Log Summary:
+
+When the daemon starts you’ll see a log line similar to:
+
+```text
+INFO Storage paths summary output_dir=./site repo_cache_dir=./daemon-data/repos workspace_resolved=./daemon-data/repos/working (persistent via repo_cache_dir) clone_strategy=auto
+```
+
+This helps verify which directory actually holds the repositories. During each build you’ll also see:
+
+```text
+INFO Using workspace directory dir=./daemon-data/repos/working configured=false
+```
+
+To force a different persistent location (e.g., mounted volume), set:
+
+```yaml
+daemon:
+  storage:
+    repo_cache_dir: /var/lib/docbuilder
+build:
+  workspace_dir: /var/lib/docbuilder/working   # (optional override; otherwise auto-derives working/)
+```
+
+To guarantee a fully clean rebuild every cycle, use:
+
+```yaml
+build:
+  clone_strategy: fresh
+  workspace_dir: ./site/_workspace  # (optional; default derived)
+output:
+  clean: true
+```
+
+Troubleshooting Tips:
+
+- Seeing unexpected reclones? Confirm strategy isn’t `fresh` and check daemon startup summary.
+- Empty `repo_cache_dir` with `auto` strategy? Ensure the path is writable and not mounted read-only.
+- Need to relocate clones in containers? Mount a volume and point `repo_cache_dir` there; restart daemon.
+
+Future Enhancements (planned):
+
+- Optional bare mirror population inside `repo_cache_dir/mirrors` with lightweight working trees for each build.
+- Periodic pruning of stale repository workspaces.
+- Metrics for workspace size / clone cache hit rate.
 
 ### Static Site Rendering (Running Hugo Automatically)
 

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-	"strings"
-	"strconv"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
@@ -203,6 +204,38 @@ func (d *Daemon) Start(ctx context.Context) error {
 		slog.Int("admin_port", d.config.Daemon.HTTP.AdminPort),
 		slog.Int("webhook_port", d.config.Daemon.HTTP.WebhookPort))
 
+	// Emit a storage/workspace summary so operators understand path roles.
+	var (
+		repoCache = ""
+		outDir    = d.config.Output.Directory
+		wsPredict string
+	)
+	if d.config.Daemon != nil {
+		repoCache = d.config.Daemon.Storage.RepoCacheDir
+	}
+	if outDir == "" {
+		outDir = "./site"
+	}
+	strategy := d.config.Build.CloneStrategy
+	if strategy == "" {
+		strategy = config.CloneStrategyFresh
+	}
+	// Predict default workspace resolution (may differ per build if user overrides build.workspace_dir).
+	if d.config.Build.WorkspaceDir != "" {
+		wsPredict = d.config.Build.WorkspaceDir + " (configured)"
+	} else if strategy == config.CloneStrategyFresh {
+		wsPredict = filepath.Join(outDir, "_workspace") + " (ephemeral)"
+	} else if repoCache != "" {
+		wsPredict = filepath.Join(repoCache, "working") + " (persistent via repo_cache_dir)"
+	} else {
+		wsPredict = filepath.Clean(outDir+"-workspace") + " (persistent sibling)"
+	}
+	slog.Info("Storage paths summary",
+		slog.String("output_dir", outDir),
+		slog.String("repo_cache_dir", repoCache),
+		slog.String("workspace_resolved", wsPredict),
+		slog.String("clone_strategy", string(strategy)))
+
 	// Release lock before entering long-running loop to avoid blocking read operations (e.g., /status)
 	d.mu.Unlock()
 
@@ -332,6 +365,10 @@ func (d *Daemon) TriggerBuild() string {
 		Type:      BuildTypeManual,
 		Priority:  PriorityHigh,
 		CreatedAt: time.Now(),
+		Metadata: map[string]interface{}{
+			"v2_config":     d.config,
+			"state_manager": d.stateManager,
+		},
 	}
 
 	if err := d.buildQueue.Enqueue(job); err != nil {
@@ -387,14 +424,15 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 
 // parseDiscoverySchedule parses a schedule expression into an approximate interval.
 // Supported forms:
-//   @every <duration>   (same semantics as Go duration parsing, e.g. @every 5m, @every 1h30m)
-//   Standard 5-field cron patterns (minute hour day month weekday) for a few common forms:
-//     */5 * * * *   -> 5m
-//     */15 * * * *  -> 15m
-//     0 * * * *     -> 1h (top of every hour)
-//     0 0 * * *     -> 24h (midnight daily)
-//     */30 * * * *  -> 30m
-//   If expression not recognized returns (0,false).
+//
+//	@every <duration>   (same semantics as Go duration parsing, e.g. @every 5m, @every 1h30m)
+//	Standard 5-field cron patterns (minute hour day month weekday) for a few common forms:
+//	  */5 * * * *   -> 5m
+//	  */15 * * * *  -> 15m
+//	  0 * * * *     -> 1h (top of every hour)
+//	  0 0 * * *     -> 24h (midnight daily)
+//	  */30 * * * *  -> 30m
+//	If expression not recognized returns (0,false).
 func parseDiscoverySchedule(expr string) (time.Duration, bool) {
 	// @every form
 	if strings.HasPrefix(expr, "@every ") {
@@ -409,17 +447,17 @@ func parseDiscoverySchedule(expr string) (time.Duration, bool) {
 		return 0, false
 	}
 	switch expr {
-case "*/5 * * * *":
+	case "*/5 * * * *":
 		return 5 * time.Minute, true
-case "*/15 * * * *":
+	case "*/15 * * * *":
 		return 15 * time.Minute, true
-case "*/30 * * * *":
+	case "*/30 * * * *":
 		return 30 * time.Minute, true
-case "0 * * * *":
+	case "0 * * * *":
 		return time.Hour, true
-case "0 0 * * *":
+	case "0 0 * * *":
 		return 24 * time.Hour, true
-default:
+	default:
 		// Attempt to parse expressions like "*/10 * * * *"
 		if strings.HasPrefix(parts[0], "*/") {
 			val := strings.TrimPrefix(parts[0], "*/")
@@ -428,7 +466,7 @@ default:
 			}
 		}
 	}
-return 0, false
+	return 0, false
 }
 
 // updateStatus updates runtime status and metrics
@@ -509,6 +547,7 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 				"discovery_result": result,
 				"repositories":     converted,
 				"v2_config":        d.config,
+				"state_manager":    d.stateManager,
 			},
 		}
 

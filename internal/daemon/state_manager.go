@@ -48,6 +48,68 @@ type RepoState struct {
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
+// SetRepoLastCommit updates the stored last commit for a repository (by URL) creating state if necessary.
+func (sm *StateManager) SetRepoLastCommit(url, name, branch, commit string) {
+	if url == "" || commit == "" {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	rs, ok := sm.state.Repositories[url]
+	if !ok {
+		rs = &RepoState{URL: url, Name: name, Branch: branch, Metadata: map[string]interface{}{"created": time.Now()}}
+		sm.state.Repositories[url] = rs
+	}
+	rs.LastCommit = commit
+	sm.scheduleSave()
+}
+
+// GetRepoLastCommit returns the stored last commit hash for a repository URL.
+func (sm *StateManager) GetRepoLastCommit(url string) string {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if rs, ok := sm.state.Repositories[url]; ok {
+		return rs.LastCommit
+	}
+	return ""
+}
+
+// SetLastConfigHash persists the last successful build config hash.
+func (sm *StateManager) SetLastConfigHash(hash string) {
+	if hash == "" {
+		return
+	}
+	sm.SetConfiguration("last_config_hash", hash)
+}
+
+// GetLastConfigHash retrieves the last stored config hash.
+func (sm *StateManager) GetLastConfigHash() string {
+	if v, ok := sm.GetConfiguration("last_config_hash"); ok {
+		if s, ok2 := v.(string); ok2 {
+			return s
+		}
+	}
+	return ""
+}
+
+// SetLastReportChecksum stores the checksum of the last successful build-report.json
+func (sm *StateManager) SetLastReportChecksum(sum string) {
+	if sum == "" {
+		return
+	}
+	sm.SetConfiguration("last_report_checksum", sum)
+}
+
+// GetLastReportChecksum retrieves the persisted build report checksum.
+func (sm *StateManager) GetLastReportChecksum() string {
+	if v, ok := sm.GetConfiguration("last_report_checksum"); ok {
+		if s, ok2 := v.(string); ok2 {
+			return s
+		}
+	}
+	return ""
+}
+
 // BuildState tracks the state of builds
 type BuildState struct {
 	ID            string                 `json:"id"`

@@ -399,7 +399,9 @@ func validateConfig(config *Config) error {
 			allowAuto := forge.AutoDiscover
 			if !allowAuto && forge.Options != nil { // legacy/options-based flag
 				if v, ok := forge.Options["auto_discover"]; ok {
-					if b, ok2 := v.(bool); ok2 && b { allowAuto = true }
+					if b, ok2 := v.(bool); ok2 && b {
+						allowAuto = true
+					}
 				}
 			}
 			if !allowAuto {
