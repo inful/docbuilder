@@ -217,7 +217,26 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		sek[string(k)] = string(v)
 	}
 
-	s := &BuildReportSerializable{
+	// Fallback semantics: if clone stage was skipped (e.g., incremental no-change early exit) or
+	// direct GenerateSiteWithReport path provided docFiles without a clone stage, surface the
+	// repository count as cloned_repositories when the original counter is zero.
+	cloned := r.ClonedRepositories
+	if cloned == 0 && r.Repositories > 0 {
+		// Heuristics: no stage durations recorded OR explicit skip_reason set.
+		if len(r.StageDurations) == 0 || r.SkipReason != "" {
+			cloned = r.Repositories
+		}
+	}
+
+	// Ensure non-nil maps so JSON shows {} rather than null for backwards stability.
+	if r.StageDurations == nil {
+		r.StageDurations = map[string]time.Duration{}
+	}
+	if r.IndexTemplates == nil {
+		r.IndexTemplates = map[string]IndexTemplateInfo{}
+	}
+
+		s := &BuildReportSerializable{
 		SchemaVersion:       r.SchemaVersion,
 		Repositories:        r.Repositories,
 		Files:               r.Files,
@@ -227,7 +246,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		Warnings:            make([]string, len(r.Warnings)),
 		StageDurations:      r.StageDurations,
 		StageErrorKinds:     sek,
-		ClonedRepositories:  r.ClonedRepositories,
+		ClonedRepositories:  cloned,
 		FailedRepositories:  r.FailedRepositories,
 		SkippedRepositories: r.SkippedRepositories,
 		RenderedPages:       r.RenderedPages,
