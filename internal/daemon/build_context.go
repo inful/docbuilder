@@ -95,13 +95,25 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 	}); ok && st != nil {
 		plan := NewDeltaAnalyzer(st).WithWorkspace(bc.cfg.Build.WorkspaceDir).Analyze(bc.generator.ComputeConfigHashForPersistence(), bc.repos)
 		bc.deltaPlan = &plan
+		if bc.skipReport != nil { // edge case: skip already decided but still populate delta metadata
+			if plan.Decision == DeltaDecisionPartial {
+				bc.skipReport.DeltaDecision = "partial"
+				bc.skipReport.DeltaChangedRepos = append([]string{}, plan.ChangedRepos...)
+			} else {
+				bc.skipReport.DeltaDecision = "full"
+			}
+		}
 		if plan.Decision == DeltaDecisionPartial && len(plan.ChangedRepos) > 0 {
 			// Prune repositories to only those needing rebuild.
 			changedSet := make(map[string]struct{}, len(plan.ChangedRepos))
-			for _, u := range plan.ChangedRepos { changedSet[u] = struct{}{} }
+			for _, u := range plan.ChangedRepos {
+				changedSet[u] = struct{}{}
+			}
 			filtered := make([]cfg.Repository, 0, len(plan.ChangedRepos))
 			for _, r := range bc.repos {
-				if _, ok := changedSet[r.URL]; ok { filtered = append(filtered, r) }
+				if _, ok := changedSet[r.URL]; ok {
+					filtered = append(filtered, r)
+				}
 			}
 			slog.Info("Applying partial rebuild repo pruning", "before", len(bc.repos), "after", len(filtered), "reason", plan.Reason)
 			bc.repos = filtered
@@ -183,6 +195,15 @@ func (bc *buildContext) stageGenerateSite() (*hugo.BuildReport, error) {
 func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error) error {
 	if report == nil {
 		return nil
+	}
+	// Attach delta metadata (if evaluated) before other persistence for external observability.
+	if bc.deltaPlan != nil {
+		if bc.deltaPlan.Decision == DeltaDecisionPartial {
+			report.DeltaDecision = "partial"
+			report.DeltaChangedRepos = append([]string{}, bc.deltaPlan.ChangedRepos...)
+		} else {
+			report.DeltaDecision = "full"
+		}
 	}
 	// Repo build counters & document counts
 	if sm, ok := bc.stateMgr.(interface {

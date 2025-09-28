@@ -50,6 +50,10 @@ type BuildReport struct {
 	CloneStageSkipped bool
 	// DocFilesHash is a stable hash (sha256 hex) of the discovered documentation file Hugo paths (sorted) for cache invalidation decisions.
 	DocFilesHash string
+	// DeltaDecision records analyzer decision: "full" | "partial" (empty if not evaluated)
+	DeltaDecision string
+	// DeltaChangedRepos lists repository URLs included in a partial rebuild decision.
+	DeltaChangedRepos []string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -250,6 +254,8 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		IndexTemplates:      r.IndexTemplates,
 		CloneStageSkipped:   r.CloneStageSkipped,
 		DocFilesHash:        r.DocFilesHash,
+		DeltaDecision:       r.DeltaDecision,
+		DeltaChangedRepos:   r.DeltaChangedRepos,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -285,4 +291,6 @@ type BuildReportSerializable struct {
 	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
 	CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
 	DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
+	DeltaDecision       string                       `json:"delta_decision,omitempty"`
+	DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
 }
