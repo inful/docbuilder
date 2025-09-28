@@ -93,7 +93,7 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 		GetRepoDocFilesHash(string) string
 		GetRepoLastCommit(string) string
 	}); ok && st != nil {
-		plan := NewDeltaAnalyzer(st).Analyze(bc.generator.ComputeConfigHashForPersistence(), bc.repos)
+		plan := NewDeltaAnalyzer(st).WithWorkspace(bc.cfg.Build.WorkspaceDir).Analyze(bc.generator.ComputeConfigHashForPersistence(), bc.repos)
 		bc.deltaPlan = &plan
 		if plan.Decision == DeltaDecisionPartial && len(plan.ChangedRepos) > 0 {
 			// Prune repositories to only those needing rebuild.

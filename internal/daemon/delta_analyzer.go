@@ -1,7 +1,12 @@
 package daemon
 
 import (
+    "crypto/sha256"
+    "encoding/hex"
     "log/slog"
+    "os"
+    "path/filepath"
+    "sort"
     "strings"
     cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -36,10 +41,54 @@ type DeltaStateAccess interface {
 // to determine if a partial rebuild is feasible. Initial implementation always returns Full.
 type DeltaAnalyzer struct {
     state DeltaStateAccess
+    // quickHashRoots provides root path(s) to look for cloned repositories (workspace dir). Optional.
+    workspaceDir string
 }
 
 // NewDeltaAnalyzer constructs a new analyzer instance.
 func NewDeltaAnalyzer(st DeltaStateAccess) *DeltaAnalyzer { return &DeltaAnalyzer{state: st} }
+
+// WithWorkspace configures the analyzer with a workspace directory containing cloned repositories.
+// This enables a lightweight pre-discovery doc path hash by scanning known doc roots (default: 'docs', 'documentation').
+func (da *DeltaAnalyzer) WithWorkspace(dir string) *DeltaAnalyzer {
+    if da != nil {
+        da.workspaceDir = dir
+    }
+    return da
+}
+
+// computeQuickRepoHash walks a small set of known doc directories inside the repository returning
+// a stable hash of relative file paths. Intended as a pre-discovery approximation to detect changes quickly.
+func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
+    if da.workspaceDir == "" || repoName == "" { return "" }
+    root := filepath.Join(da.workspaceDir, repoName)
+    if fi, err := os.Stat(root); err != nil || !fi.IsDir() { return "" }
+    docRoots := []string{"docs", "documentation"}
+    paths := make([]string, 0, 32)
+    for _, dr := range docRoots {
+        base := filepath.Join(root, dr)
+        if fi, err := os.Stat(base); err == nil && fi.IsDir() {
+            filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
+                if err != nil || d == nil || d.IsDir() { return nil }
+                name := d.Name()
+                ln := strings.ToLower(name)
+                if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
+                    rel, rerr := filepath.Rel(root, p)
+                    if rerr == nil { paths = append(paths, filepath.ToSlash(rel)) }
+                }
+                return nil
+            })
+        }
+    }
+    if len(paths) == 0 { return "" }
+    sort.Strings(paths)
+    h := sha256.New()
+    for _, p := range paths {
+        h.Write([]byte(p))
+        h.Write([]byte{0})
+    }
+    return hex.EncodeToString(h.Sum(nil))
+}
 
 // Analyze returns a DeltaPlan describing whether a partial rebuild could be attempted.
 // currentConfigHash: hash of current configuration (same value used by skip logic)
@@ -54,9 +103,22 @@ func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repositor
     for _, r := range repos {
         docHash := da.state.GetRepoDocFilesHash(r.URL)
         commit := da.state.GetRepoLastCommit(r.URL)
-        if docHash == "" || commit == "" { // treat absence as change trigger
-            changed = append(changed, r.URL)
+        // If we have prior doc hash + commit, attempt quick workspace hash to detect unchanged repos even when hash persists (skip if missing).
+        if docHash != "" && commit != "" && da.workspaceDir != "" {
+            if quick := da.computeQuickRepoHash(r.Name); quick != "" && quick == docHash {
+                // likely unchanged; continue without marking changed
+                continue
+            }
+        }
+        if docHash == "" || commit == "" { // incomplete metadata => must rebuild
             if docHash == "" && commit == "" { unknown++ }
+            changed = append(changed, r.URL)
+            continue
+        }
+        // If quick hash produced value but differs from stored docHash mark as changed.
+        if quick := da.computeQuickRepoHash(r.Name); quick != "" && quick != docHash {
+            changed = append(changed, r.URL)
+            continue
         }
     }
 
