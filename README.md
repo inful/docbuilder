@@ -219,6 +219,106 @@ Pinning:
 - Hextra is pinned to a stable version in `go.mod` automatically.
 - The Docsy theme currently floats (you can pin manually by editing `go.mod`).
 
+### Index Page Templates (Main / Repository / Section)
+
+DocBuilder generates three kinds of Hugo `_index.md` pages and supports file‑based template overrides with embedded defaults you can customize safely.
+
+Kinds:
+
+- `main` – Global site landing page (`content/_index.md`)
+- `repository` – Per repository landing (`content/<repo>/_index.md`)
+- `section` – Per section inside a repository (`content/<repo>/<section>/_index.md`)
+
+Override Search Order (first match wins) for a given `kind` (`main|repository|section`):
+
+1. `templates/index/<kind>.md.tmpl`
+2. `templates/index/<kind>.tmpl`
+3. `templates/<kind>_index.tmpl`
+
+If no user file matches, an embedded default template (mirroring the historic layout) is used. These embedded defaults are compiled in and never require you to vendor them unless you want to change them.
+
+Front Matter Wrapping:
+
+- DocBuilder constructs baseline front matter (title, description, repository, section, date, etc.).
+- If your template body does NOT start with a YAML front matter fence (`---\n`), DocBuilder prepends the generated front matter automatically.
+- If you want full control, start your template with your own `---` fenced YAML and DocBuilder will not inject another one (you can still reference `.FrontMatter` inside the template if desired).
+
+Template Context (all kinds unless noted):
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `.Site` | map | `{ Title, Description, BaseURL, Theme }` (theme type) |
+| `.FrontMatter` | map | Computed default front matter values before serialization |
+| `.Repositories` | map (string -> []DocFile) | (main) Repo name -> slice of its doc files |
+| `.Files` | []DocFile | Files relevant to the current index |
+| `.Sections` | map (string -> []DocFile) | (repository) Section name (or `root`) -> files |
+| `.SectionName` | string | (section) Current section name |
+| `.Stats` | map | `{ TotalFiles, TotalRepositories }` |
+| `.Now` | time.Time | Generation timestamp |
+
+`DocFile` exposed fields (simplified): `Name`, `Repository`, `Section`, `Path`.
+
+Helper Functions Available:
+
+- `titleCase` – Simple ASCII title casing (first letter uppercase per word)
+- `replaceAll` – Wrapper around `strings.ReplaceAll` (`{{ replaceAll "service-api" "-" " " }}` → `service api`)
+
+Example: Custom main template (`templates/index/main.md.tmpl`):
+
+```markdown
+# {{ .Site.Title }}
+
+{{ .Site.Description }}
+
+{{ range $name, $files := .Repositories }}
+## {{ $name }} ({{ len $files }} files)
+{{ end }}
+```
+
+Example: Provide explicit front matter (DocBuilder will not prepend its own):
+
+```markdown
+---
+title: "Custom Landing"
+description: "Manually controlled front matter"
+---
+
+Welcome to **{{ .Site.Title }}** (generated at {{ .Now }}).
+```
+
+Repository Template Notes:
+
+- The `.Sections` map uses the key `root` for files not inside a nested section directory. You can skip it or rename it in output:
+
+```go-html-template
+{{ range $section, $files := .Sections }}
+  {{ if eq $section "root" }}## Misc{{ else }}## {{ titleCase $section }}{{ end }}
+  {{ range $files }}- {{ titleCase (replaceAll .Name "-" " ") }}{{ end }}
+{{ end }}
+```
+
+Section Template Notes:
+
+- `.SectionName` gives you the current section.
+- `.Files` only includes files for that section.
+
+Link Construction Tips:
+
+- Embedded defaults link to directories (`./name/`) leveraging Hugo’s `_index.md` resolution. If you switch to linking to actual Markdown file names, confirm your theme’s expectations.
+
+Troubleshooting:
+
+- Only seeing embedded defaults? Ensure override files are created inside the output directory before the build runs (`outputDir/templates/...`).
+- Need more helper functions? (Planned) – currently extend the FuncMap in code.
+
+Planned Enhancements:
+
+- Configurable user template root path (instead of fixed `templates/`).
+- Additional helper functions (e.g., safe slug, truncate, date formatting).
+- Optional warning when both user front matter and automatic injection collide.
+
+Usually you only need to override one or two templates to customize the landing experience.
+
 ### Edit Links
 
 Per-page edit links are enabled by default for supported themes when repository metadata allows deriving an edit URL. The first repository (or the one containing a file) is used to construct the link; future enhancements may allow per-file overrides.
