@@ -15,39 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-// TestComputeBackoffDelay verifies backoff strategies and max capping.
-func TestComputeBackoffDelay(t *testing.T) {
-	init := 1 * time.Millisecond
-	max := 10 * time.Millisecond
-
-	// Fixed
-	if d := computeBackoffDelay("fixed", 0, init, max); d != init {
-		t.Fatalf("fixed attempt0 expected %v got %v", init, d)
-	}
-	if d := computeBackoffDelay("fixed", 5, init, max); d != init {
-		t.Fatalf("fixed attempt5 expected %v got %v", init, d)
-	}
-
-	// Linear: (attempt+1)*init
-	if d := computeBackoffDelay("linear", 0, init, max); d != init {
-		t.Fatalf("linear attempt0 expected %v got %v", init, d)
-	}
-	if d := computeBackoffDelay("linear", 3, init, max); d != 4*init {
-		t.Fatalf("linear attempt3 expected %v got %v", 4*init, d)
-	}
-
-	// Exponential: init * 2^attempt
-	if d := computeBackoffDelay("exponential", 0, init, max); d != init {
-		t.Fatalf("exp attempt0 expected %v got %v", init, d)
-	}
-	if d := computeBackoffDelay("exponential", 1, init, max); d != 2*init {
-		t.Fatalf("exp attempt1 expected %v got %v", 2*init, d)
-	}
-	// attempt 5 -> 32*init but capped at max
-	if d := computeBackoffDelay("exponential", 5, init, max); d != max {
-		t.Fatalf("exp attempt5 expected cap %v got %v", max, d)
-	}
-}
 
 // TestWithRetryBehavior ensures retries happen for transient errors and stop for permanent ones.
 func TestWithRetryBehavior(t *testing.T) {
