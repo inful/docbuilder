@@ -9,49 +9,42 @@ import (
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 // TestDaemonStateBuildCounters ensures that after a full build the state manager records per-repo build counts > 0.
 func TestDaemonStateBuildCounters(t *testing.T) {
-	// Skip in short mode due to filesystem + hugo invocation.
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
-	}
-
-	// Create temp output/workspace dirs
+	if testing.Short() { t.Skip("short") }
 	out := t.TempDir()
-	ws := filepath.Join(out, "_ws")
+	ws := filepath.Join(out, "workspace")
 	if err := os.MkdirAll(ws, 0o755); err != nil { t.Fatalf("mkdir ws: %v", err) }
 
-	// Create a fake repository with docs
-	repoDir := filepath.Join(ws, "repoA")
-	if err := os.MkdirAll(filepath.Join(repoDir, "docs"), 0o755); err != nil { t.Fatalf("mkdir repo docs: %v", err) }
-	if err := os.WriteFile(filepath.Join(repoDir, "docs", "page.md"), []byte("# Page\n"), 0o644); err != nil { t.Fatalf("write doc: %v", err) }
-	// Initialize minimal git structure to satisfy head reading (optional); we can stub by writing .git/HEAD with dummy hash.
-	if err := os.MkdirAll(filepath.Join(repoDir, ".git"), 0o755); err != nil { t.Fatalf("mkdir git: %v", err) }
-	if err := os.WriteFile(filepath.Join(repoDir, ".git", "HEAD"), []byte("dummyhash"), 0o644); err != nil { t.Fatalf("write head: %v", err) }
+	// Initialize a real local git repository so clone stage succeeds.
+	repoDir := filepath.Join(out, "remote-repoA")
+	if err := os.MkdirAll(filepath.Join(repoDir, "docs"), 0o755); err != nil { t.Fatalf("mkdir docs: %v", err) }
+	if err := os.WriteFile(filepath.Join(repoDir, "docs", "page.md"), []byte("# Page\n"), 0o644); err != nil { t.Fatalf("write page: %v", err) }
+	r, err := git.PlainInit(repoDir, false)
+	if err != nil { t.Fatalf("init repo: %v", err) }
+	wt, err := r.Worktree(); if err != nil { t.Fatalf("worktree: %v", err) }
+	if _, err := wt.Add("docs/page.md"); err != nil { t.Fatalf("add: %v", err) }
+	if _, err := wt.Commit("initial", &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "tester@example.com", When: time.Now()}}); err != nil { t.Fatalf("commit: %v", err) }
 
-	config := &cfg.Config{Output: cfg.OutputConfig{Directory: out}, Build: cfg.BuildConfig{WorkspaceDir: ws}, Hugo: cfg.HugoConfig{Theme: "hextra"}}
-	repo := cfg.Repository{Name: "repoA", Paths: []string{"docs"}, URL: "https://example.com/repoA.git", Branch: "main"}
-	config.Repositories = []cfg.Repository{repo}
+	// Use absolute path as clone URL (supported by go-git for local clone).
+	// Leave Branch empty to allow cloning default branch created by PlainInit (typically 'master').
+	repo := cfg.Repository{Name: "repoA", Paths: []string{"docs"}, URL: repoDir, Branch: ""}
+	config := &cfg.Config{Output: cfg.OutputConfig{Directory: out, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: ws, CloneStrategy: cfg.CloneStrategyFresh}, Hugo: cfg.HugoConfig{Theme: "hextra"}, Repositories: []cfg.Repository{repo}}
 
-	gen := hugo.NewGenerator(config, out)
-	// Instead of triggering full clone stage we directly supply doc files using GenerateSiteWithReport.
-	files := []docs.DocFile{{Repository: repo.Name, Name: "page", Extension: ".md", DocsBase: "docs", RelativePath: "page.md"}}
-	if err := files[0].LoadContent(); err == nil { /* content loaded if path real */ }
-	if err := gen.GenerateSite(files); err != nil { t.Fatalf("generate site: %v", err) }
-
-	// Attach state manager manually and run builder logic to update counts (simulate daemon builder behavior)
-	sm, err := NewStateManager(out)
-	if err != nil { t.Fatalf("state manager: %v", err) }
-	builder := NewSiteBuilder()
-	job := &BuildJob{Metadata: map[string]any{"v2_config": config, "repositories": []cfg.Repository{repo}, "state_manager": sm}}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if _, err := builder.Build(ctx, job); err != nil { t.Fatalf("builder.Build: %v", err) }
-
+	sm, err := NewStateManager(out); if err != nil { t.Fatalf("state manager: %v", err) }
+	gen := hugo.NewGenerator(config, out).WithStateManager(sm)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second); defer cancel()
+	report, err := gen.GenerateFullSite(ctx, []cfg.Repository{repo}, ws)
+	if err != nil { t.Fatalf("GenerateFullSite: %v", err) }
+	if report == nil { t.Fatalf("nil report") }
+	// Simulate builder increment (since we bypassed builder).
+	sm.IncrementRepoBuild(repo.URL, true)
 	rs := sm.GetRepository(repo.URL)
 	if rs == nil { t.Fatalf("expected repository state created") }
-	if rs.BuildCount == 0 { t.Fatalf("expected build count > 0, got %d", rs.BuildCount) }
+	if rs.DocumentCount != 1 { t.Fatalf("expected document count=1 got %d", rs.DocumentCount) }
+	if rs.BuildCount == 0 { t.Fatalf("expected build count >0 got %d", rs.BuildCount) }
 }

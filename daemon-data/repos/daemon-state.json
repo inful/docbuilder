@@ -1,14 +1,27 @@
 {
   "version": "2.0.0",
-  "start_time": "2025-09-28T21:43:28.903152+02:00",
-  "last_update": "2025-09-28T21:54:58.916275+02:00",
+  "start_time": "2025-09-28T22:08:32.861904+02:00",
+  "last_update": "2025-09-28T22:22:02.940692+02:00",
   "status": "starting",
   "repositories": {
+    "https://git.home.luguber.info/inful/docbuilder.git": {
+      "url": "https://git.home.luguber.info/inful/docbuilder.git",
+      "name": "docbuilder",
+      "branch": "main",
+      "last_discovery": "2025-09-28T22:20:38.870459+02:00",
+      "last_commit": "ec55cd8da973bc1bacb39d5a0f70a2f0cd44cd1a",
+      "document_count": 0,
+      "build_count": 0,
+      "error_count": 0,
+      "metadata": {
+        "created": "2025-09-28T21:57:55.468771+02:00"
+      }
+    },
     "https://git.home.luguber.info/inful/go-test-project.git": {
       "url": "https://git.home.luguber.info/inful/go-test-project.git",
       "name": "go-test-project",
       "branch": "main",
-      "last_discovery": "2025-09-28T21:53:36.759375+02:00",
+      "last_discovery": "2025-09-28T22:20:38.870453+02:00",
       "last_commit": "699b90c032b35c1450ea400dd80ac8dd87975419",
       "document_count": 0,
       "build_count": 0,
@@ -21,7 +34,7 @@
       "url": "https://git.home.luguber.info/inful/ingress-info-service.git",
       "name": "ingress-info-service",
       "branch": "main",
-      "last_discovery": "2025-09-28T21:53:36.759381+02:00",
+      "last_discovery": "2025-09-28T22:20:38.870458+02:00",
       "last_commit": "4f846e62a1d8aa718b7de9211f70036c4f3f7027",
       "document_count": 0,
       "build_count": 0,
@@ -34,8 +47,8 @@
       "url": "https://git.home.luguber.info/inful/project-dashboard-frontend.git",
       "name": "project-dashboard-frontend",
       "branch": "main",
-      "last_discovery": "2025-09-28T21:53:36.759385+02:00",
-      "last_commit": "1cf9dccf7027a817d54e72dd37b65d70d3e3db57",
+      "last_discovery": "2025-09-28T22:20:38.870459+02:00",
+      "last_commit": "bca9ca638a1faf96bb2206e38a643b26beda2850",
       "document_count": 0,
       "build_count": 0,
       "error_count": 0,
@@ -50,14 +63,14 @@
     "total_builds": 0,
     "successful_builds": 0,
     "failed_builds": 0,
-    "total_discoveries": 418,
+    "total_discoveries": 473,
     "documents_found": 0,
     "average_build_time_seconds": 0,
     "last_stat_reset": "2025-09-28T00:25:39.634835+02:00",
-    "uptime_seconds": 690.002578208
+    "uptime_seconds": 810.044642875
   },
   "configuration": {
     "last_config_hash": "f0b7d622e525a5294738e3008079c4361ec23bc351e5a11ad5853981ae145d78",
-    "last_report_checksum": "ea898d662ef76abca0fb3b9e3988c59d1379965fb56ccc68b3374de6dc82dc06"
+    "last_report_checksum": "136529bf71e9d7a22ed972260a7953d88c6142c9c0bb2fba147f5bd7de307d54"
   }
 }
