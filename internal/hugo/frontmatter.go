@@ -44,6 +44,9 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 	}
 	// Repository & Section
 	fm["repository"] = in.File.Repository
+	if in.File.Forge != "" {
+		fm["forge"] = in.File.Forge
+	}
 	if in.File.Section != "" {
 		fm["section"] = in.File.Section
 	}
