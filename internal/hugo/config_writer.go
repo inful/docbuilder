@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
@@ -33,7 +33,9 @@ func (g *Generator) generateHugoConfig() error {
 	}
 
 	// Phase 2: theme param injection via registered theme only.
-	if at := g.activeTheme(); at != nil { at.ApplyParams(g, params) }
+	if at := g.activeTheme(); at != nil {
+		at.ApplyParams(g, params)
+	}
 
 	// Phase 3: user overrides (deep merge)
 	if g.config.Hugo.Params != nil {
@@ -90,11 +92,17 @@ func (g *Generator) generateHugoConfig() error {
 				}
 			}
 			root["menu"] = map[string]any{"main": mainMenu}
-		} else { root["menu"] = g.config.Hugo.Menu }
-	} else if g.config.Hugo.Menu != nil { root["menu"] = g.config.Hugo.Menu }
+		} else {
+			root["menu"] = g.config.Hugo.Menu
+		}
+	} else if g.config.Hugo.Menu != nil {
+		root["menu"] = g.config.Hugo.Menu
+	}
 
 	// Phase 7: theme final customization
-	if at := g.activeTheme(); at != nil { at.CustomizeRoot(g, root) }
+	if at := g.activeTheme(); at != nil {
+		at.CustomizeRoot(g, root)
+	}
 
 	data, err := yaml.Marshal(root)
 	if err != nil {

@@ -2,15 +2,20 @@ package hugo
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io/fs"
 	"log/slog"
+	"os"
 	"path/filepath"
+	"strings"
 
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
-	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
 )
@@ -34,9 +39,13 @@ func (g *Generator) activeTheme() th.Theme { return th.Get(g.config.Hugo.ThemeTy
 
 // deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
 func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
-	if g.cachedThemeFeatures != nil { return *g.cachedThemeFeatures }
+	if g.cachedThemeFeatures != nil {
+		return *g.cachedThemeFeatures
+	}
 	if tt := th.Get(g.config.Hugo.ThemeType()); tt != nil {
-		feats := tt.Features(); g.cachedThemeFeatures = &feats; return feats
+		feats := tt.Features()
+		g.cachedThemeFeatures = &feats
+		return feats
 	}
 	feats := th.ThemeFeatures{Name: g.config.Hugo.ThemeType()}
 	g.cachedThemeFeatures = &feats
@@ -49,6 +58,43 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	return g
+}
+
+// existingSiteValidForSkip performs a lightweight integrity probe of the current output
+// directory to decide whether an early in-run skip (after clone stage) is safe.
+// We only allow the skip when:
+//   - build-report.json exists (file, not directory)
+//   - public/ directory exists and is non-empty
+//   - content/ directory has at least one markdown file
+//
+// Failing any check returns false, forcing the pipeline to continue so content is regenerated.
+func (g *Generator) existingSiteValidForSkip() bool {
+	reportPath := filepath.Join(g.outputDir, "build-report.json")
+	if fi, err := os.Stat(reportPath); err != nil || fi.IsDir() {
+		return false
+	}
+	publicDir := filepath.Join(g.outputDir, "public")
+	if fi, err := os.Stat(publicDir); err != nil || !fi.IsDir() {
+		return false
+	}
+	if entries, err := os.ReadDir(publicDir); err != nil || len(entries) == 0 {
+		return false
+	}
+	contentDir := filepath.Join(g.outputDir, "content")
+	if fi, err := os.Stat(contentDir); err != nil || !fi.IsDir() {
+		return false
+	}
+	found := false
+	_ = filepath.WalkDir(contentDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			found = true
+		}
+		return nil
+	})
+	return found
 }
 
 // Config exposes the underlying configuration (read-only usage by themes).
@@ -144,6 +190,8 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	g.onPageRendered = func() { report.RenderedPages++ }
 	bs := newBuildState(g, nil, report)
+	// Compute a minimal config hash for change detection (theme + baseURL + params hash length) - extensible.
+	bs.ConfigHash = g.computeConfigHash()
 
 	// Apply repository filter if config has patterns (future extension: config fields).
 	// Placeholder: look for params under g.config.Hugo.Params["filter"] map with keys include/exclude.
@@ -222,3 +270,45 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	return report, nil
 }
+
+// computeConfigHash generates a stable fingerprint of config fields that should trigger a rebuild
+// even when repository commits have not changed. This is intentionally narrow to avoid false positives
+// and can be expanded as new features require (e.g. menu configuration, output settings).
+func (g *Generator) computeConfigHash() string {
+	if g == nil || g.config == nil {
+		return ""
+	}
+	h := sha256.New()
+	cfg := g.config
+	// Include key high-impact fields.
+	h.Write([]byte(cfg.Hugo.Title))
+	h.Write([]byte(cfg.Hugo.Theme))
+	h.Write([]byte(cfg.Hugo.BaseURL))
+	// Very lightweight params inclusion: just the keys in deterministic order + their string forms.
+	if cfg.Hugo.Params != nil {
+		// Collect keys
+		keys := make([]string, 0, len(cfg.Hugo.Params))
+		for k := range cfg.Hugo.Params {
+			keys = append(keys, k)
+		}
+		// Simple insertion sort (small map expected) to avoid pulling in sort import if not already.
+		for i := 1; i < len(keys); i++ {
+			j := i
+			for j > 0 && keys[j-1] > keys[j] {
+				keys[j-1], keys[j] = keys[j], keys[j-1]
+				j--
+			}
+		}
+		for _, k := range keys {
+			h.Write([]byte(k))
+			if v := cfg.Hugo.Params[k]; v != nil {
+				h.Write([]byte(fmt.Sprintf("%v", v)))
+			}
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// ComputeConfigHashForPersistence exposes the internal config hash used for incremental change detection
+// without exporting lower-level implementation details.
+func (g *Generator) ComputeConfigHashForPersistence() string { return g.computeConfigHash() }

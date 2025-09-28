@@ -42,6 +42,8 @@ type BuildReport struct {
 	OutcomeT            BuildOutcome             // typed outcome mirror (source of truth)
 	// Issues captures structured machine-parsable issue taxonomy entries (warnings & errors) for future automation.
 	Issues []ReportIssue // not yet populated widely; additive structure
+	// SkipReason indicates why the pipeline was short-circuited (e.g. "no_changes"). Empty if full pipeline ran.
+	SkipReason string
 }
 
 // AddIssue appends a structured issue and (for backward compatibility) mirrors it into legacy
@@ -224,6 +226,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		Retries:             r.Retries,
 		RetriesExhausted:    r.RetriesExhausted,
 		Issues:              r.Issues, // already JSON-friendly
+		SkipReason:          r.SkipReason,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -255,4 +258,5 @@ type BuildReportSerializable struct {
 	Retries             int                      `json:"retries"`
 	RetriesExhausted    bool                     `json:"retries_exhausted"`
 	Issues              []ReportIssue            `json:"issues"`
+	SkipReason          string                   `json:"skip_reason,omitempty"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -190,13 +191,17 @@ func newCanceledStageError(stage StageName, err error) *StageError {
 
 // BuildState carries mutable state and metrics across stages.
 type BuildState struct {
-	Generator    *Generator
-	Docs         []docs.DocFile
-	Report       *BuildReport
-	start        time.Time
-	Repositories []config.Repository // configured repositories (post-filter)
-	RepoPaths    map[string]string   // name -> local filesystem path
-	WorkspaceDir string              // root workspace for git operations
+	Generator         *Generator
+	Docs              []docs.DocFile
+	Report            *BuildReport
+	start             time.Time
+	Repositories      []config.Repository // configured repositories (post-filter)
+	RepoPaths         map[string]string   // name -> local filesystem path
+	WorkspaceDir      string              // root workspace for git operations
+	preHeads          map[string]string   // repo -> head before update (for existing repos)
+	postHeads         map[string]string   // repo -> head after clone/update
+	AllReposUnchanged bool                // set true if every repo head unchanged (and no fresh clones)
+	ConfigHash        string              // fingerprint of relevant config used for change detection
 }
 
 // newBuildState constructs a BuildState.
@@ -242,6 +247,20 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			}
 			return fmt.Errorf("stage %s aborted", st.Name)
 		}
+		// Early skip optimization: after clone stage, if all repos unchanged skip remaining stages.
+		if st.Name == StageCloneRepos && bs.AllReposUnchanged {
+			// Only allow early exit if existing output structure is still valid.
+			if bs.Generator != nil && bs.Generator.existingSiteValidForSkip() {
+				slog.Info("Early build exit: no repository HEAD changes and existing site valid; skipping remaining stages")
+				bs.Report.SkipReason = "no_changes"
+				// Derive outcome and finish timestamps so report persistence is consistent with full builds.
+				bs.Report.deriveOutcome()
+				bs.Report.finish()
+				return nil
+			}
+			// Site missing or incomplete: continue with full pipeline despite unchanged heads.
+			slog.Info("Repository heads unchanged but output invalid/missing; proceeding with full build")
+		}
 	}
 	return nil
 }
@@ -275,6 +294,8 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
+	bs.preHeads = make(map[string]string, len(bs.Repositories))
+	bs.postHeads = make(map[string]string, len(bs.Repositories))
 
 	// Normalize requested concurrency.
 	concurrency := 1
@@ -313,14 +334,17 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			)
 			// Determine if we should attempt update based on strategy.
 			attemptUpdate := false
+			var preHead string
 			switch strategy {
 			case config.CloneStrategyUpdate:
 				attemptUpdate = true
 			case config.CloneStrategyAuto:
-				// If directory exists, try update; else fresh clone.
 				repoPath := filepath.Join(bs.WorkspaceDir, task.repo.Name)
 				if _, statErr := os.Stat(filepath.Join(repoPath, ".git")); statErr == nil {
 					attemptUpdate = true
+					if head, herr := readRepoHead(repoPath); herr == nil {
+						preHead = head
+					}
 				}
 			}
 			if attemptUpdate {
@@ -334,6 +358,12 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			if success {
 				bs.Report.ClonedRepositories++
 				bs.RepoPaths[task.repo.Name] = p
+				if head, herr := readRepoHead(p); herr == nil { // post head
+					bs.postHeads[task.repo.Name] = head
+					if preHead != "" {
+						bs.preHeads[task.repo.Name] = preHead
+					}
+				}
 			} else {
 				bs.Report.FailedRepositories++
 				// Attach structured issue immediately for permanent git errors (non-transient) with granular code.
@@ -381,6 +411,20 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	default:
 	}
 
+	// Compute unchanged determination
+	unchanged := bs.Report.FailedRepositories == 0 && len(bs.postHeads) > 0
+	if unchanged {
+		for name, post := range bs.postHeads {
+			if pre, ok := bs.preHeads[name]; !ok || pre == "" || pre != post { // fresh clone or changed
+				unchanged = false
+				break
+			}
+		}
+	}
+	bs.AllReposUnchanged = unchanged
+	if bs.AllReposUnchanged {
+		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.postHeads)))
+	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}
@@ -441,6 +485,26 @@ func classifyGitFailure(err error) ReportIssueCode {
 	default:
 		return ""
 	}
+}
+
+// readRepoHead returns the current HEAD commit hash (short 40 hex) for a repository path; best-effort.
+func readRepoHead(repoPath string) (string, error) {
+	// Open .git/HEAD and resolve if symbolic ref; fallback to empty on errors.
+	headPath := filepath.Join(repoPath, ".git", "HEAD")
+	data, err := os.ReadFile(headPath)
+	if err != nil {
+		return "", err
+	}
+	line := strings.TrimSpace(string(data))
+	if strings.HasPrefix(line, "ref:") {
+		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
+		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
+		b, berr := os.ReadFile(refPath)
+		if berr == nil {
+			return strings.TrimSpace(string(b)), nil
+		}
+	}
+	return line, nil
 }
 
 func stageLayouts(ctx context.Context, bs *BuildState) error {

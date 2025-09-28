@@ -17,6 +17,7 @@ type BuildConfig struct {
 	HardResetOnDiverge bool             `yaml:"hard_reset_on_diverge,omitempty"`
 	CleanUntracked     bool             `yaml:"clean_untracked,omitempty"`
 	WorkspaceDir       string           `yaml:"workspace_dir,omitempty"`
+	SkipIfUnchanged    bool             `yaml:"skip_if_unchanged,omitempty"`
 }
 
 // CloneStrategy enumerates strategies for handling existing repository directories.

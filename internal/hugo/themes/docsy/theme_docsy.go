@@ -1,10 +1,11 @@
 package docsy
 
 import (
-    "fmt"
-    "strings"
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
+	"fmt"
+	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 )
 
 type Theme struct{}
