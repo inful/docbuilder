@@ -32,6 +32,8 @@ type Generator struct {
 	cachedThemeFeatures *th.ThemeFeatures
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
+	// indexTemplateUsage captures which index template (main/repository/section) source was used
+	indexTemplateUsage map[string]IndexTemplateInfo
 }
 
 // activeTheme returns current registered theme.
@@ -54,7 +56,7 @@ func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}}
+	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	return g
