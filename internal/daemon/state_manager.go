@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -46,6 +47,54 @@ type RepoState struct {
 	ErrorCount    int64                  `json:"error_count"`
 	LastError     string                 `json:"last_error,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// IncrementRepoBuild increments build counters for a repository and optionally the error count.
+// If the repository does not yet exist in state it is created with minimal metadata.
+func (sm *StateManager) IncrementRepoBuild(url string, success bool) {
+	if url == "" {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	rs, ok := sm.state.Repositories[url]
+	if !ok {
+		// Derive a name heuristically from URL path segment; fallback to URL.
+		name := url
+		if slash := strings.LastIndex(url, "/"); slash >= 0 && slash+1 < len(url) {
+			name = strings.TrimSuffix(url[slash+1:], ".git")
+		}
+		rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
+		sm.state.Repositories[url] = rs
+	}
+	now := time.Now()
+	rs.LastBuild = &now
+	rs.BuildCount++
+	if !success {
+		rs.ErrorCount++
+	}
+	sm.scheduleSave()
+}
+
+// SetRepoDocumentCount sets the discovered document count for a repository (idempotent for zero unless increasing).
+func (sm *StateManager) SetRepoDocumentCount(url string, count int) {
+	if url == "" || count < 0 {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	rs, ok := sm.state.Repositories[url]
+	if !ok {
+		name := url
+		if slash := strings.LastIndex(url, "/"); slash >= 0 && slash+1 < len(url) {
+			name = strings.TrimSuffix(url[slash+1:], ".git")
+		}
+		rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
+		sm.state.Repositories[url] = rs
+	}
+	// Overwrite unconditionally; if callers want monotonic behavior they must enforce upstream.
+	rs.DocumentCount = count
+	sm.scheduleSave()
 }
 
 // SetRepoLastCommit updates the stored last commit for a repository (by URL) creating state if necessary.
