@@ -23,6 +23,7 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 
 - Clone documentation from multiple Git repositories
 - Support for various authentication methods (SSH, tokens, basic auth)
+- Conditional forge-level namespacing: when multiple distinct forge types are present (via `tags.forge_type`), content paths become `content/<forge>/<repository>/...`; single-forge builds keep `content/<repository>/...`.
 
 ## Recommended Filesystem Layouts
 
@@ -281,7 +282,7 @@ Template Context (all kinds unless noted):
 | `.Stats` | map | `{ TotalFiles, TotalRepositories }` |
 | `.Now` | time.Time | Generation timestamp |
 
-`DocFile` exposed fields (simplified): `Name`, `Repository`, `Section`, `Path`.
+`DocFile` exposed fields (simplified): `Name`, `Repository`, `Forge` (empty when not namespaced), `Section`, `Path`.
 
 Helper Functions Available:
 
@@ -430,6 +431,8 @@ DocBuilder exposes build and runtime metrics in two forms (both available when m
 | `docbuilder_build_retry_exhausted_total` | counter | `stage` | Count of stages where all retry attempts were exhausted without success. |
 
 Additional counters (JSON only currently) are derived from the internal `BuildReport` (e.g., cloned, failed, skipped repository counts, rendered pages). Two real‑time operational gauges (`docbuilder_daemon_active_jobs`, `docbuilder_daemon_queue_length`) provide active concurrency visibility. Retry attempt and exhaustion counters aid alerting around instability.
+
+Historical note: a prior heuristic that synthesized a `cloned_repositories` count when skipping the clone stage has been removed. The metric now only reflects actual clone activity (zero when no clone stage ran).
 
 ### Transient Error Classification
 
