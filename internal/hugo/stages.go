@@ -529,7 +529,16 @@ func stageCopyContent(ctx context.Context, bs *BuildState) error {
 }
 
 func stageIndexes(ctx context.Context, bs *BuildState) error {
-	return bs.Generator.generateIndexPages(bs.Docs)
+	if err := bs.Generator.generateIndexPages(bs.Docs); err != nil {
+		return err
+	}
+	// capture usage into report for observability
+	if bs.Report != nil && bs.Generator != nil && bs.Generator.indexTemplateUsage != nil {
+		for k, v := range bs.Generator.indexTemplateUsage {
+			bs.Report.IndexTemplates[k] = v
+		}
+	}
+	return nil
 }
 
 func stageRunHugo(ctx context.Context, bs *BuildState) error {

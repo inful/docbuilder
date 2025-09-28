@@ -44,6 +44,8 @@ type BuildReport struct {
 	Issues []ReportIssue // not yet populated widely; additive structure
 	// SkipReason indicates why the pipeline was short-circuited (e.g. "no_changes"). Empty if full pipeline ran.
 	SkipReason string
+	// IndexTemplates records which source was used for each index template kind (main, repository, section)
+	IndexTemplates map[string]IndexTemplateInfo
 }
 
 // AddIssue appends a structured issue and (for backward compatibility) mirrors it into legacy
@@ -99,6 +101,14 @@ type ReportIssue struct {
 	Transient bool            `json:"transient"`
 }
 
+// IndexTemplateInfo captures the resolution details for an index template kind.
+// Source can be: "embedded" (built-in default) or "file" (user override).
+// Path is empty for embedded sources.
+type IndexTemplateInfo struct {
+	Source string `json:"source"` // embedded | file
+	Path   string `json:"path,omitempty"`
+}
+
 // StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
 type StageCount struct {
 	Success  int
@@ -116,6 +126,7 @@ func newBuildReport(repos, files int) *BuildReport {
 		StageDurations:  make(map[string]time.Duration),
 		StageErrorKinds: make(map[StageName]StageErrorKind),
 		StageCounts:     make(map[StageName]StageCount),
+		IndexTemplates:  make(map[string]IndexTemplateInfo),
 		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
 }
@@ -227,6 +238,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		RetriesExhausted:    r.RetriesExhausted,
 		Issues:              r.Issues, // already JSON-friendly
 		SkipReason:          r.SkipReason,
+		IndexTemplates:      r.IndexTemplates,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -259,4 +271,5 @@ type BuildReportSerializable struct {
 	RetriesExhausted    bool                     `json:"retries_exhausted"`
 	Issues              []ReportIssue            `json:"issues"`
 	SkipReason          string                   `json:"skip_reason,omitempty"`
+	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
 }
