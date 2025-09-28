@@ -17,6 +17,7 @@ type DocFile struct {
 	RelativePath string            // Path relative to the docs directory
 	DocsBase     string            // The configured docs base path for this repo (e.g., "docs" or ".")
 	Repository   string            // Repository name
+	Forge        string            // Optional forge namespace (empty when single or not namespaced)
 	Section      string            // Documentation section/directory
 	Name         string            // File name without extension
 	Extension    string            // File extension
@@ -47,6 +48,19 @@ func NewDiscovery(repositories []config.Repository) *Discovery {
 func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error) {
 	d.docFiles = make([]DocFile, 0)
 
+	// Determine if multiple forges are present for namespacing: count distinct forge_type tags
+	forgeCount := 0
+	forgeSeen := map[string]struct{}{}
+	for _, r := range d.repositories {
+		if ft, ok := r.Tags["forge_type"]; ok && ft != "" {
+			if _, exists := forgeSeen[ft]; !exists {
+				forgeSeen[ft] = struct{}{}
+				forgeCount++
+			}
+		}
+	}
+	namespaceForges := forgeCount > 1
+
 	for repoName, repoPath := range repoPaths {
 		repo, exists := d.repositories[repoName]
 		if !exists {
@@ -64,6 +78,10 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 		slog.Info("Discovering documentation", logfields.Repository(repoName), slog.Any("paths", repo.Paths))
 
+		forgeNS := ""
+		if namespaceForges {
+			forgeNS = repo.Tags["forge_type"]
+		}
 		for _, docsPath := range repo.Paths {
 			fullDocsPath := filepath.Join(repoPath, docsPath)
 
@@ -75,7 +93,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 				continue
 			}
 
-			files, err := d.walkDocsDirectory(fullDocsPath, repoName, docsPath, repo.Tags)
+			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, docsPath, repo.Tags)
 			if err != nil {
 				return nil, fmt.Errorf("failed to walk docs directory %s in %s: %w", docsPath, repoName, err)
 			}
@@ -91,7 +109,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 }
 
 // walkDocsDirectory recursively walks a documentation directory
-func (d *Discovery) walkDocsDirectory(docsPath, repoName, relativePath string, metadata map[string]string) ([]DocFile, error) {
+func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath string, metadata map[string]string) ([]DocFile, error) {
 	var files []DocFile
 
 	err := filepath.Walk(docsPath, func(path string, info os.FileInfo, err error) error {
@@ -131,6 +149,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, relativePath string, m
 			RelativePath: relPath,
 			DocsBase:     relativePath,
 			Repository:   repoName,
+			Forge:        forgeNS,
 			Section:      section,
 			Name:         strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())),
 			Extension:    filepath.Ext(info.Name()),
@@ -167,8 +186,14 @@ func (df *DocFile) LoadContent() error {
 
 // GetHugoPath returns the Hugo-compatible path for this documentation file
 func (df *DocFile) GetHugoPath() string {
-	// Create path: content/{repository}/{section}/{name}.md
-	parts := []string{"content", df.Repository}
+	// Path shape:
+	//   Single forge (no namespace): content/{repository}/{section}/{name}.md
+	//   Multiple forges:             content/{forge}/{repository}/{section}/{name}.md
+	parts := []string{"content"}
+	if df.Forge != "" {
+		parts = append(parts, df.Forge)
+	}
+	parts = append(parts, df.Repository)
 
 	if df.Section != "" {
 		parts = append(parts, df.Section)
@@ -224,23 +249,27 @@ func (d *Discovery) GetDocFiles() []DocFile {
 // GetDocFilesByRepository returns documentation files grouped by repository
 func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 	result := make(map[string][]DocFile)
-
 	for _, file := range d.docFiles {
-		result[file.Repository] = append(result[file.Repository], file)
+		key := file.Repository
+		if file.Forge != "" {
+			key = file.Forge + "/" + key
+		}
+		result[key] = append(result[key], file)
 	}
-
 	return result
 }
 
 // GetDocFilesBySection returns documentation files grouped by section
 func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 	result := make(map[string][]DocFile)
-
 	for _, file := range d.docFiles {
-		key := file.Repository + "/" + file.Section
+		repoKey := file.Repository
+		if file.Forge != "" {
+			repoKey = file.Forge + "/" + repoKey
+		}
+		key := repoKey + "/" + file.Section
 		result[key] = append(result[key], file)
 	}
-
 	return result
 }
 

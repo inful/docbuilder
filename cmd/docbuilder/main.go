@@ -1,22 +1,22 @@
 package main
 
 import (
-    "context"
-    "fmt"
-    "log/slog"
-    "os"
-    "os/signal"
-    "syscall"
-    "time"
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-    "git.home.luguber.info/inful/docbuilder/internal/config"
-    "git.home.luguber.info/inful/docbuilder/internal/daemon"
-    "git.home.luguber.info/inful/docbuilder/internal/docs"
-    "git.home.luguber.info/inful/docbuilder/internal/forge"
-    "git.home.luguber.info/inful/docbuilder/internal/git"
-    "git.home.luguber.info/inful/docbuilder/internal/hugo"
-    "git.home.luguber.info/inful/docbuilder/internal/workspace"
-    "github.com/alecthomas/kong"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
+	"github.com/alecthomas/kong"
 )
 
 // Set at build time with: -ldflags "-X main.version=1.0.0-rc1"
@@ -24,85 +24,85 @@ var version = "dev"
 
 // Root CLI definition & global flags.
 type CLI struct {
-    Config  string           `short:"c" help:"Configuration file path" default:"config.yaml"`
-    Verbose bool             `short:"v" help:"Enable verbose logging"`
-    Version kong.VersionFlag `name:"version" help:"Show version and exit"`
+	Config  string           `short:"c" help:"Configuration file path" default:"config.yaml"`
+	Verbose bool             `short:"v" help:"Enable verbose logging"`
+	Version kong.VersionFlag `name:"version" help:"Show version and exit"`
 
-    Build    BuildCmd    `cmd:"" help:"Build documentation site from configured repositories"`
-    Init     InitCmd     `cmd:"" help:"Initialize a new configuration file"`
-    Discover DiscoverCmd `cmd:"" help:"Discover documentation files without building"`
-    Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
+	Build    BuildCmd    `cmd:"" help:"Build documentation site from configured repositories"`
+	Init     InitCmd     `cmd:"" help:"Initialize a new configuration file"`
+	Discover DiscoverCmd `cmd:"" help:"Discover documentation files without building"`
+	Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
 }
 
 // Common context passed to subcommands if we need to share global state later.
 type Global struct {
-    Logger *slog.Logger
+	Logger *slog.Logger
 }
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
-    Output      string `short:"o" help:"Output directory for generated site" default:"./site"`
-    Incremental bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
+	Output      string `short:"o" help:"Output directory for generated site" default:"./site"`
+	Incremental bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
 }
 
 // InitCmd implements the 'init' command.
 type InitCmd struct {
-    Force bool `help:"Overwrite existing configuration file"`
+	Force bool `help:"Overwrite existing configuration file"`
 }
 
 // DiscoverCmd implements the 'discover' command.
 type DiscoverCmd struct {
-    Repository string `short:"r" help:"Specific repository to discover (optional)"`
+	Repository string `short:"r" help:"Specific repository to discover (optional)"`
 }
 
 // DaemonCmd implements the 'daemon' command.
 type DaemonCmd struct {
-    DataDir string `short:"d" help:"Data directory for daemon state" default:"./daemon-data"`
+	DataDir string `short:"d" help:"Data directory for daemon state" default:"./daemon-data"`
 }
 
 // AfterApply runs after flag parsing; setup logging once.
 func (c *CLI) AfterApply() error {
-    level := slog.LevelInfo
-    if c.Verbose {
-        level = slog.LevelDebug
-    }
-    logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
-    slog.SetDefault(logger)
-    return nil
+	level := slog.LevelInfo
+	if c.Verbose {
+		level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	slog.SetDefault(logger)
+	return nil
 }
 
 func (b *BuildCmd) Run(globals *Global, root *CLI) error {
-    cfg, err := config.Load(root.Config)
-    if err != nil {
-        return fmt.Errorf("load config: %w", err)
-    }
-    if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
-        if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
-            cfg.Repositories = repos
-        } else {
-            return fmt.Errorf("auto-discovery failed: %w", err)
-        }
-    }
-    return runBuild(cfg, b.Output, b.Incremental, root.Verbose)
+	cfg, err := config.Load(root.Config)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+		if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
+			cfg.Repositories = repos
+		} else {
+			return fmt.Errorf("auto-discovery failed: %w", err)
+		}
+	}
+	return runBuild(cfg, b.Output, b.Incremental, root.Verbose)
 }
 
 func (i *InitCmd) Run(globals *Global, root *CLI) error {
-    return runInit(root.Config, i.Force)
+	return runInit(root.Config, i.Force)
 }
 
 func (d *DiscoverCmd) Run(globals *Global, root *CLI) error {
-    cfg, err := config.Load(root.Config)
-    if err != nil {
-        return fmt.Errorf("load config: %w", err)
-    }
-    if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
-        if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
-            cfg.Repositories = repos
-        } else {
-            return fmt.Errorf("auto-discovery failed: %w", err)
-        }
-    }
-    return runDiscover(cfg, d.Repository)
+	cfg, err := config.Load(root.Config)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+		if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
+			cfg.Repositories = repos
+		} else {
+			return fmt.Errorf("auto-discovery failed: %w", err)
+		}
+	}
+	return runDiscover(cfg, d.Repository)
 }
 
 func (d *DaemonCmd) Run(globals *Global, root *CLI) error {
@@ -114,16 +114,16 @@ func (d *DaemonCmd) Run(globals *Global, root *CLI) error {
 }
 
 func main() {
-    cli := &CLI{}
-    parser := kong.Parse(cli,
-        kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
-        kong.Vars{"version": version},
-    )
-    // Prepare globals (currently just logger already installed in AfterApply)
-    globals := &Global{Logger: slog.Default()}
-    if err := parser.Run(globals, cli); err != nil {
-        parser.Fatalf("%v", err)
-    }
+	cli := &CLI{}
+	parser := kong.Parse(cli,
+		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
+		kong.Vars{"version": version},
+	)
+	// Prepare globals (currently just logger already installed in AfterApply)
+	globals := &Global{Logger: slog.Default()}
+	if err := parser.Run(globals, cli); err != nil {
+		parser.Fatalf("%v", err)
+	}
 }
 
 func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bool) error {
