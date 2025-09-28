@@ -34,6 +34,11 @@ type Generator struct {
 	editLinkResolver *EditLinkResolver
 	// indexTemplateUsage captures which index template (main/repository/section) source was used
 	indexTemplateUsage map[string]IndexTemplateInfo
+	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
+	stateManager interface {
+		SetRepoDocumentCount(string, int)
+		SetRepoDocFilesHash(string, string)
+	}
 }
 
 // activeTheme returns current registered theme.
@@ -59,6 +64,12 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
+	return g
+}
+
+// WithStateManager injects an optional state manager for persistence of discovery/build metadata.
+func (g *Generator) WithStateManager(sm interface{ SetRepoDocumentCount(string, int); SetRepoDocFilesHash(string, string) }) *Generator {
+	g.stateManager = sm
 	return g
 }
 
