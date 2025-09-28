@@ -2,6 +2,26 @@ package config
 
 import "strings"
 
+// Custom unmarshal to detect if detect_deletions was explicitly set by user.
+func (b *BuildConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type raw BuildConfig
+	var aux raw
+	if err := unmarshal(&aux); err != nil {
+		return err
+	}
+	// Copy back
+	*b = BuildConfig(aux)
+	// Heuristic: if the YAML explicitly mentioned the key, the unmarshaller will have set the bool (even if false).
+	// We can't directly know presence, so we re-unmarshal into a generic map to check.
+	var m map[string]interface{}
+	if err := unmarshal(&m); err == nil {
+		if _, ok := m["detect_deletions"]; ok {
+			b.detectDeletionsSpecified = true
+		}
+	}
+	return nil
+}
+
 // BuildConfig holds build performance tuning knobs and retry/cleanup options.
 type BuildConfig struct {
 	CloneConcurrency   int              `yaml:"clone_concurrency,omitempty"`
@@ -19,7 +39,11 @@ type BuildConfig struct {
 	CleanUntracked     bool             `yaml:"clean_untracked,omitempty"`
 	WorkspaceDir       string           `yaml:"workspace_dir,omitempty"`
 	SkipIfUnchanged    bool             `yaml:"skip_if_unchanged,omitempty"`
-	RenderMode         RenderMode       `yaml:"render_mode,omitempty"` // auto|always|never (preferred over legacy env DOCBUILDER_RUN_HUGO / DOCBUILDER_SKIP_HUGO)
+	RenderMode         RenderMode       `yaml:"render_mode,omitempty"`      // auto|always|never (preferred over legacy env DOCBUILDER_RUN_HUGO / DOCBUILDER_SKIP_HUGO)
+	DetectDeletions    bool             `yaml:"detect_deletions,omitempty"` // enable unchanged repo deletion scan during partial recomposition
+	// detectDeletionsSpecified is set internally during load when the YAML explicitly sets detect_deletions.
+	// This lets defaults apply (true) only when user omitted the field entirely.
+	detectDeletionsSpecified bool `yaml:"-"`
 }
 
 // NamespacingMode controls whether forge-level directory names are included in content paths.

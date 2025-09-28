@@ -28,6 +28,7 @@ type DeltaPlan struct {
 	Decision     DeltaDecision
 	ChangedRepos []string // repositories requiring rebuild (empty implies none or full rebuild depending on Decision)
 	Reason       string   // human readable explanation of decision
+	RepoReasons  map[string]string // per-repo inclusion reason (hash_mismatch|unknown|quick_hash_diff|assumed_changed)
 }
 
 // DeltaStateAccess is the narrow interface DeltaAnalyzer needs from state.
@@ -111,28 +112,32 @@ func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repositor
 
 	changed := make([]string, 0, len(repos))
 	unknown := 0
+	reasons := make(map[string]string, len(repos))
 	for _, r := range repos {
 		docHash := da.state.GetRepoDocFilesHash(r.URL)
 		commit := da.state.GetRepoLastCommit(r.URL)
 		// If we have prior doc hash + commit, attempt quick workspace hash to detect unchanged repos even when hash persists (skip if missing).
 		if docHash != "" && commit != "" && da.workspaceDir != "" {
-			if quick := da.computeQuickRepoHash(r.Name); quick != "" && quick == docHash {
-				// likely unchanged; continue without marking changed
-				continue
+			if quick := da.computeQuickRepoHash(r.Name); quick != "" {
+				if quick == docHash {
+					// unchanged via quick hash parity
+					continue
+				} else {
+					reasons[r.URL] = "quick_hash_diff"
+					changed = append(changed, r.URL)
+					continue
+				}
 			}
 		}
 		if docHash == "" || commit == "" { // incomplete metadata => must rebuild
-			if docHash == "" && commit == "" {
-				unknown++
-			}
+			if docHash == "" && commit == "" { unknown++ }
+			reasons[r.URL] = "unknown"
 			changed = append(changed, r.URL)
 			continue
 		}
-		// If quick hash produced value but differs from stored docHash mark as changed.
-		if quick := da.computeQuickRepoHash(r.Name); quick != "" && quick != docHash {
-			changed = append(changed, r.URL)
-			continue
-		}
+		// Fallback conservative assumption (cannot prove unchanged)
+		reasons[r.URL] = "assumed_changed"
+		changed = append(changed, r.URL)
 	}
 
 	if len(changed) == 0 {
@@ -143,8 +148,8 @@ func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repositor
 		if unknown == len(repos) {
 			reason = "all_repos_unknown_state"
 		}
-		return DeltaPlan{Decision: DeltaDecisionFull, Reason: reason}
+		return DeltaPlan{Decision: DeltaDecisionFull, Reason: reason, RepoReasons: reasons}
 	}
 	slog.Info("DeltaAnalyzer: partial rebuild candidate", "changed_repos", strings.Join(changed, ","), "total_repos", len(repos))
-	return DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: changed, Reason: "subset_changed"}
+	return DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: changed, Reason: "subset_changed", RepoReasons: reasons}
 }

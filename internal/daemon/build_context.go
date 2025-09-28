@@ -96,6 +96,15 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 	}); ok && st != nil {
 		plan := NewDeltaAnalyzer(st).WithWorkspace(bc.cfg.Build.WorkspaceDir).Analyze(bc.generator.ComputeConfigHashForPersistence(), bc.repos)
 		bc.deltaPlan = &plan
+		// Expose per-repo reasons (only for changed repos) into job metadata for later report population
+		if plan.RepoReasons != nil {
+			m := make(map[string]string, len(plan.RepoReasons))
+			for k, v := range plan.RepoReasons { m[k] = v }
+			bc.job.Metadata["delta_repo_reasons"] = m
+		}
+		if mc, okm := bc.job.Metadata["metrics_collector"].(*MetricsCollector); okm && mc != nil {
+			if plan.Decision == DeltaDecisionPartial { mc.IncrementCounter("builds_partial") } else { mc.IncrementCounter("builds_full") }
+		}
 		if bc.skipReport != nil { // edge case: skip already decided but still populate delta metadata
 			if plan.Decision == DeltaDecisionPartial {
 				bc.skipReport.DeltaDecision = "partial"
@@ -205,6 +214,13 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 		} else {
 			report.DeltaDecision = "full"
 		}
+		// Attach per-repo reasons if provided via deltaPlan extension (future-proof: expect optional map in job metadata)
+		if report.DeltaRepoReasons == nil {
+			report.DeltaRepoReasons = map[string]string{}
+		}
+		if m, ok := bc.job.Metadata["delta_repo_reasons"].(map[string]string); ok {
+			for k, v := range m { report.DeltaRepoReasons[k] = v }
+		}
 	}
 	// Recompute global doc_files_hash for partial builds by merging unchanged + changed repo path lists.
 	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
@@ -217,10 +233,11 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 			for _, u := range bc.deltaPlan.ChangedRepos { changedSet[u] = struct{}{} }
 			orig, _ := bc.job.Metadata["repositories"].([]cfg.Repository)
 			allPaths := make([]string, 0, 2048)
+			deletionsDetected := 0
 			for _, r := range orig {
 				paths := getter.GetRepoDocFilePaths(r.URL)
-				// For unchanged repos, attempt to detect deletions by scanning workspace clone (if available)
-				if _, isChanged := changedSet[r.URL]; !isChanged && bc.workspace != "" {
+				// For unchanged repos, optionally detect deletions by scanning workspace clone (if available)
+				if _, isChanged := changedSet[r.URL]; !isChanged && bc.workspace != "" && bc.cfg != nil && bc.cfg.Build.DetectDeletions {
 					repoRoot := filepath.Join(bc.workspace, r.Name)
 					if fi, err := os.Stat(repoRoot); err == nil && fi.IsDir() {
 						fresh := make([]string, 0, len(paths))
@@ -240,21 +257,20 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 								return nil
 							})
 						}
-						if len(fresh) > 0 { // Only update if we found some; if repo has zero docs we allow empty slice to clear state.
-							// Compare with persisted list; if different (e.g., deletion), persist new list & hash.
-							update := false
-							if len(fresh) != len(paths) { update = true } else {
-								for i := range fresh { if i >= len(paths) || fresh[i] != paths[i] { update = true; break } }
+						// Compare with persisted list; if different (including zero-doc case), persist new list & hash.
+						sort.Strings(fresh)
+						update := false
+						if len(fresh) != len(paths) { update = true } else {
+							for i := range fresh { if i >= len(paths) || fresh[i] != paths[i] { update = true; break } }
+						}
+						if update {
+							if len(fresh) < len(paths) { deletionsDetected += len(paths) - len(fresh) }
+							if sOK { setter.SetRepoDocFilePaths(r.URL, fresh) }
+							if hOK {
+								hh := sha256.New(); for _, p := range fresh { hh.Write([]byte(p)); hh.Write([]byte{0}) }
+								hasher.SetRepoDocFilesHash(r.URL, hex.EncodeToString(hh.Sum(nil)))
 							}
-							if update {
-								sort.Strings(fresh)
-								if sOK { setter.SetRepoDocFilePaths(r.URL, fresh) }
-								if hOK {
-									hh := sha256.New(); for _, p := range fresh { hh.Write([]byte(p)); hh.Write([]byte{0}) }
-									hasher.SetRepoDocFilesHash(r.URL, hex.EncodeToString(hh.Sum(nil)))
-								}
-								paths = fresh
-							}
+							paths = fresh
 						}
 					}
 				}
@@ -266,6 +282,7 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 				for _, p := range allPaths { h.Write([]byte(p)); h.Write([]byte{0}) }
 				report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
 			}
+			if deletionsDetected > 0 { if mc, ok := bc.job.Metadata["metrics_collector"].(*MetricsCollector); ok && mc != nil { for i:=0;i<deletionsDetected;i++ { mc.IncrementCounter("doc_deletions_detected") } } }
 		}
 	}
 	// Repo build counters & document counts

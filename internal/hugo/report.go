@@ -54,6 +54,8 @@ type BuildReport struct {
 	DeltaDecision string
 	// DeltaChangedRepos lists repository URLs included in a partial rebuild decision.
 	DeltaChangedRepos []string
+	// DeltaRepoReasons maps repository URL -> reason string for inclusion/exclusion decisions (best effort; may be empty)
+	DeltaRepoReasons map[string]string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -256,6 +258,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		DocFilesHash:        r.DocFilesHash,
 		DeltaDecision:       r.DeltaDecision,
 		DeltaChangedRepos:   r.DeltaChangedRepos,
+		DeltaRepoReasons:    r.DeltaRepoReasons,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -293,4 +296,5 @@ type BuildReportSerializable struct {
 	DocFilesHash        string                       `json:"doc_files_hash,omitempty"`
 	DeltaDecision       string                       `json:"delta_decision,omitempty"`
 	DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
+	DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
 }
