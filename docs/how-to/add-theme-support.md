@@ -14,12 +14,14 @@ A `go.mod` is auto-created in the output directory with required module imports.
 ## Theme Features
 
 ### Hextra
+
 - FlexSearch configuration for fast client-side search.
 - Math support enabled in Goldmark.
 - Edit link logic integrated per page when repository metadata allows.
 - Default navbar with search & theme toggle.
 
 ### Docsy
+
 - JSON output enabled for offline search index generation.
 - Repository links and UI defaults auto-configured.
 - Module import based resolution (no legacy `themes/` copy).
@@ -32,7 +34,7 @@ Edit the generated `hugo.yaml` after a build, or better: provide overrides via c
 
 Place template overrides before running the build:
 
-```
+```text
 outputDir/
   templates/
     index/
