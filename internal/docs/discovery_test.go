@@ -3,8 +3,8 @@ package docs
 import (
 	"os"
 	"path/filepath"
-	"testing"
 	"strings"
+	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -144,14 +144,20 @@ func TestIgnoredFiles(t *testing.T) {
 
 func TestForgeNamespacingModes(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "docbuilder-ns-test")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer os.RemoveAll(tempDir)
 
 	mkRepo := func(name, forgeType string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
 		docsDir := filepath.Join(repoDir, "docs")
-		if err := os.MkdirAll(docsDir, 0o755); err != nil { t.Fatalf("mkdir: %v", err) }
-		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil { t.Fatalf("write: %v", err) }
+		if err := os.MkdirAll(docsDir, 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
 		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": forgeType}}, repoDir
 	}
 
@@ -166,14 +172,18 @@ func TestForgeNamespacingModes(t *testing.T) {
 		bc := &config.BuildConfig{NamespaceForges: mode}
 		d := NewDiscovery(repos, bc)
 		files, err := d.DiscoverDocs(repoPaths)
-		if err != nil { t.Fatalf("DiscoverDocs: %v", err) }
+		if err != nil {
+			t.Fatalf("DiscoverDocs: %v", err)
+		}
 		return files
 	}
 
 	// auto -> since two distinct forges, expect forge prefix
 	autoFiles := run(config.NamespacingAuto)
 	for _, f := range autoFiles {
-		if f.Forge == "" { t.Fatalf("expected forge set in auto mode with multi-forge") }
+		if f.Forge == "" {
+			t.Fatalf("expected forge set in auto mode with multi-forge")
+		}
 		if !strings.Contains(f.GetHugoPath(), f.Forge+string(filepath.Separator)+f.Repository) {
 			t.Fatalf("hugo path missing forge segment: %s", f.GetHugoPath())
 		}
@@ -181,12 +191,18 @@ func TestForgeNamespacingModes(t *testing.T) {
 
 	// always -> same expectation
 	alwaysFiles := run(config.NamespacingAlways)
-	for _, f := range alwaysFiles { if f.Forge == "" { t.Fatalf("expected forge set in always mode") } }
+	for _, f := range alwaysFiles {
+		if f.Forge == "" {
+			t.Fatalf("expected forge set in always mode")
+		}
+	}
 
 	// never -> Forge field empty, path lacks forge segment
 	neverFiles := run(config.NamespacingNever)
 	for _, f := range neverFiles {
-		if f.Forge != "" { t.Fatalf("expected no forge in never mode") }
+		if f.Forge != "" {
+			t.Fatalf("expected no forge in never mode")
+		}
 		if strings.Contains(f.GetHugoPath(), "github") || strings.Contains(f.GetHugoPath(), "gitlab") {
 			t.Fatalf("path should not contain forge in never mode: %s", f.GetHugoPath())
 		}
@@ -195,14 +211,20 @@ func TestForgeNamespacingModes(t *testing.T) {
 
 func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "docbuilder-ns-single")
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer os.RemoveAll(tempDir)
 
 	mkRepo := func(name string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
 		docsDir := filepath.Join(repoDir, "docs")
-		if err := os.MkdirAll(docsDir, 0o755); err != nil { t.Fatalf("mkdir: %v", err) }
-		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil { t.Fatalf("write: %v", err) }
+		if err := os.MkdirAll(docsDir, 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
 		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": "github"}}, repoDir
 	}
 
@@ -213,10 +235,18 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 
 	d := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingAuto})
 	files, err := d.DiscoverDocs(repoPaths)
-	if err != nil { t.Fatalf("DiscoverDocs: %v", err) }
-	if len(files) == 0 { t.Fatalf("expected files discovered") }
+	if err != nil {
+		t.Fatalf("DiscoverDocs: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatalf("expected files discovered")
+	}
 	for _, f := range files {
-		if f.Forge != "" { t.Fatalf("expected empty forge for single-forge auto mode, got %q", f.Forge) }
-		if strings.Contains(f.GetHugoPath(), "github") { t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath()) }
+		if f.Forge != "" {
+			t.Fatalf("expected empty forge for single-forge auto mode, got %q", f.Forge)
+		}
+		if strings.Contains(f.GetHugoPath(), "github") {
+			t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath())
+		}
 	}
 }
