@@ -142,3 +142,33 @@ func (r *EditLinkResolver) Resolve(file docs.DocFile) string {
 
 	return forge.GenerateEditURL(forgeType, base, fullName, branch, repoRel)
 }
+
+// resolveForgeForRepository attempts to match a repository clone URL against configured forge base URLs
+// returning the forge type and canonical base URL. Returns empty strings if not resolvable.
+func resolveForgeForRepository(cfg *config.Config, repoURL string) (config.ForgeType, string) {
+	if cfg == nil || len(cfg.Forges) == 0 || repoURL == "" {
+		return "", ""
+	}
+	normalized := repoURL
+	if strings.HasPrefix(normalized, "git@") {
+		parts := strings.SplitN(strings.TrimPrefix(normalized, "git@"), ":", 2)
+		if len(parts) == 2 {
+			normalized = fmt.Sprintf("https://%s/%s", parts[0], parts[1])
+		}
+	}
+	for _, fc := range cfg.Forges {
+		if fc == nil || fc.BaseURL == "" {
+			continue
+		}
+		base := strings.TrimSuffix(fc.BaseURL, "/")
+		if strings.HasPrefix(normalized, base+"/") || strings.HasPrefix(normalized, base) {
+			return fc.Type, base
+		}
+		if u1, err1 := url.Parse(base); err1 == nil {
+			if u2, err2 := url.Parse(normalized); err2 == nil && u1.Host != "" && u1.Host == u2.Host {
+				return fc.Type, base
+			}
+		}
+	}
+	return "", ""
+}

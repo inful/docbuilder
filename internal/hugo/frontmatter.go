@@ -54,11 +54,13 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 		}
 	}
 
-	// Per-page edit URL (Hextra only) if not already present
+	// Per-page edit URL (Hextra only) if not already present – tests expect BuildFrontMatter to set it.
 	if _, exists := fm["editURL"]; !exists {
-		// use resolver (cheap to allocate if generator not available)
-		if edit := generatePerPageEditURL(in.Config, in.File); edit != "" {
-			fm["editURL"] = edit
+		if in.Config != nil && in.Config.Hugo.ThemeType() == config.ThemeHextra {
+			resolver := NewEditLinkResolver(in.Config)
+			if edit := resolver.Resolve(in.File); edit != "" {
+				fm["editURL"] = edit
+			}
 		}
 	}
 

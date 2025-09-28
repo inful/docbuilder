@@ -434,8 +434,6 @@ func (e *EditLinkInjector) Transform(p *Page) error {
 	val := ""
 	if gen.editLinkResolver != nil {
 		val = gen.editLinkResolver.Resolve(p.File)
-	} else {
-		val = generatePerPageEditURL(gen.config, p.File)
 	}
 	if val == "" {
 		return nil

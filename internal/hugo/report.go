@@ -34,11 +34,11 @@ type BuildReport struct {
 	FailedRepositories  int                      // repositories that failed to clone/auth
 	SkippedRepositories int                      // repositories filtered out before cloning
 	RenderedPages       int                      // markdown pages successfully processed & written
-	StageCounts      map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
-	StaticRendered   bool                     // true if Hugo static site render executed successfully
-	Retries          int                      // total retry attempts (all stages combined)
-	RetriesExhausted bool                     // true if any stage exhausted retry budget
-	Outcome          BuildOutcome             // single source of truth outcome (typed)
+	StageCounts         map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
+	StaticRendered      bool                     // true if Hugo static site render executed successfully
+	Retries             int                      // total retry attempts (all stages combined)
+	RetriesExhausted    bool                     // true if any stage exhausted retry budget
+	Outcome             BuildOutcome             // single source of truth outcome (typed)
 	// Issues captures structured machine-parsable issue taxonomy entries (warnings & errors) for future automation.
 	Issues []ReportIssue // not yet populated widely; additive structure
 	// SkipReason indicates why the pipeline was short-circuited (e.g. "no_changes"). Empty if full pipeline ran.
@@ -234,7 +234,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		r.IndexTemplates = map[string]IndexTemplateInfo{}
 	}
 
-		s := &BuildReportSerializable{
+	s := &BuildReportSerializable{
 		SchemaVersion:       r.SchemaVersion,
 		Repositories:        r.Repositories,
 		Files:               r.Files,
@@ -269,26 +269,26 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 
 // BuildReportSerializable mirrors BuildReport but with string errors for JSON output.
 type BuildReportSerializable struct {
-	SchemaVersion       int                      `json:"schema_version"`
-	Repositories        int                      `json:"repositories"`
-	Files               int                      `json:"files"`
-	Start               time.Time                `json:"start"`
-	End                 time.Time                `json:"end"`
-	Errors              []string                 `json:"errors"`
-	Warnings            []string                 `json:"warnings"`
-	StageDurations      map[string]time.Duration `json:"stage_durations"`
-	StageErrorKinds     map[string]string        `json:"stage_error_kinds"`
-	ClonedRepositories  int                      `json:"cloned_repositories"`
-	FailedRepositories  int                      `json:"failed_repositories"`
-	SkippedRepositories int                      `json:"skipped_repositories"`
-	RenderedPages       int                      `json:"rendered_pages"`
-	StageCounts         map[string]StageCount    `json:"stage_counts"`
-	Outcome             string                   `json:"outcome"`
-	StaticRendered      bool                     `json:"static_rendered"`
-	Retries             int                      `json:"retries"`
-	RetriesExhausted    bool                     `json:"retries_exhausted"`
-	Issues              []ReportIssue            `json:"issues"`
-	SkipReason          string                   `json:"skip_reason,omitempty"`
+	SchemaVersion       int                          `json:"schema_version"`
+	Repositories        int                          `json:"repositories"`
+	Files               int                          `json:"files"`
+	Start               time.Time                    `json:"start"`
+	End                 time.Time                    `json:"end"`
+	Errors              []string                     `json:"errors"`
+	Warnings            []string                     `json:"warnings"`
+	StageDurations      map[string]time.Duration     `json:"stage_durations"`
+	StageErrorKinds     map[string]string            `json:"stage_error_kinds"`
+	ClonedRepositories  int                          `json:"cloned_repositories"`
+	FailedRepositories  int                          `json:"failed_repositories"`
+	SkippedRepositories int                          `json:"skipped_repositories"`
+	RenderedPages       int                          `json:"rendered_pages"`
+	StageCounts         map[string]StageCount        `json:"stage_counts"`
+	Outcome             string                       `json:"outcome"`
+	StaticRendered      bool                         `json:"static_rendered"`
+	Retries             int                          `json:"retries"`
+	RetriesExhausted    bool                         `json:"retries_exhausted"`
+	Issues              []ReportIssue                `json:"issues"`
+	SkipReason          string                       `json:"skip_reason,omitempty"`
 	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
-	CloneStageSkipped   bool                        `json:"clone_stage_skipped,omitempty"`
+	CloneStageSkipped   bool                         `json:"clone_stage_skipped,omitempty"`
 }
