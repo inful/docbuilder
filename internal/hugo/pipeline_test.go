@@ -15,7 +15,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 
 	original := "---\ncustom: keep\n---\n# Heading\n\nLink to [Doc](doc.md)."
 	file := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte(original)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
 	pipe := NewTransformerPipeline(&FrontMatterParser{}, &RelativeLinkRewriter{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
 	if err := pipe.Run(p); err != nil {
 		t.Fatalf("first run failed: %v", err)
@@ -31,7 +31,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 
 	// Second run on produced output
 	file2 := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte(firstOutput)}
-	p2 := &Page{File: file2, Raw: file2.Content, Content: string(file2.Content), FrontMatter: map[string]any{}}
+	p2 := &Page{File: file2, Raw: file2.Content, Content: string(file2.Content)}
 	if err := pipe.Run(p2); err != nil {
 		t.Fatalf("second run failed: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestPipeline_Order(t *testing.T) {
 	gen := NewGenerator(cfg, t.TempDir())
 	existing := "---\ncustom: val\n---\nBody"
 	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Extension: ".md", Content: []byte(existing)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
 	pipe := NewTransformerPipeline(&FrontMatterParser{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
 	if err := pipe.Run(p); err != nil {
 		t.Fatalf("pipeline failed: %v", err)
@@ -69,7 +69,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 	gen := NewGenerator(cfg, t.TempDir())
 	malformed := "---\n:bad yaml\n---\n# T\n"
 	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Extension: ".md", Content: []byte(malformed)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
 	pipe := NewTransformerPipeline(&FrontMatterParser{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
 	if err := pipe.Run(p); err != nil {
 		t.Fatalf("pipeline failed: %v", err)
@@ -85,7 +85,7 @@ func TestDateConsistency(t *testing.T) {
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, t.TempDir())
 	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Extension: ".md", Content: []byte("Body")}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}}
+	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
 	pipe := NewTransformerPipeline(&FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
 	if err := pipe.Run(p); err != nil {
 		t.Fatalf("pipeline failed: %v", err)

@@ -195,7 +195,7 @@ func (cw *ConfigWatcher) performReload(ctx context.Context) error {
 }
 
 // validateConfigChange validates that the configuration change is safe to apply
-func (cw *ConfigWatcher) validateConfigChange(newConfig *config.V2Config) error {
+func (cw *ConfigWatcher) validateConfigChange(newConfig *config.Config) error {
 	currentConfig := cw.daemon.GetConfig()
 
 	// Check for critical changes that might require daemon restart

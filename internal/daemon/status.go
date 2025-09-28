@@ -130,7 +130,7 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 							}
 							status.BuildStatus.LastBuildStages = stages
 						}
-						status.BuildStatus.LastBuildOutcome = br.Outcome
+						status.BuildStatus.LastBuildOutcome = string(br.Outcome)
 						status.BuildStatus.LastBuildSummary = br.Summary()
 						if br.RenderedPages > 0 {
 							rp := br.RenderedPages

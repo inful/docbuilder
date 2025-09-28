@@ -222,8 +222,8 @@ func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bo
 }
 
 func runInit(configPath string, force bool) error {
-	slog.Info("Initializing v2 configuration", "path", configPath, "force", force)
-	return config.InitV2(configPath, force)
+	slog.Info("Initializing configuration", "path", configPath, "force", force)
+	return config.Init(configPath, force)
 }
 
 func runDiscover(cfg *config.Config, specificRepo string) error {
