@@ -495,10 +495,38 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
 
-	// If a state manager is attached via generator (opaque interface expectation) update preliminary per-repo doc counts & hashes.
-	if bs.Generator != nil && bs.Generator.config != nil {
-		// We attach state manager through an optional interface on Generator (metadata not directly stored). Look in config.Params for a hidden handle not ideal; instead expose a hook later. For now, attempt dynamic retrieval from environment variable key not implemented.
-		// Placeholder no-op: direct wiring done in daemon builder after full site generation.
+	// If a state manager is attached, persist per-repo document counts and per-repo doc file hash for incremental detection.
+	if bs.Generator != nil && bs.Generator.stateManager != nil {
+		// Group paths per repository.
+		repoPaths := make(map[string][]string)
+		for _, f := range docFiles {
+			p := f.GetHugoPath()
+			repoPaths[f.Repository] = append(repoPaths[f.Repository], p)
+		}
+		for repoName, paths := range repoPaths {
+			// Sort for stable hash
+			sort.Strings(paths)
+			h := sha256.New()
+			for _, p := range paths {
+				_, _ = h.Write([]byte(p))
+				_, _ = h.Write([]byte{0})
+			}
+			hash := hex.EncodeToString(h.Sum(nil))
+			// We need the repository URL to persist; BuildState only has config.Repository slice with URL. Lookup by name.
+			var repoURL string
+			for _, r := range bs.Repositories {
+				if r.Name == repoName {
+					repoURL = r.URL
+					break
+				}
+			}
+			if repoURL == "" {
+				// fallback: use name as URL surrogate (e.g., direct generation path tests)
+				repoURL = repoName
+			}
+			bs.Generator.stateManager.SetRepoDocumentCount(repoURL, len(paths))
+			bs.Generator.stateManager.SetRepoDocFilesHash(repoURL, hash)
+		}
 	}
 
 	// Compute stable hash of discovered doc file Hugo paths (sorted). Useful for external cache invalidation.

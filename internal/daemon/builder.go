@@ -69,6 +69,11 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 
 	// Instantiate generator early so we can compute config hash for skip decision before destructive clean.
 	gen := hugo.NewGenerator(&cloneCfg, outDir)
+	if smAny, ok := job.Metadata["state_manager"]; ok {
+		if sm, ok2 := smAny.(interface{ SetRepoDocumentCount(string, int); SetRepoDocFilesHash(string, string) }); ok2 {
+			gen = gen.WithStateManager(sm)
+		}
+	}
 
 	// Pre-clone cross-run skip optimization must occur BEFORE output cleaning, otherwise we might delete the site then skip rebuilding it.
 	if cloneCfg.Build.SkipIfUnchanged && len(reposAny) > 0 {
@@ -257,7 +262,10 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 
 	// Update per-repository build and document statistics when state manager available.
 	if smAny, ok := job.Metadata["state_manager"]; ok && report != nil {
-		if sm, ok2 := smAny.(interface{ IncrementRepoBuild(string, bool); SetRepoDocumentCount(string, int) }); ok2 {
+		if sm, ok2 := smAny.(interface {
+			IncrementRepoBuild(string, bool)
+			SetRepoDocumentCount(string, int)
+		}); ok2 {
 			success := err == nil
 			// Derive per-repository document counts by scanning the generated content directory.
 			perRepoDocCounts := make(map[string]int, len(reposAny))
