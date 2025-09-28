@@ -25,6 +25,10 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - Support for various authentication methods (SSH, tokens, basic auth)
 - Conditional forge-level namespacing: when multiple distinct forge types are present (via `tags.forge_type`), content paths become `content/<forge>/<repository>/...`; single-forge builds keep `content/<repository>/...`.
 - Stable documentation set fingerprint: `BuildReport.DocFilesHash` (SHA-256 of sorted Hugo paths) now computed for both full (discovery) and direct generation paths. Persisted globally plus per‑repository (single‑repo builds share the same value) enabling fast incremental skip decisions across daemon restarts.
+- Incremental delta analysis: partial rebuilds when only a subset of repositories change (quick on-disk doc tree hashing heuristic).
+- Optional unchanged repository deletion detection (`build.detect_deletions`, default true) keeps global docs hash accurate after file removals in skipped repos.
+- Per‑repository delta reasons in `build-report.json` (`delta_repo_reasons`) for observability (`unknown`, `quick_hash_diff`, `assumed_changed`).
+- Metrics counters: `builds_partial`, `builds_full`, `doc_deletions_detected` exposed via metrics endpoints to tune incremental behavior.
 
 ## Recommended Filesystem Layouts
 
