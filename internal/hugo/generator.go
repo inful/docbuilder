@@ -179,12 +179,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	// record build-level metrics
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		// convert typed outcome; if unset fall back to legacy string
-		out := report.Outcome
-		if out == "" {
-			out = BuildOutcome(report.Outcome)
-		}
-		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(out))
+		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
 	}
 	slog.Info("Hugo site generation completed", slog.String("output", g.outputDir), slog.Int("repos", report.Repositories), slog.Int("files", report.Files), slog.Int("errors", len(report.Errors)))
 	return report, nil
@@ -275,11 +270,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		out := report.Outcome
-		if out == "" {
-			out = BuildOutcome(report.Outcome)
-		}
-		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(out))
+		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
 	}
 	return report, nil
 }
