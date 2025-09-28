@@ -577,22 +577,4 @@ func IsConfigVersion(configPath string) (bool, error) {
 	return strings.HasPrefix(versionCheck.Version, "2."), nil
 }
 
-// ------------------------------------------------------------
-// Backwards compatibility (temporary) – deprecated aliases.
-// ------------------------------------------------------------
-
-// V2Config is deprecated; use Config.
-// Deprecated: use Config.
-type V2Config = Config
-
-// LoadV2 is deprecated; use Load.
-// Deprecated: use Load.
-func LoadV2(path string) (*Config, error) { return Load(path) }
-
-// InitV2 is deprecated; use Init.
-// Deprecated: use Init.
-func InitV2(path string, force bool) error { return Init(path, force) }
-
-// IsV2Config is deprecated; use IsConfigVersion.
-// Deprecated: use IsConfigVersion.
-func IsV2Config(path string) (bool, error) { return IsConfigVersion(path) }
+// Deprecated aliases removed (V2Config, LoadV2, InitV2, IsV2Config) as part of legacy cleanup.

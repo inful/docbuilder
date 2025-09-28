@@ -10,7 +10,7 @@ import (
 
 // TestGenerationCancelledEarly ensures that a canceled context aborts before running stages.
 func TestGenerationCancelledEarly(t *testing.T) {
-	cfg := &config.V2Config{}
+	cfg := &config.Config{}
 	gen := NewGenerator(cfg, t.TempDir())
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -25,7 +25,7 @@ func mustRead(t *testing.T, path string) string {
 // and leaves no staging directories behind.
 func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	outDir := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, outDir)
 
 	// First build v1
@@ -71,7 +71,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 // and that the staging directory is cleaned up.
 func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	outDir := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
 	gen := NewGenerator(cfg, outDir)
 
 	// Initial successful build

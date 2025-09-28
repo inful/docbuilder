@@ -35,7 +35,7 @@ func normalizeConfig(t *testing.T, path string) []byte {
 
 func TestHugoConfigGolden_Hextra(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	g := NewGenerator(cfg, out)
 	if err := g.generateHugoConfig(); err != nil {
 		t.Fatalf("generate: %v", err)
@@ -63,7 +63,7 @@ func TestHugoConfigGolden_Hextra(t *testing.T) {
 
 func TestHugoConfigGolden_Docsy(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	g := NewGenerator(cfg, out)
 	if err := g.generateHugoConfig(); err != nil {
 		t.Fatalf("generate: %v", err)

@@ -180,7 +180,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
 		// convert typed outcome; if unset fall back to legacy string
-		out := report.OutcomeT
+		out := report.Outcome
 		if out == "" {
 			out = BuildOutcome(report.Outcome)
 		}
@@ -275,7 +275,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	if g.recorder != nil {
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		out := report.OutcomeT
+		out := report.Outcome
 		if out == "" {
 			out = BuildOutcome(report.Outcome)
 		}

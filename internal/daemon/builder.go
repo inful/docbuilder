@@ -148,7 +148,7 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 											}
 											if allHaveCommits {
 												reuseRepos, reuseFiles, reuseRendered := prev.Repositories, prev.Files, prev.RenderedPages
-												report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: "success", OutcomeT: hugo.OutcomeSuccess, Repositories: reuseRepos, Files: reuseFiles, RenderedPages: reuseRendered}
+												report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: hugo.OutcomeSuccess, Repositories: reuseRepos, Files: reuseFiles, RenderedPages: reuseRendered}
 												if err := report.Persist(outDir); err != nil {
 													slog.Warn("Failed to persist skip report", "error", err)
 												} else if rb, rberr := os.ReadFile(prevPath); rberr == nil {
@@ -172,7 +172,7 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 										}
 									}
 									if allHaveCommits {
-										report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: "success", OutcomeT: hugo.OutcomeSuccess}
+										report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: hugo.OutcomeSuccess}
 										if err := report.Persist(outDir); err != nil {
 											slog.Warn("Failed to persist skip report", "error", err)
 										} else if rb, rberr := os.ReadFile(prevPath); rberr == nil {

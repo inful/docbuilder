@@ -24,7 +24,7 @@ func readYaml(t *testing.T, path string) map[string]any {
 
 func TestGenerateHugoConfig_Docsy(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}}
 	gen := NewGenerator(cfg, out)
 	if err := gen.generateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)
@@ -59,7 +59,7 @@ func TestGenerateHugoConfig_Docsy(t *testing.T) {
 
 func TestGenerateHugoConfig_Hextra(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}}
 	gen := NewGenerator(cfg, out)
 	if err := gen.generateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)

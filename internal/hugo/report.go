@@ -34,12 +34,11 @@ type BuildReport struct {
 	FailedRepositories  int                      // repositories that failed to clone/auth
 	SkippedRepositories int                      // repositories filtered out before cloning
 	RenderedPages       int                      // markdown pages successfully processed & written
-	StageCounts         map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
-	Outcome             string                   // derived overall outcome (string form for legacy JSON; use OutcomeT for typed)
-	StaticRendered      bool                     // true if Hugo static site render executed successfully
-	Retries             int                      // total retry attempts (all stages combined)
-	RetriesExhausted    bool                     // true if any stage exhausted retry budget
-	OutcomeT            BuildOutcome             // typed outcome mirror (source of truth)
+	StageCounts      map[StageName]StageCount // per-stage classification counts (typed keys; serialize as strings)
+	StaticRendered   bool                     // true if Hugo static site render executed successfully
+	Retries          int                      // total retry attempts (all stages combined)
+	RetriesExhausted bool                     // true if any stage exhausted retry budget
+	Outcome          BuildOutcome             // single source of truth outcome (typed)
 	// Issues captures structured machine-parsable issue taxonomy entries (warnings & errors) for future automation.
 	Issues []ReportIssue // not yet populated widely; additive structure
 	// SkipReason indicates why the pipeline was short-circuited (e.g. "no_changes"). Empty if full pipeline ran.
@@ -139,7 +138,7 @@ func (r *BuildReport) finish() { r.End = time.Now() }
 // Summary returns a human-readable single-line summary.
 func (r *BuildReport) Summary() string {
 	dur := r.End.Sub(r.Start)
-	return fmt.Sprintf("repos=%d files=%d duration=%s errors=%d warnings=%d stages=%d rendered=%d outcome=%s", r.Repositories, r.Files, dur.Truncate(time.Millisecond), len(r.Errors), len(r.Warnings), len(r.StageDurations), r.RenderedPages, r.Outcome)
+	return fmt.Sprintf("repos=%d files=%d duration=%s errors=%d warnings=%d stages=%d rendered=%d outcome=%s", r.Repositories, r.Files, dur.Truncate(time.Millisecond), len(r.Errors), len(r.Warnings), len(r.StageDurations), r.RenderedPages, string(r.Outcome))
 }
 
 // deriveOutcome sets the Outcome field based on recorded errors/warnings
@@ -147,25 +146,21 @@ func (r *BuildReport) deriveOutcome() {
 	if len(r.Errors) > 0 {
 		for _, e := range r.Errors {
 			if se, ok := e.(*StageError); ok && se.Kind == StageErrorCanceled {
-				r.setOutcome(OutcomeCanceled)
+				r.Outcome = OutcomeCanceled
 				return
 			}
 		}
-		r.setOutcome(OutcomeFailed)
+		r.Outcome = OutcomeFailed
 		return
 	}
 	if len(r.Warnings) > 0 {
-		r.setOutcome(OutcomeWarning)
+		r.Outcome = OutcomeWarning
 		return
 	}
-	r.setOutcome(OutcomeSuccess)
+	r.Outcome = OutcomeSuccess
 }
 
-// setOutcome sets both typed and legacy string forms.
-func (r *BuildReport) setOutcome(o BuildOutcome) {
-	r.OutcomeT = o
-	r.Outcome = string(o)
-}
+// Outcome is set directly (typed); legacy string access removed.
 
 // Persist writes the report atomically into the provided root directory (final output dir, not staging).
 // It writes two files:
@@ -254,7 +249,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		SkippedRepositories: r.SkippedRepositories,
 		RenderedPages:       r.RenderedPages,
 		StageCounts:         stageCounts,
-		Outcome:             r.Outcome, // legacy string form retained
+		Outcome:             string(r.Outcome),
 		StaticRendered:      r.StaticRendered,
 		Retries:             r.Retries,
 		RetriesExhausted:    r.RetriesExhausted,

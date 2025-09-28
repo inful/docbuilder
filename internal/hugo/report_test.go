@@ -10,7 +10,7 @@ import (
 
 func TestGenerateSiteWithReport(t *testing.T) {
 	outDir := t.TempDir()
-	cfg := &config.V2Config{Hugo: config.HugoConfig{Title: "R", Theme: "hextra"}, Repositories: []config.Repository{{Name: "r1", URL: "https://github.com/o/r1.git"}}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Title: "R", Theme: "hextra"}, Repositories: []config.Repository{{Name: "r1", URL: "https://github.com/o/r1.git"}}}
 	files := []docs.DocFile{{Repository: "r1", Name: "p", RelativePath: "p.md", DocsBase: "docs", Extension: ".md", Content: []byte("Hello")}}
 	gen := NewGenerator(cfg, outDir)
 	rep, err := gen.GenerateSiteWithReport(files)
