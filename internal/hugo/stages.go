@@ -450,7 +450,40 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	if err != nil {
 		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %v", build.ErrDiscovery, err))
 	}
+	prevCount := len(bs.Docs)
+	prevSet := map[string]struct{}{}
+	for _, f := range bs.Docs {
+		prevSet[f.GetHugoPath()] = struct{}{}
+	}
 	bs.Docs = docFiles
+	if prevCount > 0 {
+		changed := false
+		if len(docFiles) != prevCount { // size changed
+			changed = true
+		}
+		if !changed { // compare individual paths
+			nowSet := map[string]struct{}{}
+			for _, f := range docFiles {
+				p := f.GetHugoPath()
+				nowSet[p] = struct{}{}
+				if _, ok := prevSet[p]; !ok { // new file
+					changed = true
+				}
+			}
+			if !changed { // ensure no removals
+				for k := range prevSet {
+					if _, ok := nowSet[k]; !ok {
+						changed = true
+						break
+					}
+				}
+			}
+		}
+		if !changed && bs.AllReposUnchanged {
+			// Repos unchanged AND doc file set unchanged -> explicit log to aid operator confidence.
+			slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
+		}
+	}
 	// update top-level report file count & repository count (may exclude failed clones)
 	repoSet := map[string]struct{}{}
 	for _, f := range docFiles {
