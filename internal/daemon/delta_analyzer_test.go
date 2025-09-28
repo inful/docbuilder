@@ -8,19 +8,20 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // fakeDeltaState reuses only needed fields (separate from skip tests for clarity)
- type fakeDeltaState struct {
-	global string
+type fakeDeltaState struct {
+	global  string
 	perRepo map[string]string
 	commits map[string]string
- }
+}
 
- func (f *fakeDeltaState) GetLastGlobalDocFilesHash() string { return f.global }
- func (f *fakeDeltaState) GetRepoDocFilesHash(u string) string { return f.perRepo[u] }
- func (f *fakeDeltaState) GetRepoLastCommit(u string) string { return f.commits[u] }
+func (f *fakeDeltaState) GetLastGlobalDocFilesHash() string   { return f.global }
+func (f *fakeDeltaState) GetRepoDocFilesHash(u string) string { return f.perRepo[u] }
+func (f *fakeDeltaState) GetRepoLastCommit(u string) string   { return f.commits[u] }
 
 func TestDeltaAnalyzer_NoChangeFull(t *testing.T) {
 	st := &fakeDeltaState{global: "g", perRepo: map[string]string{"u": "h"}, commits: map[string]string{"u": "c"}}
@@ -59,21 +60,32 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 	for _, dr := range docRoots {
 		base := filepath.Join(repoRoot, dr)
 		fi, err := os.Stat(base)
-		if err != nil || !fi.IsDir() { continue }
+		if err != nil || !fi.IsDir() {
+			continue
+		}
 		filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
-			if err != nil || d == nil || d.IsDir() { return nil }
+			if err != nil || d == nil || d.IsDir() {
+				return nil
+			}
 			ln := strings.ToLower(d.Name())
 			if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
 				rel, rerr := filepath.Rel(repoRoot, p)
-				if rerr == nil { paths = append(paths, filepath.ToSlash(rel)) }
+				if rerr == nil {
+					paths = append(paths, filepath.ToSlash(rel))
+				}
 			}
 			return nil
 		})
 	}
-	if len(paths) == 0 { return "" }
+	if len(paths) == 0 {
+		return ""
+	}
 	sort.Strings(paths)
 	h := sha256.New()
-	for _, p := range paths { h.Write([]byte(p)); h.Write([]byte{0}) }
+	for _, p := range paths {
+		h.Write([]byte(p))
+		h.Write([]byte{0})
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -83,8 +95,12 @@ func TestDeltaAnalyzer_QuickHashSingleRepoUnchanged(t *testing.T) {
 	repoName := "repo1"
 	repoURL := "https://example.com/org/repo1.git"
 	repoRoot := filepath.Join(tmp, repoName)
-	if err := os.MkdirAll(filepath.Join(repoRoot, "docs"), 0o755); err != nil { t.Fatalf("mkdir: %v", err) }
-	if err := os.WriteFile(filepath.Join(repoRoot, "docs", "intro.md"), []byte("# Intro"), 0o644); err != nil { t.Fatalf("write: %v", err) }
+	if err := os.MkdirAll(filepath.Join(repoRoot, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoRoot, "docs", "intro.md"), []byte("# Intro"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
 	stored := computeQuickHash(t, repoRoot)
 	st := &fakeDeltaState{perRepo: map[string]string{repoURL: stored}, commits: map[string]string{repoURL: "deadbeef"}}
 	repo := cfg.Repository{Name: repoName, URL: repoURL}

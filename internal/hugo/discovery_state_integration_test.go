@@ -4,7 +4,7 @@
 package hugo
 
 import (
-    "testing"
+	"testing"
 )
 
 // TestDiscoveryStagePersistsPerRepoDocFilesHash ensures stageDiscoverDocs writes per-repo

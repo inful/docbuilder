@@ -68,7 +68,10 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 }
 
 // WithStateManager injects an optional state manager for persistence of discovery/build metadata.
-func (g *Generator) WithStateManager(sm interface{ SetRepoDocumentCount(string, int); SetRepoDocFilesHash(string, string) }) *Generator {
+func (g *Generator) WithStateManager(sm interface {
+	SetRepoDocumentCount(string, int)
+	SetRepoDocFilesHash(string, string)
+}) *Generator {
 	g.stateManager = sm
 	return g
 }
@@ -176,11 +179,22 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	// Compute doc files hash (direct generation path bypasses discovery stage where this normally occurs)
 	if report.DocFilesHash == "" && len(docFiles) > 0 {
 		paths := make([]string, 0, len(docFiles))
-		for _, f := range docFiles { paths = append(paths, f.GetHugoPath()) }
+		for _, f := range docFiles {
+			paths = append(paths, f.GetHugoPath())
+		}
 		// Simple insertion sort to avoid importing sort (small slice typical for tests)
-		for i := 1; i < len(paths); i++ { j := i; for j > 0 && paths[j-1] > paths[j] { paths[j-1], paths[j] = paths[j], paths[j-1]; j-- } }
+		for i := 1; i < len(paths); i++ {
+			j := i
+			for j > 0 && paths[j-1] > paths[j] {
+				paths[j-1], paths[j] = paths[j], paths[j-1]
+				j--
+			}
+		}
 		h := sha256.New()
-		for _, p := range paths { _, _ = h.Write([]byte(p)); _, _ = h.Write([]byte{0}) }
+		for _, p := range paths {
+			_, _ = h.Write([]byte(p))
+			_, _ = h.Write([]byte{0})
+		}
 		report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
 	}
 
