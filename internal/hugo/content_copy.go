@@ -29,7 +29,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
-		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), FrontMatter: map[string]any{}, OriginalFrontMatter: nil, Patches: nil}
+		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
 		if err := pipeline.Run(p); err != nil {
 			return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
 		}
