@@ -20,7 +20,7 @@ const (
 
 // BuildReport captures high-level metrics about a site generation run.
 type BuildReport struct {
-	SchemaVersion   int // explicit schema version for forward-compatible consumers (serialized via BuildReportSerializable)
+	SchemaVersion   int // schema version for external consumers
 	Repositories    int
 	Files           int
 	Start           time.Time
@@ -50,8 +50,7 @@ type BuildReport struct {
 	CloneStageSkipped bool
 }
 
-// AddIssue appends a structured issue and (for backward compatibility) mirrors it into legacy
-// Errors/Warnings slices based on severity. Provide err=nil for purely informational issues.
+// AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
 func (r *BuildReport) AddIssue(code ReportIssueCode, stage StageName, severity IssueSeverity, msg string, transient bool, err error) {
 	issue := ReportIssue{Code: code, Stage: stage, Severity: severity, Message: msg, Transient: transient}
 	r.Issues = append(r.Issues, issue)
