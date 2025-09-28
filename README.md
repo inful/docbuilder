@@ -2,6 +2,21 @@
 
 > Greenfield Notice: The codebase has recently removed all transitional/legacy compatibility layers (deprecated V2 config aliases, legacy front matter field, outcome wrappers, retry helpers). If you previously depended on those symbols, consult the CHANGELOG for migration guidance.
 
+## Stability & Versioning
+
+DocBuilder is currently in an active refactor phase post-legacy removal. Until the first tagged stable release (v1.0.0):
+
+- Public Go APIs may still change in minor ways (function signatures, struct fields) to finalize the greenfield surface.
+- CLI flags and YAML schema fields listed in this README and the CHANGELOG are considered provisional but unlikely to undergo breaking renames without being noted under the Unreleased section of the CHANGELOG.
+- Semantic Versioning (SemVer) will be adopted starting at v1.0.0. Prior to that, pin to a specific commit if you need reproducibility.
+
+Recommended for early adopters:
+
+1. Vendor or go module pin a specific commit SHA.
+2. Monitor the `CHANGELOG.md` Unreleased section during upgrades.
+3. Run `docbuilder build` in CI after updating to detect behavioral drift (front matter merge & index template logic are the most active areas).
+
+
 A Go utility for creating documentation sites from multiple Git repositories using Hugo.
 
 ## Features
