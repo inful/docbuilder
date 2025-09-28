@@ -52,7 +52,6 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 	return "", fmt.Errorf("git %s failed after retries: %w", op, lastErr)
 }
 
-
 func isPermanentGitError(err error) bool {
 	if err == nil {
 		return false

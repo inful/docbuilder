@@ -15,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-
 // TestWithRetryBehavior ensures retries happen for transient errors and stop for permanent ones.
 func TestWithRetryBehavior(t *testing.T) {
 	cfg := &appcfg.BuildConfig{MaxRetries: 3, RetryBackoff: appcfg.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"}
