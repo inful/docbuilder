@@ -17,6 +17,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	if err != nil {
 		return "", fmt.Errorf("open repo: %w", err)
 	}
+	slog.Info("Updating repository", logfields.Name(repo.Name), slog.String("path", repoPath))
 	wt, err := repository.Worktree()
 	if err != nil {
 		return "", fmt.Errorf("worktree: %w", err)
@@ -118,8 +119,14 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 		slog.Warn("ancestor check failed", slog.String("error", ffErr.Error()))
 	}
 	if fastForwardPossible {
+		currentHead, _ := repository.Head()
 		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
 			return fmt.Errorf("fast-forward reset: %w", err)
+		}
+		if currentHead != nil && currentHead.Hash() == remoteRef.Hash() {
+			slog.Info("Repository already up-to-date", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", remoteRef.Hash().String()[:8]))
+		} else {
+			slog.Info("Fast-forwarded repository", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("from", currentHead.Hash().String()[:8]), slog.String("to", remoteRef.Hash().String()[:8]))
 		}
 		return nil
 	}
