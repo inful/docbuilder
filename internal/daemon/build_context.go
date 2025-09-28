@@ -95,9 +95,18 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 	}); ok && st != nil {
 		plan := NewDeltaAnalyzer(st).Analyze(bc.generator.ComputeConfigHashForPersistence(), bc.repos)
 		bc.deltaPlan = &plan
-		if plan.Decision == DeltaDecisionPartial {
-			// For now we only log; future: filter bc.repos = subset(plan.ChangedRepos)
-			slog.Info("DeltaAnalyzer selected partial plan (not yet executed as partial)", "changed_repos", plan.ChangedRepos, "reason", plan.Reason)
+		if plan.Decision == DeltaDecisionPartial && len(plan.ChangedRepos) > 0 {
+			// Prune repositories to only those needing rebuild.
+			changedSet := make(map[string]struct{}, len(plan.ChangedRepos))
+			for _, u := range plan.ChangedRepos { changedSet[u] = struct{}{} }
+			filtered := make([]cfg.Repository, 0, len(plan.ChangedRepos))
+			for _, r := range bc.repos {
+				if _, ok := changedSet[r.URL]; ok { filtered = append(filtered, r) }
+			}
+			slog.Info("Applying partial rebuild repo pruning", "before", len(bc.repos), "after", len(filtered), "reason", plan.Reason)
+			bc.repos = filtered
+		} else if plan.Decision == DeltaDecisionPartial && len(plan.ChangedRepos) == 0 {
+			slog.Warn("DeltaAnalyzer returned partial decision with empty repo set; ignoring")
 		}
 	}
 	return nil
