@@ -255,6 +255,72 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 		slog.Error("Full site generation error", "error", err)
 	}
 
+	// Update per-repository build and document statistics when state manager available.
+	if smAny, ok := job.Metadata["state_manager"]; ok && report != nil {
+		if sm, ok2 := smAny.(interface{ IncrementRepoBuild(string, bool); SetRepoDocumentCount(string, int) }); ok2 {
+			success := err == nil
+			// Derive per-repository document counts by scanning the generated content directory.
+			perRepoDocCounts := make(map[string]int, len(reposAny))
+			contentRoot := filepath.Join(outDir, "content")
+			// Helper to count markdown files recursively under a directory.
+			countMarkdown := func(root string) int {
+				count := 0
+				filepath.WalkDir(root, func(p string, d os.DirEntry, werr error) error {
+					if werr != nil || d == nil || d.IsDir() {
+						return nil
+					}
+					name := strings.ToLower(d.Name())
+					if strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".markdown") {
+						// Ignore typical root docs per discovery rules (README, LICENSE etc.) to align with discovery count semantics.
+						ln := strings.ToLower(name)
+						if ln == "readme.md" || ln == "license.md" || ln == "contributing.md" || ln == "changelog.md" {
+							return nil
+						}
+						count++
+					}
+					return nil
+				})
+				return count
+			}
+
+			// Strategy: First look for content/<repoName>. If not present, assume forge namespace and search content/*/<repoName>.
+			for _, r := range reposAny {
+				repoPath := filepath.Join(contentRoot, r.Name)
+				if fi, statErr := os.Stat(repoPath); statErr == nil && fi.IsDir() {
+					perRepoDocCounts[r.URL] = countMarkdown(repoPath)
+					continue
+				}
+				// Fallback: look one level deeper (namespaced by forge). We don't know forge name here without additional metadata, so brute force immediate children.
+				entries, derr := os.ReadDir(contentRoot)
+				if derr == nil {
+					found := false
+					for _, e := range entries {
+						if !e.IsDir() {
+							continue
+						}
+						nsRepoPath := filepath.Join(contentRoot, e.Name(), r.Name)
+						if fi2, err2 := os.Stat(nsRepoPath); err2 == nil && fi2.IsDir() {
+							perRepoDocCounts[r.URL] = countMarkdown(nsRepoPath)
+							found = true
+							break
+						}
+					}
+					if !found {
+						perRepoDocCounts[r.URL] = 0
+					}
+				} else {
+					perRepoDocCounts[r.URL] = 0
+				}
+			}
+			for _, r := range reposAny {
+				sm.IncrementRepoBuild(r.URL, success)
+				if c, okc := perRepoDocCounts[r.URL]; okc {
+					sm.SetRepoDocumentCount(r.URL, c)
+				}
+			}
+		}
+	}
+
 	// Persist last repo heads & config hash if available and build succeeded (or skipped with no changes)
 	if err == nil && report != nil {
 		// Access optional state manager passed via metadata to avoid global coupling.
