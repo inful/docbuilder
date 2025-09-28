@@ -20,7 +20,7 @@ Primary commands (Kong-based CLI):
 ## Environment Variables (Behavior Modifiers)
 
 | Variable | Effect |
-|----------|-------|
+|----------|--------|
 | `DOCBUILDER_RUN_HUGO=1` | Force running Hugo after scaffolding. |
 | `DOCBUILDER_SKIP_HUGO=1` | Force skipping Hugo even if RUN flag set. |
 
@@ -37,7 +37,7 @@ Key JSON fields:
 |-------|---------|
 | `repositories` | Number of repositories that produced at least one doc file. |
 | `files` | Number of discovered documentation files. |
-| `outcome` | success | warning | failed | canceled. |
+| `outcome` | Final build result. One of: `success`, `warning`, `failed`, `canceled`. |
 | `cloned_repositories` | Successfully cloned or updated repos. |
 | `failed_repositories` | Repos that failed clone/auth. |
 | `rendered_pages` | Markdown files written to content directory. |

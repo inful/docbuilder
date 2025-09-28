@@ -19,7 +19,7 @@ output: {}          # Output directory behavior
 | name | string | yes | Unique repository name (used in content paths). |
 | branch | string | no | Branch to checkout (default per remote). |
 | paths | []string | no | Documentation root paths (default: ["docs"]). |
-| auth.type | enum | no | `token` | `ssh` | `basic`. |
+| auth.type | enum | no | Authentication mode: `token`, `ssh`, or `basic`. |
 | auth.token | string | conditional | Required when `type=token`. |
 | auth.username | string | conditional | Required when `type=basic`. |
 | auth.password | string | conditional | Required when `type=basic`. |
@@ -30,7 +30,7 @@ output: {}          # Output directory behavior
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | clone_concurrency | int | 4 | Parallel clone/update workers (bounded to repo count). |
-| clone_strategy | enum | fresh | fresh | update | auto. |
+| clone_strategy | enum | fresh | Repository acquisition mode: `fresh`, `update`, or `auto`. |
 | shallow_depth | int | 0 | If >0 use shallow clones of that depth. |
 | prune_non_doc_paths | bool | false | Remove non-doc top-level directories after clone. |
 | prune_allow | []string | [] | Keep-listed directories/files (glob). |
@@ -38,11 +38,11 @@ output: {}          # Output directory behavior
 | hard_reset_on_diverge | bool | false | Force align local branch to remote on divergence. |
 | clean_untracked | bool | false | Remove untracked files after successful update. |
 | max_retries | int | 2 | Retry attempts for transient clone/update failures. |
-| retry_backoff | enum | linear | fixed | linear | exponential. |
+| retry_backoff | enum | linear | Backoff strategy: `fixed`, `linear`, or `exponential`. |
 | retry_initial_delay | duration | 1s | First retry delay. |
 | retry_max_delay | duration | 30s | Maximum backoff delay cap. |
 | workspace_dir | string | derived | Explicit workspace override path. |
-| namespace_forges | enum | auto | auto | always | never forge path prefixing mode. |
+| namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
 
 ## Hugo Section
 

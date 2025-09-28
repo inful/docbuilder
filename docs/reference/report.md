@@ -18,7 +18,7 @@ DocBuilder writes a machine-readable `build-report.json` and a summary `build-re
 | files | int | Count of discovered documentation files. |
 | start / end | time | Timestamps (UTC). |
 | stage_durations | object | Map stage→duration nanoseconds (human-friendly when pretty printed). |
-| stage_error_kinds | object | Map stage→(fatal|warning|canceled). |
+| stage_error_kinds | object | Map of stage name to error kind (`fatal`, `warning`, `canceled`). |
 | cloned_repositories | int | Successful clone/update count. |
 | failed_repositories | int | Failed clone attempts. |
 | skipped_repositories | int | Repositories filtered out pre-clone. |
@@ -26,7 +26,7 @@ DocBuilder writes a machine-readable `build-report.json` and a summary `build-re
 | static_rendered | bool | Hugo build executed successfully. |
 | retries | int | Aggregate retry attempts across stages. |
 | retries_exhausted | bool | True if any stage exhausted its retry budget. |
-| outcome | string | success | warning | failed | canceled. |
+| outcome | string | Final build status: `success`, `warning`, `failed`, or `canceled`. |
 | doc_files_hash | string | Stable SHA‑256 hex of sorted Hugo paths. |
 | issues | []Issue | Structured issue list. |
 | skip_reason | string | Non-empty when early exit (e.g. no_changes). |

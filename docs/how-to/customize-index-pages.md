@@ -57,9 +57,9 @@ If your template starts with `---` you assume full control; DocBuilder will not 
 |-----|-------|-------------|
 | `.Site` | all | `{ Title, Description, BaseURL, Theme }` |
 | `.FrontMatter` | all | Map of computed values prior to serialization |
-| `.Repositories` | main | map[string][]DocFile |
+| `.Repositories` | main | Go map `map[string][]DocFile` (repository name → files) |
 | `.Files` | all | Slice of relevant DocFile entries |
-| `.Sections` | repository | map[string][]DocFile (key `root` for unsectioned) |
+| `.Sections` | repository | Go map `map[string][]DocFile` (key `root` for unsectioned files) |
 | `.SectionName` | section | Name of current section |
 | `.Stats` | main/repository | `{ TotalFiles, TotalRepositories }` |
 | `.Now` | all | Build timestamp |
