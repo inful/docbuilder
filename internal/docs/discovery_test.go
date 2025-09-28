@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -56,7 +57,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 	}
 
 	// Create discovery instance
-	discovery := NewDiscovery(repos)
+	discovery := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingNever})
 
 	// Test discovery
 	repoPaths := map[string]string{
@@ -137,6 +138,57 @@ func TestIgnoredFiles(t *testing.T) {
 		if result != test.expected {
 			t.Errorf("isIgnoredFile(%s) = %v, expected %v",
 				test.filename, result, test.expected)
+		}
+	}
+}
+
+func TestForgeNamespacingModes(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "docbuilder-ns-test")
+	if err != nil { t.Fatal(err) }
+	defer os.RemoveAll(tempDir)
+
+	mkRepo := func(name, forgeType string) (config.Repository, string) {
+		repoDir := filepath.Join(tempDir, name)
+		docsDir := filepath.Join(repoDir, "docs")
+		if err := os.MkdirAll(docsDir, 0o755); err != nil { t.Fatalf("mkdir: %v", err) }
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil { t.Fatalf("write: %v", err) }
+		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": forgeType}}, repoDir
+	}
+
+	// Two repos on different forges
+	r1, p1 := mkRepo("repoA", "github")
+	r2, p2 := mkRepo("repoB", "gitlab")
+
+	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
+	repos := []config.Repository{r1, r2}
+
+	run := func(mode config.NamespacingMode) []DocFile {
+		bc := &config.BuildConfig{NamespaceForges: mode}
+		d := NewDiscovery(repos, bc)
+		files, err := d.DiscoverDocs(repoPaths)
+		if err != nil { t.Fatalf("DiscoverDocs: %v", err) }
+		return files
+	}
+
+	// auto -> since two distinct forges, expect forge prefix
+	autoFiles := run(config.NamespacingAuto)
+	for _, f := range autoFiles {
+		if f.Forge == "" { t.Fatalf("expected forge set in auto mode with multi-forge") }
+		if !strings.Contains(f.GetHugoPath(), f.Forge+string(filepath.Separator)+f.Repository) {
+			t.Fatalf("hugo path missing forge segment: %s", f.GetHugoPath())
+		}
+	}
+
+	// always -> same expectation
+	alwaysFiles := run(config.NamespacingAlways)
+	for _, f := range alwaysFiles { if f.Forge == "" { t.Fatalf("expected forge set in always mode") } }
+
+	// never -> Forge field empty, path lacks forge segment
+	neverFiles := run(config.NamespacingNever)
+	for _, f := range neverFiles {
+		if f.Forge != "" { t.Fatalf("expected no forge in never mode") }
+		if strings.Contains(f.GetHugoPath(), "github") || strings.Contains(f.GetHugoPath(), "gitlab") {
+			t.Fatalf("path should not contain forge in never mode: %s", f.GetHugoPath())
 		}
 	}
 }

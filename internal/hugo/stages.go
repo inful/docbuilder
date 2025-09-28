@@ -445,7 +445,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 		return newCanceledStageError(StageDiscoverDocs, ctx.Err())
 	default:
 	}
-	discovery := docs.NewDiscovery(bs.Repositories)
+	discovery := docs.NewDiscovery(bs.Repositories, &bs.Generator.config.Build)
 	docFiles, err := discovery.DiscoverDocs(bs.RepoPaths)
 	if err != nil {
 		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %v", build.ErrDiscovery, err))
