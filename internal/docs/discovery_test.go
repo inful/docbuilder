@@ -192,3 +192,31 @@ func TestForgeNamespacingModes(t *testing.T) {
 		}
 	}
 }
+
+func TestForgeNamespacingAutoSingleForge(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "docbuilder-ns-single")
+	if err != nil { t.Fatal(err) }
+	defer os.RemoveAll(tempDir)
+
+	mkRepo := func(name string) (config.Repository, string) {
+		repoDir := filepath.Join(tempDir, name)
+		docsDir := filepath.Join(repoDir, "docs")
+		if err := os.MkdirAll(docsDir, 0o755); err != nil { t.Fatalf("mkdir: %v", err) }
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil { t.Fatalf("write: %v", err) }
+		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": "github"}}, repoDir
+	}
+
+	r1, p1 := mkRepo("service-a")
+	r2, p2 := mkRepo("service-b")
+	repos := []config.Repository{r1, r2}
+	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
+
+	d := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingAuto})
+	files, err := d.DiscoverDocs(repoPaths)
+	if err != nil { t.Fatalf("DiscoverDocs: %v", err) }
+	if len(files) == 0 { t.Fatalf("expected files discovered") }
+	for _, f := range files {
+		if f.Forge != "" { t.Fatalf("expected empty forge for single-forge auto mode, got %q", f.Forge) }
+		if strings.Contains(f.GetHugoPath(), "github") { t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath()) }
+	}
+}
