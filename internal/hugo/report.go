@@ -46,6 +46,9 @@ type BuildReport struct {
 	SkipReason string
 	// IndexTemplates records which source was used for each index template kind (main, repository, section)
 	IndexTemplates map[string]IndexTemplateInfo
+	// CloneStageSkipped is true when the pipeline did not include the clone_repos stage (direct generation path)
+	// and false when the clone stage was part of the pipeline (even if it processed zero repositories).
+	CloneStageSkipped bool
 }
 
 // AddIssue appends a structured issue and (for backward compatibility) mirrors it into legacy
@@ -258,6 +261,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		Issues:              r.Issues, // already JSON-friendly
 		SkipReason:          r.SkipReason,
 		IndexTemplates:      r.IndexTemplates,
+		CloneStageSkipped:   r.CloneStageSkipped,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -291,4 +295,5 @@ type BuildReportSerializable struct {
 	Issues              []ReportIssue            `json:"issues"`
 	SkipReason          string                   `json:"skip_reason,omitempty"`
 	IndexTemplates      map[string]IndexTemplateInfo `json:"index_templates,omitempty"`
+	CloneStageSkipped   bool                        `json:"clone_stage_skipped,omitempty"`
 }
