@@ -84,72 +84,48 @@ repositories:
     branch: main
     paths:
       - docs
-    auth:
-      type: token
-      token: "${GIT_ACCESS_TOKEN}"
+    ## DocBuilder
 
-hugo:
-  title: "My Documentation Site"
-  description: "Aggregated documentation"
-  base_url: "https://docs.example.com"
+    DocBuilder aggregates documentation from multiple Git repositories into a single Hugo site using a staged, observable pipeline.
 
-output:
-  directory: "./site"
-  clean: true
-```
+    This repository now follows the Diátaxis documentation structure. Please consult the dedicated docs instead of this (formerly large) README.
 
-### Forge Namespacing
+    ### Documentation Map
 
-DocBuilder can optionally prefix repository content paths with a forge directory to avoid collisions when aggregating multiple hosting platforms.
+    | Purpose | Location |
+    |---------|----------|
+    | Tutorial (start here) | `docs/tutorials/getting-started.md` |
+    | How‑To guides | `docs/how-to/` |
+    | Reference (CLI, config, report) | `docs/reference/` |
+    | Explanations (architecture, rationale) | `docs/explanation/` |
 
-Modes (set via `build.namespace_forges`):
+    ### Quick Glance Features
 
-- `auto` (default): Add `/<forge>/` only when more than one distinct forge type is present.
-- `always`: Always include the forge directory when the forge type is known.
-- `never`: Never include the forge directory (legacy layout), even if ambiguous.
+    - Multi-repository aggregation with token/SSH/basic auth
+    - Conditional forge namespacing (`namespace_forges`) to avoid collisions
+    - Theme integration (Hextra, Docsy) via Hugo Modules
+    - Incremental & shallow clone strategies for speed
+    - Optional Hugo execution (env flags) producing `public/`
+    - Structured build report (`build-report.json`) with stable `doc_files_hash`
+    - Index template override system with safe defaults
+    - Pruning of non-doc paths to shrink workspace
 
-Example (two forges detected, mode = `auto`):
+    ### Fast Start
 
-```
-content/
-  github/
-    service-a/
-      getting-started.md
-  gitlab/
-    service-b/
-      overview.md
-```
+    ```bash
+    make build
+    ./bin/docbuilder init -c config.yaml
+    ./bin/docbuilder build -c config.yaml -v
+    ```
 
-Single forge (GitHub only) with `auto` (or `never`) retains the simpler shape:
+    Full details: see the Tutorial and How‑To guides.
 
-```
-content/
-  service-a/
-    getting-started.md
-```
+    ### Stability Notice
 
-Front matter gains a `forge` key when namespacing is active (or when forge information is otherwise available) so templates can branch on it.
+    Pre‑1.0: minor field or struct adjustments may occur; monitor `CHANGELOG.md`. Treat unknown JSON fields as optional for forward compatibility.
 
-### Daemon Configuration & Discovery
-
-When running the daemon (`docbuilder daemon`) specify `version: "2.0"` at top-level.
-Organizations / groups for a forge are OPTIONAL. If you omit both `organizations:` and `groups:` the daemon enters
-an auto-discovery mode: it enumerates all organizations/groups your token can access and then lists their repositories.
-
-Forge example with scoped discovery:
-
-```yaml
-version: "2.0"
-daemon:
-  http:
-    docs_port: 8080
-    admin_port: 8081
-    webhook_port: 8082
-  sync:
-    schedule: "0 */4 * * *"
-    queue_size: 100
-    concurrent_builds: 3
-forges:
+    ---
+    For deeper context (design choices, extension points) open `docs/explanation/architecture.md`.
   - name: "forgejo"
     type: "forgejo"
     api_url: "https://git.example.com/api/v1"
