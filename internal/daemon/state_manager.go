@@ -47,6 +47,7 @@ type RepoState struct {
 	ErrorCount    int64                  `json:"error_count"`
 	LastError     string                 `json:"last_error,omitempty"`
 	DocFilesHash  string                 `json:"doc_files_hash,omitempty"` // hash of doc file set for incremental detection
+	DocFilePaths  []string               `json:"doc_file_paths,omitempty"` // sorted list of Hugo-relative doc file paths (per repo)
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -111,11 +112,44 @@ func (sm *StateManager) SetRepoDocFilesHash(url, hash string) {
 		if slash := strings.LastIndex(url, "/"); slash >= 0 && slash+1 < len(url) {
 			name = strings.TrimSuffix(url[slash+1:], ".git")
 		}
-	rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
+		rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
 		sm.state.Repositories[url] = rs
 	}
 	rs.DocFilesHash = hash
 	sm.scheduleSave()
+}
+
+// SetRepoDocFilePaths stores the sorted doc file paths for a repository (replaces prior list).
+func (sm *StateManager) SetRepoDocFilePaths(url string, paths []string) {
+	if url == "" {
+		return
+	}
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	rs, ok := sm.state.Repositories[url]
+	if !ok {
+		name := url
+		if slash := strings.LastIndex(url, "/"); slash >= 0 && slash+1 < len(url) {
+			name = strings.TrimSuffix(url[slash+1:], ".git")
+		}
+		rs = &RepoState{URL: url, Name: name, Metadata: map[string]interface{}{"created": time.Now()}}
+		sm.state.Repositories[url] = rs
+	}
+	rs.DocFilePaths = append([]string{}, paths...)
+	sm.scheduleSave()
+}
+
+// GetRepoDocFilePaths returns a copy of the stored doc file path list for a repository.
+func (sm *StateManager) GetRepoDocFilePaths(url string) []string {
+	if url == "" { return nil }
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if rs, ok := sm.state.Repositories[url]; ok && len(rs.DocFilePaths) > 0 {
+		cp := make([]string, len(rs.DocFilePaths))
+		copy(cp, rs.DocFilePaths)
+		return cp
+	}
+	return nil
 }
 
 // GetRepoDocFilesHash returns the stored doc files hash for a repository.
@@ -195,16 +229,20 @@ func (sm *StateManager) GetLastReportChecksum() string {
 
 // SetLastGlobalDocFilesHash stores the global doc_files_hash from the last successful build.
 func (sm *StateManager) SetLastGlobalDocFilesHash(hash string) {
-    if hash == "" { return }
-    sm.SetConfiguration("last_global_doc_files_hash", hash)
+	if hash == "" {
+		return
+	}
+	sm.SetConfiguration("last_global_doc_files_hash", hash)
 }
 
 // GetLastGlobalDocFilesHash retrieves the persisted global doc_files_hash.
 func (sm *StateManager) GetLastGlobalDocFilesHash() string {
-    if v, ok := sm.GetConfiguration("last_global_doc_files_hash"); ok {
-        if s, ok2 := v.(string); ok2 { return s }
-    }
-    return ""
+	if v, ok := sm.GetConfiguration("last_global_doc_files_hash"); ok {
+		if s, ok2 := v.(string); ok2 {
+			return s
+		}
+	}
+	return ""
 }
 
 // BuildState tracks the state of builds

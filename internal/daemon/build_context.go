@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -203,6 +204,68 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 			report.DeltaChangedRepos = append([]string{}, bc.deltaPlan.ChangedRepos...)
 		} else {
 			report.DeltaDecision = "full"
+		}
+	}
+	// Recompute global doc_files_hash for partial builds by merging unchanged + changed repo path lists.
+	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
+		// Support interfaces for path list read/update & per-repo hash update.
+		getter, gOK := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string })
+		setter, sOK := bc.stateMgr.(interface{ SetRepoDocFilePaths(string, []string) })
+		hasher, hOK := bc.stateMgr.(interface{ SetRepoDocFilesHash(string, string) })
+		if gOK {
+			changedSet := map[string]struct{}{}
+			for _, u := range bc.deltaPlan.ChangedRepos { changedSet[u] = struct{}{} }
+			orig, _ := bc.job.Metadata["repositories"].([]cfg.Repository)
+			allPaths := make([]string, 0, 2048)
+			for _, r := range orig {
+				paths := getter.GetRepoDocFilePaths(r.URL)
+				// For unchanged repos, attempt to detect deletions by scanning workspace clone (if available)
+				if _, isChanged := changedSet[r.URL]; !isChanged && bc.workspace != "" {
+					repoRoot := filepath.Join(bc.workspace, r.Name)
+					if fi, err := os.Stat(repoRoot); err == nil && fi.IsDir() {
+						fresh := make([]string, 0, len(paths))
+						// Scan doc roots for current files, mirroring quick hash logic
+						docRoots := []string{"docs", "documentation"}
+						for _, dr := range docRoots {
+							base := filepath.Join(repoRoot, dr)
+							if sfi, serr := os.Stat(base); serr != nil || !sfi.IsDir() { continue }
+							_ = filepath.WalkDir(base, func(p string, d os.DirEntry, werr error) error {
+								if werr != nil || d == nil || d.IsDir() { return nil }
+								ln := strings.ToLower(d.Name())
+								if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
+									if rel, rerr := filepath.Rel(repoRoot, p); rerr == nil {
+										fresh = append(fresh, filepath.ToSlash(filepath.Join(r.Name, rel)))
+									}
+								}
+								return nil
+							})
+						}
+						if len(fresh) > 0 { // Only update if we found some; if repo has zero docs we allow empty slice to clear state.
+							// Compare with persisted list; if different (e.g., deletion), persist new list & hash.
+							update := false
+							if len(fresh) != len(paths) { update = true } else {
+								for i := range fresh { if i >= len(paths) || fresh[i] != paths[i] { update = true; break } }
+							}
+							if update {
+								sort.Strings(fresh)
+								if sOK { setter.SetRepoDocFilePaths(r.URL, fresh) }
+								if hOK {
+									hh := sha256.New(); for _, p := range fresh { hh.Write([]byte(p)); hh.Write([]byte{0}) }
+									hasher.SetRepoDocFilesHash(r.URL, hex.EncodeToString(hh.Sum(nil)))
+								}
+								paths = fresh
+							}
+						}
+					}
+				}
+				if len(paths) > 0 { allPaths = append(allPaths, paths...) }
+			}
+			if len(allPaths) > 0 {
+				sort.Strings(allPaths)
+				h := sha256.New()
+				for _, p := range allPaths { h.Write([]byte(p)); h.Write([]byte{0}) }
+				report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
+			}
 		}
 	}
 	// Repo build counters & document counts

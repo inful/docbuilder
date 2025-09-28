@@ -526,6 +526,10 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 			}
 			bs.Generator.stateManager.SetRepoDocumentCount(repoURL, len(paths))
 			bs.Generator.stateManager.SetRepoDocFilesHash(repoURL, hash)
+			// Persist path list for future partial/global hash recomposition
+			if setter, ok := bs.Generator.stateManager.(interface { SetRepoDocFilePaths(string, []string) }); ok {
+				setter.SetRepoDocFilePaths(repoURL, paths)
+			}
 		}
 	}
 

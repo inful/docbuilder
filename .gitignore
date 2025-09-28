@@ -305,3 +305,4 @@ site
 bin/docbuilder
 /*.docbuilder
 daemon-data/*
+daemon-data/repos/daemon-state.json
