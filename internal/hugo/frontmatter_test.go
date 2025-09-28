@@ -109,3 +109,12 @@ func TestBuildFrontMatter_ExistingPreserved(t *testing.T) {
 		t.Fatalf("existing editURL should be preserved, got %v", fm["editURL"])
 	}
 }
+
+func TestBuildFrontMatter_IncludesForge(t *testing.T) {
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	file := docs.DocFile{Repository: "repo", Name: "guide", Forge: "github"}
+	fm := BuildFrontMatter(FrontMatterInput{File: file, Config: cfg, Now: fixedTime()})
+	if got, ok := fm["forge"]; !ok || got != "github" {
+		t.Fatalf("expected forge field 'github', got %v (present=%v)", got, ok)
+	}
+}

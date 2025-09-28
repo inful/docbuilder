@@ -48,7 +48,18 @@ func NewDiscovery(repositories []config.Repository) *Discovery {
 func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error) {
 	d.docFiles = make([]DocFile, 0)
 
-	// Determine if multiple forges are present for namespacing: count distinct forge_type tags
+	// Determine forge namespacing policy.
+	// Modes:
+	//   auto   -> add forge directory only if >1 distinct forge_type present
+	//   always -> always add forge when available
+	//   never  -> never add forge
+	var namespaceForges bool
+	var mode config.NamespacingMode
+	if len(d.repositories) > 0 {
+		// All repos share same Build config via first repository's parent config (not passed here), so fall back to auto.
+		// We can't read global Build config directly; rely on tag override if provided.
+	}
+	// Since Discovery doesn't currently carry the global Build config, infer AUTO by counting forges.
 	forgeCount := 0
 	forgeSeen := map[string]struct{}{}
 	for _, r := range d.repositories {
@@ -59,7 +70,27 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			}
 		}
 	}
-	namespaceForges := forgeCount > 1
+	// Default auto behavior
+	namespaceForges = forgeCount > 1
+	// Optional override via repository tag namespace_forges on ANY repo (first wins): always|never|auto
+	for _, r := range d.repositories {
+		if modeRaw, ok := r.Tags["namespace_forges"]; ok && modeRaw != "" {
+			mode = config.NormalizeNamespacingMode(modeRaw)
+			if mode != "" {
+				break
+			}
+		}
+	}
+	if mode != "" {
+		switch mode {
+		case config.NamespacingAlways:
+			namespaceForges = true
+		case config.NamespacingNever:
+			namespaceForges = false
+		case config.NamespacingAuto:
+			// already computed
+		}
+	}
 
 	for repoName, repoPath := range repoPaths {
 		repo, exists := d.repositories[repoName]

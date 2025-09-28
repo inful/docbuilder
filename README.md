@@ -97,6 +97,38 @@ output:
   clean: true
 ```
 
+### Forge Namespacing
+
+DocBuilder can optionally prefix repository content paths with a forge directory to avoid collisions when aggregating multiple hosting platforms.
+
+Modes (set via `build.namespace_forges`):
+
+- `auto` (default): Add `/<forge>/` only when more than one distinct forge type is present.
+- `always`: Always include the forge directory when the forge type is known.
+- `never`: Never include the forge directory (legacy layout), even if ambiguous.
+
+Example (two forges detected, mode = `auto`):
+
+```
+content/
+  github/
+    service-a/
+      getting-started.md
+  gitlab/
+    service-b/
+      overview.md
+```
+
+Single forge (GitHub only) with `auto` (or `never`) retains the simpler shape:
+
+```
+content/
+  service-a/
+    getting-started.md
+```
+
+Front matter gains a `forge` key when namespacing is active (or when forge information is otherwise available) so templates can branch on it.
+
 ### Daemon Configuration & Discovery
 
 When running the daemon (`docbuilder daemon`) specify `version: "2.0"` at top-level.

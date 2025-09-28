@@ -168,6 +168,17 @@ func applyDefaults(config *Config) error {
 	if config.Build.CloneConcurrency <= 0 {
 		config.Build.CloneConcurrency = 4
 	}
+	// Forge namespacing default (auto): only add forge directory when multiple forge types present
+	if config.Build.NamespaceForges == "" {
+		config.Build.NamespaceForges = NamespacingAuto
+	} else {
+		m := NormalizeNamespacingMode(string(config.Build.NamespaceForges))
+		if m == "" {
+			config.Build.NamespaceForges = NamespacingAuto
+		} else {
+			config.Build.NamespaceForges = m
+		}
+	}
 	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
 	if config.Build.ShallowDepth < 0 {
 		config.Build.ShallowDepth = 0
