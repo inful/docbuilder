@@ -86,6 +86,21 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 			}
 		}
 	}
+
+	// Experimental: DeltaAnalyzer scaffold (no-op fallback to full build for now)
+	if smAny, ok := job.Metadata["state_manager"]; ok && len(reposAny) > 0 {
+		if st, ok2 := smAny.(interface {
+			GetLastGlobalDocFilesHash() string
+			GetRepoDocFilesHash(string) string
+			GetRepoLastCommit(string) string
+		}); ok2 {
+			plan := NewDeltaAnalyzer(st).Analyze(gen.ComputeConfigHashForPersistence(), reposAny)
+			if plan.Decision == DeltaDecisionPartial {
+				// Placeholder: Future implementation will execute partial pipeline limited to plan.ChangedRepos
+				slog.Info("DeltaAnalyzer selected partial rebuild (stub, falling back to full)", "changed_repos", plan.ChangedRepos, "reason", plan.Reason)
+			}
+		}
+	}
 	// Pre-clone cross-run skip optimization via SkipEvaluator (must occur BEFORE output cleaning).
 	if cloneCfg.Build.SkipIfUnchanged && len(reposAny) > 0 {
 		if smAny, ok := job.Metadata["state_manager"]; ok {
