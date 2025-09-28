@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - `BuildReport.CloneStageSkipped` to distinguish pipelines without a clone stage.
 - Index template reporting: `IndexTemplates` with source (embedded|file) and path.
 - Structured issue taxonomy via `ReportIssue` (`Issues` slice in `BuildReport`).
+- Stable hash of discovered documentation file set: `BuildReport.DocFilesHash` (SHA-256 hex of sorted Hugo paths) for consumer-side cache invalidation and change detection.
 
 ### Changed
 
