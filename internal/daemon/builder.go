@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -70,103 +68,30 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 	// Instantiate generator early so we can compute config hash for skip decision before destructive clean.
 	gen := hugo.NewGenerator(&cloneCfg, outDir)
 	if smAny, ok := job.Metadata["state_manager"]; ok {
-		if sm, ok2 := smAny.(interface{ SetRepoDocumentCount(string, int); SetRepoDocFilesHash(string, string) }); ok2 {
+		if sm, ok2 := smAny.(interface {
+			SetRepoDocumentCount(string, int)
+			SetRepoDocFilesHash(string, string)
+		}); ok2 {
 			gen = gen.WithStateManager(sm)
 		}
 	}
 
-	// Pre-clone cross-run skip optimization must occur BEFORE output cleaning, otherwise we might delete the site then skip rebuilding it.
+	// Pre-clone cross-run skip optimization via SkipEvaluator (must occur BEFORE output cleaning).
 	if cloneCfg.Build.SkipIfUnchanged && len(reposAny) > 0 {
 		if smAny, ok := job.Metadata["state_manager"]; ok {
-			if sm, ok2 := smAny.(interface {
-				GetRepoLastCommit(string) string
-				GetLastConfigHash() string
-				GetLastReportChecksum() string
-				SetLastReportChecksum(string)
-				GetRepoDocFilesHash(string) string
-				GetLastGlobalDocFilesHash() string
-			}); ok2 {
-				currentHash := gen.ComputeConfigHashForPersistence()
-				lastHash := sm.GetLastConfigHash()
-				if currentHash != "" && currentHash == lastHash {
-					prevPath := filepath.Join(outDir, "build-report.json")
-					if data, rerr := os.ReadFile(prevPath); rerr == nil {
-						h := sha256.Sum256(data)
-						prevSum := hex.EncodeToString(h[:])
-						if stored := sm.GetLastReportChecksum(); stored != "" && stored != prevSum {
-							slog.Warn("Previous build report checksum mismatch; forcing rebuild", "stored", stored, "current", prevSum)
-						} else {
-							publicDir := filepath.Join(outDir, "public")
-							if fi, err := os.Stat(publicDir); err != nil || !fi.IsDir() {
-								if err != nil { slog.Warn("Public directory missing; forcing rebuild", "dir", publicDir, "error", err) } else { slog.Warn("Public path is not directory; forcing rebuild", "dir", publicDir) }
-							} else if entries, eerr := os.ReadDir(publicDir); eerr != nil || len(entries) == 0 {
-								if eerr != nil { slog.Warn("Failed to read public directory; forcing rebuild", "dir", publicDir, "error", eerr) } else { slog.Warn("Public directory empty; forcing rebuild", "dir", publicDir) }
-							} else {
-								contentDir := filepath.Join(outDir, "content")
-								contentStat, cErr := os.Stat(contentDir)
-								prev := struct {
-									Repositories  int    `json:"repositories"`
-									Files         int    `json:"files"`
-									RenderedPages int    `json:"rendered_pages"`
-									DocFilesHash  string `json:"doc_files_hash"`
-								}{}
-								parseErr := json.Unmarshal(data, &prev)
-								if parseErr != nil {
-									slog.Warn("Failed to parse previous build report; forcing rebuild", "error", parseErr)
-								} else if prev.Files > 0 {
-									if lastGlobal := sm.GetLastGlobalDocFilesHash(); lastGlobal != "" && prev.DocFilesHash != "" && lastGlobal != prev.DocFilesHash {
-										slog.Warn("Stored global doc_files_hash mismatch; forcing rebuild", "state", lastGlobal, "report", prev.DocFilesHash)
-									} else if cErr != nil || !contentStat.IsDir() {
-										if cErr != nil { slog.Warn("Content directory missing; forcing rebuild", "dir", contentDir, "error", cErr) } else { slog.Warn("Content path is not directory; forcing rebuild", "dir", contentDir) }
-									} else {
-										foundMD := false
-										if walkErr := filepath.Walk(contentDir, func(p string, info os.FileInfo, err error) error {
-											if err != nil || foundMD { return nil }
-											if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".md") { foundMD = true }
-											return nil
-										}); walkErr != nil { slog.Warn("Error walking content directory during skip probe", "error", walkErr) }
-										if !foundMD {
-											slog.Warn("No markdown files found in existing content directory; forcing rebuild")
-										} else {
-											missingPerRepo := false
-											if len(reposAny) == 1 {
-												repoHash := sm.GetRepoDocFilesHash(reposAny[0].URL)
-												if repoHash == "" || (prev.DocFilesHash != "" && repoHash != prev.DocFilesHash) {
-													missingPerRepo = true
-													slog.Warn("Single repository doc_files_hash mismatch/missing; forcing rebuild", "repo", reposAny[0].URL, "repo_hash", repoHash, "report_hash", prev.DocFilesHash)
-												}
-											} else {
-												for _, r := range reposAny { if sm.GetRepoDocFilesHash(r.URL) == "" { missingPerRepo = true; slog.Warn("Missing per-repo doc_files_hash; forcing rebuild", "repo", r.URL); break } }
-											}
-											if !missingPerRepo {
-												allHaveCommits := true
-												for _, r := range reposAny { if sm.GetRepoLastCommit(r.URL) == "" { allHaveCommits = false; break } }
-												if allHaveCommits {
-													reuseRepos, reuseFiles, reuseRendered := prev.Repositories, prev.Files, prev.RenderedPages
-													report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: hugo.OutcomeSuccess, Repositories: reuseRepos, Files: reuseFiles, RenderedPages: reuseRendered, DocFilesHash: prev.DocFilesHash}
-													if err := report.Persist(outDir); err != nil { slog.Warn("Failed to persist skip report", "error", err) } else if rb, rberr := os.ReadFile(prevPath); rberr == nil { hs := sha256.Sum256(rb); sm.SetLastReportChecksum(hex.EncodeToString(hs[:])) }
-													if prev.DocFilesHash != "" { if setter, okSetter := smAny.(interface{ SetLastGlobalDocFilesHash(string) }); okSetter { setter.SetLastGlobalDocFilesHash(prev.DocFilesHash) } }
-													slog.Info("Skipping build (unchanged) without cleaning output", "repos", reuseRepos, "files", reuseFiles, "content_probe", "ok")
-													return report, nil
-												}
-												slog.Warn("Missing last commit metadata for one or more repositories; forcing rebuild")
-											}
-										}
-									}
-								} else { // prev.Files == 0
-									allHaveCommits := true
-									for _, r := range reposAny { if sm.GetRepoLastCommit(r.URL) == "" { allHaveCommits = false; break } }
-									if allHaveCommits {
-										report := &hugo.BuildReport{SchemaVersion: 1, Start: time.Now(), End: time.Now(), SkipReason: "no_changes", Outcome: hugo.OutcomeSuccess}
-										if err := report.Persist(outDir); err != nil { slog.Warn("Failed to persist skip report", "error", err) } else if rb, rberr := os.ReadFile(prevPath); rberr == nil { hs := sha256.Sum256(rb); sm.SetLastReportChecksum(hex.EncodeToString(hs[:])) }
-										slog.Info("Skipping build (unchanged) with zero prior files", "repos", len(reposAny))
-										return report, nil
-									}
-								}
-								// One or more guards failed; fall through to full rebuild.
-							}
-						}
-					}
+			if sm, ok2 := smAny.(SkipStateAccess); ok2 {
+				if rep, skipped := NewSkipEvaluator(outDir, sm, gen).Evaluate(reposAny); skipped {
+					return rep, nil
+				}
+			}
+		}
+	}
+	// Pre-clone cross-run skip optimization via SkipEvaluator (must occur BEFORE output cleaning).
+	if cloneCfg.Build.SkipIfUnchanged && len(reposAny) > 0 {
+		if smAny, ok := job.Metadata["state_manager"]; ok {
+			if sm, ok2 := smAny.(SkipStateAccess); ok2 {
+				if rep, skipped := NewSkipEvaluator(outDir, sm, gen).Evaluate(reposAny); skipped {
+					return rep, nil
 				}
 			}
 		}
@@ -247,7 +172,7 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 			// Helper to count markdown files recursively under a directory.
 			countMarkdown := func(root string) int {
 				count := 0
-				filepath.WalkDir(root, func(p string, d os.DirEntry, werr error) error {
+				_ = filepath.WalkDir(root, func(p string, d os.DirEntry, werr error) error {
 					if werr != nil || d == nil || d.IsDir() {
 						return nil
 					}
@@ -330,7 +255,9 @@ func (sb *SiteBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildRep
 					sm.SetLastReportChecksum(hex.EncodeToString(sum[:]))
 				}
 				// Persist global doc files hash for next-run cross-repo early skip comparisons.
-				if report.DocFilesHash != "" { sm.SetLastGlobalDocFilesHash(report.DocFilesHash) }
+				if report.DocFilesHash != "" {
+					sm.SetLastGlobalDocFilesHash(report.DocFilesHash)
+				}
 			}
 		}
 	}
