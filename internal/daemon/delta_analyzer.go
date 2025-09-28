@@ -2,6 +2,7 @@ package daemon
 
 import (
     "log/slog"
+    "strings"
     cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
@@ -48,13 +49,25 @@ func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repositor
         return DeltaPlan{Decision: DeltaDecisionFull, Reason: "insufficient_context"}
     }
 
-    // Placeholder heuristic (future work):
-    // 1. If config hash changed in ways affecting site structure -> full
-    // 2. If only a subset of repositories have doc_files_hash changes -> partial
-    // 3. If any repository missing prior doc hash or commit -> full
-    // 4. If global hash unchanged -> candidate partial (currently still full until implemented)
+    changed := make([]string, 0, len(repos))
+    unknown := 0
+    for _, r := range repos {
+        docHash := da.state.GetRepoDocFilesHash(r.URL)
+        commit := da.state.GetRepoLastCommit(r.URL)
+        if docHash == "" || commit == "" { // treat absence as change trigger
+            changed = append(changed, r.URL)
+            if docHash == "" && commit == "" { unknown++ }
+        }
+    }
 
-    // For now emit a single structured log for observability.
-    slog.Debug("DeltaAnalyzer: partial build path not yet implemented; falling back to full rebuild")
-    return DeltaPlan{Decision: DeltaDecisionFull, Reason: "not_implemented"}
+    if len(changed) == 0 {
+        return DeltaPlan{Decision: DeltaDecisionFull, Reason: "no_detected_repo_change"}
+    }
+    if len(changed) == len(repos) {
+        reason := "all_repos_changed"
+        if unknown == len(repos) { reason = "all_repos_unknown_state" }
+        return DeltaPlan{Decision: DeltaDecisionFull, Reason: reason}
+    }
+    slog.Info("DeltaAnalyzer: partial rebuild candidate", "changed_repos", strings.Join(changed, ","), "total_repos", len(repos))
+    return DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: changed, Reason: "subset_changed"}
 }
