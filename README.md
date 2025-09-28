@@ -1,11 +1,14 @@
 # docbuilder
 
+> Greenfield Notice: The codebase has recently removed all transitional/legacy compatibility layers (deprecated V2 config aliases, legacy front matter field, outcome wrappers, retry helpers). If you previously depended on those symbols, consult the CHANGELOG for migration guidance.
+
 A Go utility for creating documentation sites from multiple Git repositories using Hugo.
 
 ## Features
 
 - Clone documentation from multiple Git repositories
 - Support for various authentication methods (SSH, tokens, basic auth)
+
 ## Recommended Filesystem Layouts
 
 - Generate Hugo-compatible static sites
@@ -18,24 +21,31 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 ## Quick Start
 
 1. **Build the application**:
-   ```bash
-   make build
-   ```
-2. **Initialize configuration**:
-   ```bash
-   ./bin/docbuilder init
-   ```
-3. **Set up environment variables** (optional):
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   ```
-4. **Build documentation site**:
-   ```bash
-   ./bin/docbuilder build -v
-   ```
 
-## Configuration (Unified v2)
+  ```bash
+  make build
+  ```
+
+1. **Initialize configuration**:
+
+  ```bash
+  ./bin/docbuilder init
+  ```
+
+1. **Set up environment variables** (optional):
+
+  ```bash
+  cp .env.example .env
+  # Edit .env with your credentials
+  ```
+
+1. **Build documentation site**:
+
+  ```bash
+  ./bin/docbuilder build -v
+  ```
+
+## Configuration
 
 ### Environment Variables
 
@@ -71,9 +81,9 @@ output:
   clean: true
 ```
 
-### Daemon (v2) Configuration & Discovery
+### Daemon Configuration & Discovery
 
-When running the daemon (`docbuilder daemon`) you use the v2 config format (version: "2.0").
+When running the daemon (`docbuilder daemon`) specify `version: "2.0"` at top-level.
 Organizations / groups for a forge are OPTIONAL. If you omit both `organizations:` and `groups:` the daemon enters
 an auto-discovery mode: it enumerates all organizations/groups your token can access and then lists their repositories.
 
@@ -554,6 +564,7 @@ build:
 ```
 
 Metrics:
+
 - `docbuilder_build_retries_total{stage="clone_repos"}` increments per retry attempt.
 - `docbuilder_build_retry_exhausted_total{stage="clone_repos"}` increments when all retries fail.
 

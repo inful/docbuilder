@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// ForgeType mirrors config.ForgeType for backwards compatibility in forge package.
+// ForgeType re-exports config.ForgeType for convenience within forge package.
 type ForgeType = config.ForgeType
 
 const (

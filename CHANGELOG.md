@@ -9,7 +9,8 @@ All notable changes to this project will be documented in this file.
 - Legacy `Page.FrontMatter` field replaced by patch-based system (`OriginalFrontMatter`, `Patches`, `MergedFrontMatter`).
 - Deprecated V2 aliases: `V2Config`, `InitV2`, `LoadV2`, `IsV2Config` removed; use unified `Config` API (`config.Load`, `config.Init`).
 - Outcome duplication eliminated (`OutcomeT`); single typed `BuildOutcome` retained on `BuildReport`.
-- Legacy theme registry & prometheus resolver stubs marked for deletion (currently removed from runtime usage).
+- Legacy theme registry & prometheus resolver stubs fully removed.
+- `computeBackoffDelay` helper and its unit test (use `retry.Policy` directly).
 
 ### Added
 
@@ -28,6 +29,7 @@ All notable changes to this project will be documented in this file.
 2. Replace calls to `config.InitV2` with `config.Init`.
 3. Update any code/tests expecting `OutcomeT` to use `BuildReport.Outcome` (string value set from `BuildOutcome`).
 4. If relying on deprecated theme/Prometheus placeholders, migrate to the current metrics and theme module logic.
+5. Replace any direct usage of the removed `computeBackoffDelay` with `retry.NewPolicy(...).Delay(n)`.
 
 ---
 
