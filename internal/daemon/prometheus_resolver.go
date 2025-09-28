@@ -1,3 +1,3 @@
 package daemon
 
-// Deprecated: prometheus resolver logic removed; recorder now created directly where needed.
+// Legacy prometheus resolver removed; keeping minimal stub until full module refactor complete.

@@ -1,3 +1,3 @@
 package hugo
 
-// Deprecated: legacy theme registry removed. File intentionally left minimal to avoid build break during migration.
+// Legacy theme registry removed; stub retained temporarily. Safe to delete after confirming no external imports.
