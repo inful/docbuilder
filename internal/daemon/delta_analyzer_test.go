@@ -136,3 +136,14 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 		t.Fatalf("expected partial with repoB changed, got %+v", plan)
 	}
 }
+
+// Verify RepoReasons population paths (unknown vs assumed_changed).
+func TestDeltaAnalyzer_RepoReasons(t *testing.T) {
+	st := &fakeDeltaState{perRepo: map[string]string{"u1": "h1", "u2": ""}, commits: map[string]string{"u1": "c1", "u2": ""}}
+	repos := []cfg.Repository{{Name: "r1", URL: "u1"}, {Name: "r2", URL: "u2"}}
+	plan := NewDeltaAnalyzer(st).Analyze("hash", repos)
+	if plan.RepoReasons == nil { t.Fatalf("expected RepoReasons map") }
+	if _, ok := plan.RepoReasons["u2"]; !ok { t.Fatalf("missing reason for u2") }
+	if plan.RepoReasons["u2"] != "unknown" { t.Fatalf("expected 'unknown' for u2 got %s", plan.RepoReasons["u2"]) }
+	if plan.RepoReasons["u1"] == "" { t.Fatalf("expected non-empty reason for u1 (assumed_changed or quick_hash_diff)") }
+}

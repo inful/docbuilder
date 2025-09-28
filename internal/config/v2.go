@@ -193,6 +193,10 @@ func applyDefaults(config *Config) error {
 	if config.Build.ShallowDepth < 0 {
 		config.Build.ShallowDepth = 0
 	}
+	// Deletion detection default: enable only if user omitted the field entirely.
+	if !config.Build.detectDeletionsSpecified && !config.Build.DetectDeletions {
+		config.Build.DetectDeletions = true
+	}
 	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
 	if config.Build.CloneStrategy == "" {
 		config.Build.CloneStrategy = CloneStrategyFresh
