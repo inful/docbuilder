@@ -47,11 +47,16 @@ const (
 // If patch specified ArrayReplace explicitly we still allow taxonomy keys to promote to union
 // when original slice exists to preserve existing tags/categories unless explicitly replaced.
 func effectiveArrayStrategy(patchStrategy ArrayMergeStrategy, key string, hasExisting bool) ArrayMergeStrategy {
-	// If an explicit non-zero (Union or Append) provided, honor it.
+	// Honor explicit choice
 	if patchStrategy == ArrayUnion || patchStrategy == ArrayAppend { return patchStrategy }
-	// patchStrategy is ArrayReplace (zero). For taxonomy keys, prefer union if existing data present.
-	if key == "tags" || key == "categories" || key == "keywords" {
+	// Heuristic defaults when unspecified (ArrayReplace zero value):
+	switch key {
+	case "tags", "categories", "keywords":
 		if hasExisting { return ArrayUnion }
+	case "outputs":
+		return ArrayUnion
+	case "resources":
+		return ArrayAppend
 	}
 	return patchStrategy
 }
@@ -77,16 +82,34 @@ type FrontMatterConflict struct {
 // applyPatches merges all patches into a single map using precedence rules.
 // Phase 1 implementation: simple ordered application onto a base copy.
 var reservedFrontMatterKeys = map[string]struct{}{
-	"title": {}, "description": {}, "weight": {}, "slug": {}, "aliases": {},
-	"date": {}, "lastmod": {}, "tags": {}, "categories": {}, "keywords": {}, "draft": {},
-	"editURL": {}, "toc": {}, "menu": {}, "repository": {}, "section": {},
+	// Core identifiers / ordering / summaries
+	"title": {}, "linkTitle": {}, "description": {}, "summary": {}, "weight": {},
+	// URL / routing / structure
+	"slug": {}, "url": {}, "aliases": {}, "type": {}, "layout": {},
+	// Dates & lifecycle
+	"date": {}, "lastmod": {}, "publishDate": {}, "expiryDate": {}, "unpublishdate": {}, "draft": {},
+	// Classification / taxonomies / SEO
+	"tags": {}, "categories": {}, "keywords": {},
+	// Output & rendering specifics
+	"resources": {}, "outputs": {}, "markup": {},
+	// Configuration / inheritance / metadata containers
+	"cascade": {}, "params": {}, "build": {}, "sitemap": {}, "translationKey": {},
+	// Menus
+	"menu": {}, "menus": {},
+	// Internal / custom additions
+	"editURL": {}, "repository": {}, "section": {}, "toc": {},
 }
 
 // keys that are protected from overwrite (unless MergeReplace) - exclude taxonomy arrays to allow merging
 var reservedProtectedKeys = map[string]struct{}{
-	"title": {}, "description": {}, "weight": {}, "slug": {}, "aliases": {},
-	"date": {}, "lastmod": {}, "draft": {}, "editURL": {}, "toc": {}, "menu": {}, "repository": {}, "section": {},
-	// taxonomy-ish / list metadata (tags, categories, keywords) excluded to allow merging
+	// Protect canonical scalar fields; require explicit MergeReplace to override
+	"title": {}, "linkTitle": {}, "description": {}, "summary": {}, "weight": {},
+	"slug": {}, "url": {}, "aliases": {},
+	"date": {}, "lastmod": {}, "publishDate": {}, "expiryDate": {}, "unpublishdate": {}, "draft": {},
+	"layout": {}, "type": {}, "markup": {}, "translationKey": {},
+	// Internal fixed semantics
+	"editURL": {}, "repository": {}, "section": {}, "toc": {},
+	// menus / menu and taxonomy & list arrays intentionally unprotected for merging/augmentation
 }
 
 func (p *Page) applyPatches() {
