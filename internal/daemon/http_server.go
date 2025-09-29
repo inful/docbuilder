@@ -41,7 +41,11 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 
 	// Pre-bind all required ports so we can fail fast and surface aggregate errors instead of
 	// logging three independent 'address already in use' lines after partial initialization.
-	type preBind struct { name string; port int; ln net.Listener }
+	type preBind struct {
+		name string
+		port int
+		ln   net.Listener
+	}
 	binds := []preBind{
 		{name: "docs", port: s.config.Daemon.HTTP.DocsPort},
 		{name: "webhook", port: s.config.Daemon.HTTP.WebhookPort},
@@ -59,14 +63,24 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	}
 	if len(bindErrs) > 0 {
 		// Close any successful listeners before returning
-		for _, b := range binds { if b.ln != nil { _ = b.ln.Close() } }
+		for _, b := range binds {
+			if b.ln != nil {
+				_ = b.ln.Close()
+			}
+		}
 		return fmt.Errorf("http startup failed: %w", errors.Join(bindErrs...))
 	}
 
 	// All ports bound successfully – now start servers handing them their pre-bound listeners.
-	if err := s.startDocsServerWithListener(ctx, binds[0].ln); err != nil { return fmt.Errorf("failed to start docs server: %w", err) }
-	if err := s.startWebhookServerWithListener(ctx, binds[1].ln); err != nil { return fmt.Errorf("failed to start webhook server: %w", err) }
-	if err := s.startAdminServerWithListener(ctx, binds[2].ln); err != nil { return fmt.Errorf("failed to start admin server: %w", err) }
+	if err := s.startDocsServerWithListener(ctx, binds[0].ln); err != nil {
+		return fmt.Errorf("failed to start docs server: %w", err)
+	}
+	if err := s.startWebhookServerWithListener(ctx, binds[1].ln); err != nil {
+		return fmt.Errorf("failed to start webhook server: %w", err)
+	}
+	if err := s.startAdminServerWithListener(ctx, binds[2].ln); err != nil {
+		return fmt.Errorf("failed to start admin server: %w", err)
+	}
 
 	slog.Info("HTTP servers started",
 		slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
@@ -107,7 +121,9 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 }
 
 // startDocsServer starts the documentation serving server
-func (s *HTTPServer) startDocsServer(ctx context.Context) error { return s.startDocsServerWithListener(ctx, nil) }
+func (s *HTTPServer) startDocsServer(ctx context.Context) error {
+	return s.startDocsServerWithListener(ctx, nil)
+}
 
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
 func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Listener) error {
@@ -135,7 +151,7 @@ func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Lis
 		slog.Info("LiveReload HTTP endpoints registered")
 	}
 
-	s.docsServer = &http.Server{ Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second }
+	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	go func() {
 		var err error
 		if ln != nil {
@@ -143,7 +159,9 @@ func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Lis
 		} else {
 			err = s.docsServer.ListenAndServe()
 		}
-		if err != nil && err != http.ErrServerClosed { slog.Error("Documentation server error", "error", err) }
+		if err != nil && err != http.ErrServerClosed {
+			slog.Error("Documentation server error", "error", err)
+		}
 	}()
 	return nil
 }
@@ -170,7 +188,9 @@ func (s *HTTPServer) resolveDocsRoot() string {
 }
 
 // startWebhookServer starts the webhook handling server
-func (s *HTTPServer) startWebhookServer(ctx context.Context) error { return s.startWebhookServerWithListener(ctx, nil) }
+func (s *HTTPServer) startWebhookServer(ctx context.Context) error {
+	return s.startWebhookServerWithListener(ctx, nil)
+}
 
 func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
@@ -183,17 +203,25 @@ func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.
 	// Generic webhook endpoint (auto-detects forge type)
 	mux.HandleFunc("/webhook", s.handleGenericWebhook)
 
-	s.webhookServer = &http.Server{ Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second }
+	s.webhookServer = &http.Server{Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
 	go func() {
 		var err error
-		if ln != nil { err = s.webhookServer.Serve(ln) } else { err = s.webhookServer.ListenAndServe() }
-		if err != nil && err != http.ErrServerClosed { slog.Error("Webhook server error", "error", err) }
+		if ln != nil {
+			err = s.webhookServer.Serve(ln)
+		} else {
+			err = s.webhookServer.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
+			slog.Error("Webhook server error", "error", err)
+		}
 	}()
 	return nil
 }
 
 // startAdminServer starts the administrative API server
-func (s *HTTPServer) startAdminServer(ctx context.Context) error { return s.startAdminServerWithListener(ctx, nil) }
+func (s *HTTPServer) startAdminServer(ctx context.Context) error {
+	return s.startAdminServerWithListener(ctx, nil)
+}
 
 func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
@@ -223,11 +251,17 @@ func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Li
 	// Status page endpoint (HTML and JSON)
 	mux.HandleFunc("/status", s.daemon.StatusHandler)
 
-	s.adminServer = &http.Server{ Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second }
+	s.adminServer = &http.Server{Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	go func() {
 		var err error
-		if ln != nil { err = s.adminServer.Serve(ln) } else { err = s.adminServer.ListenAndServe() }
-		if err != nil && err != http.ErrServerClosed { slog.Error("Admin server error", "error", err) }
+		if ln != nil {
+			err = s.adminServer.Serve(ln)
+		} else {
+			err = s.adminServer.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
+			slog.Error("Admin server error", "error", err)
+		}
 	}()
 	return nil
 }

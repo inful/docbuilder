@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"testing"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -108,15 +109,10 @@ func TestFrontMatterBuilderPatchFlow(t *testing.T) {
 	cfg := &config.Config{}
 	gen := &Generator{config: cfg, outputDir: "out"}
 	p := &Page{File: testDocFile("sample", nil), OriginalFrontMatter: map[string]any{}, Content: ""}
-	fb := &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}
-	if err := fb.Transform(p); err != nil {
-		t.Fatalf("builder transform error: %v", err)
-	}
-	if len(p.Patches) == 0 {
-		t.Fatalf("expected patch emitted")
-	}
+	built := BuildFrontMatter(FrontMatterInput{File: p.File, Existing: p.OriginalFrontMatter, Config: gen.config, Now: time.Now()})
+	p.Patches = append(p.Patches, FrontMatterPatch{Source: "builder", Mode: MergeDeep, Priority: 50, Data: built})
 	p.applyPatches()
 	if p.MergedFrontMatter["title"] == nil {
-		t.Fatalf("expected title set from builder")
+		t.Fatalf("expected title set from BuildFrontMatter")
 	}
 }

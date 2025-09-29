@@ -31,22 +31,26 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		}
 		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
 		{
-				// Prepare transform filtering
-				var enableSet, disableSet map[string]struct{}
-				if g.config != nil && g.config.Hugo.Transforms != nil {
-					if len(g.config.Hugo.Transforms.Enable) > 0 {
-						enableSet = map[string]struct{}{}
-						for _, n := range g.config.Hugo.Transforms.Enable { enableSet[n] = struct{}{} }
-					}
-					if len(g.config.Hugo.Transforms.Disable) > 0 {
-						disableSet = map[string]struct{}{}
-						for _, n := range g.config.Hugo.Transforms.Disable { disableSet[n] = struct{}{} }
+			// Prepare transform filtering
+			var enableSet, disableSet map[string]struct{}
+			if g.config != nil && g.config.Hugo.Transforms != nil {
+				if len(g.config.Hugo.Transforms.Enable) > 0 {
+					enableSet = map[string]struct{}{}
+					for _, n := range g.config.Hugo.Transforms.Enable {
+						enableSet[n] = struct{}{}
 					}
 				}
+				if len(g.config.Hugo.Transforms.Disable) > 0 {
+					disableSet = map[string]struct{}{}
+					for _, n := range g.config.Hugo.Transforms.Disable {
+						disableSet[n] = struct{}{}
+					}
+				}
+			}
 			// Build adapter shim (two-phase to allow Serialize closure to reference shim)
 			shim := &tr.PageShim{
-				FilePath: file.RelativePath,
-				Content:  p.Content,
+				FilePath:            file.RelativePath,
+				Content:             p.Content,
 				OriginalFrontMatter: p.OriginalFrontMatter,
 				HadFrontMatter:      p.HadFrontMatter,
 				// SyncOriginal allows the parser (registry transform) to push parsed front matter
@@ -64,32 +68,58 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				},
 				InjectEditLink: func() {
 					if p.OriginalFrontMatter != nil {
-						if _, ok := p.OriginalFrontMatter["editURL"]; ok { return }
+						if _, ok := p.OriginalFrontMatter["editURL"]; ok {
+							return
+						}
 					}
-					for _, patch := range p.Patches { if patch.Data != nil { if _, ok := patch.Data["editURL"]; ok { return } } }
-					if g.editLinkResolver == nil { return }
+					for _, patch := range p.Patches {
+						if patch.Data != nil {
+							if _, ok := patch.Data["editURL"]; ok {
+								return
+							}
+						}
+					}
+					if g.editLinkResolver == nil {
+						return
+					}
 					val := g.editLinkResolver.Resolve(p.File)
-					if val == "" { return }
+					if val == "" {
+						return
+					}
 					p.Patches = append(p.Patches, FrontMatterPatch{Source: "edit_link", Mode: MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
 				},
 				ApplyPatches: func() { p.applyPatches() },
 				RewriteLinks: func(s string) string { return RewriteRelativeMarkdownLinks(s) },
 			}
 			shim.Serialize = func() error {
-				if p.MergedFrontMatter == nil { p.applyPatches() }
+				if p.MergedFrontMatter == nil {
+					p.applyPatches()
+				}
 				p.Content = shim.Content
 				fm := p.MergedFrontMatter
-				if fm == nil { fm = map[string]any{} }
+				if fm == nil {
+					fm = map[string]any{}
+				}
 				fmData, err := yaml.Marshal(fm)
-				if err != nil { return err }
+				if err != nil {
+					return err
+				}
 				combined := fmt.Sprintf("---\n%s---\n%s", string(fmData), p.Content)
 				p.Raw = []byte(combined)
 				return nil
 			}
-					for _, rt := range regs { // ordered
-						name := rt.Name()
-						if disableSet != nil { if _, blocked := disableSet[name]; blocked { continue } }
-						if enableSet != nil { if _, ok := enableSet[name]; !ok { continue } }
+			for _, rt := range regs { // ordered
+				name := rt.Name()
+				if disableSet != nil {
+					if _, blocked := disableSet[name]; blocked {
+						continue
+					}
+				}
+				if enableSet != nil {
+					if _, ok := enableSet[name]; !ok {
+						continue
+					}
+				}
 				if err := rt.Transform(shim); err != nil {
 					return fmt.Errorf("transform %s failed for %s: %w", rt.Name(), file.Path, err)
 				}
