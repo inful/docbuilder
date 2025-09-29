@@ -45,7 +45,7 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 
 ## PageShim & Hooks
 
-`PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks:
+`PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. It is being migrated toward the new `PageFacade` interface (see `internal/hugo/page_facade.go`) so custom transformers should avoid depending on concrete struct fields beyond `Content` and those hooks; future versions will pass only a facade.
 
 - `BuildFrontMatter(now time.Time)` – constructs builder patch using injected timestamp.
 - `InjectEditLink()` – conditional edit link insertion.
