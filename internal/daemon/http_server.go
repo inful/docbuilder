@@ -2,8 +2,10 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,26 +39,39 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		return fmt.Errorf("daemon configuration required for HTTP servers")
 	}
 
-	// Start documentation server
-	if err := s.startDocsServer(ctx); err != nil {
-		return fmt.Errorf("failed to start docs server: %w", err)
+	// Pre-bind all required ports so we can fail fast and surface aggregate errors instead of
+	// logging three independent 'address already in use' lines after partial initialization.
+	type preBind struct { name string; port int; ln net.Listener }
+	binds := []preBind{
+		{name: "docs", port: s.config.Daemon.HTTP.DocsPort},
+		{name: "webhook", port: s.config.Daemon.HTTP.WebhookPort},
+		{name: "admin", port: s.config.Daemon.HTTP.AdminPort},
+	}
+	var bindErrs []error
+	for i := range binds {
+		addr := fmt.Sprintf(":%d", binds[i].port)
+		ln, err := net.Listen("tcp", addr)
+		if err != nil {
+			bindErrs = append(bindErrs, fmt.Errorf("%s port %d: %w", binds[i].name, binds[i].port, err))
+			continue
+		}
+		binds[i].ln = ln
+	}
+	if len(bindErrs) > 0 {
+		// Close any successful listeners before returning
+		for _, b := range binds { if b.ln != nil { _ = b.ln.Close() } }
+		return fmt.Errorf("http startup failed: %w", errors.Join(bindErrs...))
 	}
 
-	// Start webhook server
-	if err := s.startWebhookServer(ctx); err != nil {
-		return fmt.Errorf("failed to start webhook server: %w", err)
-	}
-
-	// Start admin server
-	if err := s.startAdminServer(ctx); err != nil {
-		return fmt.Errorf("failed to start admin server: %w", err)
-	}
+	// All ports bound successfully – now start servers handing them their pre-bound listeners.
+	if err := s.startDocsServerWithListener(ctx, binds[0].ln); err != nil { return fmt.Errorf("failed to start docs server: %w", err) }
+	if err := s.startWebhookServerWithListener(ctx, binds[1].ln); err != nil { return fmt.Errorf("failed to start webhook server: %w", err) }
+	if err := s.startAdminServerWithListener(ctx, binds[2].ln); err != nil { return fmt.Errorf("failed to start admin server: %w", err) }
 
 	slog.Info("HTTP servers started",
 		slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
 		slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
 		slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort))
-
 	return nil
 }
 
@@ -92,7 +107,10 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 }
 
 // startDocsServer starts the documentation serving server
-func (s *HTTPServer) startDocsServer(ctx context.Context) error {
+func (s *HTTPServer) startDocsServer(ctx context.Context) error { return s.startDocsServerWithListener(ctx, nil) }
+
+// startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
+func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
@@ -117,20 +135,16 @@ func (s *HTTPServer) startDocsServer(ctx context.Context) error {
 		slog.Info("LiveReload HTTP endpoints registered")
 	}
 
-	s.docsServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.DocsPort),
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
+	s.docsServer = &http.Server{ Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second }
 	go func() {
-		if err := s.docsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Documentation server error", "error", err)
+		var err error
+		if ln != nil {
+			err = s.docsServer.Serve(ln)
+		} else {
+			err = s.docsServer.ListenAndServe()
 		}
+		if err != nil && err != http.ErrServerClosed { slog.Error("Documentation server error", "error", err) }
 	}()
-
 	return nil
 }
 
@@ -156,7 +170,9 @@ func (s *HTTPServer) resolveDocsRoot() string {
 }
 
 // startWebhookServer starts the webhook handling server
-func (s *HTTPServer) startWebhookServer(ctx context.Context) error {
+func (s *HTTPServer) startWebhookServer(ctx context.Context) error { return s.startWebhookServerWithListener(ctx, nil) }
+
+func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Webhook endpoints for each forge type
@@ -167,25 +183,19 @@ func (s *HTTPServer) startWebhookServer(ctx context.Context) error {
 	// Generic webhook endpoint (auto-detects forge type)
 	mux.HandleFunc("/webhook", s.handleGenericWebhook)
 
-	s.webhookServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.WebhookPort),
-		Handler:      s.loggingMiddleware(mux),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
-	}
-
+	s.webhookServer = &http.Server{ Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second }
 	go func() {
-		if err := s.webhookServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Webhook server error", "error", err)
-		}
+		var err error
+		if ln != nil { err = s.webhookServer.Serve(ln) } else { err = s.webhookServer.ListenAndServe() }
+		if err != nil && err != http.ErrServerClosed { slog.Error("Webhook server error", "error", err) }
 	}()
-
 	return nil
 }
 
 // startAdminServer starts the administrative API server
-func (s *HTTPServer) startAdminServer(ctx context.Context) error {
+func (s *HTTPServer) startAdminServer(ctx context.Context) error { return s.startAdminServerWithListener(ctx, nil) }
+
+func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Health check endpoint
@@ -213,20 +223,12 @@ func (s *HTTPServer) startAdminServer(ctx context.Context) error {
 	// Status page endpoint (HTML and JSON)
 	mux.HandleFunc("/status", s.daemon.StatusHandler)
 
-	s.adminServer = &http.Server{
-		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.AdminPort),
-		Handler:      s.loggingMiddleware(mux),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
+	s.adminServer = &http.Server{ Handler: s.loggingMiddleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second }
 	go func() {
-		if err := s.adminServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("Admin server error", "error", err)
-		}
+		var err error
+		if ln != nil { err = s.adminServer.Serve(ln) } else { err = s.adminServer.ListenAndServe() }
+		if err != nil && err != http.ErrServerClosed { slog.Error("Admin server error", "error", err) }
 	}()
-
 	return nil
 }
 
