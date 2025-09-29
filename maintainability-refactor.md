@@ -63,13 +63,13 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 ## Phase 3: Configuration System Refinement
 
 - [x] Split config loading into phases: load → normalize → apply defaults → validate
-- [~] Create `internal/config/normalize/` (build.go, versioning.go, monitoring.go) (partial; some logic still in `internal/config/normalize.go` to finish migrating)
+- [x] Create `internal/config/normalize/` (build, versioning, monitoring, output, filtering extracted) – monolith removed
 - [x] Provide `ConfigSnapshot()` method for hashing build-affecting fields (`Config.Snapshot()`)
 - [x] Table-driven normalization tests (render_mode, namespacing, clone strategy, retry modes + versioning/output/filtering)
 - [x] Filtering normalization & inclusion in snapshot
-- [ ] Emit warnings for deprecated env variables once per process (deduplicated)
+- [x] Emit warnings for deprecated env variables once per process (deduplicated) *(render env vars)*
 
-Status Delta (2025-09-29): RepoFetcher integrated; normalization & snapshot implemented; build report now persists `config_hash`.
+Status Delta (2025-09-29): RepoFetcher integrated; normalization fully modular; snapshot & `config_hash` persisted; deprecation warnings active.
 
 
 
@@ -92,7 +92,7 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization & snapshot impl
 - [ ] StageFunc signature returns structured result (`{Err error; Skip bool}`)
 - [ ] Add decorator helpers (Timed, WithObserver)
 - [ ] Early skip logic isolated in pure function
-- [ ] Add build report field `pipeline_version`
+- [x] Add build report field `pipeline_version`
 
 ## Phase 6: Testing & Golden Artifacts
 
@@ -102,7 +102,7 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization & snapshot impl
 
 - [ ] Implement Prometheus BuildObserver
 - [ ] Remove direct recorder usage in stages (use observer)
-- [ ] Add metric: effective_render_mode
+- [x] Add metric: effective_render_mode *(reported via build report field first; metrics emission pending)*
 - [ ] Add metric: content_transform_failures_total
 
 ## Phase 8: Documentation & Developer Experience
@@ -136,8 +136,8 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization & snapshot impl
 
 ## Work Tracking Fields (add as implemented)
 
-- Pipeline version in report: `report.pipeline_version`
-- Effective render mode in report: `report.effective_render_mode`
+- Pipeline version in report: `report.pipeline_version` (done)
+- Effective render mode in report: `report.effective_render_mode` (done)
 - Added test fixtures under `testdata/`
 
 ## Execution Order Recommendation (Summary)
