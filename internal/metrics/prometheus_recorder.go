@@ -21,6 +21,7 @@ type PrometheusRecorder struct {
 	retriesExhausted *prom.CounterVec
 	issues           *prom.CounterVec
 	renderMode       prom.Gauge
+	transformFailures *prom.CounterVec
 }
 
 // NewPrometheusRecorder constructs and registers Prometheus metrics (idempotent).
@@ -88,7 +89,12 @@ func NewPrometheusRecorder(reg *prom.Registry) *PrometheusRecorder {
 			Name:      "effective_render_mode",
 			Help:      "Effective render mode (labeled via value mapping)",
 		})
-		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted, pr.issues, pr.renderMode)
+		pr.transformFailures = prom.NewCounterVec(prom.CounterOpts{
+			Namespace: "docbuilder",
+			Name:      "content_transform_failures_total",
+			Help:      "Failures returned by content transforms (registry) grouped by transform name",
+		}, []string{"transform"})
+		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted, pr.issues, pr.renderMode, pr.transformFailures)
 	})
 	return pr
 }
@@ -162,20 +168,33 @@ func (p *PrometheusRecorder) IncBuildRetryExhausted(stage string) {
 }
 
 func (p *PrometheusRecorder) IncIssue(code string, stage string, severity string, transient bool) {
-	if p == nil || p.issues == nil { return }
+	if p == nil || p.issues == nil {
+		return
+	}
 	tr := "false"
-	if transient { tr = "true" }
+	if transient {
+		tr = "true"
+	}
 	p.issues.WithLabelValues(code, stage, severity, tr).Inc()
 }
 
 // SetEffectiveRenderMode records the active render mode. Since Gauges only hold numbers,
 // we map modes to stable integers: static=0, noop=1, unknown=2.
 func (p *PrometheusRecorder) SetEffectiveRenderMode(mode string) {
-	if p == nil || p.renderMode == nil { return }
+	if p == nil || p.renderMode == nil {
+		return
+	}
 	var v float64 = 2
 	switch mode {
-	case "static": v = 0
-	case "noop": v = 1
+	case "static":
+		v = 0
+	case "noop":
+		v = 1
 	}
 	p.renderMode.Set(v)
+}
+
+func (p *PrometheusRecorder) IncContentTransformFailure(name string) {
+	if p == nil || p.transformFailures == nil { return }
+	p.transformFailures.WithLabelValues(name).Inc()
 }
