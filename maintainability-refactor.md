@@ -2,23 +2,28 @@
 
 A structured, actionable checklist to improve readability, reduce cognitive load, and enhance long‑term maintainability. Organized by phases so work can be delivered incrementally with low regression risk.
 
----
 ## Legend
+
 - [ ] Not started
 - [~] In progress
 - [x] Complete
 - [Δ] Follow-up / optional enhancement
 
----
+
+
+
 ## Phase 0: Baseline & Tracking
+
 - [x] Capture current strategy document (this file)
 - [ ] Add architecture diagram (current vs target) (`docs/architecture/diagram.png`)
 - [ ] Add CONTRIBUTING section detailing refactor conventions
 
----
+
+
+
 ## Phase 1: Low-Risk Extraction
-Focus: carve out self-contained concepts without semantic change.
-- [ ] Extract theme logic into `internal/hugo/theming/` (Hextra, Docsy, registry)
+
+- [x] Extract theme logic into dedicated theme packages (`internal/hugo/theme` API + `internal/hugo/themes/{hextra,docsy}` implementers; legacy param helpers removed)
 - [x] Move link rewriting into a dedicated content transform module `internal/hugo/content/links.go` (implemented as `content/links.go` with legacy wrapper `hugo/links.go`)
 - [x] Split `stages.go` into separate files (kept in `internal/hugo/` package instead of introducing `pipeline/` yet)
   - [x] `classification.go` (StageError, StageOutcome, classifyStageResult)
@@ -37,10 +42,12 @@ Focus: carve out self-contained concepts without semantic change.
 - [ ] Introduce `internal/hugo/errors/` for Hugo/generation sentinel errors
 - [ ] Add unit tests ensuring no diff in build report for a simple fixture before/after extraction (pending; current tests still green, but no explicit before/after golden)
 
----
+
+
+
 ## Phase 2: Abstractions & Interfaces
-Focus: make extension points explicit.
-- [ ] Theme interface (`Name()`, `ModuleImports()`, `ApplyParams()`, optional `PostScaffold()`)
+
+- [ ] Theme interface (`Name()`, `ModuleImports()`, `ApplyParams()`, optional `PostScaffold()`)  <!-- historical placeholder; partially satisfied by existing theme system -->
 - [ ] Content transform pipeline
   - [ ] Interface `ContentTransform{ Match(f); Apply(f,data) }`
   - [ ] Pipeline orchestrator with ordered execution
@@ -52,24 +59,33 @@ Focus: make extension points explicit.
 - [ ] Observer abstraction (BuildObserver) decoupling metrics recorder
 - [ ] RepoFetcher abstraction to unify clone/update decision logic
 
----
+
+
+
 ## Phase 3: Configuration System Refinement
+
 - [ ] Split config loading into phases: load → normalize → apply defaults → validate
 - [ ] Create `internal/config/normalize/` (build.go, versioning.go, monitoring.go)
 - [ ] Provide `ConfigSnapshot()` method for hashing build-affecting fields
 - [ ] Table-driven normalization tests (render_mode, namespacing, clone strategy, retry modes)
 - [ ] Emit warnings for deprecated env variables once per process (deduplicated)
 
----
+
+
+
 ## Phase 4: Error & Issue Classification
+
 - [ ] Introduce typed git errors (AuthError, NotFoundError, UnsupportedProtocolError)
 - [ ] Return typed errors from git client instead of string parsing
 - [ ] Map typed errors to IssueCodes via lookup table
 - [ ] Replace discovery/generation generic errors with typed wrappers
 - [ ] Add tests asserting error → issue code matrix stability
 
----
+
+
+
 ## Phase 5: State & Pipeline Evolution
+
 - [ ] Decompose `BuildState` into sub-structs (GitState, DocsState, PipelineState)
 - [ ] Replace implicit fields with accessor methods (`AllReposUnchanged()` computes on demand or cached)
 - [ ] StageFunc signature returns structured result (`{Err error; Skip bool}`)
