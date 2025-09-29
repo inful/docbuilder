@@ -96,6 +96,8 @@ const (
 	IssueRepoNotFound     ReportIssueCode = "REPO_NOT_FOUND"
 	IssueUnsupportedProto ReportIssueCode = "UNSUPPORTED_PROTOCOL"
 	IssueRemoteDiverged   ReportIssueCode = "REMOTE_DIVERGED" // used when divergence detected and hard reset disabled
+	IssueRateLimit        ReportIssueCode = "RATE_LIMIT"
+	IssueNetworkTimeout   ReportIssueCode = "NETWORK_TIMEOUT"
 )
 
 // IssueSeverity represents normalized severity levels.

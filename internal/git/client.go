@@ -86,6 +86,12 @@ func classifyCloneError(url string, err error) error {
  	if strings.Contains(l, "unsupported protocol") || strings.Contains(l, "protocol not supported") {
  		return &UnsupportedProtocolError{Op: "clone", URL: url, Err: err}
  	}
+	if strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests") {
+		return &RateLimitError{Op: "clone", URL: url, Err: err}
+	}
+	if strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout") {
+		return &NetworkTimeoutError{Op: "clone", URL: url, Err: err}
+	}
  	return fmt.Errorf("failed to clone repository %s: %w", url, err)
 }
 

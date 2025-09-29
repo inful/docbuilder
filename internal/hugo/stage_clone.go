@@ -149,6 +149,10 @@ func classifyGitFailure(err error) ReportIssueCode {
 		return IssueUnsupportedProto
 	case errors.As(err, new(*gitpkg.RemoteDivergedError)):
 		return IssueRemoteDiverged
+	case errors.As(err, new(*gitpkg.RateLimitError)):
+		return IssueRateLimit
+	case errors.As(err, new(*gitpkg.NetworkTimeoutError)):
+		return IssueNetworkTimeout
 	}
 	// Fallback heuristic for legacy untyped errors
 	l := strings.ToLower(err.Error())
@@ -161,6 +165,10 @@ func classifyGitFailure(err error) ReportIssueCode {
 		return IssueUnsupportedProto
 	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
 		return IssueRemoteDiverged
+	case strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests"):
+		return IssueRateLimit
+	case strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout"):
+		return IssueNetworkTimeout
 	default:
 		return ""
 	}
