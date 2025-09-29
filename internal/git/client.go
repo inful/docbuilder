@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -57,7 +58,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
 	if err != nil {
-		return "", fmt.Errorf("failed to clone repository %s: %w", repo.URL, err)
+		return "", classifyCloneError(repo.URL, err)
 	}
 	if ref, herr := repository.Head(); herr == nil {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), slog.String("commit", ref.Hash().String()[:8]), logfields.Path(repoPath))
@@ -70,6 +71,22 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 		}
 	}
 	return repoPath, nil
+}
+
+// classifyCloneError attempts to wrap underlying go-git errors into typed permanent failures.
+func classifyCloneError(url string, err error) error {
+	l := strings.ToLower(err.Error())
+ 	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.
+ 	if strings.Contains(l, "authentication") || strings.Contains(l, "auth fail") || strings.Contains(l, "invalid username or password") {
+ 		return &AuthError{Op: "clone", URL: url, Err: err}
+ 	}
+ 	if strings.Contains(l, "not found") || strings.Contains(l, "repository does not exist") {
+ 		return &NotFoundError{Op: "clone", URL: url, Err: err}
+ 	}
+ 	if strings.Contains(l, "unsupported protocol") || strings.Contains(l, "protocol not supported") {
+ 		return &UnsupportedProtocolError{Op: "clone", URL: url, Err: err}
+ 	}
+ 	return fmt.Errorf("failed to clone repository %s: %w", url, err)
 }
 
 // UpdateRepository updates an existing repository or clones if missing.

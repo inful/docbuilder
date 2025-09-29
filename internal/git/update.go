@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -25,7 +26,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 1. Fetch remote refs
 	if err := c.fetchOrigin(repository, repo); err != nil {
-		return "", err
+		return "", classifyFetchError(repo.URL, err)
 	}
 
 	// 2. Resolve target branch
@@ -42,6 +43,10 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 4. Fast-forward or handle divergence
 	if err := c.syncWithRemote(repository, wt, repo, branch, localRef, remoteRef); err != nil {
+		// Divergence without hard reset is treated as permanent (REMOTE_DIVERGED)
+		if strings.Contains(strings.ToLower(err.Error()), "diverged") {
+			return "", &RemoteDivergedError{Op: "update", URL: repo.URL, Branch: branch, Err: err}
+		}
 		return "", err
 	}
 
