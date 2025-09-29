@@ -17,7 +17,9 @@ import (
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
 	regs := tr.List()
-	useRegistry := len(regs) > 0
+	if len(regs) == 0 {
+		return fmt.Errorf("no content transforms registered")
+	}
 	for _, file := range docFiles {
 		select {
 		case <-ctx.Done():
@@ -28,7 +30,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
 		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
-			if useRegistry {
+		{
 				// Prepare transform filtering
 				var enableSet, disableSet map[string]struct{}
 				if g.config != nil && g.config.Hugo.Transforms != nil {
@@ -47,6 +49,14 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				Content:  p.Content,
 				OriginalFrontMatter: p.OriginalFrontMatter,
 				HadFrontMatter:      p.HadFrontMatter,
+				// SyncOriginal allows the parser (registry transform) to push parsed front matter
+				// into the real Page before subsequent transforms (like the builder) run. Without
+				// this, builder sees nil Existing FM and overwrites user-provided keys (bug found
+				// by TestPipeline_Order losing 'custom: val').
+				SyncOriginal: func(fm map[string]any, had bool) {
+					p.OriginalFrontMatter = fm
+					p.HadFrontMatter = had
+				},
 				// Build front matter using existing helper
 				BuildFrontMatter: func(now time.Time) {
 					built := BuildFrontMatter(FrontMatterInput{File: p.File, Existing: p.OriginalFrontMatter, Config: g.config, Now: now})
@@ -89,18 +99,6 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			p.OriginalFrontMatter = shim.OriginalFrontMatter
 			p.HadFrontMatter = shim.HadFrontMatter
 			// Raw set in Serialize
-		} else {
-			pipeline := NewTransformerPipeline(
-				&FrontMatterParser{},
-				&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
-				&EditLinkInjector{ConfigProvider: func() *Generator { return g }},
-				&MergeFrontMatterTransformer{},
-				&RelativeLinkRewriter{},
-				&FinalFrontMatterSerializer{},
-			)
-			if err := pipeline.Run(p); err != nil {
-				return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
-			}
 		}
 		// record hash of raw for potential future integrity verification (not persisted yet)
 		_ = sha256.Sum256(p.Raw)
