@@ -43,6 +43,13 @@ func (c *Config) Snapshot() string {
     }
     // Output
     w("output.directory", c.Output.Directory)
+    // Filtering patterns (order-insensitive after normalization). These affect which repos/docs are included.
+    if c.Filtering != nil {
+        if len(c.Filtering.IncludePatterns) > 0 { ip := append([]string{}, c.Filtering.IncludePatterns...); sort.Strings(ip); w("filtering.include_patterns", strings.Join(ip, ",")) }
+        if len(c.Filtering.ExcludePatterns) > 0 { ep := append([]string{}, c.Filtering.ExcludePatterns...); sort.Strings(ep); w("filtering.exclude_patterns", strings.Join(ep, ",")) }
+        if len(c.Filtering.RequiredPaths) > 0 { rp := append([]string{}, c.Filtering.RequiredPaths...); sort.Strings(rp); w("filtering.required_paths", strings.Join(rp, ",")) }
+        if len(c.Filtering.IgnoreFiles) > 0 { ig := append([]string{}, c.Filtering.IgnoreFiles...); sort.Strings(ig); w("filtering.ignore_files", strings.Join(ig, ",")) }
+    }
     // Monitoring logging (affects runtime logging but not site content; included for completeness)
     if c.Monitoring != nil { w("monitoring.logging.level", string(c.Monitoring.Logging.Level)); w("monitoring.logging.format", string(c.Monitoring.Logging.Format)) }
     return hex.EncodeToString(h.Sum(nil))
