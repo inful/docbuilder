@@ -19,6 +19,8 @@ type PrometheusRecorder struct {
 	cloneConcurrency prom.Gauge
 	retries          *prom.CounterVec
 	retriesExhausted *prom.CounterVec
+	issues           *prom.CounterVec
+	renderMode       prom.Gauge
 }
 
 // NewPrometheusRecorder constructs and registers Prometheus metrics (idempotent).
@@ -76,7 +78,17 @@ func NewPrometheusRecorder(reg *prom.Registry) *PrometheusRecorder {
 			Name:      "build_retry_exhausted_total",
 			Help:      "Count of stages where retries were exhausted",
 		}, []string{"stage"})
-		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted)
+		pr.issues = prom.NewCounterVec(prom.CounterOpts{
+			Namespace: "docbuilder",
+			Name:      "issues_total",
+			Help:      "Count of structured issues by code, stage, severity, transient flag",
+		}, []string{"code", "stage", "severity", "transient"})
+		pr.renderMode = prom.NewGauge(prom.GaugeOpts{
+			Namespace: "docbuilder",
+			Name:      "effective_render_mode",
+			Help:      "Effective render mode (labeled via value mapping)",
+		})
+		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted, pr.issues, pr.renderMode)
 	})
 	return pr
 }
@@ -147,4 +159,23 @@ func (p *PrometheusRecorder) IncBuildRetryExhausted(stage string) {
 		return
 	}
 	p.retriesExhausted.WithLabelValues(stage).Inc()
+}
+
+func (p *PrometheusRecorder) IncIssue(code string, stage string, severity string, transient bool) {
+	if p == nil || p.issues == nil { return }
+	tr := "false"
+	if transient { tr = "true" }
+	p.issues.WithLabelValues(code, stage, severity, tr).Inc()
+}
+
+// SetEffectiveRenderMode records the active render mode. Since Gauges only hold numbers,
+// we map modes to stable integers: static=0, noop=1, unknown=2.
+func (p *PrometheusRecorder) SetEffectiveRenderMode(mode string) {
+	if p == nil || p.renderMode == nil { return }
+	var v float64 = 2
+	switch mode {
+	case "static": v = 0
+	case "noop": v = 1
+	}
+	p.renderMode.Set(v)
 }

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
-	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
 func stageRunHugo(ctx context.Context, bs *BuildState) error {

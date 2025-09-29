@@ -27,6 +27,12 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 		maxDelay = 10 * time.Second
 	}
 	pol := retry.NewPolicy(appcfg.RetryBackoffMode(strings.ToLower(string(c.buildCfg.RetryBackoff))), initial, maxDelay, c.buildCfg.MaxRetries)
+
+	// Adaptive delay multipliers keyed by error classification (transient types)
+	const (
+		multRateLimit      = 3.0
+		multNetworkTimeout = 1.0
+	)
 	var lastErr error
 	for attempt := 0; attempt <= c.buildCfg.MaxRetries; attempt++ {
 		if attempt > 0 {
@@ -46,7 +52,14 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 		if attempt == c.buildCfg.MaxRetries {
 			break
 		}
-		delay := pol.Delay(attempt + 1) // attempt is 0-based; Policy expects 1-based retry number
+		delay := pol.Delay(attempt + 1) // base delay
+		// Adjust delay for typed transient errors
+		switch classifyTransientType(err) {
+		case "rate_limit":
+			delay = time.Duration(float64(delay) * multRateLimit)
+		case "network_timeout":
+			delay = time.Duration(float64(delay) * multNetworkTimeout)
+		}
 		time.Sleep(delay)
 	}
 	return "", fmt.Errorf("git %s failed after retries: %w", op, lastErr)
@@ -75,3 +88,15 @@ func isPermanentGitError(err error) bool {
 
 // expose IsPermanentGitError for tests within package
 var IsPermanentGitError = isPermanentGitError
+
+// classifyTransientType returns a short string key for known transient typed errors; empty if unknown.
+func classifyTransientType(err error) string {
+	if err == nil { return "" }
+	switch {
+	case errors.As(err, new(*RateLimitError)):
+		return "rate_limit"
+	case errors.As(err, new(*NetworkTimeoutError)):
+		return "network_timeout"
+	}
+	return ""
+}
