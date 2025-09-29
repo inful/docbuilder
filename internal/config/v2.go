@@ -150,8 +150,12 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Normalization pass (case-fold enumerations, bounds, early coercions)
-	if _, nerr := NormalizeConfig(&config); nerr != nil {
+	if nres, nerr := NormalizeConfig(&config); nerr != nil {
 		return nil, fmt.Errorf("normalize: %w", nerr)
+	} else if nres != nil && len(nres.Warnings) > 0 {
+		for _, w := range nres.Warnings {
+			fmt.Fprintf(os.Stderr, "config normalization: %s\n", w)
+		}
 	}
 	// Apply defaults (after normalization so canonical values drive defaults)
 	if err := applyDefaults(&config); err != nil {
