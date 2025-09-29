@@ -48,14 +48,15 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 ## Phase 2: Abstractions & Interfaces
 
 - [x] Theme interface (implemented as `internal/hugo/theme` with `Theme` + `ThemeFeatures`; legacy helpers removed)
-- [~] Content transform pipeline
+- [x] Content transform pipeline
   - [x] Pipeline orchestrator via registry (`internal/hugo/transforms/registry.go`) with priority ordering
   - [x] Registered transforms: front matter parse/build, edit link injector, merge, relative link rewrite, serializer
-  - [x] Parity tests against legacy inline pipeline (`transform_parity_test.go` + edge cases)
-  - [ ] Formal interface for page object (currently shim struct; legacy `Page` still coupled)
-  - [ ] Remove legacy `TransformerPipeline` and inline transformers after confidence window
-  - [ ] Config-driven enable/disable or extension mechanism (user pluggable)
-  - [ ] Conflict logging assertions (dedicated tests for FrontMatterConflict semantics)
+  - [x] Parity tests against legacy inline pipeline (now decommissioned; stub retained)
+  - [ ] Formal interface for page object (currently shim struct; `Page` still coupled)  
+        Δ Next: introduce minimal `PageFacade` interface consumed by transforms
+  - [x] Remove legacy `TransformerPipeline` and inline transformers (completed; tests green)
+  - [x] Config-driven enable/disable mechanism (`hugo.transforms.enable/disable`) with precedence (disable > enable)
+  - [x] Conflict logging assertions (FrontMatterConflict semantics locked by `transform_conflicts_test.go`)
 - [ ] Renderer abstraction (`Renderer.Enabled()`, `Renderer.Run()`)
   - [ ] BinaryRenderer implementation
   - [ ] NoopRenderer (tests)
@@ -96,59 +97,52 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - [ ] Early skip logic isolated in pure function
 - [ ] Add build report field `pipeline_version`
 
----
 ## Phase 6: Testing & Golden Artifacts
-- [x] Golden test for theme-generated `hugo.yaml` (Hextra)
-- [x] Golden test for theme-generated `hugo.yaml` (Docsy)
-- [ ] Link rewriting transform unit tests (edge cases: anchors, query strings, nested paths)
-- [ ] Render mode precedence tests (matrix: config × env × CLI flag)
-- [ ] Integration test: unchanged repos triggers skip
-- [ ] Integration test: render_mode=never omits `public/` generation
-- [ ] Integration test: render_mode=always creates `public/` with index.html
 
----
+(*Re-list items after earlier sections are stabilized – placeholder heading retained for structure.*)
+
 ## Phase 7: Observability & Metrics Cleanup
+
 - [ ] Implement Prometheus BuildObserver
 - [ ] Remove direct recorder usage in stages (use observer)
 - [ ] Add metric: effective_render_mode
 - [ ] Add metric: content_transform_failures_total
 
----
 ## Phase 8: Documentation & Developer Experience
+
 - [ ] Update README with new architecture and extension points
 - [ ] Add THEME_INTEGRATION.md
 - [x] Add CONTENT_TRANSFORMS.md with examples
 - [ ] Update migration notes (legacy env → render_mode) & planned deprecation schedule
 - [ ] CONTRIBUTING: How to add a stage / transform / theme
 
----
 ## Phase 9: Deprecations & Cleanup
+
 - [ ] Mark legacy env vars (DOCBUILDER_RUN_HUGO, DOCBUILDER_SKIP_HUGO) deprecated in logs
 - [ ] Add feature flag guard removal plan (`DOCBUILDER_EXPERIMENTAL_PIPELINE` if introduced)
 - [ ] Remove duplicate early-exit logic remnants
 - [ ] Collapse any shim layers after adoption period
 
----
 ## Phase 10: Optional Enhancements (Δ)
+
 - [ ] Remote rendering service adapter (future scaling)
 - [ ] Partial rebuild detection via per-file hash graph
 - [ ] Parallel content transform execution (bounded worker pool)
 - [ ] Structured tracing (OpenTelemetry spans per stage)
 
----
 ## Cross-Cutting Quality Gates
+
 - [ ] Ensure no file > 500 LOC (CI check)
 - [ ] Lint rule: forbid direct theme branching in generator (must use Theme interface)
 - [ ] Coverage threshold ≥ 70% for pipeline, config, transforms packages
 - [ ] Static analysis: vet & staticcheck clean
 
----
 ## Work Tracking Fields (add as implemented)
+
 - Pipeline version in report: `report.pipeline_version`
 - Effective render mode in report: `report.effective_render_mode`
 - Added test fixtures under `testdata/`
 
----
 ## Execution Order Recommendation (Summary)
 1. Phase 1 (extractions) – safest, unlocks everything else
 2. Phase 2 (interfaces) – creates stable contracts
