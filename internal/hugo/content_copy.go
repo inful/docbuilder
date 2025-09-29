@@ -8,18 +8,18 @@ import (
 	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 )
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
-	pipeline := NewTransformerPipeline(
-		&FrontMatterParser{},
-		&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
-		&EditLinkInjector{ConfigProvider: func() *Generator { return g }},
-		&MergeFrontMatterTransformer{}, // produce merged view (future transformers could rely on it)
-		&RelativeLinkRewriter{},
-		&FinalFrontMatterSerializer{},
-	)
+	// Attempt to use new registry-based pipeline first; falls back to legacy explicit pipeline
+	// if no registered transformers (incremental migration safety).
+	useRegistry := false
+	regs := tr.List()
+	if len(regs) > 0 {
+		useRegistry = true
+	}
 	for _, file := range docFiles {
 		select {
 		case <-ctx.Done():
@@ -30,8 +30,24 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
 		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
-		if err := pipeline.Run(p); err != nil {
-			return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
+		if useRegistry {
+			for _, rt := range regs { // ordered by priority already
+				if err := rt.Transform(p); err != nil {
+					return fmt.Errorf("transform %s failed for %s: %w", rt.Name(), file.Path, err)
+				}
+			}
+		} else {
+			pipeline := NewTransformerPipeline(
+				&FrontMatterParser{},
+				&FrontMatterBuilder{ConfigProvider: func() *Generator { return g }},
+				&EditLinkInjector{ConfigProvider: func() *Generator { return g }},
+				&MergeFrontMatterTransformer{},
+				&RelativeLinkRewriter{},
+				&FinalFrontMatterSerializer{},
+			)
+			if err := pipeline.Run(p); err != nil {
+				return fmt.Errorf("pipeline failed for %s: %w", file.Path, err)
+			}
 		}
 		outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
