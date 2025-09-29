@@ -121,6 +121,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 					}
 				}
 				if err := rt.Transform(shim); err != nil {
+					if g.recorder != nil { g.recorder.IncContentTransformFailure(name) }
 					return fmt.Errorf("transform %s failed for %s: %w", rt.Name(), file.Path, err)
 				}
 			}

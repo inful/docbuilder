@@ -38,6 +38,7 @@ type Recorder interface {
 	// New extensibility points (additive; safe for older noop implementations)
 	IncIssue(code string, stage string, severity string, transient bool)
 	SetEffectiveRenderMode(mode string)
+	IncContentTransformFailure(name string)
 }
 
 // NoopRecorder is a Recorder that does nothing (default when metrics not configured).
@@ -54,3 +55,4 @@ func (NoopRecorder) IncBuildRetry(string)                                 {}
 func (NoopRecorder) IncBuildRetryExhausted(string)                        {}
 func (NoopRecorder) IncIssue(string, string, string, bool)                {}
 func (NoopRecorder) SetEffectiveRenderMode(string)                        {}
+func (NoopRecorder) IncContentTransformFailure(string)                   {}

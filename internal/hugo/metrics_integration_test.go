@@ -41,6 +41,7 @@ func (c *capturingRecorder) IncBuildRetry(string)                               
 func (c *capturingRecorder) IncBuildRetryExhausted(string)                        {}
 func (c *capturingRecorder) IncIssue(string, string, string, bool)                {}
 func (c *capturingRecorder) SetEffectiveRenderMode(string)                        {}
+func (c *capturingRecorder) IncContentTransformFailure(string)                   {}
 
 // TestMetricsRecorderIntegration ensures that recorder callbacks are invoked during a simple GenerateSiteWithReport run.
 func TestMetricsRecorderIntegration(t *testing.T) {
