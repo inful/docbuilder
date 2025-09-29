@@ -103,7 +103,7 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization fully modular; 
 - [x] Implement Prometheus BuildObserver (recorder adapter + issue & render mode metrics)
 - [~] Remove direct recorder usage in stages (clone stage still uses recorder directly for fine-grained repo metrics)
 - [x] Add metric: effective_render_mode *(reported via build report field; now emitted as gauge)*
-- [ ] Add metric: content_transform_failures_total
+- [x] Add metric: content_transform_failures_total
 
 ## Phase 8: Documentation & Developer Experience
 
