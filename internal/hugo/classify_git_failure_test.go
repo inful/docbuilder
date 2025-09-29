@@ -16,6 +16,8 @@ func TestClassifyGitFailureTyped(t *testing.T) {
         {"notfound", &gitpkg.NotFoundError{Op: "clone", URL: "u", Err: errors.New("not found")}, IssueRepoNotFound},
         {"unsupported", &gitpkg.UnsupportedProtocolError{Op: "clone", URL: "u", Err: errors.New("unsupported protocol")}, IssueUnsupportedProto},
         {"diverged", &gitpkg.RemoteDivergedError{Op: "update", URL: "u", Branch: "main", Err: errors.New("diverged branch")}, IssueRemoteDiverged},
+        {"ratelimit", &gitpkg.RateLimitError{Op: "clone", URL: "u", Err: errors.New("rate limit exceeded")}, IssueRateLimit},
+        {"timeout", &gitpkg.NetworkTimeoutError{Op: "clone", URL: "u", Err: errors.New("network timeout")}, IssueNetworkTimeout},
     }
     for _, c := range cases {
         if got := classifyGitFailure(c.err); got != c.want {
@@ -34,6 +36,8 @@ func TestClassifyGitFailureHeuristic(t *testing.T) {
         {"unsupported protocol scheme xyz", IssueUnsupportedProto},
         {"local branch diverged and hard reset disabled", IssueRemoteDiverged},
         {"some random error", ""},
+        {"request failed due to rate limit", IssueRateLimit},
+        {"operation i/o timeout while reading", IssueNetworkTimeout},
     }
     for _, c := range cases {
         got := classifyGitFailure(errors.New(c.msg))

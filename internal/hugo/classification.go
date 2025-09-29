@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
+	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 // StageErrorKind enumerates structured stage error categories.
@@ -43,6 +44,10 @@ func (e *StageError) Transient() bool {
 	switch e.Stage {
 	case StageCloneRepos:
 		if isSentinel(build.ErrClone) {
+			return true
+		}
+		// Typed transient git errors
+		if errors.As(cause, new(*gitpkg.RateLimitError)) || errors.As(cause, new(*gitpkg.NetworkTimeoutError)) {
 			return true
 		}
 	case StageRunHugo:
