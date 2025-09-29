@@ -28,6 +28,7 @@ type Generator struct {
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
 	recorder       metrics.Recorder
+	observer       BuildObserver // high-level observer (decouples metrics recorder)
 	renderer       Renderer // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
 	cachedThemeFeatures *th.ThemeFeatures
@@ -65,6 +66,8 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
 	// Default renderer: binary hugo invocation. Can be overridden via WithRenderer for tests or alt implementations.
 	g.renderer = &BinaryRenderer{}
+	// Default observer bridges to recorder until dedicated observers added.
+	g.observer = recorderObserver{rec: g.recorder}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	return g
@@ -123,11 +126,16 @@ func (g *Generator) Config() *config.Config { return g.config }
 func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 	if r == nil {
 		g.recorder = metrics.NoopRecorder{}
+		g.observer = recorderObserver{rec: g.recorder}
 		return g
 	}
 	g.recorder = r
+	g.observer = recorderObserver{rec: r}
 	return g
 }
+
+// WithObserver overrides the BuildObserver (takes precedence over internal recorder adapter).
+func (g *Generator) WithObserver(o BuildObserver) *Generator { if o != nil { g.observer = o }; return g }
 
 // GenerateSite creates a complete Hugo site from discovered documentation
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {

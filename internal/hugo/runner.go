@@ -18,22 +18,22 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			bs.Report.StageErrorKinds[st.Name] = se.Kind
 			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, se.Error(), out.Transient, se)
 			bs.Report.recordStageResult(out.Stage, out.Result, bs.Generator.recorder)
+			if bs.Generator != nil && bs.Generator.observer != nil { bs.Generator.observer.OnStageComplete(st.Name, 0, StageResultCanceled) }
 			return se
 		default:
 		}
+		if bs.Generator != nil && bs.Generator.observer != nil { bs.Generator.observer.OnStageStart(st.Name) }
 		t0 := time.Now()
 		err := st.Fn(ctx, bs)
 		dur := time.Since(t0)
 		bs.Report.StageDurations[string(st.Name)] = dur
-		if bs.Generator != nil && bs.Generator.recorder != nil {
-			bs.Generator.recorder.ObserveStageDuration(string(st.Name), dur)
-		}
 		out := classifyStageResult(st.Name, err, bs)
 		if out.Error != nil { // error path
 			bs.Report.StageErrorKinds[st.Name] = out.Error.Kind
 			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, out.Error.Error(), out.Transient, out.Error)
 		}
 		bs.Report.recordStageResult(st.Name, out.Result, bs.Generator.recorder)
+		if bs.Generator != nil && bs.Generator.observer != nil { bs.Generator.observer.OnStageComplete(st.Name, dur, out.Result) }
 		if out.Abort {
 			if out.Error != nil {
 				return out.Error
@@ -51,5 +51,6 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			slog.Info("Repository heads unchanged but output invalid/missing; proceeding with full build")
 		}
 	}
+	if bs.Generator != nil && bs.Generator.observer != nil { bs.Generator.observer.OnBuildComplete(bs.Report) }
 	return nil
 }
