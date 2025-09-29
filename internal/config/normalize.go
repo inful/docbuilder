@@ -43,6 +43,13 @@ func normalizeBuildConfig(b *BuildConfig, res *NormalizationResult) {
     // bounds
     if b.CloneConcurrency < 0 { b.CloneConcurrency = 0 }
     if b.ShallowDepth < 0 { b.ShallowDepth = 0 }
+    // retry_backoff
+    if rb := NormalizeRetryBackoff(string(b.RetryBackoff)); rb != "" {
+        if b.RetryBackoff != rb { res.Warnings = append(res.Warnings, warnChanged("build.retry_backoff", b.RetryBackoff, rb)); b.RetryBackoff = rb }
+    } else if strings.TrimSpace(string(b.RetryBackoff)) != "" {
+        res.Warnings = append(res.Warnings, warnUnknown("build.retry_backoff", string(b.RetryBackoff), string(RetryBackoffFixed)))
+        b.RetryBackoff = RetryBackoffFixed
+    }
 }
 
 func warnChanged(field string, from, to interface{}) string { return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to) }
