@@ -1,7 +1,7 @@
 package hugo
 
 import (
-    "context"
+	"context"
 )
 
 func stageGenerateConfig(ctx context.Context, bs *BuildState) error {

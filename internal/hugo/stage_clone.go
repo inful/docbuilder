@@ -68,8 +68,12 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			if success {
 				bs.Report.ClonedRepositories++
 				bs.RepoPaths[task.repo.Name] = res.Path
-				if res.PostHead != "" { bs.postHeads[task.repo.Name] = res.PostHead }
-				if res.PreHead != "" { bs.preHeads[task.repo.Name] = res.PreHead }
+				if res.PostHead != "" {
+					bs.postHeads[task.repo.Name] = res.PostHead
+				}
+				if res.PreHead != "" {
+					bs.preHeads[task.repo.Name] = res.PreHead
+				}
 			} else {
 				bs.Report.FailedRepositories++
 				if bs.Report != nil {

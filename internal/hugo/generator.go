@@ -332,7 +332,9 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 // normalized, stable hash over build-affecting fields. This replaces the previous
 // ad-hoc hashing logic to ensure a single source of truth for incremental decisions.
 func (g *Generator) computeConfigHash() string {
-	if g == nil || g.config == nil { return "" }
+	if g == nil || g.config == nil {
+		return ""
+	}
 	return g.config.Snapshot()
 }
 
