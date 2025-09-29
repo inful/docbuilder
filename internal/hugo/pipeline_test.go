@@ -1,6 +1,8 @@
 package hugo
 
 import (
+	"context"
+	"os"
 	"strings"
 	"testing"
 
@@ -10,87 +12,81 @@ import (
 
 // TestPipeline_Idempotency ensures that running the pipeline twice does not duplicate front matter.
 func TestPipeline_Idempotency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	gen := NewGenerator(cfg, t.TempDir())
-
 	original := "---\ncustom: keep\n---\n# Heading\n\nLink to [Doc](doc.md)."
-	file := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte(original)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
-	pipe := NewTransformerPipeline(&FrontMatterParser{}, &RelativeLinkRewriter{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
-	if err := pipe.Run(p); err != nil {
-		t.Fatalf("first run failed: %v", err)
+	file := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", Content: []byte(original)}
+	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+		t.Fatalf("first copy: %v", err)
 	}
-
-	firstOutput := string(p.Raw)
-	if strings.Count(firstOutput, "---\n") < 1 {
-		t.Fatalf("expected front matter once, got: %s", firstOutput)
+	outPath := gen.buildRoot() + "/" + file.GetHugoPath()
+	data, err := os.ReadFile(outPath)
+	if err != nil {
+		t.Fatalf("read: %v", err)
 	}
-	if strings.Contains(firstOutput, "doc.md") {
-		t.Fatalf("link rewrite failed: %s", firstOutput)
+	first := string(data)
+	if strings.Count(first, "---\n") != 2 {
+		t.Fatalf("expected single front matter block, got %d", strings.Count(first, "---\n"))
 	}
-
-	// Second run on produced output
-	file2 := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte(firstOutput)}
-	p2 := &Page{File: file2, Raw: file2.Content, Content: string(file2.Content)}
-	if err := pipe.Run(p2); err != nil {
-		t.Fatalf("second run failed: %v", err)
+	if strings.Contains(first, "doc.md") {
+		t.Fatalf("link not rewritten: %s", first)
 	}
-	secondOutput := string(p2.Raw)
-
-	// Expect exactly two delimiters: opening and closing front matter
-	if strings.Count(secondOutput, "---\n") != 2 {
-		t.Fatalf("unexpected front matter delimiter count after second run: %d output: %s", strings.Count(secondOutput, "---\n"), secondOutput)
+	// Re-run using transformed output as input
+	file2 := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", Content: data}
+	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file2}); err != nil {
+		t.Fatalf("second copy: %v", err)
+	}
+	data2, _ := os.ReadFile(outPath)
+	if strings.Count(string(data2), "---\n") != 2 {
+		t.Fatalf("idempotency failed; delimiters=%d", strings.Count(string(data2), "---\n"))
 	}
 }
 
 // TestPipeline_Order verifies that front matter parsing happens before building.
 func TestPipeline_Order(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	gen := NewGenerator(cfg, t.TempDir())
 	existing := "---\ncustom: val\n---\nBody"
-	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Extension: ".md", Content: []byte(existing)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
-	pipe := NewTransformerPipeline(&FrontMatterParser{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
-	if err := pipe.Run(p); err != nil {
-		t.Fatalf("pipeline failed: %v", err)
+	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Content: []byte(existing)}
+	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+		t.Fatalf("copy: %v", err)
 	}
-	out := string(p.Raw)
+	outPath := gen.buildRoot() + "/" + file.GetHugoPath()
+	data, _ := os.ReadFile(outPath)
+	out := string(data)
 	if !strings.Contains(out, "custom: val") {
-		t.Fatalf("existing front matter key lost: %s", out)
+		t.Fatalf("existing key lost: %s", out)
 	}
 	if !strings.Contains(out, "repository: r") {
-		t.Fatalf("builder did not add repository: %s", out)
+		t.Fatalf("repository missing: %s", out)
 	}
 }
 
 // TestMalformedFrontMatter ensures invalid YAML front matter does not break build.
 func TestMalformedFrontMatter(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	gen := NewGenerator(cfg, t.TempDir())
 	malformed := "---\n:bad yaml\n---\n# T\n"
-	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Extension: ".md", Content: []byte(malformed)}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
-	pipe := NewTransformerPipeline(&FrontMatterParser{}, &FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
-	if err := pipe.Run(p); err != nil {
-		t.Fatalf("pipeline failed: %v", err)
+	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Content: []byte(malformed)}
+	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+		t.Fatalf("copy: %v", err)
 	}
-	out := string(p.Raw)
-	if !strings.Contains(out, "title:") {
-		t.Fatalf("expected generated front matter title, got: %s", out)
+	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath())
+	if !strings.Contains(string(data), "title:") {
+		t.Fatalf("expected generated title, got %s", string(data))
 	}
 }
 
 // TestDateConsistency ensures BuildFrontMatter uses Now injection indirectly through builder.
 func TestDateConsistency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
+	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	gen := NewGenerator(cfg, t.TempDir())
-	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Extension: ".md", Content: []byte("Body")}
-	p := &Page{File: file, Raw: file.Content, Content: string(file.Content)}
-	pipe := NewTransformerPipeline(&FrontMatterBuilder{ConfigProvider: func() *Generator { return gen }}, &FinalFrontMatterSerializer{})
-	if err := pipe.Run(p); err != nil {
-		t.Fatalf("pipeline failed: %v", err)
+	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Content: []byte("Body")}
+	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+		t.Fatalf("copy: %v", err)
 	}
-	if !strings.Contains(string(p.Raw), "date:") {
-		t.Fatalf("expected date in serialized output, got %s", string(p.Raw))
+	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath())
+	if !strings.Contains(string(data), "date:") {
+		t.Fatalf("expected date in front matter, got %s", string(data))
 	}
 }

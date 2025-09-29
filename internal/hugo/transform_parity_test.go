@@ -11,5 +11,5 @@ import "testing"
 // sole implementation. If this starts failing, investigate unintended
 // reintroduction of legacy symbols.
 func TestLegacyPipelineRemoved(t *testing.T) {
-  // No-op: legacy pipeline symbols must not exist.
+	// No-op: legacy pipeline symbols must not exist.
 }

@@ -2,14 +2,10 @@ package hugo
 
 import (
 	"fmt"
-	"log/slog"
 	"reflect"
 	"sort"
-	"strings"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"gopkg.in/yaml.v3"
 )
 
 // Page is the in-memory representation of a markdown document being transformed.
@@ -311,133 +307,4 @@ func cloneSlice(in []any) []any {
 // notDeepEqual returns true if values differ using reflect.DeepEqual; safe for maps/slices.
 func notDeepEqual(a, b any) bool { return !reflect.DeepEqual(a, b) }
 
-// ContentTransformer applies a transformation to a Page.
-type ContentTransformer interface {
-	Name() string
-	Transform(p *Page) error
-}
-
-// TransformerPipeline runs a sequence of transformers.
-type TransformerPipeline struct{ stages []ContentTransformer }
-
-func NewTransformerPipeline(stages ...ContentTransformer) *TransformerPipeline {
-	return &TransformerPipeline{stages: stages}
-}
-
-func (tp *TransformerPipeline) Run(p *Page) error {
-	for _, st := range tp.stages {
-		if err := st.Transform(p); err != nil {
-			return fmt.Errorf("transform %s failed: %w", st.Name(), err)
-		}
-	}
-	return nil
-}
-
-// RelativeLinkRewriter transformer
-type RelativeLinkRewriter struct{}
-
-func (r *RelativeLinkRewriter) Name() string { return "relative_link_rewriter" }
-func (r *RelativeLinkRewriter) Transform(p *Page) error {
-	p.Content = RewriteRelativeMarkdownLinks(p.Content)
-	return nil
-}
-
-// FrontMatterParser extracts existing front matter (if any) and strips it from content.
-type FrontMatterParser struct{}
-
-func (f *FrontMatterParser) Name() string { return "front_matter_parser" }
-func (f *FrontMatterParser) Transform(p *Page) error {
-	body := p.Content
-	if strings.HasPrefix(body, "---\n") {
-		search := body[4:]
-		if idx := strings.Index(search, "\n---\n"); idx >= 0 {
-			fmContent := search[:idx]
-			fm := map[string]any{}
-			if err := yaml.Unmarshal([]byte(fmContent), &fm); err != nil {
-				slog.Warn("Failed to parse existing front matter", "file", p.File.RelativePath, "error", err)
-			} else {
-				p.OriginalFrontMatter = fm
-				p.HadFrontMatter = true
-			}
-			p.Content = search[idx+5:]
-		}
-	}
-	return nil
-}
-
-// FrontMatterBuilder populates or augments front matter using existing map.
-type FrontMatterBuilder struct{ ConfigProvider func() *Generator }
-
-func (f *FrontMatterBuilder) Name() string { return "front_matter_builder" }
-func (f *FrontMatterBuilder) Transform(p *Page) error {
-	gen := f.ConfigProvider()
-	built := BuildFrontMatter(FrontMatterInput{File: p.File, Existing: p.OriginalFrontMatter, Config: gen.config, Now: time.Now()})
-	p.Patches = append(p.Patches, FrontMatterPatch{Source: "builder", Mode: MergeDeep, Priority: 50, Data: built})
-	return nil
-}
-
-// FinalFrontMatterSerializer serializes front matter + content back to bytes in Page.Raw for writing.
-type FinalFrontMatterSerializer struct{}
-
-func (s *FinalFrontMatterSerializer) Name() string { return "front_matter_serialize" }
-func (s *FinalFrontMatterSerializer) Transform(p *Page) error {
-	// Phase 1: if merged map not built yet, fall back to current FrontMatter.
-	if p.MergedFrontMatter == nil {
-		p.applyPatches()
-	}
-	fm := p.MergedFrontMatter
-	if fm == nil {
-		fm = map[string]any{}
-	}
-	fmData, err := yaml.Marshal(fm)
-	if err != nil {
-		return err
-	}
-	combined := fmt.Sprintf("---\n%s---\n%s", string(fmData), p.Content)
-	p.Raw = []byte(combined)
-	return nil
-}
-
-// MergeFrontMatterTransformer performs an explicit merge earlier in the pipeline for future stages that might need merged view.
-type MergeFrontMatterTransformer struct{}
-
-func (m *MergeFrontMatterTransformer) Name() string { return "front_matter_merge" }
-func (m *MergeFrontMatterTransformer) Transform(p *Page) error {
-	p.applyPatches()
-	// After merge, downstream transformers should consult MergedFrontMatter.
-	return nil
-}
-
-// EditLinkInjector ensures an editURL exists (when theme expects it) after front matter build but before serialization.
-// It mirrors the logic in BuildFrontMatter but only runs if editURL is still absent; this allows it to be inserted
-// flexibly in future pipelines without duplicating site-level param logic.
-type EditLinkInjector struct{ ConfigProvider func() *Generator }
-
-func (e *EditLinkInjector) Name() string { return "edit_link_injector" }
-func (e *EditLinkInjector) Transform(p *Page) error {
-	if p.OriginalFrontMatter != nil {
-		if _, ok := p.OriginalFrontMatter["editURL"]; ok {
-			return nil
-		}
-	}
-	for _, patch := range p.Patches {
-		if patch.Data != nil {
-			if _, ok := patch.Data["editURL"]; ok {
-				return nil
-			}
-		}
-	}
-	gen := e.ConfigProvider()
-	if gen == nil {
-		return nil
-	}
-	val := ""
-	if gen.editLinkResolver != nil {
-		val = gen.editLinkResolver.Resolve(p.File)
-	}
-	if val == "" {
-		return nil
-	}
-	p.Patches = append(p.Patches, FrontMatterPatch{Source: "edit_link", Mode: MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
-	return nil
-}
+// Legacy transformer implementations removed after migration to registry-based pipeline.

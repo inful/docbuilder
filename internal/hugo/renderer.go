@@ -1,9 +1,9 @@
 package hugo
 
 import (
-  "fmt"
-  "log/slog"
-  "os/exec"
+	"fmt"
+	"log/slog"
+	"os/exec"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -12,34 +12,45 @@ import (
 // render service, in-process library) without changing stage orchestration.
 //
 // Contract:
-//  Execute(rootDir string) error  -> perform rendering inside provided directory.
-//  Enabled(cfg *config.Config) bool -> determines if rendering should run (allows
-//    renderer-level gating beyond global build.render_mode semantics)
+//
+//	Execute(rootDir string) error  -> perform rendering inside provided directory.
+//	Enabled(cfg *config.Config) bool -> determines if rendering should run (allows
+//	  renderer-level gating beyond global build.render_mode semantics)
+//
 // Errors returned are surfaced as warnings (non-fatal) unless future policy changes.
 type Renderer interface {
-  Execute(rootDir string) error
+	Execute(rootDir string) error
 }
 
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
 
 func (b *BinaryRenderer) Execute(rootDir string) error {
-  if _, err := exec.LookPath("hugo"); err != nil {
-    return fmt.Errorf("hugo binary not found: %w", err)
-  }
-  cmd := exec.Command("hugo")
-  cmd.Dir = rootDir
-  // Let existing runHugoBuild handle stream configuration (stdout/stderr) – reused for minimal churn.
-  slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
-  if err := cmd.Run(); err != nil {
-    return fmt.Errorf("hugo command failed: %w", err)
-  }
-  return nil
+	if _, err := exec.LookPath("hugo"); err != nil {
+		return fmt.Errorf("hugo binary not found: %w", err)
+	}
+	cmd := exec.Command("hugo")
+	cmd.Dir = rootDir
+	// Let existing runHugoBuild handle stream configuration (stdout/stderr) – reused for minimal churn.
+	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("hugo command failed: %w", err)
+	}
+	return nil
 }
 
 // NoopRenderer performs no rendering; useful in tests or when only scaffolding is desired.
 type NoopRenderer struct{}
-func (n *NoopRenderer) Execute(rootDir string) error { slog.Debug("NoopRenderer skipping render", "dir", rootDir); return nil }
+
+func (n *NoopRenderer) Execute(rootDir string) error {
+	slog.Debug("NoopRenderer skipping render", "dir", rootDir)
+	return nil
+}
 
 // WithRenderer allows tests or callers to inject a custom renderer.
-func (g *Generator) WithRenderer(r Renderer) *Generator { if r != nil { g.renderer = r }; return g }
+func (g *Generator) WithRenderer(r Renderer) *Generator {
+	if r != nil {
+		g.renderer = r
+	}
+	return g
+}

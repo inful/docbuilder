@@ -30,11 +30,11 @@ func TestNoopRenderer(t *testing.T) {
 	if err != nil {
 		// Any hugo invocation attempt (if NoopRenderer not used) could fail here if binary missing.
 		// Surface error for visibility.
-		 t.Fatalf("generation failed: %v", err)
+		t.Fatalf("generation failed: %v", err)
 	}
 
 	if !report.StaticRendered {
-		 t.Fatalf("expected report.StaticRendered=true with NoopRenderer, got false")
+		t.Fatalf("expected report.StaticRendered=true with NoopRenderer, got false")
 	}
 
 	// With NoopRenderer no static site is produced; we only assert that the pipeline considered rendering done.

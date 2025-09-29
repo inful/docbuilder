@@ -29,7 +29,7 @@ type Generator struct {
 	onPageRendered func()
 	recorder       metrics.Recorder
 	observer       BuildObserver // high-level observer (decouples metrics recorder)
-	renderer       Renderer // pluggable renderer abstraction (defaults to BinaryRenderer)
+	renderer       Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
 	cachedThemeFeatures *th.ThemeFeatures
 	// editLinkResolver centralizes per-page edit link resolution
@@ -135,7 +135,12 @@ func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 }
 
 // WithObserver overrides the BuildObserver (takes precedence over internal recorder adapter).
-func (g *Generator) WithObserver(o BuildObserver) *Generator { if o != nil { g.observer = o }; return g }
+func (g *Generator) WithObserver(o BuildObserver) *Generator {
+	if o != nil {
+		g.observer = o
+	}
+	return g
+}
 
 // GenerateSite creates a complete Hugo site from discovered documentation
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
@@ -322,42 +327,12 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	return report, nil
 }
 
-// computeConfigHash generates a stable fingerprint of config fields that should trigger a rebuild
-// even when repository commits have not changed. This is intentionally narrow to avoid false positives
-// and can be expanded as new features require (e.g. menu configuration, output settings).
+// computeConfigHash now delegates to the configuration Snapshot() which produces a
+// normalized, stable hash over build-affecting fields. This replaces the previous
+// ad-hoc hashing logic to ensure a single source of truth for incremental decisions.
 func (g *Generator) computeConfigHash() string {
-	if g == nil || g.config == nil {
-		return ""
-	}
-	h := sha256.New()
-	cfg := g.config
-	// Include key high-impact fields.
-	h.Write([]byte(cfg.Hugo.Title))
-	h.Write([]byte(cfg.Hugo.Theme))
-	h.Write([]byte(cfg.Hugo.BaseURL))
-	// Very lightweight params inclusion: just the keys in deterministic order + their string forms.
-	if cfg.Hugo.Params != nil {
-		// Collect keys
-		keys := make([]string, 0, len(cfg.Hugo.Params))
-		for k := range cfg.Hugo.Params {
-			keys = append(keys, k)
-		}
-		// Simple insertion sort (small map expected) to avoid pulling in sort import if not already.
-		for i := 1; i < len(keys); i++ {
-			j := i
-			for j > 0 && keys[j-1] > keys[j] {
-				keys[j-1], keys[j] = keys[j], keys[j-1]
-				j--
-			}
-		}
-		for _, k := range keys {
-			h.Write([]byte(k))
-			if v := cfg.Hugo.Params[k]; v != nil {
-				h.Write([]byte(fmt.Sprintf("%v", v)))
-			}
-		}
-	}
-	return hex.EncodeToString(h.Sum(nil))
+	if g == nil || g.config == nil { return "" }
+	return g.config.Snapshot()
 }
 
 // ComputeConfigHashForPersistence exposes the internal config hash used for incremental change detection

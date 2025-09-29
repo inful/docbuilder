@@ -10,7 +10,7 @@ type HugoConfig struct {
 	Description string            `yaml:"description,omitempty"`
 	Params      map[string]any    `yaml:"params,omitempty"`
 	Menu        map[string][]Menu `yaml:"menu,omitempty"`
-	Transforms  *HugoTransforms    `yaml:"transforms,omitempty"` // optional transform filtering
+	Transforms  *HugoTransforms   `yaml:"transforms,omitempty"` // optional transform filtering
 }
 
 // HugoTransforms allows users to enable/disable specific named content transforms.
