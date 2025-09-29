@@ -18,6 +18,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
     normalizeMonitoring(&c.Monitoring, res)
     normalizeVersioning(c.Versioning, res)
     normalizeOutput(&c.Output, res)
+    normalizeFiltering(c.Filtering, res)
     return res, nil
 }
 
@@ -108,6 +109,40 @@ func normalizeOutput(o *OutputConfig, res *NormalizationResult) {
         res.Warnings = append(res.Warnings, warnChanged("output.directory", before, cleaned))
         o.Directory = cleaned
     }
+}
+
+func normalizeFiltering(f *FilteringConfig, res *NormalizationResult) {
+    if f == nil { return }
+    // Helper: trim, drop empty, dedupe (case-sensitive), then stable sort.
+    normSlice := func(label string, in []string) []string {
+        if len(in) == 0 { return in }
+        seen := make(map[string]struct{}, len(in))
+        out := make([]string, 0, len(in))
+        changed := false
+        for _, v := range in {
+            t := strings.TrimSpace(v)
+            if t == "" { changed = true; continue }
+            if _, ok := seen[t]; ok { changed = true; continue }
+            if t != v { changed = true }
+            seen[t] = struct{}{}
+            out = append(out, t)
+        }
+        if changed {
+            res.Warnings = append(res.Warnings, fmt.Sprintf("normalized filtering.%s list (%d -> %d entries)", label, len(in), len(out)))
+        }
+        if len(out) <= 1 { return out }
+        // simple insertion sort (avoid extra import) for deterministic ordering
+        for i := 1; i < len(out); i++ {
+            j := i
+            for j > 0 && out[j-1] > out[j] { out[j-1], out[j] = out[j], out[j-1]; j-- }
+        }
+        // If order changed relative to original (ignoring removed elements) we already flagged via changed.
+        return out
+    }
+    f.RequiredPaths = normSlice("required_paths", f.RequiredPaths)
+    f.IgnoreFiles = normSlice("ignore_files", f.IgnoreFiles)
+    f.IncludePatterns = normSlice("include_patterns", f.IncludePatterns)
+    f.ExcludePatterns = normSlice("exclude_patterns", f.ExcludePatterns)
 }
 
 func warnChanged(field string, from, to interface{}) string { return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to) }
