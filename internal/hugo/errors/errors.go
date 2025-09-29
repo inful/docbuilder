@@ -7,12 +7,12 @@ package errors
 import "errors"
 
 var (
-    // ErrHugoBinaryNotFound indicates the hugo executable was not detected on PATH.
-    ErrHugoBinaryNotFound = errors.New("hugo binary not found")
-    // ErrHugoExecutionFailed indicates the hugo command returned a non‑zero exit status.
-    ErrHugoExecutionFailed = errors.New("hugo execution failed")
-    // ErrConfigMarshalFailed indicates marshaling the generated Hugo configuration failed.
-    ErrConfigMarshalFailed = errors.New("hugo config marshal failed")
-    // ErrConfigWriteFailed indicates writing the hugo.yaml file failed.
-    ErrConfigWriteFailed = errors.New("hugo config write failed")
+	// ErrHugoBinaryNotFound indicates the hugo executable was not detected on PATH.
+	ErrHugoBinaryNotFound = errors.New("hugo binary not found")
+	// ErrHugoExecutionFailed indicates the hugo command returned a non‑zero exit status.
+	ErrHugoExecutionFailed = errors.New("hugo execution failed")
+	// ErrConfigMarshalFailed indicates marshaling the generated Hugo configuration failed.
+	ErrConfigMarshalFailed = errors.New("hugo config marshal failed")
+	// ErrConfigWriteFailed indicates writing the hugo.yaml file failed.
+	ErrConfigWriteFailed = errors.New("hugo config write failed")
 )

@@ -35,5 +35,11 @@ func (r recorderObserver) OnBuildComplete(report *BuildReport) {
 	if r.rec != nil {
 		r.rec.ObserveBuildDuration(report.End.Sub(report.Start))
 		r.rec.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
+		// Emit structured issues
+		for _, is := range report.Issues {
+			r.rec.IncIssue(string(is.Code), string(is.Stage), string(is.Severity), is.Transient)
+		}
+		// Record effective render mode if present
+		if report.EffectiveRenderMode != "" { r.rec.SetEffectiveRenderMode(report.EffectiveRenderMode) }
 	}
 }

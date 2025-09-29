@@ -35,6 +35,9 @@ type Recorder interface {
 	SetCloneConcurrency(n int)
 	IncBuildRetry(stage string)
 	IncBuildRetryExhausted(stage string)
+	// New extensibility points (additive; safe for older noop implementations)
+	IncIssue(code string, stage string, severity string, transient bool)
+	SetEffectiveRenderMode(mode string)
 }
 
 // NoopRecorder is a Recorder that does nothing (default when metrics not configured).
@@ -49,3 +52,5 @@ func (NoopRecorder) IncCloneRepoResult(bool)                              {}
 func (NoopRecorder) SetCloneConcurrency(int)                              {}
 func (NoopRecorder) IncBuildRetry(string)                                 {}
 func (NoopRecorder) IncBuildRetryExhausted(string)                        {}
+func (NoopRecorder) IncIssue(string, string, string, bool)                {}
+func (NoopRecorder) SetEffectiveRenderMode(string)                        {}
