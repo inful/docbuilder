@@ -30,6 +30,11 @@ func TestDeltaAnalyzer_NoChangeFull(t *testing.T) {
 	if plan.Decision != DeltaDecisionFull || plan.Reason != "no_detected_repo_change" {
 		t.Fatalf("expected full (no change) got %+v", plan)
 	}
+	if plan.RepoReasons != nil {
+		if plan.RepoReasons["u"] != RepoReasonUnchanged {
+			t.Fatalf("expected repo reason '%s' got %s", RepoReasonUnchanged, plan.RepoReasons["u"])
+		}
+	}
 }
 
 func TestDeltaAnalyzer_SubsetPartial(t *testing.T) {
@@ -39,6 +44,12 @@ func TestDeltaAnalyzer_SubsetPartial(t *testing.T) {
 	if plan.Decision != DeltaDecisionPartial || len(plan.ChangedRepos) != 1 || plan.ChangedRepos[0] != "u2" {
 		t.Fatalf("expected partial with u2 changed, got %+v", plan)
 	}
+	if plan.RepoReasons["u1"] != RepoReasonUnchanged {
+		t.Fatalf("expected u1 reason '%s' got %s", RepoReasonUnchanged, plan.RepoReasons["u1"])
+	}
+	if plan.RepoReasons["u2"] != RepoReasonUnknown {
+		t.Fatalf("expected u2 reason '%s' got %s", RepoReasonUnknown, plan.RepoReasons["u2"])
+	}
 }
 
 func TestDeltaAnalyzer_AllChangedFull(t *testing.T) {
@@ -47,6 +58,9 @@ func TestDeltaAnalyzer_AllChangedFull(t *testing.T) {
 	plan := NewDeltaAnalyzer(st).Analyze("hash", repos)
 	if plan.Decision != DeltaDecisionFull || (plan.Reason != "all_repos_changed" && plan.Reason != "all_repos_unknown_state") {
 		t.Fatalf("expected full (all changed) got %+v", plan)
+	}
+	if plan.RepoReasons["u1"] != RepoReasonUnknown || plan.RepoReasons["u2"] != RepoReasonUnknown {
+		t.Fatalf("expected unknown reasons got %+v", plan.RepoReasons)
 	}
 }
 
@@ -142,8 +156,16 @@ func TestDeltaAnalyzer_RepoReasons(t *testing.T) {
 	st := &fakeDeltaState{perRepo: map[string]string{"u1": "h1", "u2": ""}, commits: map[string]string{"u1": "c1", "u2": ""}}
 	repos := []cfg.Repository{{Name: "r1", URL: "u1"}, {Name: "r2", URL: "u2"}}
 	plan := NewDeltaAnalyzer(st).Analyze("hash", repos)
-	if plan.RepoReasons == nil { t.Fatalf("expected RepoReasons map") }
-	if _, ok := plan.RepoReasons["u2"]; !ok { t.Fatalf("missing reason for u2") }
-	if plan.RepoReasons["u2"] != "unknown" { t.Fatalf("expected 'unknown' for u2 got %s", plan.RepoReasons["u2"]) }
-	if plan.RepoReasons["u1"] == "" { t.Fatalf("expected non-empty reason for u1 (assumed_changed or quick_hash_diff)") }
+	if plan.RepoReasons == nil {
+		t.Fatalf("expected RepoReasons map")
+	}
+	if _, ok := plan.RepoReasons["u2"]; !ok {
+		t.Fatalf("missing reason for u2")
+	}
+	if plan.RepoReasons["u2"] != RepoReasonUnknown {
+		t.Fatalf("expected '%s' for u2 got %s", RepoReasonUnknown, plan.RepoReasons["u2"])
+	}
+	if plan.RepoReasons["u1"] == "" {
+		t.Fatalf("expected non-empty reason for u1")
+	}
 }

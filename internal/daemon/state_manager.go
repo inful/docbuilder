@@ -141,7 +141,9 @@ func (sm *StateManager) SetRepoDocFilePaths(url string, paths []string) {
 
 // GetRepoDocFilePaths returns a copy of the stored doc file path list for a repository.
 func (sm *StateManager) GetRepoDocFilePaths(url string) []string {
-	if url == "" { return nil }
+	if url == "" {
+		return nil
+	}
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	if rs, ok := sm.state.Repositories[url]; ok && len(rs.DocFilePaths) > 0 {

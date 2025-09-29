@@ -197,6 +197,7 @@ func applyDefaults(config *Config) error {
 	if !config.Build.detectDeletionsSpecified && !config.Build.DetectDeletions {
 		config.Build.DetectDeletions = true
 	}
+	// LiveReload intentionally defaults to false (opt-in) to avoid extra sockets in production; no action needed here.
 	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
 	if config.Build.CloneStrategy == "" {
 		config.Build.CloneStrategy = CloneStrategyFresh

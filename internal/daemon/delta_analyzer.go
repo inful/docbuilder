@@ -26,10 +26,18 @@ const (
 // For now this is scaffolding: logic will evolve to include per-file deltas, removed docs, etc.
 type DeltaPlan struct {
 	Decision     DeltaDecision
-	ChangedRepos []string // repositories requiring rebuild (empty implies none or full rebuild depending on Decision)
-	Reason       string   // human readable explanation of decision
-	RepoReasons  map[string]string // per-repo inclusion reason (hash_mismatch|unknown|quick_hash_diff|assumed_changed)
+	ChangedRepos []string          // repositories requiring rebuild (empty implies none or full rebuild depending on Decision)
+	Reason       string            // human readable explanation of decision
+	RepoReasons  map[string]string // per-repo inclusion reason (see RepoReason* constants)
 }
+
+// RepoReason values define why a repository is (or is not) included in a delta/partial build.
+// Maintained as constants to prevent string drift across analyzer, reporting, and tests.
+const (
+	RepoReasonUnknown       = "unknown"         // insufficient persisted metadata (hash and/or commit missing)
+	RepoReasonQuickHashDiff = "quick_hash_diff" // workspace quick hash differed from stored per-repo doc files hash
+	RepoReasonUnchanged     = "unchanged"       // determined unchanged (metadata present; quick hash parity or optimistic default)
+)
 
 // DeltaStateAccess is the narrow interface DeltaAnalyzer needs from state.
 // (Intentionally minimal for easier testing and future extension.)
@@ -116,28 +124,30 @@ func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repositor
 	for _, r := range repos {
 		docHash := da.state.GetRepoDocFilesHash(r.URL)
 		commit := da.state.GetRepoLastCommit(r.URL)
-		// If we have prior doc hash + commit, attempt quick workspace hash to detect unchanged repos even when hash persists (skip if missing).
-		if docHash != "" && commit != "" && da.workspaceDir != "" {
-			if quick := da.computeQuickRepoHash(r.Name); quick != "" {
-				if quick == docHash {
-					// unchanged via quick hash parity
-					continue
-				} else {
-					reasons[r.URL] = "quick_hash_diff"
-					changed = append(changed, r.URL)
-					continue
-				}
+		// Case 1: incomplete metadata forces rebuild
+		if docHash == "" || commit == "" {
+			if docHash == "" && commit == "" {
+				unknown++
 			}
-		}
-		if docHash == "" || commit == "" { // incomplete metadata => must rebuild
-			if docHash == "" && commit == "" { unknown++ }
-			reasons[r.URL] = "unknown"
+			reasons[r.URL] = RepoReasonUnknown
 			changed = append(changed, r.URL)
 			continue
 		}
-		// Fallback conservative assumption (cannot prove unchanged)
-		reasons[r.URL] = "assumed_changed"
-		changed = append(changed, r.URL)
+		// Case 2: attempt quick hash diff if workspace available
+		if da.workspaceDir != "" {
+			if quick := da.computeQuickRepoHash(r.Name); quick != "" {
+				if quick != docHash { // mismatch => changed
+					reasons[r.URL] = RepoReasonQuickHashDiff
+					changed = append(changed, r.URL)
+					continue
+				}
+				// match => unchanged
+				reasons[r.URL] = RepoReasonUnchanged
+				continue
+			}
+		}
+		// Case 3: have metadata but no quick hash available; treat as unchanged (optimistic) for now
+		reasons[r.URL] = RepoReasonUnchanged
 	}
 
 	if len(changed) == 0 {
