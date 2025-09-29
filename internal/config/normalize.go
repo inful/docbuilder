@@ -3,6 +3,7 @@ package config
 import (
     "fmt"
     "strings"
+    "path/filepath"
 )
 
 // NormalizationResult captures adjustments & warnings from normalization pass.
@@ -16,6 +17,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
     normalizeBuildConfig(&c.Build, res)
     normalizeMonitoring(&c.Monitoring, res)
     normalizeVersioning(c.Versioning, res)
+    normalizeOutput(&c.Output, res)
     return res, nil
 }
 
@@ -93,6 +95,19 @@ func normalizeVersioning(v *VersioningConfig, res *NormalizationResult) {
     }
     v.BranchPatterns = trimSlice(v.BranchPatterns)
     v.TagPatterns = trimSlice(v.TagPatterns)
+}
+
+func normalizeOutput(o *OutputConfig, res *NormalizationResult) {
+    if o == nil { return }
+    // Clean path (remove trailing slashes, collapse ./) but keep relative vs absolute as provided.
+    before := o.Directory
+    if before == "" { return }
+    cleaned := filepath.Clean(before)
+    // filepath.Clean turns empty to "."; if user literally had "./site" we keep cleaned version.
+    if cleaned != before {
+        res.Warnings = append(res.Warnings, warnChanged("output.directory", before, cleaned))
+        o.Directory = cleaned
+    }
 }
 
 func warnChanged(field string, from, to interface{}) string { return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to) }
