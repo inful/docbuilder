@@ -76,11 +76,11 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization fully modular; 
 
 ## Phase 4: Error & Issue Classification
 
-- [ ] Introduce typed git errors (AuthError, NotFoundError, UnsupportedProtocolError)
-- [ ] Return typed errors from git client instead of string parsing
-- [ ] Map typed errors to IssueCodes via lookup table
-- [ ] Replace discovery/generation generic errors with typed wrappers
-- [ ] Add tests asserting error → issue code matrix stability
+- [x] Introduce typed git errors (AuthError, NotFoundError, UnsupportedProtocolError, RemoteDivergedError, RateLimitError, NetworkTimeoutError)
+- [x] Return typed errors from git client instead of string parsing
+- [x] Map typed errors to IssueCodes via lookup table (prioritized over legacy heuristics)
+- [~] Replace discovery/generation generic errors with typed wrappers (git layer complete; discovery/generation still pending)
+- [x] Add tests asserting error → issue code matrix stability (typed + heuristic fallback coverage)
 
 
 
@@ -100,9 +100,9 @@ Status Delta (2025-09-29): RepoFetcher integrated; normalization fully modular; 
 
 ## Phase 7: Observability & Metrics Cleanup
 
-- [ ] Implement Prometheus BuildObserver
-- [ ] Remove direct recorder usage in stages (use observer)
-- [x] Add metric: effective_render_mode *(reported via build report field first; metrics emission pending)*
+- [x] Implement Prometheus BuildObserver (recorder adapter + issue & render mode metrics)
+- [~] Remove direct recorder usage in stages (clone stage still uses recorder directly for fine-grained repo metrics)
+- [x] Add metric: effective_render_mode *(reported via build report field; now emitted as gauge)*
 - [ ] Add metric: content_transform_failures_total
 
 ## Phase 8: Documentation & Developer Experience
