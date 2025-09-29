@@ -58,15 +58,18 @@ A structured, actionable checklist to improve readability, reduce cognitive load
   - [x] BinaryRenderer implementation
   - [x] NoopRenderer (tests)
 - [x] Observer abstraction (BuildObserver) decoupling metrics recorder (adapter bridges existing metrics)
-- [ ] RepoFetcher abstraction to unify clone/update decision logic
+- [x] RepoFetcher abstraction to unify clone/update decision logic
 
 ## Phase 3: Configuration System Refinement
 
-- [ ] Split config loading into phases: load → normalize → apply defaults → validate
-- [ ] Create `internal/config/normalize/` (build.go, versioning.go, monitoring.go)
-- [ ] Provide `ConfigSnapshot()` method for hashing build-affecting fields
-- [ ] Table-driven normalization tests (render_mode, namespacing, clone strategy, retry modes)
+- [x] Split config loading into phases: load → normalize → apply defaults → validate
+- [~] Create `internal/config/normalize/` (build.go, versioning.go, monitoring.go) (partial; some logic still in `internal/config/normalize.go` to finish migrating)
+- [x] Provide `ConfigSnapshot()` method for hashing build-affecting fields (`Config.Snapshot()`)
+- [x] Table-driven normalization tests (render_mode, namespacing, clone strategy, retry modes + versioning/output/filtering)
+- [x] Filtering normalization & inclusion in snapshot
 - [ ] Emit warnings for deprecated env variables once per process (deduplicated)
+
+Status Delta (2025-09-29): RepoFetcher integrated; normalization & snapshot implemented; build report now persists `config_hash`.
 
 
 
