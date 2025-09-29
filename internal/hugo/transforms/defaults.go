@@ -110,9 +110,10 @@ type RelativeLinkRewriter struct{}
 func (t RelativeLinkRewriter) Name() string  { return "relative_link_rewriter" }
 func (t RelativeLinkRewriter) Priority() int { return prRelLink }
 func (t RelativeLinkRewriter) Transform(p PageAdapter) error {
+	// Prefer facade-style mutation if available.
 	if shim, ok := p.(*PageShim); ok {
 		if shim.RewriteLinks != nil {
-			shim.Content = shim.RewriteLinks(shim.Content)
+			shim.SetContent(shim.RewriteLinks(shim.GetContent()))
 		}
 	}
 	return nil
@@ -146,6 +147,10 @@ type PageShim struct {
 	Serialize        func() error
 	SyncOriginal     func(fm map[string]any, had bool) // allows parser to propagate parsed FM back to real Page
 }
+
+// Facade-style minimal methods (progressive migration toward PageFacade usage in registry)
+func (p *PageShim) GetContent() string { return p.Content }
+func (p *PageShim) SetContent(s string) { p.Content = s }
 
 func init() {
 	Register(FrontMatterParser{})
