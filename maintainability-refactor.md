@@ -95,8 +95,8 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 
 ---
 ## Phase 6: Testing & Golden Artifacts
-- [ ] Golden test for theme-generated `hugo.yaml` (Hextra)
-- [ ] Golden test for theme-generated `hugo.yaml` (Docsy)
+- [x] Golden test for theme-generated `hugo.yaml` (Hextra)
+- [x] Golden test for theme-generated `hugo.yaml` (Docsy)
 - [ ] Link rewriting transform unit tests (edge cases: anchors, query strings, nested paths)
 - [ ] Render mode precedence tests (matrix: config × env × CLI flag)
 - [ ] Integration test: unchanged repos triggers skip
