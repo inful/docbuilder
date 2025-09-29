@@ -56,6 +56,8 @@ type BuildReport struct {
 	DeltaChangedRepos []string
 	// DeltaRepoReasons maps repository URL -> reason string for inclusion/exclusion decisions (best effort; may be empty)
 	DeltaRepoReasons map[string]string
+	// ConfigHash stores the configuration snapshot hash used for this build (for skip/incremental decisions).
+	ConfigHash string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -259,6 +261,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		DeltaDecision:       r.DeltaDecision,
 		DeltaChangedRepos:   r.DeltaChangedRepos,
 		DeltaRepoReasons:    r.DeltaRepoReasons,
+		ConfigHash:          r.ConfigHash,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -297,4 +300,5 @@ type BuildReportSerializable struct {
 	DeltaDecision       string                       `json:"delta_decision,omitempty"`
 	DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
 	DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
+	ConfigHash          string                       `json:"config_hash,omitempty"`
 }

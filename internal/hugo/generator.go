@@ -250,8 +250,9 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	g.onPageRendered = func() { report.RenderedPages++ }
 	bs := newBuildState(g, nil, report)
-	// Compute a minimal config hash for change detection (theme + baseURL + params hash length) - extensible.
+	// Compute configuration snapshot hash early; stageGenerateConfig will backfill for other paths.
 	bs.ConfigHash = g.computeConfigHash()
+	report.ConfigHash = bs.ConfigHash
 
 	// Apply repository filter if config has patterns (future extension: config fields).
 	// Placeholder: look for params under g.config.Hugo.Params["filter"] map with keys include/exclude.
