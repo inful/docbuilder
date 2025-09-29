@@ -168,6 +168,16 @@ func applyDefaults(config *Config) error {
 	if config.Build.CloneConcurrency <= 0 {
 		config.Build.CloneConcurrency = 4
 	}
+	// Render mode default (auto) if unspecified or invalid
+	if config.Build.RenderMode == "" {
+		config.Build.RenderMode = RenderModeAuto
+	} else {
+		if rm := NormalizeRenderMode(string(config.Build.RenderMode)); rm != "" {
+			config.Build.RenderMode = rm
+		} else {
+			config.Build.RenderMode = RenderModeAuto
+		}
+	}
 	// Forge namespacing default (auto): only add forge directory when multiple forge types present
 	if config.Build.NamespaceForges == "" {
 		config.Build.NamespaceForges = NamespacingAuto

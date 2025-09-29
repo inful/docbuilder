@@ -43,6 +43,7 @@ type Global struct {
 type BuildCmd struct {
 	Output      string `short:"o" help:"Output directory for generated site" default:"./site"`
 	Incremental bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
+	RenderMode  string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
 }
 
 // InitCmd implements the 'init' command.
@@ -75,6 +76,15 @@ func (b *BuildCmd) Run(globals *Global, root *CLI) error {
 	cfg, err := config.Load(root.Config)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
+	}
+	// Apply CLI render mode override before any build operations (highest precedence besides explicit skip env)
+	if b.RenderMode != "" {
+		if rm := config.NormalizeRenderMode(b.RenderMode); rm != "" {
+			cfg.Build.RenderMode = rm
+			slog.Info("Render mode overridden via CLI flag", "mode", rm)
+		} else {
+			slog.Warn("Ignoring invalid --render-mode value", "value", b.RenderMode)
+		}
 	}
 	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
 		if repos, err := autoDiscoverRepositories(context.Background(), cfg); err == nil {
