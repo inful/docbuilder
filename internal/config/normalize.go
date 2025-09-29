@@ -15,6 +15,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
     res := &NormalizationResult{}
     normalizeBuildConfig(&c.Build, res)
     normalizeMonitoring(&c.Monitoring, res)
+    normalizeVersioning(c.Versioning, res)
     return res, nil
 }
 
@@ -70,6 +71,28 @@ func normalizeMonitoring(m **MonitoringConfig, res *NormalizationResult) {
         res.Warnings = append(res.Warnings, warnUnknown("monitoring.logging.format", string(cfg.Logging.Format), string(LogFormatText)))
         cfg.Logging.Format = LogFormatText
     }
+}
+
+func normalizeVersioning(v *VersioningConfig, res *NormalizationResult) {
+    if v == nil { return }
+    if st := NormalizeVersioningStrategy(string(v.Strategy)); st != "" {
+        if v.Strategy != st { res.Warnings = append(res.Warnings, warnChanged("versioning.strategy", v.Strategy, st)); v.Strategy = st }
+    } else if string(v.Strategy) != "" { // user provided invalid string; leave for validator to catch
+        // Do not coerce here—validator expects to reject; just record warning.
+        res.Warnings = append(res.Warnings, fmt.Sprintf("invalid versioning.strategy '%s' (will fail validation)", v.Strategy))
+    }
+    // clamp max versions (0 or negative => unlimited: represent as 0)
+    if v.MaxVersionsPerRepo < 0 { v.MaxVersionsPerRepo = 0 }
+    // trim patterns whitespace
+    trimSlice := func(in []string) []string {
+        out := make([]string, 0, len(in))
+        for _, p := range in {
+            if tp := strings.TrimSpace(p); tp != "" { out = append(out, tp) }
+        }
+        return out
+    }
+    v.BranchPatterns = trimSlice(v.BranchPatterns)
+    v.TagPatterns = trimSlice(v.TagPatterns)
 }
 
 func warnChanged(field string, from, to interface{}) string { return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to) }
