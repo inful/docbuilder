@@ -233,6 +233,10 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 	if r.IndexTemplates == nil {
 		r.IndexTemplates = map[string]IndexTemplateInfo{}
 	}
+	// Ensure issues slice non-nil for stable JSON (empty array instead of null)
+	if r.Issues == nil {
+		r.Issues = []ReportIssue{}
+	}
 
 	s := &BuildReportSerializable{
 		SchemaVersion:       r.SchemaVersion,

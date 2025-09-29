@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "repositories": 1,
+  "files": 3,
+  "start": "1970-01-01T00:00:00Z",
+  "end": "1970-01-01T00:00:00Z",
+  "errors": [],
+  "warnings": [],
+  "stage_durations": {
+    "prepare_output": 123000000
+  },
+  "stage_error_kinds": {},
+  "cloned_repositories": 1,
+  "failed_repositories": 0,
+  "skipped_repositories": 0,
+  "rendered_pages": 3,
+  "stage_counts": {
+    "prepare_output": {
+      "Success": 1,
+      "Warning": 0,
+      "Fatal": 0,
+      "Canceled": 0
+    }
+  },
+  "outcome": "success",
+  "static_rendered": false,
+  "retries": 0,
+  "retries_exhausted": false,
+  "issues": [],
+  "doc_files_hash": "",
+  "delta_decision": "",
+  "delta_changed_repos": null,
+  "delta_repo_reasons": null,
+  "config_hash": "deadbeef"
+}
