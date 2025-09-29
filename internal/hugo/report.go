@@ -58,6 +58,10 @@ type BuildReport struct {
 	DeltaRepoReasons map[string]string
 	// ConfigHash stores the configuration snapshot hash used for this build (for skip/incremental decisions).
 	ConfigHash string
+	// PipelineVersion is an incrementing internal version for the orchestration/stage contract.
+	PipelineVersion int
+	// EffectiveRenderMode records the resolved render mode after considering config + legacy envs.
+	EffectiveRenderMode string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -266,6 +270,8 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		DeltaChangedRepos:   r.DeltaChangedRepos,
 		DeltaRepoReasons:    r.DeltaRepoReasons,
 		ConfigHash:          r.ConfigHash,
+		PipelineVersion:     r.PipelineVersion,
+		EffectiveRenderMode: r.EffectiveRenderMode,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -305,4 +311,6 @@ type BuildReportSerializable struct {
 	DeltaChangedRepos   []string                     `json:"delta_changed_repos,omitempty"`
 	DeltaRepoReasons    map[string]string            `json:"delta_repo_reasons,omitempty"`
 	ConfigHash          string                       `json:"config_hash,omitempty"`
+	PipelineVersion     int                          `json:"pipeline_version,omitempty"`
+	EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
 }
