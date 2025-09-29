@@ -6,12 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // shouldRunHugo determines if we should invoke the external hugo binary under RenderModeAuto.
 // It preserves backward compatibility with legacy env vars but logs a deprecation notice when they drive the decision.
+var legacyEnvWarnOnce sync.Once
+
 func shouldRunHugo(cfg *config.Config) bool {
 	mode := config.ResolveEffectiveRenderMode(cfg)
 	switch mode {
@@ -26,6 +29,9 @@ func shouldRunHugo(cfg *config.Config) bool {
 	case config.RenderModeAuto:
 		// Legacy env gating path (auto means: only run when DOCBUILDER_RUN_HUGO=1 and not DOCBUILDER_SKIP_HUGO=1)
 		if os.Getenv("DOCBUILDER_SKIP_HUGO") == "1" {
+			legacyEnvWarnOnce.Do(func(){
+				slog.Warn("Legacy env DOCBUILDER_SKIP_HUGO is deprecated; prefer build.render_mode=never or --render-mode never")
+			})
 			slog.Info("Skipping Hugo due to DOCBUILDER_SKIP_HUGO=1 (render_mode=auto)")
 			return false
 		}
@@ -34,7 +40,10 @@ func shouldRunHugo(cfg *config.Config) bool {
 				slog.Warn("DOCBUILDER_RUN_HUGO=1 set but Hugo binary not found; skipping", "error", err)
 				return false
 			}
-			slog.Info("Running Hugo due to DOCBUILDER_RUN_HUGO=1 (deprecated; prefer build.render_mode=always or --render-mode always)")
+			legacyEnvWarnOnce.Do(func(){
+				slog.Warn("Legacy env DOCBUILDER_RUN_HUGO is deprecated; prefer build.render_mode=always or --render-mode always")
+			})
+			slog.Info("Running Hugo due to DOCBUILDER_RUN_HUGO=1 (render_mode=auto)")
 			return true
 		}
 		return false
