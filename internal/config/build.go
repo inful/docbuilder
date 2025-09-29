@@ -19,6 +19,7 @@ type BuildConfig struct {
 	CleanUntracked     bool             `yaml:"clean_untracked,omitempty"`
 	WorkspaceDir       string           `yaml:"workspace_dir,omitempty"`
 	SkipIfUnchanged    bool             `yaml:"skip_if_unchanged,omitempty"`
+	RenderMode         RenderMode       `yaml:"render_mode,omitempty"` // auto|always|never (preferred over legacy env DOCBUILDER_RUN_HUGO / DOCBUILDER_SKIP_HUGO)
 }
 
 // NamespacingMode controls whether forge-level directory names are included in content paths.
@@ -62,6 +63,32 @@ func NormalizeCloneStrategy(raw string) CloneStrategy {
 		return CloneStrategyUpdate
 	case string(CloneStrategyAuto):
 		return CloneStrategyAuto
+	default:
+		return ""
+	}
+}
+
+// RenderMode controls whether the external Hugo binary is invoked after scaffold generation.
+// auto: (default) legacy environment variable behavior is honored.
+// always: always attempt to run hugo (unless binary missing).
+// never: never run hugo (generate scaffold only).
+type RenderMode string
+
+const (
+	RenderModeAuto   RenderMode = "auto"
+	RenderModeAlways RenderMode = "always"
+	RenderModeNever  RenderMode = "never"
+)
+
+// NormalizeRenderMode canonicalizes user input returning empty string if unknown.
+func NormalizeRenderMode(raw string) RenderMode {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case string(RenderModeAuto):
+		return RenderModeAuto
+	case string(RenderModeAlways):
+		return RenderModeAlways
+	case string(RenderModeNever):
+		return RenderModeNever
 	default:
 		return ""
 	}
