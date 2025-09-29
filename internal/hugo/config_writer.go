@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
 )
@@ -106,10 +107,10 @@ func (g *Generator) generateHugoConfig() error {
 
 	data, err := yaml.Marshal(root)
 	if err != nil {
-		return fmt.Errorf("failed to marshal Hugo config: %w", err)
+		return fmt.Errorf("%w: %v", herrors.ErrConfigMarshalFailed, err)
 	}
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write Hugo config: %w", err)
+		return fmt.Errorf("%w: %v", herrors.ErrConfigWriteFailed, err)
 	}
 
 	if features.UsesModules {

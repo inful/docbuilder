@@ -39,7 +39,7 @@ A structured, actionable checklist to improve readability, reduce cognitive load
   - [x] `stage_run_hugo.go`
   - [x] `stage_post_process.go`
   - [ ] (Deferred) Introduce dedicated `pipeline/` directory structure — decided to postpone until Phase 5 when broader pipeline abstractions land
-- [ ] Introduce `internal/hugo/errors/` for Hugo/generation sentinel errors
+- [x] Introduce `internal/hugo/errors/` for Hugo/generation sentinel errors
 - [ ] Add unit tests ensuring no diff in build report for a simple fixture before/after extraction (pending; current tests still green, but no explicit before/after golden)
 
 ## Phase 2: Abstractions & Interfaces

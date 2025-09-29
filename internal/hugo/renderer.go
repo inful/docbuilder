@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -27,14 +28,14 @@ type BinaryRenderer struct{}
 
 func (b *BinaryRenderer) Execute(rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
-		return fmt.Errorf("hugo binary not found: %w", err)
+		return fmt.Errorf("%w: %v", herrors.ErrHugoBinaryNotFound, err)
 	}
 	cmd := exec.Command("hugo")
 	cmd.Dir = rootDir
 	// Let existing runHugoBuild handle stream configuration (stdout/stderr) – reused for minimal churn.
 	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("hugo command failed: %w", err)
+		return fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err)
 	}
 	return nil
 }

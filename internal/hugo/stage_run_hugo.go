@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
@@ -29,7 +30,7 @@ func stageRunHugo(ctx context.Context, bs *BuildState) error {
 	}
 	if err := bs.Generator.renderer.Execute(root); err != nil {
 		slog.Warn("Renderer execution failed", "error", err)
-		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", build.ErrHugo, err))
+		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
 	return nil
