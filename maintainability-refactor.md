@@ -49,8 +49,8 @@ A structured, actionable checklist to improve readability, reduce cognitive load
   - [x] Pipeline orchestrator via registry (`internal/hugo/transforms/registry.go`) with priority ordering
   - [x] Registered transforms: front matter parse/build, edit link injector, merge, relative link rewrite, serializer
   - [x] Parity tests against legacy inline pipeline (now decommissioned; stub retained)
-  - [ ] Formal interface for page object (currently shim struct; `Page` still coupled)  
-        Δ Next: introduce minimal `PageFacade` interface consumed by transforms
+  - [~] Formal interface for page object (`PageFacade` scaffold added; transforms partially migrated)  
+    Δ Next: complete migration (all transformers facade-only) & remove direct struct field assumptions
   - [x] Remove legacy `TransformerPipeline` and inline transformers (completed; tests green)
   - [x] Config-driven enable/disable mechanism (`hugo.transforms.enable/disable`) with precedence (disable > enable)
   - [x] Conflict logging assertions (FrontMatterConflict semantics locked by `transform_conflicts_test.go`)
