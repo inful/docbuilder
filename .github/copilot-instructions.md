@@ -41,23 +41,36 @@ repositories:
       token: "${GITHUB_TOKEN}"
 ```
 
-### Theme-Specific Logic
-The Hugo generator (`internal/hugo/generator.go`) has extensive theme-specific logic:
+### Theme System
+Theme logic is implemented via a lightweight interface in `internal/hugo/theme` with concrete packages under `internal/hugo/themes/` (e.g. `hextra`, `docsy`). Each theme registers itself in `init()` and exposes:
 
-**Hextra Theme:**
-- Uses Hugo Modules (`module.imports`) instead of filesystem themes
-- Auto-generates search configuration with FlexSearch
-- Injects `editURL` per-page from repository metadata
-- Enables LaTeX math passthrough in Goldmark
-- Creates default navbar with search/theme toggle
+```
+type Theme interface {
+  Name() config.Theme
+  Features() ThemeFeatures             // capability flags (modules, math, search json, etc.)
+  ApplyParams(ctx ParamContext, params map[string]any)  // inject default/normalized params
+  CustomizeRoot(ctx ParamContext, root map[string]any)  // final root-level tweaks (optional)
+}
+```
 
-**Docsy Theme:**  
-- Also uses Hugo Modules for dependency resolution
-- Enables JSON output for offline search indexing
-- Auto-configures repository links in theme params
-- Sets UI defaults for sidebar/navbar behavior
+Generation phases (`generateHugoConfig`):
+1. Core defaults (title, baseURL, markup)
+2. `ApplyParams` (theme fills or normalizes `params`)
+3. User param deep-merge (config overrides)
+4. Dynamic fields (`build_date`)
+5. Theme module import block (if `Features().UsesModules`)
+6. Automatic menu (if `Features().AutoMainMenu`)
+7. `CustomizeRoot` (final adjustments)
 
-**Critical**: When adding theme support, use Hugo Modules pattern and implement theme-specific params in `addHextraParams()`/`addDocsyParams()` methods.
+Adding a new theme:
+1. Create `internal/hugo/themes/<name>/theme_<name>.go`
+2. Implement the interface and call `theme.RegisterTheme(Theme{})` in `init()`
+3. Populate `ThemeFeatures` (set `UsesModules`, `ModulePath`, defaults)
+4. Provide sane defaults in `ApplyParams` (avoid overwriting user-provided keys)
+5. (Optional) adjust root in `CustomizeRoot`
+6. Add/extend golden config test for `hugo.yaml`
+
+Legacy helper functions (`addHextraParams`, `addDocsyParams`) have been removed; all new logic should go through the theme interface.
 
 ### File Discovery
 Documentation discovery (`internal/docs/discovery.go`) walks configured paths and:
