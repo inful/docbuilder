@@ -12,7 +12,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 func stageCloneRepos(ctx context.Context, bs *BuildState) error {
@@ -22,18 +21,16 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	if bs.WorkspaceDir == "" {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
 	}
-	client := git.NewClient(bs.WorkspaceDir)
-	if bs.Generator != nil {
-		client = client.WithBuildConfig(&bs.Generator.config.Build)
+	fetcher := newDefaultRepoFetcher(bs.WorkspaceDir, &bs.Generator.config.Build)
+	// Ensure workspace directory structure (previously via git client)
+	if err := os.MkdirAll(bs.WorkspaceDir, 0o755); err != nil {
+		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	strategy := config.CloneStrategyFresh
 	if bs.Generator != nil {
 		if s := bs.Generator.config.Build.CloneStrategy; s != "" {
 			strategy = s
 		}
-	}
-	if err := client.EnsureWorkspace(); err != nil {
-		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
 	bs.preHeads = make(map[string]string, len(bs.Repositories))
@@ -64,45 +61,21 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			default:
 			}
 			start := time.Now()
-			var p string
-			var err error
-			attemptUpdate := false
-			var preHead string
-			switch strategy {
-			case config.CloneStrategyUpdate:
-				attemptUpdate = true
-			case config.CloneStrategyAuto:
-				repoPath := filepath.Join(bs.WorkspaceDir, task.repo.Name)
-				if _, statErr := os.Stat(filepath.Join(repoPath, ".git")); statErr == nil {
-					attemptUpdate = true
-					if head, herr := readRepoHead(repoPath); herr == nil {
-						preHead = head
-					}
-				}
-			}
-			if attemptUpdate {
-				p, err = client.UpdateRepository(task.repo)
-			} else {
-				p, err = client.CloneRepository(task.repo)
-			}
+			res := fetcher.Fetch(ctx, strategy, task.repo)
 			dur := time.Since(start)
-			success := err == nil
+			success := res.Err == nil
 			mu.Lock()
 			if success {
 				bs.Report.ClonedRepositories++
-				bs.RepoPaths[task.repo.Name] = p
-				if head, herr := readRepoHead(p); herr == nil {
-					bs.postHeads[task.repo.Name] = head
-					if preHead != "" {
-						bs.preHeads[task.repo.Name] = preHead
-					}
-				}
+				bs.RepoPaths[task.repo.Name] = res.Path
+				if res.PostHead != "" { bs.postHeads[task.repo.Name] = res.PostHead }
+				if res.PreHead != "" { bs.preHeads[task.repo.Name] = res.PreHead }
 			} else {
 				bs.Report.FailedRepositories++
 				if bs.Report != nil {
-					code := classifyGitFailure(err)
+					code := classifyGitFailure(res.Err)
 					if code != "" {
-						bs.Report.AddIssue(code, StageCloneRepos, SeverityError, err.Error(), false, err)
+						bs.Report.AddIssue(code, StageCloneRepos, SeverityError, res.Err.Error(), false, res.Err)
 					}
 				}
 			}
