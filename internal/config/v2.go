@@ -149,7 +149,11 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("unsupported configuration version: %s (expected 2.0)", config.Version)
 	}
 
-	// Apply defaults
+	// Normalization pass (case-fold enumerations, bounds, early coercions)
+	if _, nerr := NormalizeConfig(&config); nerr != nil {
+		return nil, fmt.Errorf("normalize: %w", nerr)
+	}
+	// Apply defaults (after normalization so canonical values drive defaults)
 	if err := applyDefaults(&config); err != nil {
 		return nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
