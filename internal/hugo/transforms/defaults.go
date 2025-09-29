@@ -50,6 +50,7 @@ func (t FrontMatterParser) Transform(p PageAdapter) error {
       } else {
         pg.OriginalFrontMatter = fm
         pg.HadFrontMatter = true
+        if pg.SyncOriginal != nil { pg.SyncOriginal(fm, true) }
       }
       pg.Content = search[idx+5:]
     }
@@ -113,6 +114,7 @@ type PageShim struct {
   ApplyPatches func()
   RewriteLinks func(string) string
   Serialize func() error
+  SyncOriginal func(fm map[string]any, had bool) // allows parser to propagate parsed FM back to real Page
 }
 
 func init() {

@@ -47,12 +47,15 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 
 ## Phase 2: Abstractions & Interfaces
 
-- [ ] Theme interface (`Name()`, `ModuleImports()`, `ApplyParams()`, optional `PostScaffold()`)  <!-- historical placeholder; partially satisfied by existing theme system -->
-- [ ] Content transform pipeline
-  - [ ] Interface `ContentTransform{ Match(f); Apply(f,data) }`
-  - [ ] Pipeline orchestrator with ordered execution
-  - [ ] Register MarkdownInternalLinkRewrite transform
-  - [ ] Register FrontMatterEditURL transform (if applicable)
+- [x] Theme interface (implemented as `internal/hugo/theme` with `Theme` + `ThemeFeatures`; legacy helpers removed)
+- [~] Content transform pipeline
+  - [x] Pipeline orchestrator via registry (`internal/hugo/transforms/registry.go`) with priority ordering
+  - [x] Registered transforms: front matter parse/build, edit link injector, merge, relative link rewrite, serializer
+  - [x] Parity tests against legacy inline pipeline (`transform_parity_test.go` + edge cases)
+  - [ ] Formal interface for page object (currently shim struct; legacy `Page` still coupled)
+  - [ ] Remove legacy `TransformerPipeline` and inline transformers after confidence window
+  - [ ] Config-driven enable/disable or extension mechanism (user pluggable)
+  - [ ] Conflict logging assertions (dedicated tests for FrontMatterConflict semantics)
 - [ ] Renderer abstraction (`Renderer.Enabled()`, `Renderer.Run()`)
   - [ ] BinaryRenderer implementation
   - [ ] NoopRenderer (tests)

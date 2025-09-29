@@ -11,14 +11,28 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-func hashList(paths []string) string { if len(paths)==0 {return ""}; sort.Strings(paths); h:=sha256.New(); for _,p:= range paths { h.Write([]byte(p)); h.Write([]byte{0}) }; return hex.EncodeToString(h.Sum(nil)) }
+func hashList(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	sort.Strings(paths)
+	h := sha256.New()
+	for _, p := range paths {
+		h.Write([]byte(p))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 // TestPartialBuildDeletionReflected verifies new behavior: unchanged repo deletions are detected
 // during partial recomposition scan and removed from the union hash.
 func TestPartialBuildDeletionReflected(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
-	state, err := NewStateManager(stateDir); if err != nil { t.Fatalf("state manager: %v", err) }
+	state, err := NewStateManager(stateDir)
+	if err != nil {
+		t.Fatalf("state manager: %v", err)
+	}
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
@@ -71,29 +85,46 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 					if fi, err := os.Stat(filepath.Join(workspace, r.Name)); err == nil && fi.IsDir() {
 						fresh := []string{}
 						_ = filepath.WalkDir(filepath.Join(workspace, r.Name, "docs"), func(p string, d os.DirEntry, err error) error {
-							if err != nil || d == nil || d.IsDir() { return nil }
+							if err != nil || d == nil || d.IsDir() {
+								return nil
+							}
 							if filepath.Ext(d.Name()) == ".md" || filepath.Ext(d.Name()) == ".markdown" {
-								rel, rerr := filepath.Rel(filepath.Join(workspace, r.Name), p); if rerr == nil { fresh = append(fresh, filepath.ToSlash(filepath.Join(r.Name, rel))) }
+								rel, rerr := filepath.Rel(filepath.Join(workspace, r.Name), p)
+								if rerr == nil {
+									fresh = append(fresh, filepath.ToSlash(filepath.Join(r.Name, rel)))
+								}
 							}
 							return nil
 						})
 						sort.Strings(fresh)
 						if len(fresh) != len(paths) { // detected deletion
-							if sOK { setter.SetRepoDocFilePaths(r.URL, fresh) }
-							if hOK { hasher.SetRepoDocFilesHash(r.URL, hashList(fresh)) }
+							if sOK {
+								setter.SetRepoDocFilePaths(r.URL, fresh)
+							}
+							if hOK {
+								hasher.SetRepoDocFilesHash(r.URL, hashList(fresh))
+							}
 							paths = fresh
 						}
 					}
 				}
 				all = append(all, paths...)
 			}
-			if len(all) > 0 { report.DocFilesHash = hashList(all) }
+			if len(all) > 0 {
+				report.DocFilesHash = hashList(all)
+			}
 		}
 	}
 
-	if report.DocFilesHash == subsetHash { t.Fatalf("expected recomposed hash (not subset)") }
-	if report.DocFilesHash == hashList(append(append([]string{}, newRepoAPaths...), repoBPaths...)) { t.Fatalf("hash still includes deleted file b2.md") }
+	if report.DocFilesHash == subsetHash {
+		t.Fatalf("expected recomposed hash (not subset)")
+	}
+	if report.DocFilesHash == hashList(append(append([]string{}, newRepoAPaths...), repoBPaths...)) {
+		t.Fatalf("hash still includes deleted file b2.md")
+	}
 	// Expected union now: repoA (a1,a2) + repoB (b1) only
 	expected := hashList([]string{filepath.ToSlash(filepath.Join(repoAName, "docs", "a1.md")), filepath.ToSlash(filepath.Join(repoAName, "docs", "a2.md")), filepath.ToSlash(filepath.Join(repoBName, "docs", "b1.md"))})
-	if report.DocFilesHash != expected { t.Fatalf("unexpected recomposed hash; got=%s want=%s", report.DocFilesHash, expected) }
+	if report.DocFilesHash != expected {
+		t.Fatalf("unexpected recomposed hash; got=%s want=%s", report.DocFilesHash, expected)
+	}
 }

@@ -105,6 +105,18 @@ func (s *HTTPServer) startDocsServer(ctx context.Context) error {
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.handleDocsStatus)
 
+	// LiveReload endpoints (SSE + script) if enabled
+	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
+		mux.Handle("/livereload", s.daemon.liveReload)
+		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+			if _, err := w.Write([]byte(LiveReloadScript)); err != nil {
+				slog.Error("failed to write livereload script", "error", err)
+			}
+		})
+		slog.Info("LiveReload HTTP endpoints registered")
+	}
+
 	s.docsServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.config.Daemon.HTTP.DocsPort),
 		Handler:      mux,

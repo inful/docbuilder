@@ -47,6 +47,7 @@ type Daemon struct {
 	scheduler      *Scheduler
 	buildQueue     *BuildQueue
 	stateManager   *StateManager
+	liveReload     *LiveReloadHub
 
 	// Runtime state
 	activeJobs    int32
@@ -108,6 +109,8 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Initialize scheduler (after build queue)
 	daemon.scheduler = NewScheduler(daemon.buildQueue)
+	// Provide back-reference so scheduler can inject metadata (live reload hub, config, state)
+	daemon.scheduler.SetDaemon(daemon)
 
 	// Initialize state manager
 	var err error
@@ -139,6 +142,12 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		if err != nil {
 			return nil, fmt.Errorf("failed to create config watcher: %w", err)
 		}
+	}
+
+	// Initialize livereload hub (opt-in)
+	if cfg.Build.LiveReload {
+		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
+		slog.Info("LiveReload hub initialized")
 	}
 
 	return daemon, nil
@@ -291,6 +300,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
+	if d.liveReload != nil {
+		d.liveReload.Shutdown()
+	}
+
 	// Save state
 	if d.stateManager != nil {
 		if err := d.stateManager.Save(); err != nil {
@@ -366,8 +379,9 @@ func (d *Daemon) TriggerBuild() string {
 		Priority:  PriorityHigh,
 		CreatedAt: time.Now(),
 		Metadata: map[string]interface{}{
-			"v2_config":     d.config,
-			"state_manager": d.stateManager,
+			"v2_config":       d.config,
+			"state_manager":   d.stateManager,
+			"live_reload_hub": d.liveReload,
 		},
 	}
 
@@ -548,6 +562,7 @@ func (d *Daemon) runDiscovery(ctx context.Context) error {
 				"repositories":     converted,
 				"v2_config":        d.config,
 				"state_manager":    d.stateManager,
+				"live_reload_hub":  d.liveReload,
 			},
 		}
 

@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -99,11 +100,17 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 		// Expose per-repo reasons (only for changed repos) into job metadata for later report population
 		if plan.RepoReasons != nil {
 			m := make(map[string]string, len(plan.RepoReasons))
-			for k, v := range plan.RepoReasons { m[k] = v }
+			for k, v := range plan.RepoReasons {
+				m[k] = v
+			}
 			bc.job.Metadata["delta_repo_reasons"] = m
 		}
 		if mc, okm := bc.job.Metadata["metrics_collector"].(*MetricsCollector); okm && mc != nil {
-			if plan.Decision == DeltaDecisionPartial { mc.IncrementCounter("builds_partial") } else { mc.IncrementCounter("builds_full") }
+			if plan.Decision == DeltaDecisionPartial {
+				mc.IncrementCounter("builds_partial")
+			} else {
+				mc.IncrementCounter("builds_full")
+			}
 		}
 		if bc.skipReport != nil { // edge case: skip already decided but still populate delta metadata
 			if plan.Decision == DeltaDecisionPartial {
@@ -198,7 +205,63 @@ func (bc *buildContext) stageGenerateSite() (*hugo.BuildReport, error) {
 	if err != nil {
 		slog.Error("Full site generation error", "error", err)
 	}
+	// Attempt livereload injection (non-fatal)
+	if ierr := bc.stageInjectLiveReload(); ierr != nil {
+		slog.Debug("livereload injection skipped", "error", ierr)
+	}
 	return report, err
+}
+
+// stageInjectLiveReload post-processes generated HTML files inserting the livereload.js script tag
+// right before </body> for development convenience when live reload is enabled.
+func (bc *buildContext) stageInjectLiveReload() error {
+	if bc.cfg == nil || !bc.cfg.Build.LiveReload {
+		return nil
+	}
+	// Determine output public directory (after generation promotion)
+	outRoot := bc.outDir
+	// Prefer public/ if it exists (Hugo publishDir default)
+	pub := filepath.Join(outRoot, "public")
+	if fi, err := os.Stat(pub); err == nil && fi.IsDir() {
+		outRoot = pub
+	}
+	inject := []byte("<script src=\"/livereload.js\"></script>")
+	err := filepath.WalkDir(outRoot, func(p string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil || d == nil || d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
+			return nil
+		}
+		b, rerr := os.ReadFile(p)
+		if rerr != nil {
+			return nil
+		}
+		if bytes.Contains(b, []byte("/livereload.js")) {
+			return nil
+		}
+		// find closing body tag (case-insensitive)
+		lower := strings.ToLower(string(b))
+		idx := strings.LastIndex(lower, "</body>")
+		if idx == -1 {
+			return nil
+		}
+		// build new content
+		var out bytes.Buffer
+		out.Write(b[:idx])
+		out.WriteByte('\n')
+		out.Write(inject)
+		out.WriteByte('\n')
+		out.Write(b[idx:])
+		if werr := os.WriteFile(p, out.Bytes(), 0o644); werr != nil {
+			slog.Debug("livereload inject write failed", "file", p, "error", werr)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("livereload injection walk: %w", err)
+	}
+	return nil
 }
 
 // stagePostPersist updates metrics and state persistence after generation or skip.
@@ -219,7 +282,9 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 			report.DeltaRepoReasons = map[string]string{}
 		}
 		if m, ok := bc.job.Metadata["delta_repo_reasons"].(map[string]string); ok {
-			for k, v := range m { report.DeltaRepoReasons[k] = v }
+			for k, v := range m {
+				report.DeltaRepoReasons[k] = v
+			}
 		}
 	}
 	// Recompute global doc_files_hash for partial builds by merging unchanged + changed repo path lists.
@@ -230,7 +295,9 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 		hasher, hOK := bc.stateMgr.(interface{ SetRepoDocFilesHash(string, string) })
 		if gOK {
 			changedSet := map[string]struct{}{}
-			for _, u := range bc.deltaPlan.ChangedRepos { changedSet[u] = struct{}{} }
+			for _, u := range bc.deltaPlan.ChangedRepos {
+				changedSet[u] = struct{}{}
+			}
 			orig, _ := bc.job.Metadata["repositories"].([]cfg.Repository)
 			allPaths := make([]string, 0, 2048)
 			deletionsDetected := 0
@@ -245,9 +312,13 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 						docRoots := []string{"docs", "documentation"}
 						for _, dr := range docRoots {
 							base := filepath.Join(repoRoot, dr)
-							if sfi, serr := os.Stat(base); serr != nil || !sfi.IsDir() { continue }
+							if sfi, serr := os.Stat(base); serr != nil || !sfi.IsDir() {
+								continue
+							}
 							_ = filepath.WalkDir(base, func(p string, d os.DirEntry, werr error) error {
-								if werr != nil || d == nil || d.IsDir() { return nil }
+								if werr != nil || d == nil || d.IsDir() {
+									return nil
+								}
 								ln := strings.ToLower(d.Name())
 								if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
 									if rel, rerr := filepath.Rel(repoRoot, p); rerr == nil {
@@ -260,29 +331,55 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 						// Compare with persisted list; if different (including zero-doc case), persist new list & hash.
 						sort.Strings(fresh)
 						update := false
-						if len(fresh) != len(paths) { update = true } else {
-							for i := range fresh { if i >= len(paths) || fresh[i] != paths[i] { update = true; break } }
+						if len(fresh) != len(paths) {
+							update = true
+						} else {
+							for i := range fresh {
+								if i >= len(paths) || fresh[i] != paths[i] {
+									update = true
+									break
+								}
+							}
 						}
 						if update {
-							if len(fresh) < len(paths) { deletionsDetected += len(paths) - len(fresh) }
-							if sOK { setter.SetRepoDocFilePaths(r.URL, fresh) }
+							if len(fresh) < len(paths) {
+								deletionsDetected += len(paths) - len(fresh)
+							}
+							if sOK {
+								setter.SetRepoDocFilePaths(r.URL, fresh)
+							}
 							if hOK {
-								hh := sha256.New(); for _, p := range fresh { hh.Write([]byte(p)); hh.Write([]byte{0}) }
+								hh := sha256.New()
+								for _, p := range fresh {
+									hh.Write([]byte(p))
+									hh.Write([]byte{0})
+								}
 								hasher.SetRepoDocFilesHash(r.URL, hex.EncodeToString(hh.Sum(nil)))
 							}
 							paths = fresh
 						}
 					}
 				}
-				if len(paths) > 0 { allPaths = append(allPaths, paths...) }
+				if len(paths) > 0 {
+					allPaths = append(allPaths, paths...)
+				}
 			}
 			if len(allPaths) > 0 {
 				sort.Strings(allPaths)
 				h := sha256.New()
-				for _, p := range allPaths { h.Write([]byte(p)); h.Write([]byte{0}) }
+				for _, p := range allPaths {
+					h.Write([]byte(p))
+					h.Write([]byte{0})
+				}
 				report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
 			}
-			if deletionsDetected > 0 { if mc, ok := bc.job.Metadata["metrics_collector"].(*MetricsCollector); ok && mc != nil { for i:=0;i<deletionsDetected;i++ { mc.IncrementCounter("doc_deletions_detected") } } }
+			if deletionsDetected > 0 {
+				if mc, ok := bc.job.Metadata["metrics_collector"].(*MetricsCollector); ok && mc != nil {
+					for i := 0; i < deletionsDetected; i++ {
+						mc.IncrementCounter("doc_deletions_detected")
+					}
+				}
+			}
 		}
 	}
 	// Repo build counters & document counts
@@ -367,6 +464,14 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 		}
 		if report.DocFilesHash != "" {
 			sm.SetLastGlobalDocFilesHash(report.DocFilesHash)
+		}
+	}
+	// LiveReload broadcast: if hub provided via job metadata under key "live_reload_hub", emit hash after persistence
+	if report.DocFilesHash != "" { // report already non-nil earlier
+		if hubAny, ok := bc.job.Metadata["live_reload_hub"]; ok {
+			if hub, ok2 := hubAny.(*LiveReloadHub); ok2 && hub != nil {
+				hub.Broadcast(report.DocFilesHash)
+			}
 		}
 	}
 	return nil

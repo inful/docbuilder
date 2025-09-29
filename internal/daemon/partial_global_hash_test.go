@@ -12,10 +12,15 @@ import (
 
 // hashPaths replicates the global/per-repo hashing (sorted paths, null separator) logic.
 func hashPaths(paths []string) string {
-	if len(paths) == 0 { return "" }
+	if len(paths) == 0 {
+		return ""
+	}
 	sort.Strings(paths)
 	h := sha256.New()
-	for _, p := range paths { h.Write([]byte(p)); h.Write([]byte{0}) }
+	for _, p := range paths {
+		h.Write([]byte(p))
+		h.Write([]byte{0})
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -24,7 +29,9 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
 	state, err := NewStateManager(stateDir)
-	if err != nil { t.Fatalf("state manager: %v", err) }
+	if err != nil {
+		t.Fatalf("state manager: %v", err)
+	}
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
@@ -58,7 +65,9 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 		if getter, ok := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string }); ok {
 			all := []string{}
 			for _, r := range repos { // original full set
-				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 { all = append(all, ps...) }
+				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 {
+					all = append(all, ps...)
+				}
 			}
 			if len(all) > 0 {
 				merged := hashPaths(all)
@@ -67,9 +76,15 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 		}
 	}
 
-	if report.DocFilesHash == subsetHash { t.Fatalf("expected recomposed global hash different from subset hash: %s", subsetHash) }
-	if report.DocFilesHash == globalFull { t.Fatalf("expected new global hash to differ from original full (new file added)") }
-	if report.DocFilesHash == "" { t.Fatalf("recomposed hash empty") }
+	if report.DocFilesHash == subsetHash {
+		t.Fatalf("expected recomposed global hash different from subset hash: %s", subsetHash)
+	}
+	if report.DocFilesHash == globalFull {
+		t.Fatalf("expected new global hash to differ from original full (new file added)")
+	}
+	if report.DocFilesHash == "" {
+		t.Fatalf("recomposed hash empty")
+	}
 }
 
 // TestPartialBuildDeletionNotReflectedYet documents current limitation: if a file is deleted
@@ -80,7 +95,9 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
 	state, err := NewStateManager(stateDir)
-	if err != nil { t.Fatalf("state manager: %v", err) }
+	if err != nil {
+		t.Fatalf("state manager: %v", err)
+	}
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
@@ -113,14 +130,18 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 		if getter, ok := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string }); ok {
 			all := []string{}
 			for _, r := range repos {
-				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 { all = append(all, ps...) }
+				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 {
+					all = append(all, ps...)
+				}
 			}
-			if len(all) > 0 { report.DocFilesHash = hashPaths(all) }
+			if len(all) > 0 {
+				report.DocFilesHash = hashPaths(all)
+			}
 		}
 	}
 
 	expectedWithDeletedStillPresent := hashPaths(append(append([]string{}, newRepoAPaths...), repoBPaths...)) // includes b2.md
-	expectedIfDeletionHandled := hashPaths(append(append([]string{}, newRepoAPaths...), repoBPaths[:1]...))    // b2.md removed
+	expectedIfDeletionHandled := hashPaths(append(append([]string{}, newRepoAPaths...), repoBPaths[:1]...))   // b2.md removed
 
 	if report.DocFilesHash == subsetHash {
 		t.Fatalf("recomposition did not occur (still subset hash)")
@@ -135,4 +156,4 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 }
 
 // Minimal shim to avoid importing full hugo package in this low-level test; only needs DocFilesHash field
-type hugoBuildReportShim struct { DocFilesHash string }
+type hugoBuildReportShim struct{ DocFilesHash string }

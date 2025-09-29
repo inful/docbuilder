@@ -58,6 +58,7 @@ type Scheduler struct {
 	stopChan   chan struct{}
 	wg         sync.WaitGroup
 	buildQueue *BuildQueue
+	daemon     *Daemon // optional back-reference for feature injections (e.g., live reload hub)
 }
 
 // NewScheduler creates a new scheduler instance
@@ -68,6 +69,9 @@ func NewScheduler(buildQueue *BuildQueue) *Scheduler {
 		stopChan:   make(chan struct{}),
 	}
 }
+
+// SetDaemon injects a daemon reference post-construction to avoid an import cycle.
+func (s *Scheduler) SetDaemon(d *Daemon) { s.daemon = d }
 
 // Start begins the scheduler's main loop
 func (s *Scheduler) Start(ctx context.Context) {
@@ -258,6 +262,13 @@ func (s *Scheduler) executeSchedule(schedule *Schedule, now time.Time) {
 			"schedule_id":   schedule.ID,
 			"schedule_name": schedule.Name,
 		},
+	}
+	if s.daemon != nil {
+		job.Metadata["v2_config"] = s.daemon.config
+		job.Metadata["state_manager"] = s.daemon.stateManager
+		if s.daemon.liveReload != nil {
+			job.Metadata["live_reload_hub"] = s.daemon.liveReload
+		}
 	}
 
 	// Enqueue the build job
