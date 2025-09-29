@@ -53,8 +53,7 @@ func (t FrontMatterParser) Transform(p PageAdapter) error {
 			if err := yaml.Unmarshal([]byte(fmContent), &fm); err != nil {
 				slog.Warn("Failed to parse existing front matter (registry)", "file", pg.FilePath, "error", err)
 			} else {
-				pg.OriginalFrontMatter = fm
-				pg.HadFrontMatter = true
+				pg.SetOriginalFrontMatter(fm, true)
 				if pg.SyncOriginal != nil {
 					pg.SyncOriginal(fm, true)
 				}
@@ -151,6 +150,11 @@ type PageShim struct {
 // Facade-style minimal methods (progressive migration toward PageFacade usage in registry)
 func (p *PageShim) GetContent() string { return p.Content }
 func (p *PageShim) SetContent(s string) { p.Content = s }
+func (p *PageShim) GetOriginalFrontMatter() map[string]any { return p.OriginalFrontMatter }
+func (p *PageShim) SetOriginalFrontMatter(fm map[string]any, had bool) {
+	p.OriginalFrontMatter = fm
+	p.HadFrontMatter = had
+}
 
 func init() {
 	Register(FrontMatterParser{})
