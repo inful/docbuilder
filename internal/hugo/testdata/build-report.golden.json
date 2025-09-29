@@ -32,4 +32,6 @@
   "delta_changed_repos": null,
   "delta_repo_reasons": null,
   "config_hash": "deadbeef"
+  , "pipeline_version": 1
+  , "effective_render_mode": "auto"
 }
