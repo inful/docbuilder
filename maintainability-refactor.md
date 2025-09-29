@@ -117,7 +117,7 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 ## Phase 8: Documentation & Developer Experience
 - [ ] Update README with new architecture and extension points
 - [ ] Add THEME_INTEGRATION.md
-- [ ] Add CONTENT_TRANSFORMS.md with examples
+- [x] Add CONTENT_TRANSFORMS.md with examples
 - [ ] Update migration notes (legacy env → render_mode) & planned deprecation schedule
 - [ ] CONTRIBUTING: How to add a stage / transform / theme
 
