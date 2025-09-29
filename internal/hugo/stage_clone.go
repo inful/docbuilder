@@ -148,6 +148,8 @@ func classifyGitFailure(err error) ReportIssueCode {
 		return IssueUnsupportedProto
 	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
 		return IssueRemoteDiverged
+	// TODO(phase4): Expand taxonomy with shallow clone depth errors, network timeouts (transient), rate limiting, and
+	// distinguish between permanent vs transient auth (2FA required) once underlying git client surfaces structured causes.
 	default:
 		return ""
 	}
