@@ -1,0 +1,51 @@
+package config
+
+import "strings"
+
+// normalizeBuildConfig canonicalizes build-related enum fields & coerces numeric bounds.
+func normalizeBuildConfig(b *BuildConfig, res *NormalizationResult) {
+    if b == nil { return }
+    // render_mode
+    if rm := NormalizeRenderMode(string(b.RenderMode)); rm != "" {
+        if b.RenderMode != rm {
+            res.Warnings = append(res.Warnings, warnChanged("build.render_mode", b.RenderMode, rm))
+            b.RenderMode = rm
+        }
+    } else if strings.TrimSpace(string(b.RenderMode)) != "" {
+        res.Warnings = append(res.Warnings, warnUnknown("build.render_mode", string(b.RenderMode), string(RenderModeAuto)))
+        b.RenderMode = RenderModeAuto
+    }
+    // namespace_forges
+    if nm := NormalizeNamespacingMode(string(b.NamespaceForges)); nm != "" {
+        if b.NamespaceForges != nm {
+            res.Warnings = append(res.Warnings, warnChanged("build.namespace_forges", b.NamespaceForges, nm))
+            b.NamespaceForges = nm
+        }
+    } else if strings.TrimSpace(string(b.NamespaceForges)) != "" {
+        res.Warnings = append(res.Warnings, warnUnknown("build.namespace_forges", string(b.NamespaceForges), string(NamespacingAuto)))
+        b.NamespaceForges = NamespacingAuto
+    }
+    // clone_strategy
+    if cs := NormalizeCloneStrategy(string(b.CloneStrategy)); cs != "" {
+        if b.CloneStrategy != cs {
+            res.Warnings = append(res.Warnings, warnChanged("build.clone_strategy", b.CloneStrategy, cs))
+            b.CloneStrategy = cs
+        }
+    } else if strings.TrimSpace(string(b.CloneStrategy)) != "" {
+        res.Warnings = append(res.Warnings, warnUnknown("build.clone_strategy", string(b.CloneStrategy), string(CloneStrategyFresh)))
+        b.CloneStrategy = CloneStrategyFresh
+    }
+    // bounds
+    if b.CloneConcurrency < 0 { b.CloneConcurrency = 0 }
+    if b.ShallowDepth < 0 { b.ShallowDepth = 0 }
+    // retry_backoff
+    if rb := NormalizeRetryBackoff(string(b.RetryBackoff)); rb != "" {
+        if b.RetryBackoff != rb {
+            res.Warnings = append(res.Warnings, warnChanged("build.retry_backoff", b.RetryBackoff, rb))
+            b.RetryBackoff = rb
+        }
+    } else if strings.TrimSpace(string(b.RetryBackoff)) != "" {
+        res.Warnings = append(res.Warnings, warnUnknown("build.retry_backoff", string(b.RetryBackoff), string(RetryBackoffFixed)))
+        b.RetryBackoff = RetryBackoffFixed
+    }
+}
