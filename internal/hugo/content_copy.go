@@ -13,13 +13,11 @@ import (
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
-	// Attempt to use new registry-based pipeline first; falls back to legacy explicit pipeline
-	// if no registered transformers (incremental migration safety).
+	// NOTE: Registry-based pipeline scaffolding exists (internal/hugo/transforms) but
+	// is currently disabled until a proper PageShim adapter is implemented. Always
+	// use legacy explicit pipeline for now to guarantee identical behavior.
 	useRegistry := false
-	regs := tr.List()
-	if len(regs) > 0 {
-		useRegistry = true
-	}
+	var regs []tr.Transformer
 	for _, file := range docFiles {
 		select {
 		case <-ctx.Done():
