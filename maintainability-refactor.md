@@ -42,9 +42,6 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - [ ] Introduce `internal/hugo/errors/` for Hugo/generation sentinel errors
 - [ ] Add unit tests ensuring no diff in build report for a simple fixture before/after extraction (pending; current tests still green, but no explicit before/after golden)
 
-
-
-
 ## Phase 2: Abstractions & Interfaces
 
 - [x] Theme interface (implemented as `internal/hugo/theme` with `Theme` + `ThemeFeatures`; legacy helpers removed)
@@ -57,14 +54,11 @@ A structured, actionable checklist to improve readability, reduce cognitive load
   - [x] Remove legacy `TransformerPipeline` and inline transformers (completed; tests green)
   - [x] Config-driven enable/disable mechanism (`hugo.transforms.enable/disable`) with precedence (disable > enable)
   - [x] Conflict logging assertions (FrontMatterConflict semantics locked by `transform_conflicts_test.go`)
-- [ ] Renderer abstraction (`Renderer.Enabled()`, `Renderer.Run()`)
-  - [ ] BinaryRenderer implementation
-  - [ ] NoopRenderer (tests)
-- [ ] Observer abstraction (BuildObserver) decoupling metrics recorder
+- [x] Renderer abstraction (`Renderer.Execute()`) – implemented via `Renderer` interface with Binary + Noop
+  - [x] BinaryRenderer implementation
+  - [x] NoopRenderer (tests)
+- [x] Observer abstraction (BuildObserver) decoupling metrics recorder (adapter bridges existing metrics)
 - [ ] RepoFetcher abstraction to unify clone/update decision logic
-
-
-
 
 ## Phase 3: Configuration System Refinement
 
@@ -144,6 +138,7 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - Added test fixtures under `testdata/`
 
 ## Execution Order Recommendation (Summary)
+
 1. Phase 1 (extractions) – safest, unlocks everything else
 2. Phase 2 (interfaces) – creates stable contracts
 3. Phase 3 (config) – reduces downstream branching
@@ -154,7 +149,9 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 8. Phase 10 – opportunistic enhancements
 
 ---
+
 ## Acceptance Criteria Snapshot
+
 - Adding a new theme touches ≤ 2 files
 - Adding a new content transform requires no stage changes
 - Render mode precedence logic fully unit tested
@@ -162,7 +159,9 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - Build report exposes pipeline & render metadata
 
 ---
+
 ## Notes
+
 Keep PRs narrowly scoped (target < 400 line diff) and include: motivation paragraph, before/after file list, and confirmation of unchanged behavior via tests or golden output.
 
 ---

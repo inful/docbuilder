@@ -1,0 +1,18 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "Noop",
+    "NoopRenderer",
+    "namespacing",
+    "THEME_INTEGRATION",
+    "CONTENT_TRANSFORMS",
+    "DOCBUILDER",
+    "staticcheck"
+  ],
+  "ignorePaths": [
+    "vendor/**",
+    "node_modules/**",
+    "bin/**"
+  ]
+}
