@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -135,21 +138,29 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 
 // classifyGitFailure inspects an error string for permanent git failure signatures.
 func classifyGitFailure(err error) ReportIssueCode {
-	if err == nil {
-		return ""
+	if err == nil { return "" }
+	// Prefer typed errors (Phase 4) first
+	switch {
+	case errors.As(err, new(*gitpkg.AuthError)):
+		return IssueAuthFailure
+	case errors.As(err, new(*gitpkg.NotFoundError)):
+		return IssueRepoNotFound
+	case errors.As(err, new(*gitpkg.UnsupportedProtocolError)):
+		return IssueUnsupportedProto
+	case errors.As(err, new(*gitpkg.RemoteDivergedError)):
+		return IssueRemoteDiverged
 	}
+	// Fallback heuristic for legacy untyped errors
 	l := strings.ToLower(err.Error())
 	switch {
 	case strings.Contains(l, "authentication failed") || strings.Contains(l, "authentication required") || strings.Contains(l, "invalid username or password") || strings.Contains(l, "authorization failed"):
 		return IssueAuthFailure
-	case strings.Contains(l, "repository not found") || strings.Contains(l, "not found") && strings.Contains(l, "repository"):
+	case strings.Contains(l, "repository not found") || (strings.Contains(l, "not found") && strings.Contains(l, "repository")):
 		return IssueRepoNotFound
 	case strings.Contains(l, "unsupported protocol"):
 		return IssueUnsupportedProto
 	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
 		return IssueRemoteDiverged
-	// TODO(phase4): Expand taxonomy with shallow clone depth errors, network timeouts (transient), rate limiting, and
-	// distinguish between permanent vs transient auth (2FA required) once underlying git client surfaces structured causes.
 	default:
 		return ""
 	}
