@@ -28,6 +28,7 @@ type Generator struct {
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
 	recorder       metrics.Recorder
+	renderer       Renderer // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
 	cachedThemeFeatures *th.ThemeFeatures
 	// editLinkResolver centralizes per-page edit link resolution
@@ -62,6 +63,8 @@ func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
+	// Default renderer: binary hugo invocation. Can be overridden via WithRenderer for tests or alt implementations.
+	g.renderer = &BinaryRenderer{}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	return g
