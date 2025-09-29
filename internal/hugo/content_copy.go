@@ -28,7 +28,19 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
 		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
-		if useRegistry {
+			if useRegistry {
+				// Prepare transform filtering
+				var enableSet, disableSet map[string]struct{}
+				if g.config != nil && g.config.Hugo.Transforms != nil {
+					if len(g.config.Hugo.Transforms.Enable) > 0 {
+						enableSet = map[string]struct{}{}
+						for _, n := range g.config.Hugo.Transforms.Enable { enableSet[n] = struct{}{} }
+					}
+					if len(g.config.Hugo.Transforms.Disable) > 0 {
+						disableSet = map[string]struct{}{}
+						for _, n := range g.config.Hugo.Transforms.Disable { disableSet[n] = struct{}{} }
+					}
+				}
 			// Build adapter shim (two-phase to allow Serialize closure to reference shim)
 			shim := &tr.PageShim{
 				FilePath: file.RelativePath,
@@ -64,7 +76,10 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				p.Raw = []byte(combined)
 				return nil
 			}
-			for _, rt := range regs { // ordered
+					for _, rt := range regs { // ordered
+						name := rt.Name()
+						if disableSet != nil { if _, blocked := disableSet[name]; blocked { continue } }
+						if enableSet != nil { if _, ok := enableSet[name]; !ok { continue } }
 				if err := rt.Transform(shim); err != nil {
 					return fmt.Errorf("transform %s failed for %s: %w", rt.Name(), file.Path, err)
 				}

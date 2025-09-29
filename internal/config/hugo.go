@@ -10,6 +10,14 @@ type HugoConfig struct {
 	Description string            `yaml:"description,omitempty"`
 	Params      map[string]any    `yaml:"params,omitempty"`
 	Menu        map[string][]Menu `yaml:"menu,omitempty"`
+	Transforms  *HugoTransforms    `yaml:"transforms,omitempty"` // optional transform filtering
+}
+
+// HugoTransforms allows users to enable/disable specific named content transforms.
+// If both slices are set, Disable takes precedence over Enable.
+type HugoTransforms struct {
+	Enable  []string `yaml:"enable,omitempty"`  // whitelist subset (empty means all)
+	Disable []string `yaml:"disable,omitempty"` // explicit deny list
 }
 
 // Theme is a typed enumeration of supported Hugo theme integrations.
