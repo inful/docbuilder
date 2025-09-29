@@ -42,3 +42,18 @@ func BuildPipeline(include map[string]struct{}) ([]Transformer, error) {
   if len(out) == 0 { return nil, fmt.Errorf("no transformers matched provided filter") }
   return out, nil
 }
+
+// --- Test helpers (non-exported) ---
+// snapshotRegistry returns a shallow copy for test isolation.
+func snapshotRegistry() map[string]Transformer {
+  cp := make(map[string]Transformer, len(reg))
+  for k,v := range reg { cp[k] = v }
+  return cp
+}
+// restoreRegistry replaces the registry map (test only).
+func restoreRegistry(cp map[string]Transformer) { reg = cp }
+
+// SnapshotForTest exposes a registry snapshot (test only).
+func SnapshotForTest() map[string]Transformer { return snapshotRegistry() }
+// RestoreForTest restores a snapshot (test only).
+func RestoreForTest(cp map[string]Transformer) { restoreRegistry(cp) }
