@@ -47,6 +47,20 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 
 `PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. It is being migrated toward the new `PageFacade` interface (see `internal/hugo/page_facade.go`) so custom transformers should avoid depending on concrete struct fields beyond `Content` and those hooks; future versions will pass only a facade.
 
+### PageFacade Methods (Current Stable Set)
+
+| Method | Purpose |
+|--------|---------|
+| `GetContent()` | Retrieve mutable markdown body (without serialized front matter). |
+| `SetContent(string)` | Replace markdown body in-place. |
+| `GetOriginalFrontMatter()` | Access parsed original front matter (immutable baseline). |
+| `SetOriginalFrontMatter(map[string]any, bool)` | Set baseline front matter & had-front-matter flag (used by parser). |
+| `AddPatch(FrontMatterPatch)` | Append a pending front matter patch. |
+| `ApplyPatches()` | Merge pending patches into `MergedFrontMatter`. |
+| `HadOriginalFrontMatter()` | Whether the source file originally contained front matter. |
+
+The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible.
+
 - `BuildFrontMatter(now time.Time)` – constructs builder patch using injected timestamp.
 - `InjectEditLink()` – conditional edit link insertion.
 - `ApplyPatches()` – performs merge (`Page.applyPatches`).
