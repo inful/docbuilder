@@ -49,8 +49,8 @@ A structured, actionable checklist to improve readability, reduce cognitive load
   - [x] Pipeline orchestrator via registry (`internal/hugo/transforms/registry.go`) with priority ordering
   - [x] Registered transforms: front matter parse/build, edit link injector, merge, relative link rewrite, serializer
   - [x] Parity tests against legacy inline pipeline (now decommissioned; stub retained)
-  - [~] Formal interface for page object (`PageFacade` scaffold added; transforms partially migrated)  
-    Δ Next: complete migration (all transformers facade-only) & remove direct struct field assumptions
+  - [x] Formal interface for page object (`PageFacade`) with adapter + facade-oriented transformers
+    Δ Follow-up: Promote `Serialize()` into facade to remove final shim closure (optional)
   - [x] Remove legacy `TransformerPipeline` and inline transformers (completed; tests green)
   - [x] Config-driven enable/disable mechanism (`hugo.transforms.enable/disable`) with precedence (disable > enable)
   - [x] Conflict logging assertions (FrontMatterConflict semantics locked by `transform_conflicts_test.go`)
@@ -69,7 +69,7 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - [x] Filtering normalization & inclusion in snapshot
 - [x] Emit warnings for deprecated env variables once per process (deduplicated) *(render env vars)*
 
-Status Delta (2025-09-29): RepoFetcher integrated; normalization fully modular; snapshot & `config_hash` persisted; deprecation warnings active.
+Status Delta (2025-09-30): RepoFetcher integrated; normalization modular; `config_hash` persisted; PageFacade migration complete with golden pipeline test guarding behavior; deprecation warnings active.
 
 
 

@@ -45,7 +45,7 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 
 ## PageShim & Hooks
 
-`PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. It is being migrated toward the new `PageFacade` interface (see `internal/hugo/page_facade.go`) so custom transformers should avoid depending on concrete struct fields beyond `Content` and those hooks; future versions will pass only a facade.
+`PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. The transform layer now operates via facade-style getters/setters and an adapter that allows future direct `PageFacade` implementations. Custom transformers MUST avoid reaching into unlisted struct fields; rely on the facade methods below. A golden test (`pipeline_golden_test.go`) locks baseline behavior.
 
 ### PageFacade Methods (Current Stable Set)
 
@@ -58,8 +58,9 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 | `AddPatch(FrontMatterPatch)` | Append a pending front matter patch. |
 | `ApplyPatches()` | Merge pending patches into `MergedFrontMatter`. |
 | `HadOriginalFrontMatter()` | Whether the source file originally contained front matter. |
+| (planned) `Serialize()` | Potential future facade method to eliminate shim-only serializer closure. |
 
-The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible.
+The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. A follow-up may formalize `Serialize()` onto the facade to remove the last shim closure.
 
 - `BuildFrontMatter(now time.Time)` – constructs builder patch using injected timestamp.
 - `InjectEditLink()` – conditional edit link insertion.
