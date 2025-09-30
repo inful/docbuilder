@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,6 +22,9 @@ const (
 	prFrontMatterMerge = 40
 	prRelLink          = 50
 	prSerialize        = 90
+	// V2 transforms use slightly later priorities to ensure parity, but within same ordering group
+	prFrontMatterBuildV2 = 22
+	prEditLinkV2         = 32
 )
 
 // generatorProvider is set by hugo package prior to running registry pipeline (late binding to avoid import cycle).
@@ -140,6 +145,7 @@ func (t Serializer) Transform(p PageAdapter) error {
 // PageShim mirrors the subset of hugo.Page needed for registry-based transformers; constructed in hugo package.
 type PageShim struct {
 	FilePath            string
+	DocFile             struct{ Repository, Forge, Section, Name string; Metadata map[string]any } // lightweight projection (avoid importing docs.DocFile)
 	Content             string
 	OriginalFrontMatter map[string]any
 	HadFrontMatter      bool
@@ -185,5 +191,66 @@ func init() {
 	Register(MergeFrontMatter{})
 	Register(RelativeLinkRewriter{})
 	Register(Serializer{})
+	// V2 transforms (experimental) - once validated we can remove the original builder and injector
+	Register(FrontMatterBuilderV2{})
+	Register(EditLinkInjectorV2{})
 	_ = fmt.Sprintf // silence unused imports if stripped by future edits
+}
+
+// FrontMatterBuilderV2 builds base front matter (without editURL) and adds a patch.
+type FrontMatterBuilderV2 struct{}
+
+func (t FrontMatterBuilderV2) Name() string  { return "front_matter_builder_v2" }
+func (t FrontMatterBuilderV2) Priority() int { return prFrontMatterBuildV2 }
+func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
+	shim, ok := p.(*PageShim)
+	if !ok { return nil }
+	if shim == nil { return nil }
+	// Acquire generator for config & current time
+	var cfg *config.Config
+	if generatorProvider != nil {
+		if g, ok2 := generatorProvider().(interface{ Config() *config.Config }); ok2 {
+			cfg = g.Config()
+		}
+	}
+	existing := shim.OriginalFrontMatter
+	if existing == nil { existing = map[string]any{} }
+	md := shim.DocFile.Metadata
+	if md == nil { md = map[string]any{} }
+	built := fmcore.ComputeBaseFrontMatter(shim.DocFile.Name, shim.DocFile.Repository, shim.DocFile.Forge, shim.DocFile.Section, md, existing, cfg, time.Now())
+	// Only add patch if we actually mutated compared to existing map (len compare insufficient, just always patch for simplicity)
+	shim.Patches = append(shim.Patches, fmcore.FrontMatterPatch{Source: "builder_v2", Mode: fmcore.MergeDeep, Priority: 50, Data: built})
+	return nil
+}
+
+// EditLinkInjectorV2 adds editURL if missing using resolver logic, separate from base builder.
+type EditLinkInjectorV2 struct{}
+
+func (t EditLinkInjectorV2) Name() string  { return "edit_link_injector_v2" }
+func (t EditLinkInjectorV2) Priority() int { return prEditLinkV2 }
+func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
+	shim, ok := p.(*PageShim)
+	if !ok || shim == nil { return nil }
+	// Skip if already present in original
+	if shim.OriginalFrontMatter != nil {
+		if _, exists := shim.OriginalFrontMatter["editURL"]; exists { return nil }
+	}
+	// Skip if any prior patch already added editURL
+	for _, patchAny := range shim.Patches {
+		if patch, okp := patchAny.(fmcore.FrontMatterPatch); okp {
+			if patch.Data != nil {
+				if _, exists := patch.Data["editURL"]; exists { return nil }
+			}
+		}
+	}
+	// Need config + resolver
+	var cfg *config.Config
+	if generatorProvider != nil {
+		if g, ok2 := generatorProvider().(interface{ Config() *config.Config }); ok2 { cfg = g.Config() }
+	}
+	if cfg == nil || cfg.Hugo.ThemeType() != config.ThemeHextra { return nil }
+	// Use existing resolver path: re-create here to avoid import cycle (resolver lives in hugo package) -> replicate minimal logic not possible without cycle.
+	// For now we short-circuit: rely on original closure still adding editURL; this V2 acts only when closure removed later.
+	// TODO: future: extract resolver into shared package to enable full migration.
+	return nil
 }

@@ -51,6 +51,11 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			// Build adapter shim (two-phase to allow Serialize closure to reference shim)
 			shim := &tr.PageShim{
 				FilePath:            file.RelativePath,
+				DocFile:             func() struct{ Repository, Forge, Section, Name string; Metadata map[string]any } {
+					md := make(map[string]any, len(file.Metadata))
+					for k, v := range file.Metadata { md[k] = v }
+					return struct{ Repository, Forge, Section, Name string; Metadata map[string]any }{Repository: file.Repository, Forge: file.Forge, Section: file.Section, Name: file.Name, Metadata: md}
+				}(),
 				Content:             p.Content,
 				OriginalFrontMatter: p.OriginalFrontMatter,
 				HadFrontMatter:      p.HadFrontMatter,
