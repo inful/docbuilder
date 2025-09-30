@@ -158,15 +158,18 @@ Recommended for new transforms:
 
 ## Future Enhancements
 
-- Config-driven enable/disable list (`config.Hugo.Transforms.enabled/disabled`) – implemented in early V2; future work: per-transform param injection.
-- External plugin injection (dynamic registration before build start).
-- Parallelizable transform segments (content-only transforms batched after merge, before serialize).
-- Shared metrics (duration, error counts) per transform name – implemented (`ObserveContentTransformDuration` + failure counters).
-- Remove deprecated legacy no-op transforms once downstream migration period ends.
+The project is intentionally and permanently self-contained. We will NOT introduce a dynamic external plugin / extension / runtime injection mechanism. All transforms and behavioral changes must land via normal code changes and review.
+
+Planned/possible incremental internal improvements (still in-repo only):
+
+- Per-transform param injection sourced from config (extending existing enable/disable filtering).
+- Evaluating parallelization for pure content transforms after merge but before serialization.
+- Additional shared metrics dimensions (e.g., bytes processed, patch counts) leveraging existing duration/error counters.
+- Continued pruning or consolidation of transforms if responsibilities shift (greenfield policy).
 
 ## Migration Notes
 
-Legacy inline transformer pipeline fully removed; registry is authoritative. No third‑party transformer plugin mechanism exists yet; all runtime transformer code lives in-repo. Greenfield policy: we remove obsolete paths aggressively and accept minor backward incompatibilities during pre‑1.0 to keep surface area minimal.
+Legacy inline transformer pipeline fully removed; registry is authoritative. The project charter forbids third‑party or dynamically loaded transformer plugins—this will not change. All runtime transformer code lives in-repo. Greenfield policy: we remove obsolete paths aggressively and accept minor backward incompatibilities during pre‑1.0 to keep surface area minimal.
 
 ---
 Questions or additions? Extend this doc as the pipeline evolves.

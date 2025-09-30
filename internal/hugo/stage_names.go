@@ -24,8 +24,10 @@ type StageDef struct {
 }
 
 // Pipeline is a fluent builder for ordered stage definitions.
-// It enables conditional inclusion and future plugin insertion without
-// manually assembling slices inline in generator methods.
+// NOTE: Earlier comments referenced potential "future plugin insertion". The
+// project charter now explicitly forbids external/runtime plugin systems; this
+// builder exists solely for internal conditional assembly and readability.
+// No dynamic stage injection from third-party code will be added.
 type Pipeline struct{ defs []StageDef }
 
 // NewPipeline creates an empty pipeline.
