@@ -55,4 +55,4 @@ func (NoopRecorder) IncBuildRetry(string)                                 {}
 func (NoopRecorder) IncBuildRetryExhausted(string)                        {}
 func (NoopRecorder) IncIssue(string, string, string, bool)                {}
 func (NoopRecorder) SetEffectiveRenderMode(string)                        {}
-func (NoopRecorder) IncContentTransformFailure(string)                   {}
+func (NoopRecorder) IncContentTransformFailure(string)                    {}

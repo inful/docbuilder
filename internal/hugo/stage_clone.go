@@ -138,7 +138,9 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 
 // classifyGitFailure inspects an error string for permanent git failure signatures.
 func classifyGitFailure(err error) ReportIssueCode {
-	if err == nil { return "" }
+	if err == nil {
+		return ""
+	}
 	// Prefer typed errors (Phase 4) first
 	switch {
 	case errors.As(err, new(*gitpkg.AuthError)):

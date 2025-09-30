@@ -44,7 +44,9 @@ func TestPageFacadeContract(t *testing.T) {
 		// Allow string slice path
 		if sv, ok2 := fm["tags"].([]string); ok2 {
 			for _, v := range sv {
-				if v == "alpha" || v == "beta" || v == "gamma" { continue }
+				if v == "alpha" || v == "beta" || v == "gamma" {
+					continue
+				}
 			}
 			return
 		}

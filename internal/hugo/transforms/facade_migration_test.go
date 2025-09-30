@@ -8,7 +8,9 @@ func TestRelativeLinkRewriterUsesFacadeMethods(t *testing.T) {
 	// Provide a trivial rewriter that annotates to prove invocation.
 	shim.RewriteLinks = func(s string) string { return s + "#rewritten" }
 	rew := RelativeLinkRewriter{}
-	if err := rew.Transform(shim); err != nil { t.Fatalf("transform error: %v", err) }
+	if err := rew.Transform(shim); err != nil {
+		t.Fatalf("transform error: %v", err)
+	}
 	if shim.Content != "See [link](./relative/path.md)#rewritten" {
 		// Validate that SetContent was used (indirectly) and content mutated.
 		// (If it were not, we'd still detect mismatch but comment clarifies intent.)

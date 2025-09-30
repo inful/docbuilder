@@ -91,7 +91,9 @@ var IsPermanentGitError = isPermanentGitError
 
 // classifyTransientType returns a short string key for known transient typed errors; empty if unknown.
 func classifyTransientType(err error) string {
-	if err == nil { return "" }
+	if err == nil {
+		return ""
+	}
 	switch {
 	case errors.As(err, new(*RateLimitError)):
 		return "rate_limit"

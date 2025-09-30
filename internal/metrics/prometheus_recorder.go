@@ -9,18 +9,18 @@ import (
 
 // PrometheusRecorder implements Recorder using Prometheus metrics.
 type PrometheusRecorder struct {
-	once             sync.Once
-	stageDuration    *prom.HistogramVec
-	buildDuration    prom.Histogram
-	stageResults     *prom.CounterVec
-	buildOutcome     *prom.CounterVec
-	cloneDuration    *prom.HistogramVec
-	cloneResults     *prom.CounterVec
-	cloneConcurrency prom.Gauge
-	retries          *prom.CounterVec
-	retriesExhausted *prom.CounterVec
-	issues           *prom.CounterVec
-	renderMode       prom.Gauge
+	once              sync.Once
+	stageDuration     *prom.HistogramVec
+	buildDuration     prom.Histogram
+	stageResults      *prom.CounterVec
+	buildOutcome      *prom.CounterVec
+	cloneDuration     *prom.HistogramVec
+	cloneResults      *prom.CounterVec
+	cloneConcurrency  prom.Gauge
+	retries           *prom.CounterVec
+	retriesExhausted  *prom.CounterVec
+	issues            *prom.CounterVec
+	renderMode        prom.Gauge
 	transformFailures *prom.CounterVec
 }
 
@@ -195,6 +195,8 @@ func (p *PrometheusRecorder) SetEffectiveRenderMode(mode string) {
 }
 
 func (p *PrometheusRecorder) IncContentTransformFailure(name string) {
-	if p == nil || p.transformFailures == nil { return }
+	if p == nil || p.transformFailures == nil {
+		return
+	}
 	p.transformFailures.WithLabelValues(name).Inc()
 }
