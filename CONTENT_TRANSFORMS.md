@@ -58,9 +58,9 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 | `AddPatch(FrontMatterPatch)` | Append a pending front matter patch. |
 | `ApplyPatches()` | Merge pending patches into `MergedFrontMatter`. |
 | `HadOriginalFrontMatter()` | Whether the source file originally contained front matter. |
-| (planned) `Serialize()` | Potential future facade method to eliminate shim-only serializer closure. |
+| `Serialize()` | Serialize merged front matter + body (now part of the stable facade). |
 
-The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. A follow-up may formalize `Serialize()` onto the facade to remove the last shim closure.
+The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. `Serialize()` was promoted into the facade (2025-09-30) eliminating the special serializer closure path.
 
 - `BuildFrontMatter(now time.Time)` – constructs builder patch using injected timestamp.
 - `InjectEditLink()` – conditional edit link insertion.
