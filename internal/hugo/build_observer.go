@@ -40,6 +40,8 @@ func (r recorderObserver) OnBuildComplete(report *BuildReport) {
 			r.rec.IncIssue(string(is.Code), string(is.Stage), string(is.Severity), is.Transient)
 		}
 		// Record effective render mode if present
-		if report.EffectiveRenderMode != "" { r.rec.SetEffectiveRenderMode(report.EffectiveRenderMode) }
+		if report.EffectiveRenderMode != "" {
+			r.rec.SetEffectiveRenderMode(report.EffectiveRenderMode)
+		}
 	}
 }

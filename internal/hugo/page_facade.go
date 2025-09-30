@@ -23,13 +23,13 @@ type PageFacade interface {
 var _ PageFacade = (*Page)(nil)
 
 // Adapt *Page to PageFacade without exposing additional fields.
-func (p *Page) GetContent() string { return p.Content }
-func (p *Page) SetContent(s string) { p.Content = s }
+func (p *Page) GetContent() string                     { return p.Content }
+func (p *Page) SetContent(s string)                    { p.Content = s }
 func (p *Page) GetOriginalFrontMatter() map[string]any { return p.OriginalFrontMatter }
 func (p *Page) SetOriginalFrontMatter(fm map[string]any, had bool) {
 	p.OriginalFrontMatter = fm
 	p.HadFrontMatter = had
 }
 func (p *Page) AddPatch(fp FrontMatterPatch) { p.Patches = append(p.Patches, fp) }
-func (p *Page) ApplyPatches() { p.applyPatches() }
+func (p *Page) ApplyPatches()                { p.applyPatches() }
 func (p *Page) HadOriginalFrontMatter() bool { return p.HadFrontMatter }

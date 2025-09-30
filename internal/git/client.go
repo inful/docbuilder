@@ -76,23 +76,23 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 // classifyCloneError attempts to wrap underlying go-git errors into typed permanent failures.
 func classifyCloneError(url string, err error) error {
 	l := strings.ToLower(err.Error())
- 	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.
- 	if strings.Contains(l, "authentication") || strings.Contains(l, "auth fail") || strings.Contains(l, "invalid username or password") {
- 		return &AuthError{Op: "clone", URL: url, Err: err}
- 	}
- 	if strings.Contains(l, "not found") || strings.Contains(l, "repository does not exist") {
- 		return &NotFoundError{Op: "clone", URL: url, Err: err}
- 	}
- 	if strings.Contains(l, "unsupported protocol") || strings.Contains(l, "protocol not supported") {
- 		return &UnsupportedProtocolError{Op: "clone", URL: url, Err: err}
- 	}
+	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.
+	if strings.Contains(l, "authentication") || strings.Contains(l, "auth fail") || strings.Contains(l, "invalid username or password") {
+		return &AuthError{Op: "clone", URL: url, Err: err}
+	}
+	if strings.Contains(l, "not found") || strings.Contains(l, "repository does not exist") {
+		return &NotFoundError{Op: "clone", URL: url, Err: err}
+	}
+	if strings.Contains(l, "unsupported protocol") || strings.Contains(l, "protocol not supported") {
+		return &UnsupportedProtocolError{Op: "clone", URL: url, Err: err}
+	}
 	if strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests") {
 		return &RateLimitError{Op: "clone", URL: url, Err: err}
 	}
 	if strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout") {
 		return &NetworkTimeoutError{Op: "clone", URL: url, Err: err}
 	}
- 	return fmt.Errorf("failed to clone repository %s: %w", url, err)
+	return fmt.Errorf("failed to clone repository %s: %w", url, err)
 }
 
 // UpdateRepository updates an existing repository or clones if missing.
