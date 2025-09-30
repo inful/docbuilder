@@ -32,20 +32,26 @@ Registration occurs in `init()` via `transforms.Register(t)`. The registry produ
 
 ### Current Priority Bands
 
-| Priority | Transform                      | Purpose |
-|----------|--------------------------------|---------|
-| 10       | front_matter_parser            | Extract existing front matter & strip it |
-| 20       | front_matter_builder           | Generate baseline fields & patches |
-| 30       | edit_link_injector             | Add per-page `editURL` (if theme expects it) |
-| 40       | front_matter_merge             | Apply ordered patches into merged map |
-| 50       | relative_link_rewriter         | Rewrite intra-repo relative links to Hugo-friendly paths |
-| 90       | front_matter_serialize         | Serialize merged front matter + body |
+| Priority | Transform                       | Status      | Purpose |
+|----------|---------------------------------|-------------|---------|
+| 10       | front_matter_parser             | active      | Extract existing front matter & strip it |
+| 20       | front_matter_builder            | deprecated  | (Legacy) baseline FM build incl. editURL; superseded by V2 pair |
+| 22       | front_matter_builder_v2         | active      | Generate baseline fields (title/date/repository/forge/section/metadata) excluding editURL |
+| 30       | edit_link_injector              | deprecated  | (Legacy) insert editURL (Hextra) inside builder step ordering |
+| 32       | edit_link_injector_v2           | active      | Adds `editURL` with set-if-missing semantics using resolver & theme detection |
+| 40       | front_matter_merge              | active      | Apply ordered patches into merged map |
+| 50       | relative_link_rewriter          | active      | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
+| 90       | front_matter_serialize          | active      | Serialize merged front matter + body |
+
+Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.
 
 Keep `90` high to leave space for future pre-serialization transforms (e.g., code fence augmentation, heading slug injection) at 60–80.
 
 ## PageShim & Hooks
 
 `PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. The transform layer now operates via facade-style getters/setters and an adapter that allows future direct `PageFacade` implementations. Custom transformers MUST avoid reaching into unlisted struct fields; rely on the facade methods below. A golden test (`pipeline_golden_test.go`) locks baseline behavior.
+
+As of 2025-09-30 the shim gained a `BackingAddPatch` hook so facade patches registered by transforms propagate to the underlying concrete `Page` early (supporting conflict recording that previously happened only during final merge). This enabled safe removal of legacy closure fields (`BuildFrontMatter`, `InjectEditLink`).
 
 ### PageFacade Methods (Current Stable Set)
 
@@ -55,19 +61,24 @@ Keep `90` high to leave space for future pre-serialization transforms (e.g., cod
 | `SetContent(string)` | Replace markdown body in-place. |
 | `GetOriginalFrontMatter()` | Access parsed original front matter (immutable baseline). |
 | `SetOriginalFrontMatter(map[string]any, bool)` | Set baseline front matter & had-front-matter flag (used by parser). |
-| `AddPatch(FrontMatterPatch)` | Append a pending front matter patch. |
+| `AddPatch(FrontMatterPatch)` | Append a pending front matter patch (also forwarded via `BackingAddPatch`). |
 | `ApplyPatches()` | Merge pending patches into `MergedFrontMatter`. |
 | `HadOriginalFrontMatter()` | Whether the source file originally contained front matter. |
-| `Serialize()` | Serialize merged front matter + body (now part of the stable facade). |
+| `Serialize()` | Serialize merged front matter + body (facade method; serializer transform delegates here). |
 
 The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. `Serialize()` was promoted into the facade (2025-09-30) eliminating the special serializer closure path.
 
-- `BuildFrontMatter(now time.Time)` – constructs builder patch using injected timestamp.
-- `InjectEditLink()` – conditional edit link insertion.
+Deprecated legacy closure helpers removed (replaced by V2 transforms):
+
+- `BuildFrontMatter(now time.Time)`
+- `InjectEditLink()`
+
+Still-present facade utilities (available via shim fields / hooks):
+
 - `ApplyPatches()` – performs merge (`Page.applyPatches`).
 - `RewriteLinks(string) string` – markdown link rewriting.
 - `Serialize()` – final YAML + content emission.
-- `SyncOriginal(fm, had)` – lets parser propagate parsed original front matter into the real `Page` before builder runs (critical for protecting existing titles etc.).
+- `SyncOriginal(fm, had)` – lets parser propagate parsed original front matter before builder patches.
 
 ## Front Matter Patching Semantics
 
@@ -147,14 +158,15 @@ Recommended for new transforms:
 
 ## Future Enhancements
 
-- Config-driven enable/disable list (`config.Hugo.Transforms.Enabled/Disabled`).
+- Config-driven enable/disable list (`config.Hugo.Transforms.enabled/disabled`) – implemented in early V2; future work: per-transform param injection.
 - External plugin injection (dynamic registration before build start).
 - Parallelizable transform segments (content-only transforms batched after merge, before serialize).
-- Shared metrics (duration, error counts) per transform name.
+- Shared metrics (duration, error counts) per transform name – implemented (`ObserveContentTransformDuration` + failure counters).
+- Remove deprecated legacy no-op transforms once downstream migration period ends.
 
 ## Migration Notes
 
-The legacy inline transformer pipeline will be removed after a stabilization window; at that point parity tests may be converted to golden fixtures against the registry output.
+Legacy inline transformer pipeline fully removed; registry is authoritative. Deprecated no-op entries (`front_matter_builder`, `edit_link_injector`) remain temporarily registered for config compatibility; they will be removed in a future minor refactor once downstream consumers confirm migration. Replace any references to `front_matter_builder` with `front_matter_builder_v2` if you use explicit allowlists.
 
 ---
 Questions or additions? Extend this doc as the pipeline evolves.
