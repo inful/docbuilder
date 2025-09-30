@@ -22,6 +22,7 @@ type PrometheusRecorder struct {
 	issues            *prom.CounterVec
 	renderMode        prom.Gauge
 	transformFailures *prom.CounterVec
+	transformDuration *prom.HistogramVec
 }
 
 // NewPrometheusRecorder constructs and registers Prometheus metrics (idempotent).
@@ -94,7 +95,13 @@ func NewPrometheusRecorder(reg *prom.Registry) *PrometheusRecorder {
 			Name:      "content_transform_failures_total",
 			Help:      "Failures returned by content transforms (registry) grouped by transform name",
 		}, []string{"transform"})
-		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted, pr.issues, pr.renderMode, pr.transformFailures)
+		pr.transformDuration = prom.NewHistogramVec(prom.HistogramOpts{
+			Namespace: "docbuilder",
+			Name:      "content_transform_duration_seconds",
+			Help:      "Duration of individual content transforms (registry)",
+			Buckets:   prom.DefBuckets,
+		}, []string{"transform", "result"})
+		reg.MustRegister(pr.stageDuration, pr.buildDuration, pr.stageResults, pr.buildOutcome, pr.cloneDuration, pr.cloneResults, pr.cloneConcurrency, pr.retries, pr.retriesExhausted, pr.issues, pr.renderMode, pr.transformFailures, pr.transformDuration)
 	})
 	return pr
 }
@@ -199,4 +206,15 @@ func (p *PrometheusRecorder) IncContentTransformFailure(name string) {
 		return
 	}
 	p.transformFailures.WithLabelValues(name).Inc()
+}
+
+func (p *PrometheusRecorder) ObserveContentTransformDuration(name string, d time.Duration, success bool) {
+	if p == nil || p.transformDuration == nil {
+		return
+	}
+	res := "success"
+	if !success {
+		res = "failed"
+	}
+	p.transformDuration.WithLabelValues(name, res).Observe(d.Seconds())
 }
