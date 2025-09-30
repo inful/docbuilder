@@ -33,15 +33,15 @@ func (c *capturingRecorder) IncStageResult(stage string, r metrics.ResultLabel) 
 	}
 	m[r]++
 }
-func (c *capturingRecorder) IncBuildOutcome(o metrics.BuildOutcomeLabel)          { c.outcomes[o]++ }
-func (c *capturingRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
-func (c *capturingRecorder) IncCloneRepoResult(bool)                              {}
-func (c *capturingRecorder) SetCloneConcurrency(int)                              {}
-func (c *capturingRecorder) IncBuildRetry(string)                                 {}
-func (c *capturingRecorder) IncBuildRetryExhausted(string)                        {}
-func (c *capturingRecorder) IncIssue(string, string, string, bool)                {}
-func (c *capturingRecorder) SetEffectiveRenderMode(string)                        {}
-func (c *capturingRecorder) IncContentTransformFailure(string)                    {}
+func (c *capturingRecorder) IncBuildOutcome(o metrics.BuildOutcomeLabel)                 { c.outcomes[o]++ }
+func (c *capturingRecorder) ObserveCloneRepoDuration(string, time.Duration, bool)        {}
+func (c *capturingRecorder) IncCloneRepoResult(bool)                                     {}
+func (c *capturingRecorder) SetCloneConcurrency(int)                                     {}
+func (c *capturingRecorder) IncBuildRetry(string)                                        {}
+func (c *capturingRecorder) IncBuildRetryExhausted(string)                               {}
+func (c *capturingRecorder) IncIssue(string, string, string, bool)                       {}
+func (c *capturingRecorder) SetEffectiveRenderMode(string)                               {}
+func (c *capturingRecorder) IncContentTransformFailure(string)                           {}
 func (c *capturingRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
 
 // TestMetricsRecorderIntegration ensures that recorder callbacks are invoked during a simple GenerateSiteWithReport run.

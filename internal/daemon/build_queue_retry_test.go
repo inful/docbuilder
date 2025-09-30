@@ -43,9 +43,9 @@ func (f *fakeRecorder) IncBuildRetryExhausted(stage string) {
 	defer f.mu.Unlock()
 	f.exhausted[stage]++
 }
-func (f *fakeRecorder) IncIssue(string, string, string, bool) {}
-func (f *fakeRecorder) SetEffectiveRenderMode(string)         {}
-func (f *fakeRecorder) IncContentTransformFailure(string)     {}
+func (f *fakeRecorder) IncIssue(string, string, string, bool)                       {}
+func (f *fakeRecorder) SetEffectiveRenderMode(string)                               {}
+func (f *fakeRecorder) IncContentTransformFailure(string)                           {}
 func (f *fakeRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
 
 func (f *fakeRecorder) getRetry(stage string) int {

@@ -45,16 +45,16 @@ type Recorder interface {
 // NoopRecorder is a Recorder that does nothing (default when metrics not configured).
 type NoopRecorder struct{}
 
-func (NoopRecorder) ObserveStageDuration(string, time.Duration)           {}
-func (NoopRecorder) ObserveBuildDuration(time.Duration)                   {}
-func (NoopRecorder) IncStageResult(string, ResultLabel)                   {}
-func (NoopRecorder) IncBuildOutcome(BuildOutcomeLabel)                    {}
-func (NoopRecorder) ObserveCloneRepoDuration(string, time.Duration, bool) {}
-func (NoopRecorder) IncCloneRepoResult(bool)                              {}
-func (NoopRecorder) SetCloneConcurrency(int)                              {}
-func (NoopRecorder) IncBuildRetry(string)                                 {}
-func (NoopRecorder) IncBuildRetryExhausted(string)                        {}
-func (NoopRecorder) IncIssue(string, string, string, bool)                {}
-func (NoopRecorder) SetEffectiveRenderMode(string)                        {}
-func (NoopRecorder) IncContentTransformFailure(string)                    {}
+func (NoopRecorder) ObserveStageDuration(string, time.Duration)                  {}
+func (NoopRecorder) ObserveBuildDuration(time.Duration)                          {}
+func (NoopRecorder) IncStageResult(string, ResultLabel)                          {}
+func (NoopRecorder) IncBuildOutcome(BuildOutcomeLabel)                           {}
+func (NoopRecorder) ObserveCloneRepoDuration(string, time.Duration, bool)        {}
+func (NoopRecorder) IncCloneRepoResult(bool)                                     {}
+func (NoopRecorder) SetCloneConcurrency(int)                                     {}
+func (NoopRecorder) IncBuildRetry(string)                                        {}
+func (NoopRecorder) IncBuildRetryExhausted(string)                               {}
+func (NoopRecorder) IncIssue(string, string, string, bool)                       {}
+func (NoopRecorder) SetEffectiveRenderMode(string)                               {}
+func (NoopRecorder) IncContentTransformFailure(string)                           {}
 func (NoopRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
