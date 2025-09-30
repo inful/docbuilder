@@ -17,6 +17,7 @@ type PageFacade interface {
 	AddPatch(p FrontMatterPatch)
 	ApplyPatches()
 	HadOriginalFrontMatter() bool
+	Serialize() error
 }
 
 // Ensure *Page implements PageFacade (compile-time assertion)
@@ -33,3 +34,7 @@ func (p *Page) SetOriginalFrontMatter(fm map[string]any, had bool) {
 func (p *Page) AddPatch(fp FrontMatterPatch) { p.Patches = append(p.Patches, fp) }
 func (p *Page) ApplyPatches()                { p.applyPatches() }
 func (p *Page) HadOriginalFrontMatter() bool { return p.HadFrontMatter }
+// Serialize currently a no-op for the concrete Page in the legacy pipeline path because
+// serialization is handled via the PageShim closure. Once the facade is the sole adapter,
+// this method will encapsulate the YAML + body assembly.
+func (p *Page) Serialize() error { return nil }
