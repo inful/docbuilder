@@ -120,7 +120,14 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 						continue
 					}
 				}
-				if err := rt.Transform(shim); err != nil {
+				start := time.Now()
+				err := rt.Transform(shim)
+				dur := time.Since(start)
+				success := err == nil
+				if g.recorder != nil {
+					g.recorder.ObserveContentTransformDuration(name, dur, success)
+				}
+				if err != nil {
 					if g.recorder != nil {
 						g.recorder.IncContentTransformFailure(name)
 					}

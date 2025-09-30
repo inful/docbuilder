@@ -39,6 +39,7 @@ type Recorder interface {
 	IncIssue(code string, stage string, severity string, transient bool)
 	SetEffectiveRenderMode(mode string)
 	IncContentTransformFailure(name string)
+	ObserveContentTransformDuration(name string, d time.Duration, success bool)
 }
 
 // NoopRecorder is a Recorder that does nothing (default when metrics not configured).
@@ -56,3 +57,4 @@ func (NoopRecorder) IncBuildRetryExhausted(string)                        {}
 func (NoopRecorder) IncIssue(string, string, string, bool)                {}
 func (NoopRecorder) SetEffectiveRenderMode(string)                        {}
 func (NoopRecorder) IncContentTransformFailure(string)                    {}
+func (NoopRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
