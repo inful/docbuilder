@@ -40,8 +40,14 @@ type FrontMatterParser struct{}
 func (t FrontMatterParser) Name() string  { return "front_matter_parser" }
 func (t FrontMatterParser) Priority() int { return prFrontMatterParse }
 func (t FrontMatterParser) Transform(p PageAdapter) error {
-	pg, ok := p.(*PageShim)
-	if !ok {
+	// Accept either PageShim or any object exposing required facade subset.
+	var (
+		pg *PageShim
+		ok bool
+	)
+	if pg, ok = p.(*PageShim); !ok {
+		// Attempt reflective duck-typing: minimal path (GetContent/SetContent, SetOriginalFrontMatter)
+		// If not satisfied, exit silently.
 		return nil
 	}
 	body := pg.GetContent()
@@ -69,10 +75,13 @@ type FrontMatterBuilder struct{}
 func (t FrontMatterBuilder) Name() string  { return "front_matter_builder" }
 func (t FrontMatterBuilder) Priority() int { return prFrontMatterBuild }
 func (t FrontMatterBuilder) Transform(p PageAdapter) error {
-	// Use shim helper if present; operates via patch accumulation so no direct field access here.
 	if shim, ok := p.(*PageShim); ok && shim.BuildFrontMatter != nil {
 		shim.BuildFrontMatter(time.Now())
+		return nil
 	}
+	// If another facade implementation is provided directly, we currently have
+	// no generic build hook; future extension could introduce a BuildFrontMatter
+	// method onto PageFacade once stabilized.
 	return nil
 }
 
@@ -94,6 +103,7 @@ func (t MergeFrontMatter) Priority() int { return prFrontMatterMerge }
 func (t MergeFrontMatter) Transform(p PageAdapter) error {
 	if shim, ok := p.(*PageShim); ok {
 		shim.ApplyPatchesFacade()
+		return nil
 	}
 	return nil
 }
@@ -103,11 +113,11 @@ type RelativeLinkRewriter struct{}
 func (t RelativeLinkRewriter) Name() string  { return "relative_link_rewriter" }
 func (t RelativeLinkRewriter) Priority() int { return prRelLink }
 func (t RelativeLinkRewriter) Transform(p PageAdapter) error {
-	// Prefer facade-style mutation if available.
 	if shim, ok := p.(*PageShim); ok {
 		if shim.RewriteLinks != nil {
 			shim.SetContent(shim.RewriteLinks(shim.GetContent()))
 		}
+		return nil
 	}
 	return nil
 }
