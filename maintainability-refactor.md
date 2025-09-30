@@ -59,6 +59,52 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 - [x] Observer abstraction (BuildObserver) decoupling metrics recorder (adapter bridges existing metrics)
 - [x] RepoFetcher abstraction to unify clone/update decision logic
 
+### Isolation Hardening (Forges / Themes / Transforms) [NEW]
+
+> Goal: Adding a forge, theme, or transform should be an isolated, <200 LOC change touching only its own package + tests. No unrelated file edits. The project is permanently self‑contained (no external/runtime plugins). Reflection is disallowed for core extension points; use generics where they clarify intent.
+
+Planned tasks:
+
+- [ ] Consolidate edit link logic: remove `fmcore.ResolveEditLink` and route all generation through a single `EditLinkResolver` (canonical file path normalization; eliminate `docs/docs/` duplication risk).
+- [ ] Introduce `forge/capabilities.go` with `ForgeCapabilities{SupportsEditLinks, SupportsWebhooks, SupportsTopics,...}` map.
+- [ ] Introduce `themes/capabilities.go` with `ThemeCapabilities{WantsPerPageEditLinks, SupportsSearchJSON,...}` registered per theme.
+- [ ] Replace ad hoc protected key maps & transform filter slices with a generic `Set[T comparable]` helper (`internal/util/sets`).
+- [ ] Add deterministic transform registry order golden hash test (`transform_registry_golden_test.go`).
+- [ ] Add golden test for capability maps (sorted JSON snapshot) to flag unintentional changes.
+- [ ] Path normalization test ensuring edit links never duplicate docs base segment.
+- [ ] Introduce optional `TransformMeta{Before,After}` (future) with validation (topological check) WITHOUT altering existing priorities yet.
+- [ ] CI guard test: forbid importing `reflect` outside explicit allowlist (`internal/policy/no_reflect_test.go`).
+- [ ] Documentation updates: architecture + CONTENT_TRANSFORMS referencing single resolver & capability maps.
+- [ ] Update acceptance criteria section (below) with isolation rules.
+
+Non-goals (explicitly out of scope / will not be revisited):
+
+- Dynamic plugin loading (binary/module discovery, RPC, ABI negotiation).
+- Runtime reflection for duck-typing transformers or themes.
+- External registry of forge/theme implementations.
+
+Implementation sequencing recommendation:
+
+1. Add capabilities structs & generic Set helper (no behavior change).
+2. Swap edit link injector to canonical resolver; remove old fmcore function; fix tests.
+3. Add path normalization test & update existing expectations.
+4. Introduce registry & capability golden tests.
+5. Add no-reflect guard & doc updates.
+6. (Optional) Introduce `TransformMeta` + validator.
+
+Risk Mitigation:
+
+- Each step accompanied by focused tests; golden tests ensure no silent behavioral drift.
+- Removal of `fmcore.ResolveEditLink` done only after new resolver is covered by permutation tests (GitHub / GitLab / Forgejo / Bitbucket fallback / site-level suppression / existing editURL override).
+
+Exit Criteria for Isolation Hardening:
+
+- All checkboxes above completed.
+- Adding a new forge only edits `internal/forge/<forge>.go` + `forge/capabilities.go` + tests.
+- Adding a new theme only edits `internal/hugo/themes/<theme>/` + `themes/capabilities.go` + config golden test.
+- Adding a new transform only adds one file + a test file (no edits to registry or unrelated code).
+
+
 ## Phase 3: Configuration System Refinement
 
 - [x] Split config loading into phases: load → normalize → apply defaults → validate
