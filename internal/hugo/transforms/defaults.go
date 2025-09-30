@@ -44,7 +44,7 @@ func (t FrontMatterParser) Transform(p PageAdapter) error {
 	if !ok {
 		return nil
 	}
-	body := pg.Content
+	body := pg.GetContent()
 	if strings.HasPrefix(body, "---\n") {
 		search := body[4:]
 		if idx := strings.Index(search, "\n---\n"); idx >= 0 {
@@ -58,7 +58,7 @@ func (t FrontMatterParser) Transform(p PageAdapter) error {
 					pg.SyncOriginal(fm, true)
 				}
 			}
-			pg.Content = search[idx+5:]
+			pg.SetContent(search[idx+5:])
 		}
 	}
 	return nil
@@ -69,11 +69,9 @@ type FrontMatterBuilder struct{}
 func (t FrontMatterBuilder) Name() string  { return "front_matter_builder" }
 func (t FrontMatterBuilder) Priority() int { return prFrontMatterBuild }
 func (t FrontMatterBuilder) Transform(p PageAdapter) error {
-	// Defer to existing hugo implementation via shim method if available; fallback no-op.
-	if shim, ok := p.(*PageShim); ok {
-		if shim.BuildFrontMatter != nil {
-			shim.BuildFrontMatter(time.Now())
-		}
+	// Use shim helper if present; operates via patch accumulation so no direct field access here.
+	if shim, ok := p.(*PageShim); ok && shim.BuildFrontMatter != nil {
+		shim.BuildFrontMatter(time.Now())
 	}
 	return nil
 }
@@ -83,10 +81,8 @@ type EditLinkInjector struct{}
 func (t EditLinkInjector) Name() string  { return "edit_link_injector" }
 func (t EditLinkInjector) Priority() int { return prEditLink }
 func (t EditLinkInjector) Transform(p PageAdapter) error {
-	if shim, ok := p.(*PageShim); ok {
-		if shim.InjectEditLink != nil {
-			shim.InjectEditLink()
-		}
+	if shim, ok := p.(*PageShim); ok && shim.InjectEditLink != nil {
+		shim.InjectEditLink()
 	}
 	return nil
 }
@@ -97,9 +93,7 @@ func (t MergeFrontMatter) Name() string  { return "front_matter_merge" }
 func (t MergeFrontMatter) Priority() int { return prFrontMatterMerge }
 func (t MergeFrontMatter) Transform(p PageAdapter) error {
 	if shim, ok := p.(*PageShim); ok {
-		if shim.ApplyPatches != nil {
-			shim.ApplyPatches()
-		}
+		shim.ApplyPatchesFacade()
 	}
 	return nil
 }
@@ -123,10 +117,8 @@ type Serializer struct{}
 func (t Serializer) Name() string  { return "front_matter_serialize" }
 func (t Serializer) Priority() int { return prSerialize }
 func (t Serializer) Transform(p PageAdapter) error {
-	if shim, ok := p.(*PageShim); ok {
-		if shim.Serialize != nil {
-			return shim.Serialize()
-		}
+	if shim, ok := p.(*PageShim); ok && shim.Serialize != nil {
+		return shim.Serialize()
 	}
 	return nil
 }
@@ -148,13 +140,22 @@ type PageShim struct {
 }
 
 // Facade-style minimal methods (progressive migration toward PageFacade usage in registry)
-func (p *PageShim) GetContent() string { return p.Content }
-func (p *PageShim) SetContent(s string) { p.Content = s }
+func (p *PageShim) GetContent() string                     { return p.Content }
+func (p *PageShim) SetContent(s string)                    { p.Content = s }
 func (p *PageShim) GetOriginalFrontMatter() map[string]any { return p.OriginalFrontMatter }
 func (p *PageShim) SetOriginalFrontMatter(fm map[string]any, had bool) {
 	p.OriginalFrontMatter = fm
 	p.HadFrontMatter = had
 }
+
+// Additional facade-aligned helpers (mirroring methods on real PageFacade implementation)
+func (p *PageShim) AddPatch(_ any) { /* patches added via BuildFrontMatter / InjectEditLink closures */ }
+func (p *PageShim) ApplyPatchesFacade() {
+	if p.ApplyPatches != nil {
+		p.ApplyPatches()
+	}
+}
+func (p *PageShim) HadOriginalFrontMatter() bool { return p.HadFrontMatter }
 
 func init() {
 	Register(FrontMatterParser{})
