@@ -16,9 +16,9 @@ import (
 	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"
 	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
+	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
-	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 )
 
 // Generator handles Hugo site generation
@@ -77,6 +77,9 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	tr.SetGeneratorProvider(func() any { return g })
 	return g
 }
+
+// EditLinkResolver exposes the internal resolver for transforms (read-only behavior).
+func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } { return g.editLinkResolver }
 
 // WithStateManager injects an optional state manager for persistence of discovery/build metadata.
 func (g *Generator) WithStateManager(sm interface {

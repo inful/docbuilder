@@ -3,16 +3,16 @@ package fmcore
 import (
     "strings"
     "time"
-
     "git.home.luguber.info/inful/docbuilder/internal/config"
 )
+
 // MergeMode defines how a patch applies to existing front matter.
 type MergeMode int
 
 const (
-	MergeDeep MergeMode = iota // deep merge maps; arrays follow strategy
-	MergeReplace               // replace entire target keys
-	MergeSetIfMissing          // only set keys absent in base
+	MergeDeep         MergeMode = iota // deep merge maps; arrays follow strategy
+	MergeReplace                       // replace entire target keys
+	MergeSetIfMissing                  // only set keys absent in base
 )
 
 // ArrayMergeStrategy controls how arrays are merged when both old and new are slices under Deep mode.
@@ -45,7 +45,9 @@ func ComputeBaseFrontMatter(name, repository, forge, section string, metadata ma
 		base = strings.ReplaceAll(base, "_", "-")
 		parts := strings.Split(base, "-")
 		for i, part := range parts {
-			if part == "" { continue }
+			if part == "" {
+				continue
+			}
 			parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
 		}
 		fm["title"] = strings.Join(parts, " ")
@@ -56,11 +58,21 @@ func ComputeBaseFrontMatter(name, repository, forge, section string, metadata ma
 	}
 	// Repository & Section
 	fm["repository"] = repository
-	if forge != "" { fm["forge"] = forge }
-	if section != "" { fm["section"] = section }
+	if forge != "" {
+		fm["forge"] = forge
+	}
+	if section != "" {
+		fm["section"] = section
+	}
 	// Metadata passthrough
 	for k, v := range metadata {
-		if fm[k] == nil { fm[k] = v }
+		if fm[k] == nil {
+			fm[k] = v
+		}
 	}
 	return fm
 }
+
+// ResolveEditLink reproduces per-page edit link generation (subset of original EditLinkResolver.Resolve)
+// returning empty string when an edit link should not be generated.
+// (Removed) ResolveEditLink – logic centralized in hugo.EditLinkResolver.
