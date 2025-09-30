@@ -9,8 +9,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
-	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
+	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"gopkg.in/yaml.v3"
 )
 
@@ -234,15 +234,20 @@ func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 	}
 	// Need config + resolver
 	var (
-		cfg *config.Config
-		resolver interface{ Resolve(file docs.DocFile) string }
+		cfg      *config.Config
+		resolver interface {
+			Resolve(file docs.DocFile) string
+		}
 	)
 	if generatorProvider != nil {
 		if g, ok2 := generatorProvider().(interface{ Config() *config.Config }); ok2 {
 			cfg = g.Config()
 		}
 		// Access full generator to reach centralized resolver if available
-		if gFull, ok3 := generatorProvider().(interface{ Config() *config.Config; EditLinkResolver() interface{ Resolve(docs.DocFile) string } }); ok3 {
+		if gFull, ok3 := generatorProvider().(interface {
+			Config() *config.Config
+			EditLinkResolver() interface{ Resolve(docs.DocFile) string }
+		}); ok3 {
 			resolver = gFull.EditLinkResolver()
 		}
 	}
@@ -265,9 +270,6 @@ func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 	}
 	if val == "" { // fallback path (should be rare once resolver always set)
 		// Do nothing; we intentionally removed inline fmcore.ResolveEditLink.
-		return nil
-	}
-	if val == "" {
 		return nil
 	}
 	shim.AddPatch(fmcore.FrontMatterPatch{Source: "edit_link_v2", Mode: fmcore.MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
