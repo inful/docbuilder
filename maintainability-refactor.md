@@ -65,15 +65,15 @@ A structured, actionable checklist to improve readability, reduce cognitive load
 
 Planned tasks:
 
-- [ ] Consolidate edit link logic: remove `fmcore.ResolveEditLink` and route all generation through a single `EditLinkResolver` (canonical file path normalization; eliminate `docs/docs/` duplication risk).
-- [ ] Introduce `forge/capabilities.go` with `ForgeCapabilities{SupportsEditLinks, SupportsWebhooks, SupportsTopics,...}` map.
-- [ ] Introduce `themes/capabilities.go` with `ThemeCapabilities{WantsPerPageEditLinks, SupportsSearchJSON,...}` registered per theme.
-- [ ] Replace ad hoc protected key maps & transform filter slices with a generic `Set[T comparable]` helper (`internal/util/sets`).
-- [ ] Add deterministic transform registry order golden hash test (`transform_registry_golden_test.go`).
-- [ ] Add golden test for capability maps (sorted JSON snapshot) to flag unintentional changes.
-- [ ] Path normalization test ensuring edit links never duplicate docs base segment.
+- [x] Consolidate edit link logic: remove `fmcore.ResolveEditLink` and route all generation through a single `EditLinkResolver` (canonical file path normalization; eliminate `docs/docs/` duplication risk).
+- [x] Introduce `forge/capabilities.go` with `ForgeCapabilities{SupportsEditLinks, SupportsWebhooks, SupportsTopics,...}` map.
+- [x] Introduce `themes/capabilities.go` with `ThemeCapabilities{WantsPerPageEditLinks, SupportsSearchJSON,...}` registered per theme.
+- [x] Replace ad hoc protected key maps & transform filter slices with a generic `Set[T comparable]` helper (`internal/util/sets`).
+- [x] Add deterministic transform registry order golden hash test (`transform_registry_golden_test.go`).
+- [x] Add golden test for capability maps (sorted JSON snapshot) to flag unintentional changes.
+- [x] Path normalization test ensuring edit links never duplicate docs base segment.
 - [ ] Introduce optional `TransformMeta{Before,After}` (future) with validation (topological check) WITHOUT altering existing priorities yet.
-- [ ] CI guard test: forbid importing `reflect` outside explicit allowlist (`internal/policy/no_reflect_test.go`).
+- [x] CI guard test: forbid importing `reflect` outside explicit allowlist (`internal/policy/no_reflect_test.go`).
 - [ ] Documentation updates: architecture + CONTENT_TRANSFORMS referencing single resolver & capability maps.
 - [ ] Update acceptance criteria section (below) with isolation rules.
 

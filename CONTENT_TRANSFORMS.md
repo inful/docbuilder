@@ -16,6 +16,21 @@ This document explains DocBuilder's markdown content transform architecture: how
 3. Each transformer mutates a `PageShim` (bridging to the internal `Page`).
 4. Front matter is parsed, patches are accumulated, merged, then content and merged front matter are serialized back to bytes.
 
+## Capability System
+
+**Forge Capabilities** (`internal/forge/capabilities.go`): Each forge type declares feature support flags:
+
+- `SupportsEditLinks` - whether the forge can generate web edit URLs
+- `SupportsWebhooks` - whether web hook integration is possible
+- `SupportsTopics` - whether repository topics/tags are supported
+
+**Theme Capabilities** (`internal/hugo/theme/capabilities.go`): Each theme declares UI integration flags:
+
+- `WantsPerPageEditLinks` - whether theme UI expects `editURL` front matter
+- `SupportsSearchJSON` - whether theme can consume search index JSON
+
+These capability maps are snapshotted by golden tests to detect unintentional changes. Adding a new forge or theme requires updating the corresponding capability map and golden test expectations.
+
 ## Registry & Ordering
 
 Transforms implement:
@@ -36,12 +51,14 @@ Registration occurs in `init()` via `transforms.Register(t)`. The registry produ
 |----------|--------------------------|---------|
 | 10       | front_matter_parser      | Extract existing front matter & strip it |
 | 22       | front_matter_builder_v2  | Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL) |
-| 32       | edit_link_injector_v2    | Adds `editURL` with set-if-missing semantics using resolver & theme detection |
+| 32       | edit_link_injector_v2    | Adds `editURL` with set-if-missing semantics using **centralized resolver** & **capability-gated** theme detection |
 | 40       | front_matter_merge       | Apply ordered patches into merged map |
 | 50       | relative_link_rewriter   | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
 | 90       | front_matter_serialize   | Serialize merged front matter + body |
 
 Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.
+
+**Edit Link Generation (Post-Consolidation)**: Edit links are now generated exclusively through `hugo.EditLinkResolver` which centralizes path normalization, forge type detection, and theme capability checking. The previous `fmcore.ResolveEditLink` function has been removed. This ensures consistent behavior and eliminates the risk of `docs/docs/` path duplication. Theme capability flags (`ThemeCapabilities.WantsPerPageEditLinks`) and forge capability flags (`ForgeCapabilities.SupportsEditLinks`) gate edit link injection at the transform level.
 
 Removed legacy transforms (`front_matter_builder`, `edit_link_injector`) under the greenfield policy (no backward compatibility shims maintained). If you had explicit allowlists containing them, replace with their V2 counterparts.
 
@@ -149,7 +166,10 @@ Current safety nets:
 - Parity hash tests (extended scenarios) ensure registry mirrors legacy semantics.
 - Conflict logging test locks merge outcome & conflict classification.
 - Front matter builder tests ensure time injection & edit link logic stable.
-- Ordering test ensures deterministic registry order.
+- Ordering golden test ensures deterministic registry order.
+- Capability golden tests snapshot forge and theme feature matrices.
+- No-reflection guard test prevents accidental reflection usage in transforms.
+- Path normalization tests ensure edit links handle multi-level docs bases correctly.
 
 Recommended for new transforms:
 
