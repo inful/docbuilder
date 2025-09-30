@@ -18,6 +18,7 @@ import (
 	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
+	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 )
 
 // Generator handles Hugo site generation
@@ -70,6 +71,10 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g.observer = recorderObserver{rec: g.recorder}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
+	// Provide generator accessor to transform registry (late binding without import cycle)
+	// so V2 transforms (front matter builder/edit link injector) can access configuration/time.
+	// Safe to set each construction; registry keeps last assignment.
+	tr.SetGeneratorProvider(func() any { return g })
 	return g
 }
 
