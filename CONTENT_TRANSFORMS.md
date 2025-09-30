@@ -32,18 +32,18 @@ Registration occurs in `init()` via `transforms.Register(t)`. The registry produ
 
 ### Current Priority Bands
 
-| Priority | Transform                       | Status      | Purpose |
-|----------|---------------------------------|-------------|---------|
-| 10       | front_matter_parser             | active      | Extract existing front matter & strip it |
-| 20       | front_matter_builder            | deprecated  | (Legacy) baseline FM build incl. editURL; superseded by V2 pair |
-| 22       | front_matter_builder_v2         | active      | Generate baseline fields (title/date/repository/forge/section/metadata) excluding editURL |
-| 30       | edit_link_injector              | deprecated  | (Legacy) insert editURL (Hextra) inside builder step ordering |
-| 32       | edit_link_injector_v2           | active      | Adds `editURL` with set-if-missing semantics using resolver & theme detection |
-| 40       | front_matter_merge              | active      | Apply ordered patches into merged map |
-| 50       | relative_link_rewriter          | active      | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
-| 90       | front_matter_serialize          | active      | Serialize merged front matter + body |
+| Priority | Transform                | Purpose |
+|----------|--------------------------|---------|
+| 10       | front_matter_parser      | Extract existing front matter & strip it |
+| 22       | front_matter_builder_v2  | Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL) |
+| 32       | edit_link_injector_v2    | Adds `editURL` with set-if-missing semantics using resolver & theme detection |
+| 40       | front_matter_merge       | Apply ordered patches into merged map |
+| 50       | relative_link_rewriter   | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
+| 90       | front_matter_serialize   | Serialize merged front matter + body |
 
 Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.
+
+Removed legacy transforms (`front_matter_builder`, `edit_link_injector`) under the greenfield policy (no backward compatibility shims maintained). If you had explicit allowlists containing them, replace with their V2 counterparts.
 
 Keep `90` high to leave space for future pre-serialization transforms (e.g., code fence augmentation, heading slug injection) at 60–80.
 
@@ -166,7 +166,7 @@ Recommended for new transforms:
 
 ## Migration Notes
 
-Legacy inline transformer pipeline fully removed; registry is authoritative. Deprecated no-op entries (`front_matter_builder`, `edit_link_injector`) remain temporarily registered for config compatibility; they will be removed in a future minor refactor once downstream consumers confirm migration. Replace any references to `front_matter_builder` with `front_matter_builder_v2` if you use explicit allowlists.
+Legacy inline transformer pipeline fully removed; registry is authoritative. No third‑party transformer plugin mechanism exists yet; all runtime transformer code lives in-repo. Greenfield policy: we remove obsolete paths aggressively and accept minor backward incompatibilities during pre‑1.0 to keep surface area minimal.
 
 ---
 Questions or additions? Extend this doc as the pipeline evolves.
