@@ -12,6 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"gopkg.in/yaml.v3"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
 
 // copyContentFiles copies documentation files to Hugo content directory
@@ -64,7 +65,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				// Build front matter using existing helper
 				BuildFrontMatter: func(now time.Time) {
 					built := BuildFrontMatter(FrontMatterInput{File: p.File, Existing: p.OriginalFrontMatter, Config: g.config, Now: now})
-					p.Patches = append(p.Patches, FrontMatterPatch{Source: "builder", Mode: MergeDeep, Priority: 50, Data: built})
+					p.Patches = append(p.Patches, fmcore.FrontMatterPatch{Source: "builder", Mode: MergeDeep, Priority: 50, Data: built})
 				},
 				InjectEditLink: func() {
 					if p.OriginalFrontMatter != nil {
@@ -86,7 +87,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 					if val == "" {
 						return
 					}
-					p.Patches = append(p.Patches, FrontMatterPatch{Source: "edit_link", Mode: MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
+					p.Patches = append(p.Patches, fmcore.FrontMatterPatch{Source: "edit_link", Mode: MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
 				},
 				ApplyPatches: func() { p.applyPatches() },
 				RewriteLinks: func(s string) string { return RewriteRelativeMarkdownLinks(s) },
