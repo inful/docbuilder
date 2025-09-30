@@ -17,13 +17,13 @@ import (
 
 // priority constants (gaps allow future insertion)
 const (
-    prFrontMatterParse   = 10
-    prFrontMatterMerge   = 40
-    prRelLink            = 50
-    prSerialize          = 90
-    // Active (V2) priorities
-    prFrontMatterBuildV2 = 22
-    prEditLinkV2         = 32
+	prFrontMatterParse = 10
+	prFrontMatterMerge = 40
+	prRelLink          = 50
+	prSerialize        = 90
+	// Active (V2) priorities
+	prFrontMatterBuildV2 = 22
+	prEditLinkV2         = 32
 )
 
 // generatorProvider is set by hugo package prior to running registry pipeline (late binding to avoid import cycle).
@@ -114,16 +114,16 @@ func (t Serializer) Transform(p PageAdapter) error {
 
 // PageShim mirrors the subset of hugo.Page needed for registry-based transformers; constructed in hugo package.
 type PageShim struct {
-    FilePath            string
-    Doc                 docs.DocFile
-    Content             string
-    OriginalFrontMatter map[string]any
-    HadFrontMatter      bool
-    Patches             []fmcore.FrontMatterPatch
-    ApplyPatches        func()
-    RewriteLinks        func(string) string
-    SerializeFn         func() error
-    SyncOriginal        func(fm map[string]any, had bool)
+	FilePath            string
+	Doc                 docs.DocFile
+	Content             string
+	OriginalFrontMatter map[string]any
+	HadFrontMatter      bool
+	Patches             []fmcore.FrontMatterPatch
+	ApplyPatches        func()
+	RewriteLinks        func(string) string
+	SerializeFn         func() error
+	SyncOriginal        func(fm map[string]any, had bool)
 	BackingAddPatch     func(fmcore.FrontMatterPatch) // optional: forwards patch to underlying concrete Page for final merge
 }
 
@@ -137,8 +137,17 @@ func (p *PageShim) SetOriginalFrontMatter(fm map[string]any, had bool) {
 }
 
 // Additional facade-aligned helpers (mirroring methods on real PageFacade implementation)
-func (p *PageShim) AddPatch(fp fmcore.FrontMatterPatch) { p.Patches = append(p.Patches, fp); if p.BackingAddPatch != nil { p.BackingAddPatch(fp) } }
-func (p *PageShim) ApplyPatchesFacade() { if p.ApplyPatches != nil { p.ApplyPatches() } }
+func (p *PageShim) AddPatch(fp fmcore.FrontMatterPatch) {
+	p.Patches = append(p.Patches, fp)
+	if p.BackingAddPatch != nil {
+		p.BackingAddPatch(fp)
+	}
+}
+func (p *PageShim) ApplyPatchesFacade() {
+	if p.ApplyPatches != nil {
+		p.ApplyPatches()
+	}
+}
 func (p *PageShim) HadOriginalFrontMatter() bool { return p.HadFrontMatter }
 func (p *PageShim) Serialize() error {
 	if p.SerializeFn != nil {
@@ -148,13 +157,13 @@ func (p *PageShim) Serialize() error {
 }
 
 func init() {
-    Register(FrontMatterParser{})
-    Register(FrontMatterBuilderV2{})
-    Register(EditLinkInjectorV2{})
-    Register(MergeFrontMatter{})
-    Register(RelativeLinkRewriter{})
-    Register(Serializer{})
-    _ = fmt.Sprintf
+	Register(FrontMatterParser{})
+	Register(FrontMatterBuilderV2{})
+	Register(EditLinkInjectorV2{})
+	Register(MergeFrontMatter{})
+	Register(RelativeLinkRewriter{})
+	Register(Serializer{})
+	_ = fmt.Sprintf
 }
 
 // FrontMatterBuilderV2 builds base front matter (without editURL) and adds a patch.
@@ -164,8 +173,12 @@ func (t FrontMatterBuilderV2) Name() string  { return "front_matter_builder_v2" 
 func (t FrontMatterBuilderV2) Priority() int { return prFrontMatterBuildV2 }
 func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
 	shim, ok := p.(*PageShim)
-	if !ok { return nil }
-	if shim == nil { return nil }
+	if !ok {
+		return nil
+	}
+	if shim == nil {
+		return nil
+	}
 	// Acquire generator for config & current time
 	var cfg *config.Config
 	if generatorProvider != nil {
@@ -174,12 +187,16 @@ func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
 		}
 	}
 	existing := shim.OriginalFrontMatter
-	if existing == nil { existing = map[string]any{} }
+	if existing == nil {
+		existing = map[string]any{}
+	}
 	// Convert metadata map[string]string -> map[string]any
 	var mdAny map[string]any
 	if shim.Doc.Metadata != nil {
 		mdAny = make(map[string]any, len(shim.Doc.Metadata))
-		for k, v := range shim.Doc.Metadata { mdAny[k] = v }
+		for k, v := range shim.Doc.Metadata {
+			mdAny[k] = v
+		}
 	} else {
 		mdAny = map[string]any{}
 	}
@@ -196,25 +213,37 @@ func (t EditLinkInjectorV2) Name() string  { return "edit_link_injector_v2" }
 func (t EditLinkInjectorV2) Priority() int { return prEditLinkV2 }
 func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 	shim, ok := p.(*PageShim)
-	if !ok || shim == nil { return nil }
+	if !ok || shim == nil {
+		return nil
+	}
 	// Skip if already present in original
 	if shim.OriginalFrontMatter != nil {
-		if _, exists := shim.OriginalFrontMatter["editURL"]; exists { return nil }
+		if _, exists := shim.OriginalFrontMatter["editURL"]; exists {
+			return nil
+		}
 	}
 	// Skip if any prior patch already added editURL
 	for _, patch := range shim.Patches {
-	    if patch.Data != nil {
-	        if _, exists := patch.Data["editURL"]; exists { return nil }
-	    }
+		if patch.Data != nil {
+			if _, exists := patch.Data["editURL"]; exists {
+				return nil
+			}
+		}
 	}
 	// Need config + resolver
 	var cfg *config.Config
 	if generatorProvider != nil {
-		if g, ok2 := generatorProvider().(interface{ Config() *config.Config }); ok2 { cfg = g.Config() }
+		if g, ok2 := generatorProvider().(interface{ Config() *config.Config }); ok2 {
+			cfg = g.Config()
+		}
 	}
-	if cfg == nil || cfg.Hugo.ThemeType() != config.ThemeHextra { return nil }
+	if cfg == nil || cfg.Hugo.ThemeType() != config.ThemeHextra {
+		return nil
+	}
 	val := fmcore.ResolveEditLink(shim.Doc, cfg)
-	if val == "" { return nil }
+	if val == "" {
+		return nil
+	}
 	shim.AddPatch(fmcore.FrontMatterPatch{Source: "edit_link_v2", Mode: fmcore.MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
 	return nil
 }
