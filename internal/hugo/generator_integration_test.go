@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -82,13 +81,4 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	}
 }
 
-// Guard against accidental reliance on real time by verifying that BuildFrontMatter uses injected time.
-func TestBuildFrontMatter_TimeInjection(t *testing.T) {
-	ts := time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC)
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	file := docs.DocFile{Repository: "repo", Name: "page"}
-	fm := BuildFrontMatter(FrontMatterInput{File: file, Config: cfg, Now: ts})
-	if v, _ := fm["date"].(string); !strings.Contains(v, "2030-01-02") {
-		t.Fatalf("expected injected date to include 2030-01-02, got %v", v)
-	}
-}
+// Removed BuildFrontMatter legacy path; date injection now verified indirectly via V2 builder tests.
