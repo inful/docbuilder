@@ -1,5 +1,9 @@
 package hugo
 
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
+)
+
 // PageFacade represents the minimal contract content transforms require.
 // It allows future decoupling of the concrete Page struct from transformer
 // consumers and enables alternate page representations (e.g. streaming, lazy-loaded).
@@ -14,7 +18,7 @@ type PageFacade interface {
 	SetContent(string)
 	GetOriginalFrontMatter() map[string]any
 	SetOriginalFrontMatter(map[string]any, bool)
-	AddPatch(p FrontMatterPatch)
+	AddPatch(p fmcore.FrontMatterPatch)
 	ApplyPatches()
 	HadOriginalFrontMatter() bool
 	Serialize() error
@@ -31,7 +35,7 @@ func (p *Page) SetOriginalFrontMatter(fm map[string]any, had bool) {
 	p.OriginalFrontMatter = fm
 	p.HadFrontMatter = had
 }
-func (p *Page) AddPatch(fp FrontMatterPatch) { p.Patches = append(p.Patches, fp) }
+func (p *Page) AddPatch(fp fmcore.FrontMatterPatch) { p.Patches = append(p.Patches, fp) }
 func (p *Page) ApplyPatches()                { p.applyPatches() }
 func (p *Page) HadOriginalFrontMatter() bool { return p.HadFrontMatter }
 

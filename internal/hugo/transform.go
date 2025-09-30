@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
 
 // Page is the in-memory representation of a markdown document being transformed.
@@ -15,27 +16,23 @@ type Page struct {
 	Content             string         // Body without original front matter
 	HadFrontMatter      bool           // Original file had front matter
 	OriginalFrontMatter map[string]any // Parsed original FM (immutable base)
-	Patches             []FrontMatterPatch
+	Patches             []fmcore.FrontMatterPatch
 	MergedFrontMatter   map[string]any        // Result after merge step
 	Conflicts           []FrontMatterConflict // Recorded conflicts during merge
 }
 
-// MergeMode defines how a patch applies to existing front matter.
-type MergeMode int
-
+// Re-export enums for backward compatibility (internal only). Prefer fmcore.* directly in new code.
+type MergeMode = fmcore.MergeMode
 const (
-	MergeDeep         MergeMode = iota // deep merge maps; arrays follow strategy (initially replace)
-	MergeReplace                       // replace entire target keys
-	MergeSetIfMissing                  // only set keys absent in base
+	MergeDeep        = fmcore.MergeDeep
+	MergeReplace     = fmcore.MergeReplace
+	MergeSetIfMissing = fmcore.MergeSetIfMissing
 )
-
-// ArrayMergeStrategy controls how arrays are merged when both old and new are slices under Deep mode.
-type ArrayMergeStrategy int
-
+type ArrayMergeStrategy = fmcore.ArrayMergeStrategy
 const (
-	ArrayReplace ArrayMergeStrategy = iota
-	ArrayUnion
-	ArrayAppend
+	ArrayReplace = fmcore.ArrayReplace
+	ArrayUnion   = fmcore.ArrayUnion
+	ArrayAppend  = fmcore.ArrayAppend
 )
 
 // effectiveArrayStrategy resolves the actual strategy considering defaults.
@@ -61,13 +58,8 @@ func effectiveArrayStrategy(patchStrategy ArrayMergeStrategy, key string, hasExi
 }
 
 // FrontMatterPatch represents a unit of front matter changes from a transformer.
-type FrontMatterPatch struct {
-	Source        string
-	Mode          MergeMode
-	Priority      int                // higher applied later
-	Data          map[string]any     // patch data
-	ArrayStrategy ArrayMergeStrategy // optional override for all arrays in this patch (0 value = replace)
-}
+// FrontMatterPatch preserved for existing references (type alias)
+type FrontMatterPatch = fmcore.FrontMatterPatch
 
 // FrontMatterConflict describes merge decisions for auditing.
 type FrontMatterConflict struct {
