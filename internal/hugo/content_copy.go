@@ -10,16 +10,17 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"gopkg.in/yaml.v3"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
 	regs := tr.List()
 	if len(regs) == 0 {
-		return fmt.Errorf("no content transforms registered")
+		return fmt.Errorf("%w: no transforms available", herrors.ErrContentTransformFailed)
 	}
 	for _, file := range docFiles {
 		select {
@@ -51,51 +52,17 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			// Build adapter shim (two-phase to allow Serialize closure to reference shim)
 			shim := &tr.PageShim{
 				FilePath:            file.RelativePath,
-				DocFile:             func() struct{ Repository, Forge, Section, Name string; Metadata map[string]any } {
-					md := make(map[string]any, len(file.Metadata))
-					for k, v := range file.Metadata { md[k] = v }
-					return struct{ Repository, Forge, Section, Name string; Metadata map[string]any }{Repository: file.Repository, Forge: file.Forge, Section: file.Section, Name: file.Name, Metadata: md}
-				}(),
+				Doc:                 file,
 				Content:             p.Content,
 				OriginalFrontMatter: p.OriginalFrontMatter,
 				HadFrontMatter:      p.HadFrontMatter,
-				// SyncOriginal allows the parser (registry transform) to push parsed front matter
-				// into the real Page before subsequent transforms (like the builder) run. Without
-				// this, builder sees nil Existing FM and overwrites user-provided keys (bug found
-				// by TestPipeline_Order losing 'custom: val').
 				SyncOriginal: func(fm map[string]any, had bool) {
 					p.OriginalFrontMatter = fm
 					p.HadFrontMatter = had
 				},
-				// Build front matter using existing helper
-				BuildFrontMatter: func(now time.Time) {
-					built := BuildFrontMatter(FrontMatterInput{File: p.File, Existing: p.OriginalFrontMatter, Config: g.config, Now: now})
-					p.Patches = append(p.Patches, fmcore.FrontMatterPatch{Source: "builder", Mode: MergeDeep, Priority: 50, Data: built})
-				},
-				InjectEditLink: func() {
-					if p.OriginalFrontMatter != nil {
-						if _, ok := p.OriginalFrontMatter["editURL"]; ok {
-							return
-						}
-					}
-					for _, patch := range p.Patches {
-						if patch.Data != nil {
-							if _, ok := patch.Data["editURL"]; ok {
-								return
-							}
-						}
-					}
-					if g.editLinkResolver == nil {
-						return
-					}
-					val := g.editLinkResolver.Resolve(p.File)
-					if val == "" {
-						return
-					}
-					p.Patches = append(p.Patches, fmcore.FrontMatterPatch{Source: "edit_link", Mode: MergeSetIfMissing, Priority: 60, Data: map[string]any{"editURL": val}})
-				},
-				ApplyPatches: func() { p.applyPatches() },
-				RewriteLinks: func(s string) string { return RewriteRelativeMarkdownLinks(s) },
+				BackingAddPatch: func(pt fmcore.FrontMatterPatch) { p.Patches = append(p.Patches, pt) },
+				ApplyPatches:    func() { p.applyPatches() },
+				RewriteLinks:    func(s string) string { return RewriteRelativeMarkdownLinks(s) },
 			}
 			shim.SerializeFn = func() error {
 				if p.MergedFrontMatter == nil {
@@ -137,7 +104,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 					if g.recorder != nil {
 						g.recorder.IncContentTransformFailure(name)
 					}
-					return fmt.Errorf("transform %s failed for %s: %w", rt.Name(), file.Path, err)
+					return fmt.Errorf("%w: %s failed for %s: %v", herrors.ErrContentTransformFailed, rt.Name(), file.Path, err)
 				}
 			}
 			// Sync back mutated fields
@@ -150,10 +117,10 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		_ = sha256.Sum256(p.Raw)
 		outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-			return fmt.Errorf("failed to create directory for %s: %w", outputPath, err)
+			return fmt.Errorf("%w: failed to create directory for %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
 		}
 		if err := os.WriteFile(outputPath, p.Raw, 0644); err != nil {
-			return fmt.Errorf("failed to write file %s: %w", outputPath, err)
+			return fmt.Errorf("%w: failed to write file %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
 		}
 		slog.Debug("Copied content file", slog.String("source", file.RelativePath), slog.String("destination", file.GetHugoPath()))
 		// We cannot directly access BuildReport here cleanly without refactor; use optional callback if set.

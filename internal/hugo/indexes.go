@@ -13,6 +13,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
 )
@@ -43,7 +44,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	}
 	fmData, err := yaml.Marshal(frontMatter)
 	if err != nil {
-		return fmt.Errorf("failed to marshal front matter: %w", err)
+		return fmt.Errorf("%w: %v", herrors.ErrIndexGenerationFailed, err)
 	}
 	// File-based template overrides
 	tplRaw := g.mustIndexTemplate("main")
