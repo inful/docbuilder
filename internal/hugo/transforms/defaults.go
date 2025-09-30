@@ -127,8 +127,12 @@ type Serializer struct{}
 func (t Serializer) Name() string  { return "front_matter_serialize" }
 func (t Serializer) Priority() int { return prSerialize }
 func (t Serializer) Transform(p PageAdapter) error {
-	if shim, ok := p.(*PageShim); ok && shim.Serialize != nil {
+	if shim, ok := p.(*PageShim); ok {
 		return shim.Serialize()
+	}
+	// If a future direct PageFacade implementation is passed, expect it to implement Serialize.
+	if f, ok := p.(interface{ Serialize() error }); ok {
+		return f.Serialize()
 	}
 	return nil
 }
@@ -145,7 +149,7 @@ type PageShim struct {
 	InjectEditLink   func()
 	ApplyPatches     func()
 	RewriteLinks     func(string) string
-	Serialize        func() error
+	SerializeFn      func() error
 	SyncOriginal     func(fm map[string]any, had bool) // allows parser to propagate parsed FM back to real Page
 }
 
@@ -166,6 +170,12 @@ func (p *PageShim) ApplyPatchesFacade() {
 	}
 }
 func (p *PageShim) HadOriginalFrontMatter() bool { return p.HadFrontMatter }
+func (p *PageShim) Serialize() error {
+	if p.SerializeFn != nil {
+		return p.SerializeFn()
+	}
+	return nil
+}
 
 func init() {
 	Register(FrontMatterParser{})

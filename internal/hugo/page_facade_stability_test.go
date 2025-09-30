@@ -20,6 +20,7 @@ func TestPageFacadeStability(t *testing.T) {
 		"GetContent",
 		"GetOriginalFrontMatter",
 		"HadOriginalFrontMatter",
+		"Serialize",
 		"SetContent",
 		"SetOriginalFrontMatter",
 	}
@@ -27,7 +28,7 @@ func TestPageFacadeStability(t *testing.T) {
 		// Provide diff-style output
 		// NOTE: Keep message concise for CI logs.
 		// Extra or missing methods indicate a breaking change; update this test intentionally when expanding the facade.
-		// Current: expected 7 methods.
+		// Current: expected 8 methods (Serialize added intentionally – update docs if changing).
 		// Received: methods slice below.
 		// Action: Either revert unintended addition/removal or update expected list + docs.
 		//

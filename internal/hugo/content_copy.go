@@ -91,7 +91,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				ApplyPatches: func() { p.applyPatches() },
 				RewriteLinks: func(s string) string { return RewriteRelativeMarkdownLinks(s) },
 			}
-			shim.Serialize = func() error {
+			shim.SerializeFn = func() error {
 				if p.MergedFrontMatter == nil {
 					p.applyPatches()
 				}
