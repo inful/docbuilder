@@ -124,7 +124,7 @@ Status Delta (2025-09-30): RepoFetcher integrated; normalization modular; `confi
 - [x] Introduce typed git errors (AuthError, NotFoundError, UnsupportedProtocolError, RemoteDivergedError, RateLimitError, NetworkTimeoutError)
 - [x] Return typed errors from git client instead of string parsing
 - [x] Map typed errors to IssueCodes via lookup table (prioritized over legacy heuristics)
-- [~] Replace discovery/generation generic errors with typed wrappers (git layer complete; discovery/generation still pending)
+- [x] Replace discovery/generation generic errors with typed wrappers (discovery and generation stages now use sentinel errors)
 - [x] Add tests asserting error → issue code matrix stability (typed + heuristic fallback coverage)
 
 
