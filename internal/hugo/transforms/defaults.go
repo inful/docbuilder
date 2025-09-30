@@ -163,7 +163,8 @@ func (p *PageShim) SetOriginalFrontMatter(fm map[string]any, had bool) {
 }
 
 // Additional facade-aligned helpers (mirroring methods on real PageFacade implementation)
-func (p *PageShim) AddPatch(_ any) { /* patches added via BuildFrontMatter / InjectEditLink closures */ }
+func (p *PageShim) AddPatch(_ any) { /* patches added via BuildFrontMatter / InjectEditLink closures */
+}
 func (p *PageShim) ApplyPatchesFacade() {
 	if p.ApplyPatches != nil {
 		p.ApplyPatches()
