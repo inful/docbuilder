@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 
 - Legacy `Page.FrontMatter` field replaced by patch-based system (`OriginalFrontMatter`, `Patches`, `MergedFrontMatter`).
+- Legacy front matter builder & edit link injector closures (`BuildFrontMatter`, `InjectEditLink`) fully removed; replaced by V2 transform pair (`front_matter_builder_v2`, `edit_link_injector_v2`).
 - Deprecated V2 aliases: `V2Config`, `InitV2`, `LoadV2`, `IsV2Config` removed; use unified `Config` API (`config.Load`, `config.Init`).
 - Outcome duplication eliminated (`OutcomeT`); single typed `BuildOutcome` retained on `BuildReport`.
 - Legacy theme registry & prometheus resolver stubs fully removed.
