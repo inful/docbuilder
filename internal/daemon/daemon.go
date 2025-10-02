@@ -338,6 +338,11 @@ func (d *Daemon) GetQueueLength() int {
 	return int(atomic.LoadInt32(&d.queueLength))
 }
 
+// GetStartTime returns the daemon start time
+func (d *Daemon) GetStartTime() time.Time {
+	return d.startTime
+}
+
 // TriggerDiscovery manually triggers repository discovery
 func (d *Daemon) TriggerDiscovery() string {
 	if d.GetStatus() != StatusRunning {

@@ -49,7 +49,7 @@ func List() []Transformer {
 // BuildPipeline constructs a concrete execution slice filtering by optional allowlist.
 func BuildPipeline(include map[string]struct{}) ([]Transformer, error) {
 	all := List()
-	if include == nil || len(include) == 0 {
+	if len(include) == 0 {
 		return all, nil
 	}
 	var out []Transformer

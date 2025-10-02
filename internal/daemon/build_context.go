@@ -3,33 +3,32 @@ package daemon
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
 // buildContext encapsulates all mutable state for a single build execution.
 // It enables a staged pipeline where each stage can access shared information
 // without repeatedly recomputing derivations from the input job metadata.
 type buildContext struct {
-	ctx        context.Context
-	job        *BuildJob
-	cfg        *cfg.Config      // defensive copy
-	repos      []cfg.Repository // repositories to process (possibly filtered later for partial builds)
-	outDir     string
-	workspace  string
-	generator  *hugo.Generator
-	stateMgr   interface{} // loosely typed; narrowed via on-demand interface assertions
-	skipReport *hugo.BuildReport
-	deltaPlan  *DeltaPlan
+	ctx                     context.Context
+	job                     *BuildJob
+	cfg                     *cfg.Config      // defensive copy
+	repos                   []cfg.Repository // repositories to process (possibly filtered later for partial builds)
+	outDir                  string
+	workspace               string
+	generator               *hugo.Generator
+	stateMgr                services.StateManager // properly typed state manager interface
+	skipReport              *hugo.BuildReport
+	deltaPlan               *DeltaPlan
+	postPersistOrchestrator PostPersistOrchestrator
 }
 
 func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) {
@@ -59,8 +58,14 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 	if outDir == "" {
 		outDir = "./site"
 	}
+	// Create generator and extract state manager with proper type assertion
 	gen := hugo.NewGenerator(&cpy, outDir)
+	var stateMgr services.StateManager
 	if smAny, ok := job.Metadata["state_manager"]; ok {
+		if sm, ok2 := smAny.(services.StateManager); ok2 {
+			stateMgr = sm
+		}
+		// Also update generator if state manager supports document operations
 		if sm, ok2 := smAny.(interface {
 			SetRepoDocumentCount(string, int)
 			SetRepoDocFilesHash(string, string)
@@ -68,7 +73,17 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 			gen = gen.WithStateManager(sm)
 		}
 	}
-	return &buildContext{ctx: ctx, job: job, cfg: &cpy, repos: repos, outDir: outDir, generator: gen, stateMgr: job.Metadata["state_manager"]}, nil
+
+	return &buildContext{
+		ctx:                     ctx,
+		job:                     job,
+		cfg:                     &cpy,
+		repos:                   repos,
+		outDir:                  outDir,
+		generator:               gen,
+		stateMgr:                stateMgr,
+		postPersistOrchestrator: NewPostPersistOrchestrator(),
+	}, nil
 }
 
 // stageEarlySkip executes the SkipEvaluator prior to any destructive filesystem actions.
@@ -265,213 +280,22 @@ func (bc *buildContext) stageInjectLiveReload() error {
 
 // stagePostPersist updates metrics and state persistence after generation or skip.
 func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error) error {
-	if report == nil {
-		return nil
+	// Ensure orchestrator is initialized
+	if bc.postPersistOrchestrator == nil {
+		bc.postPersistOrchestrator = NewPostPersistOrchestrator()
 	}
-	// Attach delta metadata (if evaluated) before other persistence for external observability.
-	if bc.deltaPlan != nil {
-		if bc.deltaPlan.Decision == DeltaDecisionPartial {
-			report.DeltaDecision = "partial"
-			report.DeltaChangedRepos = append([]string{}, bc.deltaPlan.ChangedRepos...)
-		} else {
-			report.DeltaDecision = "full"
-		}
-		// Attach per-repo reasons if provided via deltaPlan extension (future-proof: expect optional map in job metadata)
-		if report.DeltaRepoReasons == nil {
-			report.DeltaRepoReasons = map[string]string{}
-		}
-		if m, ok := bc.job.Metadata["delta_repo_reasons"].(map[string]string); ok {
-			for k, v := range m {
-				report.DeltaRepoReasons[k] = v
-			}
-		}
+
+	context := &PostPersistContext{
+		DeltaPlan:  bc.deltaPlan,
+		Job:        bc.job,
+		StateMgr:   bc.stateMgr,
+		Workspace:  bc.workspace,
+		OutDir:     bc.outDir,
+		Config:     bc.cfg,
+		Generator:  bc.generator,
+		Repos:      bc.repos,
+		SkipReport: bc.skipReport,
 	}
-	// Recompute global doc_files_hash for partial builds by merging unchanged + changed repo path lists.
-	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
-		// Support interfaces for path list read/update & per-repo hash update.
-		getter, gOK := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string })
-		setter, sOK := bc.stateMgr.(interface{ SetRepoDocFilePaths(string, []string) })
-		hasher, hOK := bc.stateMgr.(interface{ SetRepoDocFilesHash(string, string) })
-		if gOK {
-			changedSet := map[string]struct{}{}
-			for _, u := range bc.deltaPlan.ChangedRepos {
-				changedSet[u] = struct{}{}
-			}
-			orig, _ := bc.job.Metadata["repositories"].([]cfg.Repository)
-			allPaths := make([]string, 0, 2048)
-			deletionsDetected := 0
-			for _, r := range orig {
-				paths := getter.GetRepoDocFilePaths(r.URL)
-				// For unchanged repos, optionally detect deletions by scanning workspace clone (if available)
-				if _, isChanged := changedSet[r.URL]; !isChanged && bc.workspace != "" && bc.cfg != nil && bc.cfg.Build.DetectDeletions {
-					repoRoot := filepath.Join(bc.workspace, r.Name)
-					if fi, err := os.Stat(repoRoot); err == nil && fi.IsDir() {
-						fresh := make([]string, 0, len(paths))
-						// Scan doc roots for current files, mirroring quick hash logic
-						docRoots := []string{"docs", "documentation"}
-						for _, dr := range docRoots {
-							base := filepath.Join(repoRoot, dr)
-							if sfi, serr := os.Stat(base); serr != nil || !sfi.IsDir() {
-								continue
-							}
-							_ = filepath.WalkDir(base, func(p string, d os.DirEntry, werr error) error {
-								if werr != nil || d == nil || d.IsDir() {
-									return nil
-								}
-								ln := strings.ToLower(d.Name())
-								if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
-									if rel, rerr := filepath.Rel(repoRoot, p); rerr == nil {
-										fresh = append(fresh, filepath.ToSlash(filepath.Join(r.Name, rel)))
-									}
-								}
-								return nil
-							})
-						}
-						// Compare with persisted list; if different (including zero-doc case), persist new list & hash.
-						sort.Strings(fresh)
-						update := false
-						if len(fresh) != len(paths) {
-							update = true
-						} else {
-							for i := range fresh {
-								if i >= len(paths) || fresh[i] != paths[i] {
-									update = true
-									break
-								}
-							}
-						}
-						if update {
-							if len(fresh) < len(paths) {
-								deletionsDetected += len(paths) - len(fresh)
-							}
-							if sOK {
-								setter.SetRepoDocFilePaths(r.URL, fresh)
-							}
-							if hOK {
-								hh := sha256.New()
-								for _, p := range fresh {
-									hh.Write([]byte(p))
-									hh.Write([]byte{0})
-								}
-								hasher.SetRepoDocFilesHash(r.URL, hex.EncodeToString(hh.Sum(nil)))
-							}
-							paths = fresh
-						}
-					}
-				}
-				if len(paths) > 0 {
-					allPaths = append(allPaths, paths...)
-				}
-			}
-			if len(allPaths) > 0 {
-				sort.Strings(allPaths)
-				h := sha256.New()
-				for _, p := range allPaths {
-					h.Write([]byte(p))
-					h.Write([]byte{0})
-				}
-				report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
-			}
-			if deletionsDetected > 0 {
-				if mc, ok := bc.job.Metadata["metrics_collector"].(*MetricsCollector); ok && mc != nil {
-					for i := 0; i < deletionsDetected; i++ {
-						mc.IncrementCounter("doc_deletions_detected")
-					}
-				}
-			}
-		}
-	}
-	// Repo build counters & document counts
-	if sm, ok := bc.stateMgr.(interface {
-		IncrementRepoBuild(string, bool)
-		SetRepoDocumentCount(string, int)
-	}); ok && sm != nil && bc.skipReport == nil {
-		success := genErr == nil
-		contentRoot := filepath.Join(bc.outDir, "content")
-		countMarkdown := func(root string) int {
-			cnt := 0
-			_ = filepath.WalkDir(root, func(p string, d os.DirEntry, werr error) error {
-				if werr != nil || d == nil || d.IsDir() {
-					return nil
-				}
-				name := strings.ToLower(d.Name())
-				if strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".markdown") {
-					ln := name
-					if ln == "readme.md" || ln == "license.md" || ln == "contributing.md" || ln == "changelog.md" {
-						return nil
-					}
-					cnt++
-				}
-				return nil
-			})
-			return cnt
-		}
-		perRepoDocCounts := make(map[string]int, len(bc.repos))
-		for _, r := range bc.repos {
-			repoPath := filepath.Join(contentRoot, r.Name)
-			if fi, err := os.Stat(repoPath); err == nil && fi.IsDir() {
-				perRepoDocCounts[r.URL] = countMarkdown(repoPath)
-				continue
-			}
-			entries, derr := os.ReadDir(contentRoot)
-			if derr == nil {
-				found := false
-				for _, e := range entries {
-					if !e.IsDir() {
-						continue
-					}
-					nsRepoPath := filepath.Join(contentRoot, e.Name(), r.Name)
-					if fi2, err2 := os.Stat(nsRepoPath); err2 == nil && fi2.IsDir() {
-						perRepoDocCounts[r.URL] = countMarkdown(nsRepoPath)
-						found = true
-						break
-					}
-				}
-				if !found {
-					perRepoDocCounts[r.URL] = 0
-				}
-			} else {
-				perRepoDocCounts[r.URL] = 0
-			}
-		}
-		for _, r := range bc.repos {
-			sm.IncrementRepoBuild(r.URL, success)
-			if c, okc := perRepoDocCounts[r.URL]; okc {
-				sm.SetRepoDocumentCount(r.URL, c)
-			}
-		}
-	}
-	// Persist commit heads + config hash + report checksum + global doc hash
-	if sm, ok := bc.stateMgr.(interface {
-		SetRepoLastCommit(string, string, string, string)
-		SetLastConfigHash(string)
-		SetLastReportChecksum(string)
-		SetLastGlobalDocFilesHash(string)
-	}); ok && sm != nil && genErr == nil {
-		for _, r := range bc.repos {
-			repoPath := filepath.Join(bc.workspace, r.Name)
-			if head, herr := hugoReadRepoHead(repoPath); herr == nil && head != "" {
-				sm.SetRepoLastCommit(r.URL, r.Name, r.Branch, head)
-			}
-		}
-		if h := bc.generator.ComputeConfigHashForPersistence(); h != "" {
-			sm.SetLastConfigHash(h)
-		}
-		if brData, rerr := os.ReadFile(filepath.Join(bc.outDir, "build-report.json")); rerr == nil {
-			sum := sha256.Sum256(brData)
-			sm.SetLastReportChecksum(hex.EncodeToString(sum[:]))
-		}
-		if report.DocFilesHash != "" {
-			sm.SetLastGlobalDocFilesHash(report.DocFilesHash)
-		}
-	}
-	// LiveReload broadcast: if hub provided via job metadata under key "live_reload_hub", emit hash after persistence
-	if report.DocFilesHash != "" { // report already non-nil earlier
-		if hubAny, ok := bc.job.Metadata["live_reload_hub"]; ok {
-			if hub, ok2 := hubAny.(*LiveReloadHub); ok2 && hub != nil {
-				hub.Broadcast(report.DocFilesHash)
-			}
-		}
-	}
-	return nil
+
+	return bc.postPersistOrchestrator.ExecutePostPersistStage(report, genErr, context)
 }

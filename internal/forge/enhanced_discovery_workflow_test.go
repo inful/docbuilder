@@ -63,7 +63,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 			t.Error("Expected to find organizations but got none")
 		}
 
-		t.Logf("✓ Enhanced forge discovery service complete - found %d repos, %d orgs", 
+		t.Logf("✓ Enhanced forge discovery service complete - found %d repos, %d orgs",
 			len(result.Repositories), len(result.Organizations))
 	})
 
@@ -143,10 +143,11 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Test auth failure scenario
 		github.WithAuthFailure()
-		result, err := discovery.DiscoverAll(ctx)
+		result, _ := discovery.DiscoverAll(ctx)
 		// Should handle partial failures gracefully
 		if result == nil {
 			t.Error("Expected discovery result even with partial failures")
+			return
 		}
 
 		// Check that errors are recorded
@@ -156,7 +157,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Test full recovery
 		github.ClearFailures()
-		result, err = discovery.DiscoverAll(ctx)
+		_, err := discovery.DiscoverAll(ctx)
 		if err != nil {
 			t.Errorf("Discovery should succeed after clearing all failures: %v", err)
 		}
@@ -266,9 +267,9 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 // Helper function to avoid conflicts
 func stringContains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) && 
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || 
-		 (len(s) > len(substr) && hasSubstring(s, substr)))))
+	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) &&
+		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
+			(len(s) > len(substr) && hasSubstring(s, substr)))))
 }
 
 func hasSubstring(s, substr string) bool {

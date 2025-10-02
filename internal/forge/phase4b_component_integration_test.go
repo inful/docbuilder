@@ -110,12 +110,10 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		}
 
 		// Test filtering integration
-		if discoveryConfig != nil {
-			t.Logf("✓ Applied filtering: required=%v, include=%v, exclude=%v",
-				discoveryConfig.RequiredPaths,
-				discoveryConfig.IncludePatterns,
-				discoveryConfig.ExcludePatterns)
-		}
+		t.Logf("✓ Applied filtering: required=%v, include=%v, exclude=%v",
+			discoveryConfig.RequiredPaths,
+			discoveryConfig.IncludePatterns,
+			discoveryConfig.ExcludePatterns)
 
 		t.Log("✓ Docs discovery component integration testing complete")
 	})

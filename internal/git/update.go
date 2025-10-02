@@ -201,9 +201,7 @@ func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		for _, p := range commit.ParentHashes {
-			queue = append(queue, p)
-		}
+		queue = append(queue, commit.ParentHashes...)
 	}
 	return false, nil
 }

@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"path/filepath"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -49,6 +51,7 @@ type BuildCmd struct {
 // InitCmd implements the 'init' command.
 type InitCmd struct {
 	Force bool `help:"Overwrite existing configuration file"`
+	Output string `help:"Output directory for generated config file" name:"output" short:"o"`
 }
 
 // DiscoverCmd implements the 'discover' command.
@@ -97,6 +100,11 @@ func (b *BuildCmd) Run(globals *Global, root *CLI) error {
 }
 
 func (i *InitCmd) Run(globals *Global, root *CLI) error {
+	// If the user specified an output directory, place the config there as "docbuilder.yaml".
+	if i.Output != "" {
+		cfgPath := filepath.Join(i.Output, "docbuilder.yaml")
+		return runInit(cfgPath, i.Force)
+	}
 	return runInit(root.Config, i.Force)
 }
 
@@ -137,6 +145,9 @@ func main() {
 }
 
 func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bool) error {
+	// Provide friendly user-facing messages on stdout for CLI integration tests.
+	fmt.Println("Starting DocBuilder build")
+	
 	// Set logging level
 	level := slog.LevelInfo
 	if verbose {
@@ -221,12 +232,21 @@ func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bo
 	}
 
 	slog.Info("Hugo site generated successfully", "output", outputDir)
+	fmt.Println("Build completed successfully")
 	return nil
 }
 
 func runInit(configPath string, force bool) error {
+	// Provide friendly user-facing messages on stdout for CLI integration tests.
+	fmt.Println("Initializing DocBuilder project")
+	fmt.Printf("Writing configuration to %s\n", configPath)
+	if err := config.Init(configPath, force); err != nil {
+		fmt.Println("Initialization failed")
+		return err
+	}
+	fmt.Println("initialized successfully")
 	slog.Info("Initializing configuration", "path", configPath, "force", force)
-	return config.Init(configPath, force)
+	return nil
 }
 
 func runDiscover(cfg *config.Config, specificRepo string) error {
