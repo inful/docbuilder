@@ -75,24 +75,6 @@ type FrontMatterConflict struct {
 
 // applyPatches merges all patches into a single map using precedence rules.
 // Phase 1 implementation: simple ordered application onto a base copy.
-var reservedFrontMatterKeys = map[string]struct{}{
-	// Core identifiers / ordering / summaries
-	"title": {}, "linkTitle": {}, "description": {}, "summary": {}, "weight": {},
-	// URL / routing / structure
-	"slug": {}, "url": {}, "aliases": {}, "type": {}, "layout": {},
-	// Dates & lifecycle
-	"date": {}, "lastmod": {}, "publishDate": {}, "expiryDate": {}, "unpublishdate": {}, "draft": {},
-	// Classification / taxonomies / SEO
-	"tags": {}, "categories": {}, "keywords": {},
-	// Output & rendering specifics
-	"resources": {}, "outputs": {}, "markup": {},
-	// Configuration / inheritance / metadata containers
-	"cascade": {}, "params": {}, "build": {}, "sitemap": {}, "translationKey": {},
-	// Menus
-	"menu": {}, "menus": {},
-	// Internal / custom additions
-	"editURL": {}, "repository": {}, "section": {}, "toc": {},
-}
 
 // keys that are protected from overwrite (unless MergeReplace) - exclude taxonomy arrays to allow merging
 var reservedProtectedKeys = map[string]struct{}{

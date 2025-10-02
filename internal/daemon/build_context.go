@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -475,14 +474,4 @@ func (bc *buildContext) stagePostPersist(report *hugo.BuildReport, genErr error)
 		}
 	}
 	return nil
-}
-
-// Optional helper for future partial timing or debug snapshots.
-func (bc *buildContext) debugSnapshot(tag string) {
-	slog.Debug("buildContext snapshot", "tag", tag, "repos", len(bc.repos), "out", bc.outDir, "workspace", bc.workspace, "skip", bc.skipReport != nil, "deltaDecision", func() string {
-		if bc.deltaPlan == nil {
-			return ""
-		}
-		return fmt.Sprintf("%v", bc.deltaPlan.Decision)
-	}(), "time", time.Now().Format(time.RFC3339))
 }

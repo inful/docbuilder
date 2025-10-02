@@ -24,8 +24,3 @@ func loadEnvFile() error {
 	}
 	return fmt.Errorf("no .env file found")
 }
-
-// Retained for potential future multi-file merging needs; currently unused after behavior restoration.
-// If later we support layered overrides (.env then .env.local) we can reintroduce a variant using godotenv.Read.
-// Keeping stub for clarity and minimal diff footprint.
-func loadSingleEnvFile(filename string) error { return godotenv.Load(filename) }
