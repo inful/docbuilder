@@ -24,3 +24,8 @@ func NormalizeForgeType(raw string) ForgeType {
 		return ""
 	}
 }
+
+// IsValid reports whether the ForgeType is a known value.
+func (f ForgeType) IsValid() bool {
+	return NormalizeForgeType(string(f)) != ""
+}

@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
@@ -199,10 +202,11 @@ func (tf *TestForge) GetUserOrganizations(ctx context.Context) ([]forge.Organiza
 	}
 
 	var orgs []forge.Organization
+	titleCaser := cases.Title(language.English)
 	for _, orgName := range tf.organizations {
 		orgs = append(orgs, forge.Organization{
 			Name:        orgName,
-			DisplayName: strings.Title(orgName),
+			DisplayName: titleCaser.String(orgName),
 			Description: fmt.Sprintf("Test organization: %s", orgName),
 		})
 	}

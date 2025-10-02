@@ -3,9 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -172,313 +170,13 @@ func Load(configPath string) (*Config, error) {
 
 // applyDefaults applies default values to configuration
 func applyDefaults(config *Config) error {
-	// Build defaults
-	if config.Build.CloneConcurrency <= 0 {
-		config.Build.CloneConcurrency = 4
-	}
-	// Render mode default (auto) if unspecified or invalid
-	if config.Build.RenderMode == "" {
-		config.Build.RenderMode = RenderModeAuto
-	} else {
-		if rm := NormalizeRenderMode(string(config.Build.RenderMode)); rm != "" {
-			config.Build.RenderMode = rm
-		} else {
-			config.Build.RenderMode = RenderModeAuto
-		}
-	}
-	// Forge namespacing default (auto): only add forge directory when multiple forge types present
-	if config.Build.NamespaceForges == "" {
-		config.Build.NamespaceForges = NamespacingAuto
-	} else {
-		m := NormalizeNamespacingMode(string(config.Build.NamespaceForges))
-		if m == "" {
-			config.Build.NamespaceForges = NamespacingAuto
-		} else {
-			config.Build.NamespaceForges = m
-		}
-	}
-	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
-	if config.Build.ShallowDepth < 0 {
-		config.Build.ShallowDepth = 0
-	}
-	// Deletion detection default: enable only if user omitted the field entirely.
-	if !config.Build.detectDeletionsSpecified && !config.Build.DetectDeletions {
-		config.Build.DetectDeletions = true
-	}
-	// LiveReload intentionally defaults to false (opt-in) to avoid extra sockets in production; no action needed here.
-	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
-	if config.Build.CloneStrategy == "" {
-		config.Build.CloneStrategy = CloneStrategyFresh
-	} else {
-		cs := NormalizeCloneStrategy(string(config.Build.CloneStrategy))
-		if cs != "" {
-			config.Build.CloneStrategy = cs
-		} else {
-			config.Build.CloneStrategy = CloneStrategyFresh // fallback
-		}
-	}
-	if config.Build.MaxRetries < 0 {
-		config.Build.MaxRetries = 0
-	}
-	if config.Build.MaxRetries == 0 { // default 2 retries (3 total attempts) unless explicitly set >0
-		config.Build.MaxRetries = 2
-	}
-	if config.Build.RetryBackoff == "" {
-		config.Build.RetryBackoff = RetryBackoffLinear
-	} else {
-		// normalize any user-provided raw string (in case future loaders bypass yaml tag typing)
-		config.Build.RetryBackoff = NormalizeRetryBackoff(string(config.Build.RetryBackoff))
-		if config.Build.RetryBackoff == "" { // fallback to default if unknown
-			config.Build.RetryBackoff = RetryBackoffLinear
-		}
-	}
-	if config.Build.RetryInitialDelay == "" {
-		config.Build.RetryInitialDelay = "1s"
-	}
-	if config.Build.RetryMaxDelay == "" {
-		config.Build.RetryMaxDelay = "30s"
-	}
-	// Note: Build.WorkspaceDir default derived later in builder (depends on output.directory)
-
-	// Hugo defaults
-	if config.Hugo.Title == "" {
-		config.Hugo.Title = "Documentation Portal"
-	}
-	if config.Hugo.Theme == "" {
-		config.Hugo.Theme = string(ThemeHextra)
-	}
-
-	// Output defaults
-	if config.Output.Directory == "" {
-		config.Output.Directory = "./site"
-	}
-	config.Output.Clean = true // Always clean in daemon mode
-
-	// Warn if user configured workspace_dir equal to output directory (can cause clone artifacts in final site)
-	if config.Build.WorkspaceDir != "" {
-		wd := filepath.Clean(config.Build.WorkspaceDir)
-		od := filepath.Clean(config.Output.Directory)
-		if wd == od {
-			fmt.Fprintf(os.Stderr, "Warning: build.workspace_dir (%s) matches output.directory (%s); this may mix git working trees with generated site artifacts. Consider using a separate directory.\n", wd, od)
-		}
-	}
-
-	// Daemon defaults
-	if config.Daemon != nil {
-		if config.Daemon.HTTP.DocsPort == 0 {
-			config.Daemon.HTTP.DocsPort = 8080
-		}
-		if config.Daemon.HTTP.WebhookPort == 0 {
-			config.Daemon.HTTP.WebhookPort = 8081
-		}
-		if config.Daemon.HTTP.AdminPort == 0 {
-			config.Daemon.HTTP.AdminPort = 8082
-		}
-		if config.Daemon.Sync.Schedule == "" {
-			config.Daemon.Sync.Schedule = "0 */4 * * *" // Every 4 hours
-		}
-		if config.Daemon.Sync.ConcurrentBuilds == 0 {
-			config.Daemon.Sync.ConcurrentBuilds = 3
-		}
-		if config.Daemon.Sync.QueueSize == 0 {
-			config.Daemon.Sync.QueueSize = 100
-		}
-		if config.Daemon.Storage.StateFile == "" {
-			config.Daemon.Storage.StateFile = "./docbuilder-state.json"
-		}
-		if config.Daemon.Storage.RepoCacheDir == "" {
-			config.Daemon.Storage.RepoCacheDir = "./repositories"
-		}
-		if config.Daemon.Storage.OutputDir == "" {
-			config.Daemon.Storage.OutputDir = config.Output.Directory
-		}
-	}
-
-	// Filtering defaults: only set RequiredPaths if filtering is nil OR RequiredPaths is nil (not explicitly empty)
-	if config.Filtering == nil {
-		config.Filtering = &FilteringConfig{}
-	}
-	// Distinguish between nil slice and explicitly empty slice: if user wrote required_paths: [] we keep it empty
-	if config.Filtering.RequiredPaths == nil {
-		config.Filtering.RequiredPaths = []string{"docs"}
-	}
-	if len(config.Filtering.IgnoreFiles) == 0 {
-		config.Filtering.IgnoreFiles = []string{".docignore"}
-	}
-
-	// Versioning defaults
-	if config.Versioning == nil {
-		config.Versioning = &VersioningConfig{}
-	}
-	if config.Versioning.Strategy == "" {
-		// Only apply default if user omitted the field entirely.
-		config.Versioning.Strategy = StrategyBranchesAndTags
-	} else {
-		orig := config.Versioning.Strategy
-		norm := NormalizeVersioningStrategy(string(config.Versioning.Strategy))
-		if norm != "" {
-			config.Versioning.Strategy = norm
-		} else {
-			// Preserve original invalid value so validateConfig can raise an error.
-			config.Versioning.Strategy = VersioningStrategy(orig)
-		}
-	}
-	if config.Versioning.MaxVersionsPerRepo == 0 {
-		config.Versioning.MaxVersionsPerRepo = 10
-	}
-
-	// Monitoring defaults
-	if config.Monitoring == nil {
-		config.Monitoring = &MonitoringConfig{}
-	}
-	if config.Monitoring.Metrics.Path == "" {
-		config.Monitoring.Metrics.Path = "/metrics"
-	}
-	if config.Monitoring.Health.Path == "" {
-		config.Monitoring.Health.Path = "/health"
-	}
-	if config.Monitoring.Logging.Level == "" {
-		config.Monitoring.Logging.Level = LogLevelInfo
-	} else {
-		lvl := NormalizeLogLevel(string(config.Monitoring.Logging.Level))
-		if lvl != "" {
-			config.Monitoring.Logging.Level = lvl
-		}
-	}
-	if config.Monitoring.Logging.Format == "" {
-		config.Monitoring.Logging.Format = LogFormatJSON
-	} else {
-		fmtVal := NormalizeLogFormat(string(config.Monitoring.Logging.Format))
-		if fmtVal != "" {
-			config.Monitoring.Logging.Format = fmtVal
-		}
-	}
-
-	// Explicit repository defaults (paths/branch) mirroring legacy behavior
-	for i := range config.Repositories {
-		if len(config.Repositories[i].Paths) == 0 {
-			config.Repositories[i].Paths = []string{"docs"}
-		}
-		if config.Repositories[i].Branch == "" {
-			config.Repositories[i].Branch = "main"
-		}
-	}
-
-	return nil
+	applier := NewDefaultApplier()
+	return applier.ApplyDefaults(config)
 }
 
 // validateConfig validates the configuration
 func validateConfig(config *Config) error {
-	// Validate forges
-	if len(config.Forges) == 0 {
-		return fmt.Errorf("at least one forge must be configured")
-	}
-
-	forgeNames := make(map[string]bool)
-	for _, forge := range config.Forges {
-		if forge.Name == "" {
-			return fmt.Errorf("forge name cannot be empty")
-		}
-		if forgeNames[forge.Name] {
-			return fmt.Errorf("duplicate forge name: %s", forge.Name)
-		}
-		forgeNames[forge.Name] = true
-
-		// Normalize & validate forge type
-		if forge.Type == "" { // empty is invalid
-			return fmt.Errorf("unsupported forge type: %s", forge.Type)
-		}
-		norm := NormalizeForgeType(string(forge.Type))
-		if norm == "" {
-			return fmt.Errorf("unsupported forge type: %s", forge.Type)
-		}
-		forge.Type = norm
-
-		// Validate authentication
-		if forge.Auth == nil {
-			return fmt.Errorf("forge %s must have authentication configured", forge.Name)
-		}
-		if forge.Auth != nil {
-			switch forge.Auth.Type {
-			case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
-				// ok; semantic checks done by individual clients
-			default:
-				return fmt.Errorf("forge %s: unsupported auth type: %s", forge.Name, forge.Auth.Type)
-			}
-			// Minimal semantic validation now (clients perform stricter checks when constructing)
-			// Token presence is validated lazily by forge clients / git operations to permit env placeholders.
-		}
-
-		// Require at least one organization or group to be specified. This keeps discovery bounded
-		// Validate explicit repository auth blocks (if provided)
-		for _, repo := range config.Repositories {
-			if repo.Auth != nil {
-				switch repo.Auth.Type {
-				case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
-					// valid
-				default:
-					return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
-				}
-				// Token emptiness allowed (environment may supply later)
-				if repo.Auth.Type == AuthTypeBasic && (repo.Auth.Username == "" || repo.Auth.Password == "") {
-					return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
-				}
-			}
-		}
-		// and matches test expectations for explicit configuration (auto-discovery can be added
-		// later behind a dedicated flag to avoid surprising large scans). We now allow an empty
-		// set if options.auto_discover is explicitly true.
-		emptyScopes := len(forge.Organizations) == 0 && len(forge.Groups) == 0
-		if emptyScopes {
-			allowAuto := forge.AutoDiscover
-			if !allowAuto && forge.Options != nil { // legacy/options-based flag
-				if v, ok := forge.Options["auto_discover"]; ok {
-					if b, ok2 := v.(bool); ok2 && b {
-						allowAuto = true
-					}
-				}
-			}
-			if !allowAuto {
-				return fmt.Errorf("forge %s must have at least one organization or group configured (or set auto_discover=true)", forge.Name)
-			}
-		}
-	}
-
-	// Validate versioning strategy
-	if config.Versioning != nil {
-		if config.Versioning.Strategy != StrategyBranchesAndTags && config.Versioning.Strategy != StrategyBranchesOnly && config.Versioning.Strategy != StrategyTagsOnly {
-			return fmt.Errorf("invalid versioning strategy: %s", config.Versioning.Strategy)
-		}
-	}
-
-	// Validate retry configuration
-	switch config.Build.RetryBackoff {
-	case RetryBackoffFixed, RetryBackoffLinear, RetryBackoffExponential:
-	default:
-		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", config.Build.RetryBackoff)
-	}
-	// Validate clone strategy
-	switch config.Build.CloneStrategy {
-	case CloneStrategyFresh, CloneStrategyUpdate, CloneStrategyAuto:
-	default:
-		return fmt.Errorf("invalid clone_strategy: %s (allowed: fresh|update|auto)", config.Build.CloneStrategy)
-	}
-	if _, err := time.ParseDuration(config.Build.RetryInitialDelay); err != nil {
-		return fmt.Errorf("invalid retry_initial_delay: %s: %w", config.Build.RetryInitialDelay, err)
-	}
-	if _, err := time.ParseDuration(config.Build.RetryMaxDelay); err != nil {
-		return fmt.Errorf("invalid retry_max_delay: %s: %w", config.Build.RetryMaxDelay, err)
-	}
-	initDur, _ := time.ParseDuration(config.Build.RetryInitialDelay)
-	maxDur, _ := time.ParseDuration(config.Build.RetryMaxDelay)
-	if maxDur < initDur {
-		return fmt.Errorf("retry_max_delay (%s) must be >= retry_initial_delay (%s)", config.Build.RetryMaxDelay, config.Build.RetryInitialDelay)
-	}
-	if config.Build.MaxRetries < 0 {
-		return fmt.Errorf("max_retries cannot be negative: %d", config.Build.MaxRetries)
-	}
-
-	return nil
+	return ValidateConfig(config)
 }
 
 // (Deprecated comment retained) Previously: InitV2 creates a new v2 configuration file with example content.
@@ -511,12 +209,12 @@ func Init(configPath string, force bool) error {
 		Forges: []*ForgeConfig{
 			{
 				Name:          "company-github",
-				Type:          "github",
+				Type:          ForgeGitHub,
 				APIURL:        "https://api.github.com",
 				BaseURL:       "https://github.com",
 				Organizations: []string{"your-org"},
 				Auth: &AuthConfig{
-					Type:  "token",
+					Type:  AuthTypeToken,
 					Token: "${GITHUB_TOKEN}",
 				},
 				Webhook: &WebhookConfig{

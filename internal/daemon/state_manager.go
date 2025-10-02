@@ -403,6 +403,26 @@ func (sm *StateManager) scheduleSave() {
 	})
 }
 
+// IsLoaded reports whether the state manager has loaded or initialized state.
+// This method is required by the services.StateManager adapter used in tests.
+func (sm *StateManager) IsLoaded() bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return sm.state != nil
+}
+
+// LastSaved returns the last update time recorded in the daemon state.
+// It returns nil if the state has never been saved/updated.
+func (sm *StateManager) LastSaved() *time.Time {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	if sm.state == nil {
+		return nil
+	}
+	t := sm.state.LastUpdate
+	return &t
+}
+
 // GetState returns a copy of the current daemon state
 func (sm *StateManager) GetState() *DaemonState {
 	sm.mu.RLock()

@@ -1,0 +1,279 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// ConfigDefaultApplier applies defaults for a specific configuration domain
+type ConfigDefaultApplier interface {
+	ApplyDefaults(cfg *Config) error
+	Domain() string
+}
+
+// BuildDefaultApplier handles Build configuration defaults
+type BuildDefaultApplier struct{}
+
+func (b *BuildDefaultApplier) Domain() string { return "build" }
+
+func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Build.CloneConcurrency <= 0 {
+		cfg.Build.CloneConcurrency = 4
+	}
+	
+	// Render mode default (auto) if unspecified or invalid
+	if cfg.Build.RenderMode == "" {
+		cfg.Build.RenderMode = RenderModeAuto
+	} else {
+		if rm := NormalizeRenderMode(string(cfg.Build.RenderMode)); rm != "" {
+			cfg.Build.RenderMode = rm
+		} else {
+			cfg.Build.RenderMode = RenderModeAuto
+		}
+	}
+	
+	// Forge namespacing default (auto): only add forge directory when multiple forge types present
+	if cfg.Build.NamespaceForges == "" {
+		cfg.Build.NamespaceForges = NamespacingAuto
+	} else {
+		m := NormalizeNamespacingMode(string(cfg.Build.NamespaceForges))
+		if m == "" {
+			cfg.Build.NamespaceForges = NamespacingAuto
+		} else {
+			cfg.Build.NamespaceForges = m
+		}
+	}
+	
+	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
+	if cfg.Build.ShallowDepth < 0 {
+		cfg.Build.ShallowDepth = 0
+	}
+	
+	// Deletion detection default: enable only if user omitted the field entirely.
+	if !cfg.Build.detectDeletionsSpecified && !cfg.Build.DetectDeletions {
+		cfg.Build.DetectDeletions = true
+	}
+	
+	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
+	if cfg.Build.CloneStrategy == "" {
+		cfg.Build.CloneStrategy = CloneStrategyFresh
+	} else {
+		cs := NormalizeCloneStrategy(string(cfg.Build.CloneStrategy))
+		if cs != "" {
+			cfg.Build.CloneStrategy = cs
+		} else {
+			cfg.Build.CloneStrategy = CloneStrategyFresh // fallback
+		}
+	}
+	
+	if cfg.Build.MaxRetries < 0 {
+		cfg.Build.MaxRetries = 0
+	}
+	if cfg.Build.MaxRetries == 0 { // default 2 retries (3 total attempts) unless explicitly set >0
+		cfg.Build.MaxRetries = 2
+	}
+	
+	if cfg.Build.RetryBackoff == "" {
+		cfg.Build.RetryBackoff = RetryBackoffLinear
+	} else {
+		// normalize any user-provided raw string
+		cfg.Build.RetryBackoff = NormalizeRetryBackoff(string(cfg.Build.RetryBackoff))
+		if cfg.Build.RetryBackoff == "" { // fallback to default if unknown
+			cfg.Build.RetryBackoff = RetryBackoffLinear
+		}
+	}
+	
+	if cfg.Build.RetryInitialDelay == "" {
+		cfg.Build.RetryInitialDelay = "1s"
+	}
+	if cfg.Build.RetryMaxDelay == "" {
+		cfg.Build.RetryMaxDelay = "30s"
+	}
+	
+	return nil
+}
+
+// HugoDefaultApplier handles Hugo configuration defaults
+type HugoDefaultApplier struct{}
+
+func (h *HugoDefaultApplier) Domain() string { return "hugo" }
+
+func (h *HugoDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Hugo.Title == "" {
+		cfg.Hugo.Title = "Documentation Portal"
+	}
+	if cfg.Hugo.Theme == "" {
+		cfg.Hugo.Theme = string(ThemeHextra)
+	}
+	return nil
+}
+
+// OutputDefaultApplier handles Output configuration defaults
+type OutputDefaultApplier struct{}
+
+func (o *OutputDefaultApplier) Domain() string { return "output" }
+
+func (o *OutputDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Output.Directory == "" {
+		cfg.Output.Directory = "./site"
+	}
+	cfg.Output.Clean = true // Always clean in daemon mode
+
+	// Warn if user configured workspace_dir equal to output directory
+	if cfg.Build.WorkspaceDir != "" {
+		wd := filepath.Clean(cfg.Build.WorkspaceDir)
+		od := filepath.Clean(cfg.Output.Directory)
+		if wd == od {
+			fmt.Fprintf(os.Stderr, "Warning: build.workspace_dir (%s) matches output.directory (%s); this may mix git working trees with generated site artifacts. Consider using a separate directory.\n", wd, od)
+		}
+	}
+	
+	return nil
+}
+
+// DaemonDefaultApplier handles Daemon configuration defaults
+type DaemonDefaultApplier struct{}
+
+func (d *DaemonDefaultApplier) Domain() string { return "daemon" }
+
+func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Daemon == nil {
+		return nil // No daemon config to apply defaults to
+	}
+	
+	if cfg.Daemon.HTTP.DocsPort == 0 {
+		cfg.Daemon.HTTP.DocsPort = 8080
+	}
+	if cfg.Daemon.HTTP.WebhookPort == 0 {
+		cfg.Daemon.HTTP.WebhookPort = 8081
+	}
+	if cfg.Daemon.HTTP.AdminPort == 0 {
+		cfg.Daemon.HTTP.AdminPort = 8082
+	}
+	if cfg.Daemon.Sync.Schedule == "" {
+		cfg.Daemon.Sync.Schedule = "0 */4 * * *" // Every 4 hours
+	}
+	if cfg.Daemon.Sync.ConcurrentBuilds == 0 {
+		cfg.Daemon.Sync.ConcurrentBuilds = 3
+	}
+	if cfg.Daemon.Sync.QueueSize == 0 {
+		cfg.Daemon.Sync.QueueSize = 100
+	}
+	if cfg.Daemon.Storage.StateFile == "" {
+		cfg.Daemon.Storage.StateFile = "./docbuilder-state.json"
+	}
+	if cfg.Daemon.Storage.RepoCacheDir == "" {
+		cfg.Daemon.Storage.RepoCacheDir = "./repositories"
+	}
+	if cfg.Daemon.Storage.OutputDir == "" {
+		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
+	}
+	
+	return nil
+}
+
+// FilteringDefaultApplier handles Filtering configuration defaults
+type FilteringDefaultApplier struct{}
+
+func (f *FilteringDefaultApplier) Domain() string { return "filtering" }
+
+func (f *FilteringDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Filtering == nil {
+		cfg.Filtering = &FilteringConfig{}
+	}
+	
+	// Distinguish between nil slice and explicitly empty slice
+	if cfg.Filtering.RequiredPaths == nil {
+		cfg.Filtering.RequiredPaths = []string{"docs"}
+	}
+	if len(cfg.Filtering.IgnoreFiles) == 0 {
+		cfg.Filtering.IgnoreFiles = []string{".docignore"}
+	}
+	
+	return nil
+}
+
+// VersioningDefaultApplier handles Versioning configuration defaults
+type VersioningDefaultApplier struct{}
+
+func (v *VersioningDefaultApplier) Domain() string { return "versioning" }
+
+func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Versioning == nil {
+		cfg.Versioning = &VersioningConfig{}
+	}
+	
+	if cfg.Versioning.Strategy == "" {
+		cfg.Versioning.Strategy = StrategyBranchesAndTags
+	} else {
+		orig := cfg.Versioning.Strategy
+		norm := NormalizeVersioningStrategy(string(cfg.Versioning.Strategy))
+		if norm != "" {
+			cfg.Versioning.Strategy = norm
+		} else {
+			// Preserve original invalid value so validateConfig can raise an error
+			cfg.Versioning.Strategy = VersioningStrategy(orig)
+		}
+	}
+	
+	if cfg.Versioning.MaxVersionsPerRepo == 0 {
+		cfg.Versioning.MaxVersionsPerRepo = 10
+	}
+	
+	return nil
+}
+
+// MonitoringDefaultApplier handles Monitoring configuration defaults
+type MonitoringDefaultApplier struct{}
+
+func (m *MonitoringDefaultApplier) Domain() string { return "monitoring" }
+
+func (m *MonitoringDefaultApplier) ApplyDefaults(cfg *Config) error {
+	if cfg.Monitoring == nil {
+		cfg.Monitoring = &MonitoringConfig{}
+	}
+	
+	if cfg.Monitoring.Metrics.Path == "" {
+		cfg.Monitoring.Metrics.Path = "/metrics"
+	}
+	if cfg.Monitoring.Health.Path == "" {
+		cfg.Monitoring.Health.Path = "/health"
+	}
+	if cfg.Monitoring.Logging.Level == "" {
+		cfg.Monitoring.Logging.Level = LogLevelInfo
+	} else {
+		lvl := NormalizeLogLevel(string(cfg.Monitoring.Logging.Level))
+		if lvl != "" {
+			cfg.Monitoring.Logging.Level = lvl
+		}
+	}
+	if cfg.Monitoring.Logging.Format == "" {
+		cfg.Monitoring.Logging.Format = LogFormatJSON
+	} else {
+		fmtVal := NormalizeLogFormat(string(cfg.Monitoring.Logging.Format))
+		if fmtVal != "" {
+			cfg.Monitoring.Logging.Format = fmtVal
+		}
+	}
+	
+	return nil
+}
+
+// RepositoryDefaultApplier handles Repository configuration defaults
+type RepositoryDefaultApplier struct{}
+
+func (r *RepositoryDefaultApplier) Domain() string { return "repositories" }
+
+func (r *RepositoryDefaultApplier) ApplyDefaults(cfg *Config) error {
+	for i := range cfg.Repositories {
+		if len(cfg.Repositories[i].Paths) == 0 {
+			cfg.Repositories[i].Paths = []string{"docs"}
+		}
+		if cfg.Repositories[i].Branch == "" {
+			cfg.Repositories[i].Branch = "main"
+		}
+	}
+	
+	return nil
+}
