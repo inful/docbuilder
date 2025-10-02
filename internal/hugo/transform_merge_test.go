@@ -3,6 +3,7 @@ package hugo
 import (
 	"testing"
 	"time"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
@@ -106,12 +107,12 @@ func TestBuilderIntegrationConflictRecording(t *testing.T) {
 
 // Ensure ComputeBaseFrontMatter baseline fields integrate via patch (V2 path).
 func TestFrontMatterBuilderPatchFlow(t *testing.T) {
-    cfg := &config.Config{}
-    p := &Page{File: testDocFile("sample", nil), OriginalFrontMatter: map[string]any{}, Content: ""}
-    built := fmcore.ComputeBaseFrontMatter(p.File.Name, p.File.Repository, p.File.Forge, p.File.Section, map[string]any{}, p.OriginalFrontMatter, cfg, time.Now())
-    p.Patches = append(p.Patches, FrontMatterPatch{Source: "builder_v2", Mode: MergeDeep, Priority: 50, Data: built})
-    p.applyPatches()
-    if p.File.Name != "index" && p.MergedFrontMatter["title"] == nil {
-        t.Fatalf("expected title set from ComputeBaseFrontMatter")
-    }
+	cfg := &config.Config{}
+	p := &Page{File: testDocFile("sample", nil), OriginalFrontMatter: map[string]any{}, Content: ""}
+	built := fmcore.ComputeBaseFrontMatter(p.File.Name, p.File.Repository, p.File.Forge, p.File.Section, map[string]any{}, p.OriginalFrontMatter, cfg, time.Now())
+	p.Patches = append(p.Patches, FrontMatterPatch{Source: "builder_v2", Mode: MergeDeep, Priority: 50, Data: built})
+	p.applyPatches()
+	if p.File.Name != "index" && p.MergedFrontMatter["title"] == nil {
+		t.Fatalf("expected title set from ComputeBaseFrontMatter")
+	}
 }

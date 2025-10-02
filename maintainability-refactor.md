@@ -132,12 +132,14 @@ Status Delta (2025-09-30): RepoFetcher integrated; normalization modular; `confi
 
 ## Phase 5: State & Pipeline Evolution
 
-- [ ] Decompose `BuildState` into sub-structs (GitState, DocsState, PipelineState)
-- [ ] Replace implicit fields with accessor methods (`AllReposUnchanged()` computes on demand or cached)
-- [ ] StageFunc signature returns structured result (`{Err error; Skip bool}`)
-- [ ] Add decorator helpers (Timed, WithObserver)
-- [ ] Early skip logic isolated in pure function
+- [x] Decompose `BuildState` into sub-structs (GitState, DocsState, PipelineState)
+- [x] Replace implicit fields with accessor methods (`AllReposUnchanged()` computes on demand or cached)
+- [x] StageFunc signature returns structured result (`{Err error; Skip bool}`)
+- [x] Add decorator helpers (Timed, WithObserver)
+- [x] Early skip logic isolated in pure function
 - [x] Add build report field `pipeline_version`
+
+**Phase 5 Complete**: BuildState has been decomposed into focused sub-states (GitState, DocsState, PipelineState) with backward compatibility. Structured execution results (StageExecution) and decorator helpers (WithTiming, WithObserver) provide better observability. Early skip logic extracted to pure function `EvaluateEarlySkip()` for testability.
 
 ## Phase 6: Testing & Golden Artifacts
 
@@ -152,11 +154,11 @@ Status Delta (2025-09-30): RepoFetcher integrated; normalization modular; `confi
 
 ## Phase 8: Documentation & Developer Experience
 
-- [ ] Update README with new architecture and extension points
-- [ ] Add THEME_INTEGRATION.md
+- [x] Update README with new architecture and extension points
+- [x] Add THEME_INTEGRATION.md
 - [x] Add CONTENT_TRANSFORMS.md with examples
 - [ ] Update migration notes (legacy env → render_mode) & planned deprecation schedule
-- [ ] CONTRIBUTING: How to add a stage / transform / theme
+- [x] CONTRIBUTING: How to add a stage / transform / theme
 
 ## Phase 9: Deprecations & Cleanup
 
@@ -167,17 +169,144 @@ Status Delta (2025-09-30): RepoFetcher integrated; normalization modular; `confi
 
 ## Phase 10: Optional Enhancements (Δ)
 
-- [ ] Remote rendering service adapter (future scaling)
 - [ ] Partial rebuild detection via per-file hash graph
 - [ ] Parallel content transform execution (bounded worker pool)
 - [ ] Structured tracing (OpenTelemetry spans per stage)
 
+## Phase 11: Greenfield Complexity & Type Safety Refactoring
+
+**Goal**: Since backward compatibility is no longer a concern, aggressively refactor to minimize cyclomatic complexity, maximize strong typing, and eliminate code sprawl.
+
+### High-Impact Large File Decomposition
+
+- [ ] **daemon.go (683 LOC)**: Extract service orchestrator pattern
+  - [ ] Create `internal/daemon/services/` with individual service managers
+  - [ ] Implement `ServiceOrchestrator` interface to coordinate lifecycle
+  - [ ] Use dependency injection container for service wiring
+  - [ ] Target: <200 LOC main daemon with composed services
+
+- [ ] **state_manager.go (620 LOC)**: Split persistence from business logic
+  - [ ] Extract `StateRepository` interface for persistence layer
+  - [ ] Create domain models separate from persistence DTOs
+  - [ ] Implement state query/command separation (CQRS-lite)
+  - [ ] Target: StateManager < 200 LOC, focused repositories
+
+- [ ] **config/v2.go (614 LOC)**: Type-safe config builder pattern
+  - [ ] Replace `map[string]any` with strongly typed structs
+  - [ ] Implement fluent configuration builder API
+  - [ ] Use option pattern for optional fields
+  - [ ] Extract validation into separate validator types
+
+### Cyclomatic Complexity Reduction
+
+- [ ] **Replace nested conditionals with guard clauses**
+  - [ ] Transform `if...if...if` chains to early returns
+  - [ ] Use table-driven tests to reduce test complexity
+  - [ ] Extract complex boolean expressions to named predicates
+
+- [ ] **Strategy pattern for enum-based switching**
+  - [ ] Replace `switch` on forge types with `ForgeStrategy` interface
+  - [ ] Replace `switch` on auth types with `AuthProvider` interface  
+  - [ ] Replace `switch` on normalization with `Normalizer[T]` generic interface
+
+- [ ] **Command pattern for stage execution**
+  - [ ] Create `StageCommand` interface with `Execute(ctx, state) Result`
+  - [ ] Replace function-based stages with command objects
+  - [ ] Enable stage composition and middleware (timing, observability)
+
+### Strong Typing Initiatives
+
+- [ ] **Eliminate `map[string]any` proliferation**
+  - [ ] Create typed DTOs for all JSON marshaling (state, config, reports)
+  - [ ] Use `encoding/json` struct tags instead of manual map manipulation
+  - [ ] Implement type-safe configuration overlays
+
+- [ ] **Generic collections and operations**
+  - [ ] Replace repetitive slice operations with generic utilities
+  - [ ] Create `Result[T, E]` type for error handling
+  - [ ] Use generic `Option[T]` for optional values instead of pointers
+
+- [ ] **Domain-specific value objects**
+  - [ ] Create `RepositoryURL`, `CommitHash`, `FilePath` value types
+  - [ ] Add validation at construction time
+  - [ ] Make impossible states unrepresentable
+
+### Code Sprawl Elimination
+
+- [ ] **Consolidate scattered normalization functions**
+  - [ ] Create generic `Normalizer[T]` interface
+  - [ ] Implement `EnumNormalizer[T comparable]` for string-to-enum conversion
+  - [ ] Replace 8+ individual `NormalizeXXX` functions with single pattern
+
+- [ ] **Extract common error handling patterns**
+  - [ ] Create `ErrorClassifier` interface with typed implementations
+  - [ ] Use error sentinels with typed wrapping instead of string parsing
+  - [ ] Implement `ErrorCollector` for accumulating validation errors
+
+- [ ] **Centralize conditional logic dispersal**
+  - [ ] Extract feature flags into `FeatureSet` struct
+  - [ ] Replace scattered condition checks with capability queries
+  - [ ] Use strategy pattern for environment-dependent behavior
+
+### Specific Refactoring Targets
+
+#### 1. Stage Clone Complexity Reduction
+Current: 100+ LOC function with nested error handling
+Target: Decomposed into:
+```go
+type CloneOrchestrator struct {
+    fetcher RepoFetcher
+    tracker StateTracker
+    observer MetricsObserver
+}
+
+func (o *CloneOrchestrator) Execute(ctx context.Context, repos []Repository) CloneResult
+```
+
+#### 2. Transform Pipeline Type Safety
+Current: `map[string]any` front matter manipulation
+Target: Strongly typed transform chain:
+```go
+type TransformChain[T any] struct {
+    transforms []Transform[T]
+}
+
+type Transform[T any] interface {
+    Apply(ctx context.Context, input T) (T, error)
+}
+```
+
+#### 3. Configuration Validation Consolidation
+Current: Scattered validation in `v2.go`
+Target: Declarative validation:
+```go
+type ConfigValidator struct {
+    rules []ValidationRule
+}
+
+type ValidationRule interface {
+    Validate(config *Config) []ValidationError
+}
+```
+
+### Architecture Simplifications
+
+- [ ] **Dependency Inversion**: Extract all external dependencies behind interfaces
+- [ ] **Service Location**: Replace manual wiring with DI container
+- [ ] **Event Sourcing**: Replace direct state mutation with event-driven updates
+- [ ] **Immutable State**: Make state objects immutable with builder pattern for updates
+
 ## Cross-Cutting Quality Gates
 
 - [ ] Ensure no file > 500 LOC (CI check)
-- [ ] Lint rule: forbid direct theme branching in generator (must use Theme interface)
+- [x] Lint rule: forbid direct theme branching in generator (must use Theme interface)
 - [ ] Coverage threshold ≥ 70% for pipeline, config, transforms packages
 - [ ] Static analysis: vet & staticcheck clean
+- [ ] **NEW**: Cyclomatic complexity ≤ 10 per function (gocyclo)
+- [ ] **NEW**: No functions with >7 parameters (use config structs)
+- [ ] **NEW**: No `map[string]any` outside JSON marshaling boundaries
+- [ ] **NEW**: All business logic errors must be typed (no `errors.New()`)
+- [ ] **NEW**: All enums must use type-safe constants (no bare strings)
 
 ## Work Tracking Fields (add as implemented)
 

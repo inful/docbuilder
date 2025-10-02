@@ -23,12 +23,15 @@ type Page struct {
 
 // Re-export enums for backward compatibility (internal only). Prefer fmcore.* directly in new code.
 type MergeMode = fmcore.MergeMode
+
 const (
-	MergeDeep        = fmcore.MergeDeep
-	MergeReplace     = fmcore.MergeReplace
+	MergeDeep         = fmcore.MergeDeep
+	MergeReplace      = fmcore.MergeReplace
 	MergeSetIfMissing = fmcore.MergeSetIfMissing
 )
+
 type ArrayMergeStrategy = fmcore.ArrayMergeStrategy
+
 const (
 	ArrayReplace = fmcore.ArrayReplace
 	ArrayUnion   = fmcore.ArrayUnion
