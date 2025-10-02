@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"gopkg.in/yaml.v3"
 )

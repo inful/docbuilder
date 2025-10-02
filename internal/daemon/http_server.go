@@ -228,13 +228,24 @@ func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Li
 
 	// Health check endpoint
 	mux.HandleFunc(s.config.Monitoring.Health.Path, s.handleHealthCheck)
-	// Add enhanced health check endpoint
-	mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
+	// Add enhanced health check endpoint (if daemon is available)
+	if s.daemon != nil {
+		mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
+	} else {
+		// Fallback for refactored daemon
+		mux.HandleFunc("/health/detailed", s.handleHealthCheck)
+	}
 
 	// Metrics endpoint
 	if s.config.Monitoring.Metrics.Enabled {
 		mux.HandleFunc(s.config.Monitoring.Metrics.Path, s.handleMetrics)
-		mux.HandleFunc("/metrics/detailed", s.daemon.metrics.MetricsHandler)
+		// Add detailed metrics endpoint (if daemon is available)
+		if s.daemon != nil && s.daemon.metrics != nil {
+			mux.HandleFunc("/metrics/detailed", s.daemon.metrics.MetricsHandler)
+		} else {
+			// Fallback for refactored daemon
+			mux.HandleFunc("/metrics/detailed", s.handleMetrics)
+		}
 		if h := prometheusOptionalHandler(); h != nil {
 			mux.Handle("/metrics/prometheus", h)
 		}

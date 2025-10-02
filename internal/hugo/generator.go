@@ -79,7 +79,9 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 }
 
 // EditLinkResolver exposes the internal resolver for transforms (read-only behavior).
-func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } { return g.editLinkResolver }
+func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } {
+	return g.editLinkResolver
+}
 
 // WithStateManager injects an optional state manager for persistence of discovery/build metadata.
 func (g *Generator) WithStateManager(sm interface {
@@ -264,8 +266,8 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	g.onPageRendered = func() { report.RenderedPages++ }
 	bs := newBuildState(g, nil, report)
 	// Compute configuration snapshot hash early; stageGenerateConfig will backfill for other paths.
-	bs.ConfigHash = g.computeConfigHash()
-	report.ConfigHash = bs.ConfigHash
+	bs.Pipeline.ConfigHash = g.computeConfigHash()
+	report.ConfigHash = bs.Pipeline.ConfigHash
 
 	// Apply repository filter if config has patterns (future extension: config fields).
 	// Placeholder: look for params under g.config.Hugo.Params["filter"] map with keys include/exclude.
@@ -304,8 +306,8 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		}
 	}
 
-	bs.Repositories = repositories
-	bs.WorkspaceDir = filepath.Clean(workspaceDir)
+	bs.Git.Repositories = repositories
+	bs.Git.WorkspaceDir = filepath.Clean(workspaceDir)
 
 	stages := NewPipeline().
 		Add(StagePrepareOutput, stagePrepareOutput).

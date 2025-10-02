@@ -12,12 +12,20 @@ import (
 // dummyGenerator minimal provider implementing Config() for generatorProvider access.
 // stub resolver implementing the minimal Resolve interface expected by EditLinkInjectorV2.
 type stubResolver struct{}
-func (s stubResolver) Resolve(df docs.DocFile) string { return "https://example.com/edit/" + df.RelativePath }
 
-type dummyGenerator struct{ cfg *config.Config; resolver stubResolver }
+func (s stubResolver) Resolve(df docs.DocFile) string {
+	return "https://example.com/edit/" + df.RelativePath
+}
+
+type dummyGenerator struct {
+	cfg      *config.Config
+	resolver stubResolver
+}
 
 func (d dummyGenerator) Config() *config.Config { return d.cfg }
-func (d dummyGenerator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } { return d.resolver }
+func (d dummyGenerator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } {
+	return d.resolver
+}
 
 // helper to create a baseline DocFile
 func testDocFile() docs.DocFile {

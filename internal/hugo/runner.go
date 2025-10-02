@@ -46,7 +46,7 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			}
 			return fmt.Errorf("stage %s aborted", st.Name)
 		}
-		if st.Name == StageCloneRepos && bs.AllReposUnchanged { // early skip optimization
+		if st.Name == StageCloneRepos && bs.Git.AllReposUnchanged { // early skip optimization
 			if bs.Generator != nil && bs.Generator.existingSiteValidForSkip() {
 				slog.Info("Early build exit: no repository HEAD changes and existing site valid; skipping remaining stages")
 				bs.Report.SkipReason = "no_changes"

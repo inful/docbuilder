@@ -1,9 +1,10 @@
 package fmcore
 
 import (
-    "strings"
-    "time"
-    "git.home.luguber.info/inful/docbuilder/internal/config"
+	"strings"
+	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // MergeMode defines how a patch applies to existing front matter.

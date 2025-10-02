@@ -6,6 +6,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/testforge"
 )
 
 func fixedTime() time.Time { return time.Date(2025, 9, 26, 12, 34, 56, 0, time.UTC) }
@@ -117,4 +118,132 @@ func TestBuildFrontMatter_IncludesForge(t *testing.T) {
 	if got, ok := fm["forge"]; !ok || got != "github" {
 		t.Fatalf("expected forge field 'github', got %v (present=%v)", got, ok)
 	}
+}
+
+// TestTestForgeFrontmatterIntegration demonstrates TestForge integration for frontmatter generation
+func TestTestForgeFrontmatterIntegration(t *testing.T) {
+	// Test frontmatter generation with TestForge-generated repositories across platforms
+	platforms := []struct {
+		name      string
+		forgeType config.ForgeType
+		theme     string
+	}{
+		{"github", config.ForgeGitHub, "hextra"},
+		{"gitlab", config.ForgeGitLab, "docsy"},
+		{"forgejo", config.ForgeForgejo, "hextra"},
+	}
+
+	for _, platform := range platforms {
+		t.Run(platform.name+"_frontmatter", func(t *testing.T) {
+			// Create TestForge for the platform
+			forge := testforge.NewTestForge(platform.name+"-fm-test", platform.forgeType)
+			repositories := forge.ToConfigRepositories()
+
+			if len(repositories) == 0 {
+				t.Fatalf("TestForge should generate repositories for %s", platform.name)
+			}
+
+			testRepo := repositories[0]
+			cfg := &config.Config{
+				Hugo:         config.HugoConfig{Theme: platform.theme},
+				Repositories: repositories,
+			}
+
+			// Test frontmatter generation with realistic repository data
+			file := docs.DocFile{
+				Repository:   testRepo.Name,
+				Name:         "testforge-integration",
+				RelativePath: "api/testforge-integration.md",
+				DocsBase:     "docs",
+				Section:      "api",
+				Forge:        platform.name,
+			}
+
+			fm := BuildFrontMatter(FrontMatterInput{
+				File:   file,
+				Config: cfg,
+				Now:    fixedTime(),
+			})
+
+			// Validate basic frontmatter fields
+			if fm["title"] != "Testforge Integration" {
+				t.Errorf("Expected title 'Testforge Integration', got %v", fm["title"])
+			}
+			if fm["repository"] != testRepo.Name {
+				t.Errorf("Expected repository %s, got %v", testRepo.Name, fm["repository"])
+			}
+			if fm["section"] != "api" {
+				t.Errorf("Expected section 'api', got %v", fm["section"])
+			}
+			if fm["forge"] != platform.name {
+				t.Errorf("Expected forge %s, got %v", platform.name, fm["forge"])
+			}
+
+			// Validate editURL generation with TestForge repository URLs
+			if editURL, ok := fm["editURL"]; ok {
+				editURLStr, isString := editURL.(string)
+				if !isString {
+					t.Errorf("editURL should be a string, got %T", editURL)
+				} else if len(editURLStr) == 0 {
+					t.Errorf("editURL should not be empty")
+				} else {
+					t.Logf("✓ Generated editURL: %s", editURLStr)
+				}
+			}
+
+			// Validate date field
+			if fm["date"] == nil {
+				t.Error("date field should be set")
+			}
+
+			t.Logf("✓ %s frontmatter: repo=%s, title=%v, editURL present=%v",
+				platform.name, testRepo.Name, fm["title"], fm["editURL"] != nil)
+		})
+	}
+}
+
+// TestTestForgeRepositoryMetadataInFrontmatter validates that TestForge repository metadata is accessible
+func TestTestForgeRepositoryMetadataInFrontmatter(t *testing.T) {
+	forge := testforge.NewTestForge("metadata-test", config.ForgeGitHub)
+	repositories := forge.ToConfigRepositories()
+
+	if len(repositories) == 0 {
+		t.Fatal("TestForge should generate repositories")
+	}
+
+	testRepo := repositories[0]
+	cfg := &config.Config{
+		Hugo:         config.HugoConfig{Theme: "hextra"},
+		Repositories: repositories,
+	}
+
+	file := docs.DocFile{
+		Repository:   testRepo.Name,
+		Name:         "metadata-test",
+		RelativePath: "metadata-test.md",
+		DocsBase:     "docs",
+	}
+
+	fm := BuildFrontMatter(FrontMatterInput{
+		File:   file,
+		Config: cfg,
+		Now:    fixedTime(),
+	})
+
+	// Validate that TestForge repository metadata is reflected
+	if fm["repository"] != testRepo.Name {
+		t.Errorf("Expected repository %s, got %v", testRepo.Name, fm["repository"])
+	}
+
+	// The repository should have realistic metadata from TestForge
+	if testRepo.Tags != nil {
+		if description, ok := testRepo.Tags["description"]; ok && len(description) > 0 {
+			t.Logf("✓ TestForge repository description: %s", description)
+		}
+		if language, ok := testRepo.Tags["language"]; ok && len(language) > 0 {
+			t.Logf("✓ TestForge repository language: %s", language)
+		}
+	}
+
+	t.Logf("✓ TestForge metadata integration: repository %s with URL %s", testRepo.Name, testRepo.URL)
 }

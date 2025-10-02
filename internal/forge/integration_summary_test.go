@@ -3,6 +3,7 @@ package forge
 import (
 	"context"
 	"testing"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
@@ -28,7 +29,7 @@ func TestIntegrationSummary(t *testing.T) {
 			},
 		}
 
-		mockClient := NewMockForgeClient("test-github", ForgeTypeGitHub)
+		mockClient := NewEnhancedMockForgeClient("test-github", ForgeTypeGitHub)
 		manager.AddForge(githubConfig, mockClient)
 
 		// Verify we can retrieve the forge
@@ -48,9 +49,9 @@ func TestIntegrationSummary(t *testing.T) {
 		t.Log("✓ ForgeManager creation and configuration works")
 	})
 
-	// Test mock forge client functionality
-	t.Run("MockForgeClient", func(t *testing.T) {
-		client := NewMockForgeClient("mock-test", ForgeTypeGitHub)
+	// Test enhanced mock forge client functionality
+	t.Run("EnhancedMockForgeClient", func(t *testing.T) {
+		client := NewEnhancedMockForgeClient("enhanced-test", ForgeTypeGitHub)
 
 		// Add test data
 		org := CreateMockOrganization("1", "test-org", "Test Organization", "Organization")
@@ -88,7 +89,7 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Errorf("Repository name = %s, want test-docs-repo", repos[0].Name)
 		}
 
-		// Test documentation checking
+		// Test documentation checking with enhanced logic
 		err = client.CheckDocumentation(ctx, repos[0])
 		if err != nil {
 			t.Errorf("CheckDocumentation() error: %v", err)
@@ -98,7 +99,115 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Error("Repository should be marked as having docs (name contains 'docs')")
 		}
 
-		t.Log("✓ MockForgeClient basic functionality works")
+		// Test enhanced failure simulation capabilities
+		client.WithAuthFailure()
+		_, err = client.ListOrganizations(ctx)
+		if err == nil {
+			t.Error("Expected authentication failure with enhanced mock")
+		}
+
+		// Test recovery
+		client.ClearFailures()
+		orgs, err = client.ListOrganizations(ctx)
+		if err != nil {
+			t.Errorf("After clearing failures, ListOrganizations() error: %v", err)
+		}
+
+		if len(orgs) != 1 {
+			t.Errorf("Expected 1 organization after recovery, got %d", len(orgs))
+		}
+
+		// Test configuration generation
+		config := client.GenerateForgeConfig()
+		if config.Name != "enhanced-test" {
+			t.Errorf("Generated config name = %s, want enhanced-test", config.Name)
+		}
+		if config.Type != "github" {
+			t.Errorf("Generated config type = %s, want github", config.Type)
+		}
+
+		t.Log("✓ Enhanced MockForgeClient functionality works")
+	})
+
+	// Test enhanced multi-platform forge discovery
+	t.Run("EnhancedMultiPlatformDiscovery", func(t *testing.T) {
+		manager := NewForgeManager()
+
+		// Create enhanced mocks for different platforms
+		github := NewEnhancedGitHubMock("enhanced-github")
+		gitlab := NewEnhancedGitLabMock("enhanced-gitlab")
+		forgejo := NewEnhancedForgejoMock("enhanced-forgejo")
+
+		// Add additional test repositories to each platform
+		github.AddRepository(CreateMockGitHubRepo("github-org", "user-docs", true, false, false, false))
+		gitlab.AddRepository(CreateMockGitLabRepo("gitlab-group", "api-documentation", true, false, false, false))
+
+		// Test forge factory with enhanced mocks
+		githubConfig := github.GenerateForgeConfig()
+		gitlabConfig := gitlab.GenerateForgeConfig()
+		forgejoConfig := forgejo.GenerateForgeConfig()
+
+		manager.AddForge(githubConfig, github)
+		manager.AddForge(gitlabConfig, gitlab)
+		manager.AddForge(forgejoConfig, forgejo)
+
+		ctx := context.Background()
+
+		// Test GitHub discovery
+		githubRepos, err := github.ListRepositories(ctx, []string{"github-org"})
+		if err != nil {
+			t.Errorf("GitHub ListRepositories() error: %v", err)
+		}
+		if len(githubRepos) != 2 { // Pre-configured + additional
+			t.Errorf("Expected 2 GitHub repositories, got %d", len(githubRepos))
+		}
+
+		// Test GitLab discovery
+		gitlabRepos, err := gitlab.ListRepositories(ctx, []string{"gitlab-group"})
+		if err != nil {
+			t.Errorf("GitLab ListRepositories() error: %v", err)
+		}
+		if len(gitlabRepos) != 2 { // Pre-configured + additional
+			t.Errorf("Expected 2 GitLab repositories, got %d", len(gitlabRepos))
+		}
+
+		// Test Forgejo discovery
+		forgejoRepos, err := forgejo.ListRepositories(ctx, []string{"forgejo-org"})
+		if err != nil {
+			t.Errorf("Forgejo ListRepositories() error: %v", err)
+		}
+		if len(forgejoRepos) != 1 { // Pre-configured only
+			t.Errorf("Expected 1 Forgejo repository, got %d", len(forgejoRepos))
+		}
+
+		// Test failure simulation across platforms
+		github.WithRateLimit(100, time.Hour)
+		_, err = github.ListOrganizations(ctx)
+		if err == nil {
+			t.Error("Expected rate limit error from GitHub mock")
+		}
+
+		gitlab.WithNetworkTimeout(time.Millisecond * 50)
+		_, err = gitlab.ListOrganizations(ctx)
+		if err == nil {
+			t.Error("Expected network timeout from GitLab mock")
+		}
+
+		// Test recovery
+		github.ClearFailures()
+		gitlab.ClearFailures()
+
+		_, err = github.ListOrganizations(ctx)
+		if err != nil {
+			t.Errorf("GitHub should recover after clearing failures: %v", err)
+		}
+
+		_, err = gitlab.ListOrganizations(ctx)
+		if err != nil {
+			t.Errorf("GitLab should recover after clearing failures: %v", err)
+		}
+
+		t.Log("✓ Enhanced multi-platform forge discovery works")
 	})
 
 	// Test discovery service creation
@@ -214,9 +323,13 @@ func TestIntegrationSummary(t *testing.T) {
 
 	t.Log("\n=== Integration Test Summary ===")
 	t.Log("✓ Phase 1 forge integration infrastructure is complete")
+	t.Log("✓ Enhanced mock forge system provides advanced testing capabilities")
+	t.Log("✓ Multi-platform discovery (GitHub, GitLab, Forgejo) with failure simulation")
 	t.Log("✓ All core components (ForgeManager, DiscoveryService, Factory) are functional")
-	t.Log("✓ Mock clients support full testing workflow")
+	t.Log("✓ Mock clients support full testing workflow with realistic behavior")
+	t.Log("✓ Advanced failure modes (auth, rate limit, network timeout) tested")
+	t.Log("✓ Automatic configuration generation from enhanced mocks")
 	t.Log("✓ Repository conversion and filtering foundation is ready")
 	t.Log("✓ V2 configuration system supports daemon mode features")
-	t.Log("→ Ready to proceed with Phase 2: Daemon Infrastructure")
+	t.Log("→ Phase 2 implementation started: Enhanced mock integration complete")
 }

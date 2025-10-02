@@ -6,7 +6,7 @@ import (
 )
 
 func stageCopyContent(ctx context.Context, bs *BuildState) error {
-	if err := bs.Generator.copyContentFiles(ctx, bs.Docs); err != nil {
+	if err := bs.Generator.copyContentFiles(ctx, bs.Docs.Files); err != nil {
 		if errors.Is(err, context.Canceled) {
 			return newCanceledStageError(StageCopyContent, err)
 		}

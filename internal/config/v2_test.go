@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -504,4 +505,395 @@ hugo:
 	if config.Forges[0].Auth.Token != "expanded-token-value" {
 		t.Errorf("Token = %v, want expanded-token-value", config.Forges[0].Auth.Token)
 	}
+}
+
+func TestConfigValidationWithTestForgeFactory(t *testing.T) {
+	factory := NewTestForgeConfigFactory()
+
+	t.Run("RealisticGitHubForgeConfiguration", func(t *testing.T) {
+		githubForge := factory.CreateGitHubForge("config-validation")
+
+		// Create a config with the realistic forge
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    base_url: %s
+    organizations:
+      - %s
+    auth:
+      type: %s
+      token: %s
+    webhook:
+      secret: %s
+      path: %s
+      events:
+        - push
+        - repository
+hugo:
+  title: Test Documentation
+  theme: hextra`,
+			githubForge.Name,
+			githubForge.Type,
+			githubForge.APIURL,
+			githubForge.BaseURL,
+			githubForge.Organizations[0],
+			githubForge.Auth.Type,
+			githubForge.Auth.Token,
+			githubForge.Webhook.Secret,
+			githubForge.Webhook.Path)
+
+		tmpFile, err := os.CreateTemp("", "test-realistic-github-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load realistic GitHub config: %v", err)
+		}
+
+		// Validate the forge was loaded correctly
+		if len(config.Forges) != 1 {
+			t.Fatalf("Expected 1 forge, got %d", len(config.Forges))
+		}
+
+		forge := config.Forges[0]
+		if forge.Type != ForgeGitHub {
+			t.Errorf("Expected GitHub forge, got %v", forge.Type)
+		}
+
+		if forge.Auth.Type != AuthTypeToken {
+			t.Errorf("Expected token auth, got %v", forge.Auth.Type)
+		}
+
+		if len(forge.Organizations) == 0 {
+			t.Error("Expected organizations to be configured")
+		}
+
+		if forge.Webhook == nil {
+			t.Error("Expected webhook configuration")
+		}
+	})
+
+	t.Run("RealisticGitLabForgeConfiguration", func(t *testing.T) {
+		gitlabForge := factory.CreateGitLabForge("config-validation")
+
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    base_url: %s
+    groups:
+      - %s
+    auth:
+      type: %s
+      token: %s
+    webhook:
+      secret: %s
+      path: %s
+      events:
+        - push
+        - repository
+hugo:
+  title: Test Documentation
+  theme: hextra`,
+			gitlabForge.Name,
+			gitlabForge.Type,
+			gitlabForge.APIURL,
+			gitlabForge.BaseURL,
+			gitlabForge.Groups[0],
+			gitlabForge.Auth.Type,
+			gitlabForge.Auth.Token,
+			gitlabForge.Webhook.Secret,
+			gitlabForge.Webhook.Path)
+
+		tmpFile, err := os.CreateTemp("", "test-realistic-gitlab-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load realistic GitLab config: %v", err)
+		}
+
+		forge := config.Forges[0]
+		if forge.Type != ForgeGitLab {
+			t.Errorf("Expected GitLab forge, got %v", forge.Type)
+		}
+
+		if len(forge.Groups) == 0 {
+			t.Error("Expected groups to be configured for GitLab")
+		}
+
+		// Verify GitLab-specific API URL
+		if !strings.Contains(forge.APIURL, "api/v4") {
+			t.Errorf("Expected GitLab API URL with api/v4, got %s", forge.APIURL)
+		}
+	})
+
+	t.Run("MultiPlatformForgeValidation", func(t *testing.T) {
+		githubForge := factory.CreateGitHubForge("multi-github")
+		gitlabForge := factory.CreateGitLabForge("multi-gitlab")
+		forgejoForge := factory.CreateForgejoForge("multi-forgejo")
+
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    organizations:
+      - %s
+    auth:
+      type: %s
+      token: %s
+  - name: %s
+    type: %s
+    api_url: %s
+    groups:
+      - %s
+    auth:
+      type: %s
+      token: %s
+  - name: %s
+    type: %s
+    api_url: %s
+    organizations:
+      - %s
+    auth:
+      type: %s
+      token: %s
+hugo:
+  title: Multi-Platform Documentation`,
+			githubForge.Name, githubForge.Type, githubForge.APIURL, githubForge.Organizations[0],
+			githubForge.Auth.Type, githubForge.Auth.Token,
+			gitlabForge.Name, gitlabForge.Type, gitlabForge.APIURL, gitlabForge.Groups[0],
+			gitlabForge.Auth.Type, gitlabForge.Auth.Token,
+			forgejoForge.Name, forgejoForge.Type, forgejoForge.APIURL, forgejoForge.Organizations[0],
+			forgejoForge.Auth.Type, forgejoForge.Auth.Token)
+
+		tmpFile, err := os.CreateTemp("", "test-multi-platform-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load multi-platform config: %v", err)
+		}
+
+		if len(config.Forges) != 3 {
+			t.Fatalf("Expected 3 forges, got %d", len(config.Forges))
+		}
+
+		// Verify forge types
+		forgeTypes := make(map[ForgeType]bool)
+		for _, forge := range config.Forges {
+			forgeTypes[forge.Type] = true
+		}
+
+		expectedTypes := []ForgeType{ForgeGitHub, ForgeGitLab, ForgeForgejo}
+		for _, expectedType := range expectedTypes {
+			if !forgeTypes[expectedType] {
+				t.Errorf("Expected forge type %v not found", expectedType)
+			}
+		}
+
+		t.Logf("✓ Multi-platform configuration validated: %d forges across GitHub/GitLab/Forgejo", len(config.Forges))
+	})
+
+	t.Run("RealisticWebhookConfiguration", func(t *testing.T) {
+		forge := factory.CreateGitHubForge("webhook-test")
+
+		// Test webhook validation with realistic data
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    organizations:
+      - %s
+    auth:
+      type: %s
+      token: %s
+    webhook:
+      secret: %s
+      path: %s
+      events:
+        - %s
+        - %s
+hugo:
+  title: Webhook Test Documentation`,
+			forge.Name, forge.Type, forge.APIURL, forge.Organizations[0],
+			forge.Auth.Type, forge.Auth.Token,
+			forge.Webhook.Secret, forge.Webhook.Path,
+			forge.Webhook.Events[0], forge.Webhook.Events[1])
+
+		tmpFile, err := os.CreateTemp("", "test-webhook-config-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load webhook config: %v", err)
+		}
+
+		loadedForge := config.Forges[0]
+		if loadedForge.Webhook == nil {
+			t.Fatal("Expected webhook configuration")
+		}
+
+		if loadedForge.Webhook.Secret == "" {
+			t.Error("Expected webhook secret to be set")
+		}
+
+		if loadedForge.Webhook.Path == "" {
+			t.Error("Expected webhook path to be set")
+		}
+
+		if len(loadedForge.Webhook.Events) == 0 {
+			t.Error("Expected webhook events to be configured")
+		}
+
+		// Verify webhook path format
+		if !strings.HasPrefix(loadedForge.Webhook.Path, "/webhooks/") {
+			t.Errorf("Expected webhook path to start with /webhooks/, got %s", loadedForge.Webhook.Path)
+		}
+	})
+}
+
+func TestAdvancedConfigurationScenarios(t *testing.T) {
+	factory := NewTestForgeConfigFactory()
+
+	t.Run("AutoDiscoveryConfiguration", func(t *testing.T) {
+		// Test configuration with auto-discovery enabled
+		autoDiscoverForge := factory.CreateForgeWithAutoDiscover(ForgeGitHub, "auto-discover")
+
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    auto_discover: true
+    auth:
+      type: %s
+      token: %s
+    options:
+      auto_discover: true
+hugo:
+  title: Auto-Discovery Documentation`,
+			autoDiscoverForge.Name, autoDiscoverForge.Type, autoDiscoverForge.APIURL,
+			autoDiscoverForge.Auth.Type, autoDiscoverForge.Auth.Token)
+
+		tmpFile, err := os.CreateTemp("", "test-auto-discover-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load auto-discovery config: %v", err)
+		}
+
+		forge := config.Forges[0]
+		if !forge.AutoDiscover {
+			t.Error("Expected auto-discovery to be enabled")
+		}
+
+		// With auto-discovery, organizations/groups should be empty or minimal
+		if len(forge.Organizations) > 0 && len(forge.Groups) > 0 {
+			t.Error("Auto-discovery forge should not have both organizations and groups pre-configured")
+		}
+	})
+
+	t.Run("MonitoringConfigurationValidation", func(t *testing.T) {
+		forge := factory.CreateGitHubForge("monitoring-test")
+
+		configContent := fmt.Sprintf(`version: "2.0"
+forges:
+  - name: %s
+    type: %s
+    api_url: %s
+    organizations:
+      - %s
+    auth:
+      type: %s
+      token: %s
+hugo:
+  title: Monitoring Test
+monitoring:
+  metrics:
+    enabled: true
+    path: /custom-metrics
+  health:
+    path: /custom-health
+  logging:
+    level: debug
+    format: json`,
+			forge.Name, forge.Type, forge.APIURL, forge.Organizations[0],
+			forge.Auth.Type, forge.Auth.Token)
+
+		tmpFile, err := os.CreateTemp("", "test-monitoring-*.yaml")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.WriteString(configContent); err != nil {
+			t.Fatalf("Failed to write config: %v", err)
+		}
+		tmpFile.Close()
+
+		config, err := Load(tmpFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to load monitoring config: %v", err)
+		}
+
+		// Verify monitoring configuration
+		if !config.Monitoring.Metrics.Enabled {
+			t.Error("Expected metrics to be enabled")
+		}
+
+		if config.Monitoring.Metrics.Path != "/custom-metrics" {
+			t.Errorf("Expected custom metrics path, got %s", config.Monitoring.Metrics.Path)
+		}
+
+		if config.Monitoring.Logging.Level != LogLevelDebug {
+			t.Errorf("Expected debug logging level, got %v", config.Monitoring.Logging.Level)
+		}
+	})
 }
