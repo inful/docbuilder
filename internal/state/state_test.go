@@ -185,7 +185,7 @@ func TestJSONStore(t *testing.T) {
 	// but individual operations try to acquire it again
 	t.Run("Transaction Operations", func(t *testing.T) {
 		t.Skip("FIXME: Deadlock in transaction test - needs refactoring of lock-free operations")
-		
+
 		txResult := store.WithTransaction(ctx, func(txStore StateStore) error {
 			// Create repository and build in transaction
 			repo := &Repository{

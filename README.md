@@ -39,6 +39,48 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - Auto-discover repositories (v2 config) across all organizations accessible to the token (Forgejo)
 - Theme-aware configuration (Hextra & Docsy) using Hugo Modules
 
+## Architecture
+
+DocBuilder follows a pipeline-based architecture with well-defined stages and sub-state management:
+
+### Pipeline Stages
+
+The build process consists of sequential stages, each with a specific responsibility:
+
+1. **PrepareOutput** - Initialize output directories and clean previous builds
+2. **CloneRepos** - Clone/update Git repositories with authentication
+3. **DiscoverDocs** - Find markdown files in configured documentation paths
+4. **GenerateConfig** - Create Hugo configuration with theme-specific settings
+5. **Layouts** - Copy theme layouts and templates
+6. **CopyContent** - Process and copy markdown files with transforms
+7. **Indexes** - Generate repository and section index pages
+8. **RunHugo** - Execute Hugo to render the final static site
+
+### State Management
+
+The `BuildState` is decomposed into focused sub-states for better maintainability:
+
+- **GitState** - Repository cloning, workspace management, and change detection
+- **DocsState** - Documentation file discovery and organization
+- **PipelineState** - Execution metadata and configuration fingerprinting
+
+### Content Processing
+
+Documentation files undergo a transform pipeline:
+
+1. **Front Matter Parsing** - Extract YAML headers
+2. **Front Matter Building** - Add repository metadata and edit links
+3. **Edit Link Injection** - Generate source edit URLs based on forge capabilities
+4. **Front Matter Merge** - Combine parsed and generated metadata
+5. **Link Rewriting** - Convert relative links to Hugo-compatible paths
+6. **Front Matter Serialization** - Write final YAML headers
+
+### Extension Points
+
+- **Themes**: Register new Hugo themes with capability declarations
+- **Transforms**: Add content processing steps to the transform registry
+- **Forges**: Support new Git hosting platforms with authentication methods
+
 ## Quick Start
 
 1. **Build the application**:

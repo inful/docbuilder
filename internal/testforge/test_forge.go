@@ -437,7 +437,7 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 // ToConfigRepositories converts TestForge repositories to config.Repository format
 func (tf *TestForge) ToConfigRepositories() []config.Repository {
 	var configRepos []config.Repository
-	
+
 	for _, repo := range tf.repositories {
 		configRepos = append(configRepos, config.Repository{
 			Name:   repo.Name,
@@ -453,14 +453,14 @@ func (tf *TestForge) ToConfigRepositories() []config.Repository {
 			},
 		})
 	}
-	
+
 	return configRepos
 }
 
 // ToForgeConfig converts TestForge to a forge configuration
 func (tf *TestForge) ToForgeConfig() *config.ForgeConfig {
 	var apiURL, baseURL string
-	
+
 	switch tf.forgeType {
 	case config.ForgeGitHub:
 		apiURL = "https://api.github.com"
@@ -475,7 +475,7 @@ func (tf *TestForge) ToForgeConfig() *config.ForgeConfig {
 		apiURL = fmt.Sprintf("https://api.%s.example.com", tf.name)
 		baseURL = fmt.Sprintf("https://%s.example.com", tf.name)
 	}
-	
+
 	return &config.ForgeConfig{
 		Name:          tf.name,
 		Type:          tf.forgeType,
