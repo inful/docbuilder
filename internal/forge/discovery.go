@@ -256,6 +256,12 @@ func matchesPattern(str, pattern string) bool {
 		return true
 	}
 
+	// Contains match with *pattern* (must be checked before suffix match!)
+	if len(pattern) > 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
+		substring := pattern[1 : len(pattern)-1]
+		return contains(str, substring)
+	}
+
 	// Prefix match with *
 	if len(pattern) > 1 && pattern[len(pattern)-1] == '*' {
 		prefix := pattern[:len(pattern)-1]
@@ -266,12 +272,6 @@ func matchesPattern(str, pattern string) bool {
 	if len(pattern) > 1 && pattern[0] == '*' {
 		suffix := pattern[1:]
 		return len(str) >= len(suffix) && str[len(str)-len(suffix):] == suffix
-	}
-
-	// Contains match with *pattern*
-	if len(pattern) > 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
-		substring := pattern[1 : len(pattern)-1]
-		return contains(str, substring)
 	}
 
 	return false

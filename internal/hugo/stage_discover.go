@@ -13,7 +13,7 @@ import (
 )
 
 func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
-	if len(bs.RepoPaths) == 0 {
+	if len(bs.Git.RepoPaths) == 0 {
 		return newWarnStageError(StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
 	}
 	select {
@@ -21,17 +21,18 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 		return newCanceledStageError(StageDiscoverDocs, ctx.Err())
 	default:
 	}
-	discovery := docs.NewDiscovery(bs.Repositories, &bs.Generator.config.Build)
-	docFiles, err := discovery.DiscoverDocs(bs.RepoPaths)
+	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.config.Build)
+	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
 		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %v", build.ErrDiscovery, err))
 	}
-	prevCount := len(bs.Docs)
+	prevCount := len(bs.Docs.Files)
 	prevSet := map[string]struct{}{}
-	for _, f := range bs.Docs {
+	for _, f := range bs.Docs.Files {
 		prevSet[f.GetHugoPath()] = struct{}{}
 	}
-	bs.Docs = docFiles
+	bs.Docs.Files = docFiles
+	bs.Docs.BuildIndexes() // Update indexes after changing files
 	if prevCount > 0 {
 		changed := false
 		if len(docFiles) != prevCount {
@@ -55,7 +56,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 				}
 			}
 		}
-		if !changed && bs.AllReposUnchanged {
+		if !changed && bs.Git.AllReposUnchanged {
 			slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
 		}
 	}
@@ -80,7 +81,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 			}
 			hash := hex.EncodeToString(h.Sum(nil))
 			var repoURL string
-			for _, r := range bs.Repositories {
+			for _, r := range bs.Git.Repositories {
 				if r.Name == repoName {
 					repoURL = r.URL
 					break

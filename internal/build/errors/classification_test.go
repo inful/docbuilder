@@ -37,7 +37,7 @@ func TestTypedErrorClassification(t *testing.T) {
 			err:         derrors.ErrNoDocsFound,
 			expectIssue: "content",
 		},
-		
+
 		// Hugo generation errors
 		{
 			name:        "content transform failed",
@@ -50,7 +50,7 @@ func TestTypedErrorClassification(t *testing.T) {
 			expectIssue: "filesystem",
 		},
 		{
-			name:        "index generation failed", 
+			name:        "index generation failed",
 			err:         herrors.ErrIndexGenerationFailed,
 			expectIssue: "processing",
 		},
@@ -88,7 +88,7 @@ func classifyError(err error) string {
 		return "content"
 	case errors.Is(err, derrors.ErrInvalidRelativePath):
 		return "filesystem"
-		
+
 	case errors.Is(err, herrors.ErrContentTransformFailed):
 		return "processing"
 	case errors.Is(err, herrors.ErrContentWriteFailed):

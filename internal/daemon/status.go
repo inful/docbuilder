@@ -100,8 +100,16 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 	}
 
 	slog.Debug("Status: building daemon info")
+	// Safely get daemon status with fallback
+	var daemonStatus DaemonStatus
+	if statusVal := d.status.Load(); statusVal != nil {
+		daemonStatus = statusVal.(DaemonStatus)
+	} else {
+		daemonStatus = StatusStopped // Default to stopped if not initialized
+	}
+
 	status.DaemonInfo = DaemonInfo{
-		Status:     d.status.Load().(DaemonStatus),
+		Status:     daemonStatus,
 		Version:    "2.0.0", // TODO: Get from build info
 		StartTime:  d.startTime,
 		Uptime:     time.Since(d.startTime).String(),

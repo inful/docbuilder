@@ -62,7 +62,7 @@ func (f *TestForgeConfigFactory) CreateGitLabForge(name string) *ForgeConfig {
 	}
 }
 
-// CreateForgejoForge creates a realistic Forgejo forge configuration  
+// CreateForgejoForge creates a realistic Forgejo forge configuration
 func (f *TestForgeConfigFactory) CreateForgejoForge(name string) *ForgeConfig {
 	f.counter++
 	return &ForgeConfig{
@@ -88,7 +88,7 @@ func (f *TestForgeConfigFactory) CreateForgejoForge(name string) *ForgeConfig {
 // CreateForgeWithAutoDiscover creates a forge configuration with auto-discovery enabled
 func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType, name string) *ForgeConfig {
 	var forge *ForgeConfig
-	
+
 	switch forgeType {
 	case ForgeGitHub:
 		forge = f.CreateGitHubForge(name)
@@ -99,19 +99,19 @@ func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType
 	default:
 		forge = f.CreateGitHubForge(name) // Default to GitHub
 	}
-	
+
 	// Clear organizations/groups and enable auto-discovery
 	forge.Organizations = nil
 	forge.Groups = nil
 	forge.AutoDiscover = true
-	
+
 	return forge
 }
 
 // CreateForgeWithOptions creates a forge configuration with custom options
 func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, name string, options map[string]any) *ForgeConfig {
 	var forge *ForgeConfig
-	
+
 	switch forgeType {
 	case ForgeGitHub:
 		forge = f.CreateGitHubForge(name)
@@ -122,9 +122,9 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 	default:
 		forge = f.CreateGitHubForge(name)
 	}
-	
+
 	forge.Options = options
-	
+
 	// Handle auto_discover option
 	if autoDiscover, ok := options["auto_discover"]; ok {
 		if enabled, isBool := autoDiscover.(bool); isBool && enabled {
@@ -132,7 +132,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 			forge.Groups = nil
 		}
 	}
-	
+
 	return forge
 }
 
@@ -143,12 +143,12 @@ func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *
 		Hugo:    HugoConfig{Title: "TestForge Documentation", Theme: string(ThemeHextra)},
 		Output:  OutputConfig{Directory: "./test-output", Clean: true},
 		Build: BuildConfig{
-			CloneConcurrency:    2,
-			MaxRetries:         3,
-			RetryBackoff:       RetryBackoffLinear,
-			RetryInitialDelay:  "1s",
-			RetryMaxDelay:      "10s",
-			CloneStrategy:      CloneStrategyFresh,
+			CloneConcurrency:  2,
+			MaxRetries:        3,
+			RetryBackoff:      RetryBackoffLinear,
+			RetryInitialDelay: "1s",
+			RetryMaxDelay:     "10s",
+			CloneStrategy:     CloneStrategyFresh,
 		},
 		Forges: forges,
 		Monitoring: &MonitoringConfig{
@@ -167,7 +167,7 @@ func (f *TestForgeConfigFactory) CreateMultiPlatformConfig(baseName string) *Con
 		f.CreateGitLabForge(baseName),
 		f.CreateForgejoForge(baseName),
 	}
-	
+
 	return f.CreateConfigWithForges(forges)
 }
 
@@ -176,20 +176,20 @@ func (f *TestForgeConfigFactory) CreateFailureScenarioForges(baseName string) []
 	return []*ForgeConfig{
 		// Valid forge
 		f.CreateGitHubForge(baseName + "-valid"),
-		
+
 		// Forge with invalid auth
 		{
-			Name:    baseName + "-invalid-auth",
-			Type:    ForgeGitHub,
-			BaseURL: "https://github.com",
-			APIURL:  "https://api.github.com",
+			Name:          baseName + "-invalid-auth",
+			Type:          ForgeGitHub,
+			BaseURL:       "https://github.com",
+			APIURL:        "https://api.github.com",
 			Organizations: []string{baseName + "-org"},
 			Auth: &AuthConfig{
 				Type:  AuthTypeToken,
 				Token: "", // Invalid empty token
 			},
 		},
-		
+
 		// Forge with invalid webhook config
 		{
 			Name:    baseName + "-invalid-webhook",
@@ -202,8 +202,8 @@ func (f *TestForgeConfigFactory) CreateFailureScenarioForges(baseName string) []
 				Token: "valid-token",
 			},
 			Webhook: &WebhookConfig{
-				Secret: "", // Invalid empty secret
-				Path:   "", // Invalid empty path
+				Secret: "",         // Invalid empty secret
+				Path:   "",         // Invalid empty path
 				Events: []string{}, // Invalid empty events
 			},
 		},

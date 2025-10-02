@@ -155,58 +155,6 @@ func (m *MockForgeClient) GetEditURL(repo *Repository, filePath string, branch s
 
 // Test helper functions
 
-// CreateMockGitHubRepo creates a mock GitHub repository
-func CreateMockGitHubRepo(org, name string, hasDocs, hasDocIgnore, isPrivate, isArchived bool) *Repository {
-	return &Repository{
-		ID:            fmt.Sprintf("github-%s-%s", org, name),
-		Name:          name,
-		FullName:      fmt.Sprintf("%s/%s", org, name),
-		CloneURL:      fmt.Sprintf("https://github.com/%s/%s.git", org, name),
-		SSHURL:        fmt.Sprintf("git@github.com:%s/%s.git", org, name),
-		DefaultBranch: "main",
-		Description:   fmt.Sprintf("Mock repository %s", name),
-		Private:       isPrivate,
-		Archived:      isArchived,
-		HasDocs:       hasDocs,
-		HasDocIgnore:  hasDocIgnore,
-		LastUpdated:   time.Now().Add(-24 * time.Hour),
-		Topics:        []string{"documentation", "test"},
-		Language:      "Go",
-		Metadata: map[string]string{
-			"github_id":  fmt.Sprintf("12345%s", name),
-			"owner":      org,
-			"owner_type": "Organization",
-			"forge_name": "test-github",
-		},
-	}
-}
-
-// CreateMockGitLabRepo creates a mock GitLab repository
-func CreateMockGitLabRepo(group, name string, hasDocs, hasDocIgnore, isPrivate, isArchived bool) *Repository {
-	return &Repository{
-		ID:            fmt.Sprintf("gitlab-%s-%s", group, name),
-		Name:          name,
-		FullName:      fmt.Sprintf("%s/%s", group, name),
-		CloneURL:      fmt.Sprintf("https://gitlab.example.com/%s/%s.git", group, name),
-		SSHURL:        fmt.Sprintf("git@gitlab.example.com:%s/%s.git", group, name),
-		DefaultBranch: "main",
-		Description:   fmt.Sprintf("Mock GitLab repository %s", name),
-		Private:       isPrivate,
-		Archived:      isArchived,
-		HasDocs:       hasDocs,
-		HasDocIgnore:  hasDocIgnore,
-		LastUpdated:   time.Now().Add(-48 * time.Hour),
-		Topics:        []string{"gitlab", "test"},
-		Language:      "Python",
-		Metadata: map[string]string{
-			"gitlab_id":      fmt.Sprintf("67890%s", name),
-			"visibility":     map[bool]string{true: "private", false: "public"}[isPrivate],
-			"namespace_kind": "group",
-			"forge_name":     "test-gitlab",
-		},
-	}
-}
-
 // CreateMockOrganization creates a mock organization
 func CreateMockOrganization(id, name, displayName, orgType string) *Organization {
 	return &Organization{

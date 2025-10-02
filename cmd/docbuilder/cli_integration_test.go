@@ -332,7 +332,7 @@ func TestCLIFailureScenarios(t *testing.T) {
 		// Test build with network timeouts
 		result := env.RunCommand("build")
 		// Should handle timeouts gracefully with proper error reporting
-		result.AssertExitCode(t, 1) // Expected to fail due to network timeout
+		result.AssertExitCode(t, 1)                      // Expected to fail due to network timeout
 		result.AssertErrorContains(t, "network timeout") // Should contain timeout error message
 
 		t.Log("✓ Network timeout handling tested")

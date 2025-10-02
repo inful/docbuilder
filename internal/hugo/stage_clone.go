@@ -18,15 +18,15 @@ import (
 )
 
 func stageCloneRepos(ctx context.Context, bs *BuildState) error {
-	if len(bs.Repositories) == 0 {
+	if len(bs.Git.Repositories) == 0 {
 		return nil
 	}
-	if bs.WorkspaceDir == "" {
+	if bs.Git.WorkspaceDir == "" {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
 	}
-	fetcher := newDefaultRepoFetcher(bs.WorkspaceDir, &bs.Generator.config.Build)
+	fetcher := newDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
 	// Ensure workspace directory structure (previously via git client)
-	if err := os.MkdirAll(bs.WorkspaceDir, 0o755); err != nil {
+	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	strategy := config.CloneStrategyFresh
@@ -35,15 +35,15 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			strategy = s
 		}
 	}
-	bs.RepoPaths = make(map[string]string, len(bs.Repositories))
-	bs.preHeads = make(map[string]string, len(bs.Repositories))
-	bs.postHeads = make(map[string]string, len(bs.Repositories))
+	bs.Git.RepoPaths = make(map[string]string, len(bs.Git.Repositories))
+	bs.Git.preHeads = make(map[string]string, len(bs.Git.Repositories))
+	bs.Git.postHeads = make(map[string]string, len(bs.Git.Repositories))
 	concurrency := 1
 	if bs.Generator != nil && bs.Generator.config.Build.CloneConcurrency > 0 {
 		concurrency = bs.Generator.config.Build.CloneConcurrency
 	}
-	if concurrency > len(bs.Repositories) {
-		concurrency = len(bs.Repositories)
+	if concurrency > len(bs.Git.Repositories) {
+		concurrency = len(bs.Git.Repositories)
 	}
 	if concurrency < 1 {
 		concurrency = 1
@@ -70,12 +70,12 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			mu.Lock()
 			if success {
 				bs.Report.ClonedRepositories++
-				bs.RepoPaths[task.repo.Name] = res.Path
+				bs.Git.RepoPaths[task.repo.Name] = res.Path
 				if res.PostHead != "" {
-					bs.postHeads[task.repo.Name] = res.PostHead
+					bs.Git.SetPostHead(task.repo.Name, res.PostHead)
 				}
 				if res.PreHead != "" {
-					bs.preHeads[task.repo.Name] = res.PreHead
+					bs.Git.SetPreHead(task.repo.Name, res.PreHead)
 				}
 			} else {
 				bs.Report.FailedRepositories++
@@ -97,7 +97,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	for i := 0; i < concurrency; i++ {
 		go worker()
 	}
-	for _, r := range bs.Repositories {
+	for _, r := range bs.Git.Repositories {
 		select {
 		case <-ctx.Done():
 			close(tasks)
@@ -114,24 +114,15 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return newCanceledStageError(StageCloneRepos, ctx.Err())
 	default:
 	}
-	unchanged := bs.Report.FailedRepositories == 0 && len(bs.postHeads) > 0
-	if unchanged {
-		for name, post := range bs.postHeads {
-			if pre, ok := bs.preHeads[name]; !ok || pre == "" || pre != post {
-				unchanged = false
-				break
-			}
-		}
-	}
-	bs.AllReposUnchanged = unchanged
-	if bs.AllReposUnchanged {
-		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.postHeads)))
+	bs.Git.AllReposUnchanged = bs.Git.AllReposUnchangedComputed()
+	if bs.Git.AllReposUnchanged {
+		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.postHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Repositories)))
+		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
 	}
 	return nil
 }
