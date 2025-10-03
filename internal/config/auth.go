@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
+)
 
 // AuthType enumerates supported authentication methods (stringly for YAML compatibility)
 type AuthType string
@@ -13,19 +15,16 @@ const (
 )
 
 // NormalizeAuthType canonicalizes an auth type string (case-insensitive) or returns empty if unknown.
+var authTypeNormalizer = normalization.NewNormalizer(map[string]AuthType{
+       "none":  AuthTypeNone,
+       "ssh":   AuthTypeSSH,
+       "token": AuthTypeToken,
+       "basic": AuthTypeBasic,
+}, AuthTypeNone)
+
+// NormalizeAuthType canonicalizes an auth type string (case-insensitive) or returns empty if unknown.
 func NormalizeAuthType(raw string) AuthType {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(AuthTypeNone):
-		return AuthTypeNone
-	case string(AuthTypeSSH):
-		return AuthTypeSSH
-	case string(AuthTypeToken):
-		return AuthTypeToken
-	case string(AuthTypeBasic):
-		return AuthTypeBasic
-	default:
-		return ""
-	}
+       return authTypeNormalizer.Normalize(raw)
 }
 
 // IsValid reports whether the AuthType is a known value.

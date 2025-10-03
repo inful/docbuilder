@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
+)
 
 // Custom unmarshal to detect if detect_deletions was explicitly set by user.
 func (b *BuildConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -56,18 +58,15 @@ const (
 	NamespacingNever  NamespacingMode = "never"  // never prefix (even if ambiguous across forges)
 )
 
+var namespacingModeNormalizer = normalization.NewNormalizer(map[string]NamespacingMode{
+	"auto":   NamespacingAuto,
+	"always": NamespacingAlways,
+	"never":  NamespacingNever,
+}, NamespacingAuto)
+
 // NormalizeNamespacingMode canonicalizes user input returning empty string if unknown.
 func NormalizeNamespacingMode(raw string) NamespacingMode {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(NamespacingAuto):
-		return NamespacingAuto
-	case string(NamespacingAlways):
-		return NamespacingAlways
-	case string(NamespacingNever):
-		return NamespacingNever
-	default:
-		return ""
-	}
+	return namespacingModeNormalizer.Normalize(raw)
 }
 
 // CloneStrategy enumerates strategies for handling existing repository directories.
@@ -79,18 +78,15 @@ const (
 	CloneStrategyAuto   CloneStrategy = "auto"
 )
 
+var cloneStrategyNormalizer = normalization.NewNormalizer(map[string]CloneStrategy{
+	"fresh":  CloneStrategyFresh,
+	"update": CloneStrategyUpdate,
+	"auto":   CloneStrategyAuto,
+}, CloneStrategyAuto)
+
 // NormalizeCloneStrategy canonicalizes user input returning empty string if unknown.
 func NormalizeCloneStrategy(raw string) CloneStrategy {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(CloneStrategyFresh):
-		return CloneStrategyFresh
-	case string(CloneStrategyUpdate):
-		return CloneStrategyUpdate
-	case string(CloneStrategyAuto):
-		return CloneStrategyAuto
-	default:
-		return ""
-	}
+	return cloneStrategyNormalizer.Normalize(raw)
 }
 
 // RenderMode controls whether the external Hugo binary is invoked after scaffold generation.
@@ -105,16 +101,13 @@ const (
 	RenderModeNever  RenderMode = "never"
 )
 
+var renderModeNormalizer = normalization.NewNormalizer(map[string]RenderMode{
+	"auto":   RenderModeAuto,
+	"always": RenderModeAlways,
+	"never":  RenderModeNever,
+}, RenderModeAuto)
+
 // NormalizeRenderMode canonicalizes user input returning empty string if unknown.
 func NormalizeRenderMode(raw string) RenderMode {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(RenderModeAuto):
-		return RenderModeAuto
-	case string(RenderModeAlways):
-		return RenderModeAlways
-	case string(RenderModeNever):
-		return RenderModeNever
-	default:
-		return ""
-	}
+	return renderModeNormalizer.Normalize(raw)
 }

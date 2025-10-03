@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
+)
 
 // RetryBackoffMode enumerates supported backoff strategies for retries.
 type RetryBackoffMode string
@@ -12,15 +14,12 @@ const (
 )
 
 // NormalizeRetryBackoff converts arbitrary user input (case-insensitive) into a typed mode, returning empty string for unknown.
+var retryBackoffNormalizer = normalization.NewNormalizer(map[string]RetryBackoffMode{
+       "fixed":       RetryBackoffFixed,
+       "linear":      RetryBackoffLinear,
+       "exponential": RetryBackoffExponential,
+}, RetryBackoffExponential)
+
 func NormalizeRetryBackoff(raw string) RetryBackoffMode {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(RetryBackoffFixed):
-		return RetryBackoffFixed
-	case string(RetryBackoffLinear):
-		return RetryBackoffLinear
-	case string(RetryBackoffExponential):
-		return RetryBackoffExponential
-	default:
-		return ""
-	}
+       return retryBackoffNormalizer.Normalize(raw)
 }

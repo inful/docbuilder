@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
+)
 
 // LogLevel enumerates supported logging levels (subset; mapping to slog or zap later).
 type LogLevel string
@@ -12,19 +14,15 @@ const (
 	LogLevelError LogLevel = "error"
 )
 
+var logLevelNormalizer = normalization.NewNormalizer(map[string]LogLevel{
+       "debug": LogLevelDebug,
+       "info":  LogLevelInfo,
+       "warn":  LogLevelWarn,
+       "error": LogLevelError,
+}, LogLevelInfo)
+
 func NormalizeLogLevel(raw string) LogLevel {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(LogLevelDebug):
-		return LogLevelDebug
-	case string(LogLevelInfo):
-		return LogLevelInfo
-	case string(LogLevelWarn):
-		return LogLevelWarn
-	case string(LogLevelError):
-		return LogLevelError
-	default:
-		return ""
-	}
+       return logLevelNormalizer.Normalize(raw)
 }
 
 // LogFormat enumerates supported log output formats.
@@ -35,13 +33,11 @@ const (
 	LogFormatText LogFormat = "text"
 )
 
+var logFormatNormalizer = normalization.NewNormalizer(map[string]LogFormat{
+       "json": LogFormatJSON,
+       "text": LogFormatText,
+}, LogFormatText)
+
 func NormalizeLogFormat(raw string) LogFormat {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case string(LogFormatJSON):
-		return LogFormatJSON
-	case string(LogFormatText):
-		return LogFormatText
-	default:
-		return ""
-	}
+       return logFormatNormalizer.Normalize(raw)
 }
