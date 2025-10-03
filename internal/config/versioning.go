@@ -1,6 +1,8 @@
 package config
 
-import "strings"
+import (
+    "git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
+)
 
 // VersioningStrategy enumerates supported multi-version selection strategies.
 type VersioningStrategy string
@@ -12,15 +14,12 @@ const (
 )
 
 // NormalizeVersioningStrategy returns a canonical typed strategy or empty string if unknown.
+var versioningStrategyNormalizer = normalization.NewNormalizer(map[string]VersioningStrategy{
+    "branches_and_tags": StrategyBranchesAndTags,
+    "branches_only":     StrategyBranchesOnly,
+    "tags_only":         StrategyTagsOnly,
+}, StrategyBranchesAndTags)
+
 func NormalizeVersioningStrategy(raw string) VersioningStrategy {
-    switch strings.ToLower(strings.TrimSpace(raw)) {
-    case string(StrategyBranchesAndTags):
-        return StrategyBranchesAndTags
-    case string(StrategyBranchesOnly):
-        return StrategyBranchesOnly
-    case string(StrategyTagsOnly):
-        return StrategyTagsOnly
-    default:
-        return ""
-    }
+    return versioningStrategyNormalizer.Normalize(raw)
 }
