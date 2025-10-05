@@ -14,7 +14,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/errors"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
 )
 
 // HTTPServer manages HTTP endpoints for the daemon
@@ -31,6 +31,9 @@ type HTTPServer struct {
 	apiHandlers        *handlers.APIHandlers
 	buildHandlers      *handlers.BuildHandlers
 	webhookHandlers    *handlers.WebhookHandlers
+
+	// middleware chain
+	mchain func(http.Handler) http.Handler
 }
 
 // NewHTTPServer creates a new HTTP server instance with the specified configuration
@@ -49,6 +52,9 @@ func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
 	s.apiHandlers = handlers.NewAPIHandlers(cfg, adapter)
 	s.buildHandlers = handlers.NewBuildHandlers(adapter)
 	s.webhookHandlers = handlers.NewWebhookHandlers()
+
+	// Initialize middleware chain
+	s.mchain = smw.Chain(slog.Default(), s.errorAdapter)
 
 	return s
 }
@@ -180,7 +186,7 @@ func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Lis
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
-	mux.Handle("/", s.middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", s.mchain(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := s.resolveDocsRoot()
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})))
@@ -252,7 +258,7 @@ func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.
 	// Generic webhook endpoint (auto-detects forge type)
 	mux.HandleFunc("/webhook", s.webhookHandlers.HandleGenericWebhook)
 
-	s.webhookServer = &http.Server{Handler: s.middleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
+	s.webhookServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
 	go func() {
 		var err error
 		if ln != nil {
@@ -311,7 +317,7 @@ func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Li
 	// Status page endpoint (HTML and JSON)
 	mux.HandleFunc("/status", s.daemon.StatusHandler)
 
-	s.adminServer = &http.Server{Handler: s.middleware(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	s.adminServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	go func() {
 		var err error
 		if ln != nil {
@@ -329,66 +335,4 @@ func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Li
 // prometheusOptionalHandler returns the Prometheus metrics handler. Previously
 // this was gated behind a build tag; it now always returns a handler.
 
-// Middleware for request logging
-func (s *HTTPServer) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		// Wrap the response writer to capture status code
-		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-
-		next.ServeHTTP(wrapped, r)
-
-		duration := time.Since(start)
-
-		slog.Info("HTTP request",
-			logfields.Method(r.Method),
-			logfields.Path(r.URL.Path),
-			logfields.Status(wrapped.statusCode),
-			slog.Duration("duration", duration),
-			logfields.UserAgent(r.UserAgent()),
-			logfields.RemoteAddr(r.RemoteAddr))
-	})
-}
-
-// middleware chains all middleware together
-func (s *HTTPServer) middleware(next http.Handler) http.Handler {
-	return s.loggingMiddleware(s.panicRecoveryMiddleware(next))
-}
-
-// panicRecoveryMiddleware provides panic recovery with structured error responses
-func (s *HTTPServer) panicRecoveryMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				// Log the panic with stack trace
-				slog.Error("HTTP handler panic",
-					"error", err,
-					"path", r.URL.Path,
-					"method", r.Method,
-					"remote_addr", r.RemoteAddr)
-
-				// Create a structured error response
-				panicErr := derrors.New(derrors.CategoryInternal, derrors.SeverityError, "internal server error").
-					WithContext("path", r.URL.Path).
-					WithContext("method", r.Method).
-					Build()
-
-				s.errorAdapter.WriteErrorResponse(w, panicErr)
-			}
-		}()
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
+// inline middleware removed in favor of internal/server/middleware
