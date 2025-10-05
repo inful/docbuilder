@@ -156,9 +156,34 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends \
               ca-certificates curl gnupg lsb-release
+            
+            # Detect OS distribution
+            if [ -f /etc/os-release ]; then
+              . /etc/os-release
+              OS_ID=$ID
+            else
+              echo "Cannot detect OS distribution"
+              exit 1
+            fi
+            
+            # Set Docker repository based on OS
+            case $OS_ID in
+              ubuntu)
+                DOCKER_REPO_URL="https://download.docker.com/linux/ubuntu"
+                ;;
+              debian)
+                DOCKER_REPO_URL="https://download.docker.com/linux/debian"
+                ;;
+              *)
+                echo "Unsupported OS: $OS_ID"
+                exit 1
+                ;;
+            esac
+            
+            echo "Using Docker repository for $OS_ID: $DOCKER_REPO_URL"
             mkdir -p /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            curl -fsSL $DOCKER_REPO_URL/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] $DOCKER_REPO_URL $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
             apt-get update
             apt-get install -y docker-ce docker-ce-cli containerd.io
           fi
@@ -244,9 +269,34 @@ jobs:
             apt-get update
             apt-get install -y --no-install-recommends \
               ca-certificates curl gnupg lsb-release
+            
+            # Detect OS distribution
+            if [ -f /etc/os-release ]; then
+              . /etc/os-release
+              OS_ID=$ID
+            else
+              echo "Cannot detect OS distribution"
+              exit 1
+            fi
+            
+            # Set Docker repository based on OS
+            case $OS_ID in
+              ubuntu)
+                DOCKER_REPO_URL="https://download.docker.com/linux/ubuntu"
+                ;;
+              debian)
+                DOCKER_REPO_URL="https://download.docker.com/linux/debian"
+                ;;
+              *)
+                echo "Unsupported OS: $OS_ID"
+                exit 1
+                ;;
+            esac
+            
+            echo "Using Docker repository for $OS_ID: $DOCKER_REPO_URL"
             mkdir -p /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            curl -fsSL $DOCKER_REPO_URL/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] $DOCKER_REPO_URL $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
             apt-get update
             apt-get install -y docker-ce docker-ce-cli containerd.io
           fi
