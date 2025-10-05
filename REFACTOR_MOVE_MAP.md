@@ -37,9 +37,9 @@ This document tracks the planned moves and refactors to achieve a more cohesive,
 - [x] Extract logging and panic recovery into `internal/server/middleware`
 - [x] Add minimal test for handlers (status endpoint JSON and content-type)
 - [x] Build and run tests (green)
+- [x] Move API response types to `internal/server/responses` and update imports
 - [ ] Move examples/fixtures to `examples/` and `testdata/`
 - [ ] Update docs and tests
-- [ ] Consider moving `internal/daemon/responses` under `internal/server` to align with handlers
 
 ---
 
