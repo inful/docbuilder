@@ -1,3 +1,4 @@
+// Package git provides functions for updating, synchronizing, and managing Git repositories in DocBuilder.
 package git
 
 import (
@@ -58,7 +59,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	return repoPath, nil
 }
 
-// fetchOrigin performs a fetch of origin with appropriate depth/refspec and auth.
+// fetchOrigin performs a fetch of the origin remote with appropriate depth, refspec, and authentication.
 func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository) error {
 	depth := 0
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
@@ -81,7 +82,8 @@ func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository)
 	return nil
 }
 
-// resolveTargetBranch determines the branch we should update/checkout following original precedence rules.
+// resolveTargetBranch determines the branch to update or checkout, following precedence rules:
+// 1. Explicit branch in config, 2. Current HEAD branch, 3. Remote default branch, 4. "main" fallback.
 func resolveTargetBranch(repository *git.Repository, repo appcfg.Repository) (string, error) {
 	if repo.Branch != "" {
 		return repo.Branch, nil
@@ -95,7 +97,7 @@ func resolveTargetBranch(repository *git.Repository, repo appcfg.Repository) (st
 	return "main", nil
 }
 
-// checkoutAndGetRefs ensures the local branch exists and is checked out, returning local and remote refs.
+// checkoutAndGetRefs ensures the local branch exists and is checked out, returning both local and remote references.
 func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch string) (localRef, remoteRef *plumbing.Reference, err error) {
 	localBranchRef := plumbing.NewBranchReferenceName(branch)
 	remoteBranchRef := plumbing.NewRemoteReferenceName("origin", branch)
@@ -117,7 +119,7 @@ func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch str
 	return localRef, remoteRef, nil
 }
 
-// syncWithRemote fast-forwards or hard-resets depending on divergence and config.
+// syncWithRemote fast-forwards or hard-resets the local branch depending on divergence and build config.
 func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, repo appcfg.Repository, branch string, localRef, remoteRef *plumbing.Reference) error {
 	fastForwardPossible, ffErr := isAncestor(repository, localRef.Hash(), remoteRef.Hash())
 	if ffErr != nil {
@@ -146,7 +148,7 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 	return fmt.Errorf("local branch diverged from remote (enable hard_reset_on_diverge to override)")
 }
 
-// postUpdateCleanup applies optional workspace hygiene (clean untracked, prune non-doc paths).
+// postUpdateCleanup applies optional workspace hygiene, such as cleaning untracked files and pruning non-doc paths.
 func (c *Client) postUpdateCleanup(wt *git.Worktree, repoPath string, repo appcfg.Repository) {
 	if c.buildCfg != nil && c.buildCfg.CleanUntracked {
 		if err := wt.Clean(&git.CleanOptions{Dir: true}); err != nil {
@@ -160,7 +162,7 @@ func (c *Client) postUpdateCleanup(wt *git.Worktree, repoPath string, repo appcf
 	}
 }
 
-// logRepositoryUpdated logs repo update summary including short commit hash if available.
+// logRepositoryUpdated logs a repository update summary, including the short commit hash if available.
 func logRepositoryUpdated(repository *git.Repository, repo appcfg.Repository, branch string) {
 	if headRef, err := repository.Head(); err == nil {
 		slog.Info("Repository updated", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", headRef.Hash().String()[:8]))

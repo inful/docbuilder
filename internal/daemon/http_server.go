@@ -1,3 +1,4 @@
+// Package daemon contains the HTTP server wiring for DocBuilder's daemon mode.
 package daemon
 
 import (
@@ -12,12 +13,12 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/errors"
+	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
 )
 
-// HTTPServer manages HTTP endpoints for the daemon
+// HTTPServer manages HTTP endpoints (docs, webhooks, admin) for the daemon.
 type HTTPServer struct {
 	docsServer    *http.Server
 	webhookServer *http.Server
@@ -36,13 +37,13 @@ type HTTPServer struct {
 	mchain func(http.Handler) http.Handler
 }
 
-// NewHTTPServer creates a new HTTP server instance with the specified configuration
+// NewHTTPServer creates a new HTTP server instance with the specified configuration.
 func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
-       s := &HTTPServer{
-	       config:       cfg,
-	       daemon:       daemon,
-	       errorAdapter: derrors.NewHTTPErrorAdapter(slog.Default()),
-       }
+	s := &HTTPServer{
+		config:       cfg,
+		daemon:       daemon,
+		errorAdapter: derrors.NewHTTPErrorAdapter(slog.Default()),
+	}
 
 	// Create adapter for interfaces that need it
 	adapter := &daemonAdapter{daemon: daemon}
@@ -76,6 +77,51 @@ func (a *daemonAdapter) GetStartTime() time.Time {
 	return a.daemon.GetStartTime()
 }
 
+// Metrics bridge for MonitoringHandlers
+func (a *daemonAdapter) HTTPRequestsTotal() int {
+	if a.daemon == nil || a.daemon.metrics == nil {
+		return 0
+	}
+	snap := a.daemon.metrics.GetSnapshot()
+	if v, ok := snap.Counters["http_requests_total"]; ok {
+		return int(v)
+	}
+	return 0
+}
+
+func (a *daemonAdapter) RepositoriesTotal() int {
+	if a.daemon == nil || a.daemon.metrics == nil {
+		return 0
+	}
+	snap := a.daemon.metrics.GetSnapshot()
+	if v, ok := snap.Gauges["repositories_discovered"]; ok {
+		return int(v)
+	}
+	return 0
+}
+
+func (a *daemonAdapter) LastDiscoveryDurationSec() int {
+	if a.daemon == nil || a.daemon.metrics == nil {
+		return 0
+	}
+	snap := a.daemon.metrics.GetSnapshot()
+	if h, ok := snap.Histograms["discovery_duration_seconds"]; ok {
+		return int(h.Mean)
+	}
+	return 0
+}
+
+func (a *daemonAdapter) LastBuildDurationSec() int {
+	if a.daemon == nil || a.daemon.metrics == nil {
+		return 0
+	}
+	snap := a.daemon.metrics.GetSnapshot()
+	if h, ok := snap.Histograms["build_duration_seconds"]; ok {
+		return int(h.Mean)
+	}
+	return 0
+}
+
 func (a *daemonAdapter) TriggerDiscovery() string {
 	return a.daemon.TriggerDiscovery()
 }
@@ -88,7 +134,7 @@ func (a *daemonAdapter) GetQueueLength() int {
 	return a.daemon.GetQueueLength()
 }
 
-// Start initializes and starts all HTTP servers
+// Start initializes and starts all HTTP servers.
 func (s *HTTPServer) Start(ctx context.Context) error {
 	if s.config.Daemon == nil {
 		return fmt.Errorf("daemon configuration required for HTTP servers")
@@ -144,7 +190,7 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop gracefully shuts down all HTTP servers
+// Stop gracefully shuts down all HTTP servers.
 func (s *HTTPServer) Stop(ctx context.Context) error {
 	var errs []error
 
@@ -173,11 +219,6 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 
 	slog.Info("HTTP servers stopped")
 	return nil
-}
-
-// startDocsServer starts the documentation serving server
-func (s *HTTPServer) startDocsServer(ctx context.Context) error {
-	return s.startDocsServerWithListener(ctx, nil)
 }
 
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
@@ -242,11 +283,6 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	return out
 }
 
-// startWebhookServer starts the webhook handling server
-func (s *HTTPServer) startWebhookServer(ctx context.Context) error {
-	return s.startWebhookServerWithListener(ctx, nil)
-}
-
 func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
@@ -271,11 +307,6 @@ func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.
 		}
 	}()
 	return nil
-}
-
-// startAdminServer starts the administrative API server
-func (s *HTTPServer) startAdminServer(ctx context.Context) error {
-	return s.startAdminServerWithListener(ctx, nil)
 }
 
 func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Listener) error {

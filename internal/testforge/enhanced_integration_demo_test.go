@@ -250,7 +250,7 @@ func TestEnhancedTestForgeIntegration(t *testing.T) {
 		// Test with delay simulation
 		enhancedForge.WithDelay(time.Millisecond * 10)
 		start = time.Now()
-		_, err = enhancedForge.ListRepositories(ctx, []string{"org"})
+		_, _ = enhancedForge.ListRepositories(ctx, []string{"org"})
 		delayedDuration := time.Since(start)
 
 		if delayedDuration < time.Millisecond*10 {

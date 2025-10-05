@@ -68,6 +68,7 @@ func (g *Generator) runHugoBuild() error {
 		}
 		slog.Warn("Hugo config file missing before run; build will likely fail", "expected", configPath, "root", root, "dir_entries", names, "error", err)
 	}
+
 	cmd := exec.Command("hugo")
 	cmd.Dir = root // run against staging directory
 	cmd.Stdout = os.Stdout

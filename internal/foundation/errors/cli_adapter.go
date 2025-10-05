@@ -1,5 +1,7 @@
 package errors
+
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -116,7 +118,7 @@ func (a *CLIErrorAdapter) formatClassified(err *ClassifiedError) string {
 	}
 
 	// Non-verbose mode for internal errors
-	return fmt.Sprintf("Internal error occurred (use -v for details)")
+	return "Internal error occurred (use -v for details)"
 }
 
 // formatDocBuilder formats a DocBuilderError for display.
@@ -190,7 +192,7 @@ func (a *CLIErrorAdapter) logError(err error) {
 			attrs = append(attrs, slog.Bool("retryable", true))
 		}
 
-		a.logger.LogAttrs(nil, level, classified.Message(), attrs...)
+		a.logger.LogAttrs(context.Background(), level, classified.Message(), attrs...)
 		return
 	}
 
@@ -204,7 +206,7 @@ func (a *CLIErrorAdapter) logError(err error) {
 			attrs = append(attrs, slog.Bool("retryable", true))
 		}
 
-		a.logger.LogAttrs(nil, level, dbe.Message, attrs...)
+		a.logger.LogAttrs(context.Background(), level, dbe.Message, attrs...)
 		return
 	}
 

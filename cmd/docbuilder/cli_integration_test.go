@@ -139,8 +139,8 @@ func TestPhase4ACLIFramework(t *testing.T) {
 		result.AssertExitCode(t, 1)
 		result.AssertErrorContains(t, "Unknown command")
 
-		// Test missing configuration
-		result = env.RunCommand("build", "--config", "nonexistent.yaml")
+		// Test missing configuration (ensure no unused assignment)
+		_ = env.RunCommand("build", "--config", "nonexistent.yaml")
 		// This would normally fail, but our simulation handles it gracefully
 
 		// Test no command

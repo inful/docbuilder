@@ -1,3 +1,5 @@
+// Package config provides configuration types and helpers for DocBuilder, including loading,
+// validation, and normalization of the unified v2 configuration format.
 package config
 
 import (
@@ -8,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config represents the unified (v2) configuration format for daemon and direct modes.
+// Config represents the unified (v2) configuration format for DocBuilder, supporting both daemon and direct modes.
 type Config struct {
 	Version    string            `yaml:"version"`
 	Daemon     *DaemonConfig     `yaml:"daemon,omitempty"`
@@ -25,7 +27,7 @@ type Config struct {
 	Repositories []Repository `yaml:"repositories,omitempty"`
 }
 
-// ForgeConfig represents configuration for a specific forge instance
+// ForgeConfig represents configuration for a specific forge instance (e.g., GitHub, GitLab, Forgejo).
 type ForgeConfig struct {
 	Name          string                 `yaml:"name"`          // Friendly name for this forge
 	Type          ForgeType              `yaml:"type"`          // Typed forge kind
@@ -39,7 +41,7 @@ type ForgeConfig struct {
 	Options       map[string]interface{} `yaml:"options"`       // Forge-specific options
 }
 
-// WebhookConfig represents webhook configuration for a forge
+// WebhookConfig represents webhook configuration for a forge, including secret, path, and events.
 type WebhookConfig struct {
 	Secret       string   `yaml:"secret"`        // Webhook secret for validation
 	Path         string   `yaml:"path"`          // Webhook endpoint path
@@ -47,35 +49,35 @@ type WebhookConfig struct {
 	RegisterAuto bool     `yaml:"register_auto"` // Auto-register webhooks
 }
 
-// DaemonConfig represents daemon-specific configuration
+// DaemonConfig represents daemon-specific configuration, including HTTP, sync, and storage settings.
 type DaemonConfig struct {
 	HTTP    HTTPConfig    `yaml:"http"`
 	Sync    SyncConfig    `yaml:"sync"`
 	Storage StorageConfig `yaml:"storage"`
 }
 
-// HTTPConfig represents HTTP server configuration
+// HTTPConfig represents HTTP server configuration for the daemon, including ports for docs, webhooks, and admin endpoints.
 type HTTPConfig struct {
 	DocsPort    int `yaml:"docs_port"`    // Documentation serving port
 	WebhookPort int `yaml:"webhook_port"` // Webhook reception port
 	AdminPort   int `yaml:"admin_port"`   // Admin/status endpoints port
 }
 
-// SyncConfig represents synchronization configuration
+// SyncConfig represents synchronization configuration for repository discovery and build queueing.
 type SyncConfig struct {
 	Schedule         string `yaml:"schedule"`          // Cron expression for discovery
 	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Max parallel repository builds
 	QueueSize        int    `yaml:"queue_size"`        // Max queued build requests
 }
 
-// StorageConfig represents storage configuration
+// StorageConfig represents storage configuration for state, repository cache, and output directories.
 type StorageConfig struct {
 	StateFile    string `yaml:"state_file"`     // Path to state file
 	RepoCacheDir string `yaml:"repo_cache_dir"` // Directory for cached repositories
 	OutputDir    string `yaml:"output_dir"`     // Output directory for generated site
 }
 
-// FilteringConfig represents repository filtering configuration
+// FilteringConfig represents repository filtering configuration, including required paths, ignore files, and name patterns.
 type FilteringConfig struct {
 	RequiredPaths   []string `yaml:"required_paths"`   // Paths that must exist (e.g., "docs")
 	IgnoreFiles     []string `yaml:"ignore_files"`     // Files that exclude repo (e.g., ".docignore")
@@ -83,7 +85,7 @@ type FilteringConfig struct {
 	ExcludePatterns []string `yaml:"exclude_patterns"` // Repository name patterns to exclude
 }
 
-// VersioningConfig represents multi-version documentation configuration
+// VersioningConfig represents multi-version documentation configuration, including strategy and version limits.
 type VersioningConfig struct {
 	Strategy           VersioningStrategy `yaml:"strategy"`              // typed: branches_and_tags|branches_only|tags_only
 	DefaultBranchOnly  bool               `yaml:"default_branch_only"`   // Only build default branch
@@ -92,31 +94,31 @@ type VersioningConfig struct {
 	MaxVersionsPerRepo int                `yaml:"max_versions_per_repo"` // Maximum versions to keep per repo
 }
 
-// MonitoringConfig represents monitoring and observability configuration
+// MonitoringConfig represents monitoring and observability configuration, including metrics, health, and logging.
 type MonitoringConfig struct {
 	Metrics MonitoringMetrics `yaml:"metrics"`
 	Health  MonitoringHealth  `yaml:"health"`
 	Logging MonitoringLogging `yaml:"logging"`
 }
 
-// MonitoringMetrics represents metrics configuration
+// MonitoringMetrics represents configuration for metrics collection and endpoint path.
 type MonitoringMetrics struct {
 	Enabled bool   `yaml:"enabled"`
 	Path    string `yaml:"path"`
 }
 
-// MonitoringHealth represents health check configuration
+// MonitoringHealth represents configuration for health check endpoints.
 type MonitoringHealth struct {
 	Path string `yaml:"path"`
 }
 
-// MonitoringLogging represents logging configuration
+// MonitoringLogging represents configuration for logging level and format.
 type MonitoringLogging struct {
 	Level  LogLevel  `yaml:"level"`
 	Format LogFormat `yaml:"format"`
 }
 
-// Load reads and validates a configuration file (version 2.x).
+// Load reads and validates a configuration file (version 2.x), expanding environment variables and applying normalization and defaults.
 func Load(configPath string) (*Config, error) {
 	// Load .env file if it exists
 	if err := loadEnvFile(); err != nil {
@@ -167,18 +169,18 @@ func Load(configPath string) (*Config, error) {
 	return &config, nil
 }
 
-// applyDefaults applies default values to configuration
+// applyDefaults applies default values to a Config after normalization.
 func applyDefaults(config *Config) error {
 	applier := NewDefaultApplier()
 	return applier.ApplyDefaults(config)
 }
 
-// validateConfig validates the configuration
+// validateConfig validates a Config for required fields and constraints.
 func validateConfig(config *Config) error {
 	return ValidateConfig(config)
 }
 
-// Init writes an example configuration file (version 2.0).
+// Init writes an example configuration file (version 2.0) to the given path. If force is false, it will not overwrite existing files.
 func Init(configPath string, force bool) error {
 	if _, err := os.Stat(configPath); err == nil && !force {
 		return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
@@ -279,7 +281,7 @@ func Init(configPath string, force bool) error {
 	return nil
 }
 
-// IsConfigVersion returns true if the config file version field starts with 2.
+// IsConfigVersion returns true if the config file version field in the given file starts with "2.".
 func IsConfigVersion(configPath string) (bool, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return false, fmt.Errorf("configuration file not found: %s", configPath)

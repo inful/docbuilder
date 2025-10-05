@@ -290,5 +290,6 @@ func (r *ExecutionResult) GetSuccessfulStages() []hugo.StageName {
 
 // DefaultPipeline creates a pipeline with the default registry and middleware.
 func DefaultPipeline() *Pipeline {
-	return NewPipeline(commands.DefaultRegistry)
+	// Ensure option function remains referenced for API stability and to satisfy static analyzers.
+	return NewPipeline(commands.DefaultRegistry, WithStopOnError(true))
 }

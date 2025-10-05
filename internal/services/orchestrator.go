@@ -11,19 +11,25 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
-// ServiceStatus represents the current state of a service.
+// ServiceStatus represents the current state of a managed service in the orchestrator.
 type ServiceStatus string
 
 const (
+	// StatusNotStarted indicates the service has not yet started.
 	StatusNotStarted ServiceStatus = "not_started"
-	StatusStarting   ServiceStatus = "starting"
-	StatusRunning    ServiceStatus = "running"
-	StatusStopping   ServiceStatus = "stopping"
-	StatusStopped    ServiceStatus = "stopped"
-	StatusFailed     ServiceStatus = "failed"
+	// StatusStarting indicates the service is in the process of starting.
+	StatusStarting ServiceStatus = "starting"
+	// StatusRunning indicates the service is running.
+	StatusRunning ServiceStatus = "running"
+	// StatusStopping indicates the service is in the process of stopping.
+	StatusStopping ServiceStatus = "stopping"
+	// StatusStopped indicates the service has stopped.
+	StatusStopped ServiceStatus = "stopped"
+	// StatusFailed indicates the service failed to start or run.
+	StatusFailed ServiceStatus = "failed"
 )
 
-// HealthStatus represents the health of a service.
+// HealthStatus represents the health of a managed service, including status, message, and timestamp.
 type HealthStatus struct {
 	Status  string    `json:"status"`
 	Message string    `json:"message,omitempty"`
@@ -31,13 +37,15 @@ type HealthStatus struct {
 }
 
 var (
-	HealthStatusHealthy   = HealthStatus{Status: "healthy", CheckAt: time.Now()}
+	// HealthStatusHealthy is a reusable healthy status value.
+	HealthStatusHealthy = HealthStatus{Status: "healthy", CheckAt: time.Now()}
+	// HealthStatusUnhealthy returns a HealthStatus indicating an unhealthy state with a message.
 	HealthStatusUnhealthy = func(message string) HealthStatus {
 		return HealthStatus{Status: "unhealthy", Message: message, CheckAt: time.Now()}
 	}
 )
 
-// ManagedService defines the interface for services managed by the orchestrator.
+// ManagedService defines the interface for services managed by the ServiceOrchestrator.
 type ManagedService interface {
 	// Name returns the service name for logging and identification.
 	Name() string
@@ -55,7 +63,7 @@ type ManagedService interface {
 	Dependencies() []string
 }
 
-// ServiceInfo contains metadata about a managed service.
+// ServiceInfo contains metadata and runtime status about a managed service, for reporting and diagnostics.
 type ServiceInfo struct {
 	Name         string        `json:"name"`
 	Status       ServiceStatus `json:"status"`
@@ -66,7 +74,7 @@ type ServiceInfo struct {
 	LastError    string        `json:"last_error,omitempty"`
 }
 
-// ServiceOrchestrator manages the lifecycle of multiple services with dependency resolution.
+// ServiceOrchestrator manages the lifecycle of multiple services, including dependency resolution, start/stop sequencing, and health reporting.
 type ServiceOrchestrator struct {
 	services   map[string]ManagedService
 	status     map[string]ServiceStatus
@@ -79,7 +87,7 @@ type ServiceOrchestrator struct {
 	stopTimeout  time.Duration
 }
 
-// NewServiceOrchestrator creates a new service orchestrator.
+// NewServiceOrchestrator creates a new ServiceOrchestrator with default timeouts.
 func NewServiceOrchestrator() *ServiceOrchestrator {
 	return &ServiceOrchestrator{
 		services:     make(map[string]ManagedService),
@@ -92,14 +100,14 @@ func NewServiceOrchestrator() *ServiceOrchestrator {
 	}
 }
 
-// WithTimeouts configures start and stop timeouts.
+// WithTimeouts sets custom start and stop timeouts for the orchestrator and returns itself for chaining.
 func (so *ServiceOrchestrator) WithTimeouts(start, stop time.Duration) *ServiceOrchestrator {
 	so.startTimeout = start
 	so.stopTimeout = stop
 	return so
 }
 
-// RegisterService adds a service to the orchestrator.
+// RegisterService adds a ManagedService to the orchestrator. Returns an error if the name is empty or already registered.
 func (so *ServiceOrchestrator) RegisterService(service ManagedService) foundation.Result[struct{}, error] {
 	so.mu.Lock()
 	defer so.mu.Unlock()
@@ -124,7 +132,7 @@ func (so *ServiceOrchestrator) RegisterService(service ManagedService) foundatio
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-// StartAll starts all services in dependency order.
+// StartAll starts all registered services in dependency order, respecting declared dependencies. If any service fails to start, all started services are stopped.
 func (so *ServiceOrchestrator) StartAll(ctx context.Context) error {
 	so.mu.Lock()
 	defer so.mu.Unlock()
@@ -152,7 +160,7 @@ func (so *ServiceOrchestrator) StartAll(ctx context.Context) error {
 	return nil
 }
 
-// StopAll stops all services in reverse dependency order.
+// StopAll stops all registered services in reverse dependency order, ensuring dependents are stopped before their dependencies.
 func (so *ServiceOrchestrator) StopAll(ctx context.Context) error {
 	so.mu.Lock()
 	defer so.mu.Unlock()
@@ -191,7 +199,7 @@ func (so *ServiceOrchestrator) StopAll(ctx context.Context) error {
 	return nil
 }
 
-// GetServiceInfo returns information about a specific service.
+// GetServiceInfo returns ServiceInfo for a specific service name, or None if not found.
 func (so *ServiceOrchestrator) GetServiceInfo(name string) foundation.Option[ServiceInfo] {
 	so.mu.RLock()
 	defer so.mu.RUnlock()
@@ -223,7 +231,7 @@ func (so *ServiceOrchestrator) GetServiceInfo(name string) foundation.Option[Ser
 	return foundation.Some(info)
 }
 
-// GetAllServiceInfo returns information about all services.
+// GetAllServiceInfo returns ServiceInfo for all registered services.
 func (so *ServiceOrchestrator) GetAllServiceInfo() []ServiceInfo {
 	so.mu.RLock()
 	defer so.mu.RUnlock()
@@ -238,7 +246,7 @@ func (so *ServiceOrchestrator) GetAllServiceInfo() []ServiceInfo {
 	return infos
 }
 
-// calculateStartOrder determines the order in which services should be started.
+// calculateStartOrder determines the order in which services should be started using topological sort for dependency resolution.
 func (so *ServiceOrchestrator) calculateStartOrder() ([]string, error) {
 	// Topological sort to handle dependencies
 	visited := make(map[string]bool)
@@ -286,7 +294,7 @@ func (so *ServiceOrchestrator) calculateStartOrder() ([]string, error) {
 	return order, nil
 }
 
-// startService starts a single service with timeout.
+// startService starts a single service by name, applying the configured start timeout.
 func (so *ServiceOrchestrator) startService(ctx context.Context, name string) error {
 	service := so.services[name]
 	so.status[name] = StatusStarting
@@ -315,7 +323,7 @@ func (so *ServiceOrchestrator) startService(ctx context.Context, name string) er
 	return nil
 }
 
-// stopService stops a single service with timeout.
+// stopService stops a single service by name, applying the configured stop timeout.
 func (so *ServiceOrchestrator) stopService(ctx context.Context, name string) error {
 	service := so.services[name]
 
@@ -347,7 +355,7 @@ func (so *ServiceOrchestrator) stopService(ctx context.Context, name string) err
 	return nil
 }
 
-// stopStartedServices stops all currently running services (used for cleanup on start failure).
+// stopStartedServices stops all currently running services. Used for cleanup if a start failure occurs.
 func (so *ServiceOrchestrator) stopStartedServices(ctx context.Context) {
 	for name, status := range so.status {
 		if status == StatusRunning {

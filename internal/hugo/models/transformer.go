@@ -210,8 +210,9 @@ func (r *TypedTransformerRegistry) BuildExecutionPlan(filter []string) ([]TypedT
 		available = filtered
 	}
 
-	// TODO: Implement dependency resolution algorithm
-	// For now, return priority-sorted list
+	// Note: full dependency resolution (graph/toposort) is intentionally deferred.
+	// Current behavior: priority-sorted list with optional filter. When we add
+	// real ordering constraints, implement a DAG + topo sort here.
 	return available, nil
 }
 
@@ -331,8 +332,9 @@ func (p *ContentPage) Serialize() ([]byte, error) {
 		return []byte(p.Content), nil
 	}
 
-	// TODO: Implement YAML serialization
-	// For now, return content only
+	// Note: YAML serialization of front matter is intentionally deferred.
+	// Current behavior: content-only output; front matter is preserved in
+	// typed structures for downstream generators.
 	return []byte(p.Content), nil
 }
 

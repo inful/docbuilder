@@ -1,3 +1,5 @@
+// Package main provides the entry point and service integration for the DocBuilder CLI.
+// It wires up the service orchestrator and command executor for end-to-end operation.
 package main
 
 import (
@@ -8,13 +10,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
-// ServiceContainer holds the service orchestrator and executor
+// ServiceContainer holds the service orchestrator and command executor for the DocBuilder CLI.
 type ServiceContainer struct {
 	Orchestrator *services.ServiceOrchestrator
 	Executor     *cli.DefaultCommandExecutor
 }
 
-// InitializeServices creates and starts the service container
+// InitializeServices creates and starts the service container, wiring up the orchestrator and executor.
 func InitializeServices(ctx context.Context) (*ServiceContainer, error) {
 	// Create service orchestrator
 	orchestrator := services.NewServiceOrchestrator()
@@ -31,7 +33,7 @@ func InitializeServices(ctx context.Context) (*ServiceContainer, error) {
 	}, nil
 }
 
-// Shutdown gracefully stops all services
+// Shutdown gracefully stops all managed services in the container.
 func (sc *ServiceContainer) Shutdown(ctx context.Context) error {
 	if err := sc.Orchestrator.StopAll(ctx); err != nil {
 		return fmt.Errorf("stop services: %w", err)
@@ -39,7 +41,8 @@ func (sc *ServiceContainer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// IntegratedMain demonstrates the complete service-oriented CLI
+// IntegratedMain demonstrates the complete service-oriented CLI workflow, including service initialization,
+// build execution, and graceful shutdown. It is intended as a reference for full integration.
 func IntegratedMain() error {
 	ctx := context.Background()
 

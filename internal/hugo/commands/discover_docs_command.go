@@ -111,46 +111,6 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	return hugo.ExecutionSuccess()
 }
 
-// updateStateManager updates the state manager with repository document statistics.
-func (c *DiscoverDocsCommand) updateStateManager(bs *hugo.BuildState, docFiles []docs.DocFile) {
-	// Access state manager directly since it's a private field
-	// This would ideally be refactored to use a proper interface
-
-	repoPaths := make(map[string][]string)
-	for _, f := range docFiles {
-		p := f.GetHugoPath()
-		repoPaths[f.Repository] = append(repoPaths[f.Repository], p)
-	}
-
-	for repoName, paths := range repoPaths {
-		sort.Strings(paths)
-		h := sha256.New()
-		for _, p := range paths {
-			_, _ = h.Write([]byte(p))
-			_, _ = h.Write([]byte{0})
-		}
-		hash := hex.EncodeToString(h.Sum(nil))
-
-		var repoURL string
-		for _, r := range bs.Git.Repositories {
-			if r.Name == repoName {
-				repoURL = r.URL
-				break
-			}
-		}
-		if repoURL == "" {
-			repoURL = repoName
-		}
-
-		// Note: Direct state manager access would require refactoring Generator interface
-		// For now, we skip this functionality in the command pattern
-		// This would be implemented when Generator provides proper state manager access
-		_ = repoURL
-		_ = paths
-		_ = hash
-	}
-}
-
 // updateReportHash updates the build report with the overall documentation files hash.
 func (c *DiscoverDocsCommand) updateReportHash(bs *hugo.BuildState, docFiles []docs.DocFile) {
 	paths := make([]string, 0, len(docFiles))

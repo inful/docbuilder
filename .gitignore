@@ -1,3 +1,5 @@
+# Ignore generated config for Hextra test
+hextra-config.yaml
 # ---> Go
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
@@ -307,3 +309,4 @@ bin/docbuilder
 /*.docbuilder
 daemon-data/*
 daemon-data/repos/daemon-state.json
+docker-test-output/output

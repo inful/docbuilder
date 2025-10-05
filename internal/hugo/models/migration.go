@@ -189,13 +189,13 @@ func (m *MigrationHelper) ValidateFrontMatterConfig(fm *FrontMatter) []string {
 		}
 
 		// Warn about complex nested structures that might cause issues
-		switch value.(type) {
+		switch v := value.(type) {
 		case map[string]interface{}:
-			if nested, ok := value.(map[string]interface{}); ok && len(nested) > 10 {
+			if len(v) > 10 {
 				warnings = append(warnings, fmt.Sprintf("custom field '%s' has complex nested structure", key))
 			}
 		case []interface{}:
-			if arr, ok := value.([]interface{}); ok && len(arr) > 20 {
+			if len(v) > 20 {
 				warnings = append(warnings, fmt.Sprintf("custom field '%s' has large array", key))
 			}
 		}

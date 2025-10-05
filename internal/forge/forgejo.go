@@ -46,7 +46,7 @@ func NewForgejoClient(fg *ForgeConfig) (*ForgejoClient, error) {
 	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
 		client.token = fg.Auth.Token
 	} else {
-		return nil, fmt.Errorf("Forgejo client requires token authentication")
+		return nil, fmt.Errorf("forgejo client requires token authentication")
 	}
 
 	return client, nil
@@ -599,7 +599,7 @@ func (c *ForgejoClient) doRequest(req *http.Request, result interface{}) error {
 		limitedBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		// Best effort to make body single-line
 		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
-		return fmt.Errorf("Forgejo API error: %s url=%s body=%q", resp.Status, req.URL.String(), bodyStr)
+		return fmt.Errorf("forgejo API error: %s url=%s body=%q", resp.Status, req.URL.String(), bodyStr)
 	}
 
 	if result != nil {
