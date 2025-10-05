@@ -1,21 +1,20 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main ]
+    paths-ignore: ['**.md']
   pull_request:
-    branches: [ main, master, develop ]
-  release:
-    types: [ published ]
+    branches: [ main ]
+    paths-ignore: ['**.md']
 
 env:
-  GO_VERSION: '1.24'
   REGISTRY: git.home.luguber.info
   IMAGE_NAME: docbuilder
 
 jobs:
   test:
-    name: Test
+    name: Test & Lint (Quick Check)
     runs-on: ubuntu-latest
     container: golang:1.24
     steps:
@@ -30,41 +29,13 @@ jobs:
           set -euo pipefail
           REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
           if [ -n "${GITHUB_TOKEN:-}" ]; then
-            # Inject token for private repositories
             HOST="${GITHUB_SERVER_URL#https://}"
             REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
           fi
           git init .
           git remote add origin "$REPO_URL"
-          # Prefer exact SHA; fallback to ref name
           git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
           git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
-
-      - name: Install Hugo
-        run: |
-          HUGO_VERSION="0.151.0"
-          # Detect architecture
-          case "$(uname -m)" in
-            x86_64) HUGO_ARCH="amd64" ;;
-            aarch64|arm64) HUGO_ARCH="arm64" ;;
-            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
-          esac
-          echo "Installing Hugo ${HUGO_VERSION} for linux-${HUGO_ARCH}"
-          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${HUGO_ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/hugo /usr/local/bin/
-          hugo version
-
-      - name: Download dependencies
-        run: make deps
-
-      - name: Format check
-        run: |
-          make fmt
-          if [ -n "$(git diff --name-only)" ]; then
-            echo "Code is not formatted. Please run 'make fmt'"
-            git diff
-            exit 1
-          fi
 
       - name: Download golangci-lint
         run: |
@@ -79,29 +50,30 @@ jobs:
           curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}.tar.gz" | tar -xz -C /tmp
           cp /tmp/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}/golangci-lint /usr/local/bin/
           
-      - name: Lint
-        run: make lint
-
-      - name: Run tests
-        run: make test-coverage
-
-      - name: Show coverage summary
+      - name: Quick format check
         run: |
-          if [ -f coverage.out ]; then
-            go tool cover -func=coverage.out | tail -n 1 || true
+          gofmt -l . | tee fmt-issues
+          if [ -s fmt-issues ]; then
+            echo "Code is not formatted. Please run 'make fmt'"
+            cat fmt-issues
+            exit 1
           fi
 
-  build:
-    name: Build
+      - name: Quick lint check
+        run: golangci-lint run --timeout=5m
+
+      - name: Quick test (no race, no coverage)
+        run: go test -short ./...
+
+  build-and-test:
+    name: Build & Full Test
     runs-on: ubuntu-latest
-    container: golang:1.24
-    needs: test
     steps:
       - name: Install system dependencies
         run: |
-          apt-get update && apt-get install -y --no-install-recommends \
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
             git make ca-certificates curl && \
-          update-ca-certificates
+          sudo update-ca-certificates
 
       - name: Checkout code (manual)
         run: |
@@ -116,60 +88,29 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
           git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
-      - name: Install Hugo
+      - name: Download Docker Buildx
         run: |
-          HUGO_VERSION="0.151.0"
-          # Detect architecture
+          BUILDX_VERSION="0.19.0"
+          # Detect architecture for runner
           case "$(uname -m)" in
-            x86_64) HUGO_ARCH="amd64" ;;
-            aarch64|arm64) HUGO_ARCH="arm64" ;;
+            x86_64) BUILDX_ARCH="amd64" ;;
+            aarch64|arm64) BUILDX_ARCH="arm64" ;;
             *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
           esac
-          echo "Installing Hugo ${HUGO_VERSION} for linux-${HUGO_ARCH}"
-          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${HUGO_ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/hugo /usr/local/bin/
-          hugo version
-
-      - name: Build binary
-        run: make build
-
-      - name: Test binary execution
-        run: |
-          ./bin/docbuilder --version
-          ./bin/docbuilder --help
-
-      # Optional: print binary size for visibility
-      - name: Show binary info
-        run: |
-          ls -lh bin/docbuilder || true
-
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    container: gcr.io/kaniko-project/executor:latest
-    needs: test
-    steps:
-      - name: Install system dependencies
-        run: |
-          # Kaniko executor image is based on busybox, install basic tools
-          apk add --no-cache git bash curl
-
-      - name: Checkout code (manual)
-        run: |
-          set -euo pipefail
-          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          if [ -n "${GITHUB_TOKEN:-}" ]; then
-            HOST="${GITHUB_SERVER_URL#https://}"
-            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
-          fi
-          git init .
-          git remote add origin "$REPO_URL"
-          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
-          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
+          echo "Installing docker buildx ${BUILDX_VERSION} for linux-${BUILDX_ARCH}"
+          
+          # Download and install buildx
+          mkdir -p ~/.docker/cli-plugins
+          curl -sSfL "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${BUILDX_ARCH}" \
+            -o ~/.docker/cli-plugins/docker-buildx
+          chmod +x ~/.docker/cli-plugins/docker-buildx
+          
+          # Set up buildx
+          docker buildx create --name multiarch --driver docker-container --use || true
+          docker buildx inspect --bootstrap
 
       - name: Compute image tags
         id: tags
-        shell: bash
         run: |
           set -euo pipefail
           IMAGE_BASE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}"
@@ -179,128 +120,40 @@ jobs:
           echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
           echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
 
-      - name: Build Docker image with Kaniko
+      - name: Build and test with Docker Buildx
         run: |
-          # Build and optionally push with Kaniko
+          # Build the image (includes all tests, format checks, linting, and binary build)
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            # Configure registry auth for Kaniko
-            echo '{"auths":{"${{ env.REGISTRY }}":{"username":"${{ github.actor }}","password":"${{ secrets.REGISTRY_TOKEN }}"}}}' > /kaniko/.docker/config.json
+            # Login to registry
+            echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
             
             # Build and push
-            /kaniko/executor \
-              --dockerfile=Dockerfile \
-              --context=. \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }}
+            docker buildx build \
+              --platform linux/amd64,linux/arm64 \
+              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
+              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
+              --push \
+              .
+            
+            echo "✅ Multi-arch image built and pushed to registry"
           else
             # Build only (no push for PRs or without registry token)
-            /kaniko/executor \
-              --dockerfile=Dockerfile \
-              --context=. \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --no-push
+            docker buildx build \
+              --platform linux/amd64 \
+              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
+              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
+              --load \
+              .
+            
+            echo "✅ Image built successfully (no push for PR)"
           fi
 
       - name: Log build results
         run: |
-          echo "Image built successfully with Kaniko"
-          echo "Built image: ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }}"
+          echo "=== Build Summary ==="
+          echo "Image: ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }}"
+          echo "All tests, linting, format checks, and build completed successfully in Dockerfile"
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            echo "Image pushed to registry: ${{ env.REGISTRY }}"
-          else
-            echo "Image built locally only (PR or no registry token)"
+            echo "Multi-arch images pushed to registry: ${{ env.REGISTRY }}"
+            echo "Platforms: linux/amd64, linux/arm64"
           fi
-
-  integration-test:
-    name: Integration Test
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.event_name != 'pull_request'
-    steps:
-      - name: Install dependencies
-        run: |
-          apt-get update && apt-get install -y --no-install-recommends \
-            git ca-certificates && \
-          update-ca-certificates
-
-      - name: Checkout code (manual)
-        run: |
-          set -euo pipefail
-          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          if [ -n "${GITHUB_TOKEN:-}" ]; then
-            HOST="${GITHUB_SERVER_URL#https://}"
-            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
-          fi
-          git init .
-          git remote add origin "$REPO_URL"
-          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
-          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
-
-      - name: Log integration test status
-        run: |
-          echo "Integration tests skipped - Docker image built successfully with Kaniko"
-          echo "Built image: ${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}:${GITHUB_SHA}"
-          echo "Note: Full integration testing would require Docker daemon or registry pull"
-              paths: ["."]
-          EOF
-          
-          # Test full pipeline with Docker image
-          echo "Running full integration test..."
-          docker run --rm \
-            -v $(pwd)/integration-test-config.yaml:/config.yaml:ro \
-            -v $(pwd)/test-output:/output \
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            build -c /config.yaml -o /output --render-mode always -v
-          
-          # Verify output was generated
-          if [ -d "test-output/public" ]; then
-            echo "✅ Integration test passed - static site generated"
-            ls -la test-output/public/
-          else
-            echo "❌ Integration test failed - no static site generated"
-            exit 1
-          fi
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.event_name != 'pull_request'
-    steps:
-      - name: Security scan (optional)
-        run: |
-          echo "Running optional security scan..."
-          if command -v trivy >/dev/null 2>&1; then
-            trivy image --no-progress --severity HIGH,CRITICAL \
-              ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }} || true
-          else
-            echo "Trivy not installed in runner; skipping security scan"
-          fi
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [build, docker-build, integration-test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: staging
-    steps:
-      - name: Deploy to staging environment
-        run: |
-          echo "🚀 Deploying to staging..."
-          echo "Image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          # Add your staging deployment commands here
-          # For example: kubectl, docker-compose, or API calls to your deployment system
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build, docker-build, integration-test, security-scan]
-    if: github.event_name == 'release' && github.event.action == 'published'
-    environment: production
-    steps:
-      - name: Deploy to production environment
-        run: |
-          echo "🚀 Deploying to production..."
-          echo "Image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
-          # Add your production deployment commands here
