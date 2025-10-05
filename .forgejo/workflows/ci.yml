@@ -19,8 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     container: golang:1.23
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            git make ca-certificates && \
+          update-ca-certificates
+
+      - name: Checkout code (manual)
+        run: |
+          set -euo pipefail
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            # Inject token for private repositories
+            HOST="${GITHUB_SERVER_URL#https://}"
+            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
+          fi
+          git init .
+          git remote add origin "$REPO_URL"
+          # Prefer exact SHA; fallback to ref name
+          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
+          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
       - name: Download dependencies
         run: make deps
@@ -42,14 +60,11 @@ jobs:
       - name: Run tests
         run: make test-coverage
 
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-${{ github.sha }}
-          path: |
-            coverage.out
-            coverage.html
-          retention-days: 14
+      - name: Show coverage summary
+        run: |
+          if [ -f coverage.out ]; then
+            go tool cover -func=coverage.out | tail -n 1 || true
+          fi
 
   build:
     name: Build
@@ -57,8 +72,24 @@ jobs:
     container: golang:1.23
     needs: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            git make ca-certificates && \
+          update-ca-certificates
+
+      - name: Checkout code (manual)
+        run: |
+          set -euo pipefail
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            HOST="${GITHUB_SERVER_URL#https://}"
+            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
+          fi
+          git init .
+          git remote add origin "$REPO_URL"
+          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
+          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
       - name: Build binary
         run: make build
@@ -68,20 +99,34 @@ jobs:
           ./bin/docbuilder --version
           ./bin/docbuilder --help
 
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: docbuilder-${{ github.sha }}
-          path: bin/docbuilder
-          retention-days: 30
+      # Optional: print binary size for visibility
+      - name: Show binary info
+        run: |
+          ls -lh bin/docbuilder || true
 
   docker-build:
     name: Docker Build
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Ensure git is installed
+        run: |
+          if ! command -v git >/dev/null 2>&1; then
+            apt-get update && apt-get install -y --no-install-recommends git ca-certificates && update-ca-certificates
+          fi
+
+      - name: Checkout code (manual)
+        run: |
+          set -euo pipefail
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            HOST="${GITHUB_SERVER_URL#https://}"
+            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
+          fi
+          git init .
+          git remote add origin "$REPO_URL"
+          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
+          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
       - name: Compute image tags
         id: tags
@@ -127,8 +172,24 @@ jobs:
     needs: docker-build
     if: github.event_name != 'pull_request'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Ensure git is installed
+        run: |
+          if ! command -v git >/dev/null 2>&1; then
+            apt-get update && apt-get install -y --no-install-recommends git ca-certificates && update-ca-certificates
+          fi
+
+      - name: Checkout code (manual)
+        run: |
+          set -euo pipefail
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            HOST="${GITHUB_SERVER_URL#https://}"
+            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
+          fi
+          git init .
+          git remote add origin "$REPO_URL"
+          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
+          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
       - name: Log in to Container Registry
         if: secrets.REGISTRY_TOKEN != ''
