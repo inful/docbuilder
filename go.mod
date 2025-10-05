@@ -1,6 +1,6 @@
 module git.home.luguber.info/inful/docbuilder
 
-go 1.25
+go 1.23
 
 require (
 	github.com/alecthomas/kong v0.8.1

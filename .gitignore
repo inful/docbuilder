@@ -310,3 +310,10 @@ bin/docbuilder
 daemon-data/*
 daemon-data/repos/daemon-state.json
 docker-test-output/output
+test-output/
+coverage.out
+coverage.html
+
+# CI/CD artifacts
+.forgejo-runner/
+integration-test-config.yaml
