@@ -38,7 +38,8 @@ This document tracks the planned moves and refactors to achieve a more cohesive,
 - [x] Add minimal test for handlers (status endpoint JSON and content-type)
 - [x] Build and run tests (green)
 - [x] Move API response types to `internal/server/responses` and update imports
-- [ ] Move examples/fixtures to `examples/` and `testdata/`
+- [x] Move example config to `examples/` (added README and demo-config)
+- [ ] Move any remaining fixtures to `testdata/`
 - [ ] Update docs and tests
 
 ---

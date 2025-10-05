@@ -1,0 +1,71 @@
+version: "2.0"
+daemon:
+  http:
+    docs_port: 8080
+    webhook_port: 8081
+    admin_port: 8082
+  sync:
+    schedule: 0 */4 * * *
+    concurrent_builds: 3
+    queue_size: 100
+  storage:
+    state_file: ./docbuilder-state.json
+    repo_cache_dir: ./repositories
+    output_dir: ./site
+build:
+  clone_concurrency: 4
+  max_retries: 2
+  retry_backoff: linear
+  retry_initial_delay: 1s
+  retry_max_delay: 30s
+forges:
+  - name: company-github
+    type: github
+    api_url: https://api.github.com
+    base_url: https://github.com
+    organizations:
+      - your-org
+    groups: []
+    auto_discover: false
+    auth:
+      type: token
+      token: ${GITHUB_TOKEN}
+    webhook:
+      secret: ${GITHUB_WEBHOOK_SECRET}
+      path: /webhooks/github
+      events: [push, repository]
+      register_auto: false
+    options: {}
+filtering:
+  required_paths: [docs]
+  ignore_files: [.docignore]
+  include_patterns: []
+  exclude_patterns: []
+versioning:
+  strategy: branches_and_tags
+  default_branch_only: false
+  branch_patterns: [main, master, develop]
+  tag_patterns: [v*.*.*]
+  max_versions_per_repo: 10
+hugo:
+  theme: hextra
+  base_url: https://docs.company.com
+  title: Company Documentation Portal
+  description: Aggregated documentation from all engineering projects
+monitoring:
+  metrics:
+    enabled: true
+    path: /metrics
+  health:
+    path: /health
+  logging:
+    level: info
+    format: json
+output:
+  directory: ./site
+  clean: true
+repositories:
+  - url: https://github.com/example/repo1.git
+    name: repo1
+    branch: main
+    paths: [docs]
