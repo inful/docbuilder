@@ -72,7 +72,7 @@ func setupValidTestEnvironment(t *testing.T, out string) {
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("<html></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	
+
 	// Create minimal content structure
 	contentDir := filepath.Join(out, "content")
 	if err := os.MkdirAll(contentDir, 0o755); err != nil {
@@ -87,23 +87,23 @@ func setupValidTestEnvironment(t *testing.T, out string) {
 func TestSkipEvaluator_ValidationRulesIntegration(t *testing.T) {
 	out := t.TempDir()
 	setupValidTestEnvironment(t, out)
-	
+
 	st := newFakeSkipState()
 	repo := cfg.Repository{Name: "r1", URL: "https://example.com/r1.git", Branch: "main"}
 	conf := makeBaseConfig(out)
 	conf.Repositories = []cfg.Repository{repo}
 	gen := newTestGenerator(t, conf, out)
-	
+
 	// Set up valid state
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
 	st.repoLastCommit[repo.URL] = "deadbeef"
 	st.repoDocHash[repo.URL] = "abc123"
 	writePrevReport(t, out, 1, 2, 2, "abc123", st)
 	st.lastGlobalDocFiles = "abc123"
-	
+
 	evaluator := NewSkipEvaluator(out, st, gen)
 	rep, ok := evaluator.Evaluate([]cfg.Repository{repo})
-	
+
 	if !ok {
 		t.Fatalf("expected skip to succeed")
 	}
@@ -116,7 +116,7 @@ func TestSkipEvaluator_ValidationRulesIntegration(t *testing.T) {
 func TestValidationRulesCoverage(t *testing.T) {
 	t.Run("BasicPrerequisitesRule", func(t *testing.T) {
 		rule := BasicPrerequisitesRule{}
-		
+
 		// Valid context
 		ctx := ValidationContext{
 			State:     &fakeSkipState{},
@@ -127,7 +127,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
-		
+
 		// Invalid context - nil state
 		ctx.State = nil
 		result = rule.Validate(ctx)
@@ -135,14 +135,14 @@ func TestValidationRulesCoverage(t *testing.T) {
 			t.Errorf("expected failure for nil state")
 		}
 	})
-	
+
 	t.Run("ConfigHashRule", func(t *testing.T) {
 		out := t.TempDir()
 		conf := makeBaseConfig(out)
 		gen := newTestGenerator(t, conf, out)
 		st := newFakeSkipState()
 		rule := ConfigHashRule{}
-		
+
 		// Valid hash
 		hash := gen.ComputeConfigHashForPersistence()
 		st.lastConfigHash = hash
@@ -151,7 +151,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
-		
+
 		// Invalid hash
 		st.lastConfigHash = "different"
 		result = rule.Validate(ctx)
@@ -159,10 +159,10 @@ func TestValidationRulesCoverage(t *testing.T) {
 			t.Errorf("expected failure for mismatched hash")
 		}
 	})
-	
+
 	t.Run("PublicDirectoryRule", func(t *testing.T) {
 		rule := PublicDirectoryRule{}
-		
+
 		// Valid directory
 		out := t.TempDir()
 		pubDir := filepath.Join(out, "public")
@@ -173,7 +173,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
-		
+
 		// Missing directory
 		out2 := t.TempDir()
 		ctx.OutDir = out2
@@ -182,17 +182,17 @@ func TestValidationRulesCoverage(t *testing.T) {
 			t.Errorf("expected failure for missing directory")
 		}
 	})
-	
+
 	t.Run("ContentIntegrityRule", func(t *testing.T) {
 		rule := ContentIntegrityRule{}
-		
+
 		// Skip when no previous files
 		ctx := ValidationContext{PrevReport: &PreviousReport{Files: 0}}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success (skip), got failure: %s", result.Reason)
 		}
-		
+
 		// Valid content directory
 		out := t.TempDir()
 		contentDir := filepath.Join(out, "content")
@@ -211,7 +211,7 @@ func TestRuleChain(t *testing.T) {
 	// Create mock rules
 	successRule := &mockRule{name: "success", shouldPass: true}
 	failureRule := &mockRule{name: "failure", shouldPass: false}
-	
+
 	t.Run("all rules pass", func(t *testing.T) {
 		chain := NewRuleChain(successRule, successRule)
 		result := chain.Validate(ValidationContext{})
@@ -219,7 +219,7 @@ func TestRuleChain(t *testing.T) {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 	})
-	
+
 	t.Run("early failure stops chain", func(t *testing.T) {
 		chain := NewRuleChain(successRule, failureRule, successRule)
 		result := chain.Validate(ValidationContext{})
