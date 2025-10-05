@@ -191,9 +191,34 @@ jobs:
           # Check if Docker daemon is running, start if needed
           if ! docker info >/dev/null 2>&1; then
             echo "Starting Docker daemon..."
-            service docker start || dockerd &
+            # Try different methods to start Docker
+            if command -v systemctl >/dev/null 2>&1; then
+              systemctl start docker || true
+            elif command -v service >/dev/null 2>&1; then
+              service docker start || true
+            elif command -v dockerd >/dev/null 2>&1; then
+              dockerd --host=unix:///var/run/docker.sock &
+            else
+              echo "Cannot find a way to start Docker daemon"
+              exit 1
+            fi
+            
             # Wait for Docker to be ready
-            timeout 30s sh -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+            echo "Waiting for Docker daemon to start..."
+            for i in $(seq 1 30); do
+              if docker info >/dev/null 2>&1; then
+                echo "Docker daemon started successfully"
+                break
+              fi
+              echo "Waiting for Docker... ($i/30)"
+              sleep 1
+            done
+            
+            # Final check
+            if ! docker info >/dev/null 2>&1; then
+              echo "Failed to start Docker daemon"
+              exit 1
+            fi
           fi
           
           docker version
@@ -304,9 +329,34 @@ jobs:
           # Check if Docker daemon is running, start if needed
           if ! docker info >/dev/null 2>&1; then
             echo "Starting Docker daemon..."
-            service docker start || dockerd &
+            # Try different methods to start Docker
+            if command -v systemctl >/dev/null 2>&1; then
+              systemctl start docker || true
+            elif command -v service >/dev/null 2>&1; then
+              service docker start || true
+            elif command -v dockerd >/dev/null 2>&1; then
+              dockerd --host=unix:///var/run/docker.sock &
+            else
+              echo "Cannot find a way to start Docker daemon"
+              exit 1
+            fi
+            
             # Wait for Docker to be ready
-            timeout 30s sh -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+            echo "Waiting for Docker daemon to start..."
+            for i in $(seq 1 30); do
+              if docker info >/dev/null 2>&1; then
+                echo "Docker daemon started successfully"
+                break
+              fi
+              echo "Waiting for Docker... ($i/30)"
+              sleep 1
+            done
+            
+            # Final check
+            if ! docker info >/dev/null 2>&1; then
+              echo "Failed to start Docker daemon"
+              exit 1
+            fi
           fi
           
           docker version
