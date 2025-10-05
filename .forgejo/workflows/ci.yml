@@ -148,11 +148,36 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - name: Ensure git is installed
+      - name: Set up Docker
         run: |
-          if ! command -v git >/dev/null 2>&1; then
-            apt-get update && apt-get install -y --no-install-recommends git ca-certificates && update-ca-certificates
+          # Check if Docker is available
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "Installing Docker..."
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              ca-certificates curl gnupg lsb-release
+            mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io
           fi
+          
+          # Check if Docker daemon is running, start if needed
+          if ! docker info >/dev/null 2>&1; then
+            echo "Starting Docker daemon..."
+            service docker start || dockerd &
+            # Wait for Docker to be ready
+            timeout 30s sh -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+          fi
+          
+          docker version
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            git make ca-certificates && \
+          update-ca-certificates
 
       - name: Checkout code (manual)
         run: |
@@ -211,11 +236,36 @@ jobs:
     needs: docker-build
     if: github.event_name != 'pull_request'
     steps:
-      - name: Ensure git is installed
+      - name: Set up Docker
         run: |
-          if ! command -v git >/dev/null 2>&1; then
-            apt-get update && apt-get install -y --no-install-recommends git ca-certificates && update-ca-certificates
+          # Check if Docker is available
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "Installing Docker..."
+            apt-get update
+            apt-get install -y --no-install-recommends \
+              ca-certificates curl gnupg lsb-release
+            mkdir -p /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io
           fi
+          
+          # Check if Docker daemon is running, start if needed
+          if ! docker info >/dev/null 2>&1; then
+            echo "Starting Docker daemon..."
+            service docker start || dockerd &
+            # Wait for Docker to be ready
+            timeout 30s sh -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+          fi
+          
+          docker version
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            git ca-certificates && \
+          update-ca-certificates
 
       - name: Checkout code (manual)
         run: |
