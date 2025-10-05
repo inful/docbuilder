@@ -52,9 +52,34 @@ install_docker() {
 # Function to start Docker daemon
 start_docker() {
     echo "Starting Docker daemon..."
-    sudo service docker start || sudo dockerd &
+    # Try different methods to start Docker
+    if command -v systemctl >/dev/null 2>&1; then
+        sudo systemctl start docker || true
+    elif command -v service >/dev/null 2>&1; then
+        sudo service docker start || true
+    elif command -v dockerd >/dev/null 2>&1; then
+        sudo dockerd --host=unix:///var/run/docker.sock &
+    else
+        echo "Cannot find a way to start Docker daemon"
+        exit 1
+    fi
+    
     # Wait for Docker to be ready
-    timeout 30s sh -c 'until docker info >/dev/null 2>&1; do sleep 1; done'
+    echo "Waiting for Docker daemon to start..."
+    for i in $(seq 1 30); do
+        if docker info >/dev/null 2>&1; then
+            echo "Docker daemon started successfully"
+            return 0
+        fi
+        echo "Waiting for Docker... ($i/30)"
+        sleep 1
+    done
+    
+    # Final check
+    if ! docker info >/dev/null 2>&1; then
+        echo "Failed to start Docker daemon"
+        exit 1
+    fi
 }
 
 # Test Docker availability
