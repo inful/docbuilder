@@ -15,22 +15,22 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 	t.Run("RealisticRepositoryGeneration", func(t *testing.T) {
 		// Instead of manually creating repository configs, use TestForge
 		testForge := testforge.NewTestForge("hugo-test", config.ForgeGitHub)
-		
+
 		// Add realistic repositories with documentation
 		testForge.AddRepository(testforge.TestRepository{
 			Name:        "user-docs",
-			FullName:    "company/user-docs", 
+			FullName:    "company/user-docs",
 			CloneURL:    "https://github.com/company/user-docs.git",
 			Description: "User documentation with guides and tutorials",
 			Topics:      []string{"documentation", "users", "guides"},
 			Language:    "Markdown",
 			HasDocs:     true,
 		})
-		
+
 		testForge.AddRepository(testforge.TestRepository{
 			Name:        "api-reference",
 			FullName:    "company/api-reference",
-			CloneURL:    "https://github.com/company/api-reference.git", 
+			CloneURL:    "https://github.com/company/api-reference.git",
 			Description: "API reference documentation",
 			Topics:      []string{"api", "reference", "openapi"},
 			Language:    "Markdown",
@@ -39,7 +39,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		// Convert TestForge repositories to config format
 		configRepos := testForge.ToConfigRepositories()
-		
+
 		// Create Hugo configuration with realistic repositories
 		cfg := &config.Config{
 			Hugo:         config.HugoConfig{Title: "Test Docs", Theme: "hextra"},
@@ -57,7 +57,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 				Content:      []byte("# Getting Started\n\nWelcome to our documentation!"),
 			},
 			{
-				Repository:   "api-reference", 
+				Repository:   "api-reference",
 				Name:         "authentication",
 				RelativePath: "auth/authentication.md",
 				DocsBase:     "docs",
@@ -69,7 +69,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		// Test Hugo generation with realistic data
 		outDir := t.TempDir()
 		gen := NewGenerator(cfg, outDir)
-		
+
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
 			t.Fatalf("Hugo generation failed: %v", err)
@@ -89,7 +89,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 	t.Run("MultiForgeScenarioTesting", func(t *testing.T) {
 		// Use TestForge scenarios for complex multi-forge testing
 		scenarios := testforge.CreateTestScenarios()
-		
+
 		// Find the multi-platform scenario
 		var multiPlatformScenario testforge.TestDiscoveryScenario
 		for _, scenario := range scenarios {
@@ -98,7 +98,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 				break
 			}
 		}
-		
+
 		if multiPlatformScenario.Name == "" {
 			t.Skip("Multi-Platform Discovery scenario not found")
 		}
@@ -122,20 +122,20 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 				Repository:   repo.Name,
 				Name:         "platform-guide",
 				RelativePath: "platform-guide.md",
-				DocsBase:     "docs", 
+				DocsBase:     "docs",
 				Extension:    ".md",
 				Content:      []byte("# Platform Guide\n\nPlatform-specific documentation."),
 			})
-			
+
 			// Add some repos without docs to test filtering
 			if i%2 == 0 {
 				continue // Skip some to simulate missing docs
 			}
 		}
 
-		outDir := t.TempDir() 
+		outDir := t.TempDir()
 		gen := NewGenerator(cfg, outDir)
-		
+
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
 			t.Fatalf("Multi-platform Hugo generation failed: %v", err)
@@ -157,7 +157,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		// Even with network failures, Hugo should handle available data gracefully
 		configRepos := testForge.ToConfigRepositories()
-		
+
 		cfg := &config.Config{
 			Hugo:         config.HugoConfig{Title: "Resilient Docs", Theme: "hextra"},
 			Repositories: configRepos,
@@ -168,7 +168,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 			{
 				Repository:   configRepos[0].Name,
 				Name:         "cached-content",
-				RelativePath: "cached-content.md", 
+				RelativePath: "cached-content.md",
 				DocsBase:     "docs",
 				Extension:    ".md",
 				Content:      []byte("# Cached Content\n\nThis content was available despite network issues."),
@@ -177,7 +177,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		outDir := t.TempDir()
 		gen := NewGenerator(cfg, outDir)
-		
+
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
 			t.Fatalf("Hugo should handle failure scenarios gracefully: %v", err)

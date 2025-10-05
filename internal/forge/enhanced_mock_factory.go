@@ -135,12 +135,12 @@ func CreateMockForgejoOrg(name string) *Organization {
 // CreateMockRepositorySet creates a set of repositories for testing
 func CreateMockRepositorySet(forgeType ForgeType, orgName string, count int) []*Repository {
 	repos := make([]*Repository, count)
-	
+
 	for i := 0; i < count; i++ {
 		repoName := fmt.Sprintf("repo-%d", i)
-		hasDocs := i%2 == 0  // Half have docs
+		hasDocs := i%2 == 0   // Half have docs
 		isPrivate := i%5 == 0 // Every 5th is private
-		
+
 		switch forgeType {
 		case ForgeTypeGitHub:
 			repos[i] = CreateMockGitHubRepo(orgName, repoName, hasDocs, isPrivate, false, false)
@@ -163,7 +163,7 @@ func CreateMockRepositorySet(forgeType ForgeType, orgName string, count int) []*
 			}
 		}
 	}
-	
+
 	return repos
 }
 
