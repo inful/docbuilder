@@ -15,6 +15,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
@@ -50,7 +51,7 @@ type BuildCmd struct {
 
 // InitCmd implements the 'init' command.
 type InitCmd struct {
-	Force bool `help:"Overwrite existing configuration file"`
+	Force  bool   `help:"Overwrite existing configuration file"`
 	Output string `help:"Output directory for generated config file" name:"output" short:"o"`
 }
 
@@ -137,17 +138,24 @@ func main() {
 		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
 		kong.Vars{"version": version},
 	)
+
+	// Set up structured error handling
+	logger := slog.Default()
+	errorAdapter := errors.NewCLIErrorAdapter(cli.Verbose, logger)
+
 	// Prepare globals (currently just logger already installed in AfterApply)
-	globals := &Global{Logger: slog.Default()}
+	globals := &Global{Logger: logger}
+
+	// Run command and handle errors uniformly
 	if err := parser.Run(globals, cli); err != nil {
-		parser.Fatalf("%v", err)
+		errorAdapter.HandleError(err)
 	}
 }
 
 func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
-	
+
 	// Set logging level
 	level := slog.LevelInfo
 	if verbose {

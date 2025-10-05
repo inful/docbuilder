@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // writeJSON serializes the provided value to JSON and writes it with the given
@@ -17,15 +19,13 @@ func writeJSON(w http.ResponseWriter, status int, v any) error {
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(true)
 	if err := enc.Encode(v); err != nil {
-		// Fallback: best-effort internal error response if nothing written.
-		// We purposefully ignore secondary write errors.
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		// Do not write fallback responses here; let callers surface via their adapters.
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	if _, err := w.Write(buf.Bytes()); err != nil {
-		slog.Error("failed writing JSON response body", "error", err)
+		slog.Error("failed writing JSON response body", logfields.Error(err))
 		return err
 	}
 	return nil
@@ -41,12 +41,12 @@ func writeJSONPretty(w http.ResponseWriter, r *http.Request, status int, v any) 
 				w.Header().Set("Content-Type", "application/json; charset=utf-8")
 				w.WriteHeader(status)
 				if _, werr := w.Write(append(b, '\n')); werr != nil { // newline parity with Encoder
-					slog.Error("failed writing pretty JSON", "error", werr)
+					slog.Error("failed writing pretty JSON", logfields.Error(werr))
 					return werr
 				}
 				return nil
 			}
-			slog.Warn("pretty JSON marshal failed, falling back to standard encode", "error", err)
+			slog.Warn("pretty JSON marshal failed, falling back to standard encode", logfields.Error(err))
 		}
 	}
 	return writeJSON(w, status, v)

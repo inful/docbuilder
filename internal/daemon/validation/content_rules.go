@@ -16,9 +16,9 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success() // Skip validation for empty previous builds
 	}
-	
+
 	contentDir := filepath.Join(ctx.OutDir, "content")
-	
+
 	// Check if content directory exists and is a directory
 	contentStat, err := os.Stat(contentDir)
 	if err != nil {
@@ -27,7 +27,7 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 	if !contentStat.IsDir() {
 		return Failure("content path is not a directory")
 	}
-	
+
 	// Probe for at least one markdown file
 	foundMD := false
 	filepath.Walk(contentDir, func(p string, info os.FileInfo, err error) error {
@@ -39,11 +39,11 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 		}
 		return nil
 	})
-	
+
 	if !foundMD {
 		return Failure("no markdown files found in content directory")
 	}
-	
+
 	return Success()
 }
 
@@ -57,14 +57,14 @@ func (r GlobalDocHashRule) Validate(ctx ValidationContext) ValidationResult {
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success()
 	}
-	
+
 	lastGlobal := ctx.State.GetLastGlobalDocFilesHash()
 	reportHash := ctx.PrevReport.DocFilesHash
-	
+
 	if lastGlobal != "" && reportHash != "" && lastGlobal != reportHash {
 		return Failure("stored global doc_files_hash mismatch with report")
 	}
-	
+
 	return Success()
 }
 
@@ -78,13 +78,13 @@ func (r PerRepoDocHashRule) Validate(ctx ValidationContext) ValidationResult {
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success()
 	}
-	
+
 	// Handle single repository case
 	if len(ctx.Repos) == 1 {
 		repo := ctx.Repos[0]
 		repoHash := ctx.State.GetRepoDocFilesHash(repo.URL)
 		reportHash := ctx.PrevReport.DocFilesHash
-		
+
 		if repoHash == "" {
 			return Failure("single repository doc_files_hash missing")
 		}
@@ -93,14 +93,14 @@ func (r PerRepoDocHashRule) Validate(ctx ValidationContext) ValidationResult {
 		}
 		return Success()
 	}
-	
+
 	// Handle multiple repositories case
 	for _, repo := range ctx.Repos {
 		if ctx.State.GetRepoDocFilesHash(repo.URL) == "" {
 			return Failure("missing per-repo doc_files_hash for " + repo.URL)
 		}
 	}
-	
+
 	return Success()
 }
 

@@ -90,15 +90,15 @@ type BuildState struct {
 	Docs     DocsState
 	Pipeline PipelineState
 
-	// Legacy field accessors for backward compatibility (deprecated)
-	start             time.Time           // deprecated: use Pipeline.StartTime
-	Repositories      []config.Repository // deprecated: use Git.Repositories
-	RepoPaths         map[string]string   // deprecated: use Git.RepoPaths
-	WorkspaceDir      string              // deprecated: use Git.WorkspaceDir
-	preHeads          map[string]string   // deprecated: use Git methods
-	postHeads         map[string]string   // deprecated: use Git methods
-	AllReposUnchanged bool                // deprecated: use Git.AllReposUnchangedComputed()
-	ConfigHash        string              // deprecated: use Pipeline.ConfigHash
+	// Legacy field mirrors (kept for temporary backward compatibility)
+	start             time.Time           // use Pipeline.StartTime instead
+	Repositories      []config.Repository // use Git.Repositories instead
+	RepoPaths         map[string]string   // use Git.RepoPaths instead
+	WorkspaceDir      string              // use Git.WorkspaceDir instead
+	preHeads          map[string]string   // prefer Git methods
+	postHeads         map[string]string   // prefer Git methods
+	AllReposUnchanged bool                // prefer Git.AllReposUnchangedComputed()
+	ConfigHash        string              // use Pipeline.ConfigHash instead
 }
 
 // Legacy accessors for backward compatibility

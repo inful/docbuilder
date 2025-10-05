@@ -13,17 +13,17 @@ type ForgeTyped struct {
 
 // Predefined forge types using the new pattern
 var (
-	ForgeTypedGitHub   = ForgeTyped{"github"}
-	ForgeTypedGitLab   = ForgeTyped{"gitlab"}
-	ForgeTypedForgejo  = ForgeTyped{"forgejo"}
-	
+	ForgeTypedGitHub  = ForgeTyped{"github"}
+	ForgeTypedGitLab  = ForgeTyped{"gitlab"}
+	ForgeTypedForgejo = ForgeTyped{"forgejo"}
+
 	// Registry for validation and parsing
 	forgeTypeNormalizer = foundation.NewNormalizer(map[string]ForgeTyped{
 		"github":  ForgeTypedGitHub,
 		"gitlab":  ForgeTypedGitLab,
 		"forgejo": ForgeTypedForgejo,
 	}, ForgeTypedGitHub) // default to GitHub
-	
+
 	// Validation for forge type fields
 	forgeTypeValidator = foundation.OneOf("forge_type", []ForgeTyped{
 		ForgeTypedGitHub, ForgeTypedGitLab, ForgeTypedForgejo,
@@ -60,12 +60,12 @@ func NormalizeForgeTyped(s string) ForgeTyped {
 
 // TypedForgeConfig demonstrates how to use strong typing instead of map[string]any.
 type TypedForgeConfig struct {
-	Type     ForgeTyped                 `yaml:"type" json:"type"`
-	BaseURL  foundation.Option[string]  `yaml:"base_url,omitempty" json:"base_url,omitempty"`
-	Token    foundation.Option[string]  `yaml:"token,omitempty" json:"token,omitempty"`
-	Username foundation.Option[string]  `yaml:"username,omitempty" json:"username,omitempty"`
-	Password foundation.Option[string]  `yaml:"password,omitempty" json:"password,omitempty"`
-	Settings map[string]any             `yaml:"settings,omitempty" json:"settings,omitempty"` // For truly dynamic fields
+	Type     ForgeTyped                `yaml:"type" json:"type"`
+	BaseURL  foundation.Option[string] `yaml:"base_url,omitempty" json:"base_url,omitempty"`
+	Token    foundation.Option[string] `yaml:"token,omitempty" json:"token,omitempty"`
+	Username foundation.Option[string] `yaml:"username,omitempty" json:"username,omitempty"`
+	Password foundation.Option[string] `yaml:"password,omitempty" json:"password,omitempty"`
+	Settings map[string]any            `yaml:"settings,omitempty" json:"settings,omitempty"` // For truly dynamic fields
 }
 
 // Validate performs comprehensive validation of the forge configuration.
@@ -75,7 +75,7 @@ func (fc *TypedForgeConfig) Validate() foundation.ValidationResult {
 		func(config TypedForgeConfig) foundation.ValidationResult {
 			return forgeTypeValidator(config.Type)
 		},
-		
+
 		// Validate that we have authentication if token is provided
 		func(config TypedForgeConfig) foundation.ValidationResult {
 			if config.Token.IsSome() && config.Token.Unwrap() == "" {
@@ -85,7 +85,7 @@ func (fc *TypedForgeConfig) Validate() foundation.ValidationResult {
 			}
 			return foundation.Valid()
 		},
-		
+
 		// Validate base URL format if provided
 		func(config TypedForgeConfig) foundation.ValidationResult {
 			if config.BaseURL.IsSome() {
@@ -100,34 +100,8 @@ func (fc *TypedForgeConfig) Validate() foundation.ValidationResult {
 			return foundation.Valid()
 		},
 	)
-	
+
 	return chain.Validate(*fc)
 }
 
-// ToLegacyForgeType converts the typed forge type back to the legacy string type for compatibility.
-func (ft ForgeTyped) ToLegacyForgeType() ForgeType {
-	switch ft {
-	case ForgeTypedGitHub:
-		return ForgeGitHub
-	case ForgeTypedGitLab:
-		return ForgeGitLab
-	case ForgeTypedForgejo:
-		return ForgeForgejo
-	default:
-		return ForgeGitHub // safe default
-	}
-}
-
-// FromLegacyForgeType converts a legacy ForgeType to the new typed version.
-func FromLegacyForgeType(legacy ForgeType) ForgeTyped {
-	switch legacy {
-	case ForgeGitHub:
-		return ForgeTypedGitHub
-	case ForgeGitLab:
-		return ForgeTypedGitLab
-	case ForgeForgejo:
-		return ForgeTypedForgejo
-	default:
-		return ForgeTypedGitHub // safe default
-	}
-}
+// Legacy conversion functions removed - use ForgeTyped directly instead.

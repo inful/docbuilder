@@ -19,13 +19,13 @@ func NewNormalizer[T comparable](values map[string]T, defaultValue T) *Normalize
 	// Create a normalized version of the map
 	normalized := make(map[string]T, len(values))
 	validKeys := make([]string, 0, len(values))
-	
+
 	for k, v := range values {
 		normalizedKey := defaultNormalization(k)
 		normalized[normalizedKey] = v
 		validKeys = append(validKeys, normalizedKey)
 	}
-	
+
 	// Sort keys for consistent error messages
 	sort.Strings(validKeys)
 
@@ -89,13 +89,13 @@ type NormalizationFunc func(string) string
 func WithCustomNormalizer[T comparable](values map[string]T, defaultValue T, normalizer NormalizationFunc) *Normalizer[T] {
 	normalized := make(map[string]T, len(values))
 	validKeys := make([]string, 0, len(values))
-	
+
 	for k, v := range values {
 		normalizedKey := normalizer(k)
 		normalized[normalizedKey] = v
 		validKeys = append(validKeys, normalizedKey)
 	}
-	
+
 	sort.Strings(validKeys)
 
 	return &Normalizer[T]{

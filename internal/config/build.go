@@ -62,7 +62,7 @@ var namespacingModeNormalizer = normalization.NewNormalizer(map[string]Namespaci
 	"auto":   NamespacingAuto,
 	"always": NamespacingAlways,
 	"never":  NamespacingNever,
-}, NamespacingAuto)
+}, "")
 
 // NormalizeNamespacingMode canonicalizes user input returning empty string if unknown.
 func NormalizeNamespacingMode(raw string) NamespacingMode {
@@ -82,7 +82,7 @@ var cloneStrategyNormalizer = normalization.NewNormalizer(map[string]CloneStrate
 	"fresh":  CloneStrategyFresh,
 	"update": CloneStrategyUpdate,
 	"auto":   CloneStrategyAuto,
-}, CloneStrategyAuto)
+}, "")
 
 // NormalizeCloneStrategy canonicalizes user input returning empty string if unknown.
 func NormalizeCloneStrategy(raw string) CloneStrategy {
@@ -105,7 +105,7 @@ var renderModeNormalizer = normalization.NewNormalizer(map[string]RenderMode{
 	"auto":   RenderModeAuto,
 	"always": RenderModeAlways,
 	"never":  RenderModeNever,
-}, RenderModeAuto)
+}, "")
 
 // NormalizeRenderMode canonicalizes user input returning empty string if unknown.
 func NormalizeRenderMode(raw string) RenderMode {

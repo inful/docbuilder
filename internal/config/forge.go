@@ -18,7 +18,7 @@ var forgeTypeStringNormalizer = normalization.NewNormalizer(map[string]ForgeType
 	"github":  ForgeGitHub,
 	"gitlab":  ForgeGitLab,
 	"forgejo": ForgeForgejo,
-}, ForgeGitHub)
+}, "")
 
 // NormalizeForgeType canonicalizes a forge type string (case-insensitive) or returns empty if unknown.
 func NormalizeForgeType(raw string) ForgeType {

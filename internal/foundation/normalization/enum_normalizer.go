@@ -56,13 +56,13 @@ type NormalizationResult[T comparable] struct {
 func (e *EnumNormalizer[T]) NormalizeWithWarning(fieldName, raw string) NormalizationResult[T] {
 	cleaned := defaultNormalization(raw)
 	normalized := e.normalizer.Normalize(raw)
-	
+
 	changed := cleaned != raw
 	var warning string
 	if changed {
 		warning = fmt.Sprintf("normalized %s from '%s' to '%s'", fieldName, raw, cleaned)
 	}
-	
+
 	return NormalizationResult[T]{
 		Value:   normalized,
 		Changed: changed,

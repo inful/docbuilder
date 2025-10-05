@@ -53,6 +53,14 @@ type Build struct {
 	UpdatedAt   time.Time                    `json:"updated_at"`
 }
 
+// ScheduleConfig represents strongly-typed config for a schedule.
+type ScheduleConfig struct {
+	// Add fields as needed for your domain, e.g.:
+	MaxRetries  int    `json:"max_retries,omitempty"`
+	NotifyEmail string `json:"notify_email,omitempty"`
+	CustomParam string `json:"custom_param,omitempty"`
+}
+
 // Schedule represents a scheduled build operation.
 type Schedule struct {
 	ID           string                       `json:"id"`
@@ -63,9 +71,44 @@ type Schedule struct {
 	NextRun      foundation.Option[time.Time] `json:"next_run"`
 	RunCount     int64                        `json:"run_count"`
 	FailureCount int64                        `json:"failure_count"`
-	Config       map[string]any               `json:"config"`
+	Config       ScheduleConfig               `json:"config"`
 	CreatedAt    time.Time                    `json:"created_at"`
 	UpdatedAt    time.Time                    `json:"updated_at"`
+}
+
+// Legacy compatibility: convert from map[string]any to ScheduleConfig
+func ScheduleConfigFromLegacy(m map[string]any) ScheduleConfig {
+	var cfg ScheduleConfig
+	if m == nil {
+		return cfg
+	}
+	if v, ok := m["max_retries"].(int); ok {
+		cfg.MaxRetries = v
+	} else if v, ok := m["max_retries"].(float64); ok { // JSON numbers decode as float64
+		cfg.MaxRetries = int(v)
+	}
+	if v, ok := m["notify_email"].(string); ok {
+		cfg.NotifyEmail = v
+	}
+	if v, ok := m["custom_param"].(string); ok {
+		cfg.CustomParam = v
+	}
+	return cfg
+}
+
+// Legacy compatibility: convert to map[string]any
+func (cfg ScheduleConfig) ToLegacyMap() map[string]any {
+	m := make(map[string]any)
+	if cfg.MaxRetries != 0 {
+		m["max_retries"] = cfg.MaxRetries
+	}
+	if cfg.NotifyEmail != "" {
+		m["notify_email"] = cfg.NotifyEmail
+	}
+	if cfg.CustomParam != "" {
+		m["custom_param"] = cfg.CustomParam
+	}
+	return m
 }
 
 // Statistics represents aggregate daemon statistics.

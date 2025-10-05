@@ -8,7 +8,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
+
+// CustomMetric represents user-defined metrics with constrained JSON-friendly types
+type CustomMetric any
 
 // MetricsCollector aggregates and exposes daemon metrics
 type MetricsCollector struct {
@@ -17,7 +22,7 @@ type MetricsCollector struct {
 	counters      map[string]*int64
 	gauges        map[string]*int64
 	histograms    map[string]*Histogram
-	customMetrics map[string]interface{}
+	customMetrics map[string]CustomMetric
 }
 
 // Histogram tracks value distributions over time
@@ -36,7 +41,7 @@ type MetricSnapshot struct {
 	Gauges        map[string]int64          `json:"gauges"`
 	Histograms    map[string]HistogramStats `json:"histograms"`
 	SystemMetrics SystemMetricsSnapshot     `json:"system_metrics"`
-	Custom        map[string]interface{}    `json:"custom_metrics"`
+	Custom        map[string]CustomMetric   `json:"custom_metrics"`
 }
 
 // HistogramStats provides statistical summary of histogram data
@@ -71,7 +76,7 @@ func NewMetricsCollector() *MetricsCollector {
 		counters:      make(map[string]*int64),
 		gauges:        make(map[string]*int64),
 		histograms:    make(map[string]*Histogram),
-		customMetrics: make(map[string]interface{}),
+		customMetrics: make(map[string]CustomMetric),
 	}
 }
 
@@ -116,7 +121,7 @@ func (mc *MetricsCollector) RecordHistogram(name string, value float64) {
 }
 
 // SetCustomMetric sets a custom metric value
-func (mc *MetricsCollector) SetCustomMetric(name string, value interface{}) {
+func (mc *MetricsCollector) SetCustomMetric(name string, value CustomMetric) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
 	mc.customMetrics[name] = value
@@ -133,7 +138,7 @@ func (mc *MetricsCollector) GetSnapshot() *MetricSnapshot {
 		Counters:   make(map[string]int64),
 		Gauges:     make(map[string]int64),
 		Histograms: make(map[string]HistogramStats),
-		Custom:     make(map[string]interface{}),
+		Custom:     make(map[string]CustomMetric),
 	}
 
 	// Copy counters
@@ -266,7 +271,9 @@ func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 
 	if err := json.NewEncoder(w).Encode(snapshot); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode metrics: %v", err), http.StatusInternalServerError)
+		adapter := errors.NewHTTPErrorAdapter(nil)
+		e := errors.WrapError(err, errors.CategoryInternal, "failed to encode metrics").Build()
+		adapter.WriteErrorResponse(w, e)
 		return
 	}
 }

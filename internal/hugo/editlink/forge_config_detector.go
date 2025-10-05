@@ -55,7 +55,7 @@ func (d *ForgeConfigDetector) resolveForgeForRepository(cfg *config.Config, repo
 		}
 
 		base := strings.TrimSuffix(fc.BaseURL, "/")
-		
+
 		// Direct prefix match
 		if strings.HasPrefix(normalized, base+"/") || strings.HasPrefix(normalized, base) {
 			return fc.Type, base
@@ -99,7 +99,7 @@ func (d *ForgeConfigDetector) hostsMatch(url1, url2 string) bool {
 // extractFullNameFromURL extracts the repository full name (owner/repo) from a URL.
 func (d *ForgeConfigDetector) extractFullNameFromURL(cloneURL string) string {
 	normalized := d.normalizeSSHURL(cloneURL)
-	
+
 	u, err := url.Parse(normalized)
 	if err != nil {
 		return ""

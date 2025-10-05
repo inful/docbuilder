@@ -52,11 +52,11 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 
 	configDir := filepath.Join(tempDir, "config")
 	outputDir := filepath.Join(tempDir, "output")
-	
+
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
-	
+
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
@@ -123,13 +123,13 @@ func (scenario *TestScenario) Run(t *testing.T) {
 		if scenario.Timeout > 0 {
 			ctx, cancel := context.WithTimeout(context.Background(), scenario.Timeout)
 			defer cancel()
-			
+
 			done := make(chan bool)
 			go func() {
 				scenario.runInternal(t)
 				done <- true
 			}()
-			
+
 			select {
 			case <-done:
 				// Test completed normally

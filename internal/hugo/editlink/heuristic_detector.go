@@ -73,7 +73,7 @@ func (d *HeuristicDetector) detectForgeTypeFromHost(cloneURL string) config.Forg
 // extractFullNameFromURL extracts the repository full name (owner/repo) from a URL.
 func (d *HeuristicDetector) extractFullNameFromURL(cloneURL string) string {
 	normalized := d.normalizeSSHURL(cloneURL)
-	
+
 	u, err := url.Parse(normalized)
 	if err != nil {
 		return ""
@@ -105,12 +105,12 @@ func (d *HeuristicDetector) normalizeSSHURL(repoURL string) string {
 // determineBaseURL calculates the base URL for a given clone URL and forge type.
 func (d *HeuristicDetector) determineBaseURL(cloneURL string, forgeType config.ForgeType) string {
 	normalized := d.normalizeSSHURL(cloneURL)
-	
+
 	// Special handling for Bitbucket
 	if strings.Contains(cloneURL, "bitbucket.org") {
 		return "https://bitbucket.org"
 	}
-	
+
 	// Try to extract from the URL
 	if u, err := url.Parse(normalized); err == nil && u.Scheme != "" && u.Host != "" {
 		return fmt.Sprintf("%s://%s", u.Scheme, u.Host)

@@ -15,11 +15,11 @@ const (
 
 // NormalizeRetryBackoff converts arbitrary user input (case-insensitive) into a typed mode, returning empty string for unknown.
 var retryBackoffNormalizer = normalization.NewNormalizer(map[string]RetryBackoffMode{
-       "fixed":       RetryBackoffFixed,
-       "linear":      RetryBackoffLinear,
-       "exponential": RetryBackoffExponential,
-}, RetryBackoffExponential)
+	"fixed":       RetryBackoffFixed,
+	"linear":      RetryBackoffLinear,
+	"exponential": RetryBackoffExponential,
+}, RetryBackoffFixed)
 
 func NormalizeRetryBackoff(raw string) RetryBackoffMode {
-       return retryBackoffNormalizer.Normalize(raw)
+	return retryBackoffNormalizer.Normalize(raw)
 }

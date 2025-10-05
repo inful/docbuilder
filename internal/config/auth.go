@@ -16,15 +16,15 @@ const (
 
 // NormalizeAuthType canonicalizes an auth type string (case-insensitive) or returns empty if unknown.
 var authTypeNormalizer = normalization.NewNormalizer(map[string]AuthType{
-       "none":  AuthTypeNone,
-       "ssh":   AuthTypeSSH,
-       "token": AuthTypeToken,
-       "basic": AuthTypeBasic,
-}, AuthTypeNone)
+	"none":  AuthTypeNone,
+	"ssh":   AuthTypeSSH,
+	"token": AuthTypeToken,
+	"basic": AuthTypeBasic,
+}, "")
 
 // NormalizeAuthType canonicalizes an auth type string (case-insensitive) or returns empty if unknown.
 func NormalizeAuthType(raw string) AuthType {
-       return authTypeNormalizer.Normalize(raw)
+	return authTypeNormalizer.Normalize(raw)
 }
 
 // IsValid reports whether the AuthType is a known value.

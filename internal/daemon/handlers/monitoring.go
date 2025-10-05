@@ -7,14 +7,17 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/responses"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
 // MonitoringHandlers contains monitoring-related HTTP handlers
 type MonitoringHandlers struct {
-	daemon DaemonInterface
+	daemon       DaemonInterface
+	errorAdapter *errors.HTTPErrorAdapter
 }
 
-// DaemonInterface defines the daemon methods needed by monitoring handlers  
+// DaemonInterface defines the daemon methods needed by monitoring handlers
 type DaemonInterface interface {
 	GetStatus() interface{} // DaemonStatus implements String() method
 	GetActiveJobs() int
@@ -23,20 +26,27 @@ type DaemonInterface interface {
 
 // NewMonitoringHandlers creates a new monitoring handlers instance
 func NewMonitoringHandlers(daemon DaemonInterface) *MonitoringHandlers {
-	return &MonitoringHandlers{daemon: daemon}
+	return &MonitoringHandlers{
+		daemon:       daemon,
+		errorAdapter: errors.NewHTTPErrorAdapter(slog.Default()),
+	}
 }
 
 // HandleHealthCheck handles the health check endpoint
 func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
 	health := &responses.HealthResponse{
 		Status:    "healthy",
 		Timestamp: time.Now().UTC(),
-		Version:   "2.0", // TODO: Get from build info
+		Version:   version.Version,
 		Uptime:    time.Since(h.daemon.GetStartTime()).Seconds(),
 	}
 
@@ -49,29 +59,37 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, health); err != nil {
-		slog.Error("Failed to write health response", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write health response").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }
 
 // HandleMetrics handles the metrics endpoint (placeholder)
 func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
 	// TODO: Implement Prometheus-style metrics
 	metrics := &responses.MetricsResponse{
-		Status:                   "ok",
-		Timestamp:               time.Now().UTC(),
-		HTTPRequestsTotal:       0, // TODO: Implement counters
-		ActiveJobs:              h.daemon.GetActiveJobs(),
-		LastDiscoveryDuration:   0, // TODO: Track discovery timing
-		LastBuildDuration:       0, // TODO: Track build timing
-		RepositoriesTotal:       0, // TODO: Count managed repositories
+		Status:                "ok",
+		Timestamp:             time.Now().UTC(),
+		HTTPRequestsTotal:     0, // TODO: Implement counters
+		ActiveJobs:            h.daemon.GetActiveJobs(),
+		LastDiscoveryDuration: 0, // TODO: Track discovery timing
+		LastBuildDuration:     0, // TODO: Track build timing
+		RepositoriesTotal:     0, // TODO: Count managed repositories
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, metrics); err != nil {
-		slog.Error("Failed to write metrics response", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write metrics response").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }

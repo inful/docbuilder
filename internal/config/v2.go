@@ -116,8 +116,7 @@ type MonitoringLogging struct {
 	Format LogFormat `yaml:"format"`
 }
 
-// (Deprecated comment retained for context) Previous: LoadV2 loads v2 configuration from the specified file.
-// Load loads a configuration file (version 2.x).
+// Load reads and validates a configuration file (version 2.x).
 func Load(configPath string) (*Config, error) {
 	// Load .env file if it exists
 	if err := loadEnvFile(); err != nil {
@@ -179,7 +178,6 @@ func validateConfig(config *Config) error {
 	return ValidateConfig(config)
 }
 
-// (Deprecated comment retained) Previously: InitV2 creates a new v2 configuration file with example content.
 // Init writes an example configuration file (version 2.0).
 func Init(configPath string, force bool) error {
 	if _, err := os.Stat(configPath); err == nil && !force {
@@ -281,7 +279,6 @@ func Init(configPath string, force bool) error {
 	return nil
 }
 
-// (Deprecated) Previously: IsV2Config checks if a configuration file is v2 format by reading the version field.
 // IsConfigVersion returns true if the config file version field starts with 2.
 func IsConfigVersion(configPath string) (bool, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -309,4 +306,4 @@ func IsConfigVersion(configPath string) (bool, error) {
 	return strings.HasPrefix(versionCheck.Version, "2."), nil
 }
 
-// Deprecated aliases removed (V2Config, LoadV2, InitV2, IsV2Config) as part of legacy cleanup.
+// Historical note: legacy alias names (V2Config, LoadV2, InitV2, IsV2Config) were removed during cleanup.

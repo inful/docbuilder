@@ -60,19 +60,7 @@ func TestForgeTyped(t *testing.T) {
 		}
 	})
 
-	t.Run("Legacy compatibility", func(t *testing.T) {
-		// Test conversion to legacy
-		legacy := ForgeTypedGitLab.ToLegacyForgeType()
-		if legacy != ForgeGitLab {
-			t.Error("Expected GitLab typed to convert to legacy GitLab")
-		}
-
-		// Test conversion from legacy
-		typed := FromLegacyForgeType(ForgeGitHub)
-		if typed != ForgeTypedGitHub {
-			t.Error("Expected legacy GitHub to convert to typed GitHub")
-		}
-	})
+	// Legacy compatibility tests removed after cleanup
 }
 
 func TestTypedForgeConfig(t *testing.T) {
@@ -242,49 +230,5 @@ func TestTypedForgeConfigWithTestForgeFactory(t *testing.T) {
 		}
 	})
 
-	t.Run("Multi-platform forge type conversion", func(t *testing.T) {
-		testCases := []struct {
-			name         string
-			forgeCreator func(string) *ForgeConfig
-			expectedType ForgeTyped
-		}{
-			{
-				name:         "GitHub",
-				forgeCreator: factory.CreateGitHubForge,
-				expectedType: ForgeTypedGitHub,
-			},
-			{
-				name:         "GitLab",
-				forgeCreator: factory.CreateGitLabForge,
-				expectedType: ForgeTypedGitLab,
-			},
-			{
-				name:         "Forgejo",
-				forgeCreator: factory.CreateForgejoForge,
-				expectedType: ForgeTypedForgejo,
-			},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				forge := tc.forgeCreator("test")
-
-				// Test legacy conversion
-				legacyType := FromLegacyForgeType(forge.Type)
-				if legacyType != tc.expectedType {
-					t.Errorf("Expected legacy %s to convert to typed %v, got %v",
-						tc.name, tc.expectedType, legacyType)
-				}
-
-				// Test round-trip conversion
-				backToLegacy := tc.expectedType.ToLegacyForgeType()
-				if backToLegacy != forge.Type {
-					t.Errorf("Expected typed %v to convert back to legacy %v, got %v",
-						tc.expectedType, forge.Type, backToLegacy)
-				}
-			})
-		}
-
-		t.Logf("✓ Multi-platform forge type conversions: %d platforms validated", len(testCases))
-	})
+	// Multi-platform forge type conversion tests removed after legacy cleanup
 }

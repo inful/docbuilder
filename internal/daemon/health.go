@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
 // HealthStatus represents the overall health of the daemon
@@ -90,7 +93,7 @@ func (d *Daemon) PerformHealthChecks() *HealthResponse {
 		Status:    overallStatus,
 		Timestamp: time.Now(),
 		Uptime:    time.Since(d.startTime).String(),
-		Version:   "2.0.0",
+		Version:   version.Version,
 		Checks:    checks,
 	}
 }
@@ -248,6 +251,8 @@ func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(health); err != nil {
-		http.Error(w, "Failed to encode health response", http.StatusInternalServerError)
+		adapter := errors.NewHTTPErrorAdapter(nil)
+		e := errors.WrapError(err, errors.CategoryInternal, "failed to encode health response").Build()
+		adapter.WriteErrorResponse(w, e)
 	}
 }
