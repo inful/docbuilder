@@ -12,11 +12,16 @@ This document tracks the planned moves and refactors to achieve a more cohesive,
 
 ---
 
+
 ## Phase 2: Error System Unification
-- [ ] Decide on canonical error package (internal/errors vs internal/foundation/errors)
-- [ ] Migrate all error creation and adapters to canonical system
-- [ ] Remove legacy/duplicate error types and adapters
-- [ ] Update all tests and docs
+
+- [x] Decide on canonical error package: **internal/errors** will be the single source of error types and helpers. All error creation, adapters, and context will be unified here. `internal/foundation/errors` and its adapters will be removed.
+
+- [ ] Inventory all usages of `internal/foundation/errors` and its adapters (HTTP, CLI, etc.)
+- [ ] Update all error creation and handling to use `internal/errors` exclusively
+- [ ] Migrate HTTP and CLI adapters to use `internal/errors` types
+- [ ] Remove `internal/foundation/errors` and related adapters
+- [ ] Update all tests and documentation to reference the unified error system
 
 ---
 
