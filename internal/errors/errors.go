@@ -1,8 +1,12 @@
+
 package errors
 
 import (
 	"fmt"
 )
+
+// ...existing code...
+
 
 // ErrorCategory represents the category of a DocBuilder error for classification
 type ErrorCategory string
@@ -34,6 +38,7 @@ type ErrorSeverity string
 
 const (
 	SeverityFatal   ErrorSeverity = "fatal"   // Stops execution
+	SeverityError   ErrorSeverity = "error"   // Error, but not fatal
 	SeverityWarning ErrorSeverity = "warning" // Continues with degraded functionality
 	SeverityInfo    ErrorSeverity = "info"    // Informational, no impact
 )
@@ -47,6 +52,13 @@ type DocBuilderError struct {
 	Retryable bool                   `json:"retryable"`
 	Context   ContextFields          `json:"context,omitempty"`
 }
+
+// Build returns the error itself for compatibility with legacy error adapter usage.
+func (e *DocBuilderError) Build() *DocBuilderError {
+	return e
+}
+
+
 
 // ContextFields carries structured context for DocBuilderError
 type ContextFields map[string]any
@@ -139,10 +151,34 @@ func GetCategory(err error) ErrorCategory {
 	return CategoryInternal
 }
 
-// GetSeverity extracts the severity from an error, or returns SeverityFatal if not a DocBuilderError
-func GetSeverity(err error) ErrorSeverity {
-	if dbe, ok := err.(*DocBuilderError); ok {
-		return dbe.Severity
-	}
-	return SeverityFatal
+
+// ValidationError creates a new validation error (400 Bad Request)
+func ValidationError(message string) *DocBuilderError {
+       return &DocBuilderError{
+	       Category:  CategoryValidation,
+	       Severity:  SeverityWarning,
+	       Message:   message,
+	       Retryable: false,
+       }
+}
+
+// DaemonError creates a new daemon error (service unavailable)
+func DaemonError(message string) *DocBuilderError {
+       return &DocBuilderError{
+	       Category:  CategoryDaemon,
+	       Severity:  SeverityError,
+	       Message:   message,
+	       Retryable: false,
+       }
+}
+
+// WrapError wraps an existing error with a new DocBuilderError
+func WrapError(err error, category ErrorCategory, message string) *DocBuilderError {
+       return &DocBuilderError{
+	       Category:  category,
+	       Severity:  SeverityError,
+	       Message:   message,
+	       Cause:     err,
+	       Retryable: false,
+       }
 }

@@ -1,4 +1,5 @@
 package handlers
+
 import (
 	"fmt"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/errors"
+
 )
 
 // APIHandlers contains API-related HTTP handlers
@@ -71,9 +73,13 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var statusStr string
-	if status, ok := h.daemon.GetStatus().(fmt.Stringer); ok {
-		statusStr = status.String()
+	statusStr := ""
+	if s := h.daemon.GetStatus(); s != nil {
+		if ss, ok := s.(fmt.Stringer); ok {
+			statusStr = ss.String()
+		} else {
+			statusStr = fmt.Sprint(s)
+		}
 	}
 
 	status := &responses.DaemonStatusResponse{

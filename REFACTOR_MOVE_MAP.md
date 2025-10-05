@@ -13,28 +13,38 @@ This document tracks the planned moves and refactors to achieve a more cohesive,
 ---
 
 
-## Phase 2: Error System Unification
+
+## Phase 2: Error System Unification (completed)
 
 - [x] Decide on canonical error package: **internal/errors** will be the single source of error types and helpers. All error creation, adapters, and context will be unified here. `internal/foundation/errors` and its adapters will be removed.
-
-- [ ] Inventory all usages of `internal/foundation/errors` and its adapters (HTTP, CLI, etc.)
-- [ ] Update all error creation and handling to use `internal/errors` exclusively
-- [ ] Migrate HTTP and CLI adapters to use `internal/errors` types
-- [ ] Remove `internal/foundation/errors` and related adapters
-- [ ] Update all tests and documentation to reference the unified error system
+- [x] Inventory all usages of `internal/foundation/errors` and its adapters (HTTP, CLI, etc.)
+- [x] Update all error creation and handling to use `internal/errors` exclusively
+- [x] Migrate HTTP and CLI adapters to use `internal/errors` types
+- [x] Remove `internal/foundation/errors` and related adapters
+- [x] Update all tests and documentation to reference the unified error system
 
 ---
 
-## Phase 3: Daemon/Server Extraction
-- [ ] Create `internal/server/` (or `internal/daemon/` → `internal/server/`)
-- [ ] Move HTTP API, handlers, middleware, and httpx helpers into cohesive subpackages:
+## Phase 3: Daemon/Server Extraction (completed)
+- [x] Create `internal/server/` (or `internal/daemon/` → `internal/server/`)
+- [x] Move HTTP API, handlers, middleware, and httpx helpers into cohesive subpackages:
     - `api/` (route registration, OpenAPI, etc.)
     - `handlers/` (endpoint logic)
     - `middleware/` (auth, logging, recovery, etc.)
     - `httpx/` (helpers, adapters)
-- [ ] Update imports and references
+- [x] Update imports and references
+- [x] Remove old `internal/daemon/handlers/*` files
+- [x] Build and run tests (green)
 - [ ] Move examples/fixtures to `examples/` and `testdata/`
 - [ ] Update docs and tests
+
+---
+
+### Phase 3 follow-ups
+
+- [ ] Extract logging and panic recovery into `internal/server/middleware`
+- [ ] Consider moving `internal/daemon/responses` under `internal/server` to align with handlers
+- [ ] Add minimal integration tests for handlers (cover JSON helpers and adapters)
 
 ---
 

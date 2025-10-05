@@ -1,6 +1,6 @@
 ---
 custom: val
-date: "2025-10-04T18:57:38+02:00"
+date: "2025-10-05T10:53:18+02:00"
 repository: repo
 title: Page
 ---

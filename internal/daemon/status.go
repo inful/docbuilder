@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/version"

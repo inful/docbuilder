@@ -1,5 +1,4 @@
 package errors
-
 import (
 	"log/slog"
 	"testing"

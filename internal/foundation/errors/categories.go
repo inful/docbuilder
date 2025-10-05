@@ -1,5 +1,4 @@
 package errors
-
 // ErrorCategory represents the broad category of an error for classification and routing.
 type ErrorCategory string
 

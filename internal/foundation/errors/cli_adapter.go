@@ -1,5 +1,4 @@
 package errors
-
 import (
 	"fmt"
 	"log/slog"
