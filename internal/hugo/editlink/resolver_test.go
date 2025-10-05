@@ -169,11 +169,11 @@ func TestHeuristicDetector(t *testing.T) {
 	detector := NewHeuristicDetector()
 
 	tests := []struct {
-		name           string
-		cloneURL       string
-		expectedForge  config.ForgeType
-		expectedBase   string
-		expectedFound  bool
+		name          string
+		cloneURL      string
+		expectedForge config.ForgeType
+		expectedBase  string
+		expectedFound bool
 	}{
 		{
 			name:          "GitHub.com",
@@ -251,8 +251,8 @@ func TestResolver(t *testing.T) {
 			},
 			Repositories: []config.Repository{
 				{
-					Name: "test-repo",
-					URL:  "https://github.com/owner/repo.git",
+					Name:   "test-repo",
+					URL:    "https://github.com/owner/repo.git",
 					Branch: "main",
 				},
 			},

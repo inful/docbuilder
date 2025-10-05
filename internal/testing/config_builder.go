@@ -181,7 +181,7 @@ func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 	if err != nil {
 		cb.t.Fatalf("Failed to marshal config: %v", err)
 	}
-	
+
 	// Write to file
 	if err := os.WriteFile(filePath, data, 0644); err != nil {
 		cb.t.Fatalf("Failed to save config to %s: %v", filePath, err)
@@ -236,7 +236,7 @@ func (cf *ConfigFactory) AutoDiscoveryConfig() *config.Config {
 // ValidationTestConfig creates a configuration for validation testing
 func (cf *ConfigFactory) ValidationTestConfig(invalidField string) *config.Config {
 	builder := NewConfigBuilder(cf.t)
-	
+
 	switch invalidField {
 	case "empty_forges":
 		// Return config with no forges (should fail validation)

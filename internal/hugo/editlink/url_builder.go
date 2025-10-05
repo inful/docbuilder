@@ -24,7 +24,7 @@ func (b *StandardEditURLBuilder) BuildURL(forgeType config.ForgeType, baseURL, f
 
 	// Clean up the base URL
 	baseURL = strings.TrimSuffix(baseURL, "/")
-	
+
 	// Handle special case for Bitbucket (not currently supported in config but preserved from original)
 	if strings.Contains(baseURL, "bitbucket.org") {
 		return fmt.Sprintf("%s/%s/src/%s/%s?mode=edit", baseURL, fullName, branch, repoRel)

@@ -15,14 +15,14 @@ const (
 )
 
 var logLevelNormalizer = normalization.NewNormalizer(map[string]LogLevel{
-       "debug": LogLevelDebug,
-       "info":  LogLevelInfo,
-       "warn":  LogLevelWarn,
-       "error": LogLevelError,
+	"debug": LogLevelDebug,
+	"info":  LogLevelInfo,
+	"warn":  LogLevelWarn,
+	"error": LogLevelError,
 }, LogLevelInfo)
 
 func NormalizeLogLevel(raw string) LogLevel {
-       return logLevelNormalizer.Normalize(raw)
+	return logLevelNormalizer.Normalize(raw)
 }
 
 // LogFormat enumerates supported log output formats.
@@ -34,10 +34,10 @@ const (
 )
 
 var logFormatNormalizer = normalization.NewNormalizer(map[string]LogFormat{
-       "json": LogFormatJSON,
-       "text": LogFormatText,
+	"json": LogFormatJSON,
+	"text": LogFormatText,
 }, LogFormatText)
 
 func NormalizeLogFormat(raw string) LogFormat {
-       return logFormatNormalizer.Normalize(raw)
+	return logFormatNormalizer.Normalize(raw)
 }

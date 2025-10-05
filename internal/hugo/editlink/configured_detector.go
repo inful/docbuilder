@@ -24,7 +24,7 @@ func (d *ConfiguredDetector) Detect(ctx DetectionContext) DetectionResult {
 	}
 
 	tags := ctx.Repository.Tags
-	
+
 	// Extract forge type from tags
 	var forgeType config.ForgeType
 	if t, ok := tags["forge_type"]; ok {

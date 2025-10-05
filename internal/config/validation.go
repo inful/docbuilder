@@ -5,15 +5,55 @@ import (
 	"time"
 )
 
-// ValidateConfig validates the complete configuration structure
+// ValidateConfig validates the complete configuration structure using the new validation system.
+// This function is now implemented directly here to avoid import cycles.
 func ValidateConfig(cfg *Config) error {
-	// Validate forges
-	if len(cfg.Forges) == 0 {
+	// Create a simple validation orchestrator without the separate package
+	// to avoid circular dependencies while maintaining the decomposed approach
+	validator := newConfigurationValidator(cfg)
+	return validator.validate()
+}
+
+// configurationValidator coordinates validation across all configuration domains.
+type configurationValidator struct {
+	config *Config
+}
+
+// newConfigurationValidator creates a comprehensive configuration validator.
+func newConfigurationValidator(config *Config) *configurationValidator {
+	return &configurationValidator{config: config}
+}
+
+// validate performs comprehensive configuration validation using domain-specific methods.
+func (cv *configurationValidator) validate() error {
+	// Validate in order of dependencies
+	if err := cv.validateForges(); err != nil {
+		return err
+	}
+	if err := cv.validateRepositories(); err != nil {
+		return err
+	}
+	if err := cv.validateBuild(); err != nil {
+		return err
+	}
+	if err := cv.validateVersioning(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateForges validates forge configuration.
+func (cv *configurationValidator) validateForges() error {
+	// Check if at least one forge is configured
+	if len(cv.config.Forges) == 0 {
 		return fmt.Errorf("at least one forge must be configured")
 	}
 
+	// Track forge names for duplicates
 	forgeNames := make(map[string]bool)
-	for _, forge := range cfg.Forges {
+
+	for _, forge := range cv.config.Forges {
+		// Validate forge name
 		if forge.Name == "" {
 			return fmt.Errorf("forge name cannot be empty")
 		}
@@ -22,98 +62,200 @@ func ValidateConfig(cfg *Config) error {
 		}
 		forgeNames[forge.Name] = true
 
-		// Normalize & validate forge type
-		if forge.Type == "" { // empty is invalid
-			return fmt.Errorf("unsupported forge type: %s", forge.Type)
+		// Validate forge type
+		if err := cv.validateForgeType(forge); err != nil {
+			return err
 		}
-		norm := NormalizeForgeType(string(forge.Type))
-		if norm == "" {
-			return fmt.Errorf("unsupported forge type: %s", forge.Type)
-		}
-		forge.Type = norm
 
 		// Validate authentication
-		if forge.Auth == nil {
-			return fmt.Errorf("forge %s must have authentication configured", forge.Name)
-		}
-		if forge.Auth != nil {
-			switch forge.Auth.Type {
-			case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
-				// ok; semantic checks done by individual clients
-			default:
-				return fmt.Errorf("forge %s: unsupported auth type: %s", forge.Name, forge.Auth.Type)
-			}
-			// Minimal semantic validation now (clients perform stricter checks when constructing)
-			// Token presence is validated lazily by forge clients / git operations to permit env placeholders.
+		if err := cv.validateForgeAuth(forge); err != nil {
+			return err
 		}
 
-		// Require at least one organization or group to be specified. This keeps discovery bounded
-		// Validate explicit repository auth blocks (if provided)
-		for _, repo := range cfg.Repositories {
-			if repo.Auth != nil {
-				switch repo.Auth.Type {
-				case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
-					// valid
-				default:
-					return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
-				}
-				// Token emptiness allowed (environment may supply later)
-				if repo.Auth.Type == AuthTypeBasic && (repo.Auth.Username == "" || repo.Auth.Password == "") {
-					return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
-				}
-			}
+		// Validate organizations/groups requirement
+		if err := cv.validateForgeScopes(forge); err != nil {
+			return err
 		}
-		// and matches test expectations for explicit configuration (auto-discovery can be added
-		// later behind a dedicated flag to avoid surprising large scans). We now allow an empty
-		// set if options.auto_discover is explicitly true.
-		emptyScopes := len(forge.Organizations) == 0 && len(forge.Groups) == 0
-		if emptyScopes {
-			allowAuto := forge.AutoDiscover
-			if !allowAuto && forge.Options != nil { // legacy/options-based flag
-				if v, ok := forge.Options["auto_discover"]; ok {
-					if b, ok2 := v.(bool); ok2 && b {
-						allowAuto = true
-					}
-				}
-			}
-			if !allowAuto {
-				return fmt.Errorf("forge %s must have at least one organization or group configured (or set auto_discover=true)", forge.Name)
+	}
+
+	return nil
+}
+
+// validateForgeType validates the forge type field.
+func (cv *configurationValidator) validateForgeType(forge *ForgeConfig) error {
+	// Empty forge type is explicitly invalid
+	if forge.Type == "" {
+		return fmt.Errorf("unsupported forge type: %s", forge.Type)
+	}
+
+	// Attempt normalization - if it returns empty, the type was invalid
+	norm := NormalizeForgeType(string(forge.Type))
+	if norm == "" {
+		return fmt.Errorf("unsupported forge type: %s", forge.Type)
+	}
+
+	// Apply the normalized value (this maintains existing behavior)
+	forge.Type = norm
+
+	return nil
+}
+
+// validateForgeAuth validates the forge authentication configuration.
+func (cv *configurationValidator) validateForgeAuth(forge *ForgeConfig) error {
+	if forge.Auth == nil {
+		return fmt.Errorf("forge %s must have authentication configured", forge.Name)
+	}
+
+	switch forge.Auth.Type {
+	case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
+		// Valid auth types - semantic checks done by individual clients
+	default:
+		return fmt.Errorf("forge %s: unsupported auth type: %s", forge.Name, forge.Auth.Type)
+	}
+
+	return nil
+}
+
+// validateForgeScopes validates that forge has organizations/groups or auto-discovery enabled.
+func (cv *configurationValidator) validateForgeScopes(forge *ForgeConfig) error {
+	emptyScopes := len(forge.Organizations) == 0 && len(forge.Groups) == 0
+	if !emptyScopes {
+		return nil // Has scopes, no need to check auto-discovery
+	}
+
+	// Check if auto-discovery is enabled
+	allowAuto := forge.AutoDiscover
+	if !allowAuto && forge.Options != nil {
+		// Check legacy options-based flag
+		if v, ok := forge.Options["auto_discover"]; ok {
+			if b, ok2 := v.(bool); ok2 && b {
+				allowAuto = true
 			}
 		}
 	}
 
-	// Validate versioning strategy
-	if cfg.Versioning != nil {
-		if cfg.Versioning.Strategy != StrategyBranchesAndTags && cfg.Versioning.Strategy != StrategyBranchesOnly && cfg.Versioning.Strategy != StrategyTagsOnly {
-			return fmt.Errorf("invalid versioning strategy: %s", cfg.Versioning.Strategy)
+	if !allowAuto {
+		return fmt.Errorf("forge %s must have at least one organization or group configured (or set auto_discover=true)", forge.Name)
+	}
+
+	return nil
+}
+
+// validateRepositories validates repository-specific configuration.
+func (cv *configurationValidator) validateRepositories() error {
+	for _, repo := range cv.config.Repositories {
+		if repo.Auth != nil {
+			if err := cv.validateRepoAuth(repo); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// validateRepoAuth validates repository authentication configuration.
+func (cv *configurationValidator) validateRepoAuth(repo Repository) error {
+	switch repo.Auth.Type {
+	case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
+		// Valid auth type
+	default:
+		return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
+	}
+
+	// Validate basic auth requirements
+	if repo.Auth.Type == AuthTypeBasic {
+		if repo.Auth.Username == "" || repo.Auth.Password == "" {
+			return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
 		}
 	}
 
+	return nil
+}
+
+// validateBuild validates build configuration settings.
+func (cv *configurationValidator) validateBuild() error {
 	// Validate retry configuration
-	switch cfg.Build.RetryBackoff {
+	if err := cv.validateRetryBackoff(); err != nil {
+		return err
+	}
+	if err := cv.validateCloneStrategy(); err != nil {
+		return err
+	}
+	if err := cv.validateRetryDelays(); err != nil {
+		return err
+	}
+	if err := cv.validateMaxRetries(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateRetryBackoff validates the retry backoff strategy.
+func (cv *configurationValidator) validateRetryBackoff() error {
+	switch cv.config.Build.RetryBackoff {
 	case RetryBackoffFixed, RetryBackoffLinear, RetryBackoffExponential:
+		// Valid backoff strategies
 	default:
-		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", cfg.Build.RetryBackoff)
+		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", cv.config.Build.RetryBackoff)
 	}
-	// Validate clone strategy
-	switch cfg.Build.CloneStrategy {
+	return nil
+}
+
+// validateCloneStrategy validates the clone strategy.
+func (cv *configurationValidator) validateCloneStrategy() error {
+	switch cv.config.Build.CloneStrategy {
 	case CloneStrategyFresh, CloneStrategyUpdate, CloneStrategyAuto:
+		// Valid clone strategies
 	default:
-		return fmt.Errorf("invalid clone_strategy: %s (allowed: fresh|update|auto)", cfg.Build.CloneStrategy)
+		return fmt.Errorf("invalid clone_strategy: %s (allowed: fresh|update|auto)", cv.config.Build.CloneStrategy)
 	}
-	if _, err := time.ParseDuration(cfg.Build.RetryInitialDelay); err != nil {
-		return fmt.Errorf("invalid retry_initial_delay: %s: %w", cfg.Build.RetryInitialDelay, err)
+	return nil
+}
+
+// validateRetryDelays validates retry delay durations and their relationship.
+func (cv *configurationValidator) validateRetryDelays() error {
+	// Validate initial delay format
+	initDur, err := time.ParseDuration(cv.config.Build.RetryInitialDelay)
+	if err != nil {
+		return fmt.Errorf("invalid retry_initial_delay: %s: %w", cv.config.Build.RetryInitialDelay, err)
 	}
-	if _, err := time.ParseDuration(cfg.Build.RetryMaxDelay); err != nil {
-		return fmt.Errorf("invalid retry_max_delay: %s: %w", cfg.Build.RetryMaxDelay, err)
+
+	// Validate max delay format
+	maxDur, err := time.ParseDuration(cv.config.Build.RetryMaxDelay)
+	if err != nil {
+		return fmt.Errorf("invalid retry_max_delay: %s: %w", cv.config.Build.RetryMaxDelay, err)
 	}
-	initDur, _ := time.ParseDuration(cfg.Build.RetryInitialDelay)
-	maxDur, _ := time.ParseDuration(cfg.Build.RetryMaxDelay)
+
+	// Validate relationship between delays
 	if maxDur < initDur {
-		return fmt.Errorf("retry_max_delay (%s) must be >= retry_initial_delay (%s)", cfg.Build.RetryMaxDelay, cfg.Build.RetryInitialDelay)
+		return fmt.Errorf("retry_max_delay (%s) must be >= retry_initial_delay (%s)",
+			cv.config.Build.RetryMaxDelay, cv.config.Build.RetryInitialDelay)
 	}
-	if cfg.Build.MaxRetries < 0 {
-		return fmt.Errorf("max_retries cannot be negative: %d", cfg.Build.MaxRetries)
+
+	return nil
+}
+
+// validateMaxRetries validates the maximum retry count.
+func (cv *configurationValidator) validateMaxRetries() error {
+	if cv.config.Build.MaxRetries < 0 {
+		return fmt.Errorf("max_retries cannot be negative: %d", cv.config.Build.MaxRetries)
+	}
+	return nil
+}
+
+// validateVersioning validates versioning configuration.
+func (cv *configurationValidator) validateVersioning() error {
+	// Only validate if versioning is configured
+	if cv.config.Versioning == nil {
+		return nil
+	}
+
+	switch cv.config.Versioning.Strategy {
+	case StrategyBranchesAndTags, StrategyBranchesOnly, StrategyTagsOnly:
+		// Valid versioning strategies
+	default:
+		return fmt.Errorf("invalid versioning strategy: %s", cv.config.Versioning.Strategy)
 	}
 
 	return nil

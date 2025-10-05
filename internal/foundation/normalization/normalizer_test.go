@@ -113,7 +113,7 @@ func TestEnumNormalizer_Validation(t *testing.T) {
 	if err == nil {
 		t.Error("NormalizeWithValidation(invalid) should return error")
 	}
-	
+
 	// Check error message includes enum name
 	if err.Error() == "" {
 		t.Error("Error message should not be empty")
@@ -128,13 +128,13 @@ func TestValidKeys(t *testing.T) {
 	}, TestEnumAlpha)
 
 	keys := normalizer.ValidKeys()
-	
+
 	// Should be sorted
 	expected := []string{"alpha", "beta", "gamma"}
 	if len(keys) != len(expected) {
 		t.Errorf("ValidKeys() length = %d, want %d", len(keys), len(expected))
 	}
-	
+
 	for i, key := range keys {
 		if key != expected[i] {
 			t.Errorf("ValidKeys()[%d] = %q, want %q", i, key, expected[i])

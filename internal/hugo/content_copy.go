@@ -132,4 +132,4 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 	return nil
 }
 
-// deprecated processMarkdownFile removed (unused)
+// Note: legacy processMarkdownFile helper was removed as unused.

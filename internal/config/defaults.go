@@ -21,7 +21,7 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Build.CloneConcurrency <= 0 {
 		cfg.Build.CloneConcurrency = 4
 	}
-	
+
 	// Render mode default (auto) if unspecified or invalid
 	if cfg.Build.RenderMode == "" {
 		cfg.Build.RenderMode = RenderModeAuto
@@ -32,7 +32,7 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Build.RenderMode = RenderModeAuto
 		}
 	}
-	
+
 	// Forge namespacing default (auto): only add forge directory when multiple forge types present
 	if cfg.Build.NamespaceForges == "" {
 		cfg.Build.NamespaceForges = NamespacingAuto
@@ -44,17 +44,17 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Build.NamespaceForges = m
 		}
 	}
-	
+
 	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
 	if cfg.Build.ShallowDepth < 0 {
 		cfg.Build.ShallowDepth = 0
 	}
-	
+
 	// Deletion detection default: enable only if user omitted the field entirely.
 	if !cfg.Build.detectDeletionsSpecified && !cfg.Build.DetectDeletions {
 		cfg.Build.DetectDeletions = true
 	}
-	
+
 	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
 	if cfg.Build.CloneStrategy == "" {
 		cfg.Build.CloneStrategy = CloneStrategyFresh
@@ -66,14 +66,14 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Build.CloneStrategy = CloneStrategyFresh // fallback
 		}
 	}
-	
+
 	if cfg.Build.MaxRetries < 0 {
 		cfg.Build.MaxRetries = 0
 	}
 	if cfg.Build.MaxRetries == 0 { // default 2 retries (3 total attempts) unless explicitly set >0
 		cfg.Build.MaxRetries = 2
 	}
-	
+
 	if cfg.Build.RetryBackoff == "" {
 		cfg.Build.RetryBackoff = RetryBackoffLinear
 	} else {
@@ -83,14 +83,14 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Build.RetryBackoff = RetryBackoffLinear
 		}
 	}
-	
+
 	if cfg.Build.RetryInitialDelay == "" {
 		cfg.Build.RetryInitialDelay = "1s"
 	}
 	if cfg.Build.RetryMaxDelay == "" {
 		cfg.Build.RetryMaxDelay = "30s"
 	}
-	
+
 	return nil
 }
 
@@ -128,7 +128,7 @@ func (o *OutputDefaultApplier) ApplyDefaults(cfg *Config) error {
 			fmt.Fprintf(os.Stderr, "Warning: build.workspace_dir (%s) matches output.directory (%s); this may mix git working trees with generated site artifacts. Consider using a separate directory.\n", wd, od)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -141,7 +141,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon == nil {
 		return nil // No daemon config to apply defaults to
 	}
-	
+
 	if cfg.Daemon.HTTP.DocsPort == 0 {
 		cfg.Daemon.HTTP.DocsPort = 8080
 	}
@@ -169,7 +169,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.Storage.OutputDir == "" {
 		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
 	}
-	
+
 	return nil
 }
 
@@ -182,7 +182,7 @@ func (f *FilteringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Filtering == nil {
 		cfg.Filtering = &FilteringConfig{}
 	}
-	
+
 	// Distinguish between nil slice and explicitly empty slice
 	if cfg.Filtering.RequiredPaths == nil {
 		cfg.Filtering.RequiredPaths = []string{"docs"}
@@ -190,7 +190,7 @@ func (f *FilteringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if len(cfg.Filtering.IgnoreFiles) == 0 {
 		cfg.Filtering.IgnoreFiles = []string{".docignore"}
 	}
-	
+
 	return nil
 }
 
@@ -203,7 +203,7 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Versioning == nil {
 		cfg.Versioning = &VersioningConfig{}
 	}
-	
+
 	if cfg.Versioning.Strategy == "" {
 		cfg.Versioning.Strategy = StrategyBranchesAndTags
 	} else {
@@ -216,11 +216,11 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Versioning.Strategy = VersioningStrategy(orig)
 		}
 	}
-	
+
 	if cfg.Versioning.MaxVersionsPerRepo == 0 {
 		cfg.Versioning.MaxVersionsPerRepo = 10
 	}
-	
+
 	return nil
 }
 
@@ -233,7 +233,7 @@ func (m *MonitoringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Monitoring == nil {
 		cfg.Monitoring = &MonitoringConfig{}
 	}
-	
+
 	if cfg.Monitoring.Metrics.Path == "" {
 		cfg.Monitoring.Metrics.Path = "/metrics"
 	}
@@ -256,7 +256,7 @@ func (m *MonitoringDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Monitoring.Logging.Format = fmtVal
 		}
 	}
-	
+
 	return nil
 }
 
@@ -274,6 +274,6 @@ func (r *RepositoryDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Repositories[i].Branch = "main"
 		}
 	}
-	
+
 	return nil
 }

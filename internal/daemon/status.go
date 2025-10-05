@@ -8,7 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
@@ -110,7 +113,7 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 
 	status.DaemonInfo = DaemonInfo{
 		Status:     daemonStatus,
-		Version:    "2.0.0", // TODO: Get from build info
+		Version:    version.Version,
 		StartTime:  d.startTime,
 		Uptime:     time.Since(d.startTime).String(),
 		ConfigFile: "config.yaml", // TODO: Get from actual config path
@@ -318,11 +321,15 @@ func (d *Daemon) generateSystemMetrics() SystemMetrics {
 
 // StatusHandler serves the status page as JSON or HTML
 func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
+	errorAdapter := errors.NewHTTPErrorAdapter(slog.Default())
+
 	start := time.Now()
 	slog.Debug("Status handler invoked")
 	statusData, err := d.GenerateStatusData()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate status: %v", err), http.StatusInternalServerError)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to generate status data").
+			Build()
+		errorAdapter.WriteErrorResponse(w, internalErr)
 		return
 	}
 
@@ -340,7 +347,9 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Accept") == "application/json" || r.URL.Query().Get("format") == "json" {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(statusData); err != nil {
-			slog.Error("failed to encode status json", "error", err)
+			slog.Error("failed to encode status json", logfields.Error(err))
+			internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode status json").Build()
+			errorAdapter.WriteErrorResponse(w, internalErr)
 		}
 		return
 	}
@@ -448,12 +457,16 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	t, err := template.New("status").Parse(tmpl)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Template error: %v", err), http.StatusInternalServerError)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to parse status template").
+			Build()
+		errorAdapter.WriteErrorResponse(w, internalErr)
 		return
 	}
 
 	if err := t.Execute(w, statusData); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to render template: %v", err), http.StatusInternalServerError)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to render status template").
+			Build()
+		errorAdapter.WriteErrorResponse(w, internalErr)
 		return
 	}
 }

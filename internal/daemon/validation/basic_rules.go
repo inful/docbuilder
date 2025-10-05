@@ -33,12 +33,12 @@ func (r ConfigHashRule) Validate(ctx ValidationContext) ValidationResult {
 	if currentHash == "" {
 		return Failure("current config hash is empty")
 	}
-	
+
 	storedHash := ctx.State.GetLastConfigHash()
 	if currentHash != storedHash {
 		return Failure("config hash mismatch")
 	}
-	
+
 	return Success()
 }
 
@@ -49,7 +49,7 @@ func (r PublicDirectoryRule) Name() string { return "public_directory" }
 
 func (r PublicDirectoryRule) Validate(ctx ValidationContext) ValidationResult {
 	publicDir := filepath.Join(ctx.OutDir, "public")
-	
+
 	// Check if directory exists and is a directory
 	fi, err := os.Stat(publicDir)
 	if err != nil {
@@ -58,7 +58,7 @@ func (r PublicDirectoryRule) Validate(ctx ValidationContext) ValidationResult {
 	if !fi.IsDir() {
 		return Failure("public path is not a directory")
 	}
-	
+
 	// Check if directory has content
 	entries, err := os.ReadDir(publicDir)
 	if err != nil {
@@ -67,6 +67,6 @@ func (r PublicDirectoryRule) Validate(ctx ValidationContext) ValidationResult {
 	if len(entries) == 0 {
 		return Failure("public directory is empty")
 	}
-	
+
 	return Success()
 }

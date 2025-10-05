@@ -20,12 +20,12 @@ type SkipStateAccess interface {
 
 // ValidationContext contains all the data needed by validation rules.
 type ValidationContext struct {
-	OutDir      string
-	State       SkipStateAccess
-	Generator   *hugo.Generator
-	Repos       []cfg.Repository
-	PrevReport  *PreviousReport
-	Logger      *slog.Logger
+	OutDir     string
+	State      SkipStateAccess
+	Generator  *hugo.Generator
+	Repos      []cfg.Repository
+	PrevReport *PreviousReport
+	Logger     *slog.Logger
 }
 
 // PreviousReport holds parsed data from the previous build report.
@@ -57,7 +57,7 @@ func Failure(reason string) ValidationResult {
 type SkipValidationRule interface {
 	// Name returns a short identifier for this rule (for logging/debugging).
 	Name() string
-	
+
 	// Validate checks if this rule allows skipping the build.
 	// Returns ValidationResult indicating pass/fail and optional reason.
 	Validate(ctx ValidationContext) ValidationResult
@@ -79,8 +79,8 @@ func (rc *RuleChain) Validate(ctx ValidationContext) ValidationResult {
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			if ctx.Logger != nil {
-				ctx.Logger.Warn("Skip validation failed", 
-					"rule", rule.Name(), 
+				ctx.Logger.Warn("Skip validation failed",
+					"rule", rule.Name(),
 					"reason", result.Reason)
 			}
 			return result

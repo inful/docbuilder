@@ -90,20 +90,32 @@ func CreateVersionAwareContentPath(repoName, versionPath, originalPath string) s
 }
 
 // CreateVersionMetadata creates metadata for a versioned document
-func CreateVersionMetadata(version *Version, repoVersions *RepositoryVersions) map[string]interface{} {
-	repoName := sanitizeRepoName(repoVersions.RepositoryURL)
+type VersionMetadata struct {
+	Version         string `json:"version"`
+	VersionDisplay  string `json:"version_display"`
+	VersionType     string `json:"version_type"`
+	IsDefault       bool   `json:"is_default_version"`
+	VersionPath     string `json:"version_path"`
+	Repository      string `json:"repository"`
+	RepositoryURL   string `json:"repository_url"`
+	CommitSHA       string `json:"commit_sha"`
+	CreatedAt       string `json:"created_at"`
+	LastModified    string `json:"last_modified"`
+}
 
-	return map[string]interface{}{
-		"version":            version.Name,
-		"version_display":    version.DisplayName,
-		"version_type":       string(version.Type),
-		"is_default_version": version.IsDefault,
-		"version_path":       version.Path,
-		"repository":         repoName,
-		"repository_url":     repoVersions.RepositoryURL,
-		"commit_sha":         version.CommitSHA,
-		"created_at":         version.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		"last_modified":      version.LastModified.Format("2006-01-02T15:04:05Z07:00"),
+func CreateVersionMetadata(version *Version, repoVersions *RepositoryVersions) VersionMetadata {
+	repoName := sanitizeRepoName(repoVersions.RepositoryURL)
+	return VersionMetadata{
+		Version:        version.Name,
+		VersionDisplay: version.DisplayName,
+		VersionType:    string(version.Type),
+		IsDefault:      version.IsDefault,
+		VersionPath:    version.Path,
+		Repository:     repoName,
+		RepositoryURL:  repoVersions.RepositoryURL,
+		CommitSHA:      version.CommitSHA,
+		CreatedAt:      version.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		LastModified:   version.LastModified.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 

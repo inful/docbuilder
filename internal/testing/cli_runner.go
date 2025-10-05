@@ -13,11 +13,11 @@ import (
 
 // CLITestRunner provides utilities for testing CLI commands
 type CLITestRunner struct {
-	t           *testing.T
-	binaryPath  string
-	workingDir  string
-	env         []string
-	timeout     time.Duration
+	t          *testing.T
+	binaryPath string
+	workingDir string
+	env        []string
+	timeout    time.Duration
 }
 
 // NewCLITestRunner creates a new CLI test runner
@@ -49,22 +49,22 @@ func (r *CLITestRunner) WithTimeout(timeout time.Duration) *CLITestRunner {
 
 // CLIResult represents the result of a CLI command execution
 type CLIResult struct {
-	ExitCode    int
-	Stdout      string
-	Stderr      string
-	Duration    time.Duration
-	Error       error
+	ExitCode int
+	Stdout   string
+	Stderr   string
+	Duration time.Duration
+	Error    error
 }
 
 // Run executes a CLI command and returns the result
 func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	r.t.Helper()
-	
+
 	start := time.Now()
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
-	
+
 	cmd := exec.CommandContext(ctx, r.binaryPath, args...)
 	if r.workingDir != "" {
 		cmd.Dir = r.workingDir
@@ -72,21 +72,21 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	if r.env != nil {
 		cmd.Env = r.env
 	}
-	
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	
+
 	err := cmd.Run()
 	duration := time.Since(start)
-	
+
 	result := &CLIResult{
 		Stdout:   stdout.String(),
 		Stderr:   stderr.String(),
 		Duration: duration,
 		Error:    err,
 	}
-	
+
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitError.ExitCode()
@@ -96,7 +96,7 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	} else {
 		result.ExitCode = 0
 	}
-	
+
 	return result
 }
 
@@ -104,7 +104,7 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 func (result *CLIResult) AssertExitCode(t *testing.T, expected int) *CLIResult {
 	t.Helper()
 	if result.ExitCode != expected {
-		t.Errorf("Expected exit code %d, got %d\nStdout: %s\nStderr: %s", 
+		t.Errorf("Expected exit code %d, got %d\nStdout: %s\nStderr: %s",
 			expected, result.ExitCode, result.Stdout, result.Stderr)
 	}
 	return result
@@ -141,7 +141,7 @@ func (result *CLIResult) AssertDurationLessThan(t *testing.T, maxDuration time.D
 func (result *CLIResult) AssertSuccess(t *testing.T) *CLIResult {
 	t.Helper()
 	if result.ExitCode != 0 {
-		t.Errorf("Command failed with exit code %d\nStdout: %s\nStderr: %s", 
+		t.Errorf("Command failed with exit code %d\nStdout: %s\nStderr: %s",
 			result.ExitCode, result.Stdout, result.Stderr)
 	}
 	return result
@@ -167,7 +167,7 @@ type MockCLIEnvironment struct {
 func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 	env := NewTestEnvironment(t)
 	runner := NewCLITestRunner(t, "docbuilder") // Assumes binary is in PATH
-	
+
 	return &MockCLIEnvironment{
 		TestEnvironment: env,
 		runner:          runner.WithWorkingDir(env.TempDir),
@@ -217,7 +217,7 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 	if env.Config == nil {
 		env.t.Fatal("No config set in environment")
 	}
-	
+
 	configPath := env.ConfigPath()
 	builder := &ConfigBuilder{config: env.Config, t: env.t}
 	builder.BuildAndSave(configPath)
@@ -234,13 +234,13 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 		"static",
 		"layouts",
 	}
-	
+
 	for _, dir := range dirs {
 		if err := env.createDir(dir); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 

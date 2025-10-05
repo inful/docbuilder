@@ -6,17 +6,21 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // WebhookHandlers contains webhook-related HTTP handlers
 type WebhookHandlers struct {
+	errorAdapter *errors.HTTPErrorAdapter
 	// Add any dependencies needed for webhook processing
 }
 
 // NewWebhookHandlers creates a new webhook handlers instance
 func NewWebhookHandlers() *WebhookHandlers {
-	return &WebhookHandlers{}
+	return &WebhookHandlers{
+		errorAdapter: errors.NewHTTPErrorAdapter(slog.Default()),
+	}
 }
 
 // HandleGitHubWebhook handles GitHub webhook requests
@@ -44,7 +48,12 @@ func (h *WebhookHandlers) HandleGenericWebhook(w http.ResponseWriter, r *http.Re
 // handleWebhookRequest processes webhook requests for any forge type
 func (h *WebhookHandlers) handleWebhookRequest(w http.ResponseWriter, r *http.Request, forgeType string) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "POST").
+			WithContext("forge_type", forgeType).
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
@@ -57,7 +66,10 @@ func (h *WebhookHandlers) handleWebhookRequest(w http.ResponseWriter, r *http.Re
 	// For now, just acknowledge receipt
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("OK")); err != nil { //nolint:errcheck
-		slog.Error("Failed to write OK response", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook acknowledgment").
+			WithContext("forge_type", forgeType).
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }
 

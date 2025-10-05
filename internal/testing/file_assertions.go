@@ -57,15 +57,15 @@ func (fa *FileAssertions) AssertDirExists(relativePath string) *FileAssertions {
 func (fa *FileAssertions) AssertFileContains(relativePath, expectedContent string) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		fa.t.Errorf("Failed to read file %s: %v", fullPath, err)
 		return fa
 	}
-	
+
 	if !strings.Contains(string(content), expectedContent) {
-		fa.t.Errorf("Expected file %s to contain %q\nActual content:\n%s", 
+		fa.t.Errorf("Expected file %s to contain %q\nActual content:\n%s",
 			relativePath, expectedContent, string(content))
 	}
 	return fa
@@ -75,20 +75,20 @@ func (fa *FileAssertions) AssertFileContains(relativePath, expectedContent strin
 func (fa *FileAssertions) AssertMinFileCount(relativePath string, minCount int) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
 		fa.t.Errorf("Failed to read directory %s: %v", fullPath, err)
 		return fa
 	}
-	
+
 	fileCount := 0
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			fileCount++
 		}
 	}
-	
+
 	if fileCount < minCount {
 		fa.t.Errorf("Expected at least %d files in %s, found %d", minCount, relativePath, fileCount)
 	}
@@ -99,13 +99,13 @@ func (fa *FileAssertions) AssertMinFileCount(relativePath string, minCount int) 
 func (fa *FileAssertions) AssertFileSize(relativePath string, minSize, maxSize int64) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	stat, err := os.Stat(fullPath)
 	if err != nil {
 		fa.t.Errorf("Failed to stat file %s: %v", fullPath, err)
 		return fa
 	}
-	
+
 	size := stat.Size()
 	if size < minSize {
 		fa.t.Errorf("File %s is too small: %d bytes (minimum: %d)", relativePath, size, minSize)
@@ -120,13 +120,13 @@ func (fa *FileAssertions) AssertFileSize(relativePath string, minSize, maxSize i
 func (fa *FileAssertions) CountFiles(relativePath string) int {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
 		fa.t.Logf("Failed to read directory %s: %v", fullPath, err)
 		return 0
 	}
-	
+
 	count := 0
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -140,13 +140,13 @@ func (fa *FileAssertions) CountFiles(relativePath string) int {
 func (fa *FileAssertions) ListFiles(relativePath string) []string {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	entries, err := os.ReadDir(fullPath)
 	if err != nil {
 		fa.t.Logf("Failed to read directory %s: %v", fullPath, err)
 		return nil
 	}
-	
+
 	var files []string
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -160,7 +160,7 @@ func (fa *FileAssertions) ListFiles(relativePath string) []string {
 func (fa *FileAssertions) GetFileContent(relativePath string) string {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
-	
+
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		fa.t.Fatalf("Failed to read file %s: %v", fullPath, err)

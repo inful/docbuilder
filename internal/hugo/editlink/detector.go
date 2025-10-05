@@ -10,12 +10,12 @@ import (
 
 // DetectionContext holds all the information needed for forge detection.
 type DetectionContext struct {
-	File      docs.DocFile
-	Config    *config.Config
+	File       docs.DocFile
+	Config     *config.Config
 	Repository *config.Repository
-	CloneURL  string
-	Branch    string
-	RepoRel   string
+	CloneURL   string
+	Branch     string
+	RepoRel    string
 }
 
 // DetectionResult contains the result of forge detection.

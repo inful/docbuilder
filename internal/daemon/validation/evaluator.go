@@ -55,12 +55,12 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 		Repos:     repos,
 		Logger:    slog.Default(),
 	}
-	
+
 	// Special handling for PreviousReportRule since it needs to populate context
 	if !se.validateAndPopulateContext(&ctx) {
 		return nil, false
 	}
-	
+
 	// Execute remaining validation rules
 	remainingRules := NewRuleChain(
 		ContentIntegrityRule{},
@@ -68,12 +68,12 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 		PerRepoDocHashRule{},
 		CommitMetadataRule{},
 	)
-	
+
 	result := remainingRules.Validate(ctx)
 	if !result.Passed {
 		return nil, false
 	}
-	
+
 	// All validation rules passed - construct skip report
 	return se.constructSkipReport(ctx)
 }
@@ -85,12 +85,12 @@ func (se *SkipEvaluator) validateAndPopulateContext(ctx *ValidationContext) bool
 		ConfigHashRule{},
 		PublicDirectoryRule{},
 	)
-	
+
 	result := initialRules.Validate(*ctx)
 	if !result.Passed {
 		return false
 	}
-	
+
 	// Handle PreviousReportRule separately to populate context
 	return se.loadPreviousReport(ctx)
 }
@@ -105,7 +105,7 @@ func (se *SkipEvaluator) loadPreviousReport(ctx *ValidationContext) bool {
 		}
 		return false
 	}
-	
+
 	// Validate checksum if stored
 	sum := sha256.Sum256(data)
 	currentSum := hex.EncodeToString(sum[:])
@@ -115,7 +115,7 @@ func (se *SkipEvaluator) loadPreviousReport(ctx *ValidationContext) bool {
 		}
 		return false
 	}
-	
+
 	// Parse the report
 	var report PreviousReport
 	if err := json.Unmarshal(data, &report); err != nil {
@@ -124,11 +124,11 @@ func (se *SkipEvaluator) loadPreviousReport(ctx *ValidationContext) bool {
 		}
 		return false
 	}
-	
+
 	// Store parsed data in context for other rules
 	report.RawData = data
 	ctx.PrevReport = &report
-	
+
 	return true
 }
 
@@ -138,7 +138,7 @@ func (se *SkipEvaluator) constructSkipReport(ctx ValidationContext) (*hugo.Build
 		slog.Warn("Cannot construct skip report: no previous report data")
 		return nil, false
 	}
-	
+
 	// Create skip report reusing prior counts
 	report := &hugo.BuildReport{
 		SchemaVersion: 1,
@@ -151,21 +151,21 @@ func (se *SkipEvaluator) constructSkipReport(ctx ValidationContext) (*hugo.Build
 		RenderedPages: ctx.PrevReport.RenderedPages,
 		DocFilesHash:  ctx.PrevReport.DocFilesHash,
 	}
-	
+
 	// Persist the skip report
 	if err := report.Persist(se.outDir); err != nil {
 		slog.Warn("Failed to persist skip report", "error", err)
 		return report, true // Still return success even if persistence fails
 	}
-	
+
 	// Update state with checksums
 	se.updateStateAfterSkip(ctx, report)
-	
+
 	slog.Info("Skipping build (unchanged) without cleaning output",
 		"repos", report.Repositories,
 		"files", report.Files,
 		"content_probe", "ok")
-	
+
 	return report, true
 }
 
@@ -179,7 +179,7 @@ func (se *SkipEvaluator) updateStateAfterSkip(ctx ValidationContext, report *hug
 			se.state.SetLastReportChecksum(hex.EncodeToString(hs[:]))
 		}
 	}
-	
+
 	// Update global doc files hash
 	if report.DocFilesHash != "" {
 		se.state.SetLastGlobalDocFilesHash(report.DocFilesHash)

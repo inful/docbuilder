@@ -8,12 +8,14 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/responses"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // APIHandlers contains API-related HTTP handlers
 type APIHandlers struct {
-	config *config.Config
-	daemon DaemonAPIInterface
+	config       *config.Config
+	daemon       DaemonAPIInterface
+	errorAdapter *errors.HTTPErrorAdapter
 }
 
 // DaemonAPIInterface defines the daemon methods needed by API handlers
@@ -24,13 +26,21 @@ type DaemonAPIInterface interface {
 
 // NewAPIHandlers creates a new API handlers instance
 func NewAPIHandlers(config *config.Config, daemon DaemonAPIInterface) *APIHandlers {
-	return &APIHandlers{config: config, daemon: daemon}
+	return &APIHandlers{
+		config:       config,
+		daemon:       daemon,
+		errorAdapter: errors.NewHTTPErrorAdapter(slog.Default()),
+	}
 }
 
 // HandleDocsStatus handles the documentation status endpoint
 func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
@@ -45,14 +55,20 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
-		slog.Error("Failed to write docs status response", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write docs status response").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }
 
 // HandleDaemonStatus handles the daemon status endpoint
 func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
@@ -74,14 +90,20 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
-		slog.Error("failed to encode daemon status", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode daemon status").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }
 
 // HandleDaemonConfig handles the daemon configuration endpoint
 func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		err := errors.ValidationError("invalid HTTP method").
+			WithContext("method", r.Method).
+			WithContext("allowed_method", "GET").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, err)
 		return
 	}
 
@@ -94,7 +116,9 @@ func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, response); err != nil {
-		slog.Error("Failed to write config response", "error", err)
+		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write config response").
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, internalErr)
 	}
 }
 

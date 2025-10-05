@@ -6,7 +6,7 @@ import (
 )
 
 // Resolver provides edit link resolution with a simplified, testable interface.
-// It replaces the complex monolithic EditLinkResolver.Resolve method with a 
+// It replaces the complex monolithic EditLinkResolver.Resolve method with a
 // chain of responsibility pattern for better maintainability.
 type Resolver struct {
 	detectorChain *DetectorChain
@@ -16,9 +16,9 @@ type Resolver struct {
 // NewResolver creates a new edit link resolver with the standard detector chain.
 func NewResolver() *Resolver {
 	chain := NewDetectorChain().
-		Add(NewConfiguredDetector()).        // Try repository tags first
-		Add(NewForgeConfigDetector()).       // Then try forge configuration
-		Add(NewHeuristicDetector())          // Finally try hostname heuristics
+		Add(NewConfiguredDetector()).  // Try repository tags first
+		Add(NewForgeConfigDetector()). // Then try forge configuration
+		Add(NewHeuristicDetector())    // Finally try hostname heuristics
 
 	return &Resolver{
 		detectorChain: chain,

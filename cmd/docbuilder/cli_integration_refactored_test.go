@@ -45,43 +45,43 @@ func TestRefactoredCLIFramework(t *testing.T) {
 
 	// Test Scenario 2: CLI Build Command
 	buildScenario := &testutils.TestScenario{
-		Name:        "CLIBuildCommand", 
+		Name:        "CLIBuildCommand",
 		Description: "Test CLI build workflow with realistic configuration",
 		Timeout:     30 * time.Second,
 		Setup: func(t *testing.T) *testutils.TestEnvironment {
 			env := testutils.NewTestEnvironment(t)
-			
+
 			// Create realistic configuration with a mock repository
 			configFactory := testutils.NewConfigFactory(t)
 			config := configFactory.MinimalConfig()
-			
-			// Use the builder to add a mock repository 
+
+			// Use the builder to add a mock repository
 			builder := testutils.NewConfigBuilder(t).
 				WithGitHubForge("test-github", "test-token", "test-org").
 				WithRepository("test-repo", "file:///nonexistent/repo.git", "main")
 			config = builder.Build()
 			config.Output.Directory = env.OutputDir
-			
+
 			return env.WithConfig(config)
 		},
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
 			cliEnv := testutils.NewMockCLIEnvironment(t).
 				WithBinaryPath("../../bin/docbuilder")
 			cliEnv.Config = env.Config
-			
+
 			if err := cliEnv.WriteConfigFile(); err != nil {
 				t.Fatalf("Failed to write config file: %v", err)
 			}
 
 			// Execute build command - expect it to start properly but may fail due to repo access
 			result := cliEnv.RunCommand("build", "--config", cliEnv.ConfigPath())
-			
+
 			// Check that the build process started correctly
 			if !strings.Contains(result.Stdout, "Starting DocBuilder build") {
 				t.Errorf("Expected output to contain 'Starting DocBuilder build', got: %s", result.Stdout)
 				return &testutils.TestResult{Success: false}
 			}
-			
+
 			// For now, accept either success or expected failure from missing repositories
 			// The key test is that the CLI framework and binary work correctly
 			if result.ExitCode != 0 {
@@ -96,7 +96,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 					t.Errorf("Expected successful build to contain completion message")
 					return &testutils.TestResult{Success: false}
 				}
-				
+
 				// Verify output files were created
 				fileAssertions := testutils.NewFileAssertions(t, env.OutputDir)
 				fileAssertions.AssertDirExists("public").
@@ -104,9 +104,9 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			}
 
 			return &testutils.TestResult{
-				Success:      true, // CLI framework working is the main test
-				Duration:     result.Duration,
-				Output:       result.Stdout,
+				Success:  true, // CLI framework working is the main test
+				Duration: result.Duration,
+				Output:   result.Stdout,
 			}
 		},
 	}
@@ -117,11 +117,11 @@ func TestRefactoredCLIFramework(t *testing.T) {
 		Description: "Test configuration with auto-discovery enabled",
 		Setup: func(t *testing.T) *testutils.TestEnvironment {
 			env := testutils.NewTestEnvironment(t)
-			
+
 			// Create auto-discovery configuration
 			configFactory := testutils.NewConfigFactory(t)
 			config := configFactory.AutoDiscoveryConfig()
-			
+
 			return env.WithConfig(config)
 		},
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
@@ -130,7 +130,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			if !forge.AutoDiscover {
 				t.Error("Expected auto-discovery to be enabled")
 			}
-			
+
 			if len(forge.Organizations) > 0 && len(forge.Groups) > 0 {
 				t.Error("Auto-discovery forge should not have both organizations and groups pre-configured")
 			}
@@ -167,7 +167,7 @@ func TestRefactoredConfigValidation(t *testing.T) {
 					t.Errorf("Failed to apply defaults: %v", err)
 					return &testutils.TestResult{Success: false}
 				}
-				
+
 				err := config.ValidateConfig(env.Config)
 				if err != nil {
 					t.Errorf("Expected valid config to pass validation: %v", err)
@@ -188,7 +188,7 @@ func TestRefactoredConfigValidation(t *testing.T) {
 					t.Error("Expected config with no forges to fail validation")
 					return &testutils.TestResult{Success: false}
 				}
-				
+
 				expectedError := "at least one forge must be configured"
 				if !containsString(err.Error(), expectedError) {
 					t.Errorf("Expected error to contain %q, got: %v", expectedError, err)

@@ -45,8 +45,11 @@ type DocBuilderError struct {
 	Message   string                 `json:"message"`
 	Cause     error                  `json:"cause,omitempty"`
 	Retryable bool                   `json:"retryable"`
-	Context   map[string]interface{} `json:"context,omitempty"`
+	Context   ContextFields          `json:"context,omitempty"`
 }
+
+// ContextFields carries structured context for DocBuilderError
+type ContextFields map[string]any
 
 // Error implements the error interface
 func (e *DocBuilderError) Error() string {
@@ -62,9 +65,9 @@ func (e *DocBuilderError) Unwrap() error {
 }
 
 // WithContext adds context information to the error
-func (e *DocBuilderError) WithContext(key string, value interface{}) *DocBuilderError {
+func (e *DocBuilderError) WithContext(key string, value any) *DocBuilderError {
 	if e.Context == nil {
-		e.Context = make(map[string]interface{})
+		e.Context = make(ContextFields)
 	}
 	e.Context[key] = value
 	return e
