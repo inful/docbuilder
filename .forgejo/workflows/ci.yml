@@ -71,9 +71,9 @@ jobs:
     steps:
       - name: Install system dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+          apt-get update && apt-get install -y --no-install-recommends \
             git make ca-certificates curl && \
-          sudo update-ca-certificates
+          update-ca-certificates
 
       - name: Checkout code (manual)
         run: |
