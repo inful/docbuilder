@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -223,8 +224,9 @@ func (sm *StateManager) RecordBuild(ctx context.Context, build *Build) foundatio
 	// Update statistics
 	statsResult := sm.store.Statistics().RecordBuild(ctx, build)
 	if statsResult.IsErr() {
-		// Log but don't fail the operation
-		// In a production system, you might want different error handling
+		// Log but don't fail the operation.
+		// In a production system, you might want different error handling.
+		slog.Warn("statistics record failed", "error", statsResult.UnwrapErr())
 	}
 
 	return result

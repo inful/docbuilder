@@ -117,7 +117,7 @@ func (g *Generator) existingSiteValidForSkip() bool {
 		return false
 	}
 	found := false
-	_ = filepath.WalkDir(contentDir, func(p string, d fs.DirEntry, err error) error {
+	if werr := filepath.WalkDir(contentDir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || found {
 			return nil
 		}
@@ -125,7 +125,9 @@ func (g *Generator) existingSiteValidForSkip() bool {
 			found = true
 		}
 		return nil
-	})
+	}); werr != nil {
+		return false
+	}
 	return found
 }
 

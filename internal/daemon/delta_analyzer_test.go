@@ -77,7 +77,7 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 		if err != nil || !fi.IsDir() {
 			continue
 		}
-		filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
+		if werr := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
 			if err != nil || d == nil || d.IsDir() {
 				return nil
 			}
@@ -89,7 +89,9 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 				}
 			}
 			return nil
-		})
+		}); werr != nil {
+			t.Fatalf("walkdir: %v", werr)
+		}
 	}
 	if len(paths) == 0 {
 		return ""
@@ -131,18 +133,27 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	repoAName := "repoA"
 	repoAURL := "https://example.com/org/repoA.git"
 	repoARoot := filepath.Join(tmp, repoAName)
-	os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755)
-	os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644)
+	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir repoA: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644); err != nil {
+		t.Fatalf("write a1: %v", err)
+	}
 	hashA := computeQuickHash(t, repoARoot)
 	// repo B (will change after snapshot)
 	repoBName := "repoB"
 	repoBURL := "https://example.com/org/repoB.git"
 	repoBRoot := filepath.Join(tmp, repoBName)
-	os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755)
-	os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644)
+	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir repoB: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644); err != nil {
+		t.Fatalf("write b1: %v", err)
+	}
 	hashB := computeQuickHash(t, repoBRoot)
-	// mutate repo B
-	os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644)
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644); err != nil {
+		t.Fatalf("write b2: %v", err)
+	}
 	st := &fakeDeltaState{perRepo: map[string]string{repoAURL: hashA, repoBURL: hashB}, commits: map[string]string{repoAURL: "c1", repoBURL: "c2"}}
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
 	plan := NewDeltaAnalyzer(st).WithWorkspace(tmp).Analyze("hash", repos)

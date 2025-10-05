@@ -55,7 +55,11 @@ func TestCommandExecutorInit(t *testing.T) {
 	if err := executor.Start(ctx); err != nil {
 		t.Fatalf("Failed to start executor: %v", err)
 	}
-	defer executor.Stop(ctx)
+	defer func() {
+		if err := executor.Stop(ctx); err != nil {
+			t.Errorf("Failed to stop executor: %v", err)
+		}
+	}()
 
 	// Test init command
 	req := InitRequest{
@@ -121,7 +125,11 @@ hugo:
 	if err := executor.Start(ctx); err != nil {
 		t.Fatalf("Failed to start executor: %v", err)
 	}
-	defer executor.Stop(ctx)
+	defer func() {
+		if err := executor.Stop(ctx); err != nil {
+			t.Errorf("Failed to stop executor: %v", err)
+		}
+	}()
 
 	// Test build command with empty repositories (should succeed with 0 files)
 	req := BuildRequest{
@@ -159,7 +167,11 @@ func TestCommandExecutorValidation(t *testing.T) {
 	if err := executor.Start(ctx); err != nil {
 		t.Fatalf("Failed to start executor: %v", err)
 	}
-	defer executor.Stop(ctx)
+	defer func() {
+		if err := executor.Stop(ctx); err != nil {
+			t.Errorf("Failed to stop executor: %v", err)
+		}
+	}()
 
 	// Test with invalid config path
 	req := BuildRequest{

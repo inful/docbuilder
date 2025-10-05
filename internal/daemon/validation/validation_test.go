@@ -166,8 +166,12 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid directory
 		out := t.TempDir()
 		pubDir := filepath.Join(out, "public")
-		os.MkdirAll(pubDir, 0o755)
-		os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o644)
+		if err := os.MkdirAll(pubDir, 0o755); err != nil {
+			t.Fatalf("mkdir public: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o644); err != nil {
+			t.Fatalf("write index.html: %v", err)
+		}
 		ctx := ValidationContext{OutDir: out}
 		result := rule.Validate(ctx)
 		if !result.Passed {
@@ -196,8 +200,12 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid content directory
 		out := t.TempDir()
 		contentDir := filepath.Join(out, "content")
-		os.MkdirAll(contentDir, 0o755)
-		os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o644)
+		if err := os.MkdirAll(contentDir, 0o755); err != nil {
+			t.Fatalf("mkdir content: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o644); err != nil {
+			t.Fatalf("write test.md: %v", err)
+		}
 		ctx = ValidationContext{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
 		result = rule.Validate(ctx)
 		if !result.Passed {

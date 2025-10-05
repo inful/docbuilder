@@ -82,7 +82,7 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 	for _, dr := range docRoots {
 		base := filepath.Join(root, dr)
 		if fi, err := os.Stat(base); err == nil && fi.IsDir() {
-			filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
+			if walkErr := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
 				if err != nil || d == nil || d.IsDir() {
 					return nil
 				}
@@ -95,7 +95,11 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 					}
 				}
 				return nil
-			})
+			}); walkErr != nil {
+				// On walk error, return empty quick hash (acts as unknown); log at info for visibility
+				slog.Info("quick hash walk error", "repo", repoName, "root", base, "err", walkErr)
+				return ""
+			}
 		}
 	}
 	if len(paths) == 0 {

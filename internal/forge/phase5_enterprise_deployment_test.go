@@ -464,12 +464,15 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 			t.Errorf("HA instances inconsistent: primary has %d repos, backup has %d", len(primaryRepos), len(backupRepos))
 		}
 
-		// Test failover scenario simulation
-		primaryAvailable := true
+	// Test failover scenario simulation
+	var primaryAvailable bool
 		backupAvailable := true
 
 		// Simulate primary failure
 		primaryAvailable = false
+		if primaryAvailable {
+			t.Fatal("expected primary to be unavailable after simulated failure")
+		}
 
 		// Test backup takeover
 		if !primaryAvailable && backupAvailable {
@@ -487,6 +490,9 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 
 		// Test recovery
 		primaryAvailable = true
+		if !primaryAvailable {
+			t.Fatal("expected primary to be available after recovery simulation")
+		}
 		if primaryAvailable && backupAvailable {
 			recoveryRepos, err := primaryGitHub.ListRepositories(ctx, []string{})
 			if err != nil {
