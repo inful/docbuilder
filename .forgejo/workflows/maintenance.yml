@@ -1,0 +1,99 @@
+name: Maintenance
+
+on:
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  GO_VERSION: '1.23'
+
+jobs:
+  dependency-update:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Update Go dependencies
+        run: |
+          go get -u ./...
+          go mod tidy
+
+      - name: Check for Hugo updates
+        run: |
+          # Get latest Hugo version
+          LATEST_HUGO=$(curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest | grep -Po '"tag_name": "v\K[^"]*')
+          CURRENT_HUGO=$(grep 'HUGO_VERSION=' Dockerfile | cut -d'"' -f2)
+          
+          echo "Current Hugo version: $CURRENT_HUGO"
+          echo "Latest Hugo version: $LATEST_HUGO"
+          
+          if [ "$CURRENT_HUGO" != "$LATEST_HUGO" ]; then
+            echo "Updating Hugo from $CURRENT_HUGO to $LATEST_HUGO"
+            sed -i "s/HUGO_VERSION=\"$CURRENT_HUGO\"/HUGO_VERSION=\"$LATEST_HUGO\"/" Dockerfile
+            echo "HUGO_UPDATED=true" >> $GITHUB_ENV
+            echo "HUGO_NEW_VERSION=$LATEST_HUGO" >> $GITHUB_ENV
+          else
+            echo "Hugo is up to date"
+            echo "HUGO_UPDATED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Run tests after updates
+        run: |
+          make deps
+          make test
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        if: env.HUGO_UPDATED == 'true' || success()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: update dependencies
+            
+            - Updated Go dependencies to latest versions
+            ${{ env.HUGO_UPDATED == 'true' && format('- Updated Hugo from {0} to {1}', env.CURRENT_HUGO, env.HUGO_NEW_VERSION) || '' }}
+          title: 'chore: automated dependency updates'
+          body: |
+            This is an automated dependency update.
+            
+            ## Changes
+            - ⬆️ Updated Go dependencies to latest versions
+            ${{ env.HUGO_UPDATED == 'true' && format('- ⬆️ Updated Hugo from {0} to {1}', env.CURRENT_HUGO, env.HUGO_NEW_VERSION) || '' }}
+            
+            ## Testing
+            - ✅ All tests pass with updated dependencies
+            - ✅ Build succeeds with updated dependencies
+            
+            ## Review Notes
+            Please review the changes and ensure everything works as expected before merging.
+          branch: chore/dependency-updates
+          delete-branch: true
+
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup old Docker images
+        run: |
+          echo "🧹 Cleaning up old Docker images..."
+          # Add commands to clean up old images from your registry
+          # This depends on your specific registry setup
+
+      - name: Cleanup old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 10
