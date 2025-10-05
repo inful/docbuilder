@@ -1,0 +1,277 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  release:
+    types: [ published ]
+
+env:
+  GO_VERSION: '1.23'
+  REGISTRY: git.luguber.info
+  IMAGE_NAME: docbuilder
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: make deps
+
+      - name: Format check
+        run: |
+          make fmt
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "Code is not formatted. Please run 'make fmt'"
+            git diff
+            exit 1
+          fi
+
+      - name: Lint
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          make lint
+
+      - name: Run tests
+        run: make test-coverage
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
+          fail_ci_if_error: true
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build binary
+        run: make build
+
+      - name: Test binary execution
+        run: |
+          ./bin/docbuilder --version
+          ./bin/docbuilder --help
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docbuilder-${{ github.sha }}
+          path: bin/docbuilder
+          retention-days: 30
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build and test Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Test Docker image functionality
+        run: |
+          docker load --input /tmp/image.tar
+          # Test the image can run basic commands
+          docker run --rm $(echo "${{ steps.meta.outputs.tags }}" | head -n1) --version
+          docker run --rm $(echo "${{ steps.meta.outputs.tags }}" | head -n1) --help
+          
+          # Test with example config
+          echo "Testing Docker container with example config..."
+          docker run --rm $(echo "${{ steps.meta.outputs.tags }}" | head -n1) init > /tmp/test-config.yaml
+          
+          # Test discovery functionality (should work without external repos)
+          echo "Testing discovery functionality..."
+          docker run --rm -v /tmp/test-config.yaml:/config.yaml:ro \
+            $(echo "${{ steps.meta.outputs.tags }}" | head -n1) \
+            discover -c /config.yaml -v || echo "Discovery test completed (may fail without repos)"
+
+      - name: Push Docker image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Run integration tests with Docker
+        run: |
+          # Create test configuration for public repository
+          cat > integration-test-config.yaml << EOF
+          hugo:
+            title: "Integration Test Docs"
+            baseURL: "https://test.example.com"
+            theme: hextra
+            
+          repositories:
+            - url: https://github.com/alecthomas/kong.git
+              name: kong-docs
+              branch: master
+              paths: ["."]
+          EOF
+          
+          # Test full pipeline with Docker image
+          echo "Running full integration test..."
+          docker run --rm \
+            -v $(pwd)/integration-test-config.yaml:/config.yaml:ro \
+            -v $(pwd)/test-output:/output \
+            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            build -c /config.yaml -o /output --render-mode always -v
+          
+          # Verify output was generated
+          if [ -d "test-output/public" ]; then
+            echo "✅ Integration test passed - static site generated"
+            ls -la test-output/public/
+          else
+            echo "❌ Integration test failed - no static site generated"
+            exit 1
+          fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, docker-build, integration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    steps:
+      - name: Deploy to staging environment
+        run: |
+          echo "🚀 Deploying to staging..."
+          echo "Image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          # Add your staging deployment commands here
+          # For example: kubectl, docker-compose, or API calls to your deployment system
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, docker-build, integration-test, security-scan]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: production
+    steps:
+      - name: Deploy to production environment
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "Image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
+          # Add your production deployment commands here

@@ -28,13 +28,13 @@ clean:
 install: build
 	cp bin/docbuilder $(GOPATH)/bin/
 
-# Run the application (requires config.yaml)
+# Run the application (requires config.yaml). Tests use fixtures under test/testdata.
 run: build
 	./bin/docbuilder build
 
 # Test discovery functionality
 discover: build
-	./bin/docbuilder discover -c test/config.test.yaml -v
+	./bin/docbuilder discover -c test/testdata/config.test.yaml -v
 
 # Initialize example configuration
 init:
