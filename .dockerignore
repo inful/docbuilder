@@ -1,0 +1,14 @@
+.git
+.gitignore
+**/.DS_Store
+**/.vscode
+**/*.log
+**/node_modules
+**/tmp
+**/dist
+**/bin
+**/site
+**/public
+**/.env*
+**/*.test
+**/testforge.test
