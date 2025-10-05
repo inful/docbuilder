@@ -257,9 +257,7 @@ func (t *FrontMatterBuilderV3) Transform(page *ContentPage, context *TransformCo
 
 	// Generate title from file name if not present
 	title := page.File.Name
-	if strings.HasSuffix(title, ".md") {
-		title = title[:len(title)-3]
-	}
+	title = strings.TrimSuffix(title, ".md")
 	title = strings.ReplaceAll(title, "_", " ")
 	title = strings.ReplaceAll(title, "-", " ")
 
@@ -527,8 +525,8 @@ func (t *ContentProcessorV2) Transform(page *ContentPage, context *TransformCont
 	originalContent := page.GetContent()
 	processedContent := originalContent
 
-	// Process relative links (placeholder implementation)
-	// TODO: Implement actual link rewriting logic
+	// Process relative links (placeholder): link rewriting will be implemented
+	// alongside the site generator’s URL mapping to avoid drift.
 	if strings.Contains(processedContent, "](./") || strings.Contains(processedContent, "](../") {
 		// Mark as processed but don't change content for now
 		result.AddChange(

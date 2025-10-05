@@ -1,4 +1,5 @@
 package errors
+
 import (
 	"encoding/json"
 	"log/slog"

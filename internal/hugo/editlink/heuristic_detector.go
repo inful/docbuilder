@@ -81,9 +81,7 @@ func (d *HeuristicDetector) extractFullNameFromURL(cloneURL string) string {
 
 	// Extract path and clean it
 	path := strings.Trim(u.Path, "/")
-	if strings.HasSuffix(path, ".git") {
-		path = path[:len(path)-4]
-	}
+	path = strings.TrimSuffix(path, ".git")
 
 	return path
 }

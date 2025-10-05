@@ -1,4 +1,5 @@
-
+// Package errors provides a lightweight structured error type (DocBuilderError)
+// for category-based classification and retry semantics in HTTP adapters and CLI.
 package errors
 
 import (
@@ -6,7 +7,6 @@ import (
 )
 
 // ...existing code...
-
 
 // ErrorCategory represents the category of a DocBuilder error for classification
 type ErrorCategory string
@@ -45,20 +45,18 @@ const (
 
 // DocBuilderError is a structured error with category, retryability, and context
 type DocBuilderError struct {
-	Category  ErrorCategory          `json:"category"`
-	Severity  ErrorSeverity          `json:"severity"`
-	Message   string                 `json:"message"`
-	Cause     error                  `json:"cause,omitempty"`
-	Retryable bool                   `json:"retryable"`
-	Context   ContextFields          `json:"context,omitempty"`
+	Category  ErrorCategory `json:"category"`
+	Severity  ErrorSeverity `json:"severity"`
+	Message   string        `json:"message"`
+	Cause     error         `json:"cause,omitempty"`
+	Retryable bool          `json:"retryable"`
+	Context   ContextFields `json:"context,omitempty"`
 }
 
 // Build returns the error itself for compatibility with legacy error adapter usage.
 func (e *DocBuilderError) Build() *DocBuilderError {
 	return e
 }
-
-
 
 // ContextFields carries structured context for DocBuilderError
 type ContextFields map[string]any
@@ -151,34 +149,33 @@ func GetCategory(err error) ErrorCategory {
 	return CategoryInternal
 }
 
-
 // ValidationError creates a new validation error (400 Bad Request)
 func ValidationError(message string) *DocBuilderError {
-       return &DocBuilderError{
-	       Category:  CategoryValidation,
-	       Severity:  SeverityWarning,
-	       Message:   message,
-	       Retryable: false,
-       }
+	return &DocBuilderError{
+		Category:  CategoryValidation,
+		Severity:  SeverityWarning,
+		Message:   message,
+		Retryable: false,
+	}
 }
 
 // DaemonError creates a new daemon error (service unavailable)
 func DaemonError(message string) *DocBuilderError {
-       return &DocBuilderError{
-	       Category:  CategoryDaemon,
-	       Severity:  SeverityError,
-	       Message:   message,
-	       Retryable: false,
-       }
+	return &DocBuilderError{
+		Category:  CategoryDaemon,
+		Severity:  SeverityError,
+		Message:   message,
+		Retryable: false,
+	}
 }
 
 // WrapError wraps an existing error with a new DocBuilderError
 func WrapError(err error, category ErrorCategory, message string) *DocBuilderError {
-       return &DocBuilderError{
-	       Category:  category,
-	       Severity:  SeverityError,
-	       Message:   message,
-	       Cause:     err,
-	       Retryable: false,
-       }
+	return &DocBuilderError{
+		Category:  category,
+		Severity:  SeverityError,
+		Message:   message,
+		Cause:     err,
+		Retryable: false,
+	}
 }

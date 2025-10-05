@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
-// MockService is a test implementation of ManagedService.
+// MockService is a test implementation of ManagedService for orchestrator unit tests.
 type MockService struct {
 	name         string
 	dependencies []string
@@ -22,6 +22,7 @@ type MockService struct {
 	mu           sync.Mutex
 }
 
+// NewMockService creates a new MockService with the given name and dependencies.
 func NewMockService(name string, deps ...string) *MockService {
 	return &MockService{
 		name:         name,
@@ -113,6 +114,14 @@ func (m *MockService) IsRunning() bool {
 	return m.isRunning
 }
 
+// TestServiceOrchestrator exercises the ServiceOrchestrator with various scenarios:
+// - Single service lifecycle
+// - Dependency resolution
+// - Circular dependency detection
+// - Service start failure and cleanup
+// - Timeout handling
+// - Service registration validation
+// - Service info retrieval
 func TestServiceOrchestrator(t *testing.T) {
 	t.Run("Single service lifecycle", func(t *testing.T) {
 		orchestrator := NewServiceOrchestrator()

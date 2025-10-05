@@ -54,6 +54,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			// Create realistic configuration with a mock repository
 			configFactory := testutils.NewConfigFactory(t)
 			config := configFactory.MinimalConfig()
+			_ = config // used via env.WithConfig below or intentionally ignored for setup clarity
 
 			// Use the builder to add a mock repository
 			builder := testutils.NewConfigBuilder(t).

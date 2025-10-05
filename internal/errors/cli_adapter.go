@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -128,7 +129,7 @@ func (a *CLIErrorAdapter) logError(err error) {
 			attrs = append(attrs, slog.Bool("retryable", true))
 		}
 
-		a.logger.LogAttrs(nil, level, dbe.Message, attrs...)
+		a.logger.LogAttrs(context.Background(), level, dbe.Message, attrs...)
 		return
 	}
 

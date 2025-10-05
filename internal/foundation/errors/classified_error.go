@@ -1,4 +1,6 @@
+// Package errors contains classified error types and helpers for robust error handling.
 package errors
+
 import (
 	"fmt"
 )
@@ -148,26 +150,5 @@ func HasSeverity(err error, severity ErrorSeverity) bool {
 	return false
 }
 
-// GetCategory extracts the category from an error, or returns CategoryInternal.
-func GetCategory(err error) ErrorCategory {
-	if classified, ok := AsClassified(err); ok {
-		return classified.Category()
-	}
-	return CategoryInternal
-}
-
-// GetSeverity extracts the severity from an error, or returns SeverityError.
-func GetSeverity(err error) ErrorSeverity {
-	if classified, ok := AsClassified(err); ok {
-		return classified.Severity()
-	}
-	return SeverityError
-}
-
-// GetRetryStrategy extracts the retry strategy from an error, or returns RetryNever.
-func GetRetryStrategy(err error) RetryStrategy {
-	if classified, ok := AsClassified(err); ok {
-		return classified.RetryStrategy()
-	}
-	return RetryNever
-}
+// Note: category/severity/retry getters removed as unused duplicates; use
+// the ClassifiedError methods on concrete values when needed.

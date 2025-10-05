@@ -327,7 +327,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		github.WithRateLimit(1, 100*time.Millisecond) // 1 request per 100ms
 
 		start := time.Now()
-		_, err = github.ListRepositories(context.Background(), []string{})
+		_, _ = github.ListRepositories(context.Background(), []string{})
 		duration := time.Since(start)
 
 		if duration >= 50*time.Millisecond {

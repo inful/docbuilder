@@ -1,3 +1,4 @@
+// Package handlers contains HTTP handlers for the DocBuilder HTTP API (status, build, monitoring, webhooks).
 package handlers
 
 import (
@@ -7,25 +8,24 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/errors"
-
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
-// APIHandlers contains API-related HTTP handlers
+// APIHandlers contains API-related HTTP handlers.
 type APIHandlers struct {
 	config       *config.Config
 	daemon       DaemonAPIInterface
 	errorAdapter *errors.HTTPErrorAdapter
 }
 
-// DaemonAPIInterface defines the daemon methods needed by API handlers
+// DaemonAPIInterface defines the daemon methods needed by API handlers.
 type DaemonAPIInterface interface {
 	GetStatus() interface{} // Returns DaemonStatus type - use interface{} to avoid import cycles
 	GetStartTime() time.Time
 }
 
-// NewAPIHandlers creates a new API handlers instance
+// NewAPIHandlers creates a new API handlers instance.
 func NewAPIHandlers(config *config.Config, daemon DaemonAPIInterface) *APIHandlers {
 	return &APIHandlers{
 		config:       config,
@@ -34,7 +34,7 @@ func NewAPIHandlers(config *config.Config, daemon DaemonAPIInterface) *APIHandle
 	}
 }
 
-// HandleDocsStatus handles the documentation status endpoint
+// HandleDocsStatus handles the documentation status endpoint.
 func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -62,7 +62,7 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleDaemonStatus handles the daemon status endpoint
+// HandleDaemonStatus handles the daemon status endpoint.
 func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -101,7 +101,7 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// HandleDaemonConfig handles the daemon configuration endpoint
+// HandleDaemonConfig handles the daemon configuration endpoint.
 func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -127,7 +127,7 @@ func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// sanitizeConfig creates a sanitized view of the configuration without secrets
+// sanitizeConfig creates a sanitized view of the configuration without secrets.
 func (h *APIHandlers) sanitizeConfig(cfg *config.Config) responses.ConfigSummary {
 	// Create sanitized forge summaries
 	forges := make([]responses.ForgeSummary, len(cfg.Forges))

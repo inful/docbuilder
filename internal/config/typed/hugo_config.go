@@ -97,11 +97,6 @@ type HugoMarkupType struct {
 var (
 	HugoMarkupGoldmark    = HugoMarkupType{"goldmark"}
 	HugoMarkupBlackfriday = HugoMarkupType{"blackfriday"}
-
-	hugoMarkupNormalizer = foundation.NewNormalizer(map[string]HugoMarkupType{
-		"goldmark":    HugoMarkupGoldmark,
-		"blackfriday": HugoMarkupBlackfriday,
-	}, HugoMarkupGoldmark)
 )
 
 func (hm HugoMarkupType) String() string {

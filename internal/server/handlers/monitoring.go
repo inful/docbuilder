@@ -1,3 +1,4 @@
+// Package handlers provides HTTP handlers for monitoring and health endpoints.
 package handlers
 
 import (
@@ -6,25 +7,30 @@ import (
 	"net/http"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
-// MonitoringHandlers contains monitoring-related HTTP handlers
+// MonitoringHandlers contains monitoring-related HTTP handlers.
 type MonitoringHandlers struct {
 	daemon       DaemonInterface
 	errorAdapter *errors.HTTPErrorAdapter
 }
 
-// DaemonInterface defines the daemon methods needed by monitoring handlers
+// DaemonInterface defines the daemon methods needed by monitoring handlers.
 type DaemonInterface interface {
 	GetStatus() interface{} // DaemonStatus implements String() method
 	GetActiveJobs() int
 	GetStartTime() time.Time
+	// Live metrics (optional; return zero values when unavailable)
+	HTTPRequestsTotal() int
+	RepositoriesTotal() int
+	LastDiscoveryDurationSec() int
+	LastBuildDurationSec() int
 }
 
-// NewMonitoringHandlers creates a new monitoring handlers instance
+// NewMonitoringHandlers creates a new monitoring handlers instance.
 func NewMonitoringHandlers(daemon DaemonInterface) *MonitoringHandlers {
 	return &MonitoringHandlers{
 		daemon:       daemon,
@@ -32,7 +38,7 @@ func NewMonitoringHandlers(daemon DaemonInterface) *MonitoringHandlers {
 	}
 }
 
-// HandleHealthCheck handles the health check endpoint
+// HandleHealthCheck handles the health check endpoint.
 func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -65,7 +71,7 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// HandleMetrics handles the metrics endpoint (placeholder)
+// HandleMetrics handles the metrics endpoint (placeholder).
 func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -76,15 +82,14 @@ func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// TODO: Implement Prometheus-style metrics
 	metrics := &responses.MetricsResponse{
 		Status:                "ok",
 		Timestamp:             time.Now().UTC(),
-		HTTPRequestsTotal:     0, // TODO: Implement counters
+		HTTPRequestsTotal:     h.daemon.HTTPRequestsTotal(),
 		ActiveJobs:            h.daemon.GetActiveJobs(),
-		LastDiscoveryDuration: 0, // TODO: Track discovery timing
-		LastBuildDuration:     0, // TODO: Track build timing
-		RepositoriesTotal:     0, // TODO: Count managed repositories
+		LastDiscoveryDuration: h.daemon.LastDiscoveryDurationSec(),
+		LastBuildDuration:     h.daemon.LastBuildDurationSec(),
+		RepositoriesTotal:     h.daemon.RepositoriesTotal(),
 	}
 
 	if err := writeJSONPretty(w, r, http.StatusOK, metrics); err != nil {

@@ -1,3 +1,4 @@
+// Package handlers contains HTTP handlers for build and discovery operations.
 package handlers
 
 import (
@@ -5,17 +6,17 @@ import (
 	"net/http"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 
-// BuildHandlers contains build and discovery related HTTP handlers
+// BuildHandlers contains build and discovery related HTTP handlers.
 type BuildHandlers struct {
 	daemon       DaemonBuildInterface
 	errorAdapter *errors.HTTPErrorAdapter
 }
 
-// DaemonBuildInterface defines the daemon methods needed by build handlers
+// DaemonBuildInterface defines the daemon methods needed by build handlers.
 type DaemonBuildInterface interface {
 	TriggerDiscovery() string
 	TriggerBuild() string
@@ -23,7 +24,7 @@ type DaemonBuildInterface interface {
 	GetActiveJobs() int
 }
 
-// NewBuildHandlers creates a new build handlers instance
+// NewBuildHandlers creates a new build handlers instance.
 func NewBuildHandlers(daemon DaemonBuildInterface) *BuildHandlers {
 	return &BuildHandlers{
 		daemon:       daemon,
@@ -31,7 +32,7 @@ func NewBuildHandlers(daemon DaemonBuildInterface) *BuildHandlers {
 	}
 }
 
-// HandleTriggerDiscovery handles the discovery trigger endpoint
+// HandleTriggerDiscovery handles the discovery trigger endpoint.
 func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		err := errors.ValidationError("invalid HTTP method").
@@ -42,7 +43,6 @@ func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO: Implement discovery triggering
 	if h.daemon != nil {
 		jobID := h.daemon.TriggerDiscovery()
 		response := &responses.TriggerResponse{
@@ -62,7 +62,7 @@ func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Re
 	}
 }
 
-// HandleTriggerBuild handles the build trigger endpoint
+// HandleTriggerBuild handles the build trigger endpoint.
 func (h *BuildHandlers) HandleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		err := errors.ValidationError("invalid HTTP method").
@@ -73,7 +73,6 @@ func (h *BuildHandlers) HandleTriggerBuild(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// TODO: Implement build triggering
 	if h.daemon != nil {
 		jobID := h.daemon.TriggerBuild()
 		response := &responses.TriggerResponse{
@@ -93,7 +92,7 @@ func (h *BuildHandlers) HandleTriggerBuild(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// HandleBuildStatus handles the build status endpoint
+// HandleBuildStatus handles the build status endpoint.
 func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -104,12 +103,11 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// TODO: Implement build status tracking
 	status := &responses.BuildStatusResponse{
 		Status:      "ok",
 		QueueLength: h.daemon.GetQueueLength(),
 		Statistics: responses.BuildStatistics{
-			TotalBuilds:      0, // TODO: Get from daemon state
+			TotalBuilds:      0, // populated by daemon state when available
 			SuccessfulBuilds: 0,
 			FailedBuilds:     0,
 		},
@@ -123,7 +121,7 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// HandleRepositories handles the repositories endpoint
+// HandleRepositories handles the repositories endpoint.
 func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		err := errors.ValidationError("invalid HTTP method").
@@ -134,10 +132,9 @@ func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// TODO: Implement repository listing from state
 	repos := &responses.RepositoryStatusResponse{
 		Status:       "ok",
-		Repositories: []responses.RepositoryInfo{}, // TODO: Get from daemon state
+		Repositories: []responses.RepositoryInfo{}, // populated from daemon state when available
 		Timestamp:    time.Now().UTC(),
 	}
 

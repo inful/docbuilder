@@ -1,4 +1,5 @@
 package errors
+
 import (
 	"context"
 	"encoding/json"

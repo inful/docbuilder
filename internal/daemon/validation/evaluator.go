@@ -34,16 +34,16 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 	}
 }
 
-// NewSkipEvaluatorWithRules constructs an evaluator with custom validation rules.
-// This is useful for testing or when different validation strategies are needed.
-func NewSkipEvaluatorWithRules(outDir string, st SkipStateAccess, gen *hugo.Generator, rules *RuleChain) *SkipEvaluator {
-	return &SkipEvaluator{
-		outDir:    outDir,
-		state:     st,
-		generator: gen,
-		rules:     rules,
-	}
-}
+// Deprecated: NewSkipEvaluatorWithRules is unused. Prefer NewSkipEvaluator and dependency injection of rules via
+// internal testing helpers instead. Kept commented for reference during refactor convergence.
+// func NewSkipEvaluatorWithRules(outDir string, st SkipStateAccess, gen *hugo.Generator, rules *RuleChain) *SkipEvaluator {
+// 	return &SkipEvaluator{
+// 		outDir:    outDir,
+// 		state:     st,
+// 		generator: gen,
+// 		rules:     rules,
+// 	}
+// }
 
 // Evaluate returns (report, true) when the build can be skipped, otherwise (nil, false).
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.

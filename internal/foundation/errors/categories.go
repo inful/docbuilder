@@ -1,4 +1,6 @@
+// Package errors provides foundational, type-safe error primitives used across DocBuilder.
 package errors
+
 // ErrorCategory represents the broad category of an error for classification and routing.
 type ErrorCategory string
 

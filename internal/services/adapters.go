@@ -1,3 +1,5 @@
+// Package services provides adapters that wrap core components (HTTP server, build queue, scheduler, etc.)
+// to implement the ManagedService interface for orchestration and lifecycle management.
 package services
 
 import (
@@ -6,20 +8,20 @@ import (
 	"time"
 )
 
-// HTTPServerService adapts an HTTP server to the ManagedService interface.
+// HTTPServerService adapts an HTTP server to the ManagedService interface, enabling orchestration and health checks.
 type HTTPServerService struct {
 	server HTTPServer
 	name   string
 }
 
-// HTTPServer defines the interface expected by HTTPServerService.
+// HTTPServer defines the interface expected by HTTPServerService for server lifecycle management.
 type HTTPServer interface {
 	Start(ctx context.Context) error
 	Stop(ctx context.Context) error
 	IsRunning() bool
 }
 
-// NewHTTPServerService creates a new HTTP server service adapter.
+// NewHTTPServerService creates a new HTTPServerService adapter for the given server and name.
 func NewHTTPServerService(name string, server HTTPServer) *HTTPServerService {
 	return &HTTPServerService{
 		server: server,
@@ -50,13 +52,13 @@ func (h *HTTPServerService) Dependencies() []string {
 	return []string{} // HTTP server typically has no dependencies
 }
 
-// BuildQueueService adapts a build queue to the ManagedService interface.
+// BuildQueueService adapts a build queue to the ManagedService interface, enabling orchestration and health checks.
 type BuildQueueService struct {
 	queue BuildQueue
 	name  string
 }
 
-// BuildQueue defines the interface expected by BuildQueueService.
+// BuildQueue defines the interface expected by BuildQueueService for build queue lifecycle and status.
 type BuildQueue interface {
 	Start(ctx context.Context)
 	Stop(ctx context.Context) error
@@ -64,7 +66,7 @@ type BuildQueue interface {
 	QueueLength() int
 }
 
-// NewBuildQueueService creates a new build queue service adapter.
+// NewBuildQueueService creates a new BuildQueueService adapter for the given queue and name.
 func NewBuildQueueService(name string, queue BuildQueue) *BuildQueueService {
 	return &BuildQueueService{
 		queue: queue,
@@ -100,20 +102,20 @@ func (b *BuildQueueService) Dependencies() []string {
 	return []string{} // Build queue typically has no service dependencies
 }
 
-// SchedulerService adapts a scheduler to the ManagedService interface.
+// SchedulerService adapts a scheduler to the ManagedService interface, enabling orchestration and health checks.
 type SchedulerService struct {
 	scheduler Scheduler
 	name      string
 }
 
-// Scheduler defines the interface expected by SchedulerService.
+// Scheduler defines the interface expected by SchedulerService for scheduling lifecycle and status.
 type Scheduler interface {
 	Start(ctx context.Context)
 	Stop(ctx context.Context) error
 	IsRunning() bool
 }
 
-// NewSchedulerService creates a new scheduler service adapter.
+// NewSchedulerService creates a new SchedulerService adapter for the given scheduler and name.
 func NewSchedulerService(name string, scheduler Scheduler) *SchedulerService {
 	return &SchedulerService{
 		scheduler: scheduler,
@@ -145,20 +147,20 @@ func (s *SchedulerService) Dependencies() []string {
 	return []string{"build-queue"} // Scheduler depends on build queue
 }
 
-// ConfigWatcherService adapts a config watcher to the ManagedService interface.
+// ConfigWatcherService adapts a config watcher to the ManagedService interface, enabling orchestration and health checks.
 type ConfigWatcherService struct {
 	watcher ConfigWatcher
 	name    string
 }
 
-// ConfigWatcher defines the interface expected by ConfigWatcherService.
+// ConfigWatcher defines the interface expected by ConfigWatcherService for config file watching lifecycle and status.
 type ConfigWatcher interface {
 	Start(ctx context.Context) error
 	Stop(ctx context.Context) error
 	IsWatching() bool
 }
 
-// NewConfigWatcherService creates a new config watcher service adapter.
+// NewConfigWatcherService creates a new ConfigWatcherService adapter for the given watcher and name.
 func NewConfigWatcherService(name string, watcher ConfigWatcher) *ConfigWatcherService {
 	return &ConfigWatcherService{
 		watcher: watcher,
@@ -189,13 +191,13 @@ func (c *ConfigWatcherService) Dependencies() []string {
 	return []string{} // Config watcher typically has no dependencies
 }
 
-// StateManagerService adapts a state manager to the ManagedService interface.
+// StateManagerService adapts a state manager to the ManagedService interface, enabling orchestration and health checks.
 type StateManagerService struct {
 	manager StateManager
 	name    string
 }
 
-// StateManager defines the interface expected by StateManagerService.
+// StateManager defines the interface expected by StateManagerService for persistent state lifecycle and status.
 type StateManager interface {
 	Load() error
 	Save() error
@@ -203,7 +205,7 @@ type StateManager interface {
 	LastSaved() *time.Time
 }
 
-// NewStateManagerService creates a new state manager service adapter.
+// NewStateManagerService creates a new StateManagerService adapter for the given manager and name.
 func NewStateManagerService(name string, manager StateManager) *StateManagerService {
 	return &StateManagerService{
 		manager: manager,

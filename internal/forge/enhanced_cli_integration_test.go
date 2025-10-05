@@ -47,8 +47,6 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 			},
 			Build: config.BuildConfig{},
 			Filtering: &config.FilteringConfig{
-				RequiredPaths:   []string{"docs", "documentation"},
-				IncludePatterns: []string{"*"},
 				ExcludePatterns: []string{"mobile-*"}, // Exclude mobile projects
 			},
 			Output: config.OutputConfig{
@@ -132,7 +130,7 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		ctx := context.Background()
 
 		// Test that the CLI operation handles failures gracefully
-		result, err := discovery.DiscoverAll(ctx)
+		result, _ := discovery.DiscoverAll(ctx)
 		if result == nil {
 			t.Error("Expected result even with failures")
 			return
@@ -149,7 +147,7 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		github.ClearFailures()
 		gitlab.ClearFailures()
 
-		result, err = discovery.DiscoverAll(ctx)
+		result, err := discovery.DiscoverAll(ctx)
 		if err != nil {
 			t.Errorf("Discovery should succeed after clearing failures: %v", err)
 			return

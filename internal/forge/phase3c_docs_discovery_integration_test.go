@@ -262,7 +262,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		ctx := context.Background()
 
 		// Test error handling
-		result, err := discovery.DiscoverAll(ctx)
+		result, _ := discovery.DiscoverAll(ctx)
 		if result == nil {
 			t.Error("Expected result even with failures")
 			return
@@ -280,7 +280,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		gitlab.ClearFailures()
 		forgejo.ClearFailures()
 
-		result, err = discovery.DiscoverAll(ctx)
+		result, err := discovery.DiscoverAll(ctx)
 		if err != nil {
 			t.Errorf("Discovery should succeed after clearing failures: %v", err)
 			return

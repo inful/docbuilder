@@ -1,3 +1,5 @@
+// Package git provides a client for performing Git operations such as clone, update, and authentication handling
+// for DocBuilder's documentation pipeline.
 package git
 
 import (
@@ -13,20 +15,21 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
-// Client handles Git operations
+// Client handles Git operations for DocBuilder, including clone, update, and authentication.
 type Client struct {
 	workspaceDir string
 	buildCfg     *appcfg.BuildConfig // optional build config for strategy flags
 	inRetry      bool                // internal guard to avoid nested retry wrapping
 }
 
-// NewClient creates a new Git client with the specified workspace directory
+// NewClient creates a new Git client with the specified workspace directory.
 func NewClient(workspaceDir string) *Client { return &Client{workspaceDir: workspaceDir} }
 
-// WithBuildConfig attaches build configuration to the client (fluent helper).
+// WithBuildConfig attaches a build configuration to the client for strategy flags (fluent helper).
 func (c *Client) WithBuildConfig(cfg *appcfg.BuildConfig) *Client { c.buildCfg = cfg; return c }
 
-// CloneRepository clones a repository to the workspace (with retry wrapper if enabled).
+// CloneRepository clones a repository to the workspace directory.
+// If retry is enabled, it wraps the operation with retry logic.
 func (c *Client) CloneRepository(repo appcfg.Repository) (string, error) {
 	if c.inRetry {
 		return c.cloneOnce(repo)
@@ -73,7 +76,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	return repoPath, nil
 }
 
-// classifyCloneError attempts to wrap underlying go-git errors into typed permanent failures.
+// classifyCloneError attempts to wrap underlying go-git errors into typed permanent failures for downstream classification.
 func classifyCloneError(url string, err error) error {
 	l := strings.ToLower(err.Error())
 	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.
@@ -95,7 +98,8 @@ func classifyCloneError(url string, err error) error {
 	return fmt.Errorf("failed to clone repository %s: %w", url, err)
 }
 
-// UpdateRepository updates an existing repository or clones if missing.
+// UpdateRepository updates an existing repository or clones it if missing.
+// If retry is enabled, it wraps the operation with retry logic.
 func (c *Client) UpdateRepository(repo appcfg.Repository) (string, error) {
 	if c.inRetry {
 		return c.updateOnce(repo)

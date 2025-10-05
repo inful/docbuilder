@@ -161,15 +161,7 @@ func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *
 }
 
 // CreateMultiPlatformConfig creates a configuration with multiple realistic forge platforms
-func (f *TestForgeConfigFactory) CreateMultiPlatformConfig(baseName string) *Config {
-	forges := []*ForgeConfig{
-		f.CreateGitHubForge(baseName),
-		f.CreateGitLabForge(baseName),
-		f.CreateForgejoForge(baseName),
-	}
-
-	return f.CreateConfigWithForges(forges)
-}
+// Note: Removed CreateMultiPlatformConfig as it was unused in active tests.
 
 // CreateFailureScenarioForges creates forge configurations for testing failure scenarios
 func (f *TestForgeConfigFactory) CreateFailureScenarioForges(baseName string) []*ForgeConfig {

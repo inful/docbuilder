@@ -91,16 +91,16 @@ func CreateVersionAwareContentPath(repoName, versionPath, originalPath string) s
 
 // CreateVersionMetadata creates metadata for a versioned document
 type VersionMetadata struct {
-	Version         string `json:"version"`
-	VersionDisplay  string `json:"version_display"`
-	VersionType     string `json:"version_type"`
-	IsDefault       bool   `json:"is_default_version"`
-	VersionPath     string `json:"version_path"`
-	Repository      string `json:"repository"`
-	RepositoryURL   string `json:"repository_url"`
-	CommitSHA       string `json:"commit_sha"`
-	CreatedAt       string `json:"created_at"`
-	LastModified    string `json:"last_modified"`
+	Version        string `json:"version"`
+	VersionDisplay string `json:"version_display"`
+	VersionType    string `json:"version_type"`
+	IsDefault      bool   `json:"is_default_version"`
+	VersionPath    string `json:"version_path"`
+	Repository     string `json:"repository"`
+	RepositoryURL  string `json:"repository_url"`
+	CommitSHA      string `json:"commit_sha"`
+	CreatedAt      string `json:"created_at"`
+	LastModified   string `json:"last_modified"`
 }
 
 func CreateVersionMetadata(version *Version, repoVersions *RepositoryVersions) VersionMetadata {
