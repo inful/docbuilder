@@ -68,6 +68,7 @@ jobs:
   build-and-test:
     name: Build & Full Test
     runs-on: ubuntu-latest
+    container: golang:1.24
     steps:
       - name: Install system dependencies
         run: |
@@ -88,72 +89,66 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
           git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
-      - name: Download Docker Buildx
+      - name: Download tools with architecture detection
         run: |
-          BUILDX_VERSION="0.19.0"
-          # Detect architecture for runner
+          HUGO_VERSION="0.151.0"
+          GOLANGCI_VERSION="1.64.8"
+          # Detect architecture
           case "$(uname -m)" in
-            x86_64) BUILDX_ARCH="amd64" ;;
-            aarch64|arm64) BUILDX_ARCH="arm64" ;;
+            x86_64) ARCH="amd64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
             *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
           esac
-          echo "Installing docker buildx ${BUILDX_VERSION} for linux-${BUILDX_ARCH}"
           
-          # Download and install buildx
-          mkdir -p ~/.docker/cli-plugins
-          curl -sSfL "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-${BUILDX_ARCH}" \
-            -o ~/.docker/cli-plugins/docker-buildx
-          chmod +x ~/.docker/cli-plugins/docker-buildx
+          echo "Installing Hugo ${HUGO_VERSION} for linux-${ARCH}"
+          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${ARCH}.tar.gz" | tar -xz -C /tmp
+          cp /tmp/hugo /usr/local/bin/
+          hugo version
           
-          # Set up buildx
-          docker buildx create --name multiarch --driver docker-container --use || true
-          docker buildx inspect --bootstrap
+          echo "Installing golangci-lint ${GOLANGCI_VERSION} for linux-${ARCH}"
+          curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-linux-${ARCH}.tar.gz" | tar -xz -C /tmp
+          cp /tmp/golangci-lint-${GOLANGCI_VERSION}-linux-${ARCH}/golangci-lint /usr/local/bin/
 
-      - name: Compute image tags
-        id: tags
-        run: |
-          set -euo pipefail
-          IMAGE_BASE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}"
-          SHA_TAG="${GITHUB_SHA}"
-          BRANCH_TAG="${GITHUB_REF_NAME//\//-}"
-          echo "image_base=${IMAGE_BASE}" >> $GITHUB_OUTPUT
-          echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
+      - name: Download dependencies
+        run: make deps
 
-      - name: Build and test with Docker Buildx
+      - name: Format check
         run: |
-          # Build the image (includes all tests, format checks, linting, and binary build)
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            # Login to registry
-            echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-            
-            # Build and push
-            docker buildx build \
-              --platform linux/amd64,linux/arm64 \
-              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --push \
-              .
-            
-            echo "✅ Multi-arch image built and pushed to registry"
-          else
-            # Build only (no push for PRs or without registry token)
-            docker buildx build \
-              --platform linux/amd64 \
-              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --tag ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --load \
-              .
-            
-            echo "✅ Image built successfully (no push for PR)"
+          make fmt
+          if [ -n "$(git diff --name-only)" ]; then
+            echo "Code is not formatted. Please run 'make fmt'"
+            git diff
+            exit 1
           fi
 
-      - name: Log build results
+      - name: Lint
+        run: make lint
+
+      - name: Run tests with coverage
+        run: make test-coverage
+
+      - name: Show coverage summary
+        run: |
+          if [ -f coverage.out ]; then
+            go tool cover -func=coverage.out | tail -n 1 || true
+          fi
+
+      - name: Build binary
+        run: make build
+
+      - name: Test binary execution
+        run: |
+          ./bin/docbuilder --version
+          ./bin/docbuilder --help
+
+      - name: Show build results
         run: |
           echo "=== Build Summary ==="
-          echo "Image: ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }}"
-          echo "All tests, linting, format checks, and build completed successfully in Dockerfile"
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            echo "Multi-arch images pushed to registry: ${{ env.REGISTRY }}"
-            echo "Platforms: linux/amd64, linux/arm64"
-          fi
+          echo "✅ Format check passed"
+          echo "✅ Lint check passed" 
+          echo "✅ Tests passed with coverage"
+          echo "✅ Binary built successfully"
+          ls -lh bin/docbuilder || true
+          echo ""
+          echo "Note: Container image build skipped in favor of direct binary build"
+          echo "This approach avoids Docker daemon complexity while maintaining full testing"
