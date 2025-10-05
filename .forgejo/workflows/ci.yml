@@ -164,5 +164,114 @@ jobs:
           echo "✅ Binary built successfully"
           ls -lh bin/docbuilder || true
           echo ""
-          echo "Note: Container image build skipped in favor of direct binary build"
-          echo "This approach avoids Docker daemon complexity while maintaining full testing"
+          echo "Note: Container image build handled in separate kaniko job"
+          echo "This job focuses on comprehensive testing and binary validation"
+
+  kaniko-build:
+    name: Container Build (Kaniko)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            git ca-certificates curl && \
+          update-ca-certificates
+
+      - name: Checkout code (manual)
+        run: |
+          set -euo pipefail
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            HOST="${GITHUB_SERVER_URL#https://}"
+            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
+          fi
+          git init .
+          git remote add origin "$REPO_URL"
+          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
+          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
+
+      - name: Download Kaniko binary
+        run: |
+          KANIKO_VERSION="1.24.0"
+          # Detect architecture for runner
+          case "$(uname -m)" in
+            x86_64) KANIKO_ARCH="amd64" ;;
+            aarch64|arm64) KANIKO_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+          esac
+          echo "Detected runner architecture: $(uname -m) -> ${KANIKO_ARCH}"
+          
+          # Download Kaniko executor binary
+          echo "Downloading Kaniko executor binary for ${KANIKO_ARCH}..."
+          KANIKO_URL="https://github.com/GoogleContainerTools/kaniko/releases/download/v${KANIKO_VERSION}/executor-linux-${KANIKO_ARCH}"
+          
+          # Try to download, fallback if not available
+          if curl -sSfL --head "${KANIKO_URL}" > /dev/null 2>&1; then
+            echo "Found Kaniko binary for ${KANIKO_ARCH}"
+            curl -sSfL "${KANIKO_URL}" -o /usr/local/bin/kaniko-executor
+            chmod +x /usr/local/bin/kaniko-executor
+          else
+            echo "No native ${KANIKO_ARCH} binary found, extracting from container..."
+            # Extract executor from container image
+            mkdir -p /tmp/kaniko
+            curl -sSL "https://github.com/GoogleContainerTools/kaniko/releases/download/v${KANIKO_VERSION}/kaniko-project-executor-v${KANIKO_VERSION}.tar.gz" | tar -xz -C /tmp/kaniko
+            cp /tmp/kaniko/kaniko/executor /usr/local/bin/kaniko-executor
+            chmod +x /usr/local/bin/kaniko-executor
+          fi
+          
+          echo "Kaniko executor ready:"
+          /usr/local/bin/kaniko-executor version || echo "Version command not available"
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          set -euo pipefail
+          IMAGE_BASE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}"
+          SHA_TAG="${GITHUB_SHA}"
+          BRANCH_TAG="${GITHUB_REF_NAME//\//-}"
+          echo "image_base=${IMAGE_BASE}" >> $GITHUB_OUTPUT
+          echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
+          echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Build container image with Kaniko
+        run: |
+          # Configure registry auth if available
+          mkdir -p /kaniko/.docker
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
+            echo '{"auths":{"${{ env.REGISTRY }}":{"username":"${{ github.actor }}","password":"${{ secrets.REGISTRY_TOKEN }}"}}}' > /kaniko/.docker/config.json
+            
+            echo "Building and pushing container image..."
+            /usr/local/bin/kaniko-executor \
+              --dockerfile=Dockerfile \
+              --context=. \
+              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
+              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
+              --cache=true \
+              --cache-ttl=24h
+              
+            echo "✅ Container image built and pushed to registry"
+          else
+            echo "Building container image (no push for PR)..."
+            /usr/local/bin/kaniko-executor \
+              --dockerfile=Dockerfile \
+              --context=. \
+              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
+              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
+              --no-push \
+              --cache=true
+              
+            echo "✅ Container image built successfully (no push for PR)"
+          fi
+
+      - name: Log build results
+        run: |
+          echo "=== Container Build Summary ==="
+          echo "Image: ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }}"
+          echo "Runner architecture: $(uname -m)"
+          echo "Kaniko executor: /usr/local/bin/kaniko-executor"
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
+            echo "✅ Image pushed to registry: ${{ env.REGISTRY }}"
+          else
+            echo "📦 Image built locally (no push for PR)"
+          fi
