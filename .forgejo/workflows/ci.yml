@@ -22,7 +22,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            git make ca-certificates && \
+            git make ca-certificates curl && \
           update-ca-certificates
 
       - name: Checkout code (manual)
@@ -40,6 +40,20 @@ jobs:
           git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
           git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
 
+      - name: Install Hugo
+        run: |
+          HUGO_VERSION="0.151.0"
+          # Detect architecture
+          case "$(uname -m)" in
+            x86_64) HUGO_ARCH="amd64" ;;
+            aarch64|arm64) HUGO_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+          esac
+          echo "Installing Hugo ${HUGO_VERSION} for linux-${HUGO_ARCH}"
+          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${HUGO_ARCH}.tar.gz" | tar -xz -C /tmp
+          cp /tmp/hugo /usr/local/bin/
+          hugo version
+
       - name: Download dependencies
         run: make deps
 
@@ -52,10 +66,21 @@ jobs:
             exit 1
           fi
 
-      - name: Lint
+      - name: Download golangci-lint
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          make lint
+          GOLANGCI_VERSION="1.59.1"
+          # Detect architecture
+          case "$(uname -m)" in
+            x86_64) GOLANGCI_ARCH="amd64" ;;
+            aarch64|arm64) GOLANGCI_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+          esac
+          echo "Installing golangci-lint ${GOLANGCI_VERSION} for linux-${GOLANGCI_ARCH}"
+          curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}.tar.gz" | tar -xz -C /tmp
+          cp /tmp/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}/golangci-lint /usr/local/bin/
+          
+      - name: Lint
+        run: make lint
 
       - name: Run tests
         run: make test-coverage
@@ -75,7 +100,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            git make ca-certificates && \
+            git make ca-certificates curl && \
           update-ca-certificates
 
       - name: Checkout code (manual)
@@ -90,6 +115,20 @@ jobs:
           git remote add origin "$REPO_URL"
           git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
           git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
+
+      - name: Install Hugo
+        run: |
+          HUGO_VERSION="0.151.0"
+          # Detect architecture
+          case "$(uname -m)" in
+            x86_64) HUGO_ARCH="amd64" ;;
+            aarch64|arm64) HUGO_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+          esac
+          echo "Installing Hugo ${HUGO_VERSION} for linux-${HUGO_ARCH}"
+          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${HUGO_ARCH}.tar.gz" | tar -xz -C /tmp
+          cp /tmp/hugo /usr/local/bin/
+          hugo version
 
       - name: Build binary
         run: make build
