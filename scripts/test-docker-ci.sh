@@ -52,14 +52,35 @@ install_docker() {
 # Function to start Docker daemon
 start_docker() {
     echo "Starting Docker daemon..."
-    # Try different methods to start Docker
-    if command -v systemctl >/dev/null 2>&1; then
-        sudo systemctl start docker || true
-    elif command -v service >/dev/null 2>&1; then
-        sudo service docker start || true
-    elif command -v dockerd >/dev/null 2>&1; then
-        sudo dockerd --host=unix:///var/run/docker.sock &
-    else
+    DOCKER_STARTED=false
+    
+    # Try systemctl if available and working
+    if command -v systemctl >/dev/null 2>&1 && sudo systemctl is-system-running >/dev/null 2>&1; then
+        echo "Trying systemctl..."
+        if sudo systemctl start docker; then
+            DOCKER_STARTED=true
+            echo "Docker started via systemctl"
+        fi
+    fi
+    
+    # Try service if systemctl didn't work
+    if [ "$DOCKER_STARTED" = "false" ] && command -v service >/dev/null 2>&1; then
+        echo "Trying service..."
+        if sudo service docker start; then
+            DOCKER_STARTED=true
+            echo "Docker started via service"
+        fi
+    fi
+    
+    # Try direct dockerd if other methods failed
+    if [ "$DOCKER_STARTED" = "false" ] && command -v dockerd >/dev/null 2>&1; then
+        echo "Trying direct dockerd..."
+        sudo dockerd --host=unix:///var/run/docker.sock --log-level=error &
+        DOCKER_STARTED=true
+        echo "Docker daemon started directly"
+    fi
+    
+    if [ "$DOCKER_STARTED" = "false" ]; then
         echo "Cannot find a way to start Docker daemon"
         exit 1
     fi
