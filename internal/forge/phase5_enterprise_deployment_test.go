@@ -464,8 +464,8 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 			t.Errorf("HA instances inconsistent: primary has %d repos, backup has %d", len(primaryRepos), len(backupRepos))
 		}
 
-	// Test failover scenario simulation
-	var primaryAvailable bool
+		// Test failover scenario simulation
+		var primaryAvailable bool
 		backupAvailable := true
 
 		// Simulate primary failure
