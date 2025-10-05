@@ -145,7 +145,9 @@ func TestRefactoredDaemon(t *testing.T) {
 		}
 
 		// Clean up
-		daemon.Stop(context.Background())
+		if err := daemon.Stop(context.Background()); err != nil {
+			t.Fatalf("Failed to stop daemon: %v", err)
+		}
 	})
 
 	t.Run("Error handling", func(t *testing.T) {
@@ -158,7 +160,9 @@ func TestRefactoredDaemon(t *testing.T) {
 
 		// Test multiple starts
 		ctx := context.Background()
-		daemon.Start(ctx)
+		if err := daemon.Start(ctx); err != nil {
+			t.Fatalf("Failed to start daemon: %v", err)
+		}
 
 		// Second start should handle gracefully (implementation dependent)
 		// For this demo, we'll just test that the daemon remains in a consistent state
@@ -166,7 +170,9 @@ func TestRefactoredDaemon(t *testing.T) {
 			t.Error("Expected daemon to remain running")
 		}
 
-		daemon.Stop(ctx)
+		if err := daemon.Stop(ctx); err != nil {
+			t.Fatalf("Failed to stop daemon: %v", err)
+		}
 	})
 }
 

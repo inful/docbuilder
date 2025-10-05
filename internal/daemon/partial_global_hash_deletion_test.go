@@ -41,12 +41,22 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	// Create workspace clone directories simulating on-disk repos (unchanged repoB will have deletion)
 	repoARoot := filepath.Join(workspace, repoAName)
 	repoBRoot := filepath.Join(workspace, repoBName)
-	os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755)
-	os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755)
+	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir repoA: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755); err != nil {
+		t.Fatalf("mkdir repoB: %v", err)
+	}
 	// Initial files
-	os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644)
-	os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644)
-	os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644)
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644); err != nil {
+		t.Fatalf("write a1: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644); err != nil {
+		t.Fatalf("write b1: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644); err != nil {
+		t.Fatalf("write b2: %v", err)
+	}
 
 	// Persist initial path lists & hashes (as if from previous full build)
 	repoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "docs", "a1.md"))}
@@ -58,8 +68,12 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	state.SetLastGlobalDocFilesHash(hashList(append(append([]string{}, repoAPaths...), repoBPaths...)))
 
 	// Change: repoA adds a2.md (changed repo) ; repoB deletes b2.md (unchanged repo)
-	os.WriteFile(filepath.Join(repoARoot, "docs", "a2.md"), []byte("# A2"), 0o644)
-	os.Remove(filepath.Join(repoBRoot, "docs", "b2.md"))
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a2.md"), []byte("# A2"), 0o644); err != nil {
+		t.Fatalf("write a2: %v", err)
+	}
+	if err := os.Remove(filepath.Join(repoBRoot, "docs", "b2.md")); err != nil {
+		t.Fatalf("remove b2: %v", err)
+	}
 
 	// Update changed repoA list (discovery result this run)
 	newRepoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "docs", "a1.md")), filepath.ToSlash(filepath.Join(repoAName, "docs", "a2.md"))}
@@ -84,7 +98,7 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 				if _, ch := changedSet[r.URL]; !ch { // unchanged repoB; scan to detect deletion
 					if fi, err := os.Stat(filepath.Join(workspace, r.Name)); err == nil && fi.IsDir() {
 						fresh := []string{}
-						_ = filepath.WalkDir(filepath.Join(workspace, r.Name, "docs"), func(p string, d os.DirEntry, err error) error {
+						if werr := filepath.WalkDir(filepath.Join(workspace, r.Name, "docs"), func(p string, d os.DirEntry, err error) error {
 							if err != nil || d == nil || d.IsDir() {
 								return nil
 							}
@@ -95,7 +109,9 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 								}
 							}
 							return nil
-						})
+						}); werr != nil {
+							t.Fatalf("walkdir: %v", werr)
+						}
 						sort.Strings(fresh)
 						if len(fresh) != len(paths) { // detected deletion
 							if sOK {

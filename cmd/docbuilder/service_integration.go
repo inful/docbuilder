@@ -51,7 +51,12 @@ func IntegratedMain() error {
 	if err != nil {
 		return fmt.Errorf("initialize services: %w", err)
 	}
-	defer container.Shutdown(ctx)
+	defer func() {
+		if err := container.Shutdown(ctx); err != nil {
+			// best-effort shutdown; report but don't override main error path
+			fmt.Printf("warning: shutdown error: %v\n", err)
+		}
+	}()
 
 	// Example build execution
 	buildReq := cli.BuildRequest{

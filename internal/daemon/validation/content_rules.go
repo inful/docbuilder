@@ -30,7 +30,7 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 
 	// Probe for at least one markdown file
 	foundMD := false
-	filepath.Walk(contentDir, func(p string, info os.FileInfo, err error) error {
+	if werr := filepath.Walk(contentDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil || foundMD || info == nil {
 			return nil
 		}
@@ -38,7 +38,9 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 			foundMD = true
 		}
 		return nil
-	})
+	}); werr != nil {
+		return Failure("error scanning content directory: " + werr.Error())
+	}
 
 	if !foundMD {
 		return Failure("no markdown files found in content directory")
