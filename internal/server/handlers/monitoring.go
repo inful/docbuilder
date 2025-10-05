@@ -1,4 +1,5 @@
 package handlers
+
 import (
 	"fmt"
 	"log/slog"

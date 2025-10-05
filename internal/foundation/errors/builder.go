@@ -1,5 +1,4 @@
 package errors
-
 // ErrorBuilder provides a fluent API for creating ClassifiedError instances.
 // This makes error creation consistent and discoverable throughout the codebase.
 type ErrorBuilder struct {

@@ -2,7 +2,7 @@ package daemon
 
 import (
 	"context"
-	"errors"
+	stdErrors "errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/daemon/handlers"
-	foundationErrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -24,7 +24,7 @@ type HTTPServer struct {
 	adminServer   *http.Server
 	config        *config.Config
 	daemon        *Daemon // Reference to main daemon service
-	errorAdapter  *foundationErrors.HTTPErrorAdapter
+	errorAdapter  *derrors.HTTPErrorAdapter
 
 	// Handler modules
 	monitoringHandlers *handlers.MonitoringHandlers
@@ -35,11 +35,11 @@ type HTTPServer struct {
 
 // NewHTTPServer creates a new HTTP server instance with the specified configuration
 func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
-	s := &HTTPServer{
-		config:       cfg,
-		daemon:       daemon,
-		errorAdapter: foundationErrors.NewHTTPErrorAdapter(slog.Default()),
-	}
+       s := &HTTPServer{
+	       config:       cfg,
+	       daemon:       daemon,
+	       errorAdapter: derrors.NewHTTPErrorAdapter(slog.Default()),
+       }
 
 	// Create adapter for interfaces that need it
 	adapter := &daemonAdapter{daemon: daemon}
@@ -117,7 +117,7 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 				_ = b.ln.Close()
 			}
 		}
-		return fmt.Errorf("http startup failed: %w", errors.Join(bindErrs...))
+		return fmt.Errorf("http startup failed: %w", stdErrors.Join(bindErrs...))
 	}
 
 	// All ports bound successfully – now start servers handing them their pre-bound listeners.
@@ -369,7 +369,7 @@ func (s *HTTPServer) panicRecoveryMiddleware(next http.Handler) http.Handler {
 					"remote_addr", r.RemoteAddr)
 
 				// Create a structured error response
-				panicErr := foundationErrors.InternalError("internal server error").
+				panicErr := derrors.New(derrors.CategoryInternal, derrors.SeverityError, "internal server error").
 					WithContext("path", r.URL.Path).
 					WithContext("method", r.Method).
 					Build()

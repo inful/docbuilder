@@ -1,12 +1,11 @@
 package handlers
-
 import (
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
