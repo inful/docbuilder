@@ -1,0 +1,14 @@
+# Test fixture config used by Makefile and integration tasks
+repositories:
+  - url: /tmp/test-docs-repo
+    name: test-docs
+    branch: main
+    paths: [docs]
+hugo:
+  title: 'Hextra Test Documentation'
+  description: 'Testing DocBuilder with Hextra theme using a local repo'
+  base_url: 'http://localhost:1316'
+  theme: 'hextra'
+output:
+  directory: './hextra-site'
+  clean: true

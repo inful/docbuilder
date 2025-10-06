@@ -1,0 +1,65 @@
+# DocBuilder V2 Configuration for Daemon Testing
+version: "2.0"
+
+# Forge configurations for discovering repositories
+forges:
+  - name: "git.home.luguber.info"
+    type: "forgejo"
+    api_url: "https://git.home.luguber.info/api/v1"
+    base_url: "https://git.home.luguber.info/"
+    auto_discover: true  # Enumerate all accessible orgs/groups (explicit org list not required)
+    auth:
+      type: "token"
+      token: "${GIT_ACCESS_TOKEN}"  # Placeholder token for testing
+    webhook:
+      secret: "test-webhook-secret"
+      path: "/webhook/github"
+      events: ["push", "pull_request"]
+      register_auto: false
+    options:
+      rate_limit: 100
+      timeout: "30s"
+
+# Repository filtering and discovery rules
+filtering:
+  required_paths: ["docs"]
+  ignore_files: [".docignore"]
+  min_doc_count: 1
+  max_repo_age: "2y"
+
+# Static repository definitions for testing
+# repositories:
+#   - name: "test-docs"
+#     url: "https://github.com/example/test-docs.git"
+#     branch: "main"
+#     paths: ["docs"]
+
+# Hugo site configuration
+hugo:
+  title: "Test Documentation Site"
+  description: "Testing DocBuilder daemon mode"
+  base_url: "http://localhost:8080"
+  theme: "hextra"
+  language_code: "en"
+  params:
+    version: "2.0.0"
+    editPage: true
+
+# Daemon mode configuration
+daemon:
+  http:
+    docs_port: 8080      # Documentation site serving port
+    webhook_port: 8081   # Webhook receiver port  
+    admin_port: 8082     # Admin/management API port
+  sync:
+    schedule: "*/2 * * * *"  # Every 15 minutes
+    concurrent_builds: 2
+    queue_size: 10
+  storage:
+    state_file: "./daemon-data/daemon-state.json"
+    repo_cache_dir: "./daemon-data/repos"
+    output_dir: "./daemon-data/site"
+build:
+  clone_strategy: auto
+  skip_if_unchanged: true
+  clone_concurrency: 4
