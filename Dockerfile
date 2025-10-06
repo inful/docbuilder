@@ -8,11 +8,11 @@
 ############################
 # Download build tools
 ############################
-FROM alpine:3.18 AS tools_downloader
+FROM alpine:3.20 AS tools_downloader
 ARG TARGETOS=linux
 ARG TARGETARCH=arm64
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
-RUN apk add --no-cache curl
+RUN apk update && apk add --no-cache curl ca-certificates
 
 # Download Hugo Extended
 RUN HUGO_VERSION="0.151.0" && \
@@ -107,9 +107,9 @@ RUN echo "=== Testing binary ===" && \
 ############################
 # Final runtime image
 ############################
-FROM alpine:3.18
+FROM alpine:3.20
 # Install minimal runtime dependencies including Go and git for Hugo modules
-RUN apk add --no-cache ca-certificates gcompat libstdc++ libgcc go git && \
+RUN apk update && apk add --no-cache ca-certificates gcompat libstdc++ libgcc go git && \
     adduser -D -u 10000 -g 10001 appuser && \
     mkdir -p /data /config && \
     chown 10000:10001 /data /config
