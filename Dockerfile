@@ -9,6 +9,8 @@
 # Download build tools
 ############################
 FROM debian:12-slim AS tools_downloader
+# Prevent interactive prompts during package install
+ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETOS=linux
 ARG TARGETARCH=arm64
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
