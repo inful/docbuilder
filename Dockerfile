@@ -8,11 +8,13 @@
 ############################
 # Download build tools
 ############################
-FROM alpine:3.20 AS tools_downloader
+FROM debian:12-slim AS tools_downloader
 ARG TARGETOS=linux
 ARG TARGETARCH=arm64
-SHELL ["/bin/ash", "-o", "pipefail", "-c"]
-RUN apk update && apk add --no-cache curl ca-certificates
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Download Hugo Extended
 RUN HUGO_VERSION="0.151.0" && \
@@ -107,12 +109,14 @@ RUN echo "=== Testing binary ===" && \
 ############################
 # Final runtime image
 ############################
-FROM alpine:3.20
+FROM debian:12-slim
 # Install minimal runtime dependencies including Go and git for Hugo modules
-RUN apk update && apk add --no-cache ca-certificates gcompat libstdc++ libgcc go git && \
-    adduser -D -u 10000 -g 10001 appuser && \
-    mkdir -p /data /config && \
-    chown 10000:10001 /data /config
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates golang-go git \
+    && rm -rf /var/lib/apt/lists/* \
+    && adduser --disabled-password --uid 10000 --gid 10001 appuser \
+    && mkdir -p /data /config \
+    && chown 10000:10001 /data /config
 
 # Copy binaries from builder stage
 COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
