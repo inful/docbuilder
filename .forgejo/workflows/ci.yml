@@ -208,9 +208,9 @@ jobs:
           chmod +x /usr/local/bin/crane
           echo "crane version: $(/usr/local/bin/crane version || true)"
           # Use crane to extract Kaniko executor from the official image
-          echo "Extracting Kaniko executor from gcr.io/kaniko-project/executor:v${KANIKO_VERSION}..."
+          echo "Extracting Kaniko executor from gcr.io/kaniko-project/executor:v${KANIKO_VERSION} for ${KANIKO_ARCH}..."
           mkdir -p /tmp/kaniko-extract
-          /usr/local/bin/crane export gcr.io/kaniko-project/executor:v${KANIKO_VERSION} - | tar -xf - -C /tmp/kaniko-extract kaniko/executor
+          /usr/local/bin/crane export --platform=linux/${KANIKO_ARCH} gcr.io/kaniko-project/executor:v${KANIKO_VERSION} - | tar -xf - -C /tmp/kaniko-extract kaniko/executor
           cp /tmp/kaniko-extract/kaniko/executor /usr/local/bin/kaniko-executor
           chmod +x /usr/local/bin/kaniko-executor
           echo "Kaniko executor ready:"
