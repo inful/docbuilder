@@ -202,9 +202,10 @@ jobs:
           esac
           echo "Detected runner architecture: $(uname -m) -> ${KANIKO_ARCH}"
           # Download and install crane (Go binary, supports arm64/amd64)
-          CRANE_VERSION="0.16.1"
+          CRANE_VERSION="0.20.6"
           echo "Downloading crane v${CRANE_VERSION} for ${KANIKO_ARCH}..."
-          curl -sSfL "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_${KANIKO_ARCH}.tar.gz" | tar -xz -C /usr/local/bin crane
+          curl -sSfL "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_${KANIKO_ARCH}.tar.gz" | tar -xz -C /tmp crane
+          mv /tmp/crane /usr/local/bin/crane
           chmod +x /usr/local/bin/crane
           echo "crane version: $(/usr/local/bin/crane version || true)"
           # Use crane to extract Kaniko executor from the official image
