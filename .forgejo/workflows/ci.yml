@@ -252,8 +252,7 @@ jobs:
               --context=. \
               --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
               --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --no-push \
-              --cache=true
+              --no-push
               
             echo "✅ Container image built successfully (no push for PR)"
           fi
