@@ -12,6 +12,11 @@ FROM debian:12-slim AS tools_downloader
 ARG TARGETOS=linux
 ARG TARGETARCH=arm64
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# Workaround for dpkg-statoverride 'messagebus' error in CI/kaniko
+RUN if grep -q messagebus /var/lib/dpkg/statoverride 2>/dev/null; then \
+      dpkg-statoverride --remove /usr/bin/dbus-daemon || true; \
+      sed -i '/messagebus/d' /var/lib/dpkg/statoverride; \
+    fi
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*

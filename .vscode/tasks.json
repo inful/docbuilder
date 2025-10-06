@@ -224,7 +224,7 @@
 		{
 			"label": "Write Hextra config",
 			"type": "shell",
-			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && printf \"repositories:\\n  - url: /tmp/test-docs-repo\\n    name: test-docs\\n    branch: main\\n    paths: [docs]\\nhugo:\\n  title: 'Hextra Test Documentation'\\n  description: 'Testing DocBuilder with Hextra theme using a local repo'\\n  base_url: 'http://localhost:1316'\\n  theme: 'hextra'\\noutput:\\n  directory: './hextra-site'\\n  clean: true\\n\" > hextra-config.yaml",
+			"command": "cd /Users/inful/Code/git.luguber.info/inful/docbuilder && cp test/testdata/config.test.yaml hextra-config.yaml",
 			"group": "build"
 		},
 		{

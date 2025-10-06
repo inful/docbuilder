@@ -1,3 +1,7 @@
+# Examples & Server Structure
+
+See the `examples/` directory for complete configuration samples and test tools. All server API handlers, middleware, and response types now live under `internal/server/handlers`, `internal/server/middleware`, and `internal/server/responses`.
+
 # docbuilder
 
 > Greenfield Notice: The codebase has recently removed all transitional/legacy compatibility layers (deprecated V2 config aliases, legacy front matter field, outcome wrappers, retry helpers). If you previously depended on those symbols, consult the CHANGELOG for migration guidance.
