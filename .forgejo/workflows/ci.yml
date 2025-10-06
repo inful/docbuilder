@@ -201,25 +201,16 @@ jobs:
             *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
           esac
           echo "Detected runner architecture: $(uname -m) -> ${KANIKO_ARCH}"
-          
-          # Download Kaniko executor binary
-          echo "Downloading Kaniko executor binary for ${KANIKO_ARCH}..."
-          KANIKO_URL="https://github.com/GoogleContainerTools/kaniko/releases/download/v${KANIKO_VERSION}/executor-linux-${KANIKO_ARCH}"
-          
-          # Try to download, fallback if not available
-          if curl -sSfL --head "${KANIKO_URL}" > /dev/null 2>&1; then
-            echo "Found Kaniko binary for ${KANIKO_ARCH}"
-            curl -sSfL "${KANIKO_URL}" -o /usr/local/bin/kaniko-executor
-            chmod +x /usr/local/bin/kaniko-executor
-          else
-            echo "No native ${KANIKO_ARCH} binary found, extracting from container..."
-            # Extract executor from container image
-            mkdir -p /tmp/kaniko
-            curl -sSL "https://github.com/GoogleContainerTools/kaniko/releases/download/v${KANIKO_VERSION}/kaniko-project-executor-v${KANIKO_VERSION}.tar.gz" | tar -xz -C /tmp/kaniko
-            cp /tmp/kaniko/kaniko/executor /usr/local/bin/kaniko-executor
-            chmod +x /usr/local/bin/kaniko-executor
-          fi
-          
+          # Download and install crane (Go binary, supports arm64/amd64)
+          CRANE_VERSION="0.16.1"
+          echo "Downloading crane v${CRANE_VERSION} for ${KANIKO_ARCH}..."
+          curl -sSfL "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_${KANIKO_ARCH}.tar.gz" | tar -xz -C /usr/local/bin crane
+          chmod +x /usr/local/bin/crane
+          echo "crane version: $(/usr/local/bin/crane version || true)"
+          # Use crane to extract Kaniko executor from the official image
+          echo "Extracting Kaniko executor from gcr.io/kaniko-project/executor:v${KANIKO_VERSION}..."
+          /usr/local/bin/crane export gcr.io/kaniko-project/executor:v${KANIKO_VERSION} /kaniko/executor > /usr/local/bin/kaniko-executor
+          chmod +x /usr/local/bin/kaniko-executor
           echo "Kaniko executor ready:"
           /usr/local/bin/kaniko-executor version || echo "Version command not available"
 
