@@ -107,11 +107,28 @@ jobs:
         SUFFIX="${{ matrix.target.suffix }}"
         IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}"
         
-        echo "🏗️  Building multi-architecture image with Docker Buildx..."
+        # Determine platform(s) to build
+        if [ "${{ steps.check_creds.outputs.skip_push }}" = "false" ]; then
+          PLATFORMS="linux/amd64,linux/arm64"
+          echo "🏗️  Building multi-architecture image with Docker Buildx..."
+        else
+          # When building locally without push, only build for native platform
+          # to avoid the "--load only supports single platform" error
+          NATIVE_ARCH=$(uname -m)
+          if [ "$NATIVE_ARCH" = "x86_64" ]; then
+            PLATFORMS="linux/amd64"
+          elif [ "$NATIVE_ARCH" = "aarch64" ] || [ "$NATIVE_ARCH" = "arm64" ]; then
+            PLATFORMS="linux/arm64"
+          else
+            PLATFORMS="linux/amd64"  # fallback
+          fi
+          echo "🏗️  Building for native platform only (no registry push)..."
+        fi
+        
         echo "📦 Target: $TARGET (${{ matrix.target.description }})"
         echo "📦 Image: $IMAGE_NAME"
         echo "🏷️  Version: $VERSION$SUFFIX"
-        echo "🏗️  Platforms: linux/amd64, linux/arm64"
+        echo "🏗️  Platforms: $PLATFORMS"
         echo "🎨 Hugo version: ${{ env.HUGO_VERSION }}"
         
         # Build tag list
@@ -130,7 +147,7 @@ jobs:
         echo "🏷️  Tags: $TAGS"
         
         # Build arguments
-        BUILD_ARGS="--platform linux/amd64,linux/arm64"
+        BUILD_ARGS="--platform $PLATFORMS"
         BUILD_ARGS="$BUILD_ARGS --target $TARGET"
         BUILD_ARGS="$BUILD_ARGS --build-arg VERSION=$VERSION"
         BUILD_ARGS="$BUILD_ARGS --build-arg HUGO_VERSION=${{ env.HUGO_VERSION }}"
@@ -141,15 +158,16 @@ jobs:
           echo "📤 Will push to registry"
         else
           BUILD_ARGS="$BUILD_ARGS --load"
-          echo "💾 Will build locally only (note: --load only supports single platform)"
+          echo "💾 Will build and load locally for native platform"
         fi
         
-        # Build multi-arch image with Docker Buildx
+        # Build image with Docker Buildx
         docker buildx build $BUILD_ARGS $TAGS .
         
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "true" ]; then
           echo "⏭️  Skipping push (no registry credentials or push disabled)"
-          echo "📋 Built images locally"
+          echo "📋 Built image locally for $PLATFORMS"
+          echo "💡 To build multi-arch, configure registry credentials and enable push"
         else
           echo "✅ Multi-arch build and push completed successfully!"
           echo "📋 Available at: $IMAGE_NAME:$VERSION$SUFFIX"
@@ -171,10 +189,12 @@ jobs:
         echo "- **Builder**: Docker Buildx (native multi-arch)" >> $GITHUB_STEP_SUMMARY
         
         if [ "${{ steps.check_creds.outputs.skip_push }}" = "true" ]; then
-          echo "- **Status**: ⚠️ Built locally (no registry credentials or push disabled)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ⚠️ Built locally for native platform only" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Configure Registry Secrets" >> $GITHUB_STEP_SUMMARY
-          echo "To enable pushing to registry, configure these secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "### 💡 Multi-Architecture Builds" >> $GITHUB_STEP_SUMMARY
+          echo "Local builds use \`--load\` which only supports single platform." >> $GITHUB_STEP_SUMMARY
+          echo "To build for multiple architectures (amd64 + arm64), configure registry credentials:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "- \`REGISTRY_USERNAME\`: Your registry username" >> $GITHUB_STEP_SUMMARY
           echo "- \`REGISTRY_PASSWORD\`: Your registry password/token" >> $GITHUB_STEP_SUMMARY
         else
