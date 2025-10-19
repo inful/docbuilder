@@ -10,6 +10,7 @@ on:
         description: 'Hugo version to use'
         required: false
         default: '0.151.0'
+        type: string
       push_images:
         description: 'Push images to registry'
         required: false
