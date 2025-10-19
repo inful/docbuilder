@@ -17,7 +17,7 @@ ARG VERSION="dev"
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends git make ca-certificates curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl && rm -rf /var/lib/apt/lists/*
 # Download Hugo Extended
 RUN HUGO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
@@ -30,9 +30,6 @@ RUN HUGO_ARCH="${TARGETARCH}" && \
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG VERSION="dev"
-
-# Install build dependencies
-RUN apk add --no-cache git make ca-certificates
 
 # Verify Hugo is working
 RUN hugo version
