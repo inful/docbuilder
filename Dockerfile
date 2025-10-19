@@ -5,21 +5,19 @@
 # 2. Run tests, formatting checks, and linting
 # 3. Build the final optimized runtime image
 
+
 ############################
-# Download build tools
+# Build and Test Stage
 ############################
-FROM debian:12-slim AS tools_downloader
-# Prevent interactive prompts during package install
-ENV DEBIAN_FRONTEND=noninteractive
+FROM golang:1.24-bullseye AS builder
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG HUGO_VERSION="0.151.0"
+ARG VERSION="dev"
+ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    -o Dpkg::Options::="--force-confold" \
-    curl ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends git make ca-certificates curl && rm -rf /var/lib/apt/lists/*
 # Download Hugo Extended
 RUN HUGO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
@@ -29,13 +27,6 @@ RUN HUGO_ARCH="${TARGETARCH}" && \
     | tar -xz -C /tmp hugo && \
     mv /tmp/hugo /usr/local/bin/hugo && \
     chmod +x /usr/local/bin/hugo
-
-# Download golangci-lint
-
-############################
-# Build and Test Stage
-############################
-FROM golang:1.24-alpine AS builder
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG VERSION="dev"
@@ -43,8 +34,6 @@ ARG VERSION="dev"
 # Install build dependencies
 RUN apk add --no-cache git make ca-certificates
 
-# Copy tools from downloader stage
-COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
 # Verify Hugo is working
 RUN hugo version
 
@@ -84,7 +73,7 @@ FROM gcr.io/distroless/cc-debian12:nonroot AS runtime-minimal
 USER nonroot:nonroot
 WORKDIR /data
 COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
-COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
+COPY --from=builder /usr/local/bin/hugo /usr/local/bin/hugo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /usr/local/go/bin/go /usr/local/bin/go
 COPY --from=builder /usr/bin/git /usr/local/bin/git
