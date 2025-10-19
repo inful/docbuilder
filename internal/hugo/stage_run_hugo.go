@@ -16,21 +16,26 @@ func stageRunHugo(ctx context.Context, bs *BuildState) error {
 	if mode == config.RenderModeNever {
 		return nil
 	}
-	if !shouldRunHugo(cfg) {
-		return nil
-	}
-	// Use renderer abstraction; fallback to legacy method if unset (should not happen, defensive)
+
+	// Use renderer abstraction; if custom renderer is set, use it regardless of shouldRunHugo
 	root := bs.Generator.buildRoot()
-	if bs.Generator.renderer == nil {
-		if err := bs.Generator.runHugoBuild(); err != nil {
-			return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", build.ErrHugo, err))
+	if bs.Generator.renderer != nil {
+		if err := bs.Generator.renderer.Execute(root); err != nil {
+			slog.Warn("Renderer execution failed", "error", err)
+			return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
 		}
 		bs.Report.StaticRendered = true
 		return nil
 	}
-	if err := bs.Generator.renderer.Execute(root); err != nil {
-		slog.Warn("Renderer execution failed", "error", err)
-		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
+
+	// No custom renderer; check if we should run the default hugo binary
+	if !shouldRunHugo(cfg) {
+		return nil
+	}
+
+	// Fallback to legacy method (should not happen in normal use, defensive)
+	if err := bs.Generator.runHugoBuild(); err != nil {
+		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", build.ErrHugo, err))
 	}
 	bs.Report.StaticRendered = true
 	return nil
