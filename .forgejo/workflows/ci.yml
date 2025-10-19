@@ -2,269 +2,56 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore: ['**.md']
+    branches: [ main, master ]
+    tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
-    paths-ignore: ['**.md']
-
-env:
-  REGISTRY: git.home.luguber.info
-  IMAGE_NAME: docbuilder
 
 jobs:
   test:
-    name: Test & Lint (Quick Check)
     runs-on: ubuntu-latest
-    container: golang:1.24
     steps:
-      - name: Install system dependencies
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - name: Build
         run: |
-          apt-get update && apt-get install -y --no-install-recommends \
-            git make ca-certificates curl && \
-          update-ca-certificates
-
-      - name: Checkout code (manual)
+          go build ./...
+      - name: Test
         run: |
-          set -euo pipefail
-          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          if [ -n "${GITHUB_TOKEN:-}" ]; then
-            HOST="${GITHUB_SERVER_URL#https://}"
-            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
-          fi
-          git init .
-          git remote add origin "$REPO_URL"
-          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
-          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
+          go test ./...
 
-      - name: Download golangci-lint
-        run: |
-          GOLANGCI_VERSION="1.64.8"
-          # Detect architecture
-          case "$(uname -m)" in
-            x86_64) GOLANGCI_ARCH="amd64" ;;
-            aarch64|arm64) GOLANGCI_ARCH="arm64" ;;
-            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
-          esac
-          echo "Installing golangci-lint ${GOLANGCI_VERSION} for linux-${GOLANGCI_ARCH}"
-          curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/golangci-lint-${GOLANGCI_VERSION}-linux-${GOLANGCI_ARCH}/golangci-lint /usr/local/bin/
-
-      - name: Download Hugo
-        run: |
-          HUGO_VERSION="0.151.0"
-          # Detect architecture
-          case "$(uname -m)" in
-            x86_64) HUGO_ARCH="amd64" ;;
-            aarch64|arm64) HUGO_ARCH="arm64" ;;
-            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
-          esac
-          echo "Installing Hugo ${HUGO_VERSION} for linux-${HUGO_ARCH}"
-          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${HUGO_ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/hugo /usr/local/bin/
-          hugo version
-          
-      - name: Quick format check
-        run: |
-          gofmt -l . | tee fmt-issues
-          if [ -s fmt-issues ]; then
-            echo "Code is not formatted. Please run 'make fmt'"
-            cat fmt-issues
-            exit 1
-          fi
-
-      - name: Quick lint check
-        run: golangci-lint run --timeout=5m
-
-      - name: Quick test (no race, no coverage)
-        run: go test -short ./...
-
-  build-and-test:
-    name: Build & Full Test
+  docker-multiarch:
     runs-on: ubuntu-latest
-    container: golang:1.24
+    if: github.event_name != 'pull_request'
     steps:
-      - name: Install system dependencies
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Docker login (optional)
+        if: env.REGISTRY != '' && env.REGISTRY_USERNAME != '' && env.REGISTRY_PASSWORD != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.REGISTRY_USERNAME }}
+          password: ${{ env.REGISTRY_PASSWORD }}
+      - name: Make script executable
+        run: chmod +x scripts/buildx-multiarch.fish
+      - name: Build and push images (both targets)
+        shell: bash
+        env:
+          REGISTRY: ${{ secrets.REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          IMAGE_REPO: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          apt-get update && apt-get install -y --no-install-recommends \
-            git make ca-certificates curl && \
-          update-ca-certificates
-
-      - name: Checkout code (manual)
-        run: |
-          set -euo pipefail
-          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          if [ -n "${GITHUB_TOKEN:-}" ]; then
-            HOST="${GITHUB_SERVER_URL#https://}"
-            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
-          fi
-          git init .
-          git remote add origin "$REPO_URL"
-          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
-          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
-
-      - name: Download tools with architecture detection
-        run: |
-          HUGO_VERSION="0.151.0"
-          GOLANGCI_VERSION="1.64.8"
-          # Detect architecture
-          case "$(uname -m)" in
-            x86_64) ARCH="amd64" ;;
-            aarch64|arm64) ARCH="arm64" ;;
-            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
-          esac
-          
-          echo "Installing Hugo ${HUGO_VERSION} for linux-${ARCH}"
-          curl -sSfL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-${ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/hugo /usr/local/bin/
-          hugo version
-          
-          echo "Installing golangci-lint ${GOLANGCI_VERSION} for linux-${ARCH}"
-          curl -sSfL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-linux-${ARCH}.tar.gz" | tar -xz -C /tmp
-          cp /tmp/golangci-lint-${GOLANGCI_VERSION}-linux-${ARCH}/golangci-lint /usr/local/bin/
-
-      - name: Download dependencies
-        run: make deps
-
-      - name: Format check
-        run: |
-          make fmt
-          if [ -n "$(git diff --name-only)" ]; then
-            echo "Code is not formatted. Please run 'make fmt'"
-            git diff
-            exit 1
-          fi
-
-      - name: Lint
-        run: make lint
-
-      - name: Run tests with coverage
-        run: make test-coverage
-
-      - name: Show coverage summary
-        run: |
-          if [ -f coverage.out ]; then
-            go tool cover -func=coverage.out | tail -n 1 || true
-          fi
-
-      - name: Build binary
-        run: make build
-
-      - name: Test binary execution
-        run: |
-          ./bin/docbuilder --version
-          ./bin/docbuilder --help
-
-      - name: Show build results
-        run: |
-          echo "=== Build Summary ==="
-          echo "✅ Format check passed"
-          echo "✅ Lint check passed" 
-          echo "✅ Tests passed with coverage"
-          echo "✅ Binary built successfully"
-          ls -lh bin/docbuilder || true
-          echo ""
-          echo "Note: Container image build handled in separate kaniko job"
-          echo "This job focuses on comprehensive testing and binary validation"
-
-  kaniko-build:
-    name: Container Build (Kaniko)
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Install system dependencies
-        run: |
-          apt-get update && apt-get install -y --no-install-recommends \
-            git ca-certificates curl && \
-          update-ca-certificates
-
-      - name: Checkout code (manual)
-        run: |
-          set -euo pipefail
-          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
-          if [ -n "${GITHUB_TOKEN:-}" ]; then
-            HOST="${GITHUB_SERVER_URL#https://}"
-            REPO_URL="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@${HOST}/${GITHUB_REPOSITORY}.git"
-          fi
-          git init .
-          git remote add origin "$REPO_URL"
-          git fetch --depth=1 origin "${GITHUB_SHA}" || git fetch --depth=1 origin "${GITHUB_REF_NAME}"
-          git checkout -qf FETCH_HEAD || git checkout -qf "${GITHUB_SHA}" || git checkout -qf "${GITHUB_REF_NAME}"
-
-      - name: Download Kaniko binary
-        run: |
-          KANIKO_VERSION="1.24.0"
-          # Detect architecture for runner
-          case "$(uname -m)" in
-            x86_64) KANIKO_ARCH="amd64" ;;
-            aarch64|arm64) KANIKO_ARCH="arm64" ;;
-            *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
-          esac
-          echo "Detected runner architecture: $(uname -m) -> ${KANIKO_ARCH}"
-          # Download and install crane (Go binary, supports arm64/amd64)
-          CRANE_VERSION="0.20.6"
-          echo "Downloading crane v${CRANE_VERSION} for ${KANIKO_ARCH}..."
-          curl -sSfL "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_${KANIKO_ARCH}.tar.gz" | tar -xz -C /tmp crane
-          mv /tmp/crane /usr/local/bin/crane
-          chmod +x /usr/local/bin/crane
-          echo "crane version: $(/usr/local/bin/crane version || true)"
-          # Use crane to extract Kaniko executor from the official image
-          echo "Extracting Kaniko executor from gcr.io/kaniko-project/executor:v${KANIKO_VERSION} for ${KANIKO_ARCH}..."
-          mkdir -p /tmp/kaniko-extract
-          /usr/local/bin/crane export --platform=linux/${KANIKO_ARCH} gcr.io/kaniko-project/executor:v${KANIKO_VERSION} - | tar -xf - -C /tmp/kaniko-extract kaniko/executor
-          cp /tmp/kaniko-extract/kaniko/executor /usr/local/bin/kaniko-executor
-          chmod +x /usr/local/bin/kaniko-executor
-          echo "Kaniko executor ready:"
-          /usr/local/bin/kaniko-executor version || echo "Version command not available"
-
-      - name: Compute image tags
-        id: tags
-        run: |
-          set -euo pipefail
-          IMAGE_BASE="${REGISTRY}/${GITHUB_REPOSITORY_OWNER}/${IMAGE_NAME}"
-          SHA_TAG="${GITHUB_SHA}"
-          BRANCH_TAG="${GITHUB_REF_NAME//\//-}"
-          echo "image_base=${IMAGE_BASE}" >> $GITHUB_OUTPUT
-          echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-          echo "branch_tag=${BRANCH_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Build container image with Kaniko
-        run: |
-          # Configure registry auth if available
-          mkdir -p /kaniko/.docker
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            echo '{"auths":{"${{ env.REGISTRY }}":{"username":"${{ github.actor }}","password":"${{ secrets.REGISTRY_TOKEN }}"}}}' > /kaniko/.docker/config.json
-            
-            echo "Building and pushing container image..."
-            /usr/local/bin/kaniko-executor \
-              --dockerfile=Dockerfile \
-              --context=. \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --cache=true \
-              --cache-ttl=24h
-              
-            echo "✅ Container image built and pushed to registry"
-          else
-            echo "Building container image (no push for PR)..."
-            /usr/local/bin/kaniko-executor \
-              --dockerfile=Dockerfile \
-              --context=. \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }} \
-              --destination=${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.branch_tag }} \
-              --no-push
-              
-            echo "✅ Container image built successfully (no push for PR)"
-          fi
-
-      - name: Log build results
-        run: |
-          echo "=== Container Build Summary ==="
-          echo "Image: ${{ steps.tags.outputs.image_base }}:${{ steps.tags.outputs.sha_tag }}"
-          echo "Runner architecture: $(uname -m)"
-          echo "Kaniko executor: /usr/local/bin/kaniko-executor"
-          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ] && [ -n "${{ secrets.REGISTRY_TOKEN }}" ]; then
-            echo "✅ Image pushed to registry: ${{ env.REGISTRY }}"
-          else
-            echo "📦 Image built locally (no push for PR)"
-          fi
+          # Install fish for script execution
+          sudo apt-get update -y
+          sudo apt-get install -y fish
+          fish scripts/buildx-multiarch.fish --push --target both --platform linux/amd64,linux/arm64 --hugo ${HUGO_VERSION:-0.151.0}

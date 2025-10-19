@@ -12,7 +12,9 @@ FROM debian:12-slim AS tools_downloader
 # Prevent interactive prompts during package install
 ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+ARG TARGETARCH
+ARG HUGO_VERSION="0.151.0"
+ARG GOLANGCI_VERSION="1.64.8"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Workaround for dpkg-statoverride 'messagebus' error in CI/kaniko
 RUN if grep -q messagebus /var/lib/dpkg/statoverride 2>/dev/null; then \
@@ -25,23 +27,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Download Hugo Extended
-RUN HUGO_VERSION="0.151.0" && \
-    HUGO_ARCH="${TARGETARCH}" && \
+RUN HUGO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
     if [ "${TARGETARCH}" = "arm64" ]; then HUGO_ARCH="arm64"; fi && \
     echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${HUGO_ARCH}" && \
-    curl -L "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" \
+    curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" \
     | tar -xz -C /tmp hugo && \
     mv /tmp/hugo /usr/local/bin/hugo && \
     chmod +x /usr/local/bin/hugo
 
 # Download golangci-lint
-RUN GOLANGCI_VERSION="1.64.8" && \
-    GOLANGCI_ARCH="${TARGETARCH}" && \
+RUN GOLANGCI_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then GOLANGCI_ARCH="amd64"; fi && \
     if [ "${TARGETARCH}" = "arm64" ]; then GOLANGCI_ARCH="arm64"; fi && \
     echo "Downloading golangci-lint ${GOLANGCI_VERSION} for ${TARGETOS}-${GOLANGCI_ARCH}" && \
-    curl -L "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-${TARGETOS}-${GOLANGCI_ARCH}.tar.gz" \
+    curl -fsSL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-${TARGETOS}-${GOLANGCI_ARCH}.tar.gz" \
     | tar -xz -C /tmp && \
     mv "/tmp/golangci-lint-${GOLANGCI_VERSION}-${TARGETOS}-${GOLANGCI_ARCH}/golangci-lint" /usr/local/bin/golangci-lint && \
     chmod +x /usr/local/bin/golangci-lint
@@ -51,7 +51,8 @@ RUN GOLANGCI_VERSION="1.64.8" && \
 ############################
 FROM golang:1.24-alpine AS builder
 ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+ARG TARGETARCH
+ARG VERSION="dev"
 
 # Install build dependencies
 RUN apk add --no-cache git make ca-certificates
@@ -105,7 +106,7 @@ RUN echo "=== Building binary ===" && \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags "-s -w" -o /out/docbuilder ./cmd/docbuilder && \
+    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/docbuilder ./cmd/docbuilder && \
     echo "✅ Binary built successfully"
 
 # Test binary execution
@@ -117,32 +118,38 @@ RUN echo "=== Testing binary ===" && \
 ############################
 # Final runtime image
 ############################
-FROM debian:12-slim
-# Install minimal runtime dependencies including Go and git for Hugo modules
+FROM alpine:3 AS certs
+RUN apk add --no-cache ca-certificates
+
+## Minimal runtime (distroless cc) – smallest footprint, no git/go
+FROM gcr.io/distroless/cc-debian12:nonroot AS runtime-minimal
+USER nonroot:nonroot
+WORKDIR /data
+COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
+COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV HUGO_ENV=production
+ENTRYPOINT ["/usr/local/bin/docbuilder"]
+CMD ["daemon", "--config", "/config/config.yaml"]
+EXPOSE 1313 8080 9090
+
+## Full runtime (Debian) – includes git + go for Hugo Modules
+FROM debian:12-slim AS runtime-full
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates golang-go git \
     && rm -rf /var/lib/apt/lists/* \
     && adduser --disabled-password --uid 10000 --gid 10001 appuser \
     && mkdir -p /data /config \
     && chown 10000:10001 /data /config
-
-# Copy binaries from builder stage
 COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
 COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
-
-# Environment
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOSUMDB=sum.golang.org
-
-# Run as non-root user
 USER 10000:10001
 WORKDIR /data
-
-# Default command
 ENTRYPOINT ["/usr/local/bin/docbuilder"]
 CMD ["daemon", "--config", "/config/config.yaml"]
-
-# Standard ports for docs and admin
 EXPOSE 1313 8080 9090
