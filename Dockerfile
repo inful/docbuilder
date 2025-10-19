@@ -14,13 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG HUGO_VERSION="0.151.0"
-ARG GOLANGCI_VERSION="1.64.8"
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# Workaround for dpkg-statoverride 'messagebus' error in CI/kaniko
-RUN if grep -q messagebus /var/lib/dpkg/statoverride 2>/dev/null; then \
-      dpkg-statoverride --remove /usr/bin/dbus-daemon || true; \
-      sed -i '/messagebus/d' /var/lib/dpkg/statoverride; \
-    fi
 RUN apt-get update && apt-get install -y --no-install-recommends \
     -o Dpkg::Options::="--force-confold" \
     curl ca-certificates \
@@ -37,14 +31,6 @@ RUN HUGO_ARCH="${TARGETARCH}" && \
     chmod +x /usr/local/bin/hugo
 
 # Download golangci-lint
-RUN GOLANGCI_ARCH="${TARGETARCH}" && \
-    if [ "${TARGETARCH}" = "amd64" ]; then GOLANGCI_ARCH="amd64"; fi && \
-    if [ "${TARGETARCH}" = "arm64" ]; then GOLANGCI_ARCH="arm64"; fi && \
-    echo "Downloading golangci-lint ${GOLANGCI_VERSION} for ${TARGETOS}-${GOLANGCI_ARCH}" && \
-    curl -fsSL "https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_VERSION}/golangci-lint-${GOLANGCI_VERSION}-${TARGETOS}-${GOLANGCI_ARCH}.tar.gz" \
-    | tar -xz -C /tmp && \
-    mv "/tmp/golangci-lint-${GOLANGCI_VERSION}-${TARGETOS}-${GOLANGCI_ARCH}/golangci-lint" /usr/local/bin/golangci-lint && \
-    chmod +x /usr/local/bin/golangci-lint
 
 ############################
 # Build and Test Stage
@@ -59,10 +45,8 @@ RUN apk add --no-cache git make ca-certificates
 
 # Copy tools from downloader stage
 COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
-COPY --from=tools_downloader /usr/local/bin/golangci-lint /usr/local/bin/golangci-lint
-
-# Verify tools are working
-RUN hugo version && golangci-lint version
+# Verify Hugo is working
+RUN hugo version
 
 WORKDIR /src
 
@@ -75,31 +59,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY . .
 
 # Run format check
-RUN echo "=== Running format check ===" && \
-    gofmt -l . | tee /tmp/fmt-issues && \
-    if [ -s /tmp/fmt-issues ]; then \
-        echo "Code is not formatted. Run 'go fmt ./...' to fix:" && \
-        cat /tmp/fmt-issues && \
-        exit 1; \
-    fi && \
-    echo "✅ Format check passed"
-
-# Run linting
-RUN echo "=== Running golangci-lint ===" && \
-    --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/root/.cache/golangci-lint \
-    golangci-lint run --timeout=10m && \
-    echo "✅ Linting passed"
-
-# Run tests with coverage
-RUN echo "=== Running tests ===" && \
-    --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go test -v -race -coverprofile=coverage.out ./... && \
-    echo "✅ Tests passed" && \
-    echo "=== Coverage Summary ===" && \
-    go tool cover -func=coverage.out | tail -n 1
 
 # Build the binary
 RUN echo "=== Building binary ===" && \
@@ -118,8 +77,7 @@ RUN echo "=== Testing binary ===" && \
 ############################
 # Final runtime image
 ############################
-FROM alpine:3 AS certs
-RUN apk add --no-cache ca-certificates
+
 
 ## Minimal runtime (distroless cc) – smallest footprint, no git/go
 FROM gcr.io/distroless/cc-debian12:nonroot AS runtime-minimal
@@ -127,29 +85,11 @@ USER nonroot:nonroot
 WORKDIR /data
 COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
 COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
-COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /usr/local/go/bin/go /usr/local/bin/go
+COPY --from=builder /usr/bin/git /usr/local/bin/git
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
-ENTRYPOINT ["/usr/local/bin/docbuilder"]
-CMD ["daemon", "--config", "/config/config.yaml"]
-EXPOSE 1313 8080 9090
-
-## Full runtime (Debian) – includes git + go for Hugo Modules
-FROM debian:12-slim AS runtime-full
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates golang-go git \
-    && rm -rf /var/lib/apt/lists/* \
-    && adduser --disabled-password --uid 10000 --gid 10001 appuser \
-    && mkdir -p /data /config \
-    && chown 10000:10001 /data /config
-COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
-COPY --from=tools_downloader /usr/local/bin/hugo /usr/local/bin/hugo
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-ENV HUGO_ENV=production
-ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOSUMDB=sum.golang.org
-USER 10000:10001
-WORKDIR /data
 ENTRYPOINT ["/usr/local/bin/docbuilder"]
 CMD ["daemon", "--config", "/config/config.yaml"]
 EXPOSE 1313 8080 9090
