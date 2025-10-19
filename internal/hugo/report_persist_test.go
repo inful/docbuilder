@@ -15,7 +15,8 @@ import (
 func TestReportPersistence_Success(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, out)
+	cfg.Build.RenderMode = "always"                             // Enable rendering so StaticRendered is set
+	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	files := []docs.DocFile{{Repository: "r", Name: "p", RelativePath: "p.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Hello\n")}}
 	if err := gen.GenerateSite(files); err != nil {
 		t.Fatalf("build failed: %v", err)
@@ -41,7 +42,8 @@ func TestReportPersistence_Success(t *testing.T) {
 func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, out)
+	cfg.Build.RenderMode = "always"                             // Enable rendering so StaticRendered is set
+	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	baseFiles := []docs.DocFile{{Repository: "r", Name: "base", RelativePath: "base.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Base\n")}}
 	if err := gen.GenerateSite(baseFiles); err != nil {
 		t.Fatalf("initial build failed: %v", err)
@@ -55,7 +57,7 @@ func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	// Now attempt a canceled build
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	gen2 := NewGenerator(cfg, out)
+	gen2 := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	if _, err := gen2.GenerateSiteWithReportContext(ctx, []docs.DocFile{{Repository: "r", Name: "fail", RelativePath: "fail.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Fail\n")}}); err == nil {
 		t.Fatalf("expected cancellation error")
 	}
