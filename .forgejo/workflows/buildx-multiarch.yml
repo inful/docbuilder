@@ -32,9 +32,6 @@ jobs:
           - name: runtime-minimal
             suffix: ''
             description: 'Minimal runtime (distroless)'
-          - name: runtime-full
-            suffix: '-full'
-            description: 'Full runtime with Git and Go'
 
     steps:
     - name: Checkout repository
@@ -234,10 +231,8 @@ jobs:
       run: |
         echo "## 🎉 Multi-Arch Build Complete" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Both runtime variants have been built:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Minimal**: Distroless base, smallest footprint" >> $GITHUB_STEP_SUMMARY
-        echo "- **Full**: Includes Git and Go for Hugo Modules support" >> $GITHUB_STEP_SUMMARY
+        echo "Minimal runtime variant has been built:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Minimal**: Distroless base, smallest footprint, includes Go and Git from builder" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Available Images" >> $GITHUB_STEP_SUMMARY
+        echo "### Available Image" >> $GITHUB_STEP_SUMMARY
         echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.version.outputs.version }}\` (minimal)" >> $GITHUB_STEP_SUMMARY
-        echo "- \`${{ env.REGISTRY }}/${{ env.IMAGE_REPO }}:${{ steps.version.outputs.version }}-full\` (full)" >> $GITHUB_STEP_SUMMARY
