@@ -9,15 +9,25 @@
 ############################
 # Build and Test Stage
 ############################
-FROM golang:1.24-bullseye AS builder
+FROM ubuntu:22.04 AS builder
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG HUGO_VERSION="0.151.0"
+ARG GO_VERSION="1.24.0"
 ARG VERSION="dev"
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git make ca-certificates curl wget xz-utils && rm -rf /var/lib/apt/lists/*
+# Download Go
+RUN GO_ARCH="${TARGETARCH}" && \
+    if [ "${TARGETARCH}" = "amd64" ]; then GO_ARCH="amd64"; fi && \
+    if [ "${TARGETARCH}" = "arm64" ]; then GO_ARCH="arm64"; fi && \
+    echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${GO_ARCH}" && \
+    wget -q "https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${GO_ARCH}.tar.gz" -O /tmp/go.tar.gz && \
+    tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    rm /tmp/go.tar.gz
+ENV PATH="/usr/local/go/bin:$PATH"
 # Download Hugo Extended
 RUN HUGO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
@@ -32,7 +42,7 @@ ARG TARGETARCH
 ARG VERSION="dev"
 
 # Verify Hugo is working
-RUN hugo version
+RUN hugo version && go version && git --version
 
 WORKDIR /src
 
@@ -46,10 +56,10 @@ COPY . .
 
 # Run format check
 
-# Build the binary
-RUN echo "=== Building binary ===" && \
-    --mount=type=cache,target=/go/pkg/mod \
+# Build the binary (BuildKit cache mounts)
+RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
+    echo "=== Building binary ===" && \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/docbuilder ./cmd/docbuilder && \
     echo "✅ Binary built successfully"
