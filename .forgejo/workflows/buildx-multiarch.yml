@@ -71,28 +71,29 @@ jobs:
     - name: Check for registry credentials
       id: check_creds
       env:
-        REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-        REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME || github.actor }}
+        REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
       run: |
         PUSH_ENABLED="${{ github.event.inputs.push_images }}"
         if [ "$PUSH_ENABLED" = "false" ]; then
           echo "skip_push=true" >> $GITHUB_OUTPUT
           echo "⚠️  Push disabled via workflow input"
-        elif [ -z "$REGISTRY_USERNAME" ] || [ -z "$REGISTRY_PASSWORD" ]; then
+        elif [ -z "$REGISTRY_PASSWORD" ]; then
           echo "skip_push=true" >> $GITHUB_OUTPUT
           echo "⚠️  Registry credentials not available - will build but skip push"
         else
           echo "skip_push=false" >> $GITHUB_OUTPUT
+          echo "registry_username=$REGISTRY_USERNAME" >> $GITHUB_OUTPUT
           echo "✅ Registry credentials available - will build and push"
         fi
 
     - name: Log in to Container Registry
       if: steps.check_creds.outputs.skip_push == 'false'
       env:
-        REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-        REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        REGISTRY_USERNAME: ${{ steps.check_creds.outputs.registry_username }}
+        REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD || secrets.GITHUB_TOKEN }}
       run: |
-        echo "🔑 Logging in to registry: ${{ env.REGISTRY }}"
+        echo "🔑 Logging in to registry: ${{ env.REGISTRY }} as $REGISTRY_USERNAME"
         echo "$REGISTRY_PASSWORD" | docker login "${{ env.REGISTRY }}" --username "$REGISTRY_USERNAME" --password-stdin
         echo "✅ Registry login successful"
 
