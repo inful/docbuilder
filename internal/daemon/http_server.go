@@ -224,11 +224,38 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
 func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
+	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
+	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
+	mux.HandleFunc("/ready", s.monitoringHandlers.HandleHealthCheck)
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
 	mux.Handle("/", s.mchain(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := s.resolveDocsRoot()
+
+		// If we're serving directly from the Hugo project (no public yet), avoid showing a raw directory listing.
+		// Instead, return a brief 503 page indicating that a render is pending.
+		out := s.config.Output.Directory
+		if out == "" {
+			out = "./site"
+		}
+		if !filepath.IsAbs(out) {
+			if abs, err := filepath.Abs(out); err == nil {
+				out = abs
+			}
+		}
+		if root == out {
+			if _, err := os.Stat(filepath.Join(out, "public")); os.IsNotExist(err) {
+				// If requesting the root path, show a friendly pending page instead of a directory listing
+				if r.URL.Path == "/" || r.URL.Path == "" {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusServiceUnavailable)
+					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasnt been rendered yet. This page will be replaced automatically once rendering completes.</p></body></html>`))
+					return
+				}
+			}
+		}
+
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})))
 
@@ -314,6 +341,8 @@ func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Li
 
 	// Health check endpoint
 	mux.HandleFunc(s.config.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
+	// Readiness check endpoint (alias to health for Kubernetes compatibility)
+	mux.HandleFunc("/ready", s.monitoringHandlers.HandleHealthCheck)
 	// Add enhanced health check endpoint (if daemon is available)
 	if s.daemon != nil {
 		mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
