@@ -82,10 +82,17 @@ WORKDIR /data
 COPY --from=builder /out/docbuilder /usr/local/bin/docbuilder
 COPY --from=builder /usr/local/bin/hugo /usr/local/bin/hugo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /usr/local/go/bin/go /usr/local/bin/go
-COPY --from=builder /usr/bin/git /usr/local/bin/git
+## Provide full Go toolchain for Hugo Modules without requiring system git
+COPY --from=builder /usr/local/go /usr/local/go
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
+ENV GOROOT=/usr/local/go
+ENV PATH="/usr/local/go/bin:${PATH}"
+## Prefer proxy-based module fetching to avoid system git dependency at runtime
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
+# HUGO module proxy (fallbacks to GOPROXY if unset)
+ENV HUGO_MODULE_PROXY=https://proxy.golang.org,direct
 ENTRYPOINT ["/usr/local/bin/docbuilder"]
 CMD ["daemon", "--config", "/config/config.yaml"]
 EXPOSE 1313 8080 9090

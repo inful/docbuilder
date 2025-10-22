@@ -58,7 +58,29 @@ func (g *Generator) finalizeStaging() error {
 	prev := g.outputDir + ".prev"
 	// Remove old backup if present
 	if _, err := os.Stat(prev); err == nil {
-		_ = os.RemoveAll(prev)
+		// Try multiple times to remove previous backup (may be locked/in-use)
+		for i := 0; i < 3; i++ {
+			if err := os.RemoveAll(prev); err == nil {
+				break
+			}
+			if i < 2 {
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+		// If still exists, try to force remove any remaining files
+		if _, err := os.Stat(prev); err == nil {
+			// Last resort: remove with chmod
+			_ = filepath.Walk(prev, func(path string, info os.FileInfo, err error) error {
+				if err == nil {
+					_ = os.Chmod(path, 0755)
+				}
+				return nil
+			})
+			if err := os.RemoveAll(prev); err != nil {
+				slog.Warn("Failed to remove previous backup", logfields.Path(prev), "error", err)
+				// Continue anyway - rename will fail if prev still exists
+			}
+		}
 	}
 	if _, err := os.Stat(g.outputDir); err == nil {
 		if err := os.Rename(g.outputDir, prev); err != nil {
