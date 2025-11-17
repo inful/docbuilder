@@ -107,9 +107,9 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 // ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
 	bq.retryCfg = cfg
-	initial, _ := time.ParseDuration(cfg.RetryInitialDelay)
-	max, _ := time.ParseDuration(cfg.RetryMaxDelay)
-	bq.retryPolicy = retry.NewPolicy(cfg.RetryBackoff, initial, max, cfg.MaxRetries)
+	retryInitialDelay, _ := time.ParseDuration(cfg.RetryInitialDelay)
+	maxDelay, _ := time.ParseDuration(cfg.RetryMaxDelay)
+	bq.retryPolicy = retry.NewPolicy(cfg.RetryBackoff, retryInitialDelay, maxDelay, cfg.MaxRetries)
 }
 
 // SetRecorder injects a metrics recorder for retry metrics (optional).
@@ -131,7 +131,7 @@ func (bq *BuildQueue) Start(ctx context.Context) {
 }
 
 // Stop gracefully shuts down the build queue
-func (bq *BuildQueue) Stop(ctx context.Context) {
+func (bq *BuildQueue) Stop(_ context.Context) {
 	slog.Info("Stopping build queue")
 
 	close(bq.stopChan)
@@ -335,7 +335,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 }
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
-func extractRecorder(report *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
+func extractRecorder(_ *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
 	// Currently we only have fallback; future: attempt to derive from report metadata if embedded.
 	return fallback
 }

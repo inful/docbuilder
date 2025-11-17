@@ -255,12 +255,12 @@ func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 		return nil
 	}
 	// Theme capability check (self-contained logic, no hard-coded theme comparisons)
-	if !th.Capabilities(cfg.Hugo.ThemeType()).WantsPerPageEditLinks {
+	if !th.GetCapabilities(cfg.Hugo.ThemeType()).WantsPerPageEditLinks {
 		return nil
 	}
 	// Forge capability check: ensure repository's forge (if tagged) supports edit links
 	if shim.Doc.Forge != "" {
-		if !forge.Capabilities(config.ForgeType(shim.Doc.Forge)).SupportsEditLinks {
+		if !forge.GetCapabilities(config.ForgeType(shim.Doc.Forge)).SupportsEditLinks {
 			return nil
 		}
 	}

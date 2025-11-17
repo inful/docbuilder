@@ -5,9 +5,10 @@ import (
 	"time"
 )
 
-func stagePostProcess(ctx context.Context, bs *BuildState) error {
+func stagePostProcess(_ context.Context, _ *BuildState) error {
 	start := time.Now()
-	for time.Since(start) == 0 { /* spin briefly */
+	// Brief spin to ensure distinguishable timestamps for build stages
+	for time.Since(start) == 0 { //nolint:revive // intentional brief spin loop
 	}
 	return nil
 }

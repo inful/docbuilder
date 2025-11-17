@@ -3,7 +3,7 @@ package forge
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- SHA-1 needed for legacy GitHub webhook compatibility
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -20,7 +20,7 @@ import (
 
 // GitHubClient implements ForgeClient for GitHub
 type GitHubClient struct {
-	config     *ForgeConfig
+	config     *Config
 	httpClient *http.Client
 	baseURL    string
 	apiURL     string
@@ -28,7 +28,7 @@ type GitHubClient struct {
 }
 
 // NewGitHubClient creates a new GitHub client
-func NewGitHubClient(fg *ForgeConfig) (*GitHubClient, error) {
+func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 	if fg.Type != cfg.ForgeGitHub {
 		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
 	}
@@ -267,7 +267,7 @@ func (c *GitHubClient) ValidateWebhook(payload []byte, signature string, secret 
 	// Fallback legacy SHA-1 format: sha1=<hash>
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret))
+		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy GitHub webhook signature fallback
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))
@@ -463,7 +463,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 
 // GetEditURL returns the GitHub edit URL for a file
 func (c *GitHubClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return GenerateEditURL(ForgeTypeGitHub, c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(TypeGitHub, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods

@@ -9,45 +9,45 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
-// StateService is a service adapter that wraps the new state management system
+// Service is a service adapter that wraps the new state management system
 // and integrates it with the service orchestrator. This bridges the gap between
 // the monolithic StateManager and the new composable state stores.
-type StateService struct {
-	store     StateStore
+type Service struct {
+	store     Store
 	dataDir   string
 	isRunning bool
 }
 
-// NewStateService creates a new state service with the default JSON store.
-func NewStateService(dataDir string) foundation.Result[*StateService, error] {
+// NewService creates a new state service with the default JSON store.
+func NewService(dataDir string) foundation.Result[*Service, error] {
 	store := NewJSONStore(dataDir)
 	if store.IsErr() {
-		return foundation.Err[*StateService, error](store.UnwrapErr())
+		return foundation.Err[*Service, error](store.UnwrapErr())
 	}
 
-	return foundation.Ok[*StateService, error](&StateService{
+	return foundation.Ok[*Service, error](&Service{
 		store:   store.Unwrap(),
 		dataDir: dataDir,
 	})
 }
 
-// NewStateServiceWithStore creates a new state service with a custom store.
+// NewServiceWithStore creates a new state service with a custom store.
 // This allows for dependency injection and testing with mock stores.
-func NewStateServiceWithStore(store StateStore, dataDir string) *StateService {
-	return &StateService{
+func NewServiceWithStore(store Store, dataDir string) *Service {
+	return &Service{
 		store:   store,
 		dataDir: dataDir,
 	}
 }
 
 // Name returns the service name for the orchestrator.
-func (ss *StateService) Name() string {
+func (ss *Service) Name() string {
 	return "state"
 }
 
 // Start implements the services.ManagedService interface.
 // This marks the state service as running and updates daemon status.
-func (ss *StateService) Start(ctx context.Context) error {
+func (ss *Service) Start(ctx context.Context) error {
 	// Test that the store is healthy
 	health := ss.store.Health(ctx)
 	if health.IsErr() {
@@ -80,7 +80,7 @@ func (ss *StateService) Start(ctx context.Context) error {
 
 // Stop implements the services.ManagedService interface.
 // This gracefully shuts down the state service and ensures data is persisted.
-func (ss *StateService) Stop(ctx context.Context) error {
+func (ss *Service) Stop(ctx context.Context) error {
 	// Update daemon status to stopping
 	daemonStore := ss.store.DaemonInfo()
 	updateResult := daemonStore.UpdateStatus(ctx, "stopping")
@@ -102,7 +102,7 @@ func (ss *StateService) Stop(ctx context.Context) error {
 }
 
 // Health implements the services.ManagedService interface.
-func (ss *StateService) Health() services.HealthStatus {
+func (ss *Service) Health() services.HealthStatus {
 	ctx := context.Background()
 	health := ss.store.Health(ctx)
 
@@ -123,54 +123,54 @@ func (ss *StateService) Health() services.HealthStatus {
 }
 
 // Dependencies implements the services.ManagedService interface.
-func (ss *StateService) Dependencies() []string {
+func (ss *Service) Dependencies() []string {
 	return []string{} // State service has no dependencies
 }
 
 // Store returns the underlying state store for direct access.
 // This allows other services to interact with state through the interfaces.
-func (ss *StateService) Store() StateStore {
+func (ss *Service) Store() Store {
 	return ss.store
 }
 
 // GetRepositoryStore provides typed access to repository operations.
-func (ss *StateService) GetRepositoryStore() RepositoryStore {
+func (ss *Service) GetRepositoryStore() RepositoryStore {
 	return ss.store.Repositories()
 }
 
 // GetBuildStore provides typed access to build operations.
-func (ss *StateService) GetBuildStore() BuildStore {
+func (ss *Service) GetBuildStore() BuildStore {
 	return ss.store.Builds()
 }
 
 // GetScheduleStore provides typed access to schedule operations.
-func (ss *StateService) GetScheduleStore() ScheduleStore {
+func (ss *Service) GetScheduleStore() ScheduleStore {
 	return ss.store.Schedules()
 }
 
 // GetStatisticsStore provides typed access to statistics operations.
-func (ss *StateService) GetStatisticsStore() StatisticsStore {
+func (ss *Service) GetStatisticsStore() StatisticsStore {
 	return ss.store.Statistics()
 }
 
 // GetConfigurationStore provides typed access to configuration operations.
-func (ss *StateService) GetConfigurationStore() ConfigurationStore {
+func (ss *Service) GetConfigurationStore() ConfigurationStore {
 	return ss.store.Configuration()
 }
 
 // GetDaemonInfoStore provides typed access to daemon info operations.
-func (ss *StateService) GetDaemonInfoStore() DaemonInfoStore {
+func (ss *Service) GetDaemonInfoStore() DaemonInfoStore {
 	return ss.store.DaemonInfo()
 }
 
 // WithTransaction executes operations within a transaction-like context.
 // This ensures consistency across multiple state operations.
-func (ss *StateService) WithTransaction(ctx context.Context, fn func(StateStore) error) foundation.Result[struct{}, error] {
+func (ss *Service) WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
 	return ss.store.WithTransaction(ctx, fn)
 }
 
 // BackupTo creates a backup of the current state to the specified directory.
-func (ss *StateService) BackupTo(ctx context.Context, backupDir string) foundation.Result[string, error] {
+func (ss *Service) BackupTo(ctx context.Context, backupDir string) foundation.Result[string, error] {
 	health := ss.store.Health(ctx)
 	if health.IsErr() {
 		return foundation.Err[string, error](
@@ -196,13 +196,13 @@ func (ss *StateService) BackupTo(ctx context.Context, backupDir string) foundati
 }
 
 // DataDirectory returns the data directory used by the state service.
-func (ss *StateService) DataDirectory() string {
+func (ss *Service) DataDirectory() string {
 	return ss.dataDir
 }
 
 // Migrate performs any necessary data migrations for schema changes.
 // This would be called during service initialization if schema versions differ.
-func (ss *StateService) Migrate(ctx context.Context, fromVersion, toVersion string) foundation.Result[struct{}, error] {
+func (ss *Service) Migrate(_ context.Context, _, _ string) foundation.Result[struct{}, error] {
 	// Placeholder for future migration logic
 	// In a real implementation, this would handle schema changes between versions
 	return foundation.Ok[struct{}, error](struct{}{})
@@ -210,7 +210,7 @@ func (ss *StateService) Migrate(ctx context.Context, fromVersion, toVersion stri
 
 // Compact performs maintenance operations on the state store.
 // For the JSON store, this might involve cleaning up old builds, compacting data, etc.
-func (ss *StateService) Compact(ctx context.Context) foundation.Result[struct{}, error] {
+func (ss *Service) Compact(ctx context.Context) foundation.Result[struct{}, error] {
 	// Clean up old builds to prevent unbounded growth
 	buildStore := ss.GetBuildStore()
 	cleanupResult := buildStore.Cleanup(ctx, 1000) // Keep last 1000 builds
@@ -231,7 +231,7 @@ func (ss *StateService) Compact(ctx context.Context) foundation.Result[struct{},
 }
 
 // GetStats returns service-level statistics about the state system.
-type StateServiceStats struct {
+type ServiceStats struct {
 	RepositoryCount int    `json:"repository_count"`
 	BuildCount      int    `json:"build_count"`
 	ScheduleCount   int    `json:"schedule_count"`
@@ -241,8 +241,8 @@ type StateServiceStats struct {
 	LastBackup      *int64 `json:"last_backup,omitempty"`
 }
 
-func (ss *StateService) GetStats(ctx context.Context) foundation.Result[StateServiceStats, error] {
-	stats := StateServiceStats{
+func (ss *Service) GetStats(ctx context.Context) foundation.Result[ServiceStats, error] {
+	stats := ServiceStats{
 		StoreType: "json", // Default for current implementation
 	}
 
@@ -277,5 +277,5 @@ func (ss *StateService) GetStats(ctx context.Context) foundation.Result[StateSer
 		stats.ScheduleCount = len(schedules.Unwrap())
 	}
 
-	return foundation.Ok[StateServiceStats, error](stats)
+	return foundation.Ok[ServiceStats, error](stats)
 }

@@ -104,7 +104,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		var totalRepos int
 		var totalDocsRepos int
 
-		forgeClients := map[string]ForgeClient{
+		forgeClients := map[string]Client{
 			"github":  github,
 			"gitlab":  gitlab,
 			"forgejo": forgejo,
@@ -268,7 +268,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		ctx := context.Background()
 
 		secureForges := map[string]struct {
-			client ForgeClient
+			client Client
 			config *config.ForgeConfig
 		}{
 			"github":  {client: github, config: githubConfig},
@@ -338,7 +338,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		t.Log("→ Testing large-scale enterprise deployment")
 
 		// Create enterprise-scale environment with multiple forge instances
-		var enterpriseForges []ForgeClient
+		var enterpriseForges []Client
 		var totalRepos int
 
 		// Create multiple GitHub enterprise instances

@@ -22,7 +22,7 @@ func DefaultPolicy() Policy {
 }
 
 // NewPolicy builds a policy from raw config fields; zero/invalid values fall back to defaults.
-func NewPolicy(mode config.RetryBackoffMode, initial, max time.Duration, maxRetries int) Policy {
+func NewPolicy(mode config.RetryBackoffMode, initial, maxDuration time.Duration, maxRetries int) Policy {
 	p := DefaultPolicy()
 	if maxRetries >= 0 {
 		p.MaxRetries = maxRetries
@@ -30,8 +30,8 @@ func NewPolicy(mode config.RetryBackoffMode, initial, max time.Duration, maxRetr
 	if initial > 0 {
 		p.Initial = initial
 	}
-	if max > 0 {
-		p.Max = max
+	if maxDuration > 0 {
+		p.Max = maxDuration
 	}
 	if mode != "" {
 		switch mode {

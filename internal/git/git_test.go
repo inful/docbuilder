@@ -28,7 +28,7 @@ func TestPruneNonDocTopLevelNormalization(t *testing.T) {
 		}
 	}
 	// Add a file at root to ensure non-directory entries are also handled gracefully.
-	if err := os.WriteFile(filepath.Join(repoPath, "README.md"), []byte("test"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoPath, "README.md"), []byte("test"), 0o600); err != nil {
 		t.Fatalf("write README: %v", err)
 	}
 
@@ -73,7 +73,7 @@ func TestPruneAllowDeny(t *testing.T) {
 	for _, n := range toMake {
 		path := filepath.Join(repoPath, n)
 		if strings.Contains(n, ".") { // treat as file
-			if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+			if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 				t.Fatalf("write %s: %v", n, err)
 			}
 		} else {
@@ -116,7 +116,7 @@ func TestPruneAllowDenyGlobs(t *testing.T) {
 	entries := []string{"docs", "LICENSE", "LICENSE.md", "README.md", "README.old", "CHANGELOG", "tmp", "cache"}
 	for _, n := range entries {
 		path := filepath.Join(repoPath, n)
-		if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 			t.Fatalf("write %s: %v", n, err)
 		}
 	}

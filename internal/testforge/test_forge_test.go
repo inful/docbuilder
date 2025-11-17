@@ -83,7 +83,7 @@ func TestTestForgeFailureModes(t *testing.T) {
 }
 
 func TestTestForgeFactory(t *testing.T) {
-	factory := NewTestForgeFactory()
+	factory := NewFactory()
 
 	// Test GitHub forge creation
 	githubForge := factory.CreateGitHubTestForge("test-github")

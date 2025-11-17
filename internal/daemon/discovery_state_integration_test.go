@@ -33,7 +33,7 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(remote, "docs"), 0o755); err != nil {
 		t.Fatalf("mkdir docs: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(remote, "docs", "page.md"), []byte("# Page\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(remote, "docs", "page.md"), []byte("# Page\n"), 0o600); err != nil {
 		t.Fatalf("write page: %v", err)
 	}
 	repo, err := git.PlainInit(remote, false)

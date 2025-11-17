@@ -10,10 +10,10 @@ import (
 )
 
 // fake stage functions for testing classification
-func failingFatalStage(ctx context.Context, bs *BuildState) error {
+func failingFatalStage(_ context.Context, _ *BuildState) error {
 	return newFatalStageError(StageName("fatal_stage"), errors.New("boom"))
 }
-func failingWarnStage(ctx context.Context, bs *BuildState) error {
+func failingWarnStage(_ context.Context, _ *BuildState) error {
 	return newWarnStageError(StageName("warn_stage"), errors.New("soft"))
 }
 

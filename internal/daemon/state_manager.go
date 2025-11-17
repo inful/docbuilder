@@ -15,14 +15,14 @@ import (
 type StateManager struct {
 	dataDir   string
 	mu        sync.RWMutex
-	state     *DaemonState
+	state     *State
 	autosave  bool
 	saveTimer *time.Timer
 	saveDelay time.Duration
 }
 
-// DaemonState represents the complete daemon state
-type DaemonState struct {
+// State represents the complete daemon state
+type State struct {
 	Version       string                 `json:"version"`
 	StartTime     time.Time              `json:"start_time"`
 	LastUpdate    time.Time              `json:"last_update"`
@@ -30,7 +30,7 @@ type DaemonState struct {
 	Repositories  map[string]*RepoState  `json:"repositories"`
 	Builds        map[string]*BuildState `json:"builds"`
 	Schedules     map[string]*Schedule   `json:"schedules"`
-	Statistics    *DaemonStats           `json:"statistics"`
+	Statistics    *Stats                 `json:"statistics"`
 	Configuration map[string]interface{} `json:"configuration,omitempty"`
 }
 
@@ -260,8 +260,8 @@ type BuildState struct {
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// DaemonStats contains runtime statistics
-type DaemonStats struct {
+// Stats contains runtime statistics
+type Stats struct {
 	TotalBuilds      int64     `json:"total_builds"`
 	SuccessfulBuilds int64     `json:"successful_builds"`
 	FailedBuilds     int64     `json:"failed_builds"`
@@ -282,7 +282,7 @@ func NewStateManager(dataDir string) (*StateManager, error) {
 		dataDir:   dataDir,
 		autosave:  true,
 		saveDelay: 5 * time.Second,
-		state: &DaemonState{
+		state: &State{
 			Version:      "2.0.0", // DocBuilder v2
 			StartTime:    time.Now(),
 			LastUpdate:   time.Now(),
@@ -290,7 +290,7 @@ func NewStateManager(dataDir string) (*StateManager, error) {
 			Repositories: make(map[string]*RepoState),
 			Builds:       make(map[string]*BuildState),
 			Schedules:    make(map[string]*Schedule),
-			Statistics: &DaemonStats{
+			Statistics: &Stats{
 				LastStatReset: time.Now(),
 			},
 			Configuration: make(map[string]interface{}),
@@ -320,7 +320,7 @@ func (sm *StateManager) Load() error {
 		return fmt.Errorf("failed to read state file: %w", err)
 	}
 
-	var state DaemonState
+	var state State
 	if err := json.Unmarshal(data, &state); err != nil {
 		return fmt.Errorf("failed to unmarshal state: %w", err)
 	}
@@ -374,6 +374,7 @@ func (sm *StateManager) saveUnsafe() error {
 	}
 
 	// Write to temporary file first
+	// #nosec G306 -- state file needs to be readable by the process
 	if err := os.WriteFile(tempPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write state to temporary file: %w", err)
 	}
@@ -424,7 +425,7 @@ func (sm *StateManager) LastSaved() *time.Time {
 }
 
 // GetState returns a copy of the current daemon state
-func (sm *StateManager) GetState() *DaemonState {
+func (sm *StateManager) GetState() *State {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return CopyDaemonState(sm.state)
@@ -595,12 +596,12 @@ func (sm *StateManager) RecordDiscovery(repoURL string, documentCount int) {
 }
 
 // GetStatistics returns current daemon statistics
-func (sm *StateManager) GetStatistics() *DaemonStats {
+func (sm *StateManager) GetStatistics() *Stats {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	statsCopy := CopyDaemonStats(sm.state.Statistics)
 	if statsCopy == nil {
-		return &DaemonStats{}
+		return &Stats{}
 	}
 	statsCopy.Uptime = time.Since(sm.state.StartTime).Seconds()
 	return statsCopy

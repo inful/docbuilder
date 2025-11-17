@@ -199,6 +199,7 @@ func (r *BuildReport) Persist(root string) error {
 	}
 	jsonPath := filepath.Join(root, "build-report.json")
 	tmpJSON := jsonPath + ".tmp"
+	// #nosec G306 -- build report is a public artifact
 	if err := os.WriteFile(tmpJSON, jb, 0644); err != nil {
 		return fmt.Errorf("write temp report json: %w", err)
 	}
@@ -208,6 +209,7 @@ func (r *BuildReport) Persist(root string) error {
 	// Text summary
 	summaryPath := filepath.Join(root, "build-report.txt")
 	tmpTxt := summaryPath + ".tmp"
+	// #nosec G306 -- build report is a public artifact
 	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0644); err != nil {
 		return fmt.Errorf("write temp report summary: %w", err)
 	}

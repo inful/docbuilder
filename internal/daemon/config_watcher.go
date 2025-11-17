@@ -68,7 +68,7 @@ func (cw *ConfigWatcher) Start(ctx context.Context) error {
 }
 
 // Stop stops the configuration watcher
-func (cw *ConfigWatcher) Stop(ctx context.Context) error {
+func (cw *ConfigWatcher) Stop(_ context.Context) error {
 	cw.mu.Lock()
 	defer cw.mu.Unlock()
 

@@ -70,7 +70,7 @@ type mockBuilder struct {
 	idx int
 }
 
-func (m *mockBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) {
+func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*hugo.BuildReport, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.idx >= len(m.seq) {
@@ -242,13 +242,13 @@ func TestNoRetryOnPermanent(t *testing.T) {
 func TestExponentialBackoffCapped(t *testing.T) {
 	// Validate exponential growth and cap respect without sleeping real exponential durations by using very small intervals.
 	initial := 1 * time.Millisecond
-	max := 4 * time.Millisecond
+	maxWait := 4 * time.Millisecond
 	// retryCount: 1->1ms,2->2ms,3->4ms,4->cap 4ms
 	cases := []struct {
 		retry int
 		want  time.Duration
 	}{{1, 1 * time.Millisecond}, {2, 2 * time.Millisecond}, {3, 4 * time.Millisecond}, {4, 4 * time.Millisecond}}
-	pol := retry.NewPolicy(config.RetryBackoffExponential, initial, max, 5)
+	pol := retry.NewPolicy(config.RetryBackoffExponential, initial, maxWait, 5)
 	for _, c := range cases {
 		got := pol.Delay(c.retry)
 		if got != c.want {

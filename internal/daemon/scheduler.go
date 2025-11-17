@@ -85,7 +85,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 }
 
 // Stop gracefully shuts down the scheduler
-func (s *Scheduler) Stop(ctx context.Context) {
+func (s *Scheduler) Stop(_ context.Context) {
 	slog.Info("Stopping scheduler")
 
 	if s.ticker != nil {
@@ -344,7 +344,7 @@ func (s *Scheduler) validateCronExpression(expression string) error {
 }
 
 // validateCronField validates a single field in a cron expression
-func (s *Scheduler) validateCronField(field string, min, max int, fieldName string) error {
+func (s *Scheduler) validateCronField(field string, _, _ int, _ string) error {
 	// This is a simplified validation - could support ranges, lists, steps
 	if strings.Contains(field, ",") || strings.Contains(field, "-") || strings.Contains(field, "/") {
 		// Complex expressions - would need more sophisticated parsing

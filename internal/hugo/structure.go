@@ -70,7 +70,7 @@ func (g *Generator) finalizeStaging() error {
 		// If still exists, try to force remove any remaining files
 		if _, err := os.Stat(prev); err == nil {
 			// Last resort: remove with chmod
-			_ = filepath.Walk(prev, func(path string, info os.FileInfo, err error) error {
+			_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
 				if err == nil {
 					_ = os.Chmod(path, 0755)
 				}

@@ -7,15 +7,15 @@ import (
 )
 
 func TestEnhancedMockForgeClient_BasicFunctionality(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-enhanced", ForgeTypeGitHub)
+	client := NewEnhancedMockForgeClient("test-enhanced", TypeGitHub)
 
 	// Test basic properties
 	if client.GetName() != "test-enhanced" {
 		t.Errorf("GetName() = %s, want test-enhanced", client.GetName())
 	}
 
-	if client.GetType() != ForgeTypeGitHub {
-		t.Errorf("GetType() = %s, want %s", client.GetType(), ForgeTypeGitHub)
+	if client.GetType() != TypeGitHub {
+		t.Errorf("GetType() = %s, want %s", client.GetType(), TypeGitHub)
 	}
 
 	// Test adding organizations
@@ -38,7 +38,7 @@ func TestEnhancedMockForgeClient_BasicFunctionality(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_FailureSimulation(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-failures", ForgeTypeGitHub)
+	client := NewEnhancedMockForgeClient("test-failures", TypeGitHub)
 
 	// Test auth failure
 	client.WithAuthFailure()
@@ -68,7 +68,7 @@ func TestEnhancedMockForgeClient_FailureSimulation(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_RateLimitSimulation(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-rate-limit", ForgeTypeGitHub)
+	client := NewEnhancedMockForgeClient("test-rate-limit", TypeGitHub)
 
 	// Test rate limit
 	client.WithRateLimit(100, time.Hour)
@@ -85,7 +85,7 @@ func TestEnhancedMockForgeClient_RateLimitSimulation(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_NetworkTimeoutSimulation(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-timeout", ForgeTypeGitHub)
+	client := NewEnhancedMockForgeClient("test-timeout", TypeGitHub)
 
 	// Test network timeout (but don't actually wait for the timeout)
 	client.WithNetworkTimeout(time.Millisecond * 50)
@@ -103,7 +103,7 @@ func TestEnhancedMockForgeClient_NetworkTimeoutSimulation(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_RepositoryManagement(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-repos", ForgeTypeGitHub)
+	client := NewEnhancedMockForgeClient("test-repos", TypeGitHub)
 
 	// Add organization and repository
 	org := CreateMockOrganization("1", "test-org", "Test Organization", "Organization")
@@ -150,7 +150,7 @@ func TestEnhancedMockForgeClient_RepositoryManagement(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_WebhookFunctionality(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-webhooks", ForgeTypeGitHub).
+	client := NewEnhancedMockForgeClient("test-webhooks", TypeGitHub).
 		WithWebhookSecret("test-secret")
 
 	// Test webhook validation
@@ -205,8 +205,8 @@ func TestEnhancedMockForgeClient_WebhookFunctionality(t *testing.T) {
 func TestEnhancedMockForgeClient_FactoryMethods(t *testing.T) {
 	// Test GitHub factory
 	github := NewEnhancedGitHubMock("github-test")
-	if github.GetType() != ForgeTypeGitHub {
-		t.Errorf("GitHub mock type = %s, want %s", github.GetType(), ForgeTypeGitHub)
+	if github.GetType() != TypeGitHub {
+		t.Errorf("GitHub mock type = %s, want %s", github.GetType(), TypeGitHub)
 	}
 
 	// Should have default organization and repository
@@ -229,19 +229,19 @@ func TestEnhancedMockForgeClient_FactoryMethods(t *testing.T) {
 
 	// Test GitLab factory
 	gitlab := NewEnhancedGitLabMock("gitlab-test")
-	if gitlab.GetType() != ForgeTypeGitLab {
-		t.Errorf("GitLab mock type = %s, want %s", gitlab.GetType(), ForgeTypeGitLab)
+	if gitlab.GetType() != TypeGitLab {
+		t.Errorf("GitLab mock type = %s, want %s", gitlab.GetType(), TypeGitLab)
 	}
 
 	// Test Forgejo factory
 	forgejo := NewEnhancedForgejoMock("forgejo-test")
-	if forgejo.GetType() != ForgeTypeForgejo {
-		t.Errorf("Forgejo mock type = %s, want %s", forgejo.GetType(), ForgeTypeForgejo)
+	if forgejo.GetType() != TypeForgejo {
+		t.Errorf("Forgejo mock type = %s, want %s", forgejo.GetType(), TypeForgejo)
 	}
 }
 
 func TestEnhancedMockForgeClient_ConfigGeneration(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-config", ForgeTypeGitHub).
+	client := NewEnhancedMockForgeClient("test-config", TypeGitHub).
 		WithWebhookSecret("test-secret")
 
 	// Add some organizations
@@ -255,8 +255,8 @@ func TestEnhancedMockForgeClient_ConfigGeneration(t *testing.T) {
 		t.Errorf("Config name = %s, want test-config", config.Name)
 	}
 
-	if string(config.Type) != string(ForgeTypeGitHub) {
-		t.Errorf("Config type = %s, want %s", config.Type, ForgeTypeGitHub)
+	if string(config.Type) != string(TypeGitHub) {
+		t.Errorf("Config type = %s, want %s", config.Type, TypeGitHub)
 	}
 
 	if config.APIURL != "https://api.github.com" {
@@ -279,22 +279,22 @@ func TestEnhancedMockForgeClient_ConfigGeneration(t *testing.T) {
 func TestEnhancedMockForgeClient_EditURLGeneration(t *testing.T) {
 	tests := []struct {
 		name        string
-		forgeType   ForgeType
+		forgeType   Type
 		expectedURL string
 	}{
 		{
 			name:        "GitHub",
-			forgeType:   ForgeTypeGitHub,
+			forgeType:   TypeGitHub,
 			expectedURL: "https://github.com/test-org/test-repo/edit/main/docs/file.md",
 		},
 		{
 			name:        "GitLab",
-			forgeType:   ForgeTypeGitLab,
+			forgeType:   TypeGitLab,
 			expectedURL: "https://gitlab.com/test-org/test-repo/-/edit/main/docs/file.md",
 		},
 		{
 			name:        "Forgejo",
-			forgeType:   ForgeTypeForgejo,
+			forgeType:   TypeForgejo,
 			expectedURL: "https://git.example.com/test-org/test-repo/_edit/main/docs/file.md",
 		},
 	}
@@ -315,7 +315,7 @@ func TestEnhancedMockForgeClient_EditURLGeneration(t *testing.T) {
 }
 
 func TestEnhancedMockForgeClient_DelaySimulation(t *testing.T) {
-	client := NewEnhancedMockForgeClient("test-delay", ForgeTypeGitHub).
+	client := NewEnhancedMockForgeClient("test-delay", TypeGitHub).
 		WithDelay(100 * time.Millisecond)
 
 	client.AddOrganization(CreateMockOrganization("1", "test-org", "Test Organization", "Organization"))

@@ -10,7 +10,7 @@ type BasicPrerequisitesRule struct{}
 
 func (r BasicPrerequisitesRule) Name() string { return "basic_prerequisites" }
 
-func (r BasicPrerequisitesRule) Validate(ctx ValidationContext) ValidationResult {
+func (r BasicPrerequisitesRule) Validate(ctx Context) Result {
 	if ctx.State == nil {
 		return Failure("state manager is nil")
 	}
@@ -28,7 +28,7 @@ type ConfigHashRule struct{}
 
 func (r ConfigHashRule) Name() string { return "config_hash" }
 
-func (r ConfigHashRule) Validate(ctx ValidationContext) ValidationResult {
+func (r ConfigHashRule) Validate(ctx Context) Result {
 	currentHash := ctx.Generator.ComputeConfigHashForPersistence()
 	if currentHash == "" {
 		return Failure("current config hash is empty")
@@ -47,7 +47,7 @@ type PublicDirectoryRule struct{}
 
 func (r PublicDirectoryRule) Name() string { return "public_directory" }
 
-func (r PublicDirectoryRule) Validate(ctx ValidationContext) ValidationResult {
+func (r PublicDirectoryRule) Validate(ctx Context) Result {
 	publicDir := filepath.Join(ctx.OutDir, "public")
 
 	// Check if directory exists and is a directory

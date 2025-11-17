@@ -274,6 +274,7 @@ func Init(configPath string, force bool) error {
 		return fmt.Errorf("failed to marshal v2 config: %w", err)
 	}
 
+	// #nosec G306 -- example config file for documentation purposes
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write v2 config file: %w", err)
 	}

@@ -21,7 +21,7 @@ type MockCLIEnvironment struct {
 	configPath    string
 	outputCapture *bytes.Buffer
 	errorCapture  *bytes.Buffer
-	forgeClients  map[string]forge.ForgeClient
+	forgeClients  map[string]forge.Client
 	forgeConfigs  []*config.ForgeConfig
 	tempFiles     []string
 	testConfig    *config.Config
@@ -36,14 +36,14 @@ func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 		configPath:    filepath.Join(workspaceDir, "docbuilder.yaml"),
 		outputCapture: &bytes.Buffer{},
 		errorCapture:  &bytes.Buffer{},
-		forgeClients:  make(map[string]forge.ForgeClient),
+		forgeClients:  make(map[string]forge.Client),
 		forgeConfigs:  make([]*config.ForgeConfig, 0),
 		tempFiles:     make([]string, 0),
 	}
 }
 
 // WithForgeClient adds a forge client to the testing environment
-func (env *MockCLIEnvironment) WithForgeClient(name string, client forge.ForgeClient) *MockCLIEnvironment {
+func (env *MockCLIEnvironment) WithForgeClient(name string, client forge.Client) *MockCLIEnvironment {
 	env.forgeClients[name] = client
 
 	// Generate and store forge configuration
@@ -124,7 +124,7 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 		return err
 	}
 
-	return os.WriteFile(env.configPath, configBytes, 0644)
+	return os.WriteFile(env.configPath, configBytes, 0600)
 }
 
 // CreateProjectStructure creates a realistic project structure for testing
@@ -154,7 +154,7 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 
 	for filePath, content := range files {
 		fullPath := filepath.Join(env.workspaceDir, filePath)
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 			return err
 		}
 		env.tempFiles = append(env.tempFiles, fullPath)
@@ -329,7 +329,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 			content = "<!DOCTYPE html><html><head><title>DocBuilder Test</title></head><body><h1>Generated Site</h1></body></html>"
 		}
 
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err == nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0600); err == nil {
 			fullPaths = append(fullPaths, fullPath)
 		}
 	}
@@ -343,7 +343,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 }
 
 // simulateDiscoverCommand simulates the 'docbuilder discover' command
-func (env *MockCLIEnvironment) simulateDiscoverCommand(args []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("Discovering documentation repositories...\n")
 
 	ctx := context.Background()
@@ -382,7 +382,7 @@ func (env *MockCLIEnvironment) simulateDiscoverCommand(args []string) (int, []st
 }
 
 // simulateDaemonCommand simulates the 'docbuilder daemon' command
-func (env *MockCLIEnvironment) simulateDaemonCommand(args []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateDaemonCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("DocBuilder daemon mode\n")
 	env.outputCapture.WriteString("✓ Daemon configuration loaded\n")
 	env.outputCapture.WriteString("✓ Webhook endpoints configured\n")
@@ -393,7 +393,7 @@ func (env *MockCLIEnvironment) simulateDaemonCommand(args []string) (int, []stri
 }
 
 // simulateValidateCommand simulates the 'docbuilder validate' command
-func (env *MockCLIEnvironment) simulateValidateCommand(args []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("Validating DocBuilder configuration...\n")
 
 	if env.testConfig == nil {

@@ -29,7 +29,7 @@ func TestIntegrationSummary(t *testing.T) {
 			},
 		}
 
-		mockClient := NewEnhancedMockForgeClient("test-github", ForgeTypeGitHub)
+		mockClient := NewEnhancedMockForgeClient("test-github", TypeGitHub)
 		manager.AddForge(githubConfig, mockClient)
 
 		// Verify we can retrieve the forge
@@ -42,8 +42,8 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Errorf("Client name = %s, want test-github", client.GetName())
 		}
 
-		if client.GetType() != ForgeTypeGitHub {
-			t.Errorf("Client type = %s, want %s", client.GetType(), ForgeTypeGitHub)
+		if client.GetType() != TypeGitHub {
+			t.Errorf("Client type = %s, want %s", client.GetType(), TypeGitHub)
 		}
 
 		t.Log("✓ ForgeManager creation and configuration works")
@@ -51,7 +51,7 @@ func TestIntegrationSummary(t *testing.T) {
 
 	// Test enhanced mock forge client functionality
 	t.Run("EnhancedMockForgeClient", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("enhanced-test", ForgeTypeGitHub)
+		client := NewEnhancedMockForgeClient("enhanced-test", TypeGitHub)
 
 		// Add test data
 		org := CreateMockOrganization("1", "test-org", "Test Organization", "Organization")
@@ -244,8 +244,8 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Fatal("CreateForgeClient() should return a non-nil client")
 		}
 
-		if client.GetType() != ForgeTypeGitHub {
-			t.Errorf("Client type = %s, want %s", client.GetType(), ForgeTypeGitHub)
+		if client.GetType() != TypeGitHub {
+			t.Errorf("Client type = %s, want %s", client.GetType(), TypeGitHub)
 		}
 
 		// Test GitLab client creation
@@ -261,8 +261,8 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Errorf("CreateForgeClient() error: %v", err)
 		}
 
-		if client.GetType() != ForgeTypeGitLab {
-			t.Errorf("Client type = %s, want %s", client.GetType(), ForgeTypeGitLab)
+		if client.GetType() != TypeGitLab {
+			t.Errorf("Client type = %s, want %s", client.GetType(), TypeGitLab)
 		}
 
 		// Test Forgejo client creation
@@ -278,8 +278,8 @@ func TestIntegrationSummary(t *testing.T) {
 			t.Errorf("CreateForgeClient() error: %v", err)
 		}
 
-		if client.GetType() != ForgeTypeForgejo {
-			t.Errorf("Client type = %s, want %s", client.GetType(), ForgeTypeForgejo)
+		if client.GetType() != TypeForgejo {
+			t.Errorf("Client type = %s, want %s", client.GetType(), TypeForgejo)
 		}
 
 		t.Log("✓ Forge factory functionality works")

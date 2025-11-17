@@ -10,7 +10,7 @@ import (
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
-func stageRunHugo(ctx context.Context, bs *BuildState) error {
+func stageRunHugo(_ context.Context, bs *BuildState) error {
 	cfg := bs.Generator.Config()
 	mode := config.ResolveEffectiveRenderMode(cfg)
 	if mode == config.RenderModeNever {

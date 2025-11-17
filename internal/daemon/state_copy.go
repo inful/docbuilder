@@ -52,7 +52,7 @@ func CopySchedule(in *Schedule) *Schedule {
 	return &out
 }
 
-func CopyDaemonStats(in *DaemonStats) *DaemonStats {
+func CopyDaemonStats(in *Stats) *Stats {
 	if in == nil {
 		return nil
 	}
@@ -63,7 +63,7 @@ func CopyDaemonStats(in *DaemonStats) *DaemonStats {
 // CopyDaemonState creates a deep copy of the top-level daemon state. Nested maps
 // and slices are recreated; pointer fields referencing time.Time retain the same
 // underlying values (copy of pointer target not needed as they are immutable after set).
-func CopyDaemonState(in *DaemonState) *DaemonState {
+func CopyDaemonState(in *State) *State {
 	if in == nil {
 		return nil
 	}

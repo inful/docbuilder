@@ -8,15 +8,15 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// RepositoryFilter decides whether repositories should be included in a build.
-type RepositoryFilter struct {
+// Filter decides whether repositories should be included in a build.
+type Filter struct {
 	include []*regexp.Regexp
 	exclude []*regexp.Regexp
 }
 
 // NewFilter constructs a RepositoryFilter from glob patterns.
 // Empty include slice means include all (unless excluded).
-func NewFilter(includeGlobs, excludeGlobs []string) (*RepositoryFilter, error) {
+func NewFilter(includeGlobs, excludeGlobs []string) (*Filter, error) {
 	compile := func(globs []string) ([]*regexp.Regexp, error) {
 		out := make([]*regexp.Regexp, 0, len(globs))
 		for _, g := range globs {
@@ -41,11 +41,11 @@ func NewFilter(includeGlobs, excludeGlobs []string) (*RepositoryFilter, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryFilter{include: incs, exclude: excs}, nil
+	return &Filter{include: incs, exclude: excs}, nil
 }
 
 // Include returns true if repo passes the filter along with an exclusion reason if false.
-func (f *RepositoryFilter) Include(repo config.Repository) (bool, string) {
+func (f *Filter) Include(repo config.Repository) (bool, string) {
 	name := repo.Name
 	if f == nil {
 		return true, ""

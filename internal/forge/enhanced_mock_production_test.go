@@ -12,7 +12,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 
 	t.Run("ProductionEnhancedMockCreation", func(t *testing.T) {
 		// Test basic enhanced mock creation
-		mock := NewEnhancedMockForgeClient("production-test", ForgeTypeGitHub)
+		mock := NewEnhancedMockForgeClient("production-test", TypeGitHub)
 		if mock == nil {
 			t.Fatal("Failed to create enhanced mock")
 		}
@@ -21,7 +21,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 			t.Errorf("Expected name 'production-test', got '%s'", mock.GetName())
 		}
 
-		if mock.GetType() != ForgeTypeGitHub {
+		if mock.GetType() != TypeGitHub {
 			t.Errorf("Expected GitHub forge type, got %v", mock.GetType())
 		}
 
@@ -53,7 +53,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 
 	t.Run("ProductionBuilderPattern", func(t *testing.T) {
 		// Test fluent builder pattern
-		mock := NewEnhancedMockBuilder("builder-test", ForgeTypeGitLab).
+		mock := NewEnhancedMockBuilder("builder-test", TypeGitLab).
 			WithRepositories(
 				CreateMockGitLabRepo("company", "docs", true, false, false, false),
 				CreateMockGitLabRepo("company", "api", true, false, false, false),
@@ -86,7 +86,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 
 	t.Run("ProductionFailureSimulation", func(t *testing.T) {
 		// Test failure simulation capabilities
-		mock := NewEnhancedMockForgeClient("failure-test", ForgeTypeGitHub)
+		mock := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
 		ctx := context.Background()
 
 		// Test auth failure
@@ -158,7 +158,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 
 	t.Run("ProductionConfigGeneration", func(t *testing.T) {
 		// Test configuration generation
-		mock := NewEnhancedMockForgeClient("config-test", ForgeTypeGitHub)
+		mock := NewEnhancedMockForgeClient("config-test", TypeGitHub)
 		mock.AddOrganization(CreateMockGitHubOrg("test-org"))
 
 		config := mock.GenerateForgeConfig()
@@ -166,7 +166,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 			t.Errorf("Expected config name 'config-test', got '%s'", config.Name)
 		}
 
-		if config.Type != ForgeTypeGitHub {
+		if config.Type != TypeGitHub {
 			t.Errorf("Expected GitHub config type, got %v", config.Type)
 		}
 
@@ -179,7 +179,7 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 
 	t.Run("ProductionBulkRepositoryCreation", func(t *testing.T) {
 		// Test bulk repository creation
-		repos := CreateMockRepositorySet(ForgeTypeGitHub, "bulk-org", 10)
+		repos := CreateMockRepositorySet(TypeGitHub, "bulk-org", 10)
 		if len(repos) != 10 {
 			t.Errorf("Expected 10 repositories, got %d", len(repos))
 		}
@@ -226,12 +226,12 @@ func TestEnhancedMockCompatibility(t *testing.T) {
 
 	t.Run("ForgeClientInterface", func(t *testing.T) {
 		// Ensure enhanced mock implements ForgeClient interface
-		var client ForgeClient = NewEnhancedMockForgeClient("interface-test", ForgeTypeGitHub)
+		var client Client = NewEnhancedMockForgeClient("interface-test", TypeGitHub)
 
 		ctx := context.Background()
 
 		// Test interface methods
-		if client.GetType() != ForgeTypeGitHub {
+		if client.GetType() != TypeGitHub {
 			t.Error("GetType() interface method failed")
 		}
 

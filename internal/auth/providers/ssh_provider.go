@@ -60,7 +60,7 @@ func (p *SSHProvider) Name() string {
 
 // CreateAuthWithContext creates SSH authentication with additional context.
 // This implements EnhancedAuthProvider to allow for context-aware SSH key selection.
-func (p *SSHProvider) CreateAuthWithContext(authConfig *config.AuthConfig, ctx AuthContext) (transport.AuthMethod, error) {
+func (p *SSHProvider) CreateAuthWithContext(authConfig *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
 	// For now, SSH provider doesn't use context, but this allows for future enhancements
 	// like per-repository SSH keys or operation-specific key selection
 	return p.CreateAuth(authConfig)

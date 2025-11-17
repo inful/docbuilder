@@ -217,12 +217,12 @@ func (s *StateManagerService) Name() string {
 	return s.name
 }
 
-func (s *StateManagerService) Start(ctx context.Context) error {
+func (s *StateManagerService) Start(_ context.Context) error {
 	// State manager "start" means loading persistent state
 	return s.manager.Load()
 }
 
-func (s *StateManagerService) Stop(ctx context.Context) error {
+func (s *StateManagerService) Stop(_ context.Context) error {
 	// State manager "stop" means saving current state
 	return s.manager.Save()
 }

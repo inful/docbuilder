@@ -13,7 +13,7 @@ func TestDetectorChain(t *testing.T) {
 
 		detector1 := &mockDetector{
 			name: "first",
-			onDetect: func(ctx DetectionContext) DetectionResult {
+			onDetect: func(_ DetectionContext) DetectionResult {
 				executed = append(executed, "first")
 				return DetectionResult{Found: false}
 			},
@@ -21,7 +21,7 @@ func TestDetectorChain(t *testing.T) {
 
 		detector2 := &mockDetector{
 			name: "second",
-			onDetect: func(ctx DetectionContext) DetectionResult {
+			onDetect: func(_ DetectionContext) DetectionResult {
 				executed = append(executed, "second")
 				return DetectionResult{
 					ForgeType: config.ForgeGitHub,
@@ -34,7 +34,7 @@ func TestDetectorChain(t *testing.T) {
 
 		detector3 := &mockDetector{
 			name: "third",
-			onDetect: func(ctx DetectionContext) DetectionResult {
+			onDetect: func(_ DetectionContext) DetectionResult {
 				executed = append(executed, "third")
 				return DetectionResult{Found: false}
 			},
@@ -65,14 +65,14 @@ func TestDetectorChain(t *testing.T) {
 	t.Run("Chain returns not found when no detector succeeds", func(t *testing.T) {
 		detector1 := &mockDetector{
 			name: "failing1",
-			onDetect: func(ctx DetectionContext) DetectionResult {
+			onDetect: func(_ DetectionContext) DetectionResult {
 				return DetectionResult{Found: false}
 			},
 		}
 
 		detector2 := &mockDetector{
 			name: "failing2",
-			onDetect: func(ctx DetectionContext) DetectionResult {
+			onDetect: func(_ DetectionContext) DetectionResult {
 				return DetectionResult{Found: false}
 			},
 		}

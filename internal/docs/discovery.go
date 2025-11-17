@@ -248,12 +248,12 @@ func copyMetadata(metadata map[string]string) map[string]string {
 		return nil
 	}
 
-	copy := make(map[string]string)
+	copyMap := make(map[string]string)
 	for k, v := range metadata {
-		copy[k] = v
+		copyMap[k] = v
 	}
 
-	return copy
+	return copyMap
 }
 
 // GetDocFiles returns all discovered documentation files
@@ -292,12 +292,13 @@ func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 	docIgnorePath := filepath.Join(repoPath, ".docignore")
 
-	if _, err := os.Stat(docIgnorePath); err == nil {
+	_, err := os.Stat(docIgnorePath)
+	if err == nil {
 		slog.Debug("Found .docignore file", logfields.Path(docIgnorePath))
 		return true, nil
-	} else if os.IsNotExist(err) {
-		return false, nil
-	} else {
-		return false, fmt.Errorf("%w: %v", derrors.ErrDocIgnoreCheckFailed, err)
 	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("%w: %v", derrors.ErrDocIgnoreCheckFailed, err)
 }

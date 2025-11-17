@@ -54,11 +54,11 @@ func TestMetricsRecorderIntegration(t *testing.T) {
 	}
 	// Create physical source files to satisfy LoadContent()
 	srcA := filepath.Join(out, "a.md")
-	if err := os.WriteFile(srcA, []byte("# A"), 0644); err != nil {
+	if err := os.WriteFile(srcA, []byte("# A"), 0600); err != nil {
 		t.Fatalf("write a: %v", err)
 	}
 	srcB := filepath.Join(out, "b.md")
-	if err := os.WriteFile(srcB, []byte("# B"), 0644); err != nil {
+	if err := os.WriteFile(srcB, []byte("# B"), 0600); err != nil {
 		t.Fatalf("write b: %v", err)
 	}
 	docFiles := []docs.DocFile{

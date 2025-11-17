@@ -11,8 +11,8 @@ import (
 type Theme struct{}
 
 func (Theme) Name() config.Theme { return config.ThemeDocsy }
-func (Theme) Features() th.ThemeFeatures {
-	return th.ThemeFeatures{
+func (Theme) Features() th.Features {
+	return th.Features{
 		Name: config.ThemeDocsy, UsesModules: true, ModulePath: "github.com/google/docsy",
 		EnableOfflineSearchJSON: true,
 	}
@@ -61,6 +61,6 @@ func (Theme) ApplyParams(g th.ParamContext, params map[string]any) {
 		params["links"] = links
 	}
 }
-func (Theme) CustomizeRoot(g th.ParamContext, root map[string]any) {}
+func (Theme) CustomizeRoot(_ th.ParamContext, _ map[string]any) {}
 
 func init() { th.RegisterTheme(Theme{}) }

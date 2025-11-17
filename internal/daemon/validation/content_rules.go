@@ -11,7 +11,7 @@ type ContentIntegrityRule struct{}
 
 func (r ContentIntegrityRule) Name() string { return "content_integrity" }
 
-func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
+func (r ContentIntegrityRule) Validate(ctx Context) Result {
 	// Only validate if there were files in the previous build
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success() // Skip validation for empty previous builds
@@ -30,7 +30,7 @@ func (r ContentIntegrityRule) Validate(ctx ValidationContext) ValidationResult {
 
 	// Probe for at least one markdown file
 	foundMD := false
-	if werr := filepath.Walk(contentDir, func(p string, info os.FileInfo, err error) error {
+	if werr := filepath.Walk(contentDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil || foundMD || info == nil {
 			return nil
 		}
@@ -54,7 +54,7 @@ type GlobalDocHashRule struct{}
 
 func (r GlobalDocHashRule) Name() string { return "global_doc_hash" }
 
-func (r GlobalDocHashRule) Validate(ctx ValidationContext) ValidationResult {
+func (r GlobalDocHashRule) Validate(ctx Context) Result {
 	// Only validate if there were files in the previous build
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success()
@@ -75,7 +75,7 @@ type PerRepoDocHashRule struct{}
 
 func (r PerRepoDocHashRule) Name() string { return "per_repo_doc_hash" }
 
-func (r PerRepoDocHashRule) Validate(ctx ValidationContext) ValidationResult {
+func (r PerRepoDocHashRule) Validate(ctx Context) Result {
 	// Only validate if there were files in the previous build
 	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
 		return Success()
@@ -111,7 +111,7 @@ type CommitMetadataRule struct{}
 
 func (r CommitMetadataRule) Name() string { return "commit_metadata" }
 
-func (r CommitMetadataRule) Validate(ctx ValidationContext) ValidationResult {
+func (r CommitMetadataRule) Validate(ctx Context) Result {
 	for _, repo := range ctx.Repos {
 		if ctx.State.GetRepoLastCommit(repo.URL) == "" {
 			return Failure("missing last commit metadata for " + repo.URL)

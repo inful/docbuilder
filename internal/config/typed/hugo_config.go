@@ -103,8 +103,8 @@ func (hm HugoMarkupType) String() string {
 	return hm.value
 }
 
-// TypedHugoConfig represents a strongly-typed Hugo configuration
-type TypedHugoConfig struct {
+// HugoConfig represents a strongly-typed Hugo configuration
+type HugoConfig struct {
 	// Basic Hugo settings
 	Title   string                    `yaml:"title" json:"title"`
 	BaseURL foundation.Option[string] `yaml:"baseURL,omitempty" json:"baseURL,omitempty"`
@@ -131,83 +131,83 @@ type TypedHugoConfig struct {
 	Timeout foundation.Option[time.Duration] `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 
 	// Theme-specific parameters
-	Params TypedHugoParams `yaml:"params,omitempty" json:"params,omitempty"`
+	Params HugoParams `yaml:"params,omitempty" json:"params,omitempty"`
 
 	// Menu configuration
-	Menu TypedMenuConfig `yaml:"menu,omitempty" json:"menu,omitempty"`
+	Menu MenuConfig `yaml:"menu,omitempty" json:"menu,omitempty"`
 
 	// Module configuration (for themes that support it)
-	Module foundation.Option[TypedModuleConfig] `yaml:"module,omitempty" json:"module,omitempty"`
+	Module foundation.Option[ModuleConfig] `yaml:"module,omitempty" json:"module,omitempty"`
 
 	// Custom settings for advanced configurations
 	CustomConfig map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
 }
 
-// TypedHugoParams represents strongly-typed Hugo theme parameters
-type TypedHugoParams struct {
+// HugoParams represents strongly-typed Hugo theme parameters
+type HugoParams struct {
 	// Common theme parameters
 	Author      foundation.Option[string] `yaml:"author,omitempty" json:"author,omitempty"`
 	Description foundation.Option[string] `yaml:"description,omitempty" json:"description,omitempty"`
 	Keywords    []string                  `yaml:"keywords,omitempty" json:"keywords,omitempty"`
 
 	// Social and metadata
-	Social foundation.Option[TypedSocialConfig] `yaml:"social,omitempty" json:"social,omitempty"`
+	Social foundation.Option[SocialConfig] `yaml:"social,omitempty" json:"social,omitempty"`
 
 	// Edit links configuration
-	EditLinks TypedEditLinksConfig `yaml:"edit_links" json:"edit_links"`
+	EditLinks EditLinksConfig `yaml:"edit_links" json:"edit_links"`
 
 	// Search configuration
-	Search foundation.Option[TypedSearchConfig] `yaml:"search,omitempty" json:"search,omitempty"`
+	Search foundation.Option[SearchConfig] `yaml:"search,omitempty" json:"search,omitempty"`
 
 	// Navigation configuration
-	Navigation TypedNavigationConfig `yaml:"navigation" json:"navigation"`
+	Navigation NavigationConfig `yaml:"navigation" json:"navigation"`
 
 	// Theme-specific parameters (organized by theme)
-	Hextra foundation.Option[TypedHextraParams] `yaml:"hextra,omitempty" json:"hextra,omitempty"`
-	Docsy  foundation.Option[TypedDocsyParams]  `yaml:"docsy,omitempty" json:"docsy,omitempty"`
+	Hextra foundation.Option[HextraParams] `yaml:"hextra,omitempty" json:"hextra,omitempty"`
+	Docsy  foundation.Option[DocsyParams]  `yaml:"docsy,omitempty" json:"docsy,omitempty"`
 
 	// Custom parameters for extensibility
 	Custom map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
 }
 
-// TypedSocialConfig represents social media configuration
-type TypedSocialConfig struct {
+// SocialConfig represents social media configuration
+type SocialConfig struct {
 	GitHub   foundation.Option[string] `yaml:"github,omitempty" json:"github,omitempty"`
 	Twitter  foundation.Option[string] `yaml:"twitter,omitempty" json:"twitter,omitempty"`
 	LinkedIn foundation.Option[string] `yaml:"linkedin,omitempty" json:"linkedin,omitempty"`
 	Email    foundation.Option[string] `yaml:"email,omitempty" json:"email,omitempty"`
 }
 
-// TypedEditLinksConfig represents edit links configuration
-type TypedEditLinksConfig struct {
+// EditLinksConfig represents edit links configuration
+type EditLinksConfig struct {
 	Enabled  bool                      `yaml:"enabled" json:"enabled"`
 	BaseURL  foundation.Option[string] `yaml:"base_url,omitempty" json:"base_url,omitempty"`
 	EditText foundation.Option[string] `yaml:"edit_text,omitempty" json:"edit_text,omitempty"`
 	PerPage  bool                      `yaml:"per_page" json:"per_page"`
 }
 
-// TypedSearchConfig represents search functionality configuration
-type TypedSearchConfig struct {
+// SearchConfig represents search functionality configuration
+type SearchConfig struct {
 	Enabled   bool                      `yaml:"enabled" json:"enabled"`
 	Provider  foundation.Option[string] `yaml:"provider,omitempty" json:"provider,omitempty"`
 	IndexPath foundation.Option[string] `yaml:"index_path,omitempty" json:"index_path,omitempty"`
 }
 
-// TypedNavigationConfig represents navigation configuration
-type TypedNavigationConfig struct {
+// NavigationConfig represents navigation configuration
+type NavigationConfig struct {
 	ShowTOC        bool `yaml:"show_toc" json:"show_toc"`
 	TOCMaxDepth    int  `yaml:"toc_max_depth" json:"toc_max_depth"`
 	ShowBreadcrumb bool `yaml:"show_breadcrumb" json:"show_breadcrumb"`
 }
 
-// TypedMenuConfig represents Hugo menu configuration
-type TypedMenuConfig struct {
-	Main   []TypedMenuItem `yaml:"main,omitempty" json:"main,omitempty"`
-	Footer []TypedMenuItem `yaml:"footer,omitempty" json:"footer,omitempty"`
+// MenuConfig represents Hugo menu configuration
+type MenuConfig struct {
+	Main   []MenuItem `yaml:"main,omitempty" json:"main,omitempty"`
+	Footer []MenuItem `yaml:"footer,omitempty" json:"footer,omitempty"`
 }
 
-// TypedMenuItem represents a strongly-typed menu item
-type TypedMenuItem struct {
+// MenuItem represents a strongly-typed menu item
+type MenuItem struct {
 	Name       string                    `yaml:"name" json:"name"`
 	URL        string                    `yaml:"url" json:"url"`
 	Weight     foundation.Option[int]    `yaml:"weight,omitempty" json:"weight,omitempty"`
@@ -217,81 +217,81 @@ type TypedMenuItem struct {
 	Post       foundation.Option[string] `yaml:"post,omitempty" json:"post,omitempty"`
 }
 
-// TypedModuleConfig represents Hugo module configuration
-type TypedModuleConfig struct {
-	Imports []TypedModuleImport `yaml:"imports" json:"imports"`
+// ModuleConfig represents Hugo module configuration
+type ModuleConfig struct {
+	Imports []ModuleImport `yaml:"imports" json:"imports"`
 }
 
-// TypedModuleImport represents a Hugo module import
-type TypedModuleImport struct {
+// ModuleImport represents a Hugo module import
+type ModuleImport struct {
 	Path     string                  `yaml:"path" json:"path"`
 	Disabled foundation.Option[bool] `yaml:"disabled,omitempty" json:"disabled,omitempty"`
-	Mounts   []TypedModuleMount      `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+	Mounts   []ModuleMount           `yaml:"mounts,omitempty" json:"mounts,omitempty"`
 }
 
-// TypedModuleMount represents a Hugo module mount
-type TypedModuleMount struct {
+// ModuleMount represents a Hugo module mount
+type ModuleMount struct {
 	Source string `yaml:"source" json:"source"`
 	Target string `yaml:"target" json:"target"`
 }
 
 // Theme-specific parameter types
 
-// TypedHextraParams represents Hextra theme specific parameters
-type TypedHextraParams struct {
-	DisplayMode foundation.Option[string]            `yaml:"displayMode,omitempty" json:"displayMode,omitempty"`
-	Width       foundation.Option[string]            `yaml:"width,omitempty" json:"width,omitempty"`
-	Navbar      foundation.Option[TypedHextraNavbar] `yaml:"navbar,omitempty" json:"navbar,omitempty"`
-	Footer      foundation.Option[TypedHextraFooter] `yaml:"footer,omitempty" json:"footer,omitempty"`
+// HextraParams represents Hextra theme specific parameters
+type HextraParams struct {
+	DisplayMode foundation.Option[string]       `yaml:"displayMode,omitempty" json:"displayMode,omitempty"`
+	Width       foundation.Option[string]       `yaml:"width,omitempty" json:"width,omitempty"`
+	Navbar      foundation.Option[HextraNavbar] `yaml:"navbar,omitempty" json:"navbar,omitempty"`
+	Footer      foundation.Option[HextraFooter] `yaml:"footer,omitempty" json:"footer,omitempty"`
 }
 
-// TypedHextraNavbar represents Hextra navbar configuration
-type TypedHextraNavbar struct {
+// HextraNavbar represents Hextra navbar configuration
+type HextraNavbar struct {
 	DisplayTitle bool                      `yaml:"displayTitle" json:"displayTitle"`
 	DisplayLogo  bool                      `yaml:"displayLogo" json:"displayLogo"`
 	LogoPath     foundation.Option[string] `yaml:"logoPath,omitempty" json:"logoPath,omitempty"`
 }
 
-// TypedHextraFooter represents Hextra footer configuration
-type TypedHextraFooter struct {
+// HextraFooter represents Hextra footer configuration
+type HextraFooter struct {
 	Enable      bool                      `yaml:"enable" json:"enable"`
 	DisplayText foundation.Option[string] `yaml:"displayText,omitempty" json:"displayText,omitempty"`
 }
 
-// TypedDocsyParams represents Docsy theme specific parameters
-type TypedDocsyParams struct {
-	EditPage TypedDocsyEditPage              `yaml:"edit_page" json:"edit_page"`
-	Search   TypedDocsySearch                `yaml:"search" json:"search"`
-	Taxonomy TypedDocsyTaxonomy              `yaml:"taxonomy" json:"taxonomy"`
-	UI       foundation.Option[TypedDocsyUI] `yaml:"ui,omitempty" json:"ui,omitempty"`
+// DocsyParams represents Docsy theme specific parameters
+type DocsyParams struct {
+	EditPage DocsyEditPage              `yaml:"edit_page" json:"edit_page"`
+	Search   DocsySearch                `yaml:"search" json:"search"`
+	Taxonomy DocsyTaxonomy              `yaml:"taxonomy" json:"taxonomy"`
+	UI       foundation.Option[DocsyUI] `yaml:"ui,omitempty" json:"ui,omitempty"`
 }
 
-// TypedDocsyEditPage represents Docsy edit page configuration
-type TypedDocsyEditPage struct {
+// DocsyEditPage represents Docsy edit page configuration
+type DocsyEditPage struct {
 	ViewURL foundation.Option[string] `yaml:"view_url,omitempty" json:"view_url,omitempty"`
 	EditURL foundation.Option[string] `yaml:"edit_url,omitempty" json:"edit_url,omitempty"`
 }
 
-// TypedDocsySearch represents Docsy search configuration
-type TypedDocsySearch struct {
-	Algolia foundation.Option[TypedDocsyAlgolia] `yaml:"algolia,omitempty" json:"algolia,omitempty"`
+// DocsySearch represents Docsy search configuration
+type DocsySearch struct {
+	Algolia foundation.Option[DocsyAlgolia] `yaml:"algolia,omitempty" json:"algolia,omitempty"`
 }
 
-// TypedDocsyAlgolia represents Docsy Algolia search configuration
-type TypedDocsyAlgolia struct {
+// DocsyAlgolia represents Docsy Algolia search configuration
+type DocsyAlgolia struct {
 	AppID     foundation.Option[string] `yaml:"appId,omitempty" json:"appId,omitempty"`
 	APIKey    foundation.Option[string] `yaml:"apiKey,omitempty" json:"apiKey,omitempty"`
 	IndexName foundation.Option[string] `yaml:"indexName,omitempty" json:"indexName,omitempty"`
 }
 
-// TypedDocsyTaxonomy represents Docsy taxonomy configuration
-type TypedDocsyTaxonomy struct {
+// DocsyTaxonomy represents Docsy taxonomy configuration
+type DocsyTaxonomy struct {
 	TaxonomyCloud      []string `yaml:"taxonomyCloud,omitempty" json:"taxonomyCloud,omitempty"`
 	TaxonomyCloudTitle []string `yaml:"taxonomyCloudTitle,omitempty" json:"taxonomyCloudTitle,omitempty"`
 }
 
-// TypedDocsyUI represents Docsy UI configuration
-type TypedDocsyUI struct {
+// DocsyUI represents Docsy UI configuration
+type DocsyUI struct {
 	ShowVisitedLinks   bool `yaml:"showVisitedLinks" json:"showVisitedLinks"`
 	SidebarMenuCompact bool `yaml:"sidebar_menu_compact" json:"sidebar_menu_compact"`
 	BreadcrumbDisable  bool `yaml:"breadcrumb_disable" json:"breadcrumb_disable"`
@@ -300,15 +300,15 @@ type TypedDocsyUI struct {
 // Validation methods for TypedHugoConfig
 
 // Validate performs comprehensive validation of the Hugo configuration
-func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
+func (hc *HugoConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
 		// Validate theme type
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			return hugoThemeValidator(config.Theme)
 		},
 
 		// Validate title is not empty
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			if strings.TrimSpace(config.Title) == "" {
 				return foundation.Invalid(
 					foundation.NewValidationError("title", "not_empty", "title cannot be empty"),
@@ -318,7 +318,7 @@ func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate baseURL format if provided
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			if config.BaseURL.IsSome() {
 				baseURL := config.BaseURL.Unwrap()
 				if baseURL != "" {
@@ -334,7 +334,7 @@ func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate content directory path
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			if config.ContentDir != "" && !isValidPath(config.ContentDir) {
 				return foundation.Invalid(
 					foundation.NewValidationError("contentDir", "valid_path",
@@ -345,7 +345,7 @@ func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate publish directory path
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			if config.PublishDir != "" && !isValidPath(config.PublishDir) {
 				return foundation.Invalid(
 					foundation.NewValidationError("publishDir", "valid_path",
@@ -356,7 +356,7 @@ func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate theme-specific configuration
-		func(config TypedHugoConfig) foundation.ValidationResult {
+		func(config HugoConfig) foundation.ValidationResult {
 			return config.validateThemeSpecificConfig()
 		},
 	)
@@ -365,7 +365,7 @@ func (hc *TypedHugoConfig) Validate() foundation.ValidationResult {
 }
 
 // validateThemeSpecificConfig validates theme-specific parameters
-func (hc *TypedHugoConfig) validateThemeSpecificConfig() foundation.ValidationResult {
+func (hc *HugoConfig) validateThemeSpecificConfig() foundation.ValidationResult {
 	switch hc.Theme {
 	case HugoThemeHextra:
 		if hc.Params.Hextra.IsSome() {
@@ -384,7 +384,7 @@ func (hc *TypedHugoConfig) validateThemeSpecificConfig() foundation.ValidationRe
 // Validate methods for theme-specific parameters
 
 // Validate validates Hextra theme parameters
-func (hp *TypedHextraParams) Validate() foundation.ValidationResult {
+func (hp *HextraParams) Validate() foundation.ValidationResult {
 	// Validate display mode if specified
 	if hp.DisplayMode.IsSome() {
 		mode := hp.DisplayMode.Unwrap()
@@ -407,7 +407,7 @@ func (hp *TypedHextraParams) Validate() foundation.ValidationResult {
 }
 
 // Validate validates Docsy theme parameters
-func (dp *TypedDocsyParams) Validate() foundation.ValidationResult {
+func (dp *DocsyParams) Validate() foundation.ValidationResult {
 	// For now, just validate that URLs are properly formatted if provided
 	if dp.EditPage.ViewURL.IsSome() {
 		if _, err := url.Parse(dp.EditPage.ViewURL.Unwrap()); err != nil {
@@ -452,7 +452,7 @@ func isValidPath(path string) bool {
 // ConversionMethods for backward compatibility
 
 // ToLegacyMap converts TypedHugoConfig to map[string]any for legacy compatibility
-func (hc *TypedHugoConfig) ToLegacyMap() map[string]any {
+func (hc *HugoConfig) ToLegacyMap() map[string]any {
 	result := make(map[string]any)
 
 	result["title"] = hc.Title
@@ -544,17 +544,17 @@ func (hc *TypedHugoConfig) ToLegacyMap() map[string]any {
 }
 
 // FromLegacyMap creates a TypedHugoConfig from a legacy map[string]any
-func FromLegacyMap(data map[string]any) foundation.Result[TypedHugoConfig, error] {
-	config := TypedHugoConfig{
+func FromLegacyMap(data map[string]any) foundation.Result[HugoConfig, error] {
+	config := HugoConfig{
 		ContentDir: "content",
 		PublishDir: "public",
 		MarkupType: HugoMarkupGoldmark,
-		Params: TypedHugoParams{
-			EditLinks: TypedEditLinksConfig{
+		Params: HugoParams{
+			EditLinks: EditLinksConfig{
 				Enabled: true,
 				PerPage: true,
 			},
-			Navigation: TypedNavigationConfig{
+			Navigation: NavigationConfig{
 				ShowTOC:        true,
 				TOCMaxDepth:    3,
 				ShowBreadcrumb: true,
@@ -566,7 +566,7 @@ func FromLegacyMap(data map[string]any) foundation.Result[TypedHugoConfig, error
 	if title, ok := data["title"].(string); ok {
 		config.Title = title
 	} else {
-		return foundation.Err[TypedHugoConfig, error](
+		return foundation.Err[HugoConfig, error](
 			fmt.Errorf("title is required and must be a string"),
 		)
 	}
@@ -575,7 +575,7 @@ func FromLegacyMap(data map[string]any) foundation.Result[TypedHugoConfig, error
 	if themeStr, ok := data["theme"].(string); ok {
 		themeResult := ParseHugoThemeType(themeStr)
 		if themeResult.IsErr() {
-			return foundation.Err[TypedHugoConfig, error](themeResult.UnwrapErr())
+			return foundation.Err[HugoConfig, error](themeResult.UnwrapErr())
 		}
 		config.Theme = themeResult.Unwrap()
 	} else {
@@ -657,10 +657,10 @@ func FromLegacyMap(data map[string]any) foundation.Result[TypedHugoConfig, error
 
 	// Validate the constructed configuration
 	if validationResult := config.Validate(); !validationResult.Valid {
-		return foundation.Err[TypedHugoConfig, error](
+		return foundation.Err[HugoConfig, error](
 			fmt.Errorf("configuration validation failed: %v", validationResult.Errors),
 		)
 	}
 
-	return foundation.Ok[TypedHugoConfig, error](config)
+	return foundation.Ok[HugoConfig, error](config)
 }

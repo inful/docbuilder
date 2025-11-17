@@ -94,17 +94,17 @@ func (e *DefaultCommandExecutor) Name() string {
 	return e.name
 }
 
-func (e *DefaultCommandExecutor) Start(ctx context.Context) error {
+func (e *DefaultCommandExecutor) Start(_ context.Context) error {
 	slog.Debug("Command executor service started", "service", e.name)
 	return nil
 }
 
-func (e *DefaultCommandExecutor) Stop(ctx context.Context) error {
+func (e *DefaultCommandExecutor) Stop(_ context.Context) error {
 	slog.Debug("Command executor service stopped", "service", e.name)
 	return nil
 }
 
-func (e *DefaultCommandExecutor) HealthCheck(ctx context.Context) services.HealthStatus {
+func (e *DefaultCommandExecutor) HealthCheck(_ context.Context) services.HealthStatus {
 	return services.HealthStatus{
 		Status:  "healthy",
 		Message: "Command executor ready",
@@ -240,7 +240,7 @@ func (e *DefaultCommandExecutor) ExecuteBuild(ctx context.Context, req BuildRequ
 	})
 }
 
-func (e *DefaultCommandExecutor) ExecuteInit(ctx context.Context, req InitRequest) foundation.Result[InitResponse, error] {
+func (e *DefaultCommandExecutor) ExecuteInit(_ context.Context, req InitRequest) foundation.Result[InitResponse, error] {
 	slog.Info("Initializing configuration", "path", req.ConfigPath, "force", req.Force)
 
 	err := config.Init(req.ConfigPath, req.Force)
@@ -409,7 +409,7 @@ func (e *DefaultCommandExecutor) autoDiscoverRepositories(ctx context.Context, v
 
 	// Instantiate forge clients
 	for _, f := range v2cfg.Forges {
-		var client forge.ForgeClient
+		var client forge.Client
 		var err error
 		switch f.Type {
 		case config.ForgeForgejo:

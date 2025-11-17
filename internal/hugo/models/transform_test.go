@@ -351,7 +351,7 @@ func (m *mockGeneratorProvider) GetThemeCapabilities() ThemeCapabilities {
 	}
 }
 
-func (m *mockGeneratorProvider) GetForgeCapabilities(forgeType string) ForgeCapabilities {
+func (m *mockGeneratorProvider) GetForgeCapabilities(_ string) ForgeCapabilities {
 	return ForgeCapabilities{
 		SupportsEditLinks: true,
 	}
@@ -377,7 +377,7 @@ func (m *mockEditLinkResolver) Resolve(file docs.DocFile) string {
 	return "https://github.com/test/edit/" + file.Path
 }
 
-func (m *mockEditLinkResolver) SupportsFile(file docs.DocFile) bool {
+func (m *mockEditLinkResolver) SupportsFile(_ docs.DocFile) bool {
 	return true
 }
 
@@ -395,10 +395,10 @@ func (m *mockTransformer) Dependencies() TransformerDependencies { return Transf
 func (m *mockTransformer) Configuration() TransformerConfiguration {
 	return TransformerConfiguration{Enabled: m.enabled}
 }
-func (m *mockTransformer) CanTransform(page *ContentPage, context *TransformContext) bool {
+func (m *mockTransformer) CanTransform(_ *ContentPage, _ *TransformContext) bool {
 	return m.enabled
 }
 func (m *mockTransformer) RequiredContext() []string { return []string{} }
-func (m *mockTransformer) Transform(page *ContentPage, context *TransformContext) (*TransformationResult, error) {
+func (m *mockTransformer) Transform(_ *ContentPage, _ *TransformContext) (*TransformationResult, error) {
 	return NewTransformationResult().SetSuccess(), nil
 }

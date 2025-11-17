@@ -49,7 +49,7 @@ func TestIndexTemplates_UserOverridePrecedence(t *testing.T) {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	content := "CUSTOM MAIN TEMPLATE\n"
-	if err := os.WriteFile(filepath.Join(overrideDir, "main.md.tmpl"), []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(overrideDir, "main.md.tmpl"), []byte(content), 0o600); err != nil {
 		t.Fatalf("write override: %v", err)
 	}
 	files := []docs.DocFile{{Repository: "repo1", Name: "doc1", Path: "doc1.md"}}

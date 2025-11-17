@@ -13,7 +13,7 @@ type jsonScheduleStore struct {
 	store *JSONStore
 }
 
-func (ss *jsonScheduleStore) Create(ctx context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
+func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
 	if schedule == nil {
 		return foundation.Err[*Schedule, error](
 			foundation.ValidationError("schedule cannot be nil").Build(),
@@ -45,7 +45,7 @@ func (ss *jsonScheduleStore) Create(ctx context.Context, schedule *Schedule) fou
 	return foundation.Ok[*Schedule, error](schedule)
 }
 
-func (ss *jsonScheduleStore) GetByID(ctx context.Context, id string) foundation.Result[foundation.Option[*Schedule], error] {
+func (ss *jsonScheduleStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Schedule], error] {
 	if id == "" {
 		return foundation.Err[foundation.Option[*Schedule], error](
 			foundation.ValidationError("ID cannot be empty").Build(),
@@ -63,7 +63,7 @@ func (ss *jsonScheduleStore) GetByID(ctx context.Context, id string) foundation.
 	return foundation.Ok[foundation.Option[*Schedule], error](foundation.None[*Schedule]())
 }
 
-func (ss *jsonScheduleStore) Update(ctx context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
+func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
 	if schedule == nil {
 		return foundation.Err[*Schedule, error](
 			foundation.ValidationError("schedule cannot be nil").Build(),
@@ -99,7 +99,7 @@ func (ss *jsonScheduleStore) Update(ctx context.Context, schedule *Schedule) fou
 	return foundation.Ok[*Schedule, error](schedule)
 }
 
-func (ss *jsonScheduleStore) Delete(ctx context.Context, id string) foundation.Result[struct{}, error] {
+func (ss *jsonScheduleStore) Delete(_ context.Context, id string) foundation.Result[struct{}, error] {
 	if id == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("ID cannot be empty").Build(),
@@ -130,7 +130,7 @@ func (ss *jsonScheduleStore) Delete(ctx context.Context, id string) foundation.R
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (ss *jsonScheduleStore) List(ctx context.Context) foundation.Result[[]Schedule, error] {
+func (ss *jsonScheduleStore) List(_ context.Context) foundation.Result[[]Schedule, error] {
 	ss.store.mu.RLock()
 	defer ss.store.mu.RUnlock()
 
@@ -154,7 +154,7 @@ func (ss *jsonScheduleStore) List(ctx context.Context) foundation.Result[[]Sched
 	return foundation.Ok[[]Schedule, error](schedules)
 }
 
-func (ss *jsonScheduleStore) GetActive(ctx context.Context) foundation.Result[[]Schedule, error] {
+func (ss *jsonScheduleStore) GetActive(_ context.Context) foundation.Result[[]Schedule, error] {
 	ss.store.mu.RLock()
 	defer ss.store.mu.RUnlock()
 

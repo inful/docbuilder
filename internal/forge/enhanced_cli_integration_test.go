@@ -104,8 +104,8 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 	// Test CLI failure handling scenarios
 	t.Run("EnhancedCliFailureHandling", func(t *testing.T) {
 		// Create enhanced mocks with different failure scenarios
-		github := NewEnhancedMockForgeClient("cli-failure-github", ForgeTypeGitHub)
-		gitlab := NewEnhancedMockForgeClient("cli-failure-gitlab", ForgeTypeGitLab)
+		github := NewEnhancedMockForgeClient("cli-failure-github", TypeGitHub)
+		gitlab := NewEnhancedMockForgeClient("cli-failure-gitlab", TypeGitLab)
 
 		// Set up various failure conditions that a CLI user might encounter
 		github.WithAuthFailure()                 // Wrong token

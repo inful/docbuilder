@@ -136,71 +136,71 @@ func ParseLogLevelType(s string) foundation.Result[LogLevelType, error] {
 	return foundation.Ok[LogLevelType, error](level)
 }
 
-// TypedDaemonConfig represents a strongly-typed daemon configuration
-type TypedDaemonConfig struct {
+// DaemonConfig represents a strongly-typed daemon configuration
+type DaemonConfig struct {
 	// Operation mode
 	Mode DaemonModeType `yaml:"mode" json:"mode"`
 
 	// Server configuration
-	Server TypedServerConfig `yaml:"server" json:"server"`
+	Server ServerConfig `yaml:"server" json:"server"`
 
 	// Logging configuration
-	Logging TypedLoggingConfig `yaml:"logging" json:"logging"`
+	Logging LoggingConfig `yaml:"logging" json:"logging"`
 
 	// Build configuration
-	Build TypedBuildConfig `yaml:"build" json:"build"`
+	Build BuildConfig `yaml:"build" json:"build"`
 
 	// Monitoring configuration
-	Monitoring foundation.Option[TypedMonitoringConfig] `yaml:"monitoring,omitempty" json:"monitoring,omitempty"`
+	Monitoring foundation.Option[MonitoringConfig] `yaml:"monitoring,omitempty" json:"monitoring,omitempty"`
 
 	// Webhook configuration (if webhook mode)
-	Webhook foundation.Option[TypedWebhookConfig] `yaml:"webhook,omitempty" json:"webhook,omitempty"`
+	Webhook foundation.Option[WebhookConfig] `yaml:"webhook,omitempty" json:"webhook,omitempty"`
 
 	// Scheduling configuration (if scheduled mode)
-	Schedule foundation.Option[TypedScheduleConfig] `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+	Schedule foundation.Option[ScheduleConfig] `yaml:"schedule,omitempty" json:"schedule,omitempty"`
 
 	// Security configuration
-	Security TypedSecurityConfig `yaml:"security" json:"security"`
+	Security SecurityConfig `yaml:"security" json:"security"`
 
 	// Performance configuration
-	Performance TypedPerformanceConfig `yaml:"performance" json:"performance"`
+	Performance PerformanceConfig `yaml:"performance" json:"performance"`
 
 	// Storage configuration
-	Storage TypedStorageConfig `yaml:"storage" json:"storage"`
+	Storage StorageConfig `yaml:"storage" json:"storage"`
 
 	// Custom settings for extensibility
 	Custom map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
 }
 
-// TypedServerConfig represents HTTP server configuration
-type TypedServerConfig struct {
-	Host         string                             `yaml:"host" json:"host"`
-	Port         int                                `yaml:"port" json:"port"`
-	ReadTimeout  foundation.Option[time.Duration]   `yaml:"read_timeout,omitempty" json:"read_timeout,omitempty"`
-	WriteTimeout foundation.Option[time.Duration]   `yaml:"write_timeout,omitempty" json:"write_timeout,omitempty"`
-	IdleTimeout  foundation.Option[time.Duration]   `yaml:"idle_timeout,omitempty" json:"idle_timeout,omitempty"`
-	TLS          foundation.Option[TypedTLSConfig]  `yaml:"tls,omitempty" json:"tls,omitempty"`
-	CORS         foundation.Option[TypedCORSConfig] `yaml:"cors,omitempty" json:"cors,omitempty"`
+// ServerConfig represents HTTP server configuration
+type ServerConfig struct {
+	Host         string                           `yaml:"host" json:"host"`
+	Port         int                              `yaml:"port" json:"port"`
+	ReadTimeout  foundation.Option[time.Duration] `yaml:"read_timeout,omitempty" json:"read_timeout,omitempty"`
+	WriteTimeout foundation.Option[time.Duration] `yaml:"write_timeout,omitempty" json:"write_timeout,omitempty"`
+	IdleTimeout  foundation.Option[time.Duration] `yaml:"idle_timeout,omitempty" json:"idle_timeout,omitempty"`
+	TLS          foundation.Option[TLSConfig]     `yaml:"tls,omitempty" json:"tls,omitempty"`
+	CORS         foundation.Option[CORSConfig]    `yaml:"cors,omitempty" json:"cors,omitempty"`
 }
 
-// TypedTLSConfig represents TLS configuration
-type TypedTLSConfig struct {
+// TLSConfig represents TLS configuration
+type TLSConfig struct {
 	Enabled  bool                      `yaml:"enabled" json:"enabled"`
 	CertFile foundation.Option[string] `yaml:"cert_file,omitempty" json:"cert_file,omitempty"`
 	KeyFile  foundation.Option[string] `yaml:"key_file,omitempty" json:"key_file,omitempty"`
 	Auto     bool                      `yaml:"auto" json:"auto"` // For automatic certificate generation
 }
 
-// TypedCORSConfig represents CORS configuration
-type TypedCORSConfig struct {
+// CORSConfig represents CORS configuration
+type CORSConfig struct {
 	Enabled        bool     `yaml:"enabled" json:"enabled"`
 	AllowedOrigins []string `yaml:"allowed_origins,omitempty" json:"allowed_origins,omitempty"`
 	AllowedMethods []string `yaml:"allowed_methods,omitempty" json:"allowed_methods,omitempty"`
 	AllowedHeaders []string `yaml:"allowed_headers,omitempty" json:"allowed_headers,omitempty"`
 }
 
-// TypedLoggingConfig represents logging configuration
-type TypedLoggingConfig struct {
+// LoggingConfig represents logging configuration
+type LoggingConfig struct {
 	Level      LogLevelType              `yaml:"level" json:"level"`
 	Format     foundation.Option[string] `yaml:"format,omitempty" json:"format,omitempty"`
 	File       foundation.Option[string] `yaml:"file,omitempty" json:"file,omitempty"`
@@ -208,8 +208,8 @@ type TypedLoggingConfig struct {
 	Structured bool                      `yaml:"structured" json:"structured"`
 }
 
-// TypedBuildConfig represents build execution configuration
-type TypedBuildConfig struct {
+// BuildConfig represents build execution configuration
+type BuildConfig struct {
 	Timeout       foundation.Option[time.Duration] `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 	MaxConcurrent foundation.Option[int]           `yaml:"max_concurrent,omitempty" json:"max_concurrent,omitempty"`
 	RetryAttempts foundation.Option[int]           `yaml:"retry_attempts,omitempty" json:"retry_attempts,omitempty"`
@@ -217,37 +217,37 @@ type TypedBuildConfig struct {
 	CleanupAfter  foundation.Option[time.Duration] `yaml:"cleanup_after,omitempty" json:"cleanup_after,omitempty"`
 }
 
-// TypedMonitoringConfig represents monitoring and health check configuration
-type TypedMonitoringConfig struct {
-	Enabled     bool                                  `yaml:"enabled" json:"enabled"`
-	HealthCheck TypedHealthCheckConfig                `yaml:"health_check" json:"health_check"`
-	Metrics     foundation.Option[TypedMetricsConfig] `yaml:"metrics,omitempty" json:"metrics,omitempty"`
-	Tracing     foundation.Option[TypedTracingConfig] `yaml:"tracing,omitempty" json:"tracing,omitempty"`
+// MonitoringConfig represents monitoring and health check configuration
+type MonitoringConfig struct {
+	Enabled     bool                             `yaml:"enabled" json:"enabled"`
+	HealthCheck HealthCheckConfig                `yaml:"health_check" json:"health_check"`
+	Metrics     foundation.Option[MetricsConfig] `yaml:"metrics,omitempty" json:"metrics,omitempty"`
+	Tracing     foundation.Option[TracingConfig] `yaml:"tracing,omitempty" json:"tracing,omitempty"`
 }
 
-// TypedHealthCheckConfig represents health check configuration
-type TypedHealthCheckConfig struct {
+// HealthCheckConfig represents health check configuration
+type HealthCheckConfig struct {
 	Enabled  bool                             `yaml:"enabled" json:"enabled"`
 	Endpoint foundation.Option[string]        `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 	Interval foundation.Option[time.Duration] `yaml:"interval,omitempty" json:"interval,omitempty"`
 }
 
-// TypedMetricsConfig represents metrics collection configuration
-type TypedMetricsConfig struct {
+// MetricsConfig represents metrics collection configuration
+type MetricsConfig struct {
 	Enabled  bool                      `yaml:"enabled" json:"enabled"`
 	Endpoint foundation.Option[string] `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 	Provider foundation.Option[string] `yaml:"provider,omitempty" json:"provider,omitempty"`
 }
 
-// TypedTracingConfig represents distributed tracing configuration
-type TypedTracingConfig struct {
+// TracingConfig represents distributed tracing configuration
+type TracingConfig struct {
 	Enabled     bool                      `yaml:"enabled" json:"enabled"`
 	ServiceName foundation.Option[string] `yaml:"service_name,omitempty" json:"service_name,omitempty"`
 	Endpoint    foundation.Option[string] `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 }
 
-// TypedWebhookConfig represents webhook processing configuration
-type TypedWebhookConfig struct {
+// WebhookConfig represents webhook processing configuration
+type WebhookConfig struct {
 	Enabled        bool                             `yaml:"enabled" json:"enabled"`
 	Secret         foundation.Option[string]        `yaml:"secret,omitempty" json:"secret,omitempty"`
 	Path           foundation.Option[string]        `yaml:"path,omitempty" json:"path,omitempty"`
@@ -256,33 +256,33 @@ type TypedWebhookConfig struct {
 	AuthRequired   bool                             `yaml:"auth_required" json:"auth_required"`
 }
 
-// TypedScheduleConfig represents scheduled build configuration
-type TypedScheduleConfig struct {
+// ScheduleConfig represents scheduled build configuration
+type ScheduleConfig struct {
 	Enabled  bool                             `yaml:"enabled" json:"enabled"`
 	Cron     foundation.Option[string]        `yaml:"cron,omitempty" json:"cron,omitempty"`
 	Interval foundation.Option[time.Duration] `yaml:"interval,omitempty" json:"interval,omitempty"`
 	Timezone foundation.Option[string]        `yaml:"timezone,omitempty" json:"timezone,omitempty"`
 }
 
-// TypedSecurityConfig represents security configuration
-type TypedSecurityConfig struct {
-	APIKey         foundation.Option[string]               `yaml:"api_key,omitempty" json:"api_key,omitempty"`
-	JWTSecret      foundation.Option[string]               `yaml:"jwt_secret,omitempty" json:"jwt_secret,omitempty"`
-	RateLimit      foundation.Option[TypedRateLimitConfig] `yaml:"rate_limit,omitempty" json:"rate_limit,omitempty"`
-	AllowedHosts   []string                                `yaml:"allowed_hosts,omitempty" json:"allowed_hosts,omitempty"`
-	TrustedProxies []string                                `yaml:"trusted_proxies,omitempty" json:"trusted_proxies,omitempty"`
+// SecurityConfig represents security configuration
+type SecurityConfig struct {
+	APIKey         foundation.Option[string]          `yaml:"api_key,omitempty" json:"api_key,omitempty"`
+	JWTSecret      foundation.Option[string]          `yaml:"jwt_secret,omitempty" json:"jwt_secret,omitempty"`
+	RateLimit      foundation.Option[RateLimitConfig] `yaml:"rate_limit,omitempty" json:"rate_limit,omitempty"`
+	AllowedHosts   []string                           `yaml:"allowed_hosts,omitempty" json:"allowed_hosts,omitempty"`
+	TrustedProxies []string                           `yaml:"trusted_proxies,omitempty" json:"trusted_proxies,omitempty"`
 }
 
-// TypedRateLimitConfig represents rate limiting configuration
-type TypedRateLimitConfig struct {
+// RateLimitConfig represents rate limiting configuration
+type RateLimitConfig struct {
 	Enabled           bool                             `yaml:"enabled" json:"enabled"`
 	RequestsPerMinute foundation.Option[int]           `yaml:"requests_per_minute,omitempty" json:"requests_per_minute,omitempty"`
 	BurstSize         foundation.Option[int]           `yaml:"burst_size,omitempty" json:"burst_size,omitempty"`
 	WindowSize        foundation.Option[time.Duration] `yaml:"window_size,omitempty" json:"window_size,omitempty"`
 }
 
-// TypedPerformanceConfig represents performance tuning configuration
-type TypedPerformanceConfig struct {
+// PerformanceConfig represents performance tuning configuration
+type PerformanceConfig struct {
 	MaxWorkers     foundation.Option[int]           `yaml:"max_workers,omitempty" json:"max_workers,omitempty"`
 	QueueSize      foundation.Option[int]           `yaml:"queue_size,omitempty" json:"queue_size,omitempty"`
 	GCPercent      foundation.Option[int]           `yaml:"gc_percent,omitempty" json:"gc_percent,omitempty"`
@@ -290,8 +290,8 @@ type TypedPerformanceConfig struct {
 	RequestTimeout foundation.Option[time.Duration] `yaml:"request_timeout,omitempty" json:"request_timeout,omitempty"`
 }
 
-// TypedStorageConfig represents storage configuration
-type TypedStorageConfig struct {
+// StorageConfig represents storage configuration
+type StorageConfig struct {
 	WorkspaceDir foundation.Option[string]        `yaml:"workspace_dir,omitempty" json:"workspace_dir,omitempty"`
 	StateFile    foundation.Option[string]        `yaml:"state_file,omitempty" json:"state_file,omitempty"`
 	TempDir      foundation.Option[string]        `yaml:"temp_dir,omitempty" json:"temp_dir,omitempty"`
@@ -302,30 +302,30 @@ type TypedStorageConfig struct {
 // Validation methods
 
 // Validate performs comprehensive validation of the daemon configuration
-func (dc *TypedDaemonConfig) Validate() foundation.ValidationResult {
+func (dc *DaemonConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
 		// Validate daemon mode
-		func(config TypedDaemonConfig) foundation.ValidationResult {
+		func(config DaemonConfig) foundation.ValidationResult {
 			return daemonModeValidator(config.Mode)
 		},
 
 		// Validate server configuration
-		func(config TypedDaemonConfig) foundation.ValidationResult {
+		func(config DaemonConfig) foundation.ValidationResult {
 			return config.Server.Validate()
 		},
 
 		// Validate logging configuration
-		func(config TypedDaemonConfig) foundation.ValidationResult {
+		func(config DaemonConfig) foundation.ValidationResult {
 			return config.Logging.Validate()
 		},
 
 		// Validate mode-specific configuration
-		func(config TypedDaemonConfig) foundation.ValidationResult {
+		func(config DaemonConfig) foundation.ValidationResult {
 			return config.validateModeSpecificConfig()
 		},
 
 		// Validate security configuration
-		func(config TypedDaemonConfig) foundation.ValidationResult {
+		func(config DaemonConfig) foundation.ValidationResult {
 			return config.Security.Validate()
 		},
 	)
@@ -334,7 +334,7 @@ func (dc *TypedDaemonConfig) Validate() foundation.ValidationResult {
 }
 
 // validateModeSpecificConfig validates configuration based on daemon mode
-func (dc *TypedDaemonConfig) validateModeSpecificConfig() foundation.ValidationResult {
+func (dc *DaemonConfig) validateModeSpecificConfig() foundation.ValidationResult {
 	switch dc.Mode {
 	case DaemonModeWebhook:
 		if dc.Webhook.IsNone() {
@@ -369,10 +369,10 @@ func (dc *TypedDaemonConfig) validateModeSpecificConfig() foundation.ValidationR
 }
 
 // Validate validates server configuration
-func (sc *TypedServerConfig) Validate() foundation.ValidationResult {
+func (sc *ServerConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
 		// Validate host
-		func(config TypedServerConfig) foundation.ValidationResult {
+		func(config ServerConfig) foundation.ValidationResult {
 			if config.Host == "" {
 				return foundation.Invalid(
 					foundation.NewValidationError("host", "not_empty", "host cannot be empty"),
@@ -393,7 +393,7 @@ func (sc *TypedServerConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate port
-		func(config TypedServerConfig) foundation.ValidationResult {
+		func(config ServerConfig) foundation.ValidationResult {
 			if config.Port < 1 || config.Port > 65535 {
 				return foundation.Invalid(
 					foundation.NewValidationError("port", "valid_range",
@@ -404,7 +404,7 @@ func (sc *TypedServerConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate TLS configuration if present
-		func(config TypedServerConfig) foundation.ValidationResult {
+		func(config ServerConfig) foundation.ValidationResult {
 			if config.TLS.IsSome() {
 				tlsConfig := config.TLS.Unwrap()
 				return tlsConfig.Validate()
@@ -417,7 +417,7 @@ func (sc *TypedServerConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates TLS configuration
-func (tc *TypedTLSConfig) Validate() foundation.ValidationResult {
+func (tc *TLSConfig) Validate() foundation.ValidationResult {
 	if !tc.Enabled {
 		return foundation.Valid()
 	}
@@ -444,7 +444,7 @@ func (tc *TypedTLSConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates logging configuration
-func (lc *TypedLoggingConfig) Validate() foundation.ValidationResult {
+func (lc *LoggingConfig) Validate() foundation.ValidationResult {
 	// Validate log level
 	if !lc.Level.Valid() {
 		return foundation.Invalid(
@@ -476,14 +476,14 @@ func (lc *TypedLoggingConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates webhook configuration
-func (wc *TypedWebhookConfig) Validate() foundation.ValidationResult {
+func (wc *WebhookConfig) Validate() foundation.ValidationResult {
 	if !wc.Enabled {
 		return foundation.Valid()
 	}
 
 	chain := foundation.NewValidatorChain(
 		// Validate webhook path
-		func(config TypedWebhookConfig) foundation.ValidationResult {
+		func(config WebhookConfig) foundation.ValidationResult {
 			if config.Path.IsSome() {
 				path := config.Path.Unwrap()
 				if !strings.HasPrefix(path, "/") {
@@ -497,7 +497,7 @@ func (wc *TypedWebhookConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate max payload size
-		func(config TypedWebhookConfig) foundation.ValidationResult {
+		func(config WebhookConfig) foundation.ValidationResult {
 			if config.MaxPayloadSize.IsSome() {
 				size := config.MaxPayloadSize.Unwrap()
 				if size < 1024 || size > 100*1024*1024 { // 1KB to 100MB
@@ -515,7 +515,7 @@ func (wc *TypedWebhookConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates schedule configuration
-func (sc *TypedScheduleConfig) Validate() foundation.ValidationResult {
+func (sc *ScheduleConfig) Validate() foundation.ValidationResult {
 	if !sc.Enabled {
 		return foundation.Valid()
 	}
@@ -542,7 +542,7 @@ func (sc *TypedScheduleConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates security configuration
-func (sc *TypedSecurityConfig) Validate() foundation.ValidationResult {
+func (sc *SecurityConfig) Validate() foundation.ValidationResult {
 	// Validate rate limit configuration if present
 	if sc.RateLimit.IsSome() {
 		rateLimitConfig := sc.RateLimit.Unwrap()
@@ -552,14 +552,14 @@ func (sc *TypedSecurityConfig) Validate() foundation.ValidationResult {
 }
 
 // Validate validates rate limit configuration
-func (rlc *TypedRateLimitConfig) Validate() foundation.ValidationResult {
+func (rlc *RateLimitConfig) Validate() foundation.ValidationResult {
 	if !rlc.Enabled {
 		return foundation.Valid()
 	}
 
 	chain := foundation.NewValidatorChain(
 		// Validate requests per minute
-		func(config TypedRateLimitConfig) foundation.ValidationResult {
+		func(config RateLimitConfig) foundation.ValidationResult {
 			if config.RequestsPerMinute.IsSome() {
 				rpm := config.RequestsPerMinute.Unwrap()
 				if rpm < 1 || rpm > 10000 {
@@ -573,7 +573,7 @@ func (rlc *TypedRateLimitConfig) Validate() foundation.ValidationResult {
 		},
 
 		// Validate burst size
-		func(config TypedRateLimitConfig) foundation.ValidationResult {
+		func(config RateLimitConfig) foundation.ValidationResult {
 			if config.BurstSize.IsSome() {
 				burst := config.BurstSize.Unwrap()
 				if burst < 1 || burst > 1000 {
@@ -625,7 +625,7 @@ func isValidHostname(hostname string) bool {
 // Conversion methods for backward compatibility
 
 // ToLegacyMap converts TypedDaemonConfig to map[string]any for legacy compatibility
-func (dc *TypedDaemonConfig) ToLegacyMap() map[string]any {
+func (dc *DaemonConfig) ToLegacyMap() map[string]any {
 	result := make(map[string]any)
 
 	result["mode"] = dc.Mode.String()
@@ -670,28 +670,28 @@ func (dc *TypedDaemonConfig) ToLegacyMap() map[string]any {
 }
 
 // FromDaemonLegacyMap creates a TypedDaemonConfig from a legacy map[string]any
-func FromDaemonLegacyMap(data map[string]any) foundation.Result[TypedDaemonConfig, error] {
-	config := TypedDaemonConfig{
+func FromDaemonLegacyMap(data map[string]any) foundation.Result[DaemonConfig, error] {
+	config := DaemonConfig{
 		Mode: DaemonModeHTTP, // default
-		Server: TypedServerConfig{
+		Server: ServerConfig{
 			Host: "localhost",
 			Port: 8080,
 		},
-		Logging: TypedLoggingConfig{
+		Logging: LoggingConfig{
 			Level:      LogLevelInfo,
 			Structured: false,
 		},
-		Build:       TypedBuildConfig{},
-		Security:    TypedSecurityConfig{},
-		Performance: TypedPerformanceConfig{},
-		Storage:     TypedStorageConfig{},
+		Build:       BuildConfig{},
+		Security:    SecurityConfig{},
+		Performance: PerformanceConfig{},
+		Storage:     StorageConfig{},
 	}
 
 	// Extract mode
 	if modeStr, ok := data["mode"].(string); ok {
 		modeResult := ParseDaemonModeType(modeStr)
 		if modeResult.IsErr() {
-			return foundation.Err[TypedDaemonConfig, error](modeResult.UnwrapErr())
+			return foundation.Err[DaemonConfig, error](modeResult.UnwrapErr())
 		}
 		config.Mode = modeResult.Unwrap()
 	}
@@ -753,10 +753,10 @@ func FromDaemonLegacyMap(data map[string]any) foundation.Result[TypedDaemonConfi
 
 	// Validate the constructed configuration
 	if validationResult := config.Validate(); !validationResult.Valid {
-		return foundation.Err[TypedDaemonConfig, error](
+		return foundation.Err[DaemonConfig, error](
 			fmt.Errorf("configuration validation failed: %v", validationResult.Errors),
 		)
 	}
 
-	return foundation.Ok[TypedDaemonConfig, error](config)
+	return foundation.Ok[DaemonConfig, error](config)
 }

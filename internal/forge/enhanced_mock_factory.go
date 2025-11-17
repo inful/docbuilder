@@ -133,7 +133,7 @@ func CreateMockForgejoOrg(name string) *Organization {
 // Bulk Repository Creation Functions
 
 // CreateMockRepositorySet creates a set of repositories for testing
-func CreateMockRepositorySet(forgeType ForgeType, orgName string, count int) []*Repository {
+func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repository {
 	repos := make([]*Repository, count)
 
 	for i := 0; i < count; i++ {
@@ -142,11 +142,11 @@ func CreateMockRepositorySet(forgeType ForgeType, orgName string, count int) []*
 		isPrivate := i%5 == 0 // Every 5th is private
 
 		switch forgeType {
-		case ForgeTypeGitHub:
+		case TypeGitHub:
 			repos[i] = CreateMockGitHubRepo(orgName, repoName, hasDocs, isPrivate, false, false)
-		case ForgeTypeGitLab:
+		case TypeGitLab:
 			repos[i] = CreateMockGitLabRepo(orgName, repoName, hasDocs, isPrivate, false, false)
-		case ForgeTypeForgejo:
+		case TypeForgejo:
 			repos[i] = CreateMockForgejoRepo(orgName, repoName, hasDocs, isPrivate, false, false)
 		default:
 			// Generic repository
@@ -175,7 +175,7 @@ type EnhancedMockBuilder struct {
 }
 
 // NewEnhancedMockBuilder creates a new builder
-func NewEnhancedMockBuilder(name string, forgeType ForgeType) *EnhancedMockBuilder {
+func NewEnhancedMockBuilder(name string, forgeType Type) *EnhancedMockBuilder {
 	return &EnhancedMockBuilder{
 		mock: NewEnhancedMockForgeClient(name, forgeType),
 	}
@@ -224,7 +224,7 @@ func (b *EnhancedMockBuilder) Build() *EnhancedMockForgeClient {
 
 // CreateRealisticGitHubMock creates a GitHub mock with realistic data
 func CreateRealisticGitHubMock(name string) *EnhancedMockForgeClient {
-	return NewEnhancedMockBuilder(name, ForgeTypeGitHub).
+	return NewEnhancedMockBuilder(name, TypeGitHub).
 		WithOrganizations(CreateMockGitHubOrg("company")).
 		WithRepositories(
 			CreateMockGitHubRepo("company", "docs", true, false, false, false),
@@ -236,7 +236,7 @@ func CreateRealisticGitHubMock(name string) *EnhancedMockForgeClient {
 
 // CreateRealisticGitLabMock creates a GitLab mock with realistic data
 func CreateRealisticGitLabMock(name string) *EnhancedMockForgeClient {
-	return NewEnhancedMockBuilder(name, ForgeTypeGitLab).
+	return NewEnhancedMockBuilder(name, TypeGitLab).
 		WithOrganizations(CreateMockGitLabGroup("team")).
 		WithRepositories(
 			CreateMockGitLabRepo("team", "documentation", true, false, false, false),
@@ -248,7 +248,7 @@ func CreateRealisticGitLabMock(name string) *EnhancedMockForgeClient {
 
 // CreateRealisticForgejoMock creates a Forgejo mock with realistic data
 func CreateRealisticForgejoMock(name string) *EnhancedMockForgeClient {
-	return NewEnhancedMockBuilder(name, ForgeTypeForgejo).
+	return NewEnhancedMockBuilder(name, TypeForgejo).
 		WithOrganizations(CreateMockForgejoOrg("self-hosted")).
 		WithRepositories(
 			CreateMockForgejoRepo("self-hosted", "runbooks", true, false, false, false),

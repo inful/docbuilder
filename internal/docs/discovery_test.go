@@ -43,7 +43,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 
 	for path, content := range testFiles {
 		fullPath := filepath.Join(repoDir, path)
-		err := os.WriteFile(fullPath, []byte(content), 0644)
+		err := os.WriteFile(fullPath, []byte(content), 0600)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,7 +157,7 @@ func TestForgeNamespacingModes(t *testing.T) {
 		if err := os.MkdirAll(docsDir, 0o755); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); err != nil {
 			t.Fatalf("write: %v", err)
 		}
 		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": forgeType}}, repoDir
@@ -224,7 +224,7 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 		if err := os.MkdirAll(docsDir, 0o755); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); err != nil {
 			t.Fatalf("write: %v", err)
 		}
 		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": "github"}}, repoDir
@@ -310,7 +310,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 					t.Fatalf("Failed to create dir for %s: %v", fullPath, err)
 				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 					t.Fatalf("Failed to write file %s: %v", fullPath, err)
 				}
 			}
@@ -359,7 +359,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 	t.Run("MultiPlatformDiscoveryValidation", func(t *testing.T) {
 		// Test discovery across different forge platforms
-		factory := testforge.NewTestForgeFactory()
+		factory := testforge.NewFactory()
 
 		githubForge := factory.CreateGitHubTestForge("discovery-github")
 		gitlabForge := factory.CreateGitLabTestForge("discovery-gitlab")
@@ -477,7 +477,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 					t.Fatalf("Failed to create dir for %s: %v", fullPath, err)
 				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 					t.Fatalf("Failed to write file %s: %v", fullPath, err)
 				}
 			}
@@ -623,7 +623,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
 					t.Fatalf("Failed to create dir: %v", err)
 				}
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 					t.Fatalf("Failed to write file: %v", err)
 				}
 			}
@@ -756,7 +756,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 			for path, content := range docFiles {
 				fullPath := filepath.Join(repoDir, path)
-				if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
 					t.Fatalf("Failed to write file: %v", err)
 				}
 			}

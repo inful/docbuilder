@@ -65,7 +65,8 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, r.binaryPath, args...)
+	// r.binaryPath and args are test-controlled inputs. This is acceptable in test harness.
+	cmd := exec.CommandContext(ctx, r.binaryPath, args...) //nolint:gosec // test runner intentionally executes built binary
 	if r.workingDir != "" {
 		cmd.Dir = r.workingDir
 	}
@@ -194,7 +195,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	// Always attempt to build the docbuilder binary at the requested path so
 	// tests use the latest source. If build fails, we fall back to the path
 	// so that a prebuilt binary (if present) might still be used.
-	buildCmd := exec.Command("go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder")
+	buildCmd := exec.Command("go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder") //nolint:gosec // building test binary
 	buildCmd.Env = os.Environ()
 	if out, err := buildCmd.CombinedOutput(); err != nil {
 		env.t.Logf("Failed to build docbuilder binary at %s: %v\n%s", absPath, err, string(out))

@@ -71,7 +71,7 @@ func addFileAndCommit(repo *git.Repository, repoPath, filename, content, msg str
 		return plumbing.Hash{}, err
 	}
 	full := filepath.Join(repoPath, filename)
-	if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(full, []byte(content), 0o600); err != nil {
 		return plumbing.Hash{}, err
 	}
 	if _, err := wt.Add(filename); err != nil {

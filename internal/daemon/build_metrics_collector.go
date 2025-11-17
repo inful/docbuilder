@@ -141,7 +141,7 @@ func (bmc *BuildMetricsCollectorImpl) countRepositoryDocuments(
 func (bmc *BuildMetricsCollectorImpl) countMarkdownFiles(root string) int {
 	count := 0
 
-	if werr := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	if werr := filepath.WalkDir(root, func(_ string, d os.DirEntry, err error) error {
 		if err != nil || d == nil || d.IsDir() {
 			return nil
 		}

@@ -36,8 +36,8 @@ func TestEnhancedIntegrationSummary(t *testing.T) {
 			t.Errorf("Client name = %s, want enhanced-github", client.GetName())
 		}
 
-		if client.GetType() != ForgeTypeGitHub {
-			t.Errorf("Client type = %s, want %s", client.GetType(), ForgeTypeGitHub)
+		if client.GetType() != TypeGitHub {
+			t.Errorf("Client type = %s, want %s", client.GetType(), TypeGitHub)
 		}
 
 		t.Log("✓ Enhanced ForgeManager creation and configuration works")
@@ -92,7 +92,7 @@ func TestEnhancedIntegrationSummary(t *testing.T) {
 
 	// Test failure mode simulation
 	t.Run("EnhancedMockForgeClient_FailureModes", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("failure-test", ForgeTypeGitHub)
+		client := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
 		ctx := context.Background()
 
 		// Test authentication failure
@@ -196,7 +196,7 @@ func TestEnhancedIntegrationSummary(t *testing.T) {
 
 	// Test enhanced webhook functionality
 	t.Run("EnhancedWebhookFunctionality", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("webhook-test", ForgeTypeGitHub).
+		client := NewEnhancedMockForgeClient("webhook-test", TypeGitHub).
 			WithWebhookSecret("advanced-secret")
 
 		payload := []byte(`{"ref": "refs/heads/main", "commits": [{"id": "abc123"}]}`)
@@ -330,7 +330,7 @@ func TestEnhancedIntegrationSummary(t *testing.T) {
 
 	// Test performance characteristics
 	t.Run("PerformanceAndResilience", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("perf-test", ForgeTypeGitHub).
+		client := NewEnhancedMockForgeClient("perf-test", TypeGitHub).
 			WithDelay(10 * time.Millisecond) // Small delay for testing
 
 		// Add many organizations and repositories

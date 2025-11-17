@@ -234,7 +234,7 @@ func (d *Daemon) checkStorageHealth() HealthCheck {
 }
 
 // EnhancedHealthHandler serves detailed health information
-func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, r *http.Request) {
+func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, _ *http.Request) {
 	health := d.PerformHealthChecks()
 
 	w.Header().Set("Content-Type", "application/json")

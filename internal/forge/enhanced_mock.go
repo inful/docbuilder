@@ -13,7 +13,7 @@ import (
 // This is the production-ready version of the enhanced mock system developed in Phase 1 & 2
 type EnhancedMockForgeClient struct {
 	name          string
-	forgeType     ForgeType
+	forgeType     Type
 	repositories  []*Repository
 	organizations []*Organization
 
@@ -38,7 +38,7 @@ type RateLimitConfig struct {
 }
 
 // NewEnhancedMockForgeClient creates a new enhanced mock forge client
-func NewEnhancedMockForgeClient(name string, forgeType ForgeType) *EnhancedMockForgeClient {
+func NewEnhancedMockForgeClient(name string, forgeType Type) *EnhancedMockForgeClient {
 	return &EnhancedMockForgeClient{
 		name:          name,
 		forgeType:     forgeType,
@@ -49,7 +49,7 @@ func NewEnhancedMockForgeClient(name string, forgeType ForgeType) *EnhancedMockF
 
 // NewEnhancedGitHubMock creates a pre-configured GitHub mock with realistic defaults
 func NewEnhancedGitHubMock(name string) *EnhancedMockForgeClient {
-	mock := NewEnhancedMockForgeClient(name, ForgeTypeGitHub)
+	mock := NewEnhancedMockForgeClient(name, TypeGitHub)
 
 	// Add default GitHub organization
 	mock.AddOrganization(&Organization{
@@ -67,7 +67,7 @@ func NewEnhancedGitHubMock(name string) *EnhancedMockForgeClient {
 
 // NewEnhancedGitLabMock creates a pre-configured GitLab mock with realistic defaults
 func NewEnhancedGitLabMock(name string) *EnhancedMockForgeClient {
-	mock := NewEnhancedMockForgeClient(name, ForgeTypeGitLab)
+	mock := NewEnhancedMockForgeClient(name, TypeGitLab)
 
 	// Add default GitLab group
 	mock.AddOrganization(&Organization{
@@ -85,7 +85,7 @@ func NewEnhancedGitLabMock(name string) *EnhancedMockForgeClient {
 
 // NewEnhancedForgejoMock creates a pre-configured Forgejo mock with realistic defaults
 func NewEnhancedForgejoMock(name string) *EnhancedMockForgeClient {
-	mock := NewEnhancedMockForgeClient(name, ForgeTypeForgejo)
+	mock := NewEnhancedMockForgeClient(name, TypeForgejo)
 
 	// Add default Forgejo organization
 	mock.AddOrganization(&Organization{
@@ -171,7 +171,7 @@ func (m *EnhancedMockForgeClient) ClearFailures() {
 // ForgeClient Interface Implementation
 
 // GetType returns the forge type
-func (m *EnhancedMockForgeClient) GetType() ForgeType {
+func (m *EnhancedMockForgeClient) GetType() Type {
 	return m.forgeType
 }
 
@@ -181,7 +181,7 @@ func (m *EnhancedMockForgeClient) GetName() string {
 }
 
 // ListOrganizations returns mock organizations with failure simulation
-func (m *EnhancedMockForgeClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
+func (m *EnhancedMockForgeClient) ListOrganizations(_ context.Context) ([]*Organization, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func (m *EnhancedMockForgeClient) ListOrganizations(ctx context.Context) ([]*Org
 }
 
 // ListRepositories returns mock repositories with failure simulation
-func (m *EnhancedMockForgeClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
+func (m *EnhancedMockForgeClient) ListRepositories(_ context.Context, organizations []string) ([]*Repository, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (m *EnhancedMockForgeClient) ListRepositories(ctx context.Context, organiza
 }
 
 // GetRepository returns a specific repository
-func (m *EnhancedMockForgeClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
+func (m *EnhancedMockForgeClient) GetRepository(_ context.Context, owner, repo string) (*Repository, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (m *EnhancedMockForgeClient) GetRepository(ctx context.Context, owner, repo
 }
 
 // CheckDocumentation checks if repository has documentation
-func (m *EnhancedMockForgeClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
+func (m *EnhancedMockForgeClient) CheckDocumentation(_ context.Context, _ *Repository) error {
 	if err := m.simulateFailures(); err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (m *EnhancedMockForgeClient) CheckDocumentation(ctx context.Context, repo *
 }
 
 // ValidateWebhook validates webhook signatures
-func (m *EnhancedMockForgeClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
+func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature string, secret string) bool {
 	// Empty signature should fail
 	if signature == "" {
 		return false
@@ -251,7 +251,7 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(payload []byte, signature stri
 
 	// Simulate platform-specific validation
 	switch m.forgeType {
-	case ForgeTypeGitHub:
+	case TypeGitHub:
 		// GitHub uses HMAC-SHA256 with 'sha256=' prefix, but also supports SHA1
 		// For testing, we accept both "sha256=valid-signature" and "sha1=valid-signature" with correct secret
 		validSignature := signature == "sha256=valid-signature" || signature == "sha1=valid-signature"
@@ -264,14 +264,14 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(payload []byte, signature stri
 		correctSecret := secret == expectedSecret
 
 		return validSignature && correctSecret
-	case ForgeTypeGitLab:
+	case TypeGitLab:
 		// GitLab uses token-based validation - signature IS the token
 		expectedSecret := secret
 		if m.webhookSecret != "" {
 			expectedSecret = m.webhookSecret
 		}
 		return signature == expectedSecret
-	case ForgeTypeForgejo:
+	case TypeForgejo:
 		// Forgejo uses HMAC-SHA1 similar to Gitea
 		// For testing, we accept valid signatures with correct secret
 		validSignature := signature != "sha256=invalid"
@@ -287,7 +287,7 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(payload []byte, signature stri
 }
 
 // ParseWebhookEvent parses webhook events
-func (m *EnhancedMockForgeClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
+func (m *EnhancedMockForgeClient) ParseWebhookEvent(_ []byte, eventType string) (*WebhookEvent, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (m *EnhancedMockForgeClient) ParseWebhookEvent(payload []byte, eventType st
 }
 
 // RegisterWebhook registers webhooks (mock implementation)
-func (m *EnhancedMockForgeClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
+func (m *EnhancedMockForgeClient) RegisterWebhook(_ context.Context, _ *Repository, webhookURL string) error {
 	if err := m.simulateFailures(); err != nil {
 		return err
 	}
@@ -362,11 +362,11 @@ func (m *EnhancedMockForgeClient) RegisterWebhook(ctx context.Context, repo *Rep
 // GetEditURL generates platform-specific edit URLs
 func (m *EnhancedMockForgeClient) GetEditURL(repo *Repository, filePath string, branch string) string {
 	switch m.forgeType {
-	case ForgeTypeGitHub:
+	case TypeGitHub:
 		return fmt.Sprintf("https://github.com/%s/edit/%s/%s", repo.FullName, branch, filePath)
-	case ForgeTypeGitLab:
+	case TypeGitLab:
 		return fmt.Sprintf("https://gitlab.com/%s/-/edit/%s/%s", repo.FullName, branch, filePath)
-	case ForgeTypeForgejo:
+	case TypeForgejo:
 		return fmt.Sprintf("https://git.example.com/%s/_edit/%s/%s", repo.FullName, branch, filePath)
 	default:
 		return fmt.Sprintf("https://forge.example.com/%s/edit/%s/%s", repo.FullName, branch, filePath)
@@ -376,17 +376,17 @@ func (m *EnhancedMockForgeClient) GetEditURL(repo *Repository, filePath string, 
 // Configuration Generation
 
 // GenerateForgeConfig generates a complete forge configuration
-func (m *EnhancedMockForgeClient) GenerateForgeConfig() *ForgeConfig {
+func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 	var apiURL, baseURL string
 
 	switch m.forgeType {
-	case ForgeTypeGitHub:
+	case TypeGitHub:
 		apiURL = "https://api.github.com"
 		baseURL = "https://github.com"
-	case ForgeTypeGitLab:
+	case TypeGitLab:
 		apiURL = "https://gitlab.com/api/v4"
 		baseURL = "https://gitlab.com"
-	case ForgeTypeForgejo:
+	case TypeForgejo:
 		apiURL = "https://git.example.com/api/v1"
 		baseURL = "https://git.example.com"
 	default:
@@ -394,9 +394,9 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *ForgeConfig {
 		baseURL = fmt.Sprintf("https://%s.example.com", m.name)
 	}
 
-	return &ForgeConfig{
+	return &Config{
 		Name:    m.name,
-		Type:    ForgeType(m.forgeType),
+		Type:    Type(m.forgeType),
 		APIURL:  apiURL,
 		BaseURL: baseURL,
 		Organizations: func() []string {
@@ -437,11 +437,11 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 	// Simulate network timeout
 	if m.networkTimeout > 0 && m.networkTimeout < time.Millisecond*100 {
 		switch m.forgeType {
-		case ForgeTypeGitHub:
+		case TypeGitHub:
 			return fmt.Errorf("network timeout: connection to https://api.github.com timed out")
-		case ForgeTypeGitLab:
+		case TypeGitLab:
 			return fmt.Errorf("network timeout: connection to https://gitlab.com/api/v4 timed out")
-		case ForgeTypeForgejo:
+		case TypeForgejo:
 			return fmt.Errorf("network timeout: connection to https://forgejo.org/api/v1 timed out")
 		default:
 			return fmt.Errorf("network timeout after %v", m.networkTimeout)

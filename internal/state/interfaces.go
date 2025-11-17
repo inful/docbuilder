@@ -134,9 +134,9 @@ type ListOptions struct {
 	Filter map[string]any            `json:"filter"`
 }
 
-// StateStore is the main interface that aggregates all storage concerns.
+// Store is the main interface that aggregates all storage concerns.
 // This replaces the monolithic StateManager with focused, composable stores.
-type StateStore interface {
+type Store interface {
 	// Repository operations
 	Repositories() RepositoryStore
 
@@ -156,7 +156,7 @@ type StateStore interface {
 	DaemonInfo() DaemonInfoStore
 
 	// Transaction operations
-	WithTransaction(ctx context.Context, fn func(StateStore) error) foundation.Result[struct{}, error]
+	WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error]
 
 	// Health and lifecycle
 	Health(ctx context.Context) foundation.Result[StoreHealth, error]
@@ -172,18 +172,18 @@ type StoreHealth struct {
 	CheckedAt   time.Time  `json:"checked_at"`
 }
 
-// StateManager orchestrates state operations across multiple stores.
-// This is a much smaller, focused component compared to the original 620-line StateManager.
-type StateManager struct {
-	store        StateStore
+// Manager orchestrates state operations across multiple stores.
+// This is a much smaller, focused component compared to the original 620-line Manager.
+type Manager struct {
+	store        Store
 	autoSave     bool
 	saveInterval time.Duration
 	lastSaved    foundation.Option[time.Time]
 }
 
-// NewStateManager creates a new state manager with the given store.
-func NewStateManager(store StateStore) *StateManager {
-	return &StateManager{
+// NewManager creates a new state manager with the given store.
+func NewManager(store Store) *Manager {
+	return &Manager{
 		store:        store,
 		autoSave:     true,
 		saveInterval: 5 * time.Second,
@@ -192,24 +192,24 @@ func NewStateManager(store StateStore) *StateManager {
 }
 
 // WithAutoSave configures automatic saving.
-func (sm *StateManager) WithAutoSave(enabled bool, interval time.Duration) *StateManager {
+func (sm *Manager) WithAutoSave(enabled bool, interval time.Duration) *Manager {
 	sm.autoSave = enabled
 	sm.saveInterval = interval
 	return sm
 }
 
 // GetRepository retrieves repository state by URL.
-func (sm *StateManager) GetRepository(ctx context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
+func (sm *Manager) GetRepository(ctx context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
 	return sm.store.Repositories().GetByURL(ctx, url)
 }
 
 // IncrementRepoBuild increments build counters for a repository.
-func (sm *StateManager) IncrementRepoBuild(ctx context.Context, url string, success bool) foundation.Result[struct{}, error] {
+func (sm *Manager) IncrementRepoBuild(ctx context.Context, url string, success bool) foundation.Result[struct{}, error] {
 	return sm.store.Repositories().IncrementBuildCount(ctx, url, success)
 }
 
 // RecordBuild records a build operation.
-func (sm *StateManager) RecordBuild(ctx context.Context, build *Build) foundation.Result[*Build, error] {
+func (sm *Manager) RecordBuild(ctx context.Context, build *Build) foundation.Result[*Build, error] {
 	// Validate the build
 	if validationResult := build.Validate(); !validationResult.Valid {
 		return foundation.Err[*Build, error](validationResult.ToError())
@@ -233,39 +233,39 @@ func (sm *StateManager) RecordBuild(ctx context.Context, build *Build) foundatio
 }
 
 // GetStatistics retrieves current daemon statistics.
-func (sm *StateManager) GetStatistics(ctx context.Context) foundation.Result[*Statistics, error] {
+func (sm *Manager) GetStatistics(ctx context.Context) foundation.Result[*Statistics, error] {
 	return sm.store.Statistics().Get(ctx)
 }
 
 // Health returns the health status of the state management system.
-func (sm *StateManager) Health(ctx context.Context) foundation.Result[StoreHealth, error] {
+func (sm *Manager) Health(ctx context.Context) foundation.Result[StoreHealth, error] {
 	return sm.store.Health(ctx)
 }
 
 // Close gracefully shuts down the state manager.
-func (sm *StateManager) Close(ctx context.Context) foundation.Result[struct{}, error] {
+func (sm *Manager) Close(ctx context.Context) foundation.Result[struct{}, error] {
 	return sm.store.Close(ctx)
 }
 
 // IsLoaded returns whether the state manager is properly initialized.
-func (sm *StateManager) IsLoaded() bool {
+func (sm *Manager) IsLoaded() bool {
 	// For this interface-based design, we consider it loaded if we have a store
 	return sm.store != nil
 }
 
 // LastSaved returns the last time state was saved.
-func (sm *StateManager) LastSaved() *time.Time {
+func (sm *Manager) LastSaved() *time.Time {
 	return sm.lastSaved.ToPointer()
 }
 
 // Load is a no-op in this design since loading is handled by the store implementation.
-func (sm *StateManager) Load() error {
+func (sm *Manager) Load() error {
 	// In the interface-based design, loading is handled by the concrete store
 	return nil
 }
 
 // Save is a no-op in this design since saving is handled automatically by stores.
-func (sm *StateManager) Save() error {
+func (sm *Manager) Save() error {
 	sm.lastSaved = foundation.Some(time.Now())
 	return nil
 }

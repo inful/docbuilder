@@ -2,7 +2,7 @@ package forge
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- SHA-1 needed for testing legacy webhook signatures
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -12,7 +12,7 @@ import (
 
 func TestGitHubWebhookValidation(t *testing.T) {
 	client := &GitHubClient{}
-	secret := "test-secret-key"
+	secret := "test-secret-key" //nolint:gosec // test secret for webhook validation
 
 	// Test valid signature
 	payload := `{"action":"push","repository":{"name":"test-repo","full_name":"test-org/test-repo"}}`
@@ -40,7 +40,7 @@ func TestGitHubWebhookValidation(t *testing.T) {
 	}
 
 	// Test SHA-1 fallback
-	mac1 := hmac.New(sha1.New, []byte(secret))
+	mac1 := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- exercising legacy SHA-1 fallback path for compatibility
 	mac1.Write([]byte(payload))
 	signatureSHA1 := "sha1=" + hex.EncodeToString(mac1.Sum(nil))
 
@@ -52,7 +52,7 @@ func TestGitHubWebhookValidation(t *testing.T) {
 
 func TestGitLabWebhookValidation(t *testing.T) {
 	client := &GitLabClient{}
-	secret := "gitlab-secret-token"
+	secret := "gitlab-secret-token" //nolint:gosec // test token for webhook validation
 
 	payload := `{"event_type":"push","project":{"name":"test-project","path_with_namespace":"test-group/test-project"}}`
 
@@ -77,7 +77,7 @@ func TestGitLabWebhookValidation(t *testing.T) {
 
 func TestForgejoWebhookValidation(t *testing.T) {
 	client := &ForgejoClient{}
-	secret := "forgejo-hmac-secret"
+	secret := "forgejo-hmac-secret" //nolint:gosec // test secret for webhook validation
 
 	payload := `{"action":"push","repository":{"name":"test-repo","full_name":"test-org/test-repo"}}`
 

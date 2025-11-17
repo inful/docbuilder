@@ -131,8 +131,8 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 	// Test failure scenarios in discovery workflow
 	t.Run("EnhancedDiscoveryFailureScenarios", func(t *testing.T) {
-		github := NewEnhancedMockForgeClient("failure-github", ForgeTypeGitHub)
-		gitlab := NewEnhancedMockForgeClient("failure-gitlab", ForgeTypeGitLab)
+		github := NewEnhancedMockForgeClient("failure-github", TypeGitHub)
+		gitlab := NewEnhancedMockForgeClient("failure-gitlab", TypeGitLab)
 
 		manager := NewForgeManager()
 		manager.AddForge(github.GenerateForgeConfig(), github)

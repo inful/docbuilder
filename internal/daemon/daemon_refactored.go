@@ -78,7 +78,7 @@ func (d *RefactoredDaemon) registerServices() error {
 	}
 
 	// Create and register the state service
-	stateServiceResult := state.NewStateService(stateDataDir)
+	stateServiceResult := state.NewService(stateDataDir)
 	if stateServiceResult.IsErr() {
 		return fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
 	}
@@ -165,8 +165,8 @@ func (d *RefactoredDaemon) Stop(ctx context.Context) error {
 }
 
 // GetStatus returns the current daemon status.
-func (d *RefactoredDaemon) GetStatus() DaemonStatus {
-	return d.status.Load().(DaemonStatus)
+func (d *RefactoredDaemon) GetStatus() Status {
+	return d.status.Load().(Status)
 }
 
 // GetServiceInfo returns information about all managed services.

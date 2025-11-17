@@ -24,6 +24,7 @@ func (g *Generator) generateBasicLayouts() error {
 			return err
 		}
 
+		// #nosec G306 -- layout templates are public assets
 		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
 			return err
 		}

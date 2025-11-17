@@ -16,7 +16,7 @@ func TestRealForgeIntegration(t *testing.T) {
 	// Test single forge repository discovery
 	t.Run("SingleForgeRepositoryDiscovery", func(t *testing.T) {
 		// Create a mock forge with realistic repositories
-		mockForge := NewMockForgeClient("test-github", ForgeTypeGitHub)
+		mockForge := NewMockForgeClient("test-github", TypeGitHub)
 
 		// Add an organization
 		mockForge.AddOrganization(&Organization{
@@ -146,7 +146,7 @@ func TestRealForgeIntegration(t *testing.T) {
 	// Test multiple forges working together
 	t.Run("MultiForgeDiscovery", func(t *testing.T) {
 		// Create GitHub mock forge
-		githubMock := NewMockForgeClient("github", ForgeTypeGitHub)
+		githubMock := NewMockForgeClient("github", TypeGitHub)
 		githubMock.AddOrganization(&Organization{
 			ID:   "github-org",
 			Name: "github-org",
@@ -163,7 +163,7 @@ func TestRealForgeIntegration(t *testing.T) {
 		})
 
 		// Create GitLab mock forge
-		gitlabMock := NewMockForgeClient("gitlab", ForgeTypeGitLab)
+		gitlabMock := NewMockForgeClient("gitlab", TypeGitLab)
 		gitlabMock.AddOrganization(&Organization{
 			ID:   "gitlab-group",
 			Name: "gitlab-group",
@@ -250,7 +250,7 @@ func TestRealForgeIntegration(t *testing.T) {
 
 	// Test filtering functionality
 	t.Run("RepositoryFiltering", func(t *testing.T) {
-		mockForge := NewMockForgeClient("test-filtering", ForgeTypeGitHub)
+		mockForge := NewMockForgeClient("test-filtering", TypeGitHub)
 
 		mockForge.AddOrganization(&Organization{
 			ID:   "test-org",
@@ -321,7 +321,7 @@ func TestRealForgeIntegration(t *testing.T) {
 	// Test error handling
 	t.Run("ForgeErrorHandling", func(t *testing.T) {
 		// Create a mock forge that will return errors
-		errorMock := NewMockForgeClient("error-forge", ForgeTypeGitHub)
+		errorMock := NewMockForgeClient("error-forge", TypeGitHub)
 		errorMock.SetError("ListRepositories", fmt.Errorf("network error"))
 
 		forgeConfig := &config.ForgeConfig{

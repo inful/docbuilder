@@ -20,7 +20,7 @@ func addSimpleCommit(t *testing.T, repo *git.Repository, repoPath, name string) 
 		t.Fatalf("worktree: %v", err)
 	}
 	file := filepath.Join(repoPath, name)
-	if err := os.WriteFile(file, []byte(name), 0o644); err != nil {
+	if err := os.WriteFile(file, []byte(name), 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	if _, err := wt.Add(name); err != nil {

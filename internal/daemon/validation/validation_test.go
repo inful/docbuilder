@@ -38,6 +38,7 @@ func (f *fakeSkipState) SetLastGlobalDocFilesHash(s string)  { f.lastGlobalDocFi
 
 // Test helpers
 func newTestGenerator(t *testing.T, cfg *cfg.Config, outDir string) *hugo.Generator {
+	t.Helper()
 	return hugo.NewGenerator(cfg, outDir)
 }
 
@@ -52,7 +53,7 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(outDir, "build-report.json"), b, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(outDir, "build-report.json"), b, 0o600); err != nil {
 		t.Fatalf("write report: %v", err)
 	}
 	sum := sha256.Sum256(b)
@@ -69,7 +70,7 @@ func setupValidTestEnvironment(t *testing.T, out string) {
 	if err := os.MkdirAll(pubDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("<html></html>"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("<html></html>"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -78,7 +79,7 @@ func setupValidTestEnvironment(t *testing.T, out string) {
 	if err := os.MkdirAll(contentDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(contentDir, "doc.md"), []byte("# hi"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(contentDir, "doc.md"), []byte("# hi"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -118,7 +119,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := BasicPrerequisitesRule{}
 
 		// Valid context
-		ctx := ValidationContext{
+		ctx := Context{
 			State:     &fakeSkipState{},
 			Generator: &hugo.Generator{},
 			Repos:     []cfg.Repository{{Name: "test"}},
@@ -146,7 +147,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid hash
 		hash := gen.ComputeConfigHashForPersistence()
 		st.lastConfigHash = hash
-		ctx := ValidationContext{State: st, Generator: gen}
+		ctx := Context{State: st, Generator: gen}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -169,10 +170,10 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.MkdirAll(pubDir, 0o755); err != nil {
 			t.Fatalf("mkdir public: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o600); err != nil {
 			t.Fatalf("write index.html: %v", err)
 		}
-		ctx := ValidationContext{OutDir: out}
+		ctx := Context{OutDir: out}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -191,7 +192,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := ContentIntegrityRule{}
 
 		// Skip when no previous files
-		ctx := ValidationContext{PrevReport: &PreviousReport{Files: 0}}
+		ctx := Context{PrevReport: &PreviousReport{Files: 0}}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success (skip), got failure: %s", result.Reason)
@@ -203,10 +204,10 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.MkdirAll(contentDir, 0o755); err != nil {
 			t.Fatalf("mkdir content: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o600); err != nil {
 			t.Fatalf("write test.md: %v", err)
 		}
-		ctx = ValidationContext{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
+		ctx = Context{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
 		result = rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -222,7 +223,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("all rules pass", func(t *testing.T) {
 		chain := NewRuleChain(successRule, successRule)
-		result := chain.Validate(ValidationContext{})
+		result := chain.Validate(Context{})
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -230,7 +231,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("early failure stops chain", func(t *testing.T) {
 		chain := NewRuleChain(successRule, failureRule, successRule)
-		result := chain.Validate(ValidationContext{})
+		result := chain.Validate(Context{})
 		if result.Passed {
 			t.Errorf("expected failure, got success")
 		}
@@ -248,7 +249,7 @@ type mockRule struct {
 
 func (m *mockRule) Name() string { return m.name }
 
-func (m *mockRule) Validate(ctx ValidationContext) ValidationResult {
+func (m *mockRule) Validate(_ Context) Result {
 	if m.shouldPass {
 		return Success()
 	}

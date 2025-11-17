@@ -73,7 +73,7 @@ func (t *FrontMatterParserV2) Configuration() TransformerConfiguration {
 }
 
 // CanTransform checks if this transformer can process the given page.
-func (t *FrontMatterParserV2) CanTransform(page *ContentPage, context *TransformContext) bool {
+func (t *FrontMatterParserV2) CanTransform(page *ContentPage, _ *TransformContext) bool {
 	if !t.config.Enabled {
 		return false
 	}
@@ -88,7 +88,7 @@ func (t *FrontMatterParserV2) RequiredContext() []string {
 }
 
 // Transform parses front matter from the page content.
-func (t *FrontMatterParserV2) Transform(page *ContentPage, context *TransformContext) (*TransformationResult, error) {
+func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) (*TransformationResult, error) {
 	startTime := time.Now()
 	result := NewTransformationResult()
 
@@ -227,7 +227,7 @@ func (t *FrontMatterBuilderV3) Configuration() TransformerConfiguration {
 }
 
 // CanTransform checks if this transformer can process the given page.
-func (t *FrontMatterBuilderV3) CanTransform(page *ContentPage, context *TransformContext) bool {
+func (t *FrontMatterBuilderV3) CanTransform(_ *ContentPage, _ *TransformContext) bool {
 	if !t.config.Enabled {
 		return false
 	}
@@ -357,7 +357,7 @@ func (t *EditLinkInjectorV3) Configuration() TransformerConfiguration {
 }
 
 // CanTransform checks if this transformer can process the given page.
-func (t *EditLinkInjectorV3) CanTransform(page *ContentPage, context *TransformContext) bool {
+func (t *EditLinkInjectorV3) CanTransform(page *ContentPage, _ *TransformContext) bool {
 	if !t.config.Enabled {
 		return false
 	}
@@ -499,7 +499,7 @@ func (t *ContentProcessorV2) Configuration() TransformerConfiguration {
 }
 
 // CanTransform checks if this transformer can process the given page.
-func (t *ContentProcessorV2) CanTransform(page *ContentPage, context *TransformContext) bool {
+func (t *ContentProcessorV2) CanTransform(page *ContentPage, _ *TransformContext) bool {
 	if !t.config.Enabled {
 		return false
 	}
@@ -518,7 +518,7 @@ func (t *ContentProcessorV2) RequiredContext() []string {
 }
 
 // Transform processes the content.
-func (t *ContentProcessorV2) Transform(page *ContentPage, context *TransformContext) (*TransformationResult, error) {
+func (t *ContentProcessorV2) Transform(page *ContentPage, _ *TransformContext) (*TransformationResult, error) {
 	startTime := time.Now()
 	result := NewTransformationResult()
 

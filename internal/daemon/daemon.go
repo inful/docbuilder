@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,15 +19,15 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
-// DaemonStatus represents the current state of the daemon
-type DaemonStatus string
+// Status represents the current state of the daemon
+type Status string
 
 const (
-	StatusStopped  DaemonStatus = "stopped"
-	StatusStarting DaemonStatus = "starting"
-	StatusRunning  DaemonStatus = "running"
-	StatusStopping DaemonStatus = "stopping"
-	StatusError    DaemonStatus = "error"
+	StatusStopped  Status = "stopped"
+	StatusStarting Status = "starting"
+	StatusRunning  Status = "running"
+	StatusStopping Status = "stopping"
+	StatusError    Status = "error"
 )
 
 // Daemon represents the main daemon service
@@ -38,7 +39,7 @@ type Daemon struct {
 	mu        sync.RWMutex
 
 	// Core components
-	forgeManager   *forge.ForgeManager
+	forgeManager   *forge.Manager
 	discovery      *forge.DiscoveryService
 	versionService *versioning.VersionService
 	configWatcher  *ConfigWatcher
@@ -320,8 +321,8 @@ func (d *Daemon) Stop(ctx context.Context) error {
 }
 
 // GetStatus returns the current daemon status
-func (d *Daemon) GetStatus() DaemonStatus {
-	status, ok := d.status.Load().(DaemonStatus)
+func (d *Daemon) GetStatus() Status {
+	status, ok := d.status.Load().(Status)
 	if !ok {
 		return StatusError
 	}
@@ -495,10 +496,16 @@ func (d *Daemon) updateStatus() {
 
 	// Update queue length from build queue
 	if d.buildQueue != nil {
-		atomic.StoreInt32(&d.queueLength, int32(d.buildQueue.Length()))
-	}
-
-	// Periodic state save
+		// Clamp to int32 range to avoid overflow warnings from linters and ensure atomic store safety
+		n := d.buildQueue.Length()
+		if n > math.MaxInt32 {
+			n = math.MaxInt32
+		} else if n < math.MinInt32 {
+			n = math.MinInt32
+		}
+		// #nosec G115 -- value is clamped to int32 range above
+		atomic.StoreInt32(&d.queueLength, int32(n))
+	} // Periodic state save
 	if d.stateManager != nil {
 		if err := d.stateManager.Save(); err != nil {
 			slog.Warn("Failed to save state", "error", err)
@@ -638,7 +645,7 @@ func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.Config) err
 }
 
 // reloadForgeManager updates the forge manager with new forge configurations
-func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *config.Config) error {
+func (d *Daemon) reloadForgeManager(_ context.Context, _, newConfig *config.Config) error {
 	// Create new forge manager
 	newForgeManager := forge.NewForgeManager()
 	for _, forgeConfig := range newConfig.Forges {
@@ -660,7 +667,7 @@ func (d *Daemon) reloadForgeManager(ctx context.Context, oldConfig, newConfig *c
 }
 
 // reloadVersionService updates the version service with new versioning configuration
-func (d *Daemon) reloadVersionService(ctx context.Context, oldConfig, newConfig *config.Config) error {
+func (d *Daemon) reloadVersionService(_ context.Context, _, newConfig *config.Config) error {
 	// Create new version configuration
 	versionConfig := &versioning.VersionConfig{
 		Strategy:    versioning.StrategyDefaultOnly,

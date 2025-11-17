@@ -114,7 +114,7 @@ func TestDeltaAnalyzer_QuickHashSingleRepoUnchanged(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoRoot, "docs"), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repoRoot, "docs", "intro.md"), []byte("# Intro"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoRoot, "docs", "intro.md"), []byte("# Intro"), 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
 	stored := computeQuickHash(t, repoRoot)
@@ -136,7 +136,7 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755); err != nil {
 		t.Fatalf("mkdir repoA: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o600); err != nil {
 		t.Fatalf("write a1: %v", err)
 	}
 	hashA := computeQuickHash(t, repoARoot)
@@ -147,11 +147,11 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755); err != nil {
 		t.Fatalf("mkdir repoB: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o600); err != nil {
 		t.Fatalf("write b1: %v", err)
 	}
 	hashB := computeQuickHash(t, repoBRoot)
-	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o600); err != nil {
 		t.Fatalf("write b2: %v", err)
 	}
 	st := &fakeDeltaState{perRepo: map[string]string{repoAURL: hashA, repoBURL: hashB}, commits: map[string]string{repoAURL: "c1", repoBURL: "c2"}}

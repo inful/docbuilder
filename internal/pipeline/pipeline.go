@@ -20,32 +20,32 @@ type Pipeline struct {
 	parallelized bool
 }
 
-// PipelineOption configures pipeline behavior.
-type PipelineOption func(*Pipeline)
+// Option configures pipeline behavior.
+type Option func(*Pipeline)
 
 // WithMiddleware adds middleware to the pipeline.
-func WithMiddleware(mw ...middleware.Middleware) PipelineOption {
+func WithMiddleware(mw ...middleware.Middleware) Option {
 	return func(p *Pipeline) {
 		p.middleware = append(p.middleware, mw...)
 	}
 }
 
 // WithStopOnError configures whether the pipeline stops on first error.
-func WithStopOnError(stop bool) PipelineOption {
+func WithStopOnError(stop bool) Option {
 	return func(p *Pipeline) {
 		p.stopOnError = stop
 	}
 }
 
 // WithParallel enables parallel execution of independent stages.
-func WithParallel(parallel bool) PipelineOption {
+func WithParallel(parallel bool) Option {
 	return func(p *Pipeline) {
 		p.parallelized = parallel
 	}
 }
 
 // NewPipeline creates a new stage pipeline.
-func NewPipeline(registry *commands.CommandRegistry, options ...PipelineOption) *Pipeline {
+func NewPipeline(registry *commands.CommandRegistry, options ...Option) *Pipeline {
 	p := &Pipeline{
 		registry:    registry,
 		stopOnError: true,

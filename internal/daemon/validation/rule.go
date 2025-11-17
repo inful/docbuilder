@@ -18,8 +18,8 @@ type SkipStateAccess interface {
 	SetLastGlobalDocFilesHash(string)
 }
 
-// ValidationContext contains all the data needed by validation rules.
-type ValidationContext struct {
+// Context contains all the data needed by validation rules.
+type Context struct {
 	OutDir     string
 	State      SkipStateAccess
 	Generator  *hugo.Generator
@@ -37,20 +37,20 @@ type PreviousReport struct {
 	RawData       []byte `json:"-"` // original JSON bytes for checksum
 }
 
-// ValidationResult indicates whether validation passed and provides context.
-type ValidationResult struct {
+// Result indicates whether validation passed and provides context.
+type Result struct {
 	Passed bool
 	Reason string // human-readable reason for failure
 }
 
 // Success returns a successful validation result.
-func Success() ValidationResult {
-	return ValidationResult{Passed: true}
+func Success() Result {
+	return Result{Passed: true}
 }
 
 // Failure returns a failed validation result with a reason.
-func Failure(reason string) ValidationResult {
-	return ValidationResult{Passed: false, Reason: reason}
+func Failure(reason string) Result {
+	return Result{Passed: false, Reason: reason}
 }
 
 // SkipValidationRule represents a single validation rule for skip evaluation.
@@ -59,8 +59,8 @@ type SkipValidationRule interface {
 	Name() string
 
 	// Validate checks if this rule allows skipping the build.
-	// Returns ValidationResult indicating pass/fail and optional reason.
-	Validate(ctx ValidationContext) ValidationResult
+	// Returns Result indicating pass/fail and optional reason.
+	Validate(ctx Context) Result
 }
 
 // RuleChain executes validation rules in sequence, stopping at the first failure.
@@ -74,7 +74,7 @@ func NewRuleChain(rules ...SkipValidationRule) *RuleChain {
 }
 
 // Validate executes all rules in order, returning the first failure or success if all pass.
-func (rc *RuleChain) Validate(ctx ValidationContext) ValidationResult {
+func (rc *RuleChain) Validate(ctx Context) Result {
 	for _, rule := range rc.rules {
 		result := rule.Validate(ctx)
 		if !result.Passed {

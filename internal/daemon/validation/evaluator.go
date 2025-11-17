@@ -48,7 +48,7 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 // Evaluate returns (report, true) when the build can be skipped, otherwise (nil, false).
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
 func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bool) {
-	ctx := ValidationContext{
+	ctx := Context{
 		OutDir:    se.outDir,
 		State:     se.state,
 		Generator: se.generator,
@@ -79,7 +79,7 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 }
 
 // validateAndPopulateContext runs the initial validation rules and populates the context.
-func (se *SkipEvaluator) validateAndPopulateContext(ctx *ValidationContext) bool {
+func (se *SkipEvaluator) validateAndPopulateContext(ctx *Context) bool {
 	initialRules := NewRuleChain(
 		BasicPrerequisitesRule{},
 		ConfigHashRule{},
@@ -96,7 +96,7 @@ func (se *SkipEvaluator) validateAndPopulateContext(ctx *ValidationContext) bool
 }
 
 // loadPreviousReport loads and validates the previous build report, populating the context.
-func (se *SkipEvaluator) loadPreviousReport(ctx *ValidationContext) bool {
+func (se *SkipEvaluator) loadPreviousReport(ctx *Context) bool {
 	prevPath := filepath.Join(ctx.OutDir, "build-report.json")
 	data, err := os.ReadFile(prevPath)
 	if err != nil {
@@ -133,7 +133,7 @@ func (se *SkipEvaluator) loadPreviousReport(ctx *ValidationContext) bool {
 }
 
 // constructSkipReport creates and persists a skip report based on the previous report data.
-func (se *SkipEvaluator) constructSkipReport(ctx ValidationContext) (*hugo.BuildReport, bool) {
+func (se *SkipEvaluator) constructSkipReport(ctx Context) (*hugo.BuildReport, bool) {
 	if ctx.PrevReport == nil {
 		slog.Warn("Cannot construct skip report: no previous report data")
 		return nil, false
@@ -170,7 +170,7 @@ func (se *SkipEvaluator) constructSkipReport(ctx ValidationContext) (*hugo.Build
 }
 
 // updateStateAfterSkip updates the state manager with current checksums after a successful skip.
-func (se *SkipEvaluator) updateStateAfterSkip(ctx ValidationContext, report *hugo.BuildReport) {
+func (se *SkipEvaluator) updateStateAfterSkip(ctx Context, report *hugo.BuildReport) {
 	// Update report checksum
 	if ctx.PrevReport != nil && len(ctx.PrevReport.RawData) > 0 {
 		prevPath := filepath.Join(se.outDir, "build-report.json")

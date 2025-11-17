@@ -12,7 +12,7 @@ type jsonStatisticsStore struct {
 	store *JSONStore
 }
 
-func (ss *jsonStatisticsStore) Get(ctx context.Context) foundation.Result[*Statistics, error] {
+func (ss *jsonStatisticsStore) Get(_ context.Context) foundation.Result[*Statistics, error] {
 	ss.store.mu.RLock()
 	defer ss.store.mu.RUnlock()
 
@@ -20,7 +20,7 @@ func (ss *jsonStatisticsStore) Get(ctx context.Context) foundation.Result[*Stati
 	return foundation.Ok[*Statistics, error](&statsCopy)
 }
 
-func (ss *jsonStatisticsStore) Update(ctx context.Context, stats *Statistics) foundation.Result[*Statistics, error] {
+func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foundation.Result[*Statistics, error] {
 	if stats == nil {
 		return foundation.Err[*Statistics, error](
 			foundation.ValidationError("statistics cannot be nil").Build(),
@@ -44,7 +44,7 @@ func (ss *jsonStatisticsStore) Update(ctx context.Context, stats *Statistics) fo
 	return foundation.Ok[*Statistics, error](stats)
 }
 
-func (ss *jsonStatisticsStore) RecordBuild(ctx context.Context, build *Build) foundation.Result[struct{}, error] {
+func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foundation.Result[struct{}, error] {
 	if build == nil {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("build cannot be nil").Build(),
@@ -73,7 +73,7 @@ func (ss *jsonStatisticsStore) RecordBuild(ctx context.Context, build *Build) fo
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (ss *jsonStatisticsStore) RecordDiscovery(ctx context.Context, documentCount int) foundation.Result[struct{}, error] {
+func (ss *jsonStatisticsStore) RecordDiscovery(_ context.Context, documentCount int) foundation.Result[struct{}, error] {
 	if documentCount < 0 {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("document count cannot be negative").Build(),
@@ -98,7 +98,7 @@ func (ss *jsonStatisticsStore) RecordDiscovery(ctx context.Context, documentCoun
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (ss *jsonStatisticsStore) Reset(ctx context.Context) foundation.Result[struct{}, error] {
+func (ss *jsonStatisticsStore) Reset(_ context.Context) foundation.Result[struct{}, error] {
 	ss.store.mu.Lock()
 	defer ss.store.mu.Unlock()
 
