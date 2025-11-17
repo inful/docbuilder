@@ -60,6 +60,13 @@ output: {}          # Output directory behavior
 | directory | string | ./site | Output root. |
 | clean | bool | true | Remove directory before build. |
 
+### Output Directory Unification
+
+- DocBuilder treats `output.directory` as the canonical output root for both direct builds and daemon mode.
+- In daemon mode, `daemon.storage.output_dir` must match `output.directory`. If not provided, it is derived from `output.directory`.
+- A validation check enforces this equality (after path normalization). Mismatches cause configuration loading to fail.
+- Recommendation: set only `output.directory`; avoid setting `daemon.storage.output_dir` unless absolutely necessary.
+
 ## Build Report Fields (Selected)
 
 | Field | Purpose |
@@ -74,6 +81,62 @@ output: {}          # Output directory behavior
 ## Environment Variable Expansion
 
 Values like `${GIT_ACCESS_TOKEN}` in YAML are expanded using the current process environment. `.env` and `.env.local` files are loaded automatically (last one wins on conflicts).
+
+## Health and Readiness Endpoints
+
+- Endpoints are exposed on both the docs port and the admin port.
+- `GET /health`: basic liveness endpoint; returns 200 when the server is responsive.
+- `GET /ready`: readiness endpoint tied to render state.
+  - Returns 200 only when `<output.directory>/public` exists.
+  - Returns 503 before the first successful render or if the public folder is missing.
+- When serving on the docs port, if the site is not yet rendered and the request path is `/`, DocBuilder returns a short 503 HTML placeholder indicating that the documentation is being prepared. This switches automatically to the rendered site once available.
+
+## Kubernetes Probes
+
+- Probe either the docs port or the admin port. Use `/ready` for readiness and `/health` for liveness.
+- Prefer probing `/ready` instead of the docs root `/`, since the root may return a temporary 503 placeholder before the first render.
+
+Example: probe the docs port (8080)
+
+```yaml
+containers:
+  - name: docbuilder
+    ports:
+      - containerPort: 8080 # docs
+      - containerPort: 8081 # webhooks
+      - containerPort: 8082 # admin
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8080
+      periodSeconds: 5
+      failureThreshold: 3
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 10
+```
+
+Example: probe the admin port (8082)
+
+```yaml
+containers:
+  - name: docbuilder
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8082
+      periodSeconds: 5
+      failureThreshold: 3
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8082
+      initialDelaySeconds: 5
+      periodSeconds: 10
+```
 
 ## Namespacing Behavior
 

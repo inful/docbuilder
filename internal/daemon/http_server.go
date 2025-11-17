@@ -226,7 +226,7 @@ func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Lis
 	mux := http.NewServeMux()
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
 	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
-	mux.HandleFunc("/ready", s.monitoringHandlers.HandleHealthCheck)
+	mux.HandleFunc("/ready", s.handleReadiness)
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
@@ -336,13 +336,40 @@ func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.
 	return nil
 }
 
+// handleReadiness returns 200 only when the rendered static site exists under <output.directory>/public.
+// Otherwise it returns 503 to signal not-yet-ready (e.g., first build pending or failed).
+func (s *HTTPServer) handleReadiness(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = w.Write([]byte("method not allowed"))
+		return
+	}
+	out := s.config.Output.Directory
+	if out == "" {
+		out = "./site"
+	}
+	if !filepath.IsAbs(out) {
+		if abs, err := filepath.Abs(out); err == nil {
+			out = abs
+		}
+	}
+	public := filepath.Join(out, "public")
+	if st, err := os.Stat(public); err == nil && st.IsDir() {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ready"))
+		return
+	}
+	w.WriteHeader(http.StatusServiceUnavailable)
+	_, _ = w.Write([]byte("not ready: public directory missing"))
+}
+
 func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Health check endpoint
 	mux.HandleFunc(s.config.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
-	// Readiness check endpoint (alias to health for Kubernetes compatibility)
-	mux.HandleFunc("/ready", s.monitoringHandlers.HandleHealthCheck)
+	// Readiness endpoint: only ready when a rendered site exists under <output>/public
+	mux.HandleFunc("/ready", s.handleReadiness)
 	// Add enhanced health check endpoint (if daemon is available)
 	if s.daemon != nil {
 		mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)

@@ -9,77 +9,77 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	// Create a temporary v2 config file
-	configContent := `version: "2.0"
-daemon:
-  http:
-    docs_port: 9000
-    webhook_port: 9001
-    admin_port: 9002
-  sync:
-    schedule: "0 */6 * * *"
-    concurrent_builds: 5
-    queue_size: 200
-  storage:
-    state_file: "./custom-state.json"
-    repo_cache_dir: "./custom-repos"
-    output_dir: "./custom-site"
-forges:
-  - name: test-github
-    type: github
-    api_url: https://api.github.com
-    base_url: https://github.com
-    organizations:
-      - test-org
-    auth:
-      type: token
-      token: test-token
-    webhook:
-      secret: test-secret
-      path: /webhooks/github
-      events:
-        - push
-        - repository
-filtering:
-  required_paths:
-    - docs
-    - documentation
-  ignore_files:
-    - .docignore
-    - .nodocs
-  include_patterns:
-    - "docs-*"
-    - "*-documentation"
-  exclude_patterns:
-    - "*-deprecated"
-    - "legacy-*"
-versioning:
-  strategy: branches_and_tags
-  default_branch_only: false
-  branch_patterns:
-    - main
-    - master
-    - release/*
-  tag_patterns:
-    - v*.*.*
-    - release-*
-  max_versions_per_repo: 15
-hugo:
-  title: Test Documentation
-  description: Test description
-  base_url: https://test.example.com
-  theme: hextra
-monitoring:
-  metrics:
-    enabled: true
-    path: /custom-metrics
-  health:
-    path: /custom-health
-  logging:
-    level: debug
-    format: text
-output:
-  directory: ./custom-output
-  clean: true`
+	configContent := "version: \"2.0\"\n" +
+		"daemon:\n" +
+		"  http:\n" +
+		"    docs_port: 9000\n" +
+		"    webhook_port: 9001\n" +
+		"    admin_port: 9002\n" +
+		"  sync:\n" +
+		"    schedule: \"0 */6 * * *\"\n" +
+		"    concurrent_builds: 5\n" +
+		"    queue_size: 200\n" +
+		"  storage:\n" +
+		"    state_file: \"./custom-state.json\"\n" +
+		"    repo_cache_dir: \"./custom-repos\"\n" +
+		"    output_dir: \"./custom-output\"\n" +
+		"forges:\n" +
+		"  - name: test-github\n" +
+		"    type: github\n" +
+		"    api_url: https://api.github.com\n" +
+		"    base_url: https://github.com\n" +
+		"    organizations:\n" +
+		"      - test-org\n" +
+		"    auth:\n" +
+		"      type: token\n" +
+		"      token: test-token\n" +
+		"    webhook:\n" +
+		"      secret: test-secret\n" +
+		"      path: /webhooks/github\n" +
+		"      events:\n" +
+		"        - push\n" +
+		"        - repository\n" +
+		"filtering:\n" +
+		"  required_paths:\n" +
+		"    - docs\n" +
+		"    - documentation\n" +
+		"  ignore_files:\n" +
+		"    - .docignore\n" +
+		"    - .nodocs\n" +
+		"  include_patterns:\n" +
+		"    - \"docs-*\"\n" +
+		"    - \"*-documentation\"\n" +
+		"  exclude_patterns:\n" +
+		"    - \"*-deprecated\"\n" +
+		"    - \"legacy-*\"\n" +
+		"versioning:\n" +
+		"  strategy: branches_and_tags\n" +
+		"  default_branch_only: false\n" +
+		"  branch_patterns:\n" +
+		"    - main\n" +
+		"    - master\n" +
+		"    - release/*\n" +
+		"  tag_patterns:\n" +
+		"    - v*.*.*\n" +
+		"    - release-*\n" +
+		"  max_versions_per_repo: 15\n" +
+		"hugo:\n" +
+		"  title: Test Documentation\n" +
+		"  description: Test description\n" +
+		"  base_url: https://test.example.com\n" +
+		"  theme: hextra\n" +
+		"monitoring:\n" +
+		"  metrics:\n" +
+		"    enabled: true\n" +
+		"    path: /custom-metrics\n" +
+		"  health:\n" +
+		"    path: /custom-health\n" +
+		"  logging:\n" +
+		"    level: debug\n" +
+		"    format: text\n" +
+		"output:\n" +
+		"  directory: ./custom-output\n" +
+		"  clean: true"
 
 	// Write to temporary file
 	tmpFile, err := os.CreateTemp("", "test-v2-config-*.yaml")

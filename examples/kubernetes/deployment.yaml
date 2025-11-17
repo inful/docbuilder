@@ -1,0 +1,234 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: docbuilder
+  labels:
+    app: docbuilder
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docbuilder-config
+  namespace: docbuilder
+data:
+  config.yaml: |
+    repositories:
+      - url: https://github.com/example/docs.git
+        name: example-docs
+        branch: main
+        paths: ["docs"]
+        auth:
+          type: token
+          token: "${GITHUB_TOKEN}"
+    
+    hugo:
+      title: "Documentation Site"
+      description: "Aggregated documentation from multiple repositories"
+      base_url: "https://docs.example.com"
+      theme: "hextra"
+      params:
+        navbar:
+          displayTitle: true
+        footer:
+          displayPoweredBy: true
+    
+    output:
+      directory: "/data/output"
+      clean: true
+    
+    build:
+      incremental: false
+      render_mode: "always"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: docbuilder-secrets
+  namespace: docbuilder
+type: Opaque
+stringData:
+  # Add your Git tokens here or use external secrets
+  GITHUB_TOKEN: "your-github-token-here"
+  # GITLAB_TOKEN: "your-gitlab-token-here"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docbuilder-output
+  namespace: docbuilder
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # Optional: specify storageClassName
+  # storageClassName: standard
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docbuilder
+  namespace: docbuilder
+  labels:
+    app: docbuilder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docbuilder
+  template:
+    metadata:
+      labels:
+        app: docbuilder
+    spec:
+      containers:
+      - name: docbuilder
+        image: git.home.luguber.info/inful/docbuilder:latest
+        imagePullPolicy: Always
+        args:
+          - "daemon"
+          - "--config"
+          - "/config/config.yaml"
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        - name: hugo
+          containerPort: 1313
+          protocol: TCP
+        env:
+        # Environment variables for authentication
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: docbuilder-secrets
+              key: GITHUB_TOKEN
+        # Optional: Add more environment variables as needed
+        # - name: GITLAB_TOKEN
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: docbuilder-secrets
+        #       key: GITLAB_TOKEN
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: output
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: config
+        configMap:
+          name: docbuilder-config
+      - name: output
+        persistentVolumeClaim:
+          claimName: docbuilder-output
+      # Optional: Use imagePullSecrets if using a private registry
+      # imagePullSecrets:
+      # - name: registry-credentials
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docbuilder
+  namespace: docbuilder
+  labels:
+    app: docbuilder
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  - name: hugo
+    port: 1313
+    targetPort: 1313
+    protocol: TCP
+  selector:
+    app: docbuilder
+
+---
+# Optional: Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docbuilder
+  namespace: docbuilder
+  annotations:
+    # Customize these annotations based on your ingress controller
+    # For nginx-ingress:
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx  # Adjust based on your ingress controller
+  rules:
+  - host: docs.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: docbuilder
+            port:
+              number: 8080
+  # Optional: TLS configuration
+  # tls:
+  # - hosts:
+  #   - docs.example.com
+  #   secretName: docbuilder-tls
+
+---
+# Optional: ServiceMonitor for Prometheus monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: docbuilder
+  namespace: docbuilder
+  labels:
+    app: docbuilder
+spec:
+  selector:
+    matchLabels:
+      app: docbuilder
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
