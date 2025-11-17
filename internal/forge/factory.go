@@ -7,7 +7,7 @@ import (
 )
 
 // NewForgeClient creates a new forge client based on the configuration
-func NewForgeClient(config *ForgeConfig) (ForgeClient, error) {
+func NewForgeClient(config *Config) (Client, error) {
 	switch config.Type {
 	case cfg.ForgeGitHub:
 		return NewGitHubClient(config)
@@ -21,7 +21,7 @@ func NewForgeClient(config *ForgeConfig) (ForgeClient, error) {
 }
 
 // CreateForgeManager creates a forge manager with the provided configurations
-func CreateForgeManager(configs []*ForgeConfig) (*ForgeManager, error) {
+func CreateForgeManager(configs []*Config) (*Manager, error) {
 	manager := NewForgeManager()
 
 	for _, config := range configs {

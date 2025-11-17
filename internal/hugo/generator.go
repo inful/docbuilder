@@ -14,8 +14,10 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"
+
+	// Import theme packages for registration side effects
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"  //nolint:revive // theme registration
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra" //nolint:revive // theme registration
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
@@ -32,7 +34,7 @@ type Generator struct {
 	observer       BuildObserver // high-level observer (decouples metrics recorder)
 	renderer       Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
-	cachedThemeFeatures *th.ThemeFeatures
+	cachedThemeFeatures *th.Features
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
 	// indexTemplateUsage captures which index template (main/repository/section) source was used
@@ -48,7 +50,7 @@ type Generator struct {
 func (g *Generator) activeTheme() th.Theme { return th.Get(g.config.Hugo.ThemeType()) }
 
 // deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
-func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
+func (g *Generator) deriveThemeFeatures() th.Features {
 	if g.cachedThemeFeatures != nil {
 		return *g.cachedThemeFeatures
 	}
@@ -57,7 +59,7 @@ func (g *Generator) deriveThemeFeatures() th.ThemeFeatures {
 		g.cachedThemeFeatures = &feats
 		return feats
 	}
-	feats := th.ThemeFeatures{Name: g.config.Hugo.ThemeType()}
+	feats := th.Features{Name: g.config.Hugo.ThemeType()}
 	g.cachedThemeFeatures = &feats
 	return feats
 }
@@ -117,7 +119,7 @@ func (g *Generator) existingSiteValidForSkip() bool {
 		return false
 	}
 	found := false
-	if werr := filepath.WalkDir(contentDir, func(p string, d fs.DirEntry, err error) error {
+	if werr := filepath.WalkDir(contentDir, func(_ string, d fs.DirEntry, err error) error {
 		if err != nil || found {
 			return nil
 		}

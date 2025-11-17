@@ -18,14 +18,14 @@ type BuildObserver interface {
 // NoopObserver is a no-op implementation.
 type NoopObserver struct{}
 
-func (NoopObserver) OnStageStart(stage StageName)                                    {}
-func (NoopObserver) OnStageComplete(stage StageName, d time.Duration, r StageResult) {}
-func (NoopObserver) OnBuildComplete(report *BuildReport)                             {}
+func (NoopObserver) OnStageStart(_ StageName)                                    {}
+func (NoopObserver) OnStageComplete(_ StageName, _ time.Duration, _ StageResult) {}
+func (NoopObserver) OnBuildComplete(_ *BuildReport)                              {}
 
 // recorderObserver adapts metrics.Recorder into a BuildObserver.
 type recorderObserver struct{ rec metrics.Recorder }
 
-func (r recorderObserver) OnStageStart(stage StageName) {}
+func (r recorderObserver) OnStageStart(_ StageName) {}
 func (r recorderObserver) OnStageComplete(stage StageName, d time.Duration, _ StageResult) {
 	if r.rec != nil {
 		r.rec.ObserveStageDuration(string(stage), d)

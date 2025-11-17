@@ -8,13 +8,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// ForgeType re-exports config.ForgeType for convenience within forge package.
-type ForgeType = config.ForgeType
+// Type re-exports config.Type for convenience within forge package.
+type Type = config.ForgeType
 
 const (
-	ForgeTypeGitHub  ForgeType = ForgeType(config.ForgeGitHub)
-	ForgeTypeGitLab  ForgeType = ForgeType(config.ForgeGitLab)
-	ForgeTypeForgejo ForgeType = ForgeType(config.ForgeForgejo)
+	TypeGitHub  Type = Type(config.ForgeGitHub)
+	TypeGitLab  Type = Type(config.ForgeGitLab)
+	TypeForgejo Type = Type(config.ForgeForgejo)
 )
 
 // Repository represents a repository discovered from a forge
@@ -46,18 +46,18 @@ type Organization struct {
 	Metadata    map[string]string `json:"metadata"`     // Additional forge-specific metadata
 }
 
-// ForgeConfig represents configuration for a specific forge instance
-// Note: This is now defined in config.ForgeConfig to avoid import cycles
-type ForgeConfig = config.ForgeConfig
+// Config represents configuration for a specific forge instance
+// Note: This is now defined in config.Config to avoid import cycles
+type Config = config.ForgeConfig
 
 // WebhookConfig represents webhook configuration for a forge
 // Note: This is now defined in config.WebhookConfig to avoid import cycles
 type WebhookConfig = config.WebhookConfig
 
-// ForgeClient interface defines the contract for forge platform clients
-type ForgeClient interface {
+// Client interface defines the contract for forge platform clients
+type Client interface {
 	// GetType returns the type of this forge
-	GetType() ForgeType
+	GetType() Type
 
 	// GetName returns the configured name of this forge instance
 	GetName() string
@@ -120,38 +120,38 @@ type WebhookCommit struct {
 	Removed   []string  `json:"removed"`
 }
 
-// ForgeManager manages multiple forge clients
-type ForgeManager struct {
-	clients map[string]ForgeClient
-	configs map[string]*ForgeConfig
+// Manager manages multiple forge clients
+type Manager struct {
+	clients map[string]Client
+	configs map[string]*Config
 }
 
 // NewForgeManager creates a new forge manager
-func NewForgeManager() *ForgeManager {
-	return &ForgeManager{
-		clients: make(map[string]ForgeClient),
-		configs: make(map[string]*ForgeConfig),
+func NewForgeManager() *Manager {
+	return &Manager{
+		clients: make(map[string]Client),
+		configs: make(map[string]*Config),
 	}
 }
 
 // AddForge adds a forge client to the manager
-func (m *ForgeManager) AddForge(config *ForgeConfig, client ForgeClient) {
+func (m *Manager) AddForge(config *Config, client Client) {
 	m.configs[config.Name] = config
 	m.clients[config.Name] = client
 }
 
 // GetForge returns a forge client by name
-func (m *ForgeManager) GetForge(name string) ForgeClient {
+func (m *Manager) GetForge(name string) Client {
 	return m.clients[name]
 }
 
 // GetAllForges returns all registered forge clients
-func (m *ForgeManager) GetAllForges() map[string]ForgeClient {
+func (m *Manager) GetAllForges() map[string]Client {
 	return m.clients
 }
 
 // GetForgeConfigs returns all forge configurations
-func (m *ForgeManager) GetForgeConfigs() map[string]*ForgeConfig {
+func (m *Manager) GetForgeConfigs() map[string]*Config {
 	return m.configs
 }
 

@@ -12,12 +12,12 @@ import (
 
 // DiscoveryService handles repository discovery across multiple forges
 type DiscoveryService struct {
-	forgeManager *ForgeManager
+	forgeManager *Manager
 	filtering    *config.FilteringConfig
 }
 
 // NewDiscoveryService creates a new discovery service
-func NewDiscoveryService(manager *ForgeManager, filtering *config.FilteringConfig) *DiscoveryService {
+func NewDiscoveryService(manager *Manager, filtering *config.FilteringConfig) *DiscoveryService {
 	return &DiscoveryService{
 		forgeManager: manager,
 		filtering:    filtering,
@@ -79,7 +79,7 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 }
 
 // discoverForge discovers repositories from a single forge
-func (ds *DiscoveryService) discoverForge(ctx context.Context, client ForgeClient) ([]*Repository, []*Organization, []*Repository, error) {
+func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([]*Repository, []*Organization, []*Repository, error) {
 	forgeConfig := ds.forgeManager.GetForgeConfigs()[client.GetName()]
 	if forgeConfig == nil {
 		return nil, nil, nil, fmt.Errorf("forge configuration not found for %s", client.GetName())
@@ -306,7 +306,7 @@ func toLowerCase(b byte) byte {
 }
 
 // ConvertToConfigRepositories converts discovered repositories to config.Repository format
-func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *ForgeManager) []config.Repository {
+func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
 	var configRepos []config.Repository
 
 	for _, repo := range repos {

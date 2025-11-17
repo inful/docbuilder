@@ -17,7 +17,7 @@ import (
 
 // StatusPageData represents data for status page rendering
 type StatusPageData struct {
-	DaemonInfo     DaemonInfo         `json:"daemon_info"`
+	DaemonInfo     Info               `json:"daemon_info"`
 	Repositories   []RepositoryStatus `json:"repositories"`
 	VersionSummary VersionSummary     `json:"version_summary"`
 	BuildStatus    BuildStatusInfo    `json:"build_status"`
@@ -29,13 +29,13 @@ type StatusPageData struct {
 	DiscoveryErrors map[string]string `json:"discovery_errors,omitempty"`
 }
 
-// DaemonInfo holds basic daemon information
-type DaemonInfo struct {
-	Status     DaemonStatus `json:"status"`
-	Version    string       `json:"version"`
-	StartTime  time.Time    `json:"start_time"`
-	Uptime     string       `json:"uptime"`
-	ConfigFile string       `json:"config_file"`
+// Info holds basic daemon information
+type Info struct {
+	Status     Status    `json:"status"`
+	Version    string    `json:"version"`
+	StartTime  time.Time `json:"start_time"`
+	Uptime     string    `json:"uptime"`
+	ConfigFile string    `json:"config_file"`
 }
 
 // RepositoryStatus tracks status of individual repositories
@@ -104,14 +104,14 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 
 	slog.Debug("Status: building daemon info")
 	// Safely get daemon status with fallback
-	var daemonStatus DaemonStatus
+	var daemonStatus Status
 	if statusVal := d.status.Load(); statusVal != nil {
-		daemonStatus = statusVal.(DaemonStatus)
+		daemonStatus = statusVal.(Status)
 	} else {
 		daemonStatus = StatusStopped // Default to stopped if not initialized
 	}
 
-	status.DaemonInfo = DaemonInfo{
+	status.DaemonInfo = Info{
 		Status:     daemonStatus,
 		Version:    version.Version,
 		StartTime:  d.startTime,

@@ -12,7 +12,7 @@ func main() {
 	ctx := context.Background()
 
 	// Create GitHub client
-	client := forge.NewEnhancedMockForgeClient("test-config", forge.ForgeTypeGitHub)
+	client := forge.NewEnhancedMockForgeClient("test-config", forge.TypeGitHub)
 
 	// Test webhook validation with correct secret
 	payload := []byte(`{"ref": "refs/heads/main", "repository": {"name": "webhook-repo", "full_name": "webhook-org/webhook-repo"}, "commits": [{"id": "abc123", "message": "Update docs"}]}`)

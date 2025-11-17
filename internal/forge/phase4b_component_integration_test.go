@@ -35,7 +35,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 
 		// Simulate coordinated discovery across forge clients
 		var totalRepos int
-		forgeClients := []ForgeClient{github, gitlab}
+		forgeClients := []Client{github, gitlab}
 
 		for _, client := range forgeClients {
 			repos, err := client.ListRepositories(ctx, []string{})
@@ -83,7 +83,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		// Test docs discovery across all forge types
 		ctx := context.Background()
 
-		forgeClients := map[string]ForgeClient{
+		forgeClients := map[string]Client{
 			"github":  github,
 			"gitlab":  gitlab,
 			"forgejo": forgejo,
@@ -198,7 +198,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		allRepos := make([]*Repository, 0)
 
 		// Discover repositories from all forges
-		forgeClients := map[string]ForgeClient{
+		forgeClients := map[string]Client{
 			"github":  github,
 			"gitlab":  gitlab,
 			"forgejo": forgejo,

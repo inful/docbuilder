@@ -15,7 +15,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 	// Test repository discovery and conversion to DocBuilder repositories
 	t.Run("RepositoryDiscoveryAndConversion", func(t *testing.T) {
 		// Create a mock forge with realistic repositories
-		mockForge := NewMockForgeClient("test-github", ForgeTypeGitHub)
+		mockForge := NewMockForgeClient("test-github", TypeGitHub)
 
 		// Add an organization
 		mockForge.AddOrganization(&Organization{

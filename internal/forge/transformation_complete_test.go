@@ -299,7 +299,7 @@ func validateCLIConfiguration(cfg *config.Config, t *testing.T) {
 
 func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForgeClient) map[string]interface{} {
 	return map[string]interface{}{
-		"forges":           []ForgeClient{github, gitlab, forgejo},
+		"forges":           []Client{github, gitlab, forgejo},
 		"workflow_enabled": true,
 		"cross_forge_sync": true,
 		"component_health": "healthy",
@@ -307,7 +307,7 @@ func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForg
 }
 
 func validateComponentIntegration(context map[string]interface{}, t *testing.T) {
-	forges := context["forges"].([]ForgeClient)
+	forges := context["forges"].([]Client)
 	if len(forges) != 3 {
 		t.Errorf("Expected 3 forge clients, got %d", len(forges))
 	}
@@ -319,7 +319,7 @@ func validateComponentIntegration(context map[string]interface{}, t *testing.T) 
 	t.Log("✓ Component integration validated")
 }
 
-func createEnterpriseDeploymentContext(github, gitlab, forgejo *EnhancedMockForgeClient) map[string]interface{} {
+func createEnterpriseDeploymentContext(_, _, _ *EnhancedMockForgeClient) map[string]interface{} {
 	return map[string]interface{}{
 		"production_ready":   true,
 		"monitoring_enabled": true,

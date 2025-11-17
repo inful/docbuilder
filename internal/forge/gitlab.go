@@ -16,7 +16,7 @@ import (
 
 // GitLabClient implements ForgeClient for GitLab
 type GitLabClient struct {
-	config     *ForgeConfig
+	config     *Config
 	httpClient *http.Client
 	baseURL    string
 	apiURL     string
@@ -24,7 +24,7 @@ type GitLabClient struct {
 }
 
 // NewGitLabClient creates a new GitLab client
-func NewGitLabClient(fg *ForgeConfig) (*GitLabClient, error) {
+func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 	if fg.Type != cfg.ForgeGitLab {
 		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
 	}
@@ -270,7 +270,7 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectPath, filePat
 }
 
 // ValidateWebhook validates GitLab webhook signature
-func (c *GitLabClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
+func (c *GitLabClient) ValidateWebhook(_ []byte, signature string, secret string) bool {
 	// GitLab sends X-Gitlab-Token header with the secret
 	return signature == secret
 }
@@ -436,7 +436,7 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 
 // GetEditURL returns the GitLab edit URL for a file
 func (c *GitLabClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return GenerateEditURL(ForgeTypeGitLab, c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(TypeGitLab, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods

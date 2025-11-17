@@ -11,7 +11,7 @@ type jsonConfigurationStore struct {
 	store *JSONStore
 }
 
-func (cs *jsonConfigurationStore) Get(ctx context.Context, key string) foundation.Result[foundation.Option[any], error] {
+func (cs *jsonConfigurationStore) Get(_ context.Context, key string) foundation.Result[foundation.Option[any], error] {
 	if key == "" {
 		return foundation.Err[foundation.Option[any], error](
 			foundation.ValidationError("key cannot be empty").Build(),
@@ -28,7 +28,7 @@ func (cs *jsonConfigurationStore) Get(ctx context.Context, key string) foundatio
 	return foundation.Ok[foundation.Option[any], error](foundation.None[any]())
 }
 
-func (cs *jsonConfigurationStore) Set(ctx context.Context, key string, value any) foundation.Result[struct{}, error] {
+func (cs *jsonConfigurationStore) Set(_ context.Context, key string, value any) foundation.Result[struct{}, error] {
 	if key == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("key cannot be empty").Build(),
@@ -51,7 +51,7 @@ func (cs *jsonConfigurationStore) Set(ctx context.Context, key string, value any
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (cs *jsonConfigurationStore) Delete(ctx context.Context, key string) foundation.Result[struct{}, error] {
+func (cs *jsonConfigurationStore) Delete(_ context.Context, key string) foundation.Result[struct{}, error] {
 	if key == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("key cannot be empty").Build(),
@@ -87,7 +87,7 @@ func (cs *jsonConfigurationStore) List(ctx context.Context) foundation.Result[ma
 	return cs.GetAll(ctx)
 }
 
-func (cs *jsonConfigurationStore) GetAll(ctx context.Context) foundation.Result[map[string]any, error] {
+func (cs *jsonConfigurationStore) GetAll(_ context.Context) foundation.Result[map[string]any, error] {
 	cs.store.mu.RLock()
 	defer cs.store.mu.RUnlock()
 

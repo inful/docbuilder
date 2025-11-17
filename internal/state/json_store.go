@@ -99,7 +99,7 @@ func (js *JSONStore) DaemonInfo() DaemonInfoStore {
 
 // WithTransaction executes a function within a transaction-like context.
 // For the JSON store, this uses a mutex to ensure consistency.
-func (js *JSONStore) WithTransaction(ctx context.Context, fn func(StateStore) error) foundation.Result[struct{}, error] {
+func (js *JSONStore) WithTransaction(_ context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
 	js.mu.Lock()
 	defer js.mu.Unlock()
 
@@ -122,7 +122,7 @@ func (js *JSONStore) WithTransaction(ctx context.Context, fn func(StateStore) er
 }
 
 // Health returns the health status of the store.
-func (js *JSONStore) Health(ctx context.Context) foundation.Result[StoreHealth, error] {
+func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, error] {
 	js.mu.RLock()
 	defer js.mu.RUnlock()
 
@@ -152,7 +152,7 @@ func (js *JSONStore) Health(ctx context.Context) foundation.Result[StoreHealth, 
 }
 
 // Close gracefully shuts down the store.
-func (js *JSONStore) Close(ctx context.Context) foundation.Result[struct{}, error] {
+func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error] {
 	js.mu.Lock()
 	defer js.mu.Unlock()
 
@@ -260,6 +260,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	tempPath := statePath + ".tmp"
 
 	// Atomic write using temporary file
+	// #nosec G306 -- state file needs to be readable by the process, 0644 is acceptable
 	if err := os.WriteFile(tempPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write temporary state file: %w", err)
 	}
@@ -276,7 +277,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 func (js *JSONStore) calculateStorageSize() (int64, error) {
 	var totalSize int64
 
-	err := filepath.Walk(js.dataDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(js.dataDir, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

@@ -197,7 +197,7 @@ func TestTestForgeScenarios(t *testing.T) {
 
 // TestTestForgeFactory demonstrates using the factory pattern
 func TestTestForgeFactory(t *testing.T) {
-	factory := testforge.NewTestForgeFactory()
+	factory := testforge.NewFactory()
 
 	// Test different forge types
 	forgeTypes := []struct {

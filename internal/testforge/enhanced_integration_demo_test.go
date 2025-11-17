@@ -186,7 +186,7 @@ func TestEnhancedTestForgeIntegration(t *testing.T) {
 
 		for _, platform := range platforms {
 			// Enhanced forges with platform-specific features
-			var enhancedForge forge.ForgeClient
+			var enhancedForge forge.Client
 			switch platform.forgeType {
 			case config.ForgeGitHub:
 				enhancedForge = forge.NewEnhancedGitHubMock(platform.name)

@@ -39,7 +39,7 @@ func newDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) *defa
 	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg}
 }
 
-func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
+func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
 	res := RepoFetchResult{Name: repo.Name}
 	client := git.NewClient(f.workspace)
 	if f.buildCfg != nil {

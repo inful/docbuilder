@@ -3,7 +3,7 @@ package daemon
 import "testing"
 
 func TestCopyDaemonStateIsolation(t *testing.T) {
-	orig := &DaemonState{Repositories: map[string]*RepoState{"r1": {Name: "repo1", URL: "u1"}}, Builds: map[string]*BuildState{"b1": {ID: "b1", Status: BuildStatusCompleted}}, Schedules: map[string]*Schedule{"s1": {ID: "s1", Name: "sched"}}, Statistics: &DaemonStats{TotalBuilds: 5}, Configuration: map[string]interface{}{"k": "v"}}
+	orig := &State{Repositories: map[string]*RepoState{"r1": {Name: "repo1", URL: "u1"}}, Builds: map[string]*BuildState{"b1": {ID: "b1", Status: BuildStatusCompleted}}, Schedules: map[string]*Schedule{"s1": {ID: "s1", Name: "sched"}}, Statistics: &Stats{TotalBuilds: 5}, Configuration: map[string]interface{}{"k": "v"}}
 	cp := CopyDaemonState(orig)
 	if cp == orig {
 		t.Fatalf("expected distinct pointer")

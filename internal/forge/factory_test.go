@@ -10,7 +10,7 @@ func TestNewForgeClient(t *testing.T) {
 	tests := []struct {
 		name      string
 		config    *config.ForgeConfig
-		wantType  ForgeType
+		wantType  Type
 		wantError bool
 	}{
 		{
@@ -25,7 +25,7 @@ func TestNewForgeClient(t *testing.T) {
 					Token: "test-token",
 				},
 			},
-			wantType:  ForgeTypeGitHub,
+			wantType:  TypeGitHub,
 			wantError: false,
 		},
 		{
@@ -40,7 +40,7 @@ func TestNewForgeClient(t *testing.T) {
 					Token: "test-token",
 				},
 			},
-			wantType:  ForgeTypeGitLab,
+			wantType:  TypeGitLab,
 			wantError: false,
 		},
 		{
@@ -55,7 +55,7 @@ func TestNewForgeClient(t *testing.T) {
 					Token: "test-token",
 				},
 			},
-			wantType:  ForgeTypeForgejo,
+			wantType:  TypeForgejo,
 			wantError: false,
 		},
 		{
@@ -235,7 +235,7 @@ func TestForgeManager(t *testing.T) {
 	}
 
 	// Create mock client and config
-	mockClient := NewMockForgeClient("test-mock", ForgeTypeGitHub)
+	mockClient := NewMockForgeClient("test-mock", TypeGitHub)
 	mockConfig := CreateMockForgeConfig("test-mock", "github", []string{"test-org"}, nil)
 
 	// Add forge

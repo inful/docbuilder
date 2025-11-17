@@ -394,16 +394,16 @@ func (p *FrontMatterPatch) applyDeep(fm *FrontMatter) *FrontMatter {
 }
 
 // mergeStringArray merges two string arrays based on the patch's array merge strategy.
-func (p *FrontMatterPatch) mergeStringArray(existing []string, new []string) []string {
+func (p *FrontMatterPatch) mergeStringArray(existing []string, newItems []string) []string {
 	switch p.ArrayMergeStrategy {
 	case ArrayMergeStrategyReplace:
-		return new
+		return newItems
 	case ArrayMergeStrategyAppend:
-		return append(existing, new...)
+		return append(existing, newItems...)
 	case ArrayMergeStrategyUnion:
 		// Create a set to track existing items
 		seen := make(map[string]bool)
-		result := make([]string, 0, len(existing)+len(new))
+		result := make([]string, 0, len(existing)+len(newItems))
 
 		// Add existing items
 		for _, item := range existing {
@@ -414,7 +414,7 @@ func (p *FrontMatterPatch) mergeStringArray(existing []string, new []string) []s
 		}
 
 		// Add new items that aren't duplicates
-		for _, item := range new {
+		for _, item := range newItems {
 			if !seen[item] {
 				seen[item] = true
 				result = append(result, item)
@@ -423,7 +423,7 @@ func (p *FrontMatterPatch) mergeStringArray(existing []string, new []string) []s
 
 		return result
 	default:
-		return new
+		return newItems
 	}
 }
 

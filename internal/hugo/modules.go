@@ -48,6 +48,7 @@ func (g *Generator) ensureGoModForModules() error {
 					} else {
 						newContent += rest
 					}
+					// #nosec G306 -- go.mod is a module configuration file
 					if writeErr := os.WriteFile(goModPath, []byte(newContent), 0644); writeErr != nil {
 						slog.Warn("Failed to rewrite invalid go.mod module line", "error", writeErr)
 					} else {
@@ -60,6 +61,7 @@ func (g *Generator) ensureGoModForModules() error {
 	}
 	moduleName := deriveModuleName()
 	content := fmt.Sprintf("module %s\n\ngo 1.21\n", moduleName)
+	// #nosec G306 -- go.mod is a module configuration file
 	if err := os.WriteFile(goModPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("failed to write go.mod: %w", err)
 	}
@@ -80,5 +82,6 @@ func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 			s += fmt.Sprintf("\nrequire %s %s\n", features.ModulePath, features.ModuleVersion)
 		}
 	}
+	// #nosec G306 -- go.mod is a module configuration file
 	return os.WriteFile(goModPath, []byte(s), 0644)
 }

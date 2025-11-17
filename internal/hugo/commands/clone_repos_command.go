@@ -251,7 +251,7 @@ type defaultRepoFetcher struct {
 	buildConfig  *config.BuildConfig
 }
 
-func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) *FetchResult {
+func (f *defaultRepoFetcher) Fetch(_ context.Context, _ config.CloneStrategy, repo config.Repository) *FetchResult {
 	// This implementation delegates to the existing git client
 	// In a full refactor, this would be extracted into its own service
 

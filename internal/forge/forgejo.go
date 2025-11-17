@@ -3,7 +3,7 @@ package forge
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- SHA-1 needed for legacy Forgejo/Gitea webhook compatibility
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -22,7 +22,7 @@ import (
 
 // ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API)
 type ForgejoClient struct {
-	config     *ForgeConfig
+	config     *Config
 	httpClient *http.Client
 	baseURL    string
 	apiURL     string
@@ -30,7 +30,7 @@ type ForgejoClient struct {
 }
 
 // NewForgejoClient creates a new Forgejo client
-func NewForgejoClient(fg *ForgeConfig) (*ForgejoClient, error) {
+func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	if fg.Type != cfg.ForgeForgejo {
 		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
 	}
@@ -318,13 +318,13 @@ func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret
 	// Legacy raw SHA1 (some older Forgejo/Gitea setups)
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret))
+		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy Forgejo/Gitea webhook signature fallback
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))
 	}
 	// Bare SHA1 hash fallback (no prefix)
-	mac := hmac.New(sha1.New, []byte(secret))
+	mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy Forgejo/Gitea webhook signature fallback (no prefix)
 	mac.Write(payload)
 	calc := hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(signature), []byte(calc))
@@ -495,7 +495,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 
 // GetEditURL returns the Forgejo edit URL for a file
 func (c *ForgejoClient) GetEditURL(repo *Repository, filePath string, branch string) string {
-	return GenerateEditURL(ForgeTypeForgejo, c.baseURL, repo.FullName, branch, filePath)
+	return GenerateEditURL(TypeForgejo, c.baseURL, repo.FullName, branch, filePath)
 }
 
 // Helper methods

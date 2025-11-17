@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 )
 
-// ConfigDefaultApplier applies defaults for a specific configuration domain
-type ConfigDefaultApplier interface {
+// DefaultApplier applies defaults for a specific configuration domain
+type DefaultApplier interface {
 	ApplyDefaults(cfg *Config) error
 	Domain() string
 }

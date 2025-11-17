@@ -13,7 +13,7 @@ type jsonBuildStore struct {
 	store *JSONStore
 }
 
-func (bs *jsonBuildStore) Create(ctx context.Context, build *Build) foundation.Result[*Build, error] {
+func (bs *jsonBuildStore) Create(_ context.Context, build *Build) foundation.Result[*Build, error] {
 	if build == nil {
 		return foundation.Err[*Build, error](
 			foundation.ValidationError("build cannot be nil").Build(),
@@ -45,7 +45,7 @@ func (bs *jsonBuildStore) Create(ctx context.Context, build *Build) foundation.R
 	return foundation.Ok[*Build, error](build)
 }
 
-func (bs *jsonBuildStore) GetByID(ctx context.Context, id string) foundation.Result[foundation.Option[*Build], error] {
+func (bs *jsonBuildStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Build], error] {
 	if id == "" {
 		return foundation.Err[foundation.Option[*Build], error](
 			foundation.ValidationError("ID cannot be empty").Build(),
@@ -63,7 +63,7 @@ func (bs *jsonBuildStore) GetByID(ctx context.Context, id string) foundation.Res
 	return foundation.Ok[foundation.Option[*Build], error](foundation.None[*Build]())
 }
 
-func (bs *jsonBuildStore) Update(ctx context.Context, build *Build) foundation.Result[*Build, error] {
+func (bs *jsonBuildStore) Update(_ context.Context, build *Build) foundation.Result[*Build, error] {
 	if build == nil {
 		return foundation.Err[*Build, error](
 			foundation.ValidationError("build cannot be nil").Build(),
@@ -99,7 +99,7 @@ func (bs *jsonBuildStore) Update(ctx context.Context, build *Build) foundation.R
 	return foundation.Ok[*Build, error](build)
 }
 
-func (bs *jsonBuildStore) List(ctx context.Context, opts ListOptions) foundation.Result[[]Build, error] {
+func (bs *jsonBuildStore) List(_ context.Context, opts ListOptions) foundation.Result[[]Build, error] {
 	bs.store.mu.RLock()
 	defer bs.store.mu.RUnlock()
 
@@ -135,7 +135,7 @@ func (bs *jsonBuildStore) List(ctx context.Context, opts ListOptions) foundation
 	return foundation.Ok[[]Build, error](builds)
 }
 
-func (bs *jsonBuildStore) Delete(ctx context.Context, id string) foundation.Result[struct{}, error] {
+func (bs *jsonBuildStore) Delete(_ context.Context, id string) foundation.Result[struct{}, error] {
 	if id == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("ID cannot be empty").Build(),
@@ -166,7 +166,7 @@ func (bs *jsonBuildStore) Delete(ctx context.Context, id string) foundation.Resu
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (bs *jsonBuildStore) Cleanup(ctx context.Context, maxBuilds int) foundation.Result[int, error] {
+func (bs *jsonBuildStore) Cleanup(_ context.Context, maxBuilds int) foundation.Result[int, error] {
 	if maxBuilds <= 0 {
 		return foundation.Err[int, error](
 			foundation.ValidationError("maxBuilds must be positive").Build(),

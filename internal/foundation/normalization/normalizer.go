@@ -82,11 +82,11 @@ func defaultNormalization(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
-// NormalizationFunc allows custom normalization behavior.
-type NormalizationFunc func(string) string
+// Func allows custom normalization behavior.
+type Func func(string) string
 
 // WithCustomNormalizer creates a normalizer with custom string normalization.
-func WithCustomNormalizer[T comparable](values map[string]T, defaultValue T, normalizer NormalizationFunc) *Normalizer[T] {
+func WithCustomNormalizer[T comparable](values map[string]T, defaultValue T, normalizer Func) *Normalizer[T] {
 	normalized := make(map[string]T, len(values))
 	validKeys := make([]string, 0, len(values))
 

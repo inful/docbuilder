@@ -48,13 +48,13 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 		t.Fatalf("mkdir repoB: %v", err)
 	}
 	// Initial files
-	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o600); err != nil {
 		t.Fatalf("write a1: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o600); err != nil {
 		t.Fatalf("write b1: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b2.md"), []byte("# B2"), 0o600); err != nil {
 		t.Fatalf("write b2: %v", err)
 	}
 
@@ -68,7 +68,7 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	state.SetLastGlobalDocFilesHash(hashList(append(append([]string{}, repoAPaths...), repoBPaths...)))
 
 	// Change: repoA adds a2.md (changed repo) ; repoB deletes b2.md (unchanged repo)
-	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a2.md"), []byte("# A2"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a2.md"), []byte("# A2"), 0o600); err != nil {
 		t.Fatalf("write a2: %v", err)
 	}
 	if err := os.Remove(filepath.Join(repoBRoot, "docs", "b2.md")); err != nil {

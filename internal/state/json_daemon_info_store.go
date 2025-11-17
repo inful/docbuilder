@@ -12,7 +12,7 @@ type jsonDaemonInfoStore struct {
 	store *JSONStore
 }
 
-func (ds *jsonDaemonInfoStore) Get(ctx context.Context) foundation.Result[*DaemonInfo, error] {
+func (ds *jsonDaemonInfoStore) Get(_ context.Context) foundation.Result[*DaemonInfo, error] {
 	ds.store.mu.RLock()
 	defer ds.store.mu.RUnlock()
 
@@ -20,7 +20,7 @@ func (ds *jsonDaemonInfoStore) Get(ctx context.Context) foundation.Result[*Daemo
 	return foundation.Ok[*DaemonInfo, error](&infoCopy)
 }
 
-func (ds *jsonDaemonInfoStore) Update(ctx context.Context, info *DaemonInfo) foundation.Result[*DaemonInfo, error] {
+func (ds *jsonDaemonInfoStore) Update(_ context.Context, info *DaemonInfo) foundation.Result[*DaemonInfo, error] {
 	if info == nil {
 		return foundation.Err[*DaemonInfo, error](
 			foundation.ValidationError("daemon info cannot be nil").Build(),
@@ -44,7 +44,7 @@ func (ds *jsonDaemonInfoStore) Update(ctx context.Context, info *DaemonInfo) fou
 	return foundation.Ok[*DaemonInfo, error](info)
 }
 
-func (ds *jsonDaemonInfoStore) UpdateStatus(ctx context.Context, status string) foundation.Result[struct{}, error] {
+func (ds *jsonDaemonInfoStore) UpdateStatus(_ context.Context, status string) foundation.Result[struct{}, error] {
 	if status == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("status cannot be empty").Build(),

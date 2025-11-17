@@ -13,7 +13,7 @@ type jsonRepositoryStore struct {
 	store *JSONStore
 }
 
-func (rs *jsonRepositoryStore) Create(ctx context.Context, repo *Repository) foundation.Result[*Repository, error] {
+func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) foundation.Result[*Repository, error] {
 	if repo == nil {
 		return foundation.Err[*Repository, error](
 			foundation.ValidationError("repository cannot be nil").Build(),
@@ -61,7 +61,7 @@ func (rs *jsonRepositoryStore) Create(ctx context.Context, repo *Repository) fou
 	return foundation.Ok[*Repository, error](repo)
 }
 
-func (rs *jsonRepositoryStore) GetByURL(ctx context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
+func (rs *jsonRepositoryStore) GetByURL(_ context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
 	if url == "" {
 		return foundation.Err[foundation.Option[*Repository], error](
 			foundation.ValidationError("URL cannot be empty").Build(),
@@ -80,7 +80,7 @@ func (rs *jsonRepositoryStore) GetByURL(ctx context.Context, url string) foundat
 	return foundation.Ok[foundation.Option[*Repository], error](foundation.None[*Repository]())
 }
 
-func (rs *jsonRepositoryStore) Update(ctx context.Context, repo *Repository) foundation.Result[*Repository, error] {
+func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) foundation.Result[*Repository, error] {
 	if repo == nil {
 		return foundation.Err[*Repository, error](
 			foundation.ValidationError("repository cannot be nil").Build(),
@@ -124,7 +124,7 @@ func (rs *jsonRepositoryStore) Update(ctx context.Context, repo *Repository) fou
 	return foundation.Ok[*Repository, error](repo)
 }
 
-func (rs *jsonRepositoryStore) List(ctx context.Context) foundation.Result[[]Repository, error] {
+func (rs *jsonRepositoryStore) List(_ context.Context) foundation.Result[[]Repository, error] {
 	rs.store.mu.RLock()
 	defer rs.store.mu.RUnlock()
 
@@ -141,7 +141,7 @@ func (rs *jsonRepositoryStore) List(ctx context.Context) foundation.Result[[]Rep
 	return foundation.Ok[[]Repository, error](repositories)
 }
 
-func (rs *jsonRepositoryStore) Delete(ctx context.Context, url string) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) Delete(_ context.Context, url string) foundation.Result[struct{}, error] {
 	if url == "" {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("URL cannot be empty").Build(),
@@ -177,7 +177,7 @@ func (rs *jsonRepositoryStore) Delete(ctx context.Context, url string) foundatio
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (rs *jsonRepositoryStore) IncrementBuildCount(ctx context.Context, url string, success bool) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string, success bool) foundation.Result[struct{}, error] {
 	rs.store.mu.Lock()
 	defer rs.store.mu.Unlock()
 
@@ -230,7 +230,7 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(ctx context.Context, url stri
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (rs *jsonRepositoryStore) SetDocumentCount(ctx context.Context, url string, count int) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, count int) foundation.Result[struct{}, error] {
 	if count < 0 {
 		return foundation.Err[struct{}, error](
 			foundation.ValidationError("document count cannot be negative").Build(),
@@ -283,7 +283,7 @@ func (rs *jsonRepositoryStore) SetDocumentCount(ctx context.Context, url string,
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (rs *jsonRepositoryStore) SetDocFilesHash(ctx context.Context, url string, hash string) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url string, hash string) foundation.Result[struct{}, error] {
 	rs.store.mu.Lock()
 	defer rs.store.mu.Unlock()
 
@@ -313,7 +313,7 @@ func (rs *jsonRepositoryStore) SetDocFilesHash(ctx context.Context, url string, 
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (rs *jsonRepositoryStore) SetDocFilePaths(ctx context.Context, url string, paths []string) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) SetDocFilePaths(_ context.Context, url string, paths []string) foundation.Result[struct{}, error] {
 	rs.store.mu.Lock()
 	defer rs.store.mu.Unlock()
 

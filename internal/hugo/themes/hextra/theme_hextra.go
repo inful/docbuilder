@@ -8,13 +8,13 @@ import (
 type Theme struct{}
 
 func (Theme) Name() config.Theme { return config.ThemeHextra }
-func (Theme) Features() th.ThemeFeatures {
-	return th.ThemeFeatures{
+func (Theme) Features() th.Features {
+	return th.Features{
 		Name: config.ThemeHextra, UsesModules: true, ModulePath: "github.com/imfing/hextra", ModuleVersion: "v0.11.0",
 		EnableMathPassthrough: true, AutoMainMenu: true, SupportsPerPageEditLinks: true, ProvidesMermaidSupport: true, DefaultSearchType: "flexsearch",
 	}
 }
-func (Theme) ApplyParams(g th.ParamContext, params map[string]any) {
+func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 	// search config normalization
 	if params["search"] == nil {
 		params["search"] = map[string]any{"enable": true, "type": "flexsearch", "flexsearch": map[string]any{"index": "content", "tokenize": "forward", "version": "0.8.143"}}
@@ -70,6 +70,6 @@ func (Theme) ApplyParams(g th.ParamContext, params map[string]any) {
 		params["navbar"] = map[string]any{"width": "normal"}
 	}
 }
-func (Theme) CustomizeRoot(g th.ParamContext, root map[string]any) {}
+func (Theme) CustomizeRoot(_ th.ParamContext, _ map[string]any) {}
 
 func init() { th.RegisterTheme(Theme{}) }

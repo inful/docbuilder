@@ -76,7 +76,7 @@ func (c *CLI) AfterApply() error {
 	return nil
 }
 
-func (b *BuildCmd) Run(globals *Global, root *CLI) error {
+func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	cfg, err := config.Load(root.Config)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -100,7 +100,7 @@ func (b *BuildCmd) Run(globals *Global, root *CLI) error {
 	return runBuild(cfg, b.Output, b.Incremental, root.Verbose)
 }
 
-func (i *InitCmd) Run(globals *Global, root *CLI) error {
+func (i *InitCmd) Run(_ *Global, root *CLI) error {
 	// If the user specified an output directory, place the config there as "docbuilder.yaml".
 	if i.Output != "" {
 		cfgPath := filepath.Join(i.Output, "docbuilder.yaml")
@@ -109,7 +109,7 @@ func (i *InitCmd) Run(globals *Global, root *CLI) error {
 	return runInit(root.Config, i.Force)
 }
 
-func (d *DiscoverCmd) Run(globals *Global, root *CLI) error {
+func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
 	cfg, err := config.Load(root.Config)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -124,7 +124,7 @@ func (d *DiscoverCmd) Run(globals *Global, root *CLI) error {
 	return runDiscover(cfg, d.Repository)
 }
 
-func (d *DaemonCmd) Run(globals *Global, root *CLI) error {
+func (d *DaemonCmd) Run(_ *Global, root *CLI) error {
 	cfg, err := config.Load(root.Config)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -380,7 +380,7 @@ func autoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]conf
 
 	// Instantiate forge clients
 	for _, f := range v2cfg.Forges {
-		var client forge.ForgeClient
+		var client forge.Client
 		var err error
 		switch f.Type {
 		case config.ForgeForgejo:

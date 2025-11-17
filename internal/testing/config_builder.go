@@ -182,8 +182,8 @@ func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 		cb.t.Fatalf("Failed to marshal config: %v", err)
 	}
 
-	// Write to file
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
+	// Write to file with tighter permissions
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
 		cb.t.Fatalf("Failed to save config to %s: %v", filePath, err)
 	}
 	return cb.config

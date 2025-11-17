@@ -64,8 +64,9 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	} else {
 		content = body
 	}
+	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write main index: %w", err)
+		return fmt.Errorf("failed to write index at %s: %w", indexPath, err)
 	}
 	slog.Info("Generated main index page", logfields.Path(indexPath))
 	return nil
@@ -112,6 +113,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		} else {
 			content = body
 		}
+		// #nosec G306 -- index pages are public content
 		if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 			return fmt.Errorf("failed to write repository index: %w", err)
 		}
@@ -161,6 +163,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			} else {
 				content = body
 			}
+			// #nosec G306 -- index pages are public content
 			if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
 				return fmt.Errorf("failed to write section index: %w", err)
 			}

@@ -183,7 +183,7 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 
 	// Test webhook failure scenarios
 	t.Run("EnhancedWebhookFailureScenarios", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("failure-webhook", ForgeTypeGitHub).
+		client := NewEnhancedMockForgeClient("failure-webhook", TypeGitHub).
 			WithWebhookSecret("test-secret")
 
 		ctx := context.Background()
@@ -234,7 +234,7 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 
 	// Test webhook validation edge cases
 	t.Run("EnhancedWebhookValidationEdgeCases", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("validation-test", ForgeTypeGitHub).
+		client := NewEnhancedMockForgeClient("validation-test", TypeGitHub).
 			WithWebhookSecret("validation-secret")
 
 		payload := []byte(`{"test": "validation"}`)
@@ -263,7 +263,7 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		// Test GitLab-style validation
-		gitlabClient := NewEnhancedMockForgeClient("gitlab-validation", ForgeTypeGitLab).
+		gitlabClient := NewEnhancedMockForgeClient("gitlab-validation", TypeGitLab).
 			WithWebhookSecret("gitlab-token")
 
 		gitlabTestCases := []struct {

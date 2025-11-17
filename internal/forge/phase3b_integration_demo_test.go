@@ -13,7 +13,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 
 	t.Run("DirectForgeClientReplacement", func(t *testing.T) {
 		// Demonstrate direct replacement of existing ForgeClient usage
-		var client ForgeClient = NewEnhancedMockForgeClient("integration-demo", ForgeTypeGitHub)
+		var client Client = NewEnhancedMockForgeClient("integration-demo", TypeGitHub)
 		ctx := context.Background()
 
 		// Add test data using enhanced system
@@ -104,7 +104,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 
 	t.Run("AdvancedFailureSimulation", func(t *testing.T) {
 		// Demonstrate advanced failure simulation for robust testing
-		client := NewEnhancedMockForgeClient("failure-demo", ForgeTypeGitHub)
+		client := NewEnhancedMockForgeClient("failure-demo", TypeGitHub)
 		ctx := context.Background()
 
 		// Add test data
@@ -161,7 +161,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 
 	t.Run("BulkDataGeneration", func(t *testing.T) {
 		// Demonstrate bulk data generation for performance testing
-		repos := CreateMockRepositorySet(ForgeTypeGitHub, "large-org", 25)
+		repos := CreateMockRepositorySet(TypeGitHub, "large-org", 25)
 		if len(repos) != 25 {
 			t.Errorf("Expected 25 repositories, got %d", len(repos))
 		}
@@ -189,7 +189,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 		}
 
 		// Test with enhanced mock
-		client := NewEnhancedMockForgeClient("bulk-test", ForgeTypeGitHub)
+		client := NewEnhancedMockForgeClient("bulk-test", TypeGitHub)
 		client.AddOrganization(CreateMockGitHubOrg("large-org"))
 		for _, repo := range repos {
 			client.AddRepository(repo)
@@ -209,7 +209,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 
 	t.Run("FluentBuilderPatterns", func(t *testing.T) {
 		// Demonstrate fluent builder for complex test setup
-		mock := NewEnhancedMockBuilder("builder-demo", ForgeTypeGitLab).
+		mock := NewEnhancedMockBuilder("builder-demo", TypeGitLab).
 			WithRepositories(
 				CreateMockGitLabRepo("team-alpha", "service-docs", true, false, false, false),
 				CreateMockGitLabRepo("team-alpha", "api-reference", true, false, false, false),
@@ -280,7 +280,7 @@ func TestPhase3BMigrationPatterns(t *testing.T) {
 
 		// AFTER: Enhanced mock system
 		t.Log("Enhanced pattern (AFTER):")
-		client := NewEnhancedMockForgeClient("migration-demo", ForgeTypeGitHub)
+		client := NewEnhancedMockForgeClient("migration-demo", TypeGitHub)
 		client.AddRepository(CreateMockGitHubRepo("company", "docs", true, false, false, false))
 		client.AddOrganization(CreateMockGitHubOrg("company"))
 
@@ -317,7 +317,7 @@ func TestPhase3BMigrationPatterns(t *testing.T) {
 		t.Log("   NEW: mock := CreateRealisticGitHubMock(\"realistic\")")
 
 		// Demonstrate the migration in action
-		enhanced := NewEnhancedMockForgeClient("migrated-test", ForgeTypeGitHub)
+		enhanced := NewEnhancedMockForgeClient("migrated-test", TypeGitHub)
 		enhanced.AddRepository(CreateMockGitHubRepo("migrated-org", "migrated-repo", true, false, false, false))
 
 		ctx := context.Background()

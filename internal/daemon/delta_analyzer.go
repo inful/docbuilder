@@ -117,7 +117,7 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 // Analyze returns a DeltaPlan describing whether a partial rebuild could be attempted.
 // currentConfigHash: hash of current configuration (same value used by skip logic)
 // repos: repositories requested for this build.
-func (da *DeltaAnalyzer) Analyze(currentConfigHash string, repos []cfg.Repository) DeltaPlan {
+func (da *DeltaAnalyzer) Analyze(_ string, repos []cfg.Repository) DeltaPlan {
 	if da == nil || da.state == nil || len(repos) == 0 {
 		return DeltaPlan{Decision: DeltaDecisionFull, Reason: "insufficient_context"}
 	}

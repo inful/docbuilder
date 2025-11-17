@@ -213,7 +213,7 @@ func (vm *DefaultVersionManager) ListAllRepositories() ([]*RepositoryVersions, e
 }
 
 // getGitReferences retrieves all Git references (branches and tags) from the repository
-func (vm *DefaultVersionManager) getGitReferences(repoURL string) ([]*GitReference, error) {
+func (vm *DefaultVersionManager) getGitReferences(_ string) ([]*GitReference, error) {
 	// This is a placeholder implementation
 	// In a real implementation, this would use git ls-remote or similar
 	// For now, we'll simulate some references

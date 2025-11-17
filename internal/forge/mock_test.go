@@ -12,14 +12,14 @@ import (
 // MockForgeClient implements ForgeClient for testing
 type MockForgeClient struct {
 	name          string
-	forgeType     ForgeType
+	forgeType     Type
 	organizations []*Organization
 	repositories  []*Repository
 	errors        map[string]error // Map of method names to errors to simulate failures
 }
 
 // NewMockForgeClient creates a new mock forge client
-func NewMockForgeClient(name string, forgeType ForgeType) *MockForgeClient {
+func NewMockForgeClient(name string, forgeType Type) *MockForgeClient {
 	return &MockForgeClient{
 		name:          name,
 		forgeType:     forgeType,
@@ -30,7 +30,7 @@ func NewMockForgeClient(name string, forgeType ForgeType) *MockForgeClient {
 }
 
 // GetType returns the forge type
-func (m *MockForgeClient) GetType() ForgeType {
+func (m *MockForgeClient) GetType() Type {
 	return m.forgeType
 }
 
@@ -55,7 +55,7 @@ func (m *MockForgeClient) SetError(method string, err error) {
 }
 
 // ListOrganizations returns mock organizations
-func (m *MockForgeClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
+func (m *MockForgeClient) ListOrganizations(_ context.Context) ([]*Organization, error) {
 	if err, exists := m.errors["ListOrganizations"]; exists {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func (m *MockForgeClient) ListOrganizations(ctx context.Context) ([]*Organizatio
 }
 
 // ListRepositories returns mock repositories for specified organizations
-func (m *MockForgeClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
+func (m *MockForgeClient) ListRepositories(_ context.Context, organizations []string) ([]*Repository, error) {
 	if err, exists := m.errors["ListRepositories"]; exists {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (m *MockForgeClient) ListRepositories(ctx context.Context, organizations []
 }
 
 // GetRepository gets detailed information about a specific repository
-func (m *MockForgeClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
+func (m *MockForgeClient) GetRepository(_ context.Context, owner, repo string) (*Repository, error) {
 	if err, exists := m.errors["GetRepository"]; exists {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (m *MockForgeClient) GetRepository(ctx context.Context, owner, repo string)
 }
 
 // CheckDocumentation checks if repository has docs folder and .docignore
-func (m *MockForgeClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
+func (m *MockForgeClient) CheckDocumentation(_ context.Context, repo *Repository) error {
 	if err, exists := m.errors["CheckDocumentation"]; exists {
 		return err
 	}
@@ -115,12 +115,12 @@ func (m *MockForgeClient) CheckDocumentation(ctx context.Context, repo *Reposito
 }
 
 // ValidateWebhook validates webhook signature (always returns true for mock)
-func (m *MockForgeClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
+func (m *MockForgeClient) ValidateWebhook(_ []byte, signature string, _ string) bool {
 	return signature == "valid_signature"
 }
 
 // ParseWebhookEvent parses webhook payload (returns mock event)
-func (m *MockForgeClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
+func (m *MockForgeClient) ParseWebhookEvent(_ []byte, eventType string) (*WebhookEvent, error) {
 	if err, exists := m.errors["ParseWebhookEvent"]; exists {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (m *MockForgeClient) ParseWebhookEvent(payload []byte, eventType string) (*
 }
 
 // RegisterWebhook registers a webhook (mock implementation)
-func (m *MockForgeClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
+func (m *MockForgeClient) RegisterWebhook(_ context.Context, _ *Repository, _ string) error {
 	if err, exists := m.errors["RegisterWebhook"]; exists {
 		return err
 	}

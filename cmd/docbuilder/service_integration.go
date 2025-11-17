@@ -17,7 +17,7 @@ type ServiceContainer struct {
 }
 
 // InitializeServices creates and starts the service container, wiring up the orchestrator and executor.
-func InitializeServices(ctx context.Context) (*ServiceContainer, error) {
+func InitializeServices(_ context.Context) (*ServiceContainer, error) {
 	// Create service orchestrator
 	orchestrator := services.NewServiceOrchestrator()
 

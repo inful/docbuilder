@@ -25,7 +25,7 @@ func NewPrepareOutputCommand() *PrepareOutputCommand {
 }
 
 // Execute runs the prepare output stage.
-func (c *PrepareOutputCommand) Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) hugo.StageExecution {
 	c.LogStageStart()
 
 	// This is a simplified implementation for the command pattern

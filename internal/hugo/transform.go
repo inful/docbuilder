@@ -218,7 +218,7 @@ func toAnySlice(v any) ([]any, bool) {
 }
 
 // mergeArrays applies strategy; default strategy: union for tags/categories, else replace, unless patch.ArrayStrategy overrides.
-func mergeArrays(oldA, newA []any, patch FrontMatterPatch, page *Page, key string) []any {
+func mergeArrays(oldA, newA []any, patch FrontMatterPatch, _ *Page, key string) []any {
 	strategy := effectiveArrayStrategy(patch.ArrayStrategy, key, len(oldA) > 0)
 	if strategy == ArrayReplace {
 		return cloneSlice(newA)

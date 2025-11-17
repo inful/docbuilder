@@ -119,6 +119,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 			return fmt.Errorf("%w: failed to create directory for %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
 		}
+		// #nosec G306 -- content files are public documentation
 		if err := os.WriteFile(outputPath, p.Raw, 0644); err != nil {
 			return fmt.Errorf("%w: failed to write file %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
 		}

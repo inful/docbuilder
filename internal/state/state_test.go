@@ -186,7 +186,7 @@ func TestJSONStore(t *testing.T) {
 	t.Run("Transaction Operations", func(t *testing.T) {
 		t.Skip("FIXME: Deadlock in transaction test - needs refactoring of lock-free operations")
 
-		txResult := store.WithTransaction(ctx, func(txStore StateStore) error {
+		txResult := store.WithTransaction(ctx, func(txStore Store) error {
 			// Create repository and build in transaction
 			repo := &Repository{
 				URL:    "https://github.com/tx/repo.git",
@@ -287,7 +287,7 @@ func TestStateService(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	// Create state service
-	serviceResult := NewStateService(tmpDir)
+	serviceResult := NewService(tmpDir)
 	if serviceResult.IsErr() {
 		t.Fatalf("Failed to create state service: %v", serviceResult.UnwrapErr())
 	}

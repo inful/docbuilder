@@ -264,7 +264,7 @@ func percentile(sorted []float64, p float64) float64 {
 }
 
 // MetricsHandler serves metrics in JSON format
-func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, r *http.Request) {
+func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, _ *http.Request) {
 	snapshot := mc.GetSnapshot()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -279,7 +279,7 @@ func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, r *http.Reques
 }
 
 // PrometheusHandler serves metrics in Prometheus format (basic implementation)
-func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, r *http.Request) {
+func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, _ *http.Request) {
 	snapshot := mc.GetSnapshot()
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")

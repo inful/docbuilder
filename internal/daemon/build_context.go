@@ -267,7 +267,8 @@ func (bc *buildContext) stageInjectLiveReload() error {
 		out.Write(inject)
 		out.WriteByte('\n')
 		out.Write(b[idx:])
-		if werr := os.WriteFile(p, out.Bytes(), 0o644); werr != nil {
+		// Public site asset; readable by others is intended.
+		if werr := os.WriteFile(p, out.Bytes(), 0o644); werr != nil { //nolint:gosec // public HTML output, non-sensitive
 			slog.Debug("livereload inject write failed", "file", p, "error", werr)
 		}
 		return nil

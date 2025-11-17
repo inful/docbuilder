@@ -43,9 +43,9 @@ func (e *EnumNormalizer[T]) ValidValues() []string {
 	return e.normalizer.ValidKeys()
 }
 
-// NormalizationResult represents the outcome of a normalization operation
+// Result represents the outcome of a normalization operation
 // with optional warnings about value changes.
-type NormalizationResult[T comparable] struct {
+type Result[T comparable] struct {
 	Value   T
 	Changed bool
 	Warning string
@@ -53,7 +53,7 @@ type NormalizationResult[T comparable] struct {
 
 // NormalizeWithWarning performs normalization and tracks if the value was changed.
 // This is useful for generating user-friendly warnings about config changes.
-func (e *EnumNormalizer[T]) NormalizeWithWarning(fieldName, raw string) NormalizationResult[T] {
+func (e *EnumNormalizer[T]) NormalizeWithWarning(fieldName, raw string) Result[T] {
 	cleaned := defaultNormalization(raw)
 	normalized := e.normalizer.Normalize(raw)
 
@@ -63,7 +63,7 @@ func (e *EnumNormalizer[T]) NormalizeWithWarning(fieldName, raw string) Normaliz
 		warning = fmt.Sprintf("normalized %s from '%s' to '%s'", fieldName, raw, cleaned)
 	}
 
-	return NormalizationResult[T]{
+	return Result[T]{
 		Value:   normalized,
 		Changed: changed,
 		Warning: warning,

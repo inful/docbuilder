@@ -196,7 +196,7 @@ func (tf *TestForge) simulate() error {
 }
 
 // GetUserOrganizations returns test organizations
-func (tf *TestForge) GetUserOrganizations(ctx context.Context) ([]forge.Organization, error) {
+func (tf *TestForge) GetUserOrganizations(_ context.Context) ([]forge.Organization, error) {
 	if err := tf.simulate(); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (tf *TestForge) GetUserOrganizations(ctx context.Context) ([]forge.Organiza
 }
 
 // GetRepositoriesForOrganization returns test repositories for an organization
-func (tf *TestForge) GetRepositoriesForOrganization(ctx context.Context, orgName string) ([]forge.Repository, error) {
+func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName string) ([]forge.Repository, error) {
 	if err := tf.simulate(); err != nil {
 		return nil, err
 	}
@@ -265,16 +265,16 @@ func (tf *TestForge) Type() config.ForgeType {
 	return tf.forgeType
 }
 
-// TestForgeFactory creates test forges for different types
-type TestForgeFactory struct{}
+// Factory creates test forges for different types
+type Factory struct{}
 
-// NewTestForgeFactory creates a new test forge factory
-func NewTestForgeFactory() *TestForgeFactory {
-	return &TestForgeFactory{}
+// NewFactory creates a new test forge factory
+func NewFactory() *Factory {
+	return &Factory{}
 }
 
 // CreateGitHubTestForge creates a GitHub-like test forge
-func (tff *TestForgeFactory) CreateGitHubTestForge(name string) *TestForge {
+func (tff *Factory) CreateGitHubTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeGitHub)
 
 	// Add GitHub-specific test repositories
@@ -297,7 +297,7 @@ func (tff *TestForgeFactory) CreateGitHubTestForge(name string) *TestForge {
 }
 
 // CreateGitLabTestForge creates a GitLab-like test forge
-func (tff *TestForgeFactory) CreateGitLabTestForge(name string) *TestForge {
+func (tff *Factory) CreateGitLabTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeGitLab)
 
 	// Add GitLab-specific test repositories
@@ -320,7 +320,7 @@ func (tff *TestForgeFactory) CreateGitLabTestForge(name string) *TestForge {
 }
 
 // CreateForgejoTestForge creates a Forgejo-like test forge
-func (tff *TestForgeFactory) CreateForgejoTestForge(name string) *TestForge {
+func (tff *Factory) CreateForgejoTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeForgejo)
 
 	// Add Forgejo-specific test repositories
@@ -384,7 +384,7 @@ type ExpectedResults struct {
 
 // CreateTestScenarios returns predefined test scenarios
 func CreateTestScenarios() []TestDiscoveryScenario {
-	factory := NewTestForgeFactory()
+	factory := NewFactory()
 
 	return []TestDiscoveryScenario{
 		{

@@ -251,11 +251,11 @@ func TestCLIPerformanceTesting(t *testing.T) {
 				for i := 0; i < 25; i++ {
 					var repo *forge.Repository
 					switch enhancedClient.GetType() {
-					case forge.ForgeTypeGitHub:
+					case forge.TypeGitHub:
 						repo = forge.CreateMockGitHubRepo("org", "repo-"+string(rune(i)), true, false, false, false)
-					case forge.ForgeTypeGitLab:
+					case forge.TypeGitLab:
 						repo = forge.CreateMockGitLabRepo("group", "repo-"+string(rune(i)), true, false, false, false)
-					case forge.ForgeTypeForgejo:
+					case forge.TypeForgejo:
 						repo = forge.CreateMockForgejoRepo("org", "repo-"+string(rune(i)), true, false, false, false)
 					}
 					if repo != nil {
@@ -299,7 +299,7 @@ func TestCLIFailureScenarios(t *testing.T) {
 		defer env.Cleanup()
 
 		// Set up environment with authentication failures
-		github := forge.NewEnhancedMockForgeClient("auth-fail-github", forge.ForgeTypeGitHub)
+		github := forge.NewEnhancedMockForgeClient("auth-fail-github", forge.TypeGitHub)
 		github.WithAuthFailure()
 
 		env.WithForgeClient("auth-fail-github", github).WithTestConfiguration()
@@ -321,7 +321,7 @@ func TestCLIFailureScenarios(t *testing.T) {
 		defer env.Cleanup()
 
 		// Set up environment with network timeouts
-		gitlab := forge.NewEnhancedMockForgeClient("timeout-gitlab", forge.ForgeTypeGitLab)
+		gitlab := forge.NewEnhancedMockForgeClient("timeout-gitlab", forge.TypeGitLab)
 		gitlab.WithNetworkTimeout(time.Millisecond * 50)
 
 		env.WithForgeClient("timeout-gitlab", gitlab).WithTestConfiguration()
@@ -343,7 +343,7 @@ func TestCLIFailureScenarios(t *testing.T) {
 		defer env.Cleanup()
 
 		// Set up environment with rate limiting
-		forgejo := forge.NewEnhancedMockForgeClient("rate-limited-forgejo", forge.ForgeTypeForgejo)
+		forgejo := forge.NewEnhancedMockForgeClient("rate-limited-forgejo", forge.TypeForgejo)
 		forgejo.WithRateLimit(10, time.Hour)
 
 		env.WithForgeClient("rate-limited-forgejo", forgejo).WithTestConfiguration()

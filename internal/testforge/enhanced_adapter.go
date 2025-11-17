@@ -10,7 +10,7 @@ import (
 
 // EnhancedTestForge provides backward-compatible API while using enhanced mock capabilities
 type EnhancedTestForge struct {
-	enhancedClient forge.ForgeClient
+	enhancedClient forge.Client
 	originalName   string
 	originalType   config.ForgeType
 }
@@ -18,7 +18,7 @@ type EnhancedTestForge struct {
 // NewEnhancedTestForge creates a new enhanced test forge that maintains API compatibility
 // with the existing TestForge while providing advanced mock capabilities
 func NewEnhancedTestForge(name string, forgeType config.ForgeType) *EnhancedTestForge {
-	var client forge.ForgeClient
+	var client forge.Client
 
 	switch forgeType {
 	case config.ForgeGitHub:
@@ -29,7 +29,7 @@ func NewEnhancedTestForge(name string, forgeType config.ForgeType) *EnhancedTest
 		client = forge.NewEnhancedForgejoMock(name)
 	default:
 		// Fallback to generic enhanced mock
-		client = forge.NewEnhancedMockForgeClient(name, forge.ForgeType(forgeType))
+		client = forge.NewEnhancedMockForgeClient(name, forge.Type(forgeType))
 	}
 
 	return &EnhancedTestForge{
@@ -108,7 +108,7 @@ func (e *EnhancedTestForge) ClearOrganizations() {
 // WithAuthFailure enables authentication failure simulation
 func (e *EnhancedTestForge) WithAuthFailure() *EnhancedTestForge {
 	if enhancedClient, ok := e.enhancedClient.(interface {
-		WithAuthFailure() forge.ForgeClient
+		WithAuthFailure() forge.Client
 	}); ok {
 		e.enhancedClient = enhancedClient.WithAuthFailure()
 	}
@@ -118,7 +118,7 @@ func (e *EnhancedTestForge) WithAuthFailure() *EnhancedTestForge {
 // WithRateLimit enables rate limiting simulation
 func (e *EnhancedTestForge) WithRateLimit(requestsPerHour int, resetDuration interface{}) *EnhancedTestForge {
 	if enhancedClient, ok := e.enhancedClient.(interface {
-		WithRateLimit(int, interface{}) forge.ForgeClient
+		WithRateLimit(int, interface{}) forge.Client
 	}); ok {
 		e.enhancedClient = enhancedClient.WithRateLimit(requestsPerHour, resetDuration)
 	}
@@ -128,7 +128,7 @@ func (e *EnhancedTestForge) WithRateLimit(requestsPerHour int, resetDuration int
 // WithNetworkTimeout enables network timeout simulation
 func (e *EnhancedTestForge) WithNetworkTimeout(timeoutDuration interface{}) *EnhancedTestForge {
 	if enhancedClient, ok := e.enhancedClient.(interface {
-		WithNetworkTimeout(interface{}) forge.ForgeClient
+		WithNetworkTimeout(interface{}) forge.Client
 	}); ok {
 		e.enhancedClient = enhancedClient.WithNetworkTimeout(timeoutDuration)
 	}
@@ -138,7 +138,7 @@ func (e *EnhancedTestForge) WithNetworkTimeout(timeoutDuration interface{}) *Enh
 // WithDelay enables response delay simulation
 func (e *EnhancedTestForge) WithDelay(delayDuration interface{}) *EnhancedTestForge {
 	if enhancedClient, ok := e.enhancedClient.(interface {
-		WithDelay(interface{}) forge.ForgeClient
+		WithDelay(interface{}) forge.Client
 	}); ok {
 		e.enhancedClient = enhancedClient.WithDelay(delayDuration)
 	}
@@ -176,7 +176,7 @@ func (e *EnhancedTestForge) GenerateForgeConfig() *config.ForgeConfig {
 }
 
 // ForgeClient returns the underlying forge client for direct access to enhanced features
-func (e *EnhancedTestForge) ForgeClient() forge.ForgeClient {
+func (e *EnhancedTestForge) ForgeClient() forge.Client {
 	return e.enhancedClient
 }
 

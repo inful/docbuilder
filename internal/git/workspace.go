@@ -35,12 +35,13 @@ func (c *Client) CleanWorkspace() error {
 
 func (c *Client) CheckDocIgnore(repoPath string) (bool, error) {
 	path := filepath.Join(repoPath, ".docignore")
-	if _, err := os.Stat(path); err == nil {
+	_, err := os.Stat(path)
+	if err == nil {
 		slog.Debug("Found .docignore file", logfields.Path(path))
 		return true, nil
-	} else if os.IsNotExist(err) {
-		return false, nil
-	} else {
-		return false, fmt.Errorf("failed to check .docignore file: %w", err)
 	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to check .docignore file: %w", err)
 }

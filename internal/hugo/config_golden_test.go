@@ -51,7 +51,7 @@ func TestHugoConfigGolden_Hextra(t *testing.T) {
 		writeMismatch(t, want, actual)
 		// update mode via env var
 		if os.Getenv("UPDATE_GOLDEN") == "1" {
-			if err := os.WriteFile(golden, actual, 0644); err != nil {
+			if err := os.WriteFile(golden, actual, 0600); err != nil {
 				t.Fatalf("update golden: %v", err)
 			}
 			return
@@ -77,7 +77,7 @@ func TestHugoConfigGolden_Docsy(t *testing.T) {
 	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(actual)) {
 		writeMismatch(t, want, actual)
 		if os.Getenv("UPDATE_GOLDEN") == "1" {
-			if err := os.WriteFile(golden, actual, 0644); err != nil {
+			if err := os.WriteFile(golden, actual, 0600); err != nil {
 				t.Fatalf("update golden: %v", err)
 			}
 			return

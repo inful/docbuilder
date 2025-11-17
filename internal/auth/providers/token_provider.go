@@ -50,7 +50,7 @@ func (p *TokenProvider) Name() string {
 
 // CreateAuthWithContext creates token authentication with additional context.
 // This implements EnhancedAuthProvider to allow for context-aware token handling.
-func (p *TokenProvider) CreateAuthWithContext(authConfig *config.AuthConfig, ctx AuthContext) (transport.AuthMethod, error) {
+func (p *TokenProvider) CreateAuthWithContext(authConfig *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
 	// Future enhancement: Could use different usernames based on the forge type
 	// For example, some services might use different username conventions
 	return p.CreateAuth(authConfig)

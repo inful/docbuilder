@@ -222,7 +222,7 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 }
 
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
-func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Listener) error {
+func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
 	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
@@ -265,7 +265,7 @@ func (s *HTTPServer) startDocsServerWithListener(ctx context.Context, ln net.Lis
 	// LiveReload endpoints (SSE + script) if enabled
 	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
 		mux.Handle("/livereload", s.daemon.liveReload)
-		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 			if _, err := w.Write([]byte(LiveReloadScript)); err != nil {
 				slog.Error("failed to write livereload script", "error", err)
@@ -310,7 +310,7 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	return out
 }
 
-func (s *HTTPServer) startWebhookServerWithListener(ctx context.Context, ln net.Listener) error {
+func (s *HTTPServer) startWebhookServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Webhook endpoints for each forge type
@@ -363,7 +363,7 @@ func (s *HTTPServer) handleReadiness(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("not ready: public directory missing"))
 }
 
-func (s *HTTPServer) startAdminServerWithListener(ctx context.Context, ln net.Listener) error {
+func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Health check endpoint

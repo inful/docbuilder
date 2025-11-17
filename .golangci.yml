@@ -1,0 +1,17 @@
+# Minimal, compatible configuration enabling core linters and gosec.
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - ineffassign
+    - errcheck
+    - revive
+    - gosec
+    - typecheck
+    - gosimple
+    - unused
+    - misspell

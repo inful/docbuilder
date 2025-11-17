@@ -71,19 +71,19 @@ func TestHugoThemeType_Features(t *testing.T) {
 
 func TestTypedHugoConfig_Validation(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
-		config := TypedHugoConfig{
+		config := HugoConfig{
 			Title:      "Test Site",
 			Theme:      HugoThemeHextra,
 			BaseURL:    foundation.Some("https://example.com"),
 			ContentDir: "content",
 			PublishDir: "public",
-			Params: TypedHugoParams{
+			Params: HugoParams{
 				Author: foundation.Some("Test Author"),
-				EditLinks: TypedEditLinksConfig{
+				EditLinks: EditLinksConfig{
 					Enabled: true,
 					PerPage: true,
 				},
-				Navigation: TypedNavigationConfig{
+				Navigation: NavigationConfig{
 					ShowTOC:     true,
 					TOCMaxDepth: 3,
 				},
@@ -95,7 +95,7 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("empty title", func(t *testing.T) {
-		config := TypedHugoConfig{
+		config := HugoConfig{
 			Title: "",
 			Theme: HugoThemeHextra,
 		}
@@ -107,7 +107,7 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid baseURL", func(t *testing.T) {
-		config := TypedHugoConfig{
+		config := HugoConfig{
 			Title:   "Test Site",
 			Theme:   HugoThemeHextra,
 			BaseURL: foundation.Some("://not-a-valid-url"), // More clearly invalid URL
@@ -126,7 +126,7 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid content directory", func(t *testing.T) {
-		config := TypedHugoConfig{
+		config := HugoConfig{
 			Title:      "Test Site",
 			Theme:      HugoThemeHextra,
 			ContentDir: "../../../etc/passwd", // directory traversal
@@ -139,13 +139,13 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 
 func TestTypedHugoConfig_LegacyConversion(t *testing.T) {
 	t.Run("to legacy map", func(t *testing.T) {
-		config := TypedHugoConfig{
+		config := HugoConfig{
 			Title:       "Test Site",
 			Theme:       HugoThemeHextra,
 			BaseURL:     foundation.Some("https://example.com"),
 			ContentDir:  "content",
 			BuildDrafts: true,
-			Params: TypedHugoParams{
+			Params: HugoParams{
 				Author:   foundation.Some("Test Author"),
 				Keywords: []string{"docs", "test"},
 				Custom: map[string]any{
@@ -283,20 +283,20 @@ func TestLogLevelType(t *testing.T) {
 
 func TestTypedDaemonConfig_Validation(t *testing.T) {
 	t.Run("valid http config", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeHTTP,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host: "localhost",
 				Port: 8080,
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level:      LogLevelInfo,
 				Structured: false,
 			},
-			Build:       TypedBuildConfig{},
-			Security:    TypedSecurityConfig{},
-			Performance: TypedPerformanceConfig{},
-			Storage:     TypedStorageConfig{},
+			Build:       BuildConfig{},
+			Security:    SecurityConfig{},
+			Performance: PerformanceConfig{},
+			Storage:     StorageConfig{},
 		}
 
 		result := config.Validate()
@@ -304,19 +304,19 @@ func TestTypedDaemonConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("webhook mode requires webhook config", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeWebhook,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host: "localhost",
 				Port: 8080,
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level: LogLevelInfo,
 			},
-			Build:       TypedBuildConfig{},
-			Security:    TypedSecurityConfig{},
-			Performance: TypedPerformanceConfig{},
-			Storage:     TypedStorageConfig{},
+			Build:       BuildConfig{},
+			Security:    SecurityConfig{},
+			Performance: PerformanceConfig{},
+			Storage:     StorageConfig{},
 			// Missing webhook configuration
 		}
 
@@ -334,19 +334,19 @@ func TestTypedDaemonConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("scheduled mode requires schedule config", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeScheduled,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host: "localhost",
 				Port: 8080,
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level: LogLevelInfo,
 			},
-			Build:       TypedBuildConfig{},
-			Security:    TypedSecurityConfig{},
-			Performance: TypedPerformanceConfig{},
-			Storage:     TypedStorageConfig{},
+			Build:       BuildConfig{},
+			Security:    SecurityConfig{},
+			Performance: PerformanceConfig{},
+			Storage:     StorageConfig{},
 			// Missing schedule configuration
 		}
 
@@ -355,19 +355,19 @@ func TestTypedDaemonConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid server port", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeHTTP,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host: "localhost",
 				Port: 99999, // invalid port
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level: LogLevelInfo,
 			},
-			Build:       TypedBuildConfig{},
-			Security:    TypedSecurityConfig{},
-			Performance: TypedPerformanceConfig{},
-			Storage:     TypedStorageConfig{},
+			Build:       BuildConfig{},
+			Security:    SecurityConfig{},
+			Performance: PerformanceConfig{},
+			Storage:     StorageConfig{},
 		}
 
 		result := config.Validate()
@@ -375,19 +375,19 @@ func TestTypedDaemonConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("empty server host", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeHTTP,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host: "", // empty host
 				Port: 8080,
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level: LogLevelInfo,
 			},
-			Build:       TypedBuildConfig{},
-			Security:    TypedSecurityConfig{},
-			Performance: TypedPerformanceConfig{},
-			Storage:     TypedStorageConfig{},
+			Build:       BuildConfig{},
+			Security:    SecurityConfig{},
+			Performance: PerformanceConfig{},
+			Storage:     StorageConfig{},
 		}
 
 		result := config.Validate()
@@ -397,7 +397,7 @@ func TestTypedDaemonConfig_Validation(t *testing.T) {
 
 func TestTypedServerConfig_Validation(t *testing.T) {
 	t.Run("valid server config", func(t *testing.T) {
-		config := TypedServerConfig{
+		config := ServerConfig{
 			Host:         "localhost",
 			Port:         8080,
 			ReadTimeout:  foundation.Some(30 * time.Second),
@@ -409,7 +409,7 @@ func TestTypedServerConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid host", func(t *testing.T) {
-		config := TypedServerConfig{
+		config := ServerConfig{
 			Host: "invalid..hostname",
 			Port: 8080,
 		}
@@ -419,7 +419,7 @@ func TestTypedServerConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid port range", func(t *testing.T) {
-		configs := []TypedServerConfig{
+		configs := []ServerConfig{
 			{Host: "localhost", Port: 0},
 			{Host: "localhost", Port: -1},
 			{Host: "localhost", Port: 65536},
@@ -434,7 +434,7 @@ func TestTypedServerConfig_Validation(t *testing.T) {
 
 func TestTypedTLSConfig_Validation(t *testing.T) {
 	t.Run("disabled TLS", func(t *testing.T) {
-		config := TypedTLSConfig{
+		config := TLSConfig{
 			Enabled: false,
 		}
 
@@ -443,7 +443,7 @@ func TestTypedTLSConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("auto TLS", func(t *testing.T) {
-		config := TypedTLSConfig{
+		config := TLSConfig{
 			Enabled: true,
 			Auto:    true,
 		}
@@ -453,7 +453,7 @@ func TestTypedTLSConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("manual TLS with cert files", func(t *testing.T) {
-		config := TypedTLSConfig{
+		config := TLSConfig{
 			Enabled:  true,
 			Auto:     false,
 			CertFile: foundation.Some("cert.pem"),
@@ -465,7 +465,7 @@ func TestTypedTLSConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("manual TLS missing cert files", func(t *testing.T) {
-		config := TypedTLSConfig{
+		config := TLSConfig{
 			Enabled: true,
 			Auto:    false,
 			// Missing cert and key files
@@ -476,7 +476,7 @@ func TestTypedTLSConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("manual TLS same cert and key file", func(t *testing.T) {
-		config := TypedTLSConfig{
+		config := TLSConfig{
 			Enabled:  true,
 			Auto:     false,
 			CertFile: foundation.Some("same.pem"),
@@ -490,7 +490,7 @@ func TestTypedTLSConfig_Validation(t *testing.T) {
 
 func TestTypedWebhookConfig_Validation(t *testing.T) {
 	t.Run("disabled webhook", func(t *testing.T) {
-		config := TypedWebhookConfig{
+		config := WebhookConfig{
 			Enabled: false,
 		}
 
@@ -499,7 +499,7 @@ func TestTypedWebhookConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("valid webhook config", func(t *testing.T) {
-		config := TypedWebhookConfig{
+		config := WebhookConfig{
 			Enabled:        true,
 			Path:           foundation.Some("/webhook"),
 			MaxPayloadSize: foundation.Some(1024 * 1024), // 1MB
@@ -510,7 +510,7 @@ func TestTypedWebhookConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid webhook path", func(t *testing.T) {
-		config := TypedWebhookConfig{
+		config := WebhookConfig{
 			Enabled: true,
 			Path:    foundation.Some("webhook"), // missing leading slash
 		}
@@ -520,7 +520,7 @@ func TestTypedWebhookConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("invalid payload size", func(t *testing.T) {
-		configs := []TypedWebhookConfig{
+		configs := []WebhookConfig{
 			{Enabled: true, MaxPayloadSize: foundation.Some(100)},               // too small
 			{Enabled: true, MaxPayloadSize: foundation.Some(200 * 1024 * 1024)}, // too large
 		}
@@ -534,7 +534,7 @@ func TestTypedWebhookConfig_Validation(t *testing.T) {
 
 func TestTypedScheduleConfig_Validation(t *testing.T) {
 	t.Run("disabled schedule", func(t *testing.T) {
-		config := TypedScheduleConfig{
+		config := ScheduleConfig{
 			Enabled: false,
 		}
 
@@ -543,7 +543,7 @@ func TestTypedScheduleConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("cron schedule", func(t *testing.T) {
-		config := TypedScheduleConfig{
+		config := ScheduleConfig{
 			Enabled: true,
 			Cron:    foundation.Some("0 */6 * * *"),
 		}
@@ -553,7 +553,7 @@ func TestTypedScheduleConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("interval schedule", func(t *testing.T) {
-		config := TypedScheduleConfig{
+		config := ScheduleConfig{
 			Enabled:  true,
 			Interval: foundation.Some(1 * time.Hour),
 		}
@@ -563,7 +563,7 @@ func TestTypedScheduleConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("missing cron and interval", func(t *testing.T) {
-		config := TypedScheduleConfig{
+		config := ScheduleConfig{
 			Enabled: true,
 			// Neither cron nor interval specified
 		}
@@ -573,7 +573,7 @@ func TestTypedScheduleConfig_Validation(t *testing.T) {
 	})
 
 	t.Run("both cron and interval", func(t *testing.T) {
-		config := TypedScheduleConfig{
+		config := ScheduleConfig{
 			Enabled:  true,
 			Cron:     foundation.Some("0 */6 * * *"),
 			Interval: foundation.Some(1 * time.Hour),
@@ -586,14 +586,14 @@ func TestTypedScheduleConfig_Validation(t *testing.T) {
 
 func TestTypedDaemonConfig_LegacyConversion(t *testing.T) {
 	t.Run("to legacy map", func(t *testing.T) {
-		config := TypedDaemonConfig{
+		config := DaemonConfig{
 			Mode: DaemonModeHTTP,
-			Server: TypedServerConfig{
+			Server: ServerConfig{
 				Host:        "localhost",
 				Port:        8080,
 				ReadTimeout: foundation.Some(30 * time.Second),
 			},
-			Logging: TypedLoggingConfig{
+			Logging: LoggingConfig{
 				Level:      LogLevelInfo,
 				Structured: true,
 				Format:     foundation.Some("json"),
