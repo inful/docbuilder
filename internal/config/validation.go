@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -34,6 +35,9 @@ func (cv *configurationValidator) validate() error {
 		return err
 	}
 	if err := cv.validateBuild(); err != nil {
+		return err
+	}
+	if err := cv.validatePaths(); err != nil {
 		return err
 	}
 	if err := cv.validateVersioning(); err != nil {
@@ -240,6 +244,26 @@ func (cv *configurationValidator) validateRetryDelays() error {
 func (cv *configurationValidator) validateMaxRetries() error {
 	if cv.config.Build.MaxRetries < 0 {
 		return fmt.Errorf("max_retries cannot be negative: %d", cv.config.Build.MaxRetries)
+	}
+	return nil
+}
+
+// validatePaths ensures output directories are unified across config domains.
+// Canonical source is output.directory; daemon.storage.output_dir must match when set.
+func (cv *configurationValidator) validatePaths() error {
+	out := cv.config.Output.Directory
+	if out == "" {
+		out = "./site" // default applied elsewhere, but keep guard for safety
+	}
+	out = filepath.Clean(out)
+	if cv.config.Daemon != nil {
+		s := cv.config.Daemon.Storage.OutputDir
+		if s != "" {
+			s = filepath.Clean(s)
+			if s != out {
+				return fmt.Errorf("daemon.storage.output_dir (%s) must match output.directory (%s)", cv.config.Daemon.Storage.OutputDir, cv.config.Output.Directory)
+			}
+		}
 	}
 	return nil
 }

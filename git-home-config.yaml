@@ -59,6 +59,22 @@ daemon:
     state_file: "./daemon-data/daemon-state.json"
     repo_cache_dir: "./daemon-data/repos"
     output_dir: "./daemon-data/site"
+
+# Output directory for generated Hugo site (used by generator). Prefer PVC path.
+output:
+  directory: "/data/site"
+  clean: true
+# Monitoring configuration
+monitoring:
+  health:
+    path: "/health"
+  metrics:
+    enabled: true
+    path: "/metrics"
+  logging:
+    level: "info"
+    format: "json"
+
 build:
   clone_strategy: auto
   skip_if_unchanged: true
