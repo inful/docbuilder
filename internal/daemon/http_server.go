@@ -276,18 +276,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	}
 
 	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
-	go func() {
-		var err error
-		if ln != nil {
-			err = s.docsServer.Serve(ln)
-		} else {
-			err = s.docsServer.ListenAndServe()
-		}
-		if err != nil && err != http.ErrServerClosed {
-			slog.Error("Documentation server error", "error", err)
-		}
-	}()
-	return nil
+	return s.startServerWithListener("docs", s.docsServer, ln)
 }
 
 // resolveDocsRoot picks the directory to serve. Preference order:
@@ -324,18 +313,7 @@ func (s *HTTPServer) startWebhookServerWithListener(_ context.Context, ln net.Li
 	mux.HandleFunc("/webhook", s.webhookHandlers.HandleGenericWebhook)
 
 	s.webhookServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
-	go func() {
-		var err error
-		if ln != nil {
-			err = s.webhookServer.Serve(ln)
-		} else {
-			err = s.webhookServer.ListenAndServe()
-		}
-		if err != nil && err != http.ErrServerClosed {
-			slog.Error("Webhook server error", "error", err)
-		}
-	}()
-	return nil
+	return s.startServerWithListener("webhook", s.webhookServer, ln)
 }
 
 // handleReadiness returns 200 only when the rendered static site exists under <output.directory>/public.
@@ -408,15 +386,21 @@ func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.List
 	mux.HandleFunc("/status", s.daemon.StatusHandler)
 
 	s.adminServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	return s.startServerWithListener("admin", s.adminServer, ln)
+}
+
+// startServerWithListener launches an http.Server on a pre-bound listener or binds itself.
+// It standardizes goroutine startup and error logging across server types.
+func (s *HTTPServer) startServerWithListener(kind string, srv *http.Server, ln net.Listener) error {
 	go func() {
 		var err error
 		if ln != nil {
-			err = s.adminServer.Serve(ln)
+			err = srv.Serve(ln)
 		} else {
-			err = s.adminServer.ListenAndServe()
+			err = srv.ListenAndServe()
 		}
 		if err != nil && err != http.ErrServerClosed {
-			slog.Error("Admin server error", "error", err)
+			slog.Error(fmt.Sprintf("%s server error", kind), "error", err)
 		}
 	}()
 	return nil
