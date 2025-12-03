@@ -92,34 +92,22 @@ func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) found
 }
 
 func (ss *jsonScheduleStore) Delete(_ context.Context, id string) foundation.Result[struct{}, error] {
-	if id == "" {
-		return foundation.Err[struct{}, error](
-			foundation.ValidationError("ID cannot be empty").Build(),
-		)
-	}
-
 	ss.store.mu.Lock()
 	defer ss.store.mu.Unlock()
 
-	if _, exists := ss.store.schedules[id]; !exists {
-		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("schedule").
-				WithContext(foundation.Fields{"id": id}).
-				Build(),
-		)
-	}
-
-	delete(ss.store.schedules, id)
-
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save schedule deletion").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
+	return deleteEntity(
+		id,
+		func() bool { _, exists := ss.store.schedules[id]; return exists },
+		func() { delete(ss.store.schedules, id) },
+		func() error {
+			if ss.store.autoSaveEnabled {
+				return ss.store.saveToDiskUnsafe()
+			}
+			return nil
+		},
+		"schedule",
+		"failed to save schedule deletion",
+	)
 }
 
 func (ss *jsonScheduleStore) List(_ context.Context) foundation.Result[[]Schedule, error] {

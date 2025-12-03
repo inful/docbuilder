@@ -128,34 +128,22 @@ func (bs *jsonBuildStore) List(_ context.Context, opts ListOptions) foundation.R
 }
 
 func (bs *jsonBuildStore) Delete(_ context.Context, id string) foundation.Result[struct{}, error] {
-	if id == "" {
-		return foundation.Err[struct{}, error](
-			foundation.ValidationError("ID cannot be empty").Build(),
-		)
-	}
-
 	bs.store.mu.Lock()
 	defer bs.store.mu.Unlock()
 
-	if _, exists := bs.store.builds[id]; !exists {
-		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("build").
-				WithContext(foundation.Fields{"id": id}).
-				Build(),
-		)
-	}
-
-	delete(bs.store.builds, id)
-
-	if bs.store.autoSaveEnabled {
-		if err := bs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save build deletion").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
+	return deleteEntity(
+		id,
+		func() bool { _, exists := bs.store.builds[id]; return exists },
+		func() { delete(bs.store.builds, id) },
+		func() error {
+			if bs.store.autoSaveEnabled {
+				return bs.store.saveToDiskUnsafe()
+			}
+			return nil
+		},
+		"build",
+		"failed to save build deletion",
+	)
 }
 
 func (bs *jsonBuildStore) Cleanup(_ context.Context, maxBuilds int) foundation.Result[int, error] {
