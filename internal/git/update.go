@@ -180,7 +180,7 @@ func resolveRemoteDefaultBranch(repo *git.Repository) (string, error) {
 	if target == "" {
 		return "", fmt.Errorf("origin/HEAD target empty")
 	}
-	return plumbing.ReferenceName(target).Short(), nil
+	return target.Short(), nil
 }
 
 func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {

@@ -213,6 +213,7 @@ func (vm *DefaultVersionManager) ListAllRepositories() ([]*RepositoryVersions, e
 }
 
 // getGitReferences retrieves all Git references (branches and tags) from the repository
+// nolint:unparam // error reserved for future git backends that may fail reference lookup
 func (vm *DefaultVersionManager) getGitReferences(_ string) ([]*GitReference, error) {
 	// This is a placeholder implementation
 	// In a real implementation, this would use git ls-remote or similar
@@ -368,7 +369,7 @@ func (vm *DefaultVersionManager) generateDisplayName(name, refType string) strin
 		// Capitalize first letter and replace dashes/underscores with spaces
 		displayName := strings.ReplaceAll(name, "-", " ")
 		displayName = strings.ReplaceAll(displayName, "_", " ")
-		if len(displayName) > 0 {
+		if displayName != "" {
 			displayName = strings.ToUpper(displayName[:1]) + displayName[1:]
 		}
 		return displayName
@@ -391,7 +392,7 @@ func (vm *DefaultVersionManager) generateVersionPath(name, refType, defaultBranc
 }
 
 // calculateVersionChanges compares old and new versions to determine changes
-func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersions []*Version) (int, int, int) {
+func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersions []*Version) (newCount, updatedCount, removedCount int) {
 	oldMap := make(map[string]*Version)
 	for _, v := range oldVersions {
 		oldMap[v.Name] = v
@@ -401,9 +402,6 @@ func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersion
 	for _, v := range newVersions {
 		newMap[v.Name] = v
 	}
-
-	newCount := 0
-	updatedCount := 0
 
 	// Count new and updated versions
 	for name, newVersion := range newMap {
@@ -418,7 +416,6 @@ func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersion
 	}
 
 	// Count removed versions
-	removedCount := 0
 	for name := range oldMap {
 		if _, exists := newMap[name]; !exists {
 			removedCount++

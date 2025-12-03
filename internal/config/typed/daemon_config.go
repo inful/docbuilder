@@ -594,14 +594,14 @@ func (rlc *RateLimitConfig) Validate() foundation.ValidationResult {
 
 // isValidHostname checks if a string is a valid hostname
 func isValidHostname(hostname string) bool {
-	if len(hostname) == 0 || len(hostname) > 253 {
+	if hostname == "" || len(hostname) > 253 {
 		return false
 	}
 
 	// Check each label
 	labels := strings.Split(hostname, ".")
 	for _, label := range labels {
-		if len(label) == 0 || len(label) > 63 {
+		if label == "" || len(label) > 63 {
 			return false
 		}
 

@@ -667,6 +667,7 @@ func (d *Daemon) reloadForgeManager(_ context.Context, _, newConfig *config.Conf
 }
 
 // reloadVersionService updates the version service with new versioning configuration
+// nolint:unparam // This method currently never returns an error.
 func (d *Daemon) reloadVersionService(_ context.Context, _, newConfig *config.Config) error {
 	// Create new version configuration
 	versionConfig := &versioning.VersionConfig{

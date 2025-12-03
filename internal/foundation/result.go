@@ -98,13 +98,11 @@ func MapErr[T any, E1, E2 error](r Result[T, E1], fn func(E1) E2) Result[T, E2] 
 }
 
 // ToTuple converts Result to the traditional Go (value, error) pattern.
-func (r Result[T, E]) ToTuple() (T, E) {
+func (r Result[T, E]) ToTuple() (val T, err E) {
 	if r.isOk {
-		var zeroErr E
-		return r.value, zeroErr
+		return r.value, err
 	}
-	var zeroVal T
-	return zeroVal, r.err
+	return val, r.err
 }
 
 // FromTuple creates a Result from the traditional Go (value, error) pattern.

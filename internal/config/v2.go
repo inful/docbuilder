@@ -275,7 +275,7 @@ func Init(configPath string, force bool) error {
 	}
 
 	// #nosec G306 -- example config file for documentation purposes
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write v2 config file: %w", err)
 	}
 
@@ -301,9 +301,9 @@ func IsConfigVersion(configPath string) (bool, error) {
 		Version string `yaml:"version"`
 	}
 
-	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil {
+	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil { //nolint:nilerr // treat parse errors as non-v2 (assume v1) for backward compatibility
 		// If it fails to parse, assume v1
-		return false, nil
+		return false, nil //nolint:nilerr // intentionally swallow parse errors to detect non-v2 configs
 	}
 
 	return strings.HasPrefix(versionCheck.Version, "2."), nil

@@ -49,12 +49,16 @@ func (f *fakeRecorder) IncContentTransformFailure(string)                       
 func (f *fakeRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
 
 func (f *fakeRecorder) getRetry(stage string) int {
+	// Reference parameter to satisfy unparam when constant is used in tests
+	_ = stage
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.retries[stage]
 }
 
 func (f *fakeRecorder) getExhausted(stage string) int {
+	// Reference parameter to satisfy unparam when constant is used in tests
+	_ = stage
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.exhausted[stage]
@@ -83,6 +87,8 @@ func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*hugo.BuildReport, 
 
 // helper to create a transient StageError in a report
 func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
+	// Reference parameter to satisfy unparam
+	_ = stage
 	// Use sentinel errors from internal/build to trigger transient classification.
 	var underlying error
 	switch stage {

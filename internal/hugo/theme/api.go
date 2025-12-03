@@ -70,7 +70,7 @@ func TitleCase(s string) string {
 	}
 	parts := strings.Fields(s)
 	for i, p := range parts {
-		if len(p) > 0 {
+		if p != "" {
 			parts[i] = strings.ToUpper(p[:1]) + strings.ToLower(p[1:])
 		}
 	}

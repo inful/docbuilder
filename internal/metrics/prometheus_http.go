@@ -10,7 +10,9 @@ import (
 // HTTPHandler returns an http.Handler that serves Prometheus metrics for the provided registry.
 func HTTPHandler(reg *prom.Registry) http.Handler {
 	if reg == nil {
-		reg = prom.DefaultRegisterer.(*prom.Registry)
+		if typed, ok := prom.DefaultRegisterer.(*prom.Registry); ok { // check assertion to satisfy errcheck
+			reg = typed
+		}
 	}
 	return promhttp.HandlerFor(reg, promhttp.HandlerOpts{EnableOpenMetrics: true})
 }

@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
@@ -297,7 +298,8 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		transientStage := ""
 		if report != nil && len(report.Errors) > 0 {
 			for _, e := range report.Errors {
-				if se, ok := e.(*hugo.StageError); ok && se.Transient() {
+				var se *hugo.StageError
+				if errors.As(e, &se) && se.Transient() {
 					transient = true
 					transientStage = string(se.Stage)
 					break

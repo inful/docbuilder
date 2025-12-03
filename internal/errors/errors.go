@@ -3,6 +3,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -127,7 +128,8 @@ func WrapRetryable(err error, category ErrorCategory, severity ErrorSeverity, me
 
 // IsCategory checks if an error belongs to a specific category
 func IsCategory(err error, category ErrorCategory) bool {
-	if dbe, ok := err.(*DocBuilderError); ok {
+	var dbe *DocBuilderError
+	if errors.As(err, &dbe) {
 		return dbe.Category == category
 	}
 	return false
@@ -135,7 +137,8 @@ func IsCategory(err error, category ErrorCategory) bool {
 
 // IsRetryable checks if an error is retryable
 func IsRetryable(err error) bool {
-	if dbe, ok := err.(*DocBuilderError); ok {
+	var dbe *DocBuilderError
+	if errors.As(err, &dbe) {
 		return dbe.Retryable
 	}
 	return false
@@ -143,7 +146,8 @@ func IsRetryable(err error) bool {
 
 // GetCategory extracts the category from an error, or returns CategoryInternal if not a DocBuilderError
 func GetCategory(err error) ErrorCategory {
-	if dbe, ok := err.(*DocBuilderError); ok {
+	var dbe *DocBuilderError
+	if errors.As(err, &dbe) {
 		return dbe.Category
 	}
 	return CategoryInternal

@@ -44,7 +44,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	}
 	fmData, err := yaml.Marshal(frontMatter)
 	if err != nil {
-		return fmt.Errorf("%w: %v", herrors.ErrIndexGenerationFailed, err)
+		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)
 	}
 	// File-based template overrides
 	tplRaw := g.mustIndexTemplate("main")
@@ -65,7 +65,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 		content = body
 	}
 	// #nosec G306 -- index pages are public content
-	if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write index at %s: %w", indexPath, err)
 	}
 	slog.Info("Generated main index page", logfields.Path(indexPath))
@@ -79,7 +79,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 	}
 	for repoName, files := range repoGroups {
 		indexPath := filepath.Join(g.buildRoot(), "content", repoName, "_index.md")
-		if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
 		frontMatter := map[string]any{"title": fmt.Sprintf("%s Documentation", titleCase(repoName)), "repository": repoName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
@@ -114,7 +114,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			content = body
 		}
 		// #nosec G306 -- index pages are public content
-		if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("failed to write repository index: %w", err)
 		}
 		slog.Debug("Generated repository index", logfields.Repository(repoName), logfields.Path(indexPath))
@@ -136,7 +136,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	for repoName, sections := range sectionGroups {
 		for sectionName, files := range sections {
 			indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
-			if err := os.MkdirAll(filepath.Dir(indexPath), 0755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 			}
 			frontMatter := map[string]any{"title": fmt.Sprintf("%s - %s", titleCase(repoName), titleCase(sectionName)), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
@@ -164,7 +164,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 				content = body
 			}
 			// #nosec G306 -- index pages are public content
-			if err := os.WriteFile(indexPath, []byte(content), 0644); err != nil {
+			if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 				return fmt.Errorf("failed to write section index: %w", err)
 			}
 			slog.Debug("Generated section index", logfields.Repository(repoName), logfields.Section(sectionName), logfields.Path(indexPath))

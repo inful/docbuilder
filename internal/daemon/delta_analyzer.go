@@ -84,7 +84,7 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 		if fi, err := os.Stat(base); err == nil && fi.IsDir() {
 			if walkErr := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
 				if err != nil || d == nil || d.IsDir() {
-					return nil
+					return nil //nolint:nilerr // best-effort quick hash; skip per-file errors
 				}
 				name := d.Name()
 				ln := strings.ToLower(name)

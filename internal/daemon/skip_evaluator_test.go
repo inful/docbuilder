@@ -43,6 +43,9 @@ func newTestGenerator(_ *testing.T, cfg *cfg.Config, outDir string) *hugo.Genera
 
 // writePrevReport helper writes a build-report.json with the provided fields and updates checksum state.
 func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, docHash string, st *fakeSkipState) {
+	// Reference unused parameter to satisfy unparam
+	// nolint:unparam // Test helper accepts fixed values in call sites by design.
+	_ = repos
 	prev := struct {
 		Repositories  int    `json:"repositories"`
 		Files         int    `json:"files"`

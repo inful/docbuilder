@@ -110,7 +110,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, docsPath, repo.Tags)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %s in %s: %v", derrors.ErrDocsDirWalkFailed, docsPath, repoName, err)
+				return nil, fmt.Errorf("%w: %s in %s: %w", derrors.ErrDocsDirWalkFailed, docsPath, repoName, err)
 			}
 
 			d.docFiles = append(d.docFiles, files...)
@@ -150,7 +150,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 		// Calculate relative path from docs directory
 		relPath, err := filepath.Rel(docsPath, path)
 		if err != nil {
-			return fmt.Errorf("%w: %v", derrors.ErrInvalidRelativePath, err)
+			return fmt.Errorf("%w: %w", derrors.ErrInvalidRelativePath, err)
 		}
 
 		// Determine section from directory structure
@@ -192,7 +192,7 @@ func (df *DocFile) LoadContent() error {
 
 	content, err := os.ReadFile(df.Path)
 	if err != nil {
-		return fmt.Errorf("%w: %s: %v", derrors.ErrFileReadFailed, df.Path, err)
+		return fmt.Errorf("%w: %s: %w", derrors.ErrFileReadFailed, df.Path, err)
 	}
 
 	df.Content = content
@@ -300,5 +300,5 @@ func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-	return false, fmt.Errorf("%w: %v", derrors.ErrDocIgnoreCheckFailed, err)
+	return false, fmt.Errorf("%w: %w", derrors.ErrDocIgnoreCheckFailed, err)
 }

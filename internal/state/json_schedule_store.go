@@ -74,29 +74,21 @@ func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) found
 		return foundation.Err[*Schedule, error](validationResult.ToError())
 	}
 
-	ss.store.mu.Lock()
-	defer ss.store.mu.Unlock()
-
-	if _, exists := ss.store.schedules[schedule.ID]; !exists {
-		return foundation.Err[*Schedule, error](
-			foundation.NotFoundError("schedule").
-				WithContext(foundation.Fields{"id": schedule.ID}).
-				Build(),
-		)
-	}
-
-	schedule.UpdatedAt = time.Now()
-	ss.store.schedules[schedule.ID] = schedule
-
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
+	return updateEntity[Schedule](
+		ss.store,
+		schedule,
+		func() bool { _, ok := ss.store.schedules[schedule.ID]; return ok },
+		func() { schedule.UpdatedAt = time.Now() },
+		func() { ss.store.schedules[schedule.ID] = schedule },
+		func() foundation.Result[*Schedule, error] {
 			return foundation.Err[*Schedule, error](
-				foundation.InternalError("failed to save schedule update").WithCause(err).Build(),
+				foundation.NotFoundError("schedule").
+					WithContext(foundation.Fields{"id": schedule.ID}).
+					Build(),
 			)
-		}
-	}
-
-	return foundation.Ok[*Schedule, error](schedule)
+		},
+		"failed to save schedule update",
+	)
 }
 
 func (ss *jsonScheduleStore) Delete(_ context.Context, id string) foundation.Result[struct{}, error] {

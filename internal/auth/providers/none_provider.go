@@ -20,7 +20,8 @@ func (p *NoneProvider) Type() config.AuthType {
 
 // CreateAuth creates no authentication (returns nil).
 func (p *NoneProvider) CreateAuth(_ *config.AuthConfig) (transport.AuthMethod, error) {
-	return nil, nil
+	// No authentication needed, return typed nil for AuthMethod
+	return transport.AuthMethod(nil), nil
 }
 
 // ValidateConfig validates that no authentication is properly configured.

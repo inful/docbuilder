@@ -35,25 +35,20 @@ func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 
 	client := &GitHubClient{
 		config:     fg,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: newHTTPClient30s(),
 		apiURL:     fg.APIURL,
 		baseURL:    fg.BaseURL,
 	}
 
 	// Set default URLs if not provided
-	if client.apiURL == "" {
-		client.apiURL = "https://api.github.com"
-	}
-	if client.baseURL == "" {
-		client.baseURL = "https://github.com"
-	}
+	client.apiURL, client.baseURL = withDefaults(client.apiURL, client.baseURL, "https://api.github.com", "https://github.com")
 
 	// Extract token from auth config
-	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
-		client.token = fg.Auth.Token
-	} else {
-		return nil, fmt.Errorf("GitHub client requires token authentication")
+	tok, err := tokenFromConfig(fg, "GitHub")
+	if err != nil {
+		return nil, err
 	}
+	client.token = tok
 
 	return client, nil
 }
@@ -249,8 +244,8 @@ func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, b
 	return true, nil
 }
 
-// ValidateWebhook validates GitHub webhook signature
-func (c *GitHubClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
+// ValidateWebhook validates the GitHub webhook signature
+func (c *GitHubClient) ValidateWebhook(payload []byte, signature, secret string) bool {
 	if signature == "" || secret == "" {
 		return false
 	}
@@ -267,7 +262,7 @@ func (c *GitHubClient) ValidateWebhook(payload []byte, signature string, secret 
 	// Fallback legacy SHA-1 format: sha1=<hash>
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy GitHub webhook signature fallback
+		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy GitHub webhook signature fallback
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))
@@ -461,8 +456,8 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	return c.doRequest(req, &result)
 }
 
-// GetEditURL returns the GitHub edit URL for a file
-func (c *GitHubClient) GetEditURL(repo *Repository, filePath string, branch string) string {
+// GetEditURL returns the URL to edit a file in GitHub
+func (c *GitHubClient) GetEditURL(repo *Repository, filePath, branch string) string {
 	return GenerateEditURL(TypeGitHub, c.baseURL, repo.FullName, branch, filePath)
 }
 
@@ -518,7 +513,7 @@ func (c *GitHubClient) newRequest(ctx context.Context, method, endpoint string, 
 		req.Header.Set("Content-Type", "application/json")
 	} else {
 		var err error
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), nil)
+		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
 		if err != nil {
 			return nil, err
 		}

@@ -58,8 +58,11 @@ func (sp *StatePersisterImpl) PersistBuildState(
 	genErr error,
 ) error {
 	sm, ok := stateMgr.(buildStateManager)
-	if !ok || sm == nil || genErr != nil {
-		return nil // Skip persistence on error or if state manager unavailable
+	if !ok || sm == nil {
+		return nil //nolint:nilerr // Skip if state manager unavailable
+	}
+	if genErr != nil {
+		return genErr
 	}
 
 	// Persist repository commit heads
@@ -86,6 +89,7 @@ func (sp *StatePersisterImpl) PersistBuildState(
 }
 
 // persistRepositoryCommits persists the latest commit hash for each repository
+// nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistRepositoryCommits(
 	repos []config.Repository,
 	workspace string,
@@ -103,6 +107,7 @@ func (sp *StatePersisterImpl) persistRepositoryCommits(
 }
 
 // persistConfigHash persists the Hugo configuration hash
+// nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistConfigHash(
 	generator HugoGenerator,
 	sm buildStateManager,
@@ -114,6 +119,7 @@ func (sp *StatePersisterImpl) persistConfigHash(
 }
 
 // persistReportChecksum persists the build report checksum
+// nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistReportChecksum(
 	outDir string,
 	sm buildStateManager,
@@ -121,7 +127,7 @@ func (sp *StatePersisterImpl) persistReportChecksum(
 	reportPath := filepath.Join(outDir, "build-report.json")
 	brData, err := os.ReadFile(reportPath)
 	if err != nil {
-		return nil // Skip if report file doesn't exist
+		return nil //nolint:nilerr // Skip if report file doesn't exist
 	}
 
 	sum := sha256.Sum256(brData)
@@ -132,6 +138,7 @@ func (sp *StatePersisterImpl) persistReportChecksum(
 }
 
 // persistGlobalDocFilesHash persists the global documentation files hash
+// nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistGlobalDocFilesHash(
 	report *hugo.BuildReport,
 	sm buildStateManager,

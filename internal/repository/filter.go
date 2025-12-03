@@ -45,7 +45,7 @@ func NewFilter(includeGlobs, excludeGlobs []string) (*Filter, error) {
 }
 
 // Include returns true if repo passes the filter along with an exclusion reason if false.
-func (f *Filter) Include(repo config.Repository) (bool, string) {
+func (f *Filter) Include(repo config.Repository) (ok bool, reason string) {
 	name := repo.Name
 	if f == nil {
 		return true, ""

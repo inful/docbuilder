@@ -66,6 +66,7 @@ type DaemonCmd struct {
 }
 
 // AfterApply runs after flag parsing; setup logging once.
+// nolint:unparam // AfterApply currently never returns an error.
 func (c *CLI) AfterApply() error {
 	level := slog.LevelInfo
 	if c.Verbose {
@@ -152,7 +153,7 @@ func main() {
 	}
 }
 
-func runBuild(cfg *config.Config, outputDir string, incremental bool, verbose bool) error {
+func runBuild(cfg *config.Config, outputDir string, incremental, verbose bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
 
@@ -331,7 +332,7 @@ func runDiscover(cfg *config.Config, specificRepo string) error {
 	return nil
 }
 
-func runDaemon(cfg *config.Config, dataDir string, configPath string) error {
+func runDaemon(cfg *config.Config, dataDir, configPath string) error {
 	slog.Info("Starting daemon mode", "data_dir", dataDir)
 
 	// Create main context for the daemon

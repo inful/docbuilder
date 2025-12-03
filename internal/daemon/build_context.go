@@ -87,6 +87,7 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 }
 
 // stageEarlySkip executes the SkipEvaluator prior to any destructive filesystem actions.
+// nolint:unparam // This stage currently never returns an error.
 func (bc *buildContext) stageEarlySkip() error {
 	if bc.cfg == nil || len(bc.repos) == 0 || !bc.cfg.Build.SkipIfUnchanged {
 		return nil
@@ -100,6 +101,7 @@ func (bc *buildContext) stageEarlySkip() error {
 }
 
 // stageDeltaAnalysis runs the delta analyzer scaffold. Future work will refine repos slice.
+// nolint:unparam // This stage currently never returns an error.
 func (bc *buildContext) stageDeltaAnalysis() error {
 	if bc.skipReport != nil || len(bc.repos) == 0 {
 		return nil
@@ -165,7 +167,7 @@ func (bc *buildContext) stagePrepareFilesystem() error {
 			slog.Warn("Failed to clean output directory", "dir", bc.outDir, "error", err)
 		}
 	}
-	if err := os.MkdirAll(bc.outDir, 0755); err != nil {
+	if err := os.MkdirAll(bc.outDir, 0o755); err != nil {
 		return fmt.Errorf("create output dir: %w", err)
 	}
 	ws := bc.cfg.Build.WorkspaceDir
@@ -199,7 +201,7 @@ func (bc *buildContext) stagePrepareFilesystem() error {
 	} else if bc.cfg.Build.CloneStrategy != cfg.CloneStrategyFresh && bc.cfg.Output.Clean {
 		slog.Info("Preserving workspace for incremental updates", "dir", ws, "strategy", bc.cfg.Build.CloneStrategy)
 	}
-	if err := os.MkdirAll(ws, 0755); err != nil {
+	if err := os.MkdirAll(ws, 0o755); err != nil {
 		return fmt.Errorf("create workspace: %w", err)
 	}
 	slog.Info("Using workspace directory", "dir", ws, "configured", bc.cfg.Build.WorkspaceDir != "")
@@ -242,14 +244,14 @@ func (bc *buildContext) stageInjectLiveReload() error {
 	inject := []byte("<script src=\"/livereload.js\"></script>")
 	err := filepath.WalkDir(outRoot, func(p string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil || d == nil || d.IsDir() {
-			return nil
+			return nil //nolint:nilerr // ignore per-file traversal errors; best-effort inject
 		}
 		if !strings.HasSuffix(strings.ToLower(d.Name()), ".html") {
 			return nil
 		}
 		b, rerr := os.ReadFile(p)
 		if rerr != nil {
-			return nil
+			return nil //nolint:nilerr // skip unreadable files; livereload injection is optional
 		}
 		if bytes.Contains(b, []byte("/livereload.js")) {
 			return nil

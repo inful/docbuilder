@@ -1,6 +1,7 @@
 package errors
 
 import (
+	stdErrors "errors"
 	"fmt"
 	"testing"
 )
@@ -127,8 +128,8 @@ func TestConvenienceFunctions(t *testing.T) {
 		if !err.Retryable {
 			t.Error("NetworkTimeout should be retryable")
 		}
-		if err.Cause != cause {
-			t.Errorf("Cause = %v, want %v", err.Cause, cause)
+		if !stdErrors.Is(err, cause) {
+			t.Errorf("Cause should match wrapped cause: %v", cause)
 		}
 	})
 

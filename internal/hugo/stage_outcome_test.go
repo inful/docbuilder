@@ -3,9 +3,10 @@ package hugo
 import (
 	"errors"
 	"fmt"
+	"testing"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	cfgpkg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"testing"
 )
 
 // minimal build state helper

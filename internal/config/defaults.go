@@ -213,7 +213,7 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 			cfg.Versioning.Strategy = norm
 		} else {
 			// Preserve original invalid value so validateConfig can raise an error
-			cfg.Versioning.Strategy = VersioningStrategy(orig)
+			cfg.Versioning.Strategy = orig
 		}
 	}
 

@@ -31,7 +31,7 @@ func (m *Manager) Create() error {
 	timestamp := time.Now().Format("20060102-150405")
 	tempDir := filepath.Join(m.baseDir, fmt.Sprintf("docbuilder-%s", timestamp))
 
-	if err := os.MkdirAll(tempDir, 0755); err != nil {
+	if err := os.MkdirAll(tempDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 
@@ -67,7 +67,7 @@ func (m *Manager) CreateSubdir(name string) (string, error) {
 	}
 
 	subdir := filepath.Join(m.tempDir, name)
-	if err := os.MkdirAll(subdir, 0755); err != nil {
+	if err := os.MkdirAll(subdir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create subdirectory: %w", err)
 	}
 

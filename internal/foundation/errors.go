@@ -1,6 +1,7 @@
 package foundation
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -62,8 +63,7 @@ func (e *ClassifiedError) Error() string {
 		parts = append(parts, fmt.Sprintf("operation=%s", e.Operation))
 	}
 
-	parts = append(parts, fmt.Sprintf("code=%s", e.Code))
-	parts = append(parts, e.Message)
+	parts = append(parts, fmt.Sprintf("code=%s", e.Code), e.Message)
 
 	if e.Cause != nil {
 		parts = append(parts, fmt.Sprintf("cause: %v", e.Cause))
@@ -223,16 +223,10 @@ func IsErrorCode(err error, code ErrorCode) bool {
 
 // AsClassified extracts a ClassifiedError from an error chain.
 func AsClassified(err error, target **ClassifiedError) bool {
-	for err != nil {
-		if classified, ok := err.(*ClassifiedError); ok {
-			*target = classified
-			return true
-		}
-		if unwrapper, ok := err.(interface{ Unwrap() error }); ok {
-			err = unwrapper.Unwrap()
-		} else {
-			break
-		}
+	var classified *ClassifiedError
+	if errors.As(err, &classified) {
+		*target = classified
+		return true
 	}
 	return false
 }

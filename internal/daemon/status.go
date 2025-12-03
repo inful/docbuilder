@@ -242,6 +242,7 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 }
 
 // generateRepositoryStatus collects status for discovered repositories
+// nolint:unparam // generateRepositoryStatus currently never returns an error.
 func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 	var repositories []RepositoryStatus
 
