@@ -52,35 +52,22 @@ func (cs *jsonConfigurationStore) Set(_ context.Context, key string, value any) 
 }
 
 func (cs *jsonConfigurationStore) Delete(_ context.Context, key string) foundation.Result[struct{}, error] {
-	if key == "" {
-		return foundation.Err[struct{}, error](
-			foundation.ValidationError("key cannot be empty").Build(),
-		)
-	}
-
 	cs.store.mu.Lock()
 	defer cs.store.mu.Unlock()
 
-	// Check if key exists
-	if _, exists := cs.store.configuration[key]; !exists {
-		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("configuration key").
-				WithContext(foundation.Fields{"key": key}).
-				Build(),
-		)
-	}
-
-	delete(cs.store.configuration, key)
-
-	if cs.store.autoSaveEnabled {
-		if err := cs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save configuration deletion").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
+	return deleteEntity(
+		key,
+		func() bool { _, exists := cs.store.configuration[key]; return exists },
+		func() { delete(cs.store.configuration, key) },
+		func() error {
+			if cs.store.autoSaveEnabled {
+				return cs.store.saveToDiskUnsafe()
+			}
+			return nil
+		},
+		"configuration key",
+		"failed to save configuration deletion",
+	)
 }
 
 func (cs *jsonConfigurationStore) List(ctx context.Context) foundation.Result[map[string]any, error] {

@@ -127,39 +127,22 @@ func (rs *jsonRepositoryStore) List(_ context.Context) foundation.Result[[]Repos
 }
 
 func (rs *jsonRepositoryStore) Delete(_ context.Context, url string) foundation.Result[struct{}, error] {
-	if url == "" {
-		return foundation.Err[struct{}, error](
-			foundation.ValidationError("URL cannot be empty").Build(),
-		)
-	}
-
 	rs.store.mu.Lock()
 	defer rs.store.mu.Unlock()
 
-	// Check if repository exists
-	if _, exists := rs.store.repositories[url]; !exists {
-		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": url}).
-				Build(),
-		)
-	}
-
-	// Remove the repository
-	delete(rs.store.repositories, url)
-
-	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save repository deletion").
-					WithCause(err).
-					Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[struct{}, error](struct{}{})
+	return deleteEntity(
+		url,
+		func() bool { _, exists := rs.store.repositories[url]; return exists },
+		func() { delete(rs.store.repositories, url) },
+		func() error {
+			if rs.store.autoSaveEnabled {
+				return rs.store.saveToDiskUnsafe()
+			}
+			return nil
+		},
+		"repository",
+		"failed to save repository deletion",
+	)
 }
 
 func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string, success bool) foundation.Result[struct{}, error] {
