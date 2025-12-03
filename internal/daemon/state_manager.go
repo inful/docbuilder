@@ -274,7 +274,7 @@ type Stats struct {
 
 // NewStateManager creates a new state manager
 func NewStateManager(dataDir string) (*StateManager, error) {
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create data directory: %w", err)
 	}
 
@@ -375,7 +375,7 @@ func (sm *StateManager) saveUnsafe() error {
 
 	// Write to temporary file first
 	// #nosec G306 -- state file needs to be readable by the process
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write state to temporary file: %w", err)
 	}
 

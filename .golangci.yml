@@ -131,6 +131,11 @@ issues:
         - dupl
         - goconst
         - gocognit
+
+    # Mock factories are intentionally repetitive for readability in tests
+    - path: internal/forge/enhanced_mock_factory\.go
+      linters:
+        - dupl
     
     # Forge test integration files - intentionally complex integration tests
     - path: internal/forge/.*_(integration|workflow|deployment|summary|demo)_test\.go

@@ -359,7 +359,7 @@ func (s *Scheduler) validateCronField(field string, _, _ int, _ string) error {
 func (s *Scheduler) validateIntervalExpression(expression string) error {
 	_, err := time.ParseDuration(expression)
 	if err != nil {
-		return fmt.Errorf("invalid interval duration: %v", err)
+		return fmt.Errorf("invalid interval duration: %w", err)
 	}
 	return nil
 }
@@ -368,7 +368,7 @@ func (s *Scheduler) validateIntervalExpression(expression string) error {
 func (s *Scheduler) validateOnceExpression(expression string) error {
 	_, err := time.Parse(time.RFC3339, expression)
 	if err != nil {
-		return fmt.Errorf("invalid timestamp format, use RFC3339: %v", err)
+		return fmt.Errorf("invalid timestamp format, use RFC3339: %w", err)
 	}
 	return nil
 }
@@ -388,7 +388,7 @@ func (s *Scheduler) calculateNextRun(schedule *Schedule) error {
 	case ScheduleTypeInterval:
 		duration, err := time.ParseDuration(schedule.Expression)
 		if err != nil {
-			return fmt.Errorf("invalid interval: %v", err)
+			return fmt.Errorf("invalid interval: %w", err)
 		}
 
 		var nextRun time.Time
@@ -402,7 +402,7 @@ func (s *Scheduler) calculateNextRun(schedule *Schedule) error {
 	case ScheduleTypeOnce:
 		targetTime, err := time.Parse(time.RFC3339, schedule.Expression)
 		if err != nil {
-			return fmt.Errorf("invalid timestamp: %v", err)
+			return fmt.Errorf("invalid timestamp: %w", err)
 		}
 
 		if targetTime.Before(now) {

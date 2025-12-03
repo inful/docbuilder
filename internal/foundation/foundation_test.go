@@ -34,8 +34,8 @@ func TestResult(t *testing.T) {
 			t.Error("Expected result to be Err")
 		}
 
-		if result.UnwrapErr() != testErr {
-			t.Error("Expected unwrap error to return test error")
+		if !errors.Is(result.UnwrapErr(), testErr) {
+			t.Error("Expected unwrap error to match test error")
 		}
 	})
 

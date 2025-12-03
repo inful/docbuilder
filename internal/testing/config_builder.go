@@ -183,7 +183,7 @@ func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 	}
 
 	// Write to file with tighter permissions
-	if err := os.WriteFile(filePath, data, 0600); err != nil {
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
 		cb.t.Fatalf("Failed to save config to %s: %v", filePath, err)
 	}
 	return cb.config

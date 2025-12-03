@@ -31,25 +31,20 @@ func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 
 	client := &GitLabClient{
 		config:     fg,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		httpClient: newHTTPClient30s(),
 		apiURL:     fg.APIURL,
 		baseURL:    fg.BaseURL,
 	}
 
 	// Set default URLs if not provided
-	if client.apiURL == "" {
-		client.apiURL = "https://gitlab.com/api/v4"
-	}
-	if client.baseURL == "" {
-		client.baseURL = "https://gitlab.com"
-	}
+	client.apiURL, client.baseURL = withDefaults(client.apiURL, client.baseURL, "https://gitlab.com/api/v4", "https://gitlab.com")
 
 	// Extract token from auth config
-	if fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
-		client.token = fg.Auth.Token
-	} else {
-		return nil, fmt.Errorf("GitLab client requires token authentication")
+	tok, err := tokenFromConfig(fg, "GitLab")
+	if err != nil {
+		return nil, err
 	}
+	client.token = tok
 
 	return client, nil
 }
@@ -495,7 +490,7 @@ func (c *GitLabClient) newRequest(ctx context.Context, method, endpoint string, 
 		req.Header.Set("Content-Type", "application/json")
 	} else {
 		var err error
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), nil)
+		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
 		if err != nil {
 			return nil, err
 		}

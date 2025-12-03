@@ -84,6 +84,7 @@ func (env *MockCLIEnvironment) WithRealisticForgeEcosystem() *MockCLIEnvironment
 }
 
 // WithTestConfiguration creates a test configuration file
+// nolint:unparam // Method returns receiver for chaining; result sometimes ignored in tests.
 func (env *MockCLIEnvironment) WithTestConfiguration() *MockCLIEnvironment {
 	env.testConfig = &config.Config{
 		Version: "2.0",
@@ -124,7 +125,7 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 		return err
 	}
 
-	return os.WriteFile(env.configPath, configBytes, 0600)
+	return os.WriteFile(env.configPath, configBytes, 0o600)
 }
 
 // CreateProjectStructure creates a realistic project structure for testing
@@ -139,7 +140,7 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(env.workspaceDir, dir)
-		if err := os.MkdirAll(dirPath, 0755); err != nil {
+		if err := os.MkdirAll(dirPath, 0o755); err != nil {
 			return err
 		}
 	}
@@ -154,7 +155,7 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 
 	for filePath, content := range files {
 		fullPath := filepath.Join(env.workspaceDir, filePath)
-		if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
 			return err
 		}
 		env.tempFiles = append(env.tempFiles, fullPath)
@@ -299,7 +300,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 	env.outputCapture.WriteString("Generating Hugo static site...\n")
 
 	outputDir := filepath.Join(env.workspaceDir, "site")
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		env.errorCapture.WriteString("Failed to create output directory: " + err.Error())
 		return 1, nil
 	}
@@ -319,7 +320,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 
 		// Create directory if needed
 		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			continue
 		}
 
@@ -329,7 +330,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 			content = "<!DOCTYPE html><html><head><title>DocBuilder Test</title></head><body><h1>Generated Site</h1></body></html>"
 		}
 
-		if err := os.WriteFile(fullPath, []byte(content), 0600); err == nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0o600); err == nil {
 			fullPaths = append(fullPaths, fullPath)
 		}
 	}

@@ -12,9 +12,9 @@ import (
 type Type = config.ForgeType
 
 const (
-	TypeGitHub  Type = Type(config.ForgeGitHub)
-	TypeGitLab  Type = Type(config.ForgeGitLab)
-	TypeForgejo Type = Type(config.ForgeForgejo)
+	TypeGitHub  Type = config.ForgeGitHub
+	TypeGitLab  Type = config.ForgeGitLab
+	TypeForgejo Type = config.ForgeForgejo
 )
 
 // Repository represents a repository discovered from a forge

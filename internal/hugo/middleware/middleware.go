@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -159,7 +160,8 @@ func ErrorHandlingMiddleware() Middleware {
 
 			// Wrap errors with command context if not already wrapped
 			if result.Err != nil {
-				if _, ok := result.Err.(*commands.ExecutionError); !ok {
+				var execErr *commands.ExecutionError
+				if !errors.As(result.Err, &execErr) {
 					result.Err = &commands.ExecutionError{
 						Command: cmd.Name(),
 						Cause:   result.Err,

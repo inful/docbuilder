@@ -394,7 +394,7 @@ func (p *FrontMatterPatch) applyDeep(fm *FrontMatter) *FrontMatter {
 }
 
 // mergeStringArray merges two string arrays based on the patch's array merge strategy.
-func (p *FrontMatterPatch) mergeStringArray(existing []string, newItems []string) []string {
+func (p *FrontMatterPatch) mergeStringArray(existing, newItems []string) []string {
 	switch p.ArrayMergeStrategy {
 	case ArrayMergeStrategyReplace:
 		return newItems

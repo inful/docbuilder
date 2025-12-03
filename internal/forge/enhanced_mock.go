@@ -242,8 +242,8 @@ func (m *EnhancedMockForgeClient) CheckDocumentation(_ context.Context, _ *Repos
 	return nil
 }
 
-// ValidateWebhook validates webhook signatures
-func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature string, secret string) bool {
+// ValidateWebhook simulates webhook validation
+func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature, secret string) bool {
 	// Empty signature should fail
 	if signature == "" {
 		return false

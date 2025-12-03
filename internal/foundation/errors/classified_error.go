@@ -2,6 +2,7 @@
 package errors
 
 import (
+	stdErrors "errors"
 	"fmt"
 )
 
@@ -122,13 +123,14 @@ func (e *ClassifiedError) IsTransient() bool {
 
 // IsClassified checks if an error is a ClassifiedError.
 func IsClassified(err error) bool {
-	_, ok := err.(*ClassifiedError)
-	return ok
+	var ce *ClassifiedError
+	return stdErrors.As(err, &ce)
 }
 
 // AsClassified attempts to convert an error to a ClassifiedError.
 func AsClassified(err error) (*ClassifiedError, bool) {
-	if classified, ok := err.(*ClassifiedError); ok {
+	var classified *ClassifiedError
+	if stdErrors.As(err, &classified) {
 		return classified, true
 	}
 	return nil, false

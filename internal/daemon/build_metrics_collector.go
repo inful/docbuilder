@@ -88,6 +88,7 @@ func (bmc *BuildMetricsCollectorImpl) UpdateRepositoryMetrics(
 }
 
 // calculateDocumentCounts calculates document counts for each repository
+// nolint:unparam // This helper currently never returns a non-nil error.
 func (bmc *BuildMetricsCollectorImpl) calculateDocumentCounts(
 	repos []config.Repository,
 	contentRoot string,
@@ -103,7 +104,7 @@ func (bmc *BuildMetricsCollectorImpl) calculateDocumentCounts(
 		perRepoDocCounts[r.URL] = count
 	}
 
-	return perRepoDocCounts, nil
+	return perRepoDocCounts, nil //nolint:nilerr // errors are treated as zero counts; overall function returns map only
 }
 
 // countRepositoryDocuments counts markdown documents for a specific repository
@@ -120,7 +121,7 @@ func (bmc *BuildMetricsCollectorImpl) countRepositoryDocuments(
 	// Try namespaced repository path (repo might be under organization folder)
 	entries, err := os.ReadDir(contentRoot)
 	if err != nil {
-		return 0, nil // Return 0 count if can't read content root
+		return 0, err // Propagate error; caller handles by setting count=0
 	}
 
 	for _, entry := range entries {
@@ -153,7 +154,7 @@ func (bmc *BuildMetricsCollectorImpl) countMarkdownFiles(root string) int {
 		return nil
 	}); werr != nil {
 		// best-effort counter; ignore traversal error
-		return count
+		return count //nolint:nilerr // traversal errors are intentionally ignored for metrics
 	}
 
 	return count

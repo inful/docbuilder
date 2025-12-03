@@ -53,11 +53,11 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	configDir := filepath.Join(tempDir, "config")
 	outputDir := filepath.Join(tempDir, "output")
 
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 
@@ -190,7 +190,7 @@ func (result *TestResult) AssertOutputContains(t *testing.T, expected string) {
 	}
 	// Simple string search for now - could be enhanced with regex
 	found := false
-	if result.Output != "" && len(expected) > 0 {
+	if result.Output != "" && expected != "" {
 		for i := 0; i <= len(result.Output)-len(expected); i++ {
 			if result.Output[i:i+len(expected)] == expected {
 				found = true

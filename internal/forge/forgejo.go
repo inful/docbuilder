@@ -318,13 +318,13 @@ func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret
 	// Legacy raw SHA1 (some older Forgejo/Gitea setups)
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy Forgejo/Gitea webhook signature fallback
+		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy Forgejo/Gitea webhook signature fallback
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))
 	}
 	// Bare SHA1 hash fallback (no prefix)
-	mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- legacy Forgejo/Gitea webhook signature fallback (no prefix)
+	mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy Forgejo/Gitea webhook signature fallback (no prefix)
 	mac.Write(payload)
 	calc := hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(signature), []byte(calc))
@@ -493,8 +493,8 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 	return c.doRequest(req, &result)
 }
 
-// GetEditURL returns the Forgejo edit URL for a file
-func (c *ForgejoClient) GetEditURL(repo *Repository, filePath string, branch string) string {
+// GetEditURL returns the URL to edit a file in Forgejo
+func (c *ForgejoClient) GetEditURL(repo *Repository, filePath, branch string) string {
 	return GenerateEditURL(TypeForgejo, c.baseURL, repo.FullName, branch, filePath)
 }
 
@@ -575,7 +575,7 @@ func (c *ForgejoClient) newRequest(ctx context.Context, method, endpoint string,
 		req.Header.Set("Content-Type", "application/json")
 	} else {
 		var err error
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), nil)
+		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
 		if err != nil {
 			return nil, err
 		}

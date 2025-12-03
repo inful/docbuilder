@@ -107,10 +107,10 @@ func (g *Generator) generateHugoConfig() error {
 
 	data, err := yaml.Marshal(root)
 	if err != nil {
-		return fmt.Errorf("%w: %v", herrors.ErrConfigMarshalFailed, err)
+		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
 	}
 	// #nosec G306 -- hugo.yaml is a public configuration file
-	if err := os.WriteFile(configPath, data, 0644); err != nil {
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write hugo config: %w", err)
 	}
 

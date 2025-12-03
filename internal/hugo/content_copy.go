@@ -104,7 +104,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 					if g.recorder != nil {
 						g.recorder.IncContentTransformFailure(name)
 					}
-					return fmt.Errorf("%w: %s failed for %s: %v", herrors.ErrContentTransformFailed, rt.Name(), file.Path, err)
+					return fmt.Errorf("%w: %s failed for %s: %w", herrors.ErrContentTransformFailed, rt.Name(), file.Path, err)
 				}
 			}
 			// Sync back mutated fields
@@ -116,12 +116,12 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		// record hash of raw for potential future integrity verification (not persisted yet)
 		_ = sha256.Sum256(p.Raw)
 		outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
-		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-			return fmt.Errorf("%w: failed to create directory for %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+			return fmt.Errorf("%w: failed to create directory for %s: %w", herrors.ErrContentWriteFailed, outputPath, err)
 		}
 		// #nosec G306 -- content files are public documentation
-		if err := os.WriteFile(outputPath, p.Raw, 0644); err != nil {
-			return fmt.Errorf("%w: failed to write file %s: %v", herrors.ErrContentWriteFailed, outputPath, err)
+		if err := os.WriteFile(outputPath, p.Raw, 0o644); err != nil {
+			return fmt.Errorf("%w: failed to write file %s: %w", herrors.ErrContentWriteFailed, outputPath, err)
 		}
 		slog.Debug("Copied content file", slog.String("source", file.RelativePath), slog.String("destination", file.GetHugoPath()))
 		// We cannot directly access BuildReport here cleanly without refactor; use optional callback if set.

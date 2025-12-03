@@ -109,14 +109,14 @@ func (g *Generator) existingSiteValidForSkip() bool {
 	}
 	publicDir := filepath.Join(g.outputDir, "public")
 	if fi, err := os.Stat(publicDir); err != nil || !fi.IsDir() {
-		return false
+		return false //nolint:nilerr // readiness treats missing dir as not ready
 	}
 	if entries, err := os.ReadDir(publicDir); err != nil || len(entries) == 0 {
-		return false
+		return false //nolint:nilerr // readiness treats read errors as not ready
 	}
 	contentDir := filepath.Join(g.outputDir, "content")
 	if fi, err := os.Stat(contentDir); err != nil || !fi.IsDir() {
-		return false
+		return false //nolint:nilerr // readiness treats missing content as not ready
 	}
 	found := false
 	if werr := filepath.WalkDir(contentDir, func(_ string, d fs.DirEntry, err error) error {
@@ -128,7 +128,7 @@ func (g *Generator) existingSiteValidForSkip() bool {
 		}
 		return nil
 	}); werr != nil {
-		return false
+		return false //nolint:nilerr // treat traversal errors as not found for readiness probe
 	}
 	return found
 }

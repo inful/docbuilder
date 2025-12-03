@@ -222,6 +222,7 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 }
 
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
+// nolint:unparam // This method currently never returns an error.
 func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
@@ -310,6 +311,7 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	return out
 }
 
+// nolint:unparam // This method currently never returns an error.
 func (s *HTTPServer) startWebhookServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
@@ -363,6 +365,7 @@ func (s *HTTPServer) handleReadiness(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte("not ready: public directory missing"))
 }
 
+// nolint:unparam // This method currently never returns an error.
 func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 

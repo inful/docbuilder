@@ -74,29 +74,21 @@ func (bs *jsonBuildStore) Update(_ context.Context, build *Build) foundation.Res
 		return foundation.Err[*Build, error](validationResult.ToError())
 	}
 
-	bs.store.mu.Lock()
-	defer bs.store.mu.Unlock()
-
-	if _, exists := bs.store.builds[build.ID]; !exists {
-		return foundation.Err[*Build, error](
-			foundation.NotFoundError("build").
-				WithContext(foundation.Fields{"id": build.ID}).
-				Build(),
-		)
-	}
-
-	build.UpdatedAt = time.Now()
-	bs.store.builds[build.ID] = build
-
-	if bs.store.autoSaveEnabled {
-		if err := bs.store.saveToDiskUnsafe(); err != nil {
+	return updateEntity[Build](
+		bs.store,
+		build,
+		func() bool { _, ok := bs.store.builds[build.ID]; return ok },
+		func() { build.UpdatedAt = time.Now() },
+		func() { bs.store.builds[build.ID] = build },
+		func() foundation.Result[*Build, error] {
 			return foundation.Err[*Build, error](
-				foundation.InternalError("failed to save build update").WithCause(err).Build(),
+				foundation.NotFoundError("build").
+					WithContext(foundation.Fields{"id": build.ID}).
+					Build(),
 			)
-		}
-	}
-
-	return foundation.Ok[*Build, error](build)
+		},
+		"failed to save build update",
+	)
 }
 
 func (bs *jsonBuildStore) List(_ context.Context, opts ListOptions) foundation.Result[[]Build, error] {

@@ -22,7 +22,7 @@ func (r ContentIntegrityRule) Validate(ctx Context) Result {
 	// Check if content directory exists and is a directory
 	contentStat, err := os.Stat(contentDir)
 	if err != nil {
-		return Failure("content directory missing")
+		return Failure("content directory missing") //nolint:nilerr // convert error into rule failure result
 	}
 	if !contentStat.IsDir() {
 		return Failure("content path is not a directory")
@@ -39,7 +39,7 @@ func (r ContentIntegrityRule) Validate(ctx Context) Result {
 		}
 		return nil
 	}); werr != nil {
-		return Failure("error scanning content directory: " + werr.Error())
+		return Failure("error scanning content directory: " + werr.Error()) //nolint:nilerr // Convert error to Failure result intentionally
 	}
 
 	if !foundMD {

@@ -3,6 +3,7 @@ package testing
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -89,7 +90,8 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	}
 
 	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
 			result.ExitCode = exitError.ExitCode()
 		} else {
 			result.ExitCode = -1
@@ -186,7 +188,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	}
 
 	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 		env.t.Logf("Failed to create parent dir for binary %s: %v", absPath, err)
 		env.runner.binaryPath = absPath
 		return env
@@ -246,5 +248,5 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 }
 
 func (env *MockCLIEnvironment) createDir(name string) error {
-	return os.MkdirAll(filepath.Join(env.TempDir, name), 0755)
+	return os.MkdirAll(filepath.Join(env.TempDir, name), 0o755)
 }

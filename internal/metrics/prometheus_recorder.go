@@ -135,9 +135,9 @@ func (p *PrometheusRecorder) ObserveCloneRepoDuration(repo string, d time.Durati
 	if p == nil || p.cloneDuration == nil {
 		return
 	}
-	res := "failed"
+	res := string(BuildOutcomeFailed)
 	if success {
-		res = "success"
+		res = string(BuildOutcomeSuccess)
 	}
 	p.cloneDuration.WithLabelValues(repo, res).Observe(d.Seconds())
 }
@@ -146,9 +146,9 @@ func (p *PrometheusRecorder) IncCloneRepoResult(success bool) {
 	if p == nil || p.cloneResults == nil {
 		return
 	}
-	res := "failed"
+	res := string(BuildOutcomeFailed)
 	if success {
-		res = "success"
+		res = string(BuildOutcomeSuccess)
 	}
 	p.cloneResults.WithLabelValues(res).Inc()
 }
@@ -174,7 +174,7 @@ func (p *PrometheusRecorder) IncBuildRetryExhausted(stage string) {
 	p.retriesExhausted.WithLabelValues(stage).Inc()
 }
 
-func (p *PrometheusRecorder) IncIssue(code string, stage string, severity string, transient bool) {
+func (p *PrometheusRecorder) IncIssue(code, stage, severity string, transient bool) {
 	if p == nil || p.issues == nil {
 		return
 	}
@@ -212,9 +212,9 @@ func (p *PrometheusRecorder) ObserveContentTransformDuration(name string, d time
 	if p == nil || p.transformDuration == nil {
 		return
 	}
-	res := "success"
+	res := string(BuildOutcomeSuccess)
 	if !success {
-		res = "failed"
+		res = string(BuildOutcomeFailed)
 	}
 	p.transformDuration.WithLabelValues(name, res).Observe(d.Seconds())
 }

@@ -1,8 +1,9 @@
 package config
 
-import "fmt"
-
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func normalizeFiltering(f *FilteringConfig, res *NormalizationResult) {
 	if f == nil {

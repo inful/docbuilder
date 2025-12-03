@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -160,7 +161,8 @@ func (r *BuildReport) Summary() string {
 func (r *BuildReport) deriveOutcome() {
 	if len(r.Errors) > 0 {
 		for _, e := range r.Errors {
-			if se, ok := e.(*StageError); ok && se.Kind == StageErrorCanceled {
+			var se *StageError
+			if errors.As(e, &se) && se.Kind == StageErrorCanceled {
 				r.Outcome = OutcomeCanceled
 				return
 			}
@@ -189,7 +191,7 @@ func (r *BuildReport) Persist(root string) error {
 		r.finish()
 		r.deriveOutcome()
 	}
-	if err := os.MkdirAll(root, 0755); err != nil {
+	if err := os.MkdirAll(root, 0o755); err != nil {
 		return fmt.Errorf("ensure root for report: %w", err)
 	}
 	// JSON
@@ -200,7 +202,7 @@ func (r *BuildReport) Persist(root string) error {
 	jsonPath := filepath.Join(root, "build-report.json")
 	tmpJSON := jsonPath + ".tmp"
 	// #nosec G306 -- build report is a public artifact
-	if err := os.WriteFile(tmpJSON, jb, 0644); err != nil {
+	if err := os.WriteFile(tmpJSON, jb, 0o644); err != nil {
 		return fmt.Errorf("write temp report json: %w", err)
 	}
 	if err := os.Rename(tmpJSON, jsonPath); err != nil {
@@ -210,7 +212,7 @@ func (r *BuildReport) Persist(root string) error {
 	summaryPath := filepath.Join(root, "build-report.txt")
 	tmpTxt := summaryPath + ".tmp"
 	// #nosec G306 -- build report is a public artifact
-	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0644); err != nil {
+	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0o644); err != nil {
 		return fmt.Errorf("write temp report summary: %w", err)
 	}
 	if err := os.Rename(tmpTxt, summaryPath); err != nil {

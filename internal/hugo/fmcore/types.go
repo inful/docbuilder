@@ -35,7 +35,7 @@ type FrontMatterPatch struct {
 }
 
 // ComputeBaseFrontMatter builds base front matter (title/date/repository/section/metadata) excluding edit link.
-func ComputeBaseFrontMatter(name, repository, forge, section string, metadata map[string]any, existing map[string]any, _ *config.Config, now time.Time) map[string]any {
+func ComputeBaseFrontMatter(name, repository, forge, section string, metadata, existing map[string]any, _ *config.Config, now time.Time) map[string]any {
 	fm := map[string]any{}
 	for k, v := range existing { // copy
 		fm[k] = v

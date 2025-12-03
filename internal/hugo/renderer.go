@@ -29,14 +29,14 @@ type BinaryRenderer struct{}
 
 func (b *BinaryRenderer) Execute(rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
-		return fmt.Errorf("%w: %v", herrors.ErrHugoBinaryNotFound, err)
+		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
 	}
 	cmd := exec.Command("hugo")
 	cmd.Dir = rootDir
 	// Let existing runHugoBuild handle stream configuration (stdout/stderr) – reused for minimal churn.
 	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err)
+		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
 	return nil
 }

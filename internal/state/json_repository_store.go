@@ -92,36 +92,21 @@ func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) found
 		return foundation.Err[*Repository, error](validationResult.ToError())
 	}
 
-	rs.store.mu.Lock()
-	defer rs.store.mu.Unlock()
-
-	// Check if repository exists
-	if _, exists := rs.store.repositories[repo.URL]; !exists {
-		return foundation.Err[*Repository, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": repo.URL}).
-				Build(),
-		)
-	}
-
-	// Update timestamp
-	repo.UpdatedAt = time.Now()
-
-	// Store the updated repository
-	rs.store.repositories[repo.URL] = repo
-
-	// Auto-save if enabled
-	if rs.store.autoSaveEnabled {
-		if err := rs.store.saveToDiskUnsafe(); err != nil {
+	return updateEntity[Repository](
+		rs.store,
+		repo,
+		func() bool { _, ok := rs.store.repositories[repo.URL]; return ok },
+		func() { repo.UpdatedAt = time.Now() },
+		func() { rs.store.repositories[repo.URL] = repo },
+		func() foundation.Result[*Repository, error] {
 			return foundation.Err[*Repository, error](
-				foundation.InternalError("failed to save repository update").
-					WithCause(err).
+				foundation.NotFoundError("repository").
+					WithContext(foundation.Fields{"url": repo.URL}).
 					Build(),
 			)
-		}
-	}
-
-	return foundation.Ok[*Repository, error](repo)
+		},
+		"failed to save repository update",
+	)
 }
 
 func (rs *jsonRepositoryStore) List(_ context.Context) foundation.Result[[]Repository, error] {
@@ -283,7 +268,7 @@ func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, c
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url string, hash string) foundation.Result[struct{}, error] {
+func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url, hash string) foundation.Result[struct{}, error] {
 	rs.store.mu.Lock()
 	defer rs.store.mu.Unlock()
 

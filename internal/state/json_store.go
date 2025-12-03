@@ -30,7 +30,7 @@ type JSONStore struct {
 
 // NewJSONStore creates a new JSON-based state store.
 func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return foundation.Err[*JSONStore, error](
 			foundation.InternalError("failed to create data directory").
 				WithCause(err).
@@ -261,7 +261,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 
 	// Atomic write using temporary file
 	// #nosec G306 -- state file needs to be readable by the process, 0644 is acceptable
-	if err := os.WriteFile(tempPath, data, 0644); err != nil {
+	if err := os.WriteFile(tempPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write temporary state file: %w", err)
 	}
 

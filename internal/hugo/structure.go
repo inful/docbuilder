@@ -25,7 +25,7 @@ func (g *Generator) createHugoStructure() error {
 	root := g.buildRoot()
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
-		if err := os.MkdirAll(path, 0755); err != nil {
+		if err := os.MkdirAll(path, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", path, err)
 		}
 	}
@@ -36,10 +36,10 @@ func (g *Generator) createHugoStructure() error {
 // beginStaging creates an isolated staging directory for atomic build output.
 func (g *Generator) beginStaging() error {
 	// create sibling staging dir: <output>.staging-<ts>
-	ts := time.Now().UnixNano()
-	stage := fmt.Sprintf("%s.staging-%d", g.outputDir, ts)
-	if err := os.MkdirAll(stage, 0755); err != nil {
-		return fmt.Errorf("create staging dir: %w", err)
+	root := g.outputDir
+	stage := filepath.Join(root, "_stage")
+	if err := os.MkdirAll(stage, 0o755); err != nil {
+		return err
 	}
 	g.stageDir = stage
 	slog.Debug("Initialized staging directory", "staging", stage, "final", g.outputDir)
@@ -72,7 +72,7 @@ func (g *Generator) finalizeStaging() error {
 			// Last resort: remove with chmod
 			_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
 				if err == nil {
-					_ = os.Chmod(path, 0755)
+					_ = os.Chmod(path, 0o755)
 				}
 				return nil
 			})

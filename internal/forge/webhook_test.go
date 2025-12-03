@@ -40,7 +40,7 @@ func TestGitHubWebhookValidation(t *testing.T) {
 	}
 
 	// Test SHA-1 fallback
-	mac1 := hmac.New(sha1.New, []byte(secret)) //nolint:gosec,G505 -- exercising legacy SHA-1 fallback path for compatibility
+	mac1 := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // exercising legacy SHA-1 fallback path for compatibility
 	mac1.Write([]byte(payload))
 	signatureSHA1 := "sha1=" + hex.EncodeToString(mac1.Sum(nil))
 

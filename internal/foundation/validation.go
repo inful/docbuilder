@@ -73,7 +73,7 @@ func (vr ValidationResult) ToError() error {
 		return nil
 	}
 
-	var messages []string
+	messages := make([]string, 0, len(vr.Errors))
 	for _, err := range vr.Errors {
 		messages = append(messages, err.Error())
 	}

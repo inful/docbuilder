@@ -2,6 +2,7 @@ package errors
 
 import (
 	"encoding/json"
+	stdErrors "errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -175,7 +176,8 @@ func TestHTTPErrorAdapter_FormatErrorResponse(t *testing.T) {
 
 			// Check retryable flag for retryable errors
 			if tt.err != nil {
-				if dbe, ok := tt.err.(*dberrors.DocBuilderError); ok && dbe.Retryable {
+				var dbe *dberrors.DocBuilderError
+				if stdErrors.As(tt.err, &dbe) && dbe.Retryable {
 					if response.Details == nil || !response.Details["retryable"].(bool) {
 						t.Error("FormatErrorResponse() missing retryable flag for retryable error")
 					}
