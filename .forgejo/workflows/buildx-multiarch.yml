@@ -24,7 +24,12 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: dind
+    runs-on: ubuntu-latest
+    
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
 
     strategy:
       matrix:
@@ -45,7 +50,7 @@ jobs:
         docker buildx version
         
         # Create and use a new builder instance for multi-arch
-        docker buildx create --name multiarch --use --bootstrap
+        docker buildx create --name multiarch --driver docker-container --use --bootstrap
         
         # Verify multi-arch support
         docker buildx inspect --bootstrap
