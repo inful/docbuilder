@@ -16,6 +16,34 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
+// buildStatus tracks the current build state for error display
+type buildStatus struct {
+	mu            sync.RWMutex
+	lastError     error
+	lastErrorTime time.Time
+	hasGoodBuild  bool // true if at least one successful build exists
+}
+
+func (bs *buildStatus) setError(err error) {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+	bs.lastError = err
+	bs.lastErrorTime = time.Now()
+}
+
+func (bs *buildStatus) setSuccess() {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+	bs.lastError = nil
+	bs.hasGoodBuild = true
+}
+
+func (bs *buildStatus) getStatus() (hasError bool, err error, hasGoodBuild bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+	return bs.lastError != nil, bs.lastError, bs.hasGoodBuild
+}
+
 // StartLocalPreview serves the generated site and watches a local docs directory for changes.
 // It uses the daemon's HTTP server with built-in LiveReload support.
 // If tempOutputDir is non-empty, it will be removed on shutdown.
@@ -35,9 +63,15 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 		return fmt.Errorf("docs dir not found or not a directory: %s", absDocs)
 	}
 
+	// Track build status for error display
+	buildStat := &buildStatus{}
+
 	// Initial build
 	if _, err := buildFromLocal(cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
+		buildStat.setError(err)
+	} else {
+		buildStat.setSuccess()
 	}
 
 	// Create minimal daemon with HTTP server
@@ -48,6 +82,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 		liveReload: NewLiveReloadHub(nil), // nil metrics collector for LiveReload
 	}
 	daemon.status.Store(StatusRunning)
+	daemon.buildStatus = buildStat
 
 	httpServer := NewHTTPServer(cfg, daemon)
 	if err := httpServer.Start(ctx); err != nil {
@@ -97,7 +132,13 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 				slog.Info("Change detected; rebuilding site")
 				if _, err := buildFromLocal(cfg, absDocs); err != nil {
 					slog.Warn("rebuild failed", "error", err)
+					buildStat.setError(err)
+					// Notify browsers about error so they can display error overlay
+					if daemon.liveReload != nil {
+						daemon.liveReload.Broadcast(fmt.Sprintf("error:%d", time.Now().UnixNano()))
+					}
 				} else {
+					buildStat.setSuccess()
 					// Notify connected browsers via LiveReload
 					if daemon.liveReload != nil {
 						// Broadcast hash to trigger browser refresh

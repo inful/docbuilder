@@ -63,6 +63,18 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 	}
 
 	if err != nil {
+		// Include both stdout and stderr in error message for better diagnostics
+		// Hugo may output errors to either stream
+		output := errStr
+		if output == "" {
+			output = outStr
+		} else if outStr != "" {
+			output = outStr + "\n" + errStr
+		}
+
+		if output != "" {
+			return fmt.Errorf("%w: %w: %s", herrors.ErrHugoExecutionFailed, err, output)
+		}
 		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
 

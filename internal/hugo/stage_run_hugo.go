@@ -29,12 +29,8 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 		renderer = &BinaryRenderer{}
 	}
 	if err := renderer.Execute(root); err != nil {
-		// In live preview mode, surface as warning only and continue serving prior build
-		if cfg.Build.LiveReload {
-			slog.Warn("Renderer execution failed (preview mode)", "error", err)
-			return nil
-		}
 		slog.Warn("Renderer execution failed", "error", err)
+		// Return error regardless of mode - let caller decide how to handle
 		return newFatalStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
