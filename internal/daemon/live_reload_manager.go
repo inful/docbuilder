@@ -22,13 +22,9 @@ func (lrm *LiveReloadManagerImpl) BroadcastUpdate(report *hugo.BuildReport, job 
 		return
 	}
 
-	hubAny, ok := job.Metadata["live_reload_hub"]
-	if !ok {
-		return
-	}
-
-	hub, ok := hubAny.(*LiveReloadHub)
-	if !ok || hub == nil {
+	EnsureTypedMeta(job)
+	hub := job.TypedMeta.LiveReloadHub
+	if hub == nil {
 		return
 	}
 

@@ -184,4 +184,14 @@ func (h *LiveReloadHub) Shutdown() {
 }
 
 // ScriptContent returns the JS snippet clients can include.
-const LiveReloadScript = `(() => {\n  if (window.__DOCBUILDER_LR__) return;\n  window.__DOCBUILDER_LR__=true;\n  function connect(){\n    const es = new EventSource('/livereload');\n    let first=true; let current=null;\n    es.onmessage = (e)=>{ try { const p=JSON.parse(e.data); if(first){ current=p.hash; first=false; return;} if(p.hash && p.hash!==current){ console.log('[docbuilder] change detected, reloading'); location.reload(); } } catch(_){} };\n    es.onerror = ()=>{ console.warn('[docbuilder] livereload error - retrying'); es.close(); setTimeout(connect,2000); };\n  }\n  connect();\n})();`
+const LiveReloadScript = `(() => {
+  if (window.__DOCBUILDER_LR__) return;
+  window.__DOCBUILDER_LR__=true;
+  function connect(){
+    const es = new EventSource('/livereload');
+    let first=true; let current=null;
+    es.onmessage = (e)=>{ try { const p=JSON.parse(e.data); if(first){ current=p.hash; first=false; return;} if(p.hash && p.hash!==current){ console.log('[docbuilder] change detected, reloading'); location.reload(); } } catch(_){} };
+    es.onerror = ()=>{ console.warn('[docbuilder] livereload error - retrying'); es.close(); setTimeout(connect,2000); };
+  }
+  connect();
+})();`

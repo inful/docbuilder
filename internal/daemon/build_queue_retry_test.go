@@ -131,8 +131,7 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 		{tr, terr},
 		{&hugo.BuildReport{}, nil},
 	}}
-	bq := NewBuildQueue(10, 1)
-	bq.builder = mb
+	bq := NewBuildQueue(10, 1, mb)
 	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
 	bq.SetRecorder(fr)
 
@@ -177,8 +176,7 @@ func TestRetryExhausted(t *testing.T) {
 	}{
 		{tr1, terr1}, {tr2, terr2}, {tr3, terr3},
 	}}
-	bq := NewBuildQueue(10, 1)
-	bq.builder = mb
+	bq := NewBuildQueue(10, 1, mb)
 	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 2, RetryBackoff: config.RetryBackoffLinear, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
 	bq.SetRecorder(fr)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -216,8 +214,7 @@ func TestNoRetryOnPermanent(t *testing.T) {
 		rep *hugo.BuildReport
 		err error
 	}{{frpt, ferr}}}
-	bq := NewBuildQueue(10, 1)
-	bq.builder = mb
+	bq := NewBuildQueue(10, 1, mb)
 	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffExponential, RetryInitialDelay: "1ms", RetryMaxDelay: "4ms"})
 	bq.SetRecorder(fr)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

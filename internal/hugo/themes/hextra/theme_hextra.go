@@ -11,7 +11,7 @@ func (Theme) Name() config.Theme { return config.ThemeHextra }
 func (Theme) Features() th.Features {
 	return th.Features{
 		Name: config.ThemeHextra, UsesModules: true, ModulePath: "github.com/imfing/hextra", ModuleVersion: "v0.11.0",
-		EnableMathPassthrough: true, AutoMainMenu: true, SupportsPerPageEditLinks: true, ProvidesMermaidSupport: true, DefaultSearchType: "flexsearch",
+		EnableMathPassthrough: true, EnableOfflineSearchJSON: true, AutoMainMenu: true, SupportsPerPageEditLinks: true, ProvidesMermaidSupport: true, DefaultSearchType: "flexsearch",
 	}
 }
 func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {

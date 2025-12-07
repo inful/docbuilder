@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 func hashList(paths []string) string {
@@ -29,14 +30,17 @@ func hashList(paths []string) string {
 func TestPartialBuildDeletionReflected(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
-	state, err := NewStateManager(stateDir)
-	if err != nil {
-		t.Fatalf("state manager: %v", err)
+	svcResult := state.NewService(stateDir)
+	if svcResult.IsErr() {
+		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
+	sm.EnsureRepositoryState(repoAURL, repoAName, "")
+	sm.EnsureRepositoryState(repoBURL, repoBName, "")
 
 	// Create workspace clone directories simulating on-disk repos (unchanged repoB will have deletion)
 	repoARoot := filepath.Join(workspace, repoAName)
@@ -61,11 +65,11 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	// Persist initial path lists & hashes (as if from previous full build)
 	repoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "docs", "a1.md"))}
 	repoBPaths := []string{filepath.ToSlash(filepath.Join(repoBName, "docs", "b1.md")), filepath.ToSlash(filepath.Join(repoBName, "docs", "b2.md"))}
-	state.SetRepoDocFilePaths(repoAURL, repoAPaths)
-	state.SetRepoDocFilePaths(repoBURL, repoBPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashList(repoAPaths))
-	state.SetRepoDocFilesHash(repoBURL, hashList(repoBPaths))
-	state.SetLastGlobalDocFilesHash(hashList(append(append([]string{}, repoAPaths...), repoBPaths...)))
+	sm.SetRepoDocFilePaths(repoAURL, repoAPaths)
+	sm.SetRepoDocFilePaths(repoBURL, repoBPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashList(repoAPaths))
+	sm.SetRepoDocFilesHash(repoBURL, hashList(repoBPaths))
+	sm.SetLastGlobalDocFilesHash(hashList(append(append([]string{}, repoAPaths...), repoBPaths...)))
 
 	// Change: repoA adds a2.md (changed repo) ; repoB deletes b2.md (unchanged repo)
 	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a2.md"), []byte("# A2"), 0o600); err != nil {
@@ -77,13 +81,20 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 
 	// Update changed repoA list (discovery result this run)
 	newRepoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "docs", "a1.md")), filepath.ToSlash(filepath.Join(repoAName, "docs", "a2.md"))}
-	state.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashList(newRepoAPaths))
+	sm.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashList(newRepoAPaths))
 
 	// Subset report hash (only changed repoA) prior to recomposition
 	subsetHash := hashList(newRepoAPaths)
 	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
-	bc := &buildContext{workspace: workspace, job: &BuildJob{Metadata: map[string]interface{}{"repositories": repos}}, stateMgr: state, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
+	bc := &buildContext{
+		workspace: workspace,
+		job: &BuildJob{
+			TypedMeta: &BuildJobMetadata{Repositories: repos},
+		},
+		stateMgr:  sm,
+		deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}},
+	}
 
 	// Execute recomposition logic block from stagePostPersist (duplicated minimal) to isolate behavior
 	if bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {

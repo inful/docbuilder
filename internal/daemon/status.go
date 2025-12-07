@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/errors"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
@@ -127,70 +126,47 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 		// TODO: Add more metrics from build queue
 	}
 
-	// Extract most recent build stage timings (best-effort)
-	if d.buildQueue != nil {
-		if history := d.buildQueue.GetHistory(); len(history) > 0 {
-			last := history[len(history)-1]
-			if last != nil && last.Metadata != nil {
-				if brRaw, ok := last.Metadata["build_report"]; ok {
-					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
-						if len(br.StageDurations) > 0 {
-							stages := make(map[string]string, len(br.StageDurations))
-							for k, v := range br.StageDurations {
-								stages[k] = v.Truncate(time.Millisecond).String()
-							}
-							status.BuildStatus.LastBuildStages = stages
-						}
-						status.BuildStatus.LastBuildOutcome = string(br.Outcome)
-						status.BuildStatus.LastBuildSummary = br.Summary()
-						if br.RenderedPages > 0 {
-							rp := br.RenderedPages
-							status.BuildStatus.RenderedPages = &rp
-						}
-						if br.ClonedRepositories > 0 {
-							cr := br.ClonedRepositories
-							status.BuildStatus.ClonedRepositories = &cr
-						}
-						if br.FailedRepositories > 0 {
-							fr := br.FailedRepositories
-							status.BuildStatus.FailedRepositories = &fr
-						}
-						if br.SkippedRepositories > 0 {
-							srk := br.SkippedRepositories
-							status.BuildStatus.SkippedRepositories = &srk
-						}
-						if br.StaticRendered {
-							sr := true
-							status.BuildStatus.StaticRendered = &sr
-						}
-						if len(br.StageCounts) > 0 {
-							m := make(map[string]map[string]int, len(br.StageCounts))
-							for stage, sc := range br.StageCounts {
-								m[string(stage)] = map[string]int{"success": sc.Success, "warning": sc.Warning, "fatal": sc.Fatal, "canceled": sc.Canceled}
-							}
-							status.BuildStatus.StageCounts = m
-						}
-						if len(br.Errors) > 0 {
-							for _, e := range br.Errors {
-								msg := e.Error()
-								if len(msg) > 300 {
-									msg = msg[:300] + "…"
-								}
-								status.BuildStatus.LastBuildErrors = append(status.BuildStatus.LastBuildErrors, msg)
-							}
-						}
-						if len(br.Warnings) > 0 {
-							for _, w := range br.Warnings {
-								msg := w.Error()
-								if len(msg) > 300 {
-									msg = msg[:300] + "…"
-								}
-								status.BuildStatus.LastBuildWarnings = append(status.BuildStatus.LastBuildWarnings, msg)
-							}
-						}
-					}
+	// Extract most recent build stage timings from event-sourced projection (Phase B)
+	if d.buildProjection != nil {
+		if last := d.buildProjection.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
+			rd := last.ReportData
+
+			// Convert stage durations from milliseconds to human-readable strings
+			if len(rd.StageDurations) > 0 {
+				stages := make(map[string]string, len(rd.StageDurations))
+				for k, ms := range rd.StageDurations {
+					stages[k] = (time.Duration(ms) * time.Millisecond).Truncate(time.Millisecond).String()
 				}
+				status.BuildStatus.LastBuildStages = stages
 			}
+
+			status.BuildStatus.LastBuildOutcome = rd.Outcome
+			status.BuildStatus.LastBuildSummary = rd.Summary
+
+			if rd.RenderedPages > 0 {
+				rp := rd.RenderedPages
+				status.BuildStatus.RenderedPages = &rp
+			}
+			if rd.ClonedRepositories > 0 {
+				cr := rd.ClonedRepositories
+				status.BuildStatus.ClonedRepositories = &cr
+			}
+			if rd.FailedRepositories > 0 {
+				fr := rd.FailedRepositories
+				status.BuildStatus.FailedRepositories = &fr
+			}
+			if rd.SkippedRepositories > 0 {
+				srk := rd.SkippedRepositories
+				status.BuildStatus.SkippedRepositories = &srk
+			}
+			if rd.StaticRendered {
+				sr := true
+				status.BuildStatus.StaticRendered = &sr
+			}
+
+			// Copy errors and warnings from report data
+			status.BuildStatus.LastBuildErrors = rd.Errors
+			status.BuildStatus.LastBuildWarnings = rd.Warnings
 		}
 	}
 
@@ -209,18 +185,18 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 	status.SystemMetrics = d.generateSystemMetrics()
 
 	// Discovery metadata
-	d.discoveryCacheMu.RLock()
-	if d.lastDiscovery != nil {
-		status.LastDiscovery = d.lastDiscovery
+	if lastDiscovery := d.discoveryRunner.GetLastDiscovery(); lastDiscovery != nil {
+		status.LastDiscovery = lastDiscovery
 	}
-	if d.lastDiscoveryError != nil {
-		errStr := d.lastDiscoveryError.Error()
+	result, discoveryErr := d.discoveryCache.Get()
+	if discoveryErr != nil {
+		errStr := discoveryErr.Error()
 		status.DiscoveryError = &errStr
 	}
 	// Extract per-forge errors from last discovery result (if any)
-	if d.lastDiscoveryResult != nil && len(d.lastDiscoveryResult.Errors) > 0 {
-		status.DiscoveryErrors = make(map[string]string, len(d.lastDiscoveryResult.Errors))
-		for forgeName, ferr := range d.lastDiscoveryResult.Errors {
+	if result != nil && len(result.Errors) > 0 {
+		status.DiscoveryErrors = make(map[string]string, len(result.Errors))
+		for forgeName, ferr := range result.Errors {
 			if ferr != nil {
 				// Truncate very long error strings to avoid bloating response
 				msg := ferr.Error()
@@ -234,7 +210,6 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 			status.DiscoveryErrors = nil // ensure omitted if all nil
 		}
 	}
-	d.discoveryCacheMu.RUnlock()
 
 	slog.Debug("Status: status data fully generated", "repos", len(repositories))
 
@@ -247,10 +222,7 @@ func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 	var repositories []RepositoryStatus
 
 	// Use cached discovery result for fast response
-	d.discoveryCacheMu.RLock()
-	result := d.lastDiscoveryResult
-	discoveryErr := d.lastDiscoveryError
-	d.discoveryCacheMu.RUnlock()
+	result, discoveryErr := d.discoveryCache.Get()
 
 	if discoveryErr != nil {
 		slog.Warn("Using last failed discovery state for status", "error", discoveryErr)
@@ -272,8 +244,8 @@ func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 		// Version info (future: integrate with versionService for cached metadata)
 
 		// Placeholder LastSync from cached discovery timestamp
-		if d.lastDiscovery != nil {
-			repoStatus.LastSync = d.lastDiscovery
+		if lastDiscovery := d.discoveryRunner.GetLastDiscovery(); lastDiscovery != nil {
+			repoStatus.LastSync = lastDiscovery
 		}
 
 		repositories = append(repositories, repoStatus)

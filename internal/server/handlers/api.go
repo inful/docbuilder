@@ -2,7 +2,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -21,7 +20,7 @@ type APIHandlers struct {
 
 // DaemonAPIInterface defines the daemon methods needed by API handlers.
 type DaemonAPIInterface interface {
-	GetStatus() interface{} // Returns DaemonStatus type - use interface{} to avoid import cycles
+	GetStatus() string
 	GetStartTime() time.Time
 }
 
@@ -73,17 +72,8 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	statusStr := ""
-	if s := h.daemon.GetStatus(); s != nil {
-		if ss, ok := s.(fmt.Stringer); ok {
-			statusStr = ss.String()
-		} else {
-			statusStr = fmt.Sprint(s)
-		}
-	}
-
 	status := &responses.DaemonStatusResponse{
-		Status:    statusStr,
+		Status:    h.daemon.GetStatus(),
 		Uptime:    time.Since(h.daemon.GetStartTime()).Seconds(),
 		StartTime: h.daemon.GetStartTime(),
 		Config: responses.DaemonConfigSummary{

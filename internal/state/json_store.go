@@ -28,6 +28,23 @@ type JSONStore struct {
 	autoSaveEnabled bool
 }
 
+const stateSnapshotFormatVersion = "1"
+
+// stateSnapshot is the typed on-disk representation for the JSON store.
+// Additional fields should be added here so load/save logic remains centralized.
+type stateSnapshot struct {
+	FormatVersion string                 `json:"format_version,omitempty"`
+	Version       string                 `json:"version"`
+	StartTime     time.Time              `json:"start_time"`
+	LastUpdate    time.Time              `json:"last_update"`
+	Status        string                 `json:"status"`
+	Repositories  map[string]*Repository `json:"repositories"`
+	Builds        map[string]*Build      `json:"builds"`
+	Schedules     map[string]*Schedule   `json:"schedules"`
+	Statistics    *Statistics            `json:"statistics"`
+	Configuration map[string]any         `json:"configuration,omitempty"`
+}
+
 // NewJSONStore creates a new JSON-based state store.
 func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
@@ -58,10 +75,13 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 		},
 	}
 
-	// Load existing data
 	if err := store.loadFromDisk(); err != nil {
-		// Log warning but continue with empty state
-		return foundation.Ok[*JSONStore, error](store)
+		return foundation.Err[*JSONStore, error](
+			foundation.InternalError("failed to load daemon state").
+				WithCause(err).
+				WithContext(foundation.Fields{"data_dir": dataDir}).
+				Build(),
+		)
 	}
 
 	return foundation.Ok[*JSONStore, error](store)
@@ -180,46 +200,11 @@ func (js *JSONStore) loadFromDisk() error {
 		return fmt.Errorf("failed to read state file: %w", err)
 	}
 
-	// Use the same format as the original StateManager for compatibility
-	var legacyState struct {
-		Version       string                 `json:"version"`
-		StartTime     time.Time              `json:"start_time"`
-		LastUpdate    time.Time              `json:"last_update"`
-		Status        string                 `json:"status"`
-		Repositories  map[string]*Repository `json:"repositories"`
-		Builds        map[string]*Build      `json:"builds"`
-		Schedules     map[string]*Schedule   `json:"schedules"`
-		Statistics    *Statistics            `json:"statistics"`
-		Configuration map[string]any         `json:"configuration,omitempty"`
-	}
-
-	if err := json.Unmarshal(data, &legacyState); err != nil {
+	snapshot, err := decodeStateSnapshot(data)
+	if err != nil {
 		return fmt.Errorf("failed to unmarshal state: %w", err)
 	}
-
-	// Migrate data to new format
-	if legacyState.Repositories != nil {
-		js.repositories = legacyState.Repositories
-	}
-	if legacyState.Builds != nil {
-		js.builds = legacyState.Builds
-	}
-	if legacyState.Schedules != nil {
-		js.schedules = legacyState.Schedules
-	}
-	if legacyState.Statistics != nil {
-		js.statistics = legacyState.Statistics
-	}
-	if legacyState.Configuration != nil {
-		js.configuration = legacyState.Configuration
-	}
-
-	// Update daemon info
-	js.daemonInfo.Version = legacyState.Version
-	js.daemonInfo.StartTime = legacyState.StartTime
-	js.daemonInfo.LastUpdate = legacyState.LastUpdate
-	js.daemonInfo.Status = legacyState.Status
-
+	js.applySnapshot(snapshot)
 	return nil
 }
 
@@ -228,30 +213,8 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	now := time.Now()
 	js.daemonInfo.LastUpdate = now
 
-	// Create legacy format for compatibility
-	legacyState := struct {
-		Version       string                 `json:"version"`
-		StartTime     time.Time              `json:"start_time"`
-		LastUpdate    time.Time              `json:"last_update"`
-		Status        string                 `json:"status"`
-		Repositories  map[string]*Repository `json:"repositories"`
-		Builds        map[string]*Build      `json:"builds"`
-		Schedules     map[string]*Schedule   `json:"schedules"`
-		Statistics    *Statistics            `json:"statistics"`
-		Configuration map[string]any         `json:"configuration,omitempty"`
-	}{
-		Version:       js.daemonInfo.Version,
-		StartTime:     js.daemonInfo.StartTime,
-		LastUpdate:    js.daemonInfo.LastUpdate,
-		Status:        js.daemonInfo.Status,
-		Repositories:  js.repositories,
-		Builds:        js.builds,
-		Schedules:     js.schedules,
-		Statistics:    js.statistics,
-		Configuration: js.configuration,
-	}
-
-	data, err := json.MarshalIndent(legacyState, "", "  ")
+	snapshot := js.snapshot()
+	data, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
@@ -271,6 +234,71 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 
 	js.lastSaved = &now
 	return nil
+}
+
+func decodeStateSnapshot(data []byte) (stateSnapshot, error) {
+	var snapshot stateSnapshot
+	if err := json.Unmarshal(data, &snapshot); err != nil {
+		return stateSnapshot{}, err
+	}
+	if snapshot.FormatVersion == "" {
+		return stateSnapshot{}, fmt.Errorf("state snapshot missing format_version (legacy files are no longer supported)")
+	}
+	if snapshot.FormatVersion != stateSnapshotFormatVersion {
+		return stateSnapshot{}, fmt.Errorf("unsupported state snapshot format_version %q (expected %s)", snapshot.FormatVersion, stateSnapshotFormatVersion)
+	}
+	return snapshot, nil
+}
+
+func (js *JSONStore) applySnapshot(snapshot stateSnapshot) {
+	if snapshot.Repositories != nil {
+		js.repositories = snapshot.Repositories
+	} else if js.repositories == nil {
+		js.repositories = make(map[string]*Repository)
+	}
+	if snapshot.Builds != nil {
+		js.builds = snapshot.Builds
+	} else if js.builds == nil {
+		js.builds = make(map[string]*Build)
+	}
+	if snapshot.Schedules != nil {
+		js.schedules = snapshot.Schedules
+	} else if js.schedules == nil {
+		js.schedules = make(map[string]*Schedule)
+	}
+	if snapshot.Statistics != nil {
+		js.statistics = snapshot.Statistics
+	}
+	if snapshot.Configuration != nil {
+		js.configuration = snapshot.Configuration
+	}
+	if snapshot.Version != "" {
+		js.daemonInfo.Version = snapshot.Version
+	}
+	if !snapshot.StartTime.IsZero() {
+		js.daemonInfo.StartTime = snapshot.StartTime
+	}
+	if !snapshot.LastUpdate.IsZero() {
+		js.daemonInfo.LastUpdate = snapshot.LastUpdate
+	}
+	if snapshot.Status != "" {
+		js.daemonInfo.Status = snapshot.Status
+	}
+}
+
+func (js *JSONStore) snapshot() stateSnapshot {
+	return stateSnapshot{
+		FormatVersion: stateSnapshotFormatVersion,
+		Version:       js.daemonInfo.Version,
+		StartTime:     js.daemonInfo.StartTime,
+		LastUpdate:    js.daemonInfo.LastUpdate,
+		Status:        js.daemonInfo.Status,
+		Repositories:  js.repositories,
+		Builds:        js.builds,
+		Schedules:     js.schedules,
+		Statistics:    js.statistics,
+		Configuration: js.configuration,
+	}
 }
 
 // calculateStorageSize calculates the total storage size used by the store.

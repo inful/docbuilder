@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -40,6 +41,7 @@ type buildStateManager interface {
 	SetLastConfigHash(string)
 	SetLastReportChecksum(string)
 	SetLastGlobalDocFilesHash(string)
+	EnsureRepositoryState(string, string, string)
 }
 
 // HugoGenerator interface for getting config hash
@@ -96,6 +98,7 @@ func (sp *StatePersisterImpl) persistRepositoryCommits(
 	sm buildStateManager,
 ) error {
 	for _, repo := range repos {
+		sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
 		repoPath := filepath.Join(workspace, repo.Name)
 		head, err := hugoReadRepoHead(repoPath)
 		if err == nil && head != "" {
@@ -147,4 +150,22 @@ func (sp *StatePersisterImpl) persistGlobalDocFilesHash(
 		sm.SetLastGlobalDocFilesHash(report.DocFilesHash)
 	}
 	return nil
+}
+
+// hugoReadRepoHead reads the HEAD commit hash from a git repository.
+func hugoReadRepoHead(repoPath string) (string, error) {
+	headPath := filepath.Join(repoPath, ".git", "HEAD")
+	b, err := os.ReadFile(headPath)
+	if err != nil {
+		return "", err
+	}
+	line := strings.TrimSpace(string(b))
+	if strings.HasPrefix(line, "ref:") {
+		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
+		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
+		if rb, rerr := os.ReadFile(refPath); rerr == nil {
+			return strings.TrimSpace(string(rb)), nil
+		}
+	}
+	return line, nil
 }

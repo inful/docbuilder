@@ -55,10 +55,13 @@ func (dm *DeltaManagerImpl) AttachDeltaMetadata(report *hugo.BuildReport, deltaP
 	if report.DeltaRepoReasons == nil {
 		report.DeltaRepoReasons = map[string]string{}
 	}
-	if m, ok := job.Metadata["delta_repo_reasons"].(map[string]string); ok {
-		for k, v := range m {
-			report.DeltaRepoReasons[k] = v
-		}
+	// Get reasons from TypedMeta
+	var reasons map[string]string
+	if job.TypedMeta != nil && job.TypedMeta.DeltaRepoReasons != nil {
+		reasons = job.TypedMeta.DeltaRepoReasons
+	}
+	for k, v := range reasons {
+		report.DeltaRepoReasons[k] = v
 	}
 }
 
@@ -103,7 +106,11 @@ func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
 		changedSet[u] = struct{}{}
 	}
 
-	orig, _ := job.Metadata["repositories"].([]config.Repository)
+	// Get repositories from TypedMeta
+	var orig []config.Repository
+	if job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
+		orig = job.TypedMeta.Repositories
+	}
 	allPaths := make([]string, 0, 2048)
 	deletionsDetected := 0
 

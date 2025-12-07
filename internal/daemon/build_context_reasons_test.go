@@ -7,10 +7,12 @@ import (
 )
 
 func TestBuildContextDeltaRepoReasonsPropagation(t *testing.T) {
-	job := &BuildJob{Metadata: map[string]interface{}{}}
+	job := &BuildJob{
+		TypedMeta: &BuildJobMetadata{
+			DeltaRepoReasons: map[string]string{"u1": "unknown", "u2": "quick_hash_diff"},
+		},
+	}
 	bc := &buildContext{job: job}
-	// Simulate delta plan with reasons placed in metadata by stageDeltaAnalysis
-	job.Metadata["delta_repo_reasons"] = map[string]string{"u1": "unknown", "u2": "quick_hash_diff"}
 	rep := &hugo2.BuildReport{}
 	bc.deltaPlan = &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{"u1", "u2"}}
 	if err := bc.stagePostPersist(rep, nil); err != nil {

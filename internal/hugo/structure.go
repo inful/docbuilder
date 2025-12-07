@@ -35,9 +35,9 @@ func (g *Generator) createHugoStructure() error {
 
 // beginStaging creates an isolated staging directory for atomic build output.
 func (g *Generator) beginStaging() error {
-	// create sibling staging dir: <output>.staging-<ts>
-	root := g.outputDir
-	stage := filepath.Join(root, "_stage")
+	// Create sibling staging dir: <output>_stage (not inside output)
+	// For example: if outputDir is "site", create "site_stage" as a sibling
+	stage := g.outputDir + "_stage"
 	if err := os.MkdirAll(stage, 0o755); err != nil {
 		return err
 	}
@@ -52,9 +52,20 @@ func (g *Generator) beginStaging() error {
 //  2. Rename staging -> outputDir.
 //  3. Remove previous backup asynchronously best-effort.
 func (g *Generator) finalizeStaging() error {
+	slog.Debug("finalizeStaging called", "stageDir", g.stageDir, "outputDir", g.outputDir)
+
 	if g.stageDir == "" {
 		return fmt.Errorf("no staging directory initialized")
 	}
+
+	// Check if staging directory still exists
+	if stat, err := os.Stat(g.stageDir); err != nil {
+		slog.Error("Staging directory missing at finalize", "stageDir", g.stageDir, "outputDir", g.outputDir, "error", err)
+		return fmt.Errorf("staging directory missing: %w", err)
+	} else {
+		slog.Debug("Staging directory exists at finalize", "stageDir", g.stageDir, "is_dir", stat.IsDir())
+	}
+
 	prev := g.outputDir + ".prev"
 	// Remove old backup if present
 	if _, err := os.Stat(prev); err == nil {

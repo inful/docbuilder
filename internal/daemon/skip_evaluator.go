@@ -1,8 +1,8 @@
 package daemon
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/daemon/validation"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 

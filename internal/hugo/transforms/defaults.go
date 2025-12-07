@@ -202,7 +202,9 @@ func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
 	} else {
 		mdAny = map[string]any{}
 	}
-	built := fmcore.ComputeBaseFrontMatter(shim.Doc.Name, shim.Doc.Repository, shim.Doc.Forge, shim.Doc.Section, mdAny, existing, cfg, time.Now())
+	// Build typed front matter then convert to map for patch application
+	builtTyped := fmcore.ComputeBaseFrontMatterTyped(shim.Doc.Name, shim.Doc.Repository, shim.Doc.Forge, shim.Doc.Section, mdAny, existing, cfg, time.Now())
+	built := builtTyped.ToMap()
 	// Only add patch if we actually mutated compared to existing map (len compare insufficient, just always patch for simplicity)
 	shim.AddPatch(fmcore.FrontMatterPatch{Source: "builder_v2", Mode: fmcore.MergeDeep, Priority: 50, Data: built})
 	return nil

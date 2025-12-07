@@ -9,6 +9,7 @@ import (
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
@@ -55,11 +56,14 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	repository := cfg.Repository{Name: "repo-one", Paths: []string{"docs"}, URL: remote, Branch: "", Tags: map[string]string{"forge_type": "github"}}
 	conf := &cfg.Config{Output: cfg.OutputConfig{Directory: outputDir, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: workspace, CloneStrategy: cfg.CloneStrategyFresh, NamespaceForges: cfg.NamespacingAuto}, Hugo: cfg.HugoConfig{Theme: "hextra"}, Repositories: []cfg.Repository{repository}}
 
-	sm, err := NewStateManager(tmp)
-	if err != nil {
-		t.Fatalf("state manager: %v", err)
+	// Use typed state.ServiceAdapter instead of legacy StateManager
+	svcResult := state.NewService(tmp)
+	if svcResult.IsErr() {
+		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	gen := hugo.NewGenerator(conf, outputDir).WithStateManager(sm)
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm.EnsureRepositoryState(repository.URL, repository.Name, repository.Branch)
+	gen := hugo.NewGenerator(conf, outputDir).WithStateManager(sm).WithRenderer(&hugo.NoopRenderer{})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

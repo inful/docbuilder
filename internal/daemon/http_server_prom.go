@@ -5,7 +5,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	m "git.home.luguber.info/inful/docbuilder/internal/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 	promcollect "github.com/prometheus/client_golang/prometheus/collectors"
@@ -65,17 +64,11 @@ func updateDaemonPromMetrics(d *Daemon) {
 			atomicStoreInt64(&lastFailed, v)
 		}
 	}
-	// Update snapshot gauges from last build report (best effort)
-	if d.buildQueue != nil {
-		if history := d.buildQueue.GetHistory(); len(history) > 0 {
-			if last := history[len(history)-1]; last != nil && last.Metadata != nil {
-				if brRaw, ok := last.Metadata["build_report"]; ok {
-					if br, ok2 := brRaw.(*hugo.BuildReport); ok2 && br != nil {
-						atomic.StoreInt64(&lastRenderedPages, int64(br.RenderedPages))
-						atomic.StoreInt64(&lastRepositories, int64(br.Repositories))
-					}
-				}
-			}
+	// Update snapshot gauges from last build report via event-sourced projection (Phase B)
+	if d.buildProjection != nil {
+		if last := d.buildProjection.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
+			atomic.StoreInt64(&lastRenderedPages, int64(last.ReportData.RenderedPages))
+			atomic.StoreInt64(&lastRepositories, int64(last.RepoCount))
 		}
 	}
 }

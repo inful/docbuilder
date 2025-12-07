@@ -89,29 +89,6 @@ type BuildState struct {
 	Git      GitState
 	Docs     DocsState
 	Pipeline PipelineState
-
-	// Legacy field mirrors (kept for temporary backward compatibility)
-	start             time.Time           // use Pipeline.StartTime instead
-	Repositories      []config.Repository // use Git.Repositories instead
-	RepoPaths         map[string]string   // use Git.RepoPaths instead
-	WorkspaceDir      string              // use Git.WorkspaceDir instead
-	preHeads          map[string]string   // prefer Git methods
-	postHeads         map[string]string   // prefer Git methods
-	AllReposUnchanged bool                // prefer Git.AllReposUnchangedComputed()
-	ConfigHash        string              // use Pipeline.ConfigHash instead
-}
-
-// Legacy accessors for backward compatibility
-func (bs *BuildState) SyncLegacyFields() {
-	// Keep legacy fields in sync with sub-states
-	bs.start = bs.Pipeline.StartTime
-	bs.Repositories = bs.Git.Repositories
-	bs.RepoPaths = bs.Git.RepoPaths
-	bs.WorkspaceDir = bs.Git.WorkspaceDir
-	bs.AllReposUnchanged = bs.Git.AllReposUnchanged
-	bs.ConfigHash = bs.Pipeline.ConfigHash
-	bs.preHeads = bs.Git.preHeads
-	bs.postHeads = bs.Git.postHeads
 }
 
 // newBuildState constructs a BuildState with sub-state initialization.
@@ -130,8 +107,6 @@ func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *
 			preHeads:  make(map[string]string),
 			postHeads: make(map[string]string),
 		},
-		// Legacy field initialization for backward compatibility
-		start: startTime,
 	}
 
 	// Initialize docs indexes if we have files

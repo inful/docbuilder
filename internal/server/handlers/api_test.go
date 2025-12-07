@@ -11,7 +11,7 @@ import (
 
 type stubDaemon struct{}
 
-func (s *stubDaemon) GetStatus() interface{}  { return "ready" }
+func (s *stubDaemon) GetStatus() string       { return "ready" }
 func (s *stubDaemon) GetStartTime() time.Time { return time.Now().Add(-time.Hour) }
 
 func TestHandleDocsStatus_OK(t *testing.T) {

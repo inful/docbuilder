@@ -1,7 +1,7 @@
-// Package daemon contains the HTTP server wiring for DocBuilder's daemon mode.
 package daemon
 
 import (
+	"bytes"
 	"context"
 	stdErrors "errors"
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -65,8 +66,8 @@ type daemonAdapter struct {
 	daemon *Daemon
 }
 
-func (a *daemonAdapter) GetStatus() interface{} {
-	return a.daemon.GetStatus()
+func (a *daemonAdapter) GetStatus() string {
+	return string(a.daemon.GetStatus())
 }
 
 func (a *daemonAdapter) GetActiveJobs() int {
@@ -228,10 +229,23 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
 	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
 	mux.HandleFunc("/ready", s.handleReadiness)
+
+	// LiveReload endpoints (SSE + script) if enabled - MUST be before root handler
+	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
+		mux.Handle("/livereload", s.daemon.liveReload)
+		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+			if _, err := w.Write([]byte(LiveReloadScript)); err != nil {
+				slog.Error("failed to write livereload script", "error", err)
+			}
+		})
+		slog.Info("LiveReload HTTP endpoints registered")
+	}
+
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
-	mux.Handle("/", s.mchain(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := s.resolveDocsRoot()
 
 		// If we're serving directly from the Hugo project (no public yet), avoid showing a raw directory listing.
@@ -251,29 +265,25 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 				if r.URL.Path == "/" || r.URL.Path == "" {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(http.StatusServiceUnavailable)
-					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasnt been rendered yet. This page will be replaced automatically once rendering completes.</p></body></html>`))
+					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p></body></html>`))
 					return
 				}
 			}
 		}
 
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
-	})))
+	})
+
+	// Wrap with LiveReload injection middleware if enabled
+	var rootWithMiddleware http.Handler = rootHandler
+	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
+		rootWithMiddleware = injectLiveReloadScript(rootHandler)
+	}
+
+	mux.Handle("/", s.mchain(rootWithMiddleware))
 
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.apiHandlers.HandleDocsStatus)
-
-	// LiveReload endpoints (SSE + script) if enabled
-	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		mux.Handle("/livereload", s.daemon.liveReload)
-		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-			if _, err := w.Write([]byte(LiveReloadScript)); err != nil {
-				slog.Error("failed to write livereload script", "error", err)
-			}
-		})
-		slog.Info("LiveReload HTTP endpoints registered")
-	}
 
 	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("docs", s.docsServer, ln)
@@ -410,3 +420,65 @@ func (s *HTTPServer) startServerWithListener(kind string, srv *http.Server, ln n
 // this was gated behind a build tag; it now always returns a handler.
 
 // inline middleware removed in favor of internal/server/middleware
+
+// injectLiveReloadScript is a middleware that injects the LiveReload client script
+// into HTML responses.
+func injectLiveReloadScript(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Only inject into HTML pages (not assets, API endpoints, etc.)
+		path := r.URL.Path
+		isHTMLPage := path == "/" || path == "" || strings.HasSuffix(path, "/") || strings.HasSuffix(path, ".html")
+
+		if !isHTMLPage {
+			// Not an HTML page, serve normally
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		injector := newLiveReloadInjector(w, r)
+		next.ServeHTTP(injector, r)
+		injector.finalize()
+	})
+}
+
+// liveReloadInjector wraps an http.ResponseWriter to inject the LiveReload client script
+// into HTML responses before </body> tag.
+type liveReloadInjector struct {
+	http.ResponseWriter
+	statusCode int
+	buf        bytes.Buffer
+}
+
+func newLiveReloadInjector(w http.ResponseWriter, _ *http.Request) *liveReloadInjector {
+	return &liveReloadInjector{
+		ResponseWriter: w,
+		statusCode:     http.StatusOK, // default status
+	}
+}
+
+func (l *liveReloadInjector) WriteHeader(code int) {
+	l.statusCode = code
+	// Don't write header yet - we buffer everything
+}
+
+func (l *liveReloadInjector) Write(data []byte) (int, error) {
+	// Buffer all content
+	return l.buf.Write(data)
+}
+
+// finalize must be called after the handler completes to inject the script
+func (l *liveReloadInjector) finalize() {
+	if l.buf.Len() > 0 {
+		// Inject LiveReload script before </body>
+		html := l.buf.String()
+		script := `<script src="/livereload.js"></script></body>`
+		html = strings.Replace(html, "</body>", script, 1)
+
+		// Remove Content-Length header as we're modifying the content
+		l.ResponseWriter.Header().Del("Content-Length")
+
+		// Write header and modified HTML
+		l.ResponseWriter.WriteHeader(l.statusCode)
+		_, _ = l.ResponseWriter.Write([]byte(html))
+	}
+}

@@ -145,4 +145,77 @@ func TestConvenienceFunctions(t *testing.T) {
 			t.Errorf("Context[reason] = %v, want unsupported value", err.Context["reason"])
 		}
 	})
+
+	t.Run("ConfigRequired", func(t *testing.T) {
+		err := ConfigRequired("api_key")
+		if err.Category != CategoryConfig {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryConfig)
+		}
+		if err.Context["field"] != "api_key" {
+			t.Errorf("Context[field] = %v, want api_key", err.Context["field"])
+		}
+	})
+
+	t.Run("BuildFailed", func(t *testing.T) {
+		cause := fmt.Errorf("stage error")
+		err := BuildFailed("generate", cause)
+		if err.Category != CategoryBuild {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryBuild)
+		}
+		if err.Context["stage"] != "generate" {
+			t.Errorf("Context[stage] = %v, want generate", err.Context["stage"])
+		}
+		if !stdErrors.Is(err, cause) {
+			t.Error("Should wrap cause")
+		}
+	})
+
+	t.Run("WorkspaceError", func(t *testing.T) {
+		cause := fmt.Errorf("permission denied")
+		err := WorkspaceError("create", cause)
+		if err.Category != CategoryFileSystem {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryFileSystem)
+		}
+		if err.Context["operation"] != "create" {
+			t.Errorf("Context[operation] = %v, want create", err.Context["operation"])
+		}
+	})
+
+	t.Run("GitCloneError", func(t *testing.T) {
+		cause := fmt.Errorf("clone failed")
+		err := GitCloneError("my-repo", cause)
+		if err.Category != CategoryGit {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryGit)
+		}
+		if err.Context["repository"] != "my-repo" {
+			t.Errorf("Context[repository] = %v, want my-repo", err.Context["repository"])
+		}
+	})
+
+	t.Run("GitNetworkError", func(t *testing.T) {
+		cause := fmt.Errorf("connection reset")
+		err := GitNetworkError("my-repo", cause)
+		if err.Category != CategoryGit {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryGit)
+		}
+		if !err.Retryable {
+			t.Error("GitNetworkError should be retryable")
+		}
+	})
+
+	t.Run("DiscoveryError", func(t *testing.T) {
+		cause := fmt.Errorf("no docs found")
+		err := DiscoveryError(cause)
+		if err.Category != CategoryBuild {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryBuild)
+		}
+	})
+
+	t.Run("HugoGenerationError", func(t *testing.T) {
+		cause := fmt.Errorf("hugo failed")
+		err := HugoGenerationError(cause)
+		if err.Category != CategoryHugo {
+			t.Errorf("Category = %v, want %v", err.Category, CategoryHugo)
+		}
+	})
 }

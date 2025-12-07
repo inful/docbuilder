@@ -26,7 +26,7 @@ func mustRead(t *testing.T, path string) string {
 func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	outDir := t.TempDir()
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, outDir)
+	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 
 	// First build v1
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version1\n")}}
@@ -40,7 +40,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	}
 
 	// Second build v2
-	gen2 := NewGenerator(cfg, outDir)
+	gen2 := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version2\n")}}
 	if err := gen2.GenerateSite(filesV2); err != nil {
 		t.Fatalf("second build failed: %v", err)
@@ -72,7 +72,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	outDir := t.TempDir()
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, outDir)
+	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 
 	// Initial successful build
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Stable\n")}}
@@ -86,7 +86,7 @@ func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	}
 
 	// Start second build with immediate cancellation
-	gen2 := NewGenerator(cfg, outDir)
+	gen2 := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Broken\n")}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately

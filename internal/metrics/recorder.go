@@ -10,6 +10,7 @@ const (
 	BuildOutcomeWarning  BuildOutcomeLabel = "warning"
 	BuildOutcomeFailed   BuildOutcomeLabel = "failed"
 	BuildOutcomeCanceled BuildOutcomeLabel = "canceled"
+	BuildOutcomeSkipped  BuildOutcomeLabel = "skipped"
 )
 
 // ResultLabel enumerates stage result categories for counters.

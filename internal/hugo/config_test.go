@@ -79,8 +79,20 @@ func TestGenerateHugoConfig_Hextra(t *testing.T) {
 	if !found {
 		t.Fatalf("hextra module import missing: %v", imports)
 	}
-	if _, ok := conf["outputs"]; ok {
-		t.Fatalf("hextra should not configure outputs.home JSON by default")
+	// Hextra now enables JSON output for offline search
+	if outputs, ok := conf["outputs"].(map[string]any); ok {
+		if home, ok := outputs["home"].([]any); ok {
+			hasJSON := false
+			for _, v := range home {
+				if v == "JSON" {
+					hasJSON = true
+					break
+				}
+			}
+			if !hasJSON {
+				t.Fatalf("hextra should configure JSON output for offline search")
+			}
+		}
 	}
 	markup := conf["markup"].(map[string]any)
 	gold := markup["goldmark"].(map[string]any)

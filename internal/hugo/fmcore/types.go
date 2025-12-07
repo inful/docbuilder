@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // MergeMode defines how a patch applies to existing front matter.
@@ -71,6 +72,74 @@ func ComputeBaseFrontMatter(name, repository, forge, section string, metadata, e
 			fm[k] = v
 		}
 	}
+	return fm
+}
+
+// ComputeBaseFrontMatterTyped builds a typed FrontMatter struct (title/date/repository/section/metadata)
+// excluding edit link. It preserves existing front matter values when present.
+func ComputeBaseFrontMatterTyped(name, repository, forge, section string, metadata, existing map[string]any, _ *config.Config, now time.Time) *models.FrontMatter {
+	// Seed from existing map to preserve any provided values
+	fm, _ := models.FromMap(existing)
+
+	// Title (if missing and not index)
+	if fm.Title == "" && name != "index" {
+		base := name
+		base = strings.ReplaceAll(base, "_", "-")
+		parts := strings.Split(base, "-")
+		for i, part := range parts {
+			if part == "" {
+				continue
+			}
+			parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
+		}
+		fm.Title = strings.Join(parts, " ")
+	}
+
+	// Date (inject if missing in existing)
+	if _, hadDate := existing["date"]; !hadDate {
+		fm.Date = now
+	}
+
+	// Repository & Section
+	fm.Repository = repository
+	if forge != "" {
+		fm.Forge = forge
+	}
+	if section != "" {
+		fm.Section = section
+	}
+
+	// Metadata passthrough (only when missing from existing)
+	for k, v := range metadata {
+		if _, had := existing[k]; !had {
+			// Prefer known fields when applicable
+			switch k {
+			case "description":
+				if s, ok := v.(string); ok {
+					fm.Description = s
+					continue
+				}
+			case "tags":
+				if arr, ok := v.([]string); ok {
+					fm.Tags = append(fm.Tags, arr...)
+					continue
+				}
+			case "categories":
+				if arr, ok := v.([]string); ok {
+					fm.Categories = append(fm.Categories, arr...)
+					continue
+				}
+			case "keywords":
+				if arr, ok := v.([]string); ok {
+					fm.Keywords = append(fm.Keywords, arr...)
+					continue
+				}
+			}
+			// Fallback to custom field storage
+			fm.SetCustom(k, v)
+		}
+	}
+
 	return fm
 }
 

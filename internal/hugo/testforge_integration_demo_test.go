@@ -68,7 +68,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		// Test Hugo generation with realistic data
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir)
+		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
@@ -134,7 +134,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir)
+		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
@@ -176,7 +176,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir)
+		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
