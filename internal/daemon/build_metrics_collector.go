@@ -8,6 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // BuildMetricsCollector handles metrics collection during build process
@@ -50,11 +51,7 @@ func (bmc *BuildMetricsCollectorImpl) RecordDeletions(deletionsDetected int, job
 	}
 }
 
-// repositoryBuildTracker interface for tracking repository builds
-type repositoryBuildTracker interface {
-	IncrementRepoBuild(string, bool)
-	SetRepoDocumentCount(string, int)
-}
+// The repositoryBuildTracker interface was removed - using state.RepositoryBuildCounter and state.RepositoryMetadataWriter
 
 // UpdateRepositoryMetrics updates build counters and document counts
 func (bmc *BuildMetricsCollectorImpl) UpdateRepositoryMetrics(
@@ -64,8 +61,10 @@ func (bmc *BuildMetricsCollectorImpl) UpdateRepositoryMetrics(
 	genErr error,
 	skipReport *hugo.BuildReport,
 ) error {
-	sm, ok := stateMgr.(repositoryBuildTracker)
-	if !ok || sm == nil || skipReport != nil {
+	// Type assert to both needed interfaces
+	counter, hasCounter := stateMgr.(state.RepositoryBuildCounter)
+	writer, hasWriter := stateMgr.(state.RepositoryMetadataWriter)
+	if (!hasCounter && !hasWriter) || skipReport != nil {
 		return nil
 	}
 
@@ -79,9 +78,13 @@ func (bmc *BuildMetricsCollectorImpl) UpdateRepositoryMetrics(
 
 	// Update metrics for each repository
 	for _, r := range repos {
-		sm.IncrementRepoBuild(r.URL, success)
-		if count, exists := perRepoDocCounts[r.URL]; exists {
-			sm.SetRepoDocumentCount(r.URL, count)
+		if hasCounter {
+			counter.IncrementRepoBuild(r.URL, success)
+		}
+		if hasWriter {
+			if count, exists := perRepoDocCounts[r.URL]; exists {
+				writer.SetRepoDocumentCount(r.URL, count)
+			}
 		}
 	}
 

@@ -2,13 +2,10 @@ package errors
 
 import (
 	"encoding/json"
-	stdErrors "errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	dberrors "git.home.luguber.info/inful/docbuilder/internal/errors"
 )
 
 func TestHTTPErrorAdapter_StatusCodeFor(t *testing.T) {
@@ -37,16 +34,6 @@ func TestHTTPErrorAdapter_StatusCodeFor(t *testing.T) {
 				WithSeverity(SeverityError).
 				Build(),
 			expected: http.StatusUnauthorized,
-		},
-		{
-			name:     "docbuilder network error",
-			err:      dberrors.New(dberrors.CategoryNetwork, dberrors.SeverityFatal, "network failed"),
-			expected: http.StatusBadGateway,
-		},
-		{
-			name:     "docbuilder internal error",
-			err:      dberrors.New(dberrors.CategoryInternal, dberrors.SeverityFatal, "internal error"),
-			expected: http.StatusInternalServerError,
 		},
 		{
 			name:     "unclassified error",
@@ -85,12 +72,6 @@ func TestHTTPErrorAdapter_WriteErrorResponse(t *testing.T) {
 			err: NewError(CategoryValidation, "invalid input").
 				WithSeverity(SeverityError).
 				Build(),
-			expectedStatus: http.StatusBadRequest,
-			checkJSON:      true,
-		},
-		{
-			name:           "docbuilder config error",
-			err:            dberrors.New(dberrors.CategoryConfig, dberrors.SeverityFatal, "bad config"),
 			expectedStatus: http.StatusBadRequest,
 			checkJSON:      true,
 		},
@@ -151,11 +132,6 @@ func TestHTTPErrorAdapter_FormatErrorResponse(t *testing.T) {
 				Build(),
 			checkMsg: true,
 		},
-		{
-			name:     "docbuilder retryable error",
-			err:      dberrors.Retryable(dberrors.CategoryNetwork, dberrors.SeverityWarning, "network timeout"),
-			checkMsg: true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -172,16 +148,6 @@ func TestHTTPErrorAdapter_FormatErrorResponse(t *testing.T) {
 
 			if response.Code == "" {
 				t.Error("FormatErrorResponse() missing error code")
-			}
-
-			// Check retryable flag for retryable errors
-			if tt.err != nil {
-				var dbe *dberrors.DocBuilderError
-				if stdErrors.As(tt.err, &dbe) && dbe.Retryable {
-					if response.Details == nil || !response.Details["retryable"].(bool) {
-						t.Error("FormatErrorResponse() missing retryable flag for retryable error")
-					}
-				}
 			}
 		})
 	}

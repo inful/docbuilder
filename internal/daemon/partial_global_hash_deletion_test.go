@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -86,61 +87,22 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 
 	// Subset report hash (only changed repoA) prior to recomposition
 	subsetHash := hashList(newRepoAPaths)
-	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
-	bc := &buildContext{
-		workspace: workspace,
-		job: &BuildJob{
-			TypedMeta: &BuildJobMetadata{Repositories: repos},
-		},
-		stateMgr:  sm,
-		deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}},
-	}
+	report := &hugo.BuildReport{DocFilesHash: subsetHash}
 
-	// Execute recomposition logic block from stagePostPersist (duplicated minimal) to isolate behavior
-	if bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
-		getter, gOK := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string })
-		setter, sOK := bc.stateMgr.(interface{ SetRepoDocFilePaths(string, []string) })
-		hasher, hOK := bc.stateMgr.(interface{ SetRepoDocFilesHash(string, string) })
-		if gOK {
-			all := []string{}
-			changedSet := map[string]struct{}{repoAURL: {}}
-			for _, r := range repos {
-				paths := getter.GetRepoDocFilePaths(r.URL)
-				if _, ch := changedSet[r.URL]; !ch { // unchanged repoB; scan to detect deletion
-					if fi, err := os.Stat(filepath.Join(workspace, r.Name)); err == nil && fi.IsDir() {
-						fresh := []string{}
-						if werr := filepath.WalkDir(filepath.Join(workspace, r.Name, "docs"), func(p string, d os.DirEntry, err error) error {
-							if err != nil || d == nil || d.IsDir() {
-								return nil
-							}
-							if filepath.Ext(d.Name()) == ".md" || filepath.Ext(d.Name()) == ".markdown" {
-								rel, rerr := filepath.Rel(filepath.Join(workspace, r.Name), p)
-								if rerr == nil {
-									fresh = append(fresh, filepath.ToSlash(filepath.Join(r.Name, rel)))
-								}
-							}
-							return nil
-						}); werr != nil {
-							t.Fatalf("walkdir: %v", werr)
-						}
-						sort.Strings(fresh)
-						if len(fresh) != len(paths) { // detected deletion
-							if sOK {
-								setter.SetRepoDocFilePaths(r.URL, fresh)
-							}
-							if hOK {
-								hasher.SetRepoDocFilesHash(r.URL, hashList(fresh))
-							}
-							paths = fresh
-						}
-					}
-				}
-				all = append(all, paths...)
-			}
-			if len(all) > 0 {
-				report.DocFilesHash = hashList(all)
-			}
-		}
+	job := &BuildJob{
+		TypedMeta: &BuildJobMetadata{Repositories: repos},
+	}
+	deltaPlan := &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}
+
+	// Test DeltaManager.RecomputeGlobalDocHash with deletion detection enabled
+	buildCfg := &cfg.Config{Build: cfg.BuildConfig{DetectDeletions: true}}
+	dm := NewDeltaManager()
+	deletions, err := dm.RecomputeGlobalDocHash(report, deltaPlan, sm, job, workspace, buildCfg)
+	if err != nil {
+		t.Fatalf("RecomputeGlobalDocHash failed: %v", err)
+	}
+	if deletions != 1 {
+		t.Errorf("expected 1 deletion detected, got %d", deletions)
 	}
 
 	if report.DocFilesHash == subsetHash {

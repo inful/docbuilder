@@ -1,9 +1,6 @@
 package config
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 func normalizeVersioning(v *VersioningConfig, res *NormalizationResult) {
 	if v == nil {
@@ -20,15 +17,6 @@ func normalizeVersioning(v *VersioningConfig, res *NormalizationResult) {
 	if v.MaxVersionsPerRepo < 0 {
 		v.MaxVersionsPerRepo = 0
 	}
-	trimSlice := func(in []string) []string {
-		out := make([]string, 0, len(in))
-		for _, p := range in {
-			if tp := strings.TrimSpace(p); tp != "" {
-				out = append(out, tp)
-			}
-		}
-		return out
-	}
-	v.BranchPatterns = trimSlice(v.BranchPatterns)
-	v.TagPatterns = trimSlice(v.TagPatterns)
+	v.BranchPatterns = trimStringSlice(v.BranchPatterns)
+	v.TagPatterns = trimStringSlice(v.TagPatterns)
 }

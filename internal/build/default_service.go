@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	dberrors "git.home.luguber.info/inful/docbuilder/internal/errors"
+	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
@@ -109,7 +109,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.ConfigRequired("config")
+		return result, dberrors.ConfigError("config required").Build()
 	}
 
 	if len(req.Config.Repositories) == 0 {
@@ -165,7 +165,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Duration = result.EndTime.Sub(startTime)
 		s.recorder.IncStageResult("workspace", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.WorkspaceError("create", err)
+		return result, dberrors.FileSystemError("failed to create workspace").WithContext("error", err.Error()).Build()
 	}
 	s.recorder.ObserveStageDuration("workspace", time.Since(stageStart))
 	s.recorder.IncStageResult("workspace", metrics.ResultSuccess)
@@ -188,7 +188,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Duration = result.EndTime.Sub(startTime)
 		s.recorder.IncStageResult("clone", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.WorkspaceError("ensure_git", err)
+		return result, dberrors.FileSystemError("failed to ensure git initialized").WithContext("error", err.Error()).Build()
 	}
 
 	repoPaths := make(map[string]string)
@@ -230,7 +230,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 			s.recorder.IncCloneRepoResult(false)
 			s.recorder.IncStageResult("clone", metrics.ResultFatal)
 			s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-			return result, dberrors.GitCloneError(repo.Name, err)
+			return result, dberrors.GitError("failed to clone repository").WithContext("repo", repo.Name).WithContext("error", err.Error()).Build()
 		}
 
 		s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), true)
@@ -259,7 +259,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Duration = result.EndTime.Sub(startTime)
 		s.recorder.IncStageResult("discovery", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.DiscoveryError(err)
+		return result, dberrors.BuildError("discovery failed").WithContext("error", err.Error()).Build()
 	}
 	s.recorder.ObserveStageDuration("discovery", time.Since(stageStart))
 	s.recorder.IncStageResult("discovery", metrics.ResultSuccess)
@@ -298,7 +298,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Duration = result.EndTime.Sub(startTime)
 		s.recorder.IncStageResult("hugo", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.ConfigRequired("hugo_generator_factory")
+		return result, dberrors.ConfigError("hugo generator factory required").Build()
 	}
 
 	generator := s.hugoGeneratorFactory(req.Config, req.OutputDir)
@@ -312,7 +312,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		s.recorder.ObserveStageDuration("hugo", time.Since(stageStart))
 		s.recorder.IncStageResult("hugo", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.HugoGenerationError(err)
+		return result, dberrors.HugoError("hugo generation failed").WithContext("error", err.Error()).Build()
 	}
 	s.recorder.ObserveStageDuration("hugo", time.Since(stageStart))
 	s.recorder.IncStageResult("hugo", metrics.ResultSuccess)

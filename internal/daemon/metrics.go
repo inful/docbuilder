@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // CustomMetric represents user-defined metrics with constrained JSON-friendly types

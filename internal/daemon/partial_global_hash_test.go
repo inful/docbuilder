@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -25,7 +26,7 @@ func hashPaths(paths []string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// TestPartialBuildRecomposesGlobalDocFilesHash ensures stagePostPersist merges unchanged + changed repo paths.
+// TestPartialBuildRecomposesGlobalDocFilesHash ensures DeltaManager.RecomputeGlobalDocHash merges unchanged + changed repo paths.
 func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
@@ -58,28 +59,24 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 
 	// Subset BuildReport (what generator would emit for changed repoA only) uses subset hash (only repoA paths)
 	subsetHash := hashPaths(newRepoAPaths) // does not include repoB yet
-	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
+	report := &hugo.BuildReport{DocFilesHash: subsetHash}
 
-	// Build context with deltaPlan marking repoA changed
+	// Build job with repositories metadata
 	job := &BuildJob{
 		TypedMeta: &BuildJobMetadata{Repositories: repos},
 	}
-	bc := &buildContext{job: job, stateMgr: sm, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
 
-	// Invoke post-persist recomposition via a lightweight shim (copy stagePostPersist logic segment for recomposition)
-	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
-		if getter, ok := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string }); ok {
-			all := []string{}
-			for _, r := range repos { // original full set
-				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 {
-					all = append(all, ps...)
-				}
-			}
-			if len(all) > 0 {
-				merged := hashPaths(all)
-				report.DocFilesHash = merged
-			}
-		}
+	// Delta plan marking repoA changed
+	deltaPlan := &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}
+
+	// Test DeltaManager.RecomputeGlobalDocHash directly
+	dm := NewDeltaManager()
+	deletions, err := dm.RecomputeGlobalDocHash(report, deltaPlan, sm, job, workspace, nil)
+	if err != nil {
+		t.Fatalf("RecomputeGlobalDocHash failed: %v", err)
+	}
+	if deletions != 0 {
+		t.Errorf("expected 0 deletions, got %d", deletions)
 	}
 
 	if report.DocFilesHash == subsetHash {
@@ -129,26 +126,23 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 	// IMPORTANT: we DO NOT update repoB path list (still includes b2.md) to reflect current limitation.
 
 	subsetHash := hashPaths(newRepoAPaths) // what a changed-only subset would carry
-	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
+	report := &hugo.BuildReport{DocFilesHash: subsetHash}
 
 	job := &BuildJob{
 		TypedMeta: &BuildJobMetadata{Repositories: repos},
 	}
-	bc := &buildContext{job: job, stateMgr: sm, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
 
-	// Recomposition identical to stagePostPersist logic used in previous test
-	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
-		if getter, ok := bc.stateMgr.(interface{ GetRepoDocFilePaths(string) []string }); ok {
-			all := []string{}
-			for _, r := range repos {
-				if ps := getter.GetRepoDocFilePaths(r.URL); len(ps) > 0 {
-					all = append(all, ps...)
-				}
-			}
-			if len(all) > 0 {
-				report.DocFilesHash = hashPaths(all)
-			}
-		}
+	// Delta plan marking repoA changed
+	deltaPlan := &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}
+
+	// Test DeltaManager.RecomputeGlobalDocHash directly
+	dm := NewDeltaManager()
+	deletions, err := dm.RecomputeGlobalDocHash(report, deltaPlan, sm, job, workspace, nil)
+	if err != nil {
+		t.Fatalf("RecomputeGlobalDocHash failed: %v", err)
+	}
+	if deletions != 0 {
+		t.Errorf("expected 0 deletions, got %d", deletions)
 	}
 
 	expectedWithDeletedStillPresent := hashPaths(append(append([]string{}, newRepoAPaths...), repoBPaths...)) // includes b2.md
@@ -165,6 +159,3 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 	}
 	t.Logf("NOTE: deletion not reflected yet; recomposed hash includes stale path b2.md (expected current limitation)")
 }
-
-// Minimal shim to avoid importing full hugo package in this low-level test; only needs DocFilesHash field
-type hugoBuildReportShim struct{ DocFilesHash string }

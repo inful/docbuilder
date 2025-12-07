@@ -65,6 +65,6 @@ If a template body starts with a YAML front matter fence (`---`), DocBuilder wil
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Theme assets missing | Hugo not run | Set `DOCBUILDER_RUN_HUGO=1` or run `hugo` manually. |
+| Theme assets missing | Hugo not run | Run `hugo` manually or rerun DocBuilder with `--render-mode always`. |
 | Edit links absent | Repo metadata incomplete | Ensure repo URL + branch were configured. |
 | Wrong base URL | `hugo.base_url` mismatch | Update config and rebuild. |

@@ -2,10 +2,11 @@ package daemon
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -146,10 +147,14 @@ func (d *Daemon) checkHTTPHealth() HealthCheck {
 		return check
 	}
 
-	// For now, assume healthy if server exists
-	// TODO: Add actual connectivity checks
-	check.Status = HealthStatusHealthy
-	check.Message = "HTTP servers are running"
+	// Check daemon status as proxy for server health
+	if d.GetStatus() == StatusRunning {
+		check.Status = HealthStatusHealthy
+		check.Message = "HTTP servers are running and accepting connections"
+	} else {
+		check.Status = HealthStatusDegraded
+		check.Message = "HTTP server initialized but daemon not fully running"
+	}
 
 	return check
 }
@@ -202,10 +207,21 @@ func (d *Daemon) checkForgeHealth() HealthCheck {
 		return check
 	}
 
-	// For now, assume healthy if forge manager exists
-	// TODO: Add actual forge connectivity tests
-	check.Status = HealthStatusHealthy
-	check.Message = "Forge connections appear healthy"
+	// Check if forge discovery has run successfully
+	result, err := d.discoveryCache.Get()
+	if err != nil {
+		check.Status = HealthStatusDegraded
+		check.Message = fmt.Sprintf("Last forge discovery failed: %v", err)
+	} else if result == nil {
+		check.Status = HealthStatusDegraded
+		check.Message = "No forge discovery has run yet"
+	} else if len(result.Errors) > 0 {
+		check.Status = HealthStatusDegraded
+		check.Message = fmt.Sprintf("Some forges have errors: %d/%d", len(result.Errors), len(result.Repositories)+len(result.Errors))
+	} else {
+		check.Status = HealthStatusHealthy
+		check.Message = fmt.Sprintf("All forges healthy, %d repositories discovered", len(result.Repositories))
+	}
 
 	return check
 }
@@ -226,9 +242,19 @@ func (d *Daemon) checkStorageHealth() HealthCheck {
 		return check
 	}
 
-	// TODO: Add actual storage health checks (disk space, permissions, etc.)
-	check.Status = HealthStatusHealthy
-	check.Message = "Storage and state management operational"
+	// Check if state is loaded
+	if !d.stateManager.IsLoaded() {
+		check.Status = HealthStatusDegraded
+		check.Message = "State not loaded"
+	} else {
+		check.Status = HealthStatusHealthy
+		lastSaved := d.stateManager.LastSaved()
+		if lastSaved != nil {
+			check.Message = fmt.Sprintf("State operational, last saved: %s", lastSaved.Format(time.RFC3339))
+		} else {
+			check.Message = "State operational"
+		}
+	}
 
 	return check
 }

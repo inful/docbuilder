@@ -21,8 +21,8 @@ Primary commands (Kong-based CLI):
 
 | Variable | Effect |
 |----------|--------|
-| `DOCBUILDER_RUN_HUGO=1` | Force running Hugo after scaffolding. |
-| `DOCBUILDER_SKIP_HUGO=1` | Force skipping Hugo even if RUN flag set. |
+| `--render-mode always` | Force running Hugo after scaffolding. |
+| `--render-mode never` | Force skipping Hugo even when enabled in config. |
 
 ## Build Report Outputs
 

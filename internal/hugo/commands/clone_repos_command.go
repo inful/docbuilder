@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -49,7 +48,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 		return hugo.ExecutionFailure(err)
 	}
 
-	fetcher := newDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
+	fetcher := hugo.NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 
 	// Ensure workspace directory structure
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
@@ -219,52 +218,6 @@ func (c *CloneReposCommand) classifyGitFailure(err error) hugo.ReportIssueCode {
 	default:
 		return ""
 	}
-}
-
-// newDefaultRepoFetcher creates a default repository fetcher.
-// This is a simplified version for the command pattern.
-func newDefaultRepoFetcher(workspaceDir string, buildConfig *config.BuildConfig) RepoFetcher {
-	// This would normally be injected or configured
-	// For now, return a basic implementation that delegates to the existing git infrastructure
-	return &defaultRepoFetcher{
-		workspaceDir: workspaceDir,
-		buildConfig:  buildConfig,
-	}
-}
-
-// RepoFetcher interface for repository operations.
-type RepoFetcher interface {
-	Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) *FetchResult
-}
-
-// FetchResult represents the result of a repository fetch operation.
-type FetchResult struct {
-	Path     string
-	PreHead  string
-	PostHead string
-	Err      error
-}
-
-// defaultRepoFetcher implements RepoFetcher using the existing git infrastructure.
-type defaultRepoFetcher struct {
-	workspaceDir string
-	buildConfig  *config.BuildConfig
-}
-
-func (f *defaultRepoFetcher) Fetch(_ context.Context, _ config.CloneStrategy, repo config.Repository) *FetchResult {
-	// This implementation delegates to the existing git client
-	// In a full refactor, this would be extracted into its own service
-
-	targetPath := filepath.Join(f.workspaceDir, repo.Name)
-
-	result := &FetchResult{
-		Path: targetPath,
-	}
-
-	// Simplified implementation - in practice this would use the git client
-	// This is a placeholder for the actual git operations
-
-	return result
 }
 
 func init() {

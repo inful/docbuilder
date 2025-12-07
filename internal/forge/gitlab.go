@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -16,11 +15,9 @@ import (
 
 // GitLabClient implements ForgeClient for GitLab
 type GitLabClient struct {
-	config     *Config
-	httpClient *http.Client
-	baseURL    string
-	apiURL     string
-	token      string
+	*BaseForge
+	config  *Config
+	baseURL string
 }
 
 // NewGitLabClient creates a new GitLab client
@@ -29,24 +26,24 @@ func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
 	}
 
-	client := &GitLabClient{
-		config:     fg,
-		httpClient: newHTTPClient30s(),
-		apiURL:     fg.APIURL,
-		baseURL:    fg.BaseURL,
-	}
-
 	// Set default URLs if not provided
-	client.apiURL, client.baseURL = withDefaults(client.apiURL, client.baseURL, "https://gitlab.com/api/v4", "https://gitlab.com")
+	apiURL, baseURL := withDefaults(fg.APIURL, fg.BaseURL, "https://gitlab.com/api/v4", "https://gitlab.com")
 
 	// Extract token from auth config
 	tok, err := tokenFromConfig(fg, "GitLab")
 	if err != nil {
 		return nil, err
 	}
-	client.token = tok
 
-	return client, nil
+	// Create BaseForge with common HTTP operations
+	baseForge := NewBaseForge(newHTTPClient30s(), apiURL, tok)
+	// GitLab uses Bearer auth (default), no custom headers needed
+
+	return &GitLabClient{
+		BaseForge: baseForge,
+		config:    fg,
+		baseURL:   baseURL,
+	}, nil
 }
 
 // GetType returns the forge type
@@ -104,13 +101,13 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 
 	for {
 		endpoint := fmt.Sprintf("/groups?per_page=%d&page=%d&order_by=name", perPage, page)
-		req, err := c.newRequest(ctx, "GET", endpoint, nil)
+		req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		var gitlabGroups []gitlabGroup
-		if err := c.doRequest(req, &gitlabGroups); err != nil {
+		if err := c.DoRequest(req, &gitlabGroups); err != nil {
 			return nil, err
 		}
 
@@ -168,13 +165,13 @@ func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*R
 	for {
 		endpoint := fmt.Sprintf("/groups/%s/projects?per_page=%d&page=%d&order_by=last_activity_at&include_subgroups=true",
 			url.PathEscape(group), perPage, page)
-		req, err := c.newRequest(ctx, "GET", endpoint, nil)
+		req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 		if err != nil {
 			return nil, err
 		}
 
 		var gitlabProjects []gitlabProject
-		if err := c.doRequest(req, &gitlabProjects); err != nil {
+		if err := c.DoRequest(req, &gitlabProjects); err != nil {
 			return nil, err
 		}
 
@@ -200,13 +197,13 @@ func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*R
 func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	projectPath := fmt.Sprintf("%s/%s", owner, repo)
 	endpoint := fmt.Sprintf("/projects/%s", url.PathEscape(projectPath))
-	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var gitlabProject gitlabProject
-	if err := c.doRequest(req, &gitlabProject); err != nil {
+	if err := c.DoRequest(req, &gitlabProject); err != nil {
 		return nil, err
 	}
 
@@ -241,7 +238,7 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectPath, filePat
 		url.PathEscape(filePath),
 		url.PathEscape(branch))
 
-	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return false, err
 	}
@@ -420,13 +417,13 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		}
 	}
 
-	req, err := c.newRequest(ctx, "POST", endpoint, payload)
+	req, err := c.NewRequest(ctx, "POST", endpoint, payload)
 	if err != nil {
 		return err
 	}
 
 	var result map[string]interface{}
-	return c.doRequest(req, &result)
+	return c.DoRequest(req, &result)
 }
 
 // GetEditURL returns the GitLab edit URL for a file
@@ -468,56 +465,4 @@ func (c *GitLabClient) convertGitLabProject(gProject *gitlabProject) *Repository
 			"namespace_path":      gProject.Namespace.Path,
 		},
 	}
-}
-
-func (c *GitLabClient) newRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Request, error) {
-	u, err := url.Parse(c.apiURL)
-	if err != nil {
-		return nil, err
-	}
-	u.Path = path.Join(u.Path, endpoint)
-
-	var req *http.Request
-	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), strings.NewReader(string(jsonBody)))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-	} else {
-		var err error
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("User-Agent", "DocBuilder/1.0")
-
-	return req, nil
-}
-
-func (c *GitLabClient) doRequest(req *http.Request, result interface{}) error {
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("GitLab API error: %s", resp.Status)
-	}
-
-	if result != nil {
-		return json.NewDecoder(resp.Body).Decode(result)
-	}
-
-	return nil
 }

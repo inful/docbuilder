@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // StatePersister handles persisting build state and metadata
@@ -35,13 +36,13 @@ func NewStatePersister() StatePersister {
 	return &StatePersisterImpl{}
 }
 
-// buildStateManager interface for persisting build state
-type buildStateManager interface {
-	SetRepoLastCommit(string, string, string, string)
-	SetLastConfigHash(string)
-	SetLastReportChecksum(string)
-	SetLastGlobalDocFilesHash(string)
-	EnsureRepositoryState(string, string, string)
+// The buildStateManager interface was removed - using individual state interfaces
+
+// stateManager wraps multiple state interfaces for cleaner passing
+type stateManager struct {
+	configStore state.ConfigurationStateStore
+	repoInit    state.RepositoryInitializer
+	repoCommit  state.RepositoryCommitTracker
 }
 
 // HugoGenerator interface for getting config hash
@@ -59,12 +60,22 @@ func (sp *StatePersisterImpl) PersistBuildState(
 	report *hugo.BuildReport,
 	genErr error,
 ) error {
-	sm, ok := stateMgr.(buildStateManager)
-	if !ok || sm == nil {
+	// Type assert to needed interfaces
+	configStore, hasConfigStore := stateMgr.(state.ConfigurationStateStore)
+	repoInit, hasRepoInit := stateMgr.(state.RepositoryInitializer)
+	repoCommit, hasRepoCommit := stateMgr.(state.RepositoryCommitTracker)
+
+	if !hasConfigStore && !hasRepoInit && !hasRepoCommit {
 		return nil //nolint:nilerr // Skip if state manager unavailable
 	}
 	if genErr != nil {
 		return genErr
+	}
+
+	sm := &stateManager{
+		configStore: configStore,
+		repoInit:    repoInit,
+		repoCommit:  repoCommit,
 	}
 
 	// Persist repository commit heads
@@ -95,14 +106,17 @@ func (sp *StatePersisterImpl) PersistBuildState(
 func (sp *StatePersisterImpl) persistRepositoryCommits(
 	repos []config.Repository,
 	workspace string,
-	sm buildStateManager,
+	sm *stateManager,
 ) error {
+	if sm.repoInit == nil || sm.repoCommit == nil {
+		return nil
+	}
 	for _, repo := range repos {
-		sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
+		sm.repoInit.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
 		repoPath := filepath.Join(workspace, repo.Name)
 		head, err := hugoReadRepoHead(repoPath)
 		if err == nil && head != "" {
-			sm.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, head)
+			sm.repoCommit.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, head)
 		}
 		// Continue with other repos even if one fails
 	}
@@ -113,10 +127,13 @@ func (sp *StatePersisterImpl) persistRepositoryCommits(
 // nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistConfigHash(
 	generator HugoGenerator,
-	sm buildStateManager,
+	sm *stateManager,
 ) error {
+	if sm.configStore == nil {
+		return nil
+	}
 	if hash := generator.ComputeConfigHashForPersistence(); hash != "" {
-		sm.SetLastConfigHash(hash)
+		sm.configStore.SetLastConfigHash(hash)
 	}
 	return nil
 }
@@ -125,8 +142,11 @@ func (sp *StatePersisterImpl) persistConfigHash(
 // nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistReportChecksum(
 	outDir string,
-	sm buildStateManager,
+	sm *stateManager,
 ) error {
+	if sm.configStore == nil {
+		return nil
+	}
 	reportPath := filepath.Join(outDir, "build-report.json")
 	brData, err := os.ReadFile(reportPath)
 	if err != nil {
@@ -135,7 +155,7 @@ func (sp *StatePersisterImpl) persistReportChecksum(
 
 	sum := sha256.Sum256(brData)
 	checksum := hex.EncodeToString(sum[:])
-	sm.SetLastReportChecksum(checksum)
+	sm.configStore.SetLastReportChecksum(checksum)
 
 	return nil
 }
@@ -144,28 +164,19 @@ func (sp *StatePersisterImpl) persistReportChecksum(
 // nolint:unparam // These helpers currently never return an error.
 func (sp *StatePersisterImpl) persistGlobalDocFilesHash(
 	report *hugo.BuildReport,
-	sm buildStateManager,
+	sm *stateManager,
 ) error {
+	if sm.configStore == nil {
+		return nil
+	}
 	if report.DocFilesHash != "" {
-		sm.SetLastGlobalDocFilesHash(report.DocFilesHash)
+		sm.configStore.SetLastGlobalDocFilesHash(report.DocFilesHash)
 	}
 	return nil
 }
 
 // hugoReadRepoHead reads the HEAD commit hash from a git repository.
+// Deprecated: Use git.ReadRepoHead directly.
 func hugoReadRepoHead(repoPath string) (string, error) {
-	headPath := filepath.Join(repoPath, ".git", "HEAD")
-	b, err := os.ReadFile(headPath)
-	if err != nil {
-		return "", err
-	}
-	line := strings.TrimSpace(string(b))
-	if strings.HasPrefix(line, "ref:") {
-		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
-		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
-		if rb, rerr := os.ReadFile(refPath); rerr == nil {
-			return strings.TrimSpace(string(rb)), nil
-		}
-	}
-	return line, nil
+	return git.ReadRepoHead(repoPath)
 }

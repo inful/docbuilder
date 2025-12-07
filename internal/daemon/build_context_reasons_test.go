@@ -12,16 +12,21 @@ func TestBuildContextDeltaRepoReasonsPropagation(t *testing.T) {
 			DeltaRepoReasons: map[string]string{"u1": "unknown", "u2": "quick_hash_diff"},
 		},
 	}
-	bc := &buildContext{job: job}
-	rep := &hugo2.BuildReport{}
-	bc.deltaPlan = &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{"u1", "u2"}}
-	if err := bc.stagePostPersist(rep, nil); err != nil {
-		t.Fatalf("stagePostPersist: %v", err)
+
+	// Test DeltaManager.AttachDeltaMetadata directly
+	report := &hugo2.BuildReport{}
+	deltaPlan := &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{"u1", "u2"}}
+
+	dm := NewDeltaManager()
+	dm.AttachDeltaMetadata(report, deltaPlan, job)
+
+	if len(report.DeltaRepoReasons) != 2 {
+		t.Fatalf("expected 2 repo reasons, got %d", len(report.DeltaRepoReasons))
 	}
-	if len(rep.DeltaRepoReasons) != 2 {
-		t.Fatalf("expected 2 repo reasons, got %d", len(rep.DeltaRepoReasons))
+	if report.DeltaRepoReasons["u1"] != "unknown" {
+		t.Fatalf("u1 reason mismatch: got %s", report.DeltaRepoReasons["u1"])
 	}
-	if rep.DeltaRepoReasons["u1"] != "unknown" {
-		t.Fatalf("u1 reason mismatch")
+	if report.DeltaRepoReasons["u2"] != "quick_hash_diff" {
+		t.Fatalf("u2 reason mismatch: got %s", report.DeltaRepoReasons["u2"])
 	}
 }

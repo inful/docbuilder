@@ -35,7 +35,8 @@ type defaultRepoFetcher struct {
 	buildCfg  *config.BuildConfig
 }
 
-func newDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) *defaultRepoFetcher {
+// NewDefaultRepoFetcher creates a new default repository fetcher (exported for commands package).
+func NewDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) RepoFetcher {
 	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg}
 }
 

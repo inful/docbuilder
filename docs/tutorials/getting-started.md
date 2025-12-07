@@ -63,7 +63,7 @@ On success you’ll have:
 
 ## 5. Serve (Optional)
 
-If you enabled Hugo rendering (`DOCBUILDER_RUN_HUGO=1`), serve the generated site directly:
+If you enabled Hugo rendering (for example with `--render-mode always`), serve the generated site directly:
 
 ```bash
 hugo server -s site

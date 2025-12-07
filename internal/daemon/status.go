@@ -6,9 +6,10 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
+	"runtime"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
@@ -110,21 +111,28 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 		daemonStatus = StatusStopped // Default to stopped if not initialized
 	}
 
+	configFile := d.configFilePath
+	if configFile == "" {
+		configFile = "config.yaml" // fallback for when path not provided
+	}
 	status.DaemonInfo = Info{
 		Status:     daemonStatus,
 		Version:    version.Version,
 		StartTime:  d.startTime,
 		Uptime:     time.Since(d.startTime).String(),
-		ConfigFile: "config.yaml", // TODO: Get from actual config path
+		ConfigFile: configFile,
 	}
 
 	slog.Debug("Status: collecting build status")
-	status.BuildStatus = BuildStatusInfo{
-		QueueLength:   d.queueLength,
-		ActiveJobs:    d.activeJobs,
-		LastBuildTime: d.lastBuild,
-		// TODO: Add more metrics from build queue
+	// Update queue length from build queue if available
+	if d.buildQueue != nil {
+		qLen := d.buildQueue.Length()
+		status.BuildStatus.QueueLength = int32(qLen)
+	} else {
+		status.BuildStatus.QueueLength = d.queueLength
 	}
+	status.BuildStatus.ActiveJobs = d.activeJobs
+	status.BuildStatus.LastBuildTime = d.lastBuild
 
 	// Extract most recent build stage timings from event-sourced projection (Phase B)
 	if d.buildProjection != nil {
@@ -272,9 +280,11 @@ func (d *Daemon) generateVersionSummary(repositories []RepositoryStatus) Version
 		}
 	}
 
-	// For now, assume all repos use the same strategy from config
-	if d.versionService != nil {
-		// TODO: Get actual strategy from version service config
+	// Get actual strategy from config
+	if d.config.Versioning != nil && d.config.Versioning.Strategy != "" {
+		strategy := string(d.config.Versioning.Strategy)
+		summary.StrategyBreakdown[strategy] = len(repositories)
+	} else {
 		summary.StrategyBreakdown["default_only"] = len(repositories)
 	}
 
@@ -283,11 +293,17 @@ func (d *Daemon) generateVersionSummary(repositories []RepositoryStatus) Version
 
 // generateSystemMetrics collects system resource information
 func (d *Daemon) generateSystemMetrics() SystemMetrics {
-	// TODO: Implement actual system metrics collection
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	// Format memory usage in MB
+	memUsageMB := float64(m.Alloc) / 1024 / 1024
+	memUsage := fmt.Sprintf("%.2f MB", memUsageMB)
+
 	return SystemMetrics{
-		MemoryUsage:    "Unknown",
-		DiskUsage:      "Unknown",
-		GoroutineCount: 0, // runtime.NumGoroutine()
+		MemoryUsage:    memUsage,
+		DiskUsage:      "N/A", // Disk usage requires platform-specific syscalls
+		GoroutineCount: runtime.NumGoroutine(),
 		WorkspaceSize:  "Unknown",
 	}
 }

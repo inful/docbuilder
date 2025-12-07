@@ -1,5 +1,7 @@
 # Architecture Overview
 
+Test
+
 DocBuilder implements a staged pipeline to turn multiple Git repositories into a unified Hugo documentation site.
 
 ## Pipeline Flow

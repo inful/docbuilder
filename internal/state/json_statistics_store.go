@@ -27,21 +27,13 @@ func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foun
 		)
 	}
 
-	ss.store.mu.Lock()
-	defer ss.store.mu.Unlock()
-
-	stats.LastUpdated = time.Now()
-	ss.store.statistics = stats
-
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*Statistics, error](
-				foundation.InternalError("failed to save statistics").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[*Statistics, error](stats)
+	return updateSimpleEntity[Statistics](
+		ss.store,
+		stats,
+		func() { stats.LastUpdated = time.Now() },
+		func() { ss.store.statistics = stats },
+		"failed to save statistics",
+	)
 }
 
 func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foundation.Result[struct{}, error] {

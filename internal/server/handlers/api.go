@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/server/responses"
 )
 

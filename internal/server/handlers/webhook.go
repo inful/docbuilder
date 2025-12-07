@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // WebhookHandlers contains HTTP handlers for webhook integrations.
@@ -67,8 +67,8 @@ func (h *WebhookHandlers) HandleGenericWebhook(w http.ResponseWriter, r *http.Re
 	h.HandleWebhook(w, r)
 }
 
-// HandleGitHubWebhook handles GitHub webhooks.
-func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
+// handleForgeWebhook is a shared helper for forge-specific webhook handlers.
+func (h *WebhookHandlers) handleForgeWebhook(w http.ResponseWriter, r *http.Request, eventHeader, source string) {
 	if r.Method != http.MethodPost {
 		err := errors.ValidationError("invalid HTTP method").
 			WithContext("method", r.Method).
@@ -91,8 +91,8 @@ func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Req
 	resp := map[string]any{
 		"status":    "received",
 		"timestamp": time.Now().UTC(),
-		"event":     r.Header.Get("X-GitHub-Event"),
-		"source":    "github",
+		"event":     r.Header.Get(eventHeader),
+		"source":    source,
 	}
 	if err := writeJSONPretty(w, r, http.StatusAccepted, resp); err != nil {
 		derr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook response").
@@ -102,39 +102,14 @@ func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// HandleGitHubWebhook handles GitHub webhooks.
+func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
+	h.handleForgeWebhook(w, r, "X-GitHub-Event", "github")
+}
+
 // HandleGitLabWebhook handles GitLab webhooks.
 func (h *WebhookHandlers) HandleGitLabWebhook(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		err := errors.ValidationError("invalid HTTP method").
-			WithContext("method", r.Method).
-			WithContext("allowed_method", "POST").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
-		return
-	}
-
-	var payload any
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		derr := errors.ValidationError("invalid JSON payload").
-			WithContext("content_type", r.Header.Get("Content-Type")).
-			WithContext("error", err.Error()).
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
-		return
-	}
-
-	resp := map[string]any{
-		"status":    "received",
-		"timestamp": time.Now().UTC(),
-		"event":     r.Header.Get("X-Gitlab-Event"),
-		"source":    "gitlab",
-	}
-	if err := writeJSONPretty(w, r, http.StatusAccepted, resp); err != nil {
-		derr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook response").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
-		return
-	}
+	h.handleForgeWebhook(w, r, "X-Gitlab-Event", "gitlab")
 }
 
 // HandleForgejoWebhook handles Forgejo (Gitea-compatible) webhooks.
@@ -158,7 +133,7 @@ func (h *WebhookHandlers) HandleForgejoWebhook(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Forgejo uses X-Gitea-Event or X-Forgejo-Event; capture either
+	// Forgejo uses X-Forgejo-Event or X-Gitea-Event; capture either
 	event := r.Header.Get("X-Forgejo-Event")
 	if event == "" {
 		event = r.Header.Get("X-Gitea-Event")
