@@ -36,7 +36,7 @@ func TestGenerateSiteWithReport(t *testing.T) {
 		Content:      []byte("# TestForge Generated Content\n\nThis is realistic test documentation."),
 	}}
 
-	gen := NewGenerator(cfg, outDir)
+	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 	rep, err := gen.GenerateSiteWithReport(files)
 	if err != nil {
 		t.Fatalf("generation failed: %v", err)
@@ -104,7 +104,7 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 				})
 			}
 
-			gen := NewGenerator(cfg, outDir)
+			gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 			rep, err := gen.GenerateSiteWithReport(files)
 			if err != nil {
 				t.Fatalf("generation failed for %s: %v", platform.name, err)
@@ -155,7 +155,7 @@ func TestTestForgeFailureScenarios(t *testing.T) {
 		Content:      []byte("# Failure Scenario Test\n\nTesting resilience with TestForge failures."),
 	}}
 
-	gen := NewGenerator(cfg, outDir)
+	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 	rep, err := gen.GenerateSiteWithReport(files)
 
 	// Hugo generation should succeed despite forge failures

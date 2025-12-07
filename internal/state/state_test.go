@@ -86,6 +86,69 @@ func TestJSONStore(t *testing.T) {
 		if updated.BuildCount != 1 {
 			t.Errorf("Expected build count 1, got %d", updated.BuildCount)
 		}
+
+		// Update repository metadata for existing record
+		if hashResult := repoStore.SetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
+			t.Fatalf("Failed to set doc files hash: %v", hashResult.UnwrapErr())
+		}
+		if pathsResult := repoStore.SetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
+			t.Fatalf("Failed to set doc file paths: %v", pathsResult.UnwrapErr())
+		}
+
+		metaResult := repoStore.GetByURL(ctx, repo.URL)
+		if metaResult.IsErr() || metaResult.Unwrap().IsNone() {
+			t.Fatalf("Failed to reload repository for metadata checks: %v", metaResult.UnwrapErr())
+		}
+		meta := metaResult.Unwrap().Unwrap()
+		if meta.DocFilesHash.IsNone() || meta.DocFilesHash.Unwrap() != "abc123" {
+			t.Fatalf("Doc files hash not stored correctly: %+v", meta.DocFilesHash)
+		}
+		if len(meta.DocFilePaths) != 2 || meta.DocFilePaths[0] != "docs/a.md" || meta.DocFilePaths[1] != "docs/b.md" {
+			t.Fatalf("Doc file paths not stored correctly: %+v", meta.DocFilePaths)
+		}
+
+		t.Run("Repository metadata requires existing repo", func(t *testing.T) {
+			missingURL := "https://github.com/example/missing.git"
+			errCases := []struct {
+				name string
+				call func() foundation.Result[struct{}, error]
+			}{
+				{
+					name: "increment",
+					call: func() foundation.Result[struct{}, error] {
+						return repoStore.IncrementBuildCount(ctx, missingURL, true)
+					},
+				},
+				{
+					name: "doc-count",
+					call: func() foundation.Result[struct{}, error] {
+						return repoStore.SetDocumentCount(ctx, missingURL, 1)
+					},
+				},
+				{
+					name: "doc-hash",
+					call: func() foundation.Result[struct{}, error] {
+						return repoStore.SetDocFilesHash(ctx, missingURL, "hash")
+					},
+				},
+				{
+					name: "doc-paths",
+					call: func() foundation.Result[struct{}, error] {
+						return repoStore.SetDocFilePaths(ctx, missingURL, []string{"a"})
+					},
+				},
+			}
+
+			for _, tc := range errCases {
+				res := tc.call()
+				if res.IsOk() {
+					t.Fatalf("%s unexpectedly succeeded for missing repository", tc.name)
+				}
+				if classified, ok := res.UnwrapErr().(*foundation.ClassifiedError); !ok || classified.Code != foundation.ErrorCodeNotFound {
+					t.Fatalf("%s returned wrong error: %v", tc.name, res.UnwrapErr())
+				}
+			}
+		})
 	})
 
 	// Test build operations

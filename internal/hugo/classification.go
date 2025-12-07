@@ -118,7 +118,7 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 			}
 		case StageDiscoverDocs:
 			if errors.Is(se.Err, build.ErrDiscovery) {
-				if len(bs.RepoPaths) == 0 {
+				if len(bs.Git.RepoPaths) == 0 {
 					code = IssueNoRepositories
 				} else {
 					code = IssueDiscoveryFailure

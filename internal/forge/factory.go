@@ -15,6 +15,8 @@ func NewForgeClient(config *Config) (Client, error) {
 		return NewGitLabClient(config)
 	case cfg.ForgeForgejo:
 		return NewForgejoClient(config)
+	case cfg.ForgeLocal:
+		return NewLocalClient(config)
 	default:
 		return nil, fmt.Errorf("unsupported forge type: %s", config.Type)
 	}

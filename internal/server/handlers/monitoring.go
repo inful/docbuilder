@@ -2,7 +2,6 @@
 package handlers
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -20,7 +19,7 @@ type MonitoringHandlers struct {
 
 // DaemonInterface defines the daemon methods needed by monitoring handlers.
 type DaemonInterface interface {
-	GetStatus() interface{} // DaemonStatus implements String() method
+	GetStatus() string
 	GetActiveJobs() int
 	GetStartTime() time.Time
 	// Live metrics (optional; return zero values when unavailable)
@@ -58,9 +57,7 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 
 	// Check daemon health
 	if h.daemon != nil {
-		if status, ok := h.daemon.GetStatus().(fmt.Stringer); ok {
-			health.DaemonStatus = status.String()
-		}
+		health.DaemonStatus = h.daemon.GetStatus()
 		health.ActiveJobs = h.daemon.GetActiveJobs()
 	}
 

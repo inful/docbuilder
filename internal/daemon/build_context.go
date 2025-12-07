@@ -14,8 +14,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
-// buildContext encapsulates all mutable state for a single build execution.
-// It enables a staged pipeline where each stage can access shared information
+// LEGACY: buildContext encapsulates all mutable state for a single build execution.
+// As of Dec 2025, the daemon uses BuildServiceAdapter wrapping build.DefaultBuildService.
+// This type is retained for associated tests and as fallback via SiteBuilder.
+// See ARCHITECTURE_MIGRATION_PLAN.md Phase D for migration status.
+// TODO: Remove once BuildServiceAdapter is fully validated in production.
+//
+// buildContext enables a staged pipeline where each stage can access shared information
 // without repeatedly recomputing derivations from the input job metadata.
 type buildContext struct {
 	ctx                     context.Context
@@ -35,22 +40,18 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 	if job == nil {
 		return nil, fmt.Errorf("nil job passed to builder")
 	}
-	rawCfg, ok := job.Metadata["v2_config"].(*cfg.Config)
-	if !ok || rawCfg == nil {
+	// Get config from TypedMeta
+	var rawCfg *cfg.Config
+	if job.TypedMeta != nil && job.TypedMeta.V2Config != nil {
+		rawCfg = job.TypedMeta.V2Config
+	}
+	if rawCfg == nil {
 		return nil, fmt.Errorf("missing v2 configuration in job metadata")
 	}
-	// Extract repo slice with best-effort conversion
-	repos, _ := job.Metadata["repositories"].([]cfg.Repository)
-	if repos == nil {
-		if ra, ok2 := job.Metadata["repositories"].([]interface{}); ok2 {
-			casted := make([]cfg.Repository, 0, len(ra))
-			for _, v := range ra {
-				if r, ok3 := v.(cfg.Repository); ok3 {
-					casted = append(casted, r)
-				}
-			}
-			repos = casted
-		}
+	// Get repositories from TypedMeta
+	var repos []cfg.Repository
+	if job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
+		repos = job.TypedMeta.Repositories
 	}
 	cpy := *rawCfg
 	cpy.Repositories = repos
@@ -61,17 +62,21 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 	// Create generator and extract state manager with proper type assertion
 	gen := hugo.NewGenerator(&cpy, outDir)
 	var stateMgr services.StateManager
-	if smAny, ok := job.Metadata["state_manager"]; ok {
-		if sm, ok2 := smAny.(services.StateManager); ok2 {
-			stateMgr = sm
-		}
-		// Also update generator if state manager supports document operations
-		if sm, ok2 := smAny.(interface {
+	// Get state manager from TypedMeta
+	if job.TypedMeta != nil && job.TypedMeta.StateManager != nil {
+		stateMgr = job.TypedMeta.StateManager
+	}
+	// Also update generator if state manager supports document operations
+	if stateMgr != nil {
+		if sm, ok2 := stateMgr.(interface {
 			SetRepoDocumentCount(string, int)
 			SetRepoDocFilesHash(string, string)
 		}); ok2 {
 			gen = gen.WithStateManager(sm)
 		}
+	}
+	if stateMgr != nil {
+		ensureRepositoriesInitialized(stateMgr, repos)
 	}
 
 	return &buildContext{
@@ -86,6 +91,19 @@ func newBuildContext(ctx context.Context, job *BuildJob) (*buildContext, error) 
 	}, nil
 }
 
+// ensureRepositoriesInitialized proactively registers repository state entries when the state manager supports it.
+func ensureRepositoriesInitialized(stateMgr services.StateManager, repos []cfg.Repository) {
+	initializer, ok := stateMgr.(interface {
+		EnsureRepositoryState(string, string, string)
+	})
+	if !ok {
+		return
+	}
+	for _, repo := range repos {
+		initializer.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
+	}
+}
+
 // stageEarlySkip executes the SkipEvaluator prior to any destructive filesystem actions.
 // nolint:unparam // This stage currently never returns an error.
 func (bc *buildContext) stageEarlySkip() error {
@@ -95,6 +113,7 @@ func (bc *buildContext) stageEarlySkip() error {
 	if sm, ok := bc.stateMgr.(SkipStateAccess); ok && sm != nil {
 		if rep, skipped := NewSkipEvaluator(bc.outDir, sm, bc.generator).Evaluate(bc.repos); skipped {
 			bc.skipReport = rep
+			return nil
 		}
 	}
 	return nil
@@ -119,9 +138,15 @@ func (bc *buildContext) stageDeltaAnalysis() error {
 			for k, v := range plan.RepoReasons {
 				m[k] = v
 			}
-			bc.job.Metadata["delta_repo_reasons"] = m
+			// Store in TypedMeta
+			EnsureTypedMeta(bc.job).DeltaRepoReasons = m
 		}
-		if mc, okm := bc.job.Metadata["metrics_collector"].(*MetricsCollector); okm && mc != nil {
+		// Get metrics collector from TypedMeta
+		var mc *MetricsCollector
+		if bc.job.TypedMeta != nil && bc.job.TypedMeta.MetricsCollector != nil {
+			mc = bc.job.TypedMeta.MetricsCollector
+		}
+		if mc != nil {
 			if plan.Decision == DeltaDecisionPartial {
 				mc.IncrementCounter("builds_partial")
 			} else {
@@ -213,9 +238,6 @@ func (bc *buildContext) stagePrepareFilesystem() error {
 func (bc *buildContext) stageGenerateSite() (*hugo.BuildReport, error) {
 	if bc.skipReport != nil {
 		return bc.skipReport, nil
-	}
-	if err := os.Setenv("DOCBUILDER_RUN_HUGO", "1"); err != nil {
-		slog.Warn("Failed to set DOCBUILDER_RUN_HUGO env", "error", err)
 	}
 	report, err := bc.generator.GenerateFullSite(bc.ctx, bc.repos, bc.workspace)
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
@@ -17,25 +16,26 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 		return nil
 	}
 
-	// Use renderer abstraction; if custom renderer is set, use it regardless of shouldRunHugo
-	root := bs.Generator.buildRoot()
-	if bs.Generator.renderer != nil {
-		if err := bs.Generator.renderer.Execute(root); err != nil {
-			slog.Warn("Renderer execution failed", "error", err)
-			return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
-		}
-		bs.Report.StaticRendered = true
-		return nil
-	}
-
-	// No custom renderer; check if we should run the default hugo binary
+	// Check if we should run Hugo based on mode and config
 	if !shouldRunHugo(cfg) {
+		// No rendering needed (e.g., auto mode without explicit request)
 		return nil
 	}
 
-	// Fallback to legacy method (should not happen in normal use, defensive)
-	if err := bs.Generator.runHugoBuild(); err != nil {
-		return newWarnStageError(StageRunHugo, fmt.Errorf("%w: %v", build.ErrHugo, err))
+	// Use renderer abstraction; if custom renderer is set, use it, otherwise use default BinaryRenderer
+	root := bs.Generator.buildRoot()
+	renderer := bs.Generator.renderer
+	if renderer == nil {
+		renderer = &BinaryRenderer{}
+	}
+	if err := renderer.Execute(root); err != nil {
+		// In live preview mode, surface as warning only and continue serving prior build
+		if cfg.Build.LiveReload {
+			slog.Warn("Renderer execution failed (preview mode)", "error", err)
+			return nil
+		}
+		slog.Warn("Renderer execution failed", "error", err)
+		return newFatalStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
 	return nil

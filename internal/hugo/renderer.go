@@ -1,8 +1,10 @@
 package hugo
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
@@ -31,13 +33,47 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
 	}
-	cmd := exec.Command("hugo")
+
+	// Check staging directory exists before Hugo runs
+	if stat, err := os.Stat(rootDir); err != nil {
+		slog.Error("Staging directory missing before Hugo execution", "dir", rootDir, "error", err)
+		return fmt.Errorf("staging directory not found: %w", err)
+	} else {
+		slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
+	}
+
+	// Increase log verbosity for better diagnostics
+	cmd := exec.Command("hugo", "--logLevel", "debug")
 	cmd.Dir = rootDir
-	// Let existing runHugoBuild handle stream configuration (stdout/stderr) – reused for minimal churn.
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
-	if err := cmd.Run(); err != nil {
+
+	err := cmd.Run()
+
+	// Always log Hugo output when non-empty to diagnose issues
+	outStr := stdout.String()
+	errStr := stderr.String()
+	if outStr != "" {
+		slog.Debug("hugo stdout", "output", outStr)
+	}
+	if errStr != "" {
+		slog.Warn("hugo stderr", "error_output", errStr)
+	}
+
+	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
+
+	// Check staging directory still exists after Hugo runs
+	if stat, err := os.Stat(rootDir); err != nil {
+		slog.Error("Staging directory MISSING after Hugo execution", "dir", rootDir, "error", err)
+		return fmt.Errorf("staging directory disappeared during Hugo execution: %w", err)
+	} else {
+		slog.Debug("Staging directory confirmed after Hugo", "dir", rootDir, "is_dir", stat.IsDir())
+	}
+
 	return nil
 }
 

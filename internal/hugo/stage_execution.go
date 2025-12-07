@@ -1,12 +1,5 @@
 package hugo
 
-import (
-	"context"
-	"time"
-
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
-)
-
 // StageExecution represents the structured result of a stage execution
 type StageExecution struct {
 	Err  error // error encountered during stage execution
@@ -43,47 +36,6 @@ func (r StageExecution) ShouldSkip() bool {
 	return r.Skip
 }
 
-// StageExecutor defines the signature for stage functions with structured results
-type StageExecutor func(ctx context.Context, bs *BuildState) StageExecution
-
-// StageDecorator defines functions that can wrap/decorate stage functions
-type StageDecorator func(StageName, StageExecutor) StageExecutor
-
-// WithTiming decorates a stage function to measure execution duration
-func WithTiming(name StageName, fn StageExecutor) StageExecutor {
-	return func(ctx context.Context, bs *BuildState) StageExecution {
-		if bs.Generator != nil && bs.Generator.recorder != nil {
-			defer func(start time.Time) {
-				bs.Generator.recorder.ObserveStageDuration(string(name), time.Since(start))
-			}(time.Now())
-		}
-		return fn(ctx, bs)
-	}
-}
-
-// WithObserver decorates a stage function to record stage results
-func WithObserver(name StageName, fn StageExecutor) StageExecutor {
-	return func(ctx context.Context, bs *BuildState) StageExecution {
-		result := fn(ctx, bs)
-		if bs.Generator != nil && bs.Generator.recorder != nil {
-			var label metrics.ResultLabel
-			if result.IsSuccess() {
-				label = metrics.ResultSuccess
-			} else {
-				label = metrics.ResultFatal
-			}
-			bs.Generator.recorder.IncStageResult(string(name), label)
-		}
-		return result
-	}
-}
-
-// WrapLegacyStage wraps a legacy stage function (error return) as a StageExecutor
-func WrapLegacyStage(fn func(ctx context.Context, bs *BuildState) error) StageExecutor {
-	return func(ctx context.Context, bs *BuildState) StageExecution {
-		if err := fn(ctx, bs); err != nil {
-			return ExecutionFailure(err)
-		}
-		return ExecutionSuccess()
-	}
-}
+// StageExecutor and decorators removed. Timing and observation are handled centrally
+// in the runner for error-returning stages. Structured StageExecution is used by
+// command-style stages and they can record as needed within Execute.

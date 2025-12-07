@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -79,14 +80,33 @@ type DaemonResponse struct {
 
 // DefaultCommandExecutor implements the CommandExecutor interface
 type DefaultCommandExecutor struct {
-	name string
+	name         string
+	buildService build.BuildService
 }
 
 // NewCommandExecutor creates a new command executor service
 func NewCommandExecutor(name string) *DefaultCommandExecutor {
 	return &DefaultCommandExecutor{
-		name: name,
+		name:         name,
+		buildService: createDefaultBuildService(),
 	}
+}
+
+// createDefaultBuildService creates a BuildService with the hugo generator factory.
+func createDefaultBuildService() build.BuildService {
+	return build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfg any, outputDir string) build.HugoGenerator {
+			if c, ok := cfg.(*config.Config); ok {
+				return hugo.NewGenerator(c, outputDir)
+			}
+			return nil
+		})
+}
+
+// WithBuildService allows injecting a custom BuildService (for testing).
+func (e *DefaultCommandExecutor) WithBuildService(svc build.BuildService) *DefaultCommandExecutor {
+	e.buildService = svc
+	return e
 }
 
 // Service interface implementation
@@ -115,8 +135,6 @@ func (e *DefaultCommandExecutor) HealthCheck(_ context.Context) services.HealthS
 // Command execution implementations
 
 func (e *DefaultCommandExecutor) ExecuteBuild(ctx context.Context, req BuildRequest) foundation.Result[BuildResponse, error] {
-	startTime := time.Now()
-
 	// Load configuration
 	cfg, err := config.Load(req.ConfigPath)
 	if err != nil {
@@ -149,94 +167,26 @@ func (e *DefaultCommandExecutor) ExecuteBuild(ctx context.Context, req BuildRequ
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
-	slog.Info("Starting documentation build",
-		"output", req.OutputDir,
-		"repositories", len(cfg.Repositories),
-		"incremental", req.Incremental)
-
-	// Create workspace manager
-	wsManager := workspace.NewManager("")
-	if err := wsManager.Create(); err != nil {
-		return foundation.Err[BuildResponse](err)
-	}
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			slog.Warn("Failed to cleanup workspace", "error", err)
-		}
-	}()
-
-	// Create Git client
-	gitClient := git.NewClient(wsManager.GetPath())
-	if err := gitClient.EnsureWorkspace(); err != nil {
-		return foundation.Err[BuildResponse](err)
+	// Delegate to BuildService
+	buildReq := build.BuildRequest{
+		Config:      cfg,
+		OutputDir:   req.OutputDir,
+		Incremental: req.Incremental,
+		Options: build.BuildOptions{
+			Verbose: req.Verbose,
+		},
 	}
 
-	// Clone/update all repositories
-	repoPaths := make(map[string]string)
-	for _, repo := range cfg.Repositories {
-		slog.Info("Processing repository", "name", repo.Name, "url", repo.URL)
-
-		var repoPath string
-		var err error
-
-		if req.Incremental {
-			repoPath, err = gitClient.UpdateRepository(repo)
-		} else {
-			repoPath, err = gitClient.CloneRepository(repo)
-		}
-
-		if err != nil {
-			slog.Error("Failed to process repository", "name", repo.Name, "error", err)
-			return foundation.Err[BuildResponse](err)
-		}
-
-		repoPaths[repo.Name] = repoPath
-		slog.Info("Repository processed", "name", repo.Name, "path", repoPath)
-	}
-
-	slog.Info("All repositories processed successfully", "count", len(repoPaths))
-
-	// Discover documentation files
-	slog.Info("Starting documentation discovery")
-	discovery := docs.NewDiscovery(cfg.Repositories, &cfg.Build)
-
-	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	result, err := e.buildService.Run(ctx, buildReq)
 	if err != nil {
 		return foundation.Err[BuildResponse](err)
 	}
 
-	if len(docFiles) == 0 {
-		slog.Warn("No documentation files found in any repository")
-		return foundation.Ok[BuildResponse, error](BuildResponse{
-			OutputPath:    req.OutputDir,
-			FilesBuilt:    0,
-			Repositories:  len(cfg.Repositories),
-			BuildDuration: time.Since(startTime),
-		})
-	}
-
-	// Log discovery summary
-	filesByRepo := discovery.GetDocFilesByRepository()
-	for repoName, files := range filesByRepo {
-		slog.Info("Documentation files by repository", "repository", repoName, "files", len(files))
-	}
-
-	// Generate Hugo site
-	slog.Info("Generating Hugo site", "output", req.OutputDir, "files", len(docFiles))
-	generator := hugo.NewGenerator(cfg, req.OutputDir)
-
-	if err := generator.GenerateSite(docFiles); err != nil {
-		slog.Error("Failed to generate Hugo site", "error", err)
-		return foundation.Err[BuildResponse](err)
-	}
-
-	slog.Info("Hugo site generated successfully", "output", req.OutputDir)
-
 	return foundation.Ok[BuildResponse, error](BuildResponse{
-		OutputPath:    req.OutputDir,
-		FilesBuilt:    len(docFiles),
-		Repositories:  len(cfg.Repositories),
-		BuildDuration: time.Since(startTime),
+		OutputPath:    result.OutputPath,
+		FilesBuilt:    result.FilesProcessed,
+		Repositories:  result.Repositories,
+		BuildDuration: result.Duration,
 	})
 }
 

@@ -21,6 +21,7 @@ import (
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/repository"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // Generator handles Hugo site generation
@@ -40,35 +41,27 @@ type Generator struct {
 	// indexTemplateUsage captures which index template (main/repository/section) source was used
 	indexTemplateUsage map[string]IndexTemplateInfo
 	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
-	stateManager interface {
-		SetRepoDocumentCount(string, int)
-		SetRepoDocFilesHash(string, string)
-	}
+	stateManager state.RepositoryMetadataWriter
 }
-
-// activeTheme returns current registered theme.
-func (g *Generator) activeTheme() th.Theme { return th.Get(g.config.Hugo.ThemeType()) }
 
 // deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
 func (g *Generator) deriveThemeFeatures() th.Features {
+	// Prefer cached features when available (set by Engine.ApplyPhases during config generation).
 	if g.cachedThemeFeatures != nil {
 		return *g.cachedThemeFeatures
 	}
+	// Fallback to direct theme Features when engine hasn’t run yet.
 	if tt := th.Get(g.config.Hugo.ThemeType()); tt != nil {
-		feats := tt.Features()
-		g.cachedThemeFeatures = &feats
-		return feats
+		return tt.Features()
 	}
-	feats := th.Features{Name: g.config.Hugo.ThemeType()}
-	g.cachedThemeFeatures = &feats
-	return feats
+	return th.Features{Name: g.config.Hugo.ThemeType()}
 }
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
-	// Default renderer: binary hugo invocation. Can be overridden via WithRenderer for tests or alt implementations.
-	g.renderer = &BinaryRenderer{}
+	// Renderer defaults to nil; stageRunHugo will use BinaryRenderer when needed.
+	// Use WithRenderer to inject custom/test renderers.
 	// Default observer bridges to recorder until dedicated observers added.
 	g.observer = recorderObserver{rec: g.recorder}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
@@ -86,10 +79,8 @@ func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string }
 }
 
 // WithStateManager injects an optional state manager for persistence of discovery/build metadata.
-func (g *Generator) WithStateManager(sm interface {
-	SetRepoDocumentCount(string, int)
-	SetRepoDocFilesHash(string, string)
-}) *Generator {
+// Accepts any type implementing state.RepositoryMetadataWriter (e.g., state.ServiceAdapter).
+func (g *Generator) WithStateManager(sm state.RepositoryMetadataWriter) *Generator {
 	g.stateManager = sm
 	return g
 }

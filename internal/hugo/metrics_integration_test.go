@@ -47,7 +47,7 @@ func (c *capturingRecorder) ObserveContentTransformDuration(string, time.Duratio
 // TestMetricsRecorderIntegration ensures that recorder callbacks are invoked during a simple GenerateSiteWithReport run.
 func TestMetricsRecorderIntegration(t *testing.T) {
 	out := t.TempDir()
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Site"}}, out).SetRecorder(newCapturingRecorder())
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Site"}}, out).SetRecorder(newCapturingRecorder()).WithRenderer(&NoopRenderer{})
 	// Ensure Hugo structure exists for index generation dirs
 	if err := g.createHugoStructure(); err != nil {
 		t.Fatalf("structure: %v", err)

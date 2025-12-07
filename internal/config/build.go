@@ -21,7 +21,7 @@ type BuildConfig struct {
 	CleanUntracked     bool             `yaml:"clean_untracked,omitempty"`
 	WorkspaceDir       string           `yaml:"workspace_dir,omitempty"`
 	SkipIfUnchanged    bool             `yaml:"skip_if_unchanged,omitempty"`
-	RenderMode         RenderMode       `yaml:"render_mode,omitempty"`      // auto|always|never (preferred over legacy env DOCBUILDER_RUN_HUGO / DOCBUILDER_SKIP_HUGO)
+	RenderMode         RenderMode       `yaml:"render_mode,omitempty"`      // auto|always|never (source of truth for Hugo execution)
 	DetectDeletions    bool             `yaml:"detect_deletions,omitempty"` // enable unchanged repo deletion scan during partial recomposition
 	LiveReload         bool             `yaml:"live_reload,omitempty"`      // enable SSE livereload endpoint & script (development only)
 	// detectDeletionsSpecified is set internally during load when the YAML explicitly sets detect_deletions.

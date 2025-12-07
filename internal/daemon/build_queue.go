@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
@@ -48,19 +49,31 @@ const (
 
 // BuildJob represents a single build job in the queue
 type BuildJob struct {
-	ID          string                 `json:"id"`
-	Type        BuildType              `json:"type"`
-	Priority    BuildPriority          `json:"priority"`
-	Status      BuildStatus            `json:"status"`
-	CreatedAt   time.Time              `json:"created_at"`
-	StartedAt   *time.Time             `json:"started_at,omitempty"`
-	CompletedAt *time.Time             `json:"completed_at,omitempty"`
-	Duration    time.Duration          `json:"duration,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+	ID          string        `json:"id"`
+	Type        BuildType     `json:"type"`
+	Priority    BuildPriority `json:"priority"`
+	Status      BuildStatus   `json:"status"`
+	CreatedAt   time.Time     `json:"created_at"`
+	StartedAt   *time.Time    `json:"started_at,omitempty"`
+	CompletedAt *time.Time    `json:"completed_at,omitempty"`
+	Duration    time.Duration `json:"duration,omitempty"`
+	Error       string        `json:"error,omitempty"`
+
+	// TypedMeta holds typed metadata for the build job.
+	// This provides compile-time safety for job configuration and dependencies.
+	TypedMeta *BuildJobMetadata `json:"typed_meta,omitempty"`
 
 	// Internal processing
 	cancel context.CancelFunc `json:"-"`
+}
+
+// BuildEventEmitter abstracts event emission for build lifecycle events.
+// This allows the BuildQueue to emit events without depending on the Daemon directly.
+type BuildEventEmitter interface {
+	EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error
+	EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error
+	EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error
+	EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error
 }
 
 // BuildQueue manages the queue of build jobs
@@ -79,15 +92,21 @@ type BuildQueue struct {
 	retryCfg    config.BuildConfig
 	retryPolicy retry.Policy
 	recorder    metrics.Recorder
+	// Event emitter for build lifecycle events (Phase B)
+	eventEmitter BuildEventEmitter
 }
 
-// NewBuildQueue creates a new build queue with the specified size and worker count
-func NewBuildQueue(maxSize, workers int) *BuildQueue {
+// NewBuildQueue creates a new build queue with the specified size, worker count, and builder.
+// The builder parameter is required - use build.NewBuildService() wrapped in NewBuildServiceAdapter().
+func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 	if maxSize <= 0 {
 		maxSize = 100
 	}
 	if workers <= 0 {
 		workers = 2
+	}
+	if builder == nil {
+		panic("NewBuildQueue: builder is required")
 	}
 
 	return &BuildQueue{
@@ -98,7 +117,7 @@ func NewBuildQueue(maxSize, workers int) *BuildQueue {
 		history:     make([]*BuildJob, 0),
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
-		builder:     NewSiteBuilder(),
+		builder:     builder,
 		retryCfg:    config.BuildConfig{},
 		retryPolicy: retry.DefaultPolicy(),
 		recorder:    metrics.NoopRecorder{},
@@ -119,6 +138,11 @@ func (bq *BuildQueue) SetRecorder(r metrics.Recorder) {
 		r = metrics.NoopRecorder{}
 	}
 	bq.recorder = r
+}
+
+// SetEventEmitter injects a build event emitter for Phase B event sourcing.
+func (bq *BuildQueue) SetEventEmitter(emitter BuildEventEmitter) {
+	bq.eventEmitter = emitter
 }
 
 // Start begins processing jobs with the configured number of workers
@@ -188,16 +212,6 @@ func (bq *BuildQueue) GetActiveJobs() []*BuildJob {
 	return active
 }
 
-// GetHistory returns recent completed jobs
-func (bq *BuildQueue) GetHistory() []*BuildJob {
-	bq.mu.RLock()
-	defer bq.mu.RUnlock()
-
-	history := make([]*BuildJob, len(bq.history))
-	copy(history, bq.history)
-	return history
-}
-
 // worker processes jobs from the queue
 func (bq *BuildQueue) worker(ctx context.Context, workerID string) {
 	defer bq.wg.Done()
@@ -237,6 +251,18 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 
 	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.Worker(workerID))
 
+	// Emit BuildStarted event (Phase B)
+	if bq.eventEmitter != nil {
+		meta := eventstore.BuildStartedMeta{
+			Type:     string(job.Type),
+			Priority: int(job.Priority),
+			WorkerID: workerID,
+		}
+		if err := bq.eventEmitter.EmitBuildStarted(jobCtx, job.ID, meta); err != nil {
+			slog.Warn("Failed to emit BuildStarted event", logfields.JobID(job.ID), logfields.Error(err))
+		}
+	}
+
 	// Execute the build
 	err := bq.executeBuild(jobCtx, job)
 
@@ -257,6 +283,36 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	}
 	duration := job.Duration
 	bq.mu.Unlock()
+
+	// Emit completion/failure events (Phase B)
+	if bq.eventEmitter != nil {
+		// Always emit build report if available (for both success and failure)
+		var report *hugo.BuildReport
+		if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
+			report = job.TypedMeta.BuildReport
+		}
+		if report != nil {
+			if emitErr := bq.eventEmitter.EmitBuildReport(ctx, job.ID, report); emitErr != nil {
+				slog.Warn("Failed to emit BuildReport event", logfields.JobID(job.ID), logfields.Error(emitErr))
+			}
+		}
+
+		if err != nil {
+			if emitErr := bq.eventEmitter.EmitBuildFailed(ctx, job.ID, "build", err.Error()); emitErr != nil {
+				slog.Warn("Failed to emit BuildFailed event", logfields.JobID(job.ID), logfields.Error(emitErr))
+			}
+		} else {
+			artifacts := make(map[string]string)
+			// Extract artifacts from build report if available
+			if report != nil {
+				artifacts["files"] = fmt.Sprintf("%d", report.Files)
+				artifacts["repositories"] = fmt.Sprintf("%d", report.Repositories)
+			}
+			if emitErr := bq.eventEmitter.EmitBuildCompleted(ctx, job.ID, duration, artifacts); emitErr != nil {
+				slog.Warn("Failed to emit BuildCompleted event", logfields.JobID(job.ID), logfields.Error(emitErr))
+			}
+		}
+	}
 
 	if err != nil {
 		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), logfields.Error(err))
@@ -279,11 +335,10 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	for {
 		attempts++
 		report, err := bq.builder.Build(ctx, job)
-		if job.Metadata == nil {
-			job.Metadata = make(map[string]interface{})
-		}
+		// Store report in TypedMeta
 		if report != nil {
-			job.Metadata["build_report"] = report
+			meta := EnsureTypedMeta(job)
+			meta.BuildReport = report
 		}
 		if err == nil {
 			// attach retry summary if present

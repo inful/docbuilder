@@ -52,3 +52,42 @@ func TestComputeBaseFrontMatter_TitleGeneration(t *testing.T) {
 
 // helper config for edit link tests
 // (Edit link resolution tests moved to hugo package with consolidated resolver.)
+
+// TestComputeBaseFrontMatterTyped mirrors ComputeBaseFrontMatter tests for the typed builder.
+func TestComputeBaseFrontMatterTyped_Basic(t *testing.T) {
+	existing := map[string]any{"title": "Keep", "custom": "orig"}
+	meta := map[string]any{"custom": "meta", "description": "Desc"}
+	now := time.Date(2025, 9, 30, 12, 34, 56, 0, time.UTC)
+	cfg := &config.Config{}
+	fm := ComputeBaseFrontMatterTyped("sample_page", "repo1", "github", "sectionA", meta, existing, cfg, now)
+
+	if fm.Title != "Keep" {
+		t.Fatalf("expected existing title preserved, got %v", fm.Title)
+	}
+	if fm.Date.IsZero() || !fm.Date.Equal(now) {
+		t.Fatalf("expected date injected to now, got %v", fm.Date)
+	}
+	if fm.Repository != "repo1" {
+		t.Fatalf("expected repository repo1, got %v", fm.Repository)
+	}
+	if fm.Forge != "github" {
+		t.Fatalf("expected forge github, got %v", fm.Forge)
+	}
+	if fm.Section != "sectionA" {
+		t.Fatalf("expected section sectionA, got %v", fm.Section)
+	}
+	// Metadata passthrough only when missing: existing wins
+	if val, ok := fm.GetCustom("custom"); !ok || val != "orig" {
+		t.Fatalf("expected existing custom retained, got %v", val)
+	}
+	if fm.Description != "Desc" {
+		t.Fatalf("expected description passthrough, got %v", fm.Description)
+	}
+}
+
+func TestComputeBaseFrontMatterTyped_TitleGeneration(t *testing.T) {
+	fm := ComputeBaseFrontMatterTyped("my_sample-page", "r", "", "", nil, map[string]any{}, &config.Config{}, time.Now())
+	if fm.Title != "My Sample Page" {
+		t.Fatalf("expected normalized title, got %v", fm.Title)
+	}
+}

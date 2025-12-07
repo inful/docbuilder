@@ -5,8 +5,10 @@ go 1.24
 require (
 	github.com/alecthomas/kong v0.8.1
 	github.com/fsnotify/fsnotify v1.9.0
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/joho/godotenv v1.5.1
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/text v0.14.0

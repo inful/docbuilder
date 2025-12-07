@@ -39,8 +39,9 @@ func (bmc *BuildMetricsCollectorImpl) RecordDeletions(deletionsDetected int, job
 		return
 	}
 
-	mc, ok := job.Metadata["metrics_collector"].(*MetricsCollector)
-	if !ok || mc == nil {
+	EnsureTypedMeta(job)
+	mc := job.TypedMeta.MetricsCollector
+	if mc == nil {
 		return
 	}
 

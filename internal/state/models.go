@@ -76,41 +76,6 @@ type Schedule struct {
 	UpdatedAt    time.Time                    `json:"updated_at"`
 }
 
-// Legacy compatibility: convert from map[string]any to ScheduleConfig
-func ScheduleConfigFromLegacy(m map[string]any) ScheduleConfig {
-	var cfg ScheduleConfig
-	if m == nil {
-		return cfg
-	}
-	if v, ok := m["max_retries"].(int); ok {
-		cfg.MaxRetries = v
-	} else if v, ok := m["max_retries"].(float64); ok { // JSON numbers decode as float64
-		cfg.MaxRetries = int(v)
-	}
-	if v, ok := m["notify_email"].(string); ok {
-		cfg.NotifyEmail = v
-	}
-	if v, ok := m["custom_param"].(string); ok {
-		cfg.CustomParam = v
-	}
-	return cfg
-}
-
-// Legacy compatibility: convert to map[string]any
-func (cfg ScheduleConfig) ToLegacyMap() map[string]any {
-	m := make(map[string]any)
-	if cfg.MaxRetries != 0 {
-		m["max_retries"] = cfg.MaxRetries
-	}
-	if cfg.NotifyEmail != "" {
-		m["notify_email"] = cfg.NotifyEmail
-	}
-	if cfg.CustomParam != "" {
-		m["custom_param"] = cfg.CustomParam
-	}
-	return m
-}
-
 // Statistics represents aggregate daemon statistics.
 type Statistics struct {
 	TotalBuilds      int64     `json:"total_builds"`

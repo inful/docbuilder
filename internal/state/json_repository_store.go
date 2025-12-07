@@ -151,28 +151,11 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 
 	repo, exists := rs.store.repositories[url]
 	if !exists {
-		// Create repository if it doesn't exist (same behavior as original)
-		name := url
-		if slash := len(url) - 1; slash >= 0 {
-			for i := slash; i >= 0; i-- {
-				if url[i] == '/' {
-					name = url[i+1:]
-					break
-				}
-			}
-		}
-		if name != url && len(name) > 4 && name[len(name)-4:] == ".git" {
-			name = name[:len(name)-4]
-		}
-
-		repo = &Repository{
-			URL:       url,
-			Name:      name,
-			Branch:    "main", // default
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		rs.store.repositories[url] = repo
+		return foundation.Err[struct{}, error](
+			foundation.NotFoundError("repository").
+				WithContext(foundation.Fields{"url": url}).
+				Build(),
+		)
 	}
 
 	// Update counters
@@ -210,28 +193,11 @@ func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, c
 
 	repo, exists := rs.store.repositories[url]
 	if !exists {
-		// Create repository if it doesn't exist
-		name := url
-		if slash := len(url) - 1; slash >= 0 {
-			for i := slash; i >= 0; i-- {
-				if url[i] == '/' {
-					name = url[i+1:]
-					break
-				}
-			}
-		}
-		if name != url && len(name) > 4 && name[len(name)-4:] == ".git" {
-			name = name[:len(name)-4]
-		}
-
-		repo = &Repository{
-			URL:       url,
-			Name:      name,
-			Branch:    "main",
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		}
-		rs.store.repositories[url] = repo
+		return foundation.Err[struct{}, error](
+			foundation.NotFoundError("repository").
+				WithContext(foundation.Fields{"url": url}).
+				Build(),
+		)
 	}
 
 	repo.DocumentCount = count

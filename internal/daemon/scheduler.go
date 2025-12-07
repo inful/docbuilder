@@ -33,18 +33,17 @@ const (
 
 // Schedule represents a scheduled task
 type Schedule struct {
-	ID         string                 `json:"id"`
-	Name       string                 `json:"name"`
-	Type       ScheduleType           `json:"type"`
-	Expression string                 `json:"expression"` // Cron expression or interval
-	Enabled    bool                   `json:"enabled"`
-	LastRun    *time.Time             `json:"last_run,omitempty"`
-	NextRun    *time.Time             `json:"next_run,omitempty"`
-	RunCount   int64                  `json:"run_count"`
-	ErrorCount int64                  `json:"error_count"`
-	LastError  string                 `json:"last_error,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt  time.Time              `json:"created_at"`
+	ID         string       `json:"id"`
+	Name       string       `json:"name"`
+	Type       ScheduleType `json:"type"`
+	Expression string       `json:"expression"` // Cron expression or interval
+	Enabled    bool         `json:"enabled"`
+	LastRun    *time.Time   `json:"last_run,omitempty"`
+	NextRun    *time.Time   `json:"next_run,omitempty"`
+	RunCount   int64        `json:"run_count"`
+	ErrorCount int64        `json:"error_count"`
+	LastError  string       `json:"last_error,omitempty"`
+	CreatedAt  time.Time    `json:"created_at"`
 }
 
 // NOTE: A full cron expression struct/parser was previously stubbed here but removed
@@ -255,19 +254,16 @@ func (s *Scheduler) executeSchedule(schedule *Schedule, now time.Time) {
 
 	// Create a build job for this scheduled task
 	job := &BuildJob{
-		ID:       fmt.Sprintf("schedule-%s-%d", schedule.ID, now.Unix()),
-		Type:     BuildTypeScheduled,
-		Priority: PriorityNormal,
-		Metadata: map[string]interface{}{
-			"schedule_id":   schedule.ID,
-			"schedule_name": schedule.Name,
-		},
+		ID:        fmt.Sprintf("schedule-%s-%d", schedule.ID, now.Unix()),
+		Type:      BuildTypeScheduled,
+		Priority:  PriorityNormal,
+		TypedMeta: &BuildJobMetadata{},
 	}
 	if s.daemon != nil {
-		job.Metadata["v2_config"] = s.daemon.config
-		job.Metadata["state_manager"] = s.daemon.stateManager
+		job.TypedMeta.V2Config = s.daemon.config
+		job.TypedMeta.StateManager = s.daemon.stateManager
 		if s.daemon.liveReload != nil {
-			job.Metadata["live_reload_hub"] = s.daemon.liveReload
+			job.TypedMeta.LiveReloadHub = s.daemon.liveReload
 		}
 	}
 

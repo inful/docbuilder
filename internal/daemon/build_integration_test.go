@@ -9,6 +9,7 @@ import (
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
@@ -52,11 +53,14 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	repo := cfg.Repository{Name: "repoA", Paths: []string{"docs"}, URL: repoDir, Branch: ""}
 	config := &cfg.Config{Output: cfg.OutputConfig{Directory: out, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: ws, CloneStrategy: cfg.CloneStrategyFresh}, Hugo: cfg.HugoConfig{Theme: "hextra"}, Repositories: []cfg.Repository{repo}}
 
-	sm, err := NewStateManager(out)
-	if err != nil {
-		t.Fatalf("state manager: %v", err)
+	// Use typed state.ServiceAdapter instead of legacy StateManager
+	svcResult := state.NewService(out)
+	if svcResult.IsErr() {
+		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	gen := hugo.NewGenerator(config, out).WithStateManager(sm)
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
+	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&hugo.NoopRenderer{})
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	report, err := gen.GenerateFullSite(ctx, []cfg.Repository{repo}, ws)

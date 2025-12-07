@@ -12,10 +12,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
@@ -47,19 +51,24 @@ type Daemon struct {
 	httpServer     *HTTPServer
 	scheduler      *Scheduler
 	buildQueue     *BuildQueue
-	stateManager   *StateManager
+	stateManager   state.DaemonStateManager
 	liveReload     *LiveReloadHub
 
-	// Runtime state
-	activeJobs    int32
-	queueLength   int32
-	lastBuild     *time.Time
-	lastDiscovery *time.Time
+	// Event sourcing components (Phase B)
+	eventStore      eventstore.Store
+	buildProjection *eventstore.BuildHistoryProjection
+	eventEmitter    *EventEmitter
 
-	// Cached discovery data to serve /status quickly without doing network I/O each request
-	discoveryCacheMu    sync.RWMutex
-	lastDiscoveryResult *forge.DiscoveryResult
-	lastDiscoveryError  error
+	// Runtime state
+	activeJobs  int32
+	queueLength int32
+	lastBuild   *time.Time
+
+	// Discovery cache for fast status queries
+	discoveryCache *DiscoveryCache
+
+	// Discovery runner for forge discovery operations
+	discoveryRunner *DiscoveryRunner
 }
 
 // NewDaemon creates a new daemon instance
@@ -79,9 +88,10 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 
 	daemon := &Daemon{
-		config:   cfg,
-		stopChan: make(chan struct{}),
-		metrics:  NewMetricsCollector(),
+		config:         cfg,
+		stopChan:       make(chan struct{}),
+		metrics:        NewMetricsCollector(),
+		discoveryCache: NewDiscoveryCache(),
 	}
 
 	daemon.status.Store(StatusStopped)
@@ -103,8 +113,12 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Initialize HTTP server
 	daemon.httpServer = NewHTTPServer(cfg, daemon)
 
-	// Initialize build queue first (scheduler needs it)
-	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds)
+	// Create canonical BuildService (Phase D - Single Execution Pipeline)
+	buildService := build.NewBuildService()
+	buildAdapter := NewBuildServiceAdapter(buildService)
+
+	// Initialize build queue with the canonical builder
+	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, buildAdapter)
 	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
 	daemon.buildQueue.ConfigureRetry(cfg.Build)
 
@@ -113,15 +127,32 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Provide back-reference so scheduler can inject metadata (live reload hub, config, state)
 	daemon.scheduler.SetDaemon(daemon)
 
-	// Initialize state manager
-	var err error
+	// Initialize state manager using the typed state.Service wrapped in ServiceAdapter.
+	// This bridges the new typed state system with the daemon's interface requirements.
 	stateDir := cfg.Daemon.Storage.RepoCacheDir
 	if stateDir == "" {
 		stateDir = "./daemon-data" // Default data directory
 	}
-	daemon.stateManager, err = NewStateManager(stateDir)
+	stateServiceResult := state.NewService(stateDir)
+	if stateServiceResult.IsErr() {
+		return nil, fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
+	}
+	daemon.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
+
+	// Initialize event store and build history projection (Phase B - Event Sourcing)
+	eventStorePath := filepath.Join(stateDir, "events.db")
+	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create state manager: %w", err)
+		return nil, fmt.Errorf("failed to create event store: %w", err)
+	}
+	daemon.eventStore = eventStore
+	daemon.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
+	daemon.eventEmitter = NewEventEmitter(eventStore, daemon.buildProjection)
+
+	// Rebuild projection from existing events
+	if err := daemon.buildProjection.Rebuild(context.Background()); err != nil {
+		slog.Warn("Failed to rebuild build history projection", logfields.Error(err))
+		// Non-fatal: projection will start empty
 	}
 
 	// Initialize version service
@@ -150,6 +181,21 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
 		slog.Info("LiveReload hub initialized")
 	}
+
+	// Wire up event emitter for build queue (Phase B)
+	daemon.buildQueue.SetEventEmitter(daemon.eventEmitter)
+
+	// Initialize discovery runner (Phase H - extracted component)
+	daemon.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
+		Discovery:      daemon.discovery,
+		ForgeManager:   daemon.forgeManager,
+		DiscoveryCache: daemon.discoveryCache,
+		Metrics:        daemon.metrics,
+		StateManager:   daemon.stateManager,
+		BuildQueue:     daemon.buildQueue,
+		LiveReload:     daemon.liveReload,
+		Config:         cfg,
+	})
 
 	return daemon, nil
 }
@@ -312,6 +358,13 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
+	// Close event store (Phase B)
+	if d.eventStore != nil {
+		if err := d.eventStore.Close(); err != nil {
+			slog.Error("Failed to close event store", logfields.Error(err))
+		}
+	}
+
 	d.status.Store(StatusStopped)
 
 	uptime := time.Since(d.startTime)
@@ -344,31 +397,59 @@ func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
 
+// GetBuildProjection returns the build history projection for querying build history.
+// Returns nil if event sourcing is not initialized.
+func (d *Daemon) GetBuildProjection() *eventstore.BuildHistoryProjection {
+	return d.buildProjection
+}
+
+// EmitBuildEvent persists an event to the event store and updates the projection.
+// This delegates to the eventEmitter component.
+func (d *Daemon) EmitBuildEvent(ctx context.Context, event eventstore.Event) error {
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitEvent(ctx, event)
+}
+
+// EmitBuildStarted implements BuildEventEmitter for the daemon.
+func (d *Daemon) EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error {
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitBuildStarted(ctx, buildID, meta)
+}
+
+// EmitBuildCompleted implements BuildEventEmitter for the daemon.
+func (d *Daemon) EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error {
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitBuildCompleted(ctx, buildID, duration, artifacts)
+}
+
+// EmitBuildFailed implements BuildEventEmitter for the daemon.
+func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error {
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitBuildFailed(ctx, buildID, stage, errorMsg)
+}
+
+// EmitBuildReport implements BuildEventEmitter for the daemon.
+func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitBuildReport(ctx, buildID, report)
+}
+
+// Compile-time check that Daemon implements BuildEventEmitter
+var _ BuildEventEmitter = (*Daemon)(nil)
+
 // TriggerDiscovery manually triggers repository discovery
 func (d *Daemon) TriggerDiscovery() string {
-	if d.GetStatus() != StatusRunning {
-		return ""
-	}
-
-	jobID := fmt.Sprintf("discovery-%d", time.Now().Unix())
-
-	go func() {
-		atomic.AddInt32(&d.activeJobs, 1)
-		defer atomic.AddInt32(&d.activeJobs, -1)
-
-		slog.Info("Manual discovery triggered", logfields.JobID(jobID))
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		defer cancel()
-
-		if err := d.runDiscovery(ctx); err != nil {
-			slog.Error("Discovery failed", logfields.JobID(jobID), logfields.Error(err))
-		} else {
-			slog.Info("Discovery completed", logfields.JobID(jobID))
-		}
-	}()
-
-	return jobID
+	return d.discoveryRunner.TriggerManual(d.GetStatus, &d.activeJobs)
 }
 
 // TriggerBuild manually triggers a site build
@@ -384,10 +465,10 @@ func (d *Daemon) TriggerBuild() string {
 		Type:      BuildTypeManual,
 		Priority:  PriorityHigh,
 		CreatedAt: time.Now(),
-		Metadata: map[string]interface{}{
-			"v2_config":       d.config,
-			"state_manager":   d.stateManager,
-			"live_reload_hub": d.liveReload,
+		TypedMeta: &BuildJobMetadata{
+			V2Config:      d.config,
+			StateManager:  d.stateManager,
+			LiveReloadHub: d.liveReload,
 		},
 	}
 
@@ -434,10 +515,10 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-ticker.C:
 			d.updateStatus()
 		case <-initialDiscoveryTimer.C:
-			go d.safeRunDiscovery()
+			go d.discoveryRunner.SafeRun(d.GetStatus)
 		case <-discoveryTicker.C:
 			slog.Info("Scheduled discovery tick", slog.Duration("interval", discoveryInterval))
-			go d.safeRunDiscovery()
+			go d.discoveryRunner.SafeRun(d.GetStatus)
 		}
 	}
 }
@@ -513,107 +594,11 @@ func (d *Daemon) updateStatus() {
 	}
 }
 
-// runDiscovery executes repository discovery across all forges
-func (d *Daemon) runDiscovery(ctx context.Context) error {
-	start := time.Now()
-	d.metrics.IncrementCounter("discovery_attempts")
-
-	slog.Info("Starting repository discovery")
-
-	result, err := d.discovery.DiscoverAll(ctx)
-	if err != nil {
-		d.metrics.IncrementCounter("discovery_errors")
-		// Cache the error so status endpoint can report it fast
-		d.discoveryCacheMu.Lock()
-		d.lastDiscoveryError = err
-		d.discoveryCacheMu.Unlock()
-		return fmt.Errorf("discovery failed: %w", err)
-	}
-
-	duration := time.Since(start)
-	d.metrics.RecordHistogram("discovery_duration_seconds", duration.Seconds())
-	d.metrics.IncrementCounter("discovery_successes")
-	d.metrics.SetGauge("repositories_discovered", int64(len(result.Repositories)))
-	d.metrics.SetGauge("repositories_filtered", int64(len(result.Filtered)))
-	now := time.Now()
-	d.lastDiscovery = &now
-
-	// Cache successful discovery result for status queries
-	d.discoveryCacheMu.Lock()
-	d.lastDiscoveryResult = result
-	d.lastDiscoveryError = nil
-	d.discoveryCacheMu.Unlock()
-
-	slog.Info("Repository discovery completed",
-		slog.Duration("duration", duration),
-		slog.Int("repositories_found", len(result.Repositories)),
-		slog.Int("repositories_filtered", len(result.Filtered)),
-		slog.Int("errors", len(result.Errors)))
-
-	// Store discovery results in state
-	if d.stateManager != nil {
-		// Record discovery for each repository
-		for _, repo := range result.Repositories {
-			// For now, record with 0 documents as we don't have that info from forge discovery
-			// This would be updated later during actual document discovery
-			d.stateManager.RecordDiscovery(repo.CloneURL, 0)
-		}
-	}
-
-	// Trigger build if new repositories were found
-	if len(result.Repositories) > 0 {
-		// Convert discovered repositories to config.Repository for build usage
-		converted := d.discovery.ConvertToConfigRepositories(result.Repositories, d.forgeManager)
-		job := &BuildJob{
-			ID:        fmt.Sprintf("auto-build-%d", time.Now().Unix()),
-			Type:      BuildTypeDiscovery,
-			Priority:  PriorityNormal,
-			CreatedAt: time.Now(),
-			Metadata: map[string]interface{}{
-				"discovery_result": result,
-				"repositories":     converted,
-				"v2_config":        d.config,
-				"state_manager":    d.stateManager,
-				"live_reload_hub":  d.liveReload,
-			},
-		}
-
-		if err := d.buildQueue.Enqueue(job); err != nil {
-			slog.Error("Failed to enqueue auto-build", logfields.Error(err))
-		}
-	}
-
-	return nil
-}
-
 // GetConfig returns the current daemon configuration
 func (d *Daemon) GetConfig() *config.Config {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.config
-}
-
-// safeRunDiscovery executes discovery with a timeout and panic protection
-func (d *Daemon) safeRunDiscovery() {
-	if d.discovery == nil {
-		return
-	}
-	// Skip if daemon not running
-	if d.GetStatus() != StatusRunning {
-		return
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-	defer func() {
-		if r := recover(); r != nil {
-			slog.Error("Recovered from panic in safeRunDiscovery", "panic", r)
-		}
-	}()
-	if err := d.runDiscovery(ctx); err != nil {
-		slog.Warn("Periodic discovery failed", "error", err)
-	} else {
-		slog.Info("Periodic discovery completed")
-	}
 }
 
 // ReloadConfig reloads the daemon configuration and restarts affected services
@@ -661,6 +646,11 @@ func (d *Daemon) reloadForgeManager(_ context.Context, _, newConfig *config.Conf
 
 	// Update discovery service
 	d.discovery = forge.NewDiscoveryService(newForgeManager, newConfig.Filtering)
+
+	// Update discovery runner with new services
+	d.discoveryRunner.UpdateForgeManager(newForgeManager)
+	d.discoveryRunner.UpdateDiscoveryService(d.discovery)
+	d.discoveryRunner.UpdateConfig(newConfig)
 
 	slog.Info("Forge manager reloaded", slog.Int("forge_count", len(newConfig.Forges)))
 	return nil

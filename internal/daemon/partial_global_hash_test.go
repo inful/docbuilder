@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // hashPaths replicates the global/per-repo hashing (sorted paths, null separator) logic.
@@ -28,37 +29,42 @@ func hashPaths(paths []string) string {
 func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
-	state, err := NewStateManager(stateDir)
-	if err != nil {
-		t.Fatalf("state manager: %v", err)
+	svcResult := state.NewService(stateDir)
+	if svcResult.IsErr() {
+		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
+	sm.EnsureRepositoryState(repoAURL, repoAName, "")
+	sm.EnsureRepositoryState(repoBURL, repoBName, "")
 
 	// Seed initial full build state: one file per repo
 	repoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "a1.md"))}
 	repoBPaths := []string{filepath.ToSlash(filepath.Join(repoBName, "b1.md"))}
-	state.SetRepoDocFilePaths(repoAURL, repoAPaths)
-	state.SetRepoDocFilePaths(repoBURL, repoBPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashPaths(repoAPaths))
-	state.SetRepoDocFilesHash(repoBURL, hashPaths(repoBPaths))
+	sm.SetRepoDocFilePaths(repoAURL, repoAPaths)
+	sm.SetRepoDocFilePaths(repoBURL, repoBPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashPaths(repoAPaths))
+	sm.SetRepoDocFilesHash(repoBURL, hashPaths(repoBPaths))
 	globalFull := hashPaths(append(append([]string{}, repoAPaths...), repoBPaths...))
-	state.SetLastGlobalDocFilesHash(globalFull)
+	sm.SetLastGlobalDocFilesHash(globalFull)
 
 	// Simulate change: repoA adds a2.md (discovery this run will produce new repoA paths list)
 	newRepoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "a1.md")), filepath.ToSlash(filepath.Join(repoAName, "a2.md"))}
-	state.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashPaths(newRepoAPaths))
+	sm.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashPaths(newRepoAPaths))
 
 	// Subset BuildReport (what generator would emit for changed repoA only) uses subset hash (only repoA paths)
 	subsetHash := hashPaths(newRepoAPaths) // does not include repoB yet
 	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
 
 	// Build context with deltaPlan marking repoA changed
-	job := &BuildJob{Metadata: map[string]interface{}{"repositories": repos}}
-	bc := &buildContext{job: job, stateMgr: state, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
+	job := &BuildJob{
+		TypedMeta: &BuildJobMetadata{Repositories: repos},
+	}
+	bc := &buildContext{job: job, stateMgr: sm, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
 
 	// Invoke post-persist recomposition via a lightweight shim (copy stagePostPersist logic segment for recomposition)
 	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {
@@ -94,36 +100,41 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 	workspace := t.TempDir()
 	stateDir := filepath.Join(workspace, "state")
-	state, err := NewStateManager(stateDir)
-	if err != nil {
-		t.Fatalf("state manager: %v", err)
+	svcResult := state.NewService(stateDir)
+	if svcResult.IsErr() {
+		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
 	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
 	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
+	sm.EnsureRepositoryState(repoAURL, repoAName, "")
+	sm.EnsureRepositoryState(repoBURL, repoBName, "")
 
 	// Initial state: repoA: a1.md ; repoB: b1.md, b2.md
 	repoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "a1.md"))}
 	repoBPaths := []string{filepath.ToSlash(filepath.Join(repoBName, "b1.md")), filepath.ToSlash(filepath.Join(repoBName, "b2.md"))}
-	state.SetRepoDocFilePaths(repoAURL, repoAPaths)
-	state.SetRepoDocFilePaths(repoBURL, repoBPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashPaths(repoAPaths))
-	state.SetRepoDocFilesHash(repoBURL, hashPaths(repoBPaths))
+	sm.SetRepoDocFilePaths(repoAURL, repoAPaths)
+	sm.SetRepoDocFilePaths(repoBURL, repoBPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashPaths(repoAPaths))
+	sm.SetRepoDocFilesHash(repoBURL, hashPaths(repoBPaths))
 	globalFull := hashPaths(append(append([]string{}, repoAPaths...), repoBPaths...))
-	state.SetLastGlobalDocFilesHash(globalFull)
+	sm.SetLastGlobalDocFilesHash(globalFull)
 
 	// Simulate: repoA adds a2.md (causing partial build) and repoB deletes b2.md (not rebuilt this run)
 	newRepoAPaths := []string{filepath.ToSlash(filepath.Join(repoAName, "a1.md")), filepath.ToSlash(filepath.Join(repoAName, "a2.md"))}
-	state.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
-	state.SetRepoDocFilesHash(repoAURL, hashPaths(newRepoAPaths))
+	sm.SetRepoDocFilePaths(repoAURL, newRepoAPaths)
+	sm.SetRepoDocFilesHash(repoAURL, hashPaths(newRepoAPaths))
 	// IMPORTANT: we DO NOT update repoB path list (still includes b2.md) to reflect current limitation.
 
 	subsetHash := hashPaths(newRepoAPaths) // what a changed-only subset would carry
 	report := &hugoBuildReportShim{DocFilesHash: subsetHash}
 
-	job := &BuildJob{Metadata: map[string]interface{}{"repositories": repos}}
-	bc := &buildContext{job: job, stateMgr: state, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
+	job := &BuildJob{
+		TypedMeta: &BuildJobMetadata{Repositories: repos},
+	}
+	bc := &buildContext{job: job, stateMgr: sm, deltaPlan: &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{repoAURL}}}
 
 	// Recomposition identical to stagePostPersist logic used in previous test
 	if bc.deltaPlan != nil && bc.deltaPlan.Decision == DeltaDecisionPartial && report.DocFilesHash != "" {

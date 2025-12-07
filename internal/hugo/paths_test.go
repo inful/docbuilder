@@ -32,8 +32,9 @@ func TestPathHelpers_Contract(t *testing.T) {
 	if stage1 == "" {
 		t.Fatalf("stageDir empty after beginStaging")
 	}
-	if !strings.Contains(stage1, ".staging-") {
-		t.Fatalf("stageDir does not contain .staging- marker: %s", stage1)
+	// Staging directory is now outputDir + "_stage"
+	if !strings.HasSuffix(stage1, "_stage") {
+		t.Fatalf("stageDir does not have _stage suffix: %s", stage1)
 	}
 	if gen.buildRoot() != stage1 {
 		t.Fatalf("buildRoot should point to staging dir")
@@ -62,11 +63,13 @@ func TestPathHelpers_Contract(t *testing.T) {
 		t.Fatalf("second beginStaging failed: %v", err)
 	}
 	stage2 := gen.stageDir
-	if stage2 == "" || stage2 == stage1 {
-		t.Fatalf("expected new staging dir, got %s (old %s)", stage2, stage1)
+	if stage2 == "" {
+		t.Fatalf("stageDir empty after second beginStaging")
 	}
+	// With the new staging design, the staging path is deterministic (outputDir_stage)
+	// so stage2 will equal stage1's path (but stage1 was deleted by abort)
 	if gen.buildRoot() != stage2 {
-		t.Fatalf("buildRoot should equal new staging dir before finalize")
+		t.Fatalf("buildRoot should equal staging dir before finalize")
 	}
 	if err := gen.finalizeStaging(); err != nil {
 		t.Fatalf("finalizeStaging failed: %v", err)
