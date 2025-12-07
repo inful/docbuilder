@@ -19,7 +19,11 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 	// Check if we should run Hugo based on mode and config
 	if !shouldRunHugo(cfg) {
 		// No rendering needed (e.g., auto mode without explicit request)
-		return nil
+		// However, if a custom renderer is set (like NoopRenderer), we should still proceed
+		if bs.Generator.renderer == nil {
+			return nil
+		}
+		// Custom renderer is set, so we'll use it even if shouldRunHugo says no
 	}
 
 	// Use renderer abstraction; if custom renderer is set, use it, otherwise use default BinaryRenderer
