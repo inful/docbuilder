@@ -12,6 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
+	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // DeltaManager handles delta-related operations during post-persistence stage
@@ -66,19 +67,8 @@ func (dm *DeltaManagerImpl) AttachDeltaMetadata(report *hugo.BuildReport, deltaP
 }
 
 // pathGetter interface for reading repository document file paths
-type pathGetter interface {
-	GetRepoDocFilePaths(string) []string
-}
-
-// pathSetter interface for setting repository document file paths
-type pathSetter interface {
-	SetRepoDocFilePaths(string, []string)
-}
-
-// hashSetter interface for setting repository document files hash
-type hashSetter interface {
-	SetRepoDocFilesHash(string, string)
-}
+// The following interfaces were removed as they're already covered by state.RepositoryMetadataStore
+// which is the proper abstraction for repository metadata operations.
 
 // RecomputeGlobalDocHash recalculates the global documentation hash for partial builds
 func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
@@ -93,13 +83,11 @@ func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
 		return 0, nil
 	}
 
-	getter, gOK := stateMgr.(pathGetter)
-	if !gOK {
+	// Type assert to RepositoryMetadataStore for repository metadata operations
+	metaStore, ok := stateMgr.(state.RepositoryMetadataStore)
+	if !ok {
 		return 0, nil
 	}
-
-	setter, sOK := stateMgr.(pathSetter)
-	hasher, hOK := stateMgr.(hashSetter)
 
 	changedSet := make(map[string]struct{}, len(deltaPlan.ChangedRepos))
 	for _, u := range deltaPlan.ChangedRepos {
@@ -115,7 +103,7 @@ func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
 	deletionsDetected := 0
 
 	for _, r := range orig {
-		paths := getter.GetRepoDocFilePaths(r.URL)
+		paths := metaStore.GetRepoDocFilePaths(r.URL)
 
 		// For unchanged repos, optionally detect deletions by scanning workspace clone
 		if _, isChanged := changedSet[r.URL]; !isChanged &&
@@ -127,13 +115,9 @@ func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
 			}
 
 			if len(freshPaths) != len(paths) {
-				if sOK {
-					setter.SetRepoDocFilePaths(r.URL, freshPaths)
-				}
-				if hOK {
-					hash := dm.computePathsHash(freshPaths)
-					hasher.SetRepoDocFilesHash(r.URL, hash)
-				}
+				metaStore.SetRepoDocFilePaths(r.URL, freshPaths)
+				hash := dm.computePathsHash(freshPaths)
+				metaStore.SetRepoDocFilesHash(r.URL, hash)
 				paths = freshPaths
 				deletionsDetected += deleted
 			}

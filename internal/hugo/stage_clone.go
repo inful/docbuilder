@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -24,7 +23,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	if bs.Git.WorkspaceDir == "" {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
 	}
-	fetcher := newDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
+	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
 	// Ensure workspace directory structure (previously via git client)
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
@@ -168,19 +167,7 @@ func classifyGitFailure(err error) ReportIssueCode {
 }
 
 // readRepoHead returns the current HEAD commit hash for a repository path.
+// Deprecated: Use gitpkg.ReadRepoHead directly.
 func readRepoHead(repoPath string) (string, error) {
-	headPath := filepath.Join(repoPath, ".git", "HEAD")
-	data, err := os.ReadFile(headPath)
-	if err != nil {
-		return "", err
-	}
-	line := strings.TrimSpace(string(data))
-	if strings.HasPrefix(line, "ref:") {
-		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
-		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
-		if b, berr := os.ReadFile(refPath); berr == nil {
-			return strings.TrimSpace(string(b)), nil
-		}
-	}
-	return line, nil
+	return gitpkg.ReadRepoHead(repoPath)
 }

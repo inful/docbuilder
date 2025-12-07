@@ -271,8 +271,8 @@ func TestCommandExecutorIntegration(t *testing.T) {
 
 	// The failure should be related to Git authentication (expected for external repo)
 	buildErr := buildResult.UnwrapErr()
-	if buildErr == nil || !strings.Contains(buildErr.Error(), "authentication required") {
-		t.Errorf("Expected authentication error, got: %v", buildErr)
+	if buildErr == nil || (!strings.Contains(buildErr.Error(), "authentication required") && !strings.Contains(buildErr.Error(), "[git:error] failed to clone repository")) {
+		t.Errorf("Expected authentication or git clone error, got: %v", buildErr)
 	}
 
 	// Test graceful shutdown

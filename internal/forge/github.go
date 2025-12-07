@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -20,11 +18,9 @@ import (
 
 // GitHubClient implements ForgeClient for GitHub
 type GitHubClient struct {
-	config     *Config
-	httpClient *http.Client
-	baseURL    string
-	apiURL     string
-	token      string
+	*BaseForge
+	config  *Config
+	baseURL string
 }
 
 // NewGitHubClient creates a new GitHub client
@@ -33,24 +29,27 @@ func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
 	}
 
-	client := &GitHubClient{
-		config:     fg,
-		httpClient: newHTTPClient30s(),
-		apiURL:     fg.APIURL,
-		baseURL:    fg.BaseURL,
-	}
-
 	// Set default URLs if not provided
-	client.apiURL, client.baseURL = withDefaults(client.apiURL, client.baseURL, "https://api.github.com", "https://github.com")
+	apiURL, baseURL := withDefaults(fg.APIURL, fg.BaseURL, "https://api.github.com", "https://github.com")
 
 	// Extract token from auth config
 	tok, err := tokenFromConfig(fg, "GitHub")
 	if err != nil {
 		return nil, err
 	}
-	client.token = tok
 
-	return client, nil
+	// Create BaseForge with common HTTP operations
+	baseForge := NewBaseForge(newHTTPClient30s(), apiURL, tok)
+
+	// GitHub-specific headers
+	baseForge.SetCustomHeader("Accept", "application/vnd.github+json")
+	baseForge.SetCustomHeader("X-GitHub-Api-Version", "2022-11-28")
+
+	return &GitHubClient{
+		BaseForge: baseForge,
+		config:    fg,
+		baseURL:   baseURL,
+	}, nil
 }
 
 // GetType returns the forge type
@@ -103,13 +102,13 @@ func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 
 // getUserOrganizations gets organizations for the authenticated user
 func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organization, error) {
-	req, err := c.newRequest(ctx, "GET", "/user/orgs", nil)
+	req, err := c.NewRequest(ctx, "GET", "/user/orgs", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var githubOrgs []githubOrg
-	if err := c.doRequest(req, &githubOrgs); err != nil {
+	if err := c.DoRequest(req, &githubOrgs); err != nil {
 		return nil, err
 	}
 
@@ -149,35 +148,40 @@ func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []str
 
 // getOrgRepositories gets all repositories for an organization
 func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*Repository, error) {
-	var allRepos []*Repository
-	page := 1
-	perPage := 100
+	baseEndpoint := fmt.Sprintf("/orgs/%s/repos?sort=updated", org)
 
-	for {
-		endpoint := fmt.Sprintf("/orgs/%s/repos?per_page=%d&page=%d&sort=updated", org, perPage, page)
-		req, err := c.newRequest(ctx, "GET", endpoint, nil)
-		if err != nil {
-			return nil, err
-		}
+	githubRepos, err := PaginatedFetchHelper(
+		ctx,
+		baseEndpoint,
+		"page",
+		"per_page",
+		100,
+		func(endpoint string) ([]githubRepo, bool, error) {
+			req, err := c.NewRequest(ctx, "GET", endpoint, nil)
+			if err != nil {
+				return nil, false, err
+			}
 
-		var githubRepos []githubRepo
-		if err := c.doRequest(req, &githubRepos); err != nil {
-			return nil, err
-		}
+			var repos []githubRepo
+			if err := c.DoRequest(req, &repos); err != nil {
+				return nil, false, err
+			}
 
-		if len(githubRepos) == 0 {
-			break
-		}
+			// Has more if we got a full page
+			hasMore := len(repos) >= 100
+			return repos, hasMore, nil
+		},
+	)
 
-		for _, gRepo := range githubRepos {
-			repo := c.convertGitHubRepo(&gRepo)
-			allRepos = append(allRepos, repo)
-		}
+	if err != nil {
+		return nil, err
+	}
 
-		if len(githubRepos) < perPage {
-			break
-		}
-		page++
+	// Convert to common Repository format
+	allRepos := make([]*Repository, 0, len(githubRepos))
+	for _, gRepo := range githubRepos {
+		repo := c.convertGitHubRepo(&gRepo)
+		allRepos = append(allRepos, repo)
 	}
 
 	return allRepos, nil
@@ -186,13 +190,13 @@ func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*R
 // GetRepository gets detailed information about a specific repository
 func (c *GitHubClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s", owner, repo)
-	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	var githubRepo githubRepo
-	if err := c.doRequest(req, &githubRepo); err != nil {
+	if err := c.DoRequest(req, &githubRepo); err != nil {
 		return nil, err
 	}
 
@@ -223,7 +227,7 @@ func (c *GitHubClient) CheckDocumentation(ctx context.Context, repo *Repository)
 // checkPathExists checks if a path exists in the repository
 func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, branch string) (bool, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, path, branch)
-	req, err := c.newRequest(ctx, "GET", endpoint, nil)
+	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 	if err != nil {
 		return false, err
 	}
@@ -447,13 +451,13 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		"active": true,
 	}
 
-	req, err := c.newRequest(ctx, "POST", endpoint, payload)
+	req, err := c.NewRequest(ctx, "POST", endpoint, payload)
 	if err != nil {
 		return err
 	}
 
 	var result map[string]interface{}
-	return c.doRequest(req, &result)
+	return c.DoRequest(req, &result)
 }
 
 // GetEditURL returns the URL to edit a file in GitHub
@@ -491,56 +495,4 @@ func (c *GitHubClient) splitFullName(fullName string) (owner, repo string) {
 		return parts[0], parts[1]
 	}
 	return "", fullName
-}
-
-func (c *GitHubClient) newRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Request, error) {
-	u, err := url.Parse(c.apiURL)
-	if err != nil {
-		return nil, err
-	}
-	u.Path = path.Join(u.Path, endpoint)
-
-	var req *http.Request
-	if body != nil {
-		jsonBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), strings.NewReader(string(jsonBody)))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-	} else {
-		var err error
-		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("User-Agent", "DocBuilder/1.0")
-
-	return req, nil
-}
-
-func (c *GitHubClient) doRequest(req *http.Request, result interface{}) error {
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("GitHub API error: %s", resp.Status)
-	}
-
-	if result != nil {
-		return json.NewDecoder(resp.Body).Decode(result)
-	}
-
-	return nil
 }

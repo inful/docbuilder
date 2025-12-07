@@ -4,8 +4,6 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
-
-	dberrors "git.home.luguber.info/inful/docbuilder/internal/errors"
 )
 
 func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
@@ -34,16 +32,6 @@ func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
 				WithSeverity(SeverityError).
 				Build(),
 			expected: 5,
-		},
-		{
-			name:     "docbuilder config error",
-			err:      dberrors.New(dberrors.CategoryConfig, dberrors.SeverityFatal, "bad config"),
-			expected: 7,
-		},
-		{
-			name:     "docbuilder build error",
-			err:      dberrors.New(dberrors.CategoryBuild, dberrors.SeverityFatal, "build failed"),
-			expected: 11,
 		},
 		{
 			name:     "unclassified error",
@@ -81,11 +69,6 @@ func TestCLIErrorAdapter_FormatError(t *testing.T) {
 				WithSeverity(SeverityError).
 				Build(),
 			contains: "Internal error occurred (use -v for details)",
-		},
-		{
-			name:     "docbuilder config error",
-			err:      dberrors.New(dberrors.CategoryConfig, dberrors.SeverityFatal, "bad config"),
-			contains: "bad config",
 		},
 		{
 			name:     "unclassified error",

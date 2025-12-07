@@ -35,3 +35,29 @@ func updateEntity[T any](
 
 	return foundation.Ok[*T, error](obj)
 }
+
+// updateSimpleEntity is a variant for entities that don't track UpdatedAt
+// (like DaemonInfo and Statistics that use their own timestamp fields).
+func updateSimpleEntity[T any](
+	js *JSONStore,
+	obj *T,
+	updateTimestamp func(),
+	write func(),
+	saveErrMsg string,
+) foundation.Result[*T, error] {
+	js.mu.Lock()
+	defer js.mu.Unlock()
+
+	updateTimestamp()
+	write()
+
+	if js.autoSaveEnabled {
+		if err := js.saveToDiskUnsafe(); err != nil {
+			return foundation.Err[*T, error](
+				foundation.InternalError(saveErrMsg).WithCause(err).Build(),
+			)
+		}
+	}
+
+	return foundation.Ok[*T, error](obj)
+}

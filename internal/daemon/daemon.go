@@ -36,11 +36,12 @@ const (
 
 // Daemon represents the main daemon service
 type Daemon struct {
-	config    *config.Config
-	status    atomic.Value // DaemonStatus
-	startTime time.Time
-	stopChan  chan struct{}
-	mu        sync.RWMutex
+	config         *config.Config
+	configFilePath string
+	status         atomic.Value // DaemonStatus
+	startTime      time.Time
+	stopChan       chan struct{}
+	mu             sync.RWMutex
 
 	// Core components
 	forgeManager   *forge.Manager
@@ -89,6 +90,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	daemon := &Daemon{
 		config:         cfg,
+		configFilePath: configFilePath,
 		stopChan:       make(chan struct{}),
 		metrics:        NewMetricsCollector(),
 		discoveryCache: NewDiscoveryCache(),

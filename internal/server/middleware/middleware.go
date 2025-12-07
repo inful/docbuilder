@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	derrors "git.home.luguber.info/inful/docbuilder/internal/errors"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -45,7 +45,7 @@ func panicRecoveryMiddleware(logger *slog.Logger, adapter *derrors.HTTPErrorAdap
 					"method", r.Method,
 					"remote_addr", r.RemoteAddr)
 
-				panicErr := derrors.New(derrors.CategoryInternal, derrors.SeverityError, "internal server error").
+				panicErr := derrors.InternalError("internal server error").
 					WithContext("path", r.URL.Path).
 					WithContext("method", r.Method).
 					Build()

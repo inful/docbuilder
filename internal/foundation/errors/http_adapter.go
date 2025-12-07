@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-
-	dberrors "git.home.luguber.info/inful/docbuilder/internal/errors"
 )
 
 // HTTPErrorAdapter handles error presentation and status code determination for HTTP applications.
@@ -60,28 +58,6 @@ func (a *HTTPErrorAdapter) StatusCodeFor(err error) int {
 		}
 	}
 
-	// DocBuilder domain errors
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		switch dbe.Category {
-		case dberrors.CategoryValidation, dberrors.CategoryConfig:
-			return http.StatusBadRequest
-		case dberrors.CategoryAuth:
-			return http.StatusUnauthorized
-		case dberrors.CategoryNetwork, dberrors.CategoryGit, dberrors.CategoryForge:
-			return http.StatusBadGateway
-		case dberrors.CategoryBuild, dberrors.CategoryHugo:
-			return http.StatusUnprocessableEntity
-		case dberrors.CategoryFileSystem:
-			return http.StatusInternalServerError
-		case dberrors.CategoryRuntime, dberrors.CategoryDaemon:
-			return http.StatusServiceUnavailable
-		case dberrors.CategoryInternal:
-			return http.StatusInternalServerError
-		default:
-			return http.StatusInternalServerError
-		}
-	}
-
 	// Fallback
 	return http.StatusInternalServerError
 }
@@ -114,11 +90,6 @@ func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, err error) 
 		a.logger.Log(context.Background(), lvl, c.Error())
 		return
 	}
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		lvl := a.slogLevelFromDocBuilderSeverity(dbe.Severity)
-		a.logger.Log(context.Background(), lvl, dbe.Error())
-		return
-	}
 	// Unknown error
 	a.logger.Error(err.Error())
 }
@@ -142,20 +113,6 @@ func (a *HTTPErrorAdapter) FormatErrorResponse(err error) HTTPErrorResponse {
 		}
 		return resp
 	}
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		resp := HTTPErrorResponse{Error: dbe.Message, Code: string(dbe.Category)}
-		if len(dbe.Context) > 0 {
-			resp.Details = map[string]any(dbe.Context)
-		}
-		if dbe.Retryable {
-			resp.Retryable = true
-			if resp.Details == nil {
-				resp.Details = make(map[string]any)
-			}
-			resp.Details["retryable"] = true
-		}
-		return resp
-	}
 	return HTTPErrorResponse{Error: err.Error()}
 }
 
@@ -165,17 +122,6 @@ func (a *HTTPErrorAdapter) slogLevelFromSeverity(s ErrorSeverity) slog.Level {
 	case SeverityInfo:
 		return slog.LevelInfo
 	case SeverityWarning:
-		return slog.LevelWarn
-	default:
-		return slog.LevelError
-	}
-}
-
-func (a *HTTPErrorAdapter) slogLevelFromDocBuilderSeverity(s dberrors.ErrorSeverity) slog.Level {
-	switch s {
-	case dberrors.SeverityInfo:
-		return slog.LevelInfo
-	case dberrors.SeverityWarning:
 		return slog.LevelWarn
 	default:
 		return slog.LevelError

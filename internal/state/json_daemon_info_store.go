@@ -27,21 +27,13 @@ func (ds *jsonDaemonInfoStore) Update(_ context.Context, info *DaemonInfo) found
 		)
 	}
 
-	ds.store.mu.Lock()
-	defer ds.store.mu.Unlock()
-
-	info.LastUpdate = time.Now()
-	ds.store.daemonInfo = info
-
-	if ds.store.autoSaveEnabled {
-		if err := ds.store.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*DaemonInfo, error](
-				foundation.InternalError("failed to save daemon info").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[*DaemonInfo, error](info)
+	return updateSimpleEntity[DaemonInfo](
+		ds.store,
+		info,
+		func() { info.LastUpdate = time.Now() },
+		func() { ds.store.daemonInfo = info },
+		"failed to save daemon info",
+	)
 }
 
 func (ds *jsonDaemonInfoStore) UpdateStatus(_ context.Context, status string) foundation.Result[struct{}, error] {

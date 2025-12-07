@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	derrors "git.home.luguber.info/inful/docbuilder/internal/errors"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
 )

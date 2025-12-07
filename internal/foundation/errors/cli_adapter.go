@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-
-	dberrors "git.home.luguber.info/inful/docbuilder/internal/errors"
 )
 
 // CLIErrorAdapter handles error presentation and exit code determination for CLI applications.
@@ -32,14 +30,9 @@ func (a *CLIErrorAdapter) ExitCodeFor(err error) int {
 		return 0
 	}
 
-	// Check for ClassifiedError from foundation package
+	// Check for ClassifiedError
 	if classified, ok := AsClassified(err); ok {
 		return a.exitCodeFromClassified(classified)
-	}
-
-	// Check for DocBuilderError from errors package
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		return a.exitCodeFromDocBuilder(dbe)
 	}
 
 	// Fallback for unclassified errors
@@ -68,28 +61,6 @@ func (a *CLIErrorAdapter) exitCodeFromClassified(err *ClassifiedError) int {
 	}
 }
 
-// exitCodeFromDocBuilder maps DocBuilderError to exit codes.
-func (a *CLIErrorAdapter) exitCodeFromDocBuilder(err *dberrors.DocBuilderError) int {
-	switch err.Category {
-	case dberrors.CategoryValidation:
-		return 2 // Invalid usage
-	case dberrors.CategoryConfig:
-		return 7 // Configuration error
-	case dberrors.CategoryAuth:
-		return 5 // Auth error
-	case dberrors.CategoryNetwork, dberrors.CategoryGit, dberrors.CategoryForge:
-		return 8 // External system error
-	case dberrors.CategoryBuild, dberrors.CategoryHugo, dberrors.CategoryFileSystem:
-		return 11 // Build error
-	case dberrors.CategoryDaemon, dberrors.CategoryRuntime:
-		return 12 // Runtime error
-	case dberrors.CategoryInternal:
-		return 10 // Internal error
-	default:
-		return 1 // General error
-	}
-}
-
 // FormatError formats an error for user-friendly display.
 func (a *CLIErrorAdapter) FormatError(err error) string {
 	if err == nil {
@@ -99,11 +70,6 @@ func (a *CLIErrorAdapter) FormatError(err error) string {
 	// Check for ClassifiedError
 	if classified, ok := AsClassified(err); ok {
 		return a.formatClassified(classified)
-	}
-
-	// Check for DocBuilderError
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		return a.formatDocBuilder(dbe)
 	}
 
 	// Fallback for unclassified errors
@@ -119,21 +85,6 @@ func (a *CLIErrorAdapter) formatClassified(err *ClassifiedError) string {
 
 	// Non-verbose mode for internal errors
 	return "Internal error occurred (use -v for details)"
-}
-
-// formatDocBuilder formats a DocBuilderError for display.
-func (a *CLIErrorAdapter) formatDocBuilder(err *dberrors.DocBuilderError) string {
-	if a.verbose {
-		return err.Error()
-	}
-
-	// Clean format for common user-facing categories
-	switch err.Category {
-	case dberrors.CategoryConfig, dberrors.CategoryValidation, dberrors.CategoryAuth:
-		return err.Message
-	default:
-		return fmt.Sprintf("%s: %s", err.Category, err.Message)
-	}
 }
 
 // HandleError processes an error and exits the program with appropriate code.
@@ -168,14 +119,6 @@ func (a *CLIErrorAdapter) shouldLog(err error) bool {
 		return classified.Severity() == SeverityFatal
 	}
 
-	// Check DocBuilderError
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		// Log internal/runtime errors or fatal severity
-		return dbe.Category == dberrors.CategoryInternal ||
-			dbe.Category == dberrors.CategoryRuntime ||
-			dbe.Severity == dberrors.SeverityFatal
-	}
-
 	// Log unclassified errors
 	return true
 }
@@ -196,20 +139,6 @@ func (a *CLIErrorAdapter) logError(err error) {
 		return
 	}
 
-	// Check DocBuilderError
-	if dbe, ok := err.(*dberrors.DocBuilderError); ok {
-		level := a.slogLevelFromDocBuilderSeverity(dbe.Severity)
-		attrs := []slog.Attr{
-			slog.String("category", string(dbe.Category)),
-		}
-		if dbe.Retryable {
-			attrs = append(attrs, slog.Bool("retryable", true))
-		}
-
-		a.logger.LogAttrs(context.Background(), level, dbe.Message, attrs...)
-		return
-	}
-
 	// Fallback for unclassified errors
 	a.logger.Error("Unclassified error", "error", err)
 }
@@ -222,20 +151,6 @@ func (a *CLIErrorAdapter) slogLevelFromSeverity(severity ErrorSeverity) slog.Lev
 	case SeverityWarning:
 		return slog.LevelWarn
 	case SeverityError, SeverityFatal:
-		return slog.LevelError
-	default:
-		return slog.LevelError
-	}
-}
-
-// slogLevelFromDocBuilderSeverity converts DocBuilderError severity to slog level.
-func (a *CLIErrorAdapter) slogLevelFromDocBuilderSeverity(severity dberrors.ErrorSeverity) slog.Level {
-	switch severity {
-	case dberrors.SeverityInfo:
-		return slog.LevelInfo
-	case dberrors.SeverityWarning:
-		return slog.LevelWarn
-	case dberrors.SeverityFatal:
 		return slog.LevelError
 	default:
 		return slog.LevelError
