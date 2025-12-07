@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +19,45 @@ import (
 	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
 )
+
+// parseHugoError extracts useful error information from Hugo build output.
+// Hugo errors typically contain paths like: "/tmp/.../content/local/file.md:line:col": error message
+// This function extracts: file.md:line:col: error message
+func parseHugoError(errStr string) string {
+	// Pattern 1: Match Hugo error format in output:
+	// Error: error building site: process: readAndProcessContent: "/path/to/content/file.md:123:45": error message
+	re1 := regexp.MustCompile(`Error:.*?[":]\s*"([^"]+\.md):(\d+):(\d+)":\s*(.+?)(?:\n|$)`)
+
+	matches := re1.FindStringSubmatch(errStr)
+	if len(matches) >= 5 {
+		// Extract just the filename without full path
+		filePath := matches[1]
+		// Remove temporary directory prefix if present
+		if idx := strings.Index(filePath, "/content/"); idx >= 0 {
+			filePath = filePath[idx+9:] // Skip "/content/"
+		}
+		line := matches[2]
+		col := matches[3]
+		message := strings.TrimSpace(matches[4])
+		return fmt.Sprintf("%s:%s:%s: %s", filePath, line, col, message)
+	}
+
+	// Pattern 2: Legacy format from previous implementation
+	// "/path/to/content/local/relative/path.md:123:45": error message
+	re2 := regexp.MustCompile(`/content/local/([^"]+):(\d+):(\d+)[^"]*":\s*(.+)$`)
+
+	matches = re2.FindStringSubmatch(errStr)
+	if len(matches) >= 5 {
+		filePath := matches[1]
+		line := matches[2]
+		col := matches[3]
+		message := strings.TrimSpace(matches[4])
+		return fmt.Sprintf("%s:%s:%s: %s", filePath, line, col, message)
+	}
+
+	// If no pattern matches, return original error
+	return errStr
+}
 
 // HTTPServer manages HTTP endpoints (docs, webhooks, admin) for the daemon.
 type HTTPServer struct {
@@ -261,11 +301,25 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 		}
 		if root == out {
 			if _, err := os.Stat(filepath.Join(out, "public")); os.IsNotExist(err) {
+				// Check if there's a build error
+				if s.daemon != nil && s.daemon.buildStatus != nil {
+					if hasError, buildErr, hasGoodBuild := s.daemon.buildStatus.getStatus(); hasError && !hasGoodBuild {
+						// Build failed and no previous successful build exists - show error page for all paths
+						w.Header().Set("Content-Type", "text/html; charset=utf-8")
+						w.WriteHeader(http.StatusServiceUnavailable)
+						errorMsg := "Unknown error"
+						if buildErr != nil {
+							errorMsg = parseHugoError(buildErr.Error())
+						}
+						_, _ = w.Write([]byte(fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title><style>body{font-family:sans-serif;max-width:800px;margin:50px auto;padding:20px}h1{color:#d32f2f}pre{background:#f5f5f5;padding:15px;border-radius:4px;overflow-x:auto}</style></head><body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build. Fix the error below and save to rebuild automatically.</p><h2>Error Details:</h2><pre>%s</pre><p><small>This page will refresh automatically when you fix the error.</small></p><script src="/livereload.js"></script></body></html>`, errorMsg)))
+						return
+					}
+				}
 				// If requesting the root path, show a friendly pending page instead of a directory listing
 				if r.URL.Path == "/" || r.URL.Path == "" {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(http.StatusServiceUnavailable)
-					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p></body></html>`))
+					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p><script src="/livereload.js"></script></body></html>`))
 					return
 				}
 			}
@@ -285,7 +339,11 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.apiHandlers.HandleDocsStatus)
 
-	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
+	// Docs server needs long/no timeouts for SSE (LiveReload) connections
+	// ReadTimeout: 0 = no timeout (SSE connections are long-lived)
+	// WriteTimeout: 0 = no timeout (SSE connections send periodic pings)
+	// IdleTimeout: still set to close truly idle connections
+	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 0, WriteTimeout: 0, IdleTimeout: 300 * time.Second}
 	return s.startServerWithListener("docs", s.docsServer, ln)
 }
 
@@ -303,10 +361,22 @@ func (s *HTTPServer) resolveDocsRoot() string {
 			out = abs
 		}
 	}
+
+	// First, try the public directory (fully rendered site)
 	public := filepath.Join(out, "public")
 	if st, err := os.Stat(public); err == nil && st.IsDir() {
 		return public
 	}
+
+	// If public doesn't exist, check if we're in the middle of a rebuild
+	// and the previous backup directory exists
+	prev := out + "_prev"
+	prevPublic := filepath.Join(prev, "public")
+	if st, err := os.Stat(prevPublic); err == nil && st.IsDir() {
+		// Serve from previous backup to avoid empty responses during atomic rename
+		return prevPublic
+	}
+
 	return out
 }
 
@@ -480,5 +550,8 @@ func (l *liveReloadInjector) finalize() {
 		// Write header and modified HTML
 		l.ResponseWriter.WriteHeader(l.statusCode)
 		_, _ = l.ResponseWriter.Write([]byte(html))
+	} else {
+		// Empty response - write status code anyway to avoid hanging connection
+		l.ResponseWriter.WriteHeader(l.statusCode)
 	}
 }

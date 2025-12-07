@@ -70,6 +70,9 @@ type Daemon struct {
 
 	// Discovery runner for forge discovery operations
 	discoveryRunner *DiscoveryRunner
+
+	// Build status tracker for preview mode (optional, used by local preview)
+	buildStatus interface{ getStatus() (bool, error, bool) }
 }
 
 // NewDaemon creates a new daemon instance
