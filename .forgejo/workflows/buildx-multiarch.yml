@@ -30,6 +30,8 @@ jobs:
       docker:
         image: docker:dind
         options: --privileged
+        env:
+          DOCKER_TLS_CERTDIR: ""
 
     strategy:
       matrix:
