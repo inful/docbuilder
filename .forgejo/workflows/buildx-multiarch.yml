@@ -21,17 +21,11 @@ env:
   REGISTRY: git.home.luguber.info
   IMAGE_REPO: ${{ github.repository }}
   HUGO_VERSION: ${{ github.event.inputs.hugo_version || '0.151.0' }}
+  DOCKER_HOST: tcp://localhost:2375
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
-    services:
-      docker:
-        image: docker:dind
-        options: --privileged
-        env:
-          DOCKER_TLS_CERTDIR: ""
 
     strategy:
       matrix:
@@ -43,6 +37,16 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+    
+    - name: Start Docker daemon
+      run: |
+        # Start Docker daemon without TLS
+        sudo dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 &
+        
+        # Wait for Docker to be ready
+        timeout 30 sh -c 'until docker info > /dev/null 2>&1; do sleep 1; done'
+        
+        echo "✅ Docker daemon ready"
 
     - name: Set up Docker Buildx
       run: |
