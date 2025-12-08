@@ -118,7 +118,7 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 		for _, gGroup := range gitlabGroups {
 			org := &Organization{
 				ID:          strconv.Itoa(gGroup.ID),
-				Name:        gGroup.Path,
+				Name:        gGroup.FullPath, // Use full path instead of just path for GitLab API compatibility
 				DisplayName: gGroup.Name,
 				Description: gGroup.Description,
 				Type:        gGroup.Kind,
