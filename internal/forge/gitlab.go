@@ -157,14 +157,18 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 }
 
 // getGroupProjects gets all projects for a group
+// The group parameter should be the numeric group ID (e.g., "123") or URL-encoded full path.
+// GitLab API prefers numeric IDs but also accepts URL-encoded paths.
 func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*Repository, error) {
 	var allRepos []*Repository
 	page := 1
 	perPage := 100
 
 	for {
+		// Use group ID directly if it's numeric, otherwise URL-encode the path
+		// GitLab API: /groups/:id/projects where :id can be numeric ID or URL-encoded path
 		endpoint := fmt.Sprintf("/groups/%s/projects?per_page=%d&page=%d&order_by=last_activity_at&include_subgroups=true",
-			url.PathEscape(group), perPage, page)
+			group, perPage, page)
 		req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 		if err != nil {
 			return nil, err
