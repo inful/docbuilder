@@ -105,11 +105,8 @@ jobs:
           # Install Hugo Extended
           RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
               rm -rf /var/lib/apt/lists/* && \
-              HUGO_ARCH="${TARGETARCH}" && \
-              if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
-              if [ "${TARGETARCH}" = "arm64" ]; then HUGO_ARCH="arm64"; fi && \
-              echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${HUGO_ARCH}" && \
-              curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" \
+              echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${TARGETARCH}" && \
+              curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${TARGETARCH}.tar.gz" \
               | tar -xz -C /tmp hugo && \
               mv /tmp/hugo /usr/local/bin/hugo && \
               chmod +x /usr/local/bin/hugo && \
@@ -117,13 +114,10 @@ jobs:
           
           # Download Go toolchain
           RUN GO_VERSION="1.24.0" && \
-              GO_ARCH="${TARGETARCH}" && \
-              if [ "${TARGETARCH}" = "amd64" ]; then GO_ARCH="amd64"; fi && \
-              if [ "${TARGETARCH}" = "arm64" ]; then GO_ARCH="arm64"; fi && \
               apt-get update && apt-get install -y --no-install-recommends wget xz-utils && \
               rm -rf /var/lib/apt/lists/* && \
-              echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${GO_ARCH}" && \
-              wget -q "https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${GO_ARCH}.tar.gz" -O /tmp/go.tar.gz && \
+              echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${TARGETARCH}" && \
+              wget -q "https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz" -O /tmp/go.tar.gz && \
               tar -C /usr/local -xzf /tmp/go.tar.gz && \
               rm /tmp/go.tar.gz
           
