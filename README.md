@@ -85,18 +85,48 @@ Documentation files undergo a transform pipeline:
 - **Transforms**: Add content processing steps to the transform registry
 - **Forges**: Support new Git hosting platforms with authentication methods
 
+## Installation
+
+### Download Pre-built Binaries
+
+Download the latest release from the [GitHub Releases page](https://github.com/inful/docbuilder/releases):
+
+```bash
+# Linux (amd64)
+wget https://github.com/inful/docbuilder/releases/latest/download/docbuilder_linux_amd64.tar.gz
+tar -xzf docbuilder_linux_amd64.tar.gz
+sudo mv docbuilder /usr/local/bin/
+
+# macOS (arm64)
+wget https://github.com/inful/docbuilder/releases/latest/download/docbuilder_darwin_arm64.tar.gz
+tar -xzf docbuilder_darwin_arm64.tar.gz
+sudo mv docbuilder /usr/local/bin/
+```
+
+### Docker
+
+Use the official Docker image:
+
+```bash
+docker pull ghcr.io/inful/docbuilder:latest
+```
+
+### Build from Source
+
+For development or if pre-built binaries aren't available for your platform:
+
+```bash
+git clone https://github.com/inful/docbuilder.git
+cd docbuilder
+make build
+```
+
 ## Quick Start
-
-1. **Build the application**:
-
-  ```bash
-  make build
-  ```
 
 1. **Initialize configuration**:
 
   ```bash
-  ./bin/docbuilder init
+  docbuilder init
   ```
 
 1. **Set up environment variables** (optional):
@@ -109,7 +139,7 @@ Documentation files undergo a transform pipeline:
 1. **Build documentation site**:
 
   ```bash
-  ./bin/docbuilder build -v
+  docbuilder build -v
   ```
 
 ## Configuration
