@@ -80,7 +80,9 @@ jobs:
           if [ -d dist/dist ]; then
             echo ""
             echo "⚠️  Detected nested dist/dist/ structure, normalizing..."
-            mv dist/dist/* dist/ && rmdir dist/dist
+            # Move all files including hidden files, handle empty directory gracefully
+            find dist/dist -mindepth 1 -maxdepth 1 -exec mv {} dist/ \;
+            rmdir dist/dist
             echo "✅ Normalized directory structure"
             echo ""
             echo "Updated dist/ contents:"
