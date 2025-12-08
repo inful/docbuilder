@@ -434,7 +434,6 @@ Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Ac
    - GoReleaser builds binaries for:
      - Linux (amd64, arm64, arm)
      - macOS (amd64, arm64)
-     - Windows (amd64)
    - Multi-architecture Docker images are built and pushed to GitHub Container Registry
 
 4. **Verify the Release**:
@@ -450,7 +449,7 @@ Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Ac
 
 Each release includes:
 - **Binaries**: Pre-compiled executables for all supported platforms
-- **Archives**: Tar.gz (Linux/macOS) and zip (Windows) with LICENSE, README, and example config
+- **Archives**: Tar.gz archives with LICENSE, README, and example config
 - **Checksums**: SHA256 checksums for all artifacts
 - **Docker Images**: Multi-arch images tagged with:
   - `v1.2.3` - Specific version

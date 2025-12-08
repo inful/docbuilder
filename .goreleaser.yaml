@@ -16,7 +16,6 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     
     goarch:
       - amd64
@@ -25,11 +24,6 @@ builds:
     
     goarm:
       - "7"
-    
-    # Ignore specific platform combinations that don't make sense
-    ignore:
-      - goos: windows
-        goarch: arm
     
     # Build flags
     flags:

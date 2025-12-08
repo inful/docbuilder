@@ -101,10 +101,6 @@ sudo mv docbuilder /usr/local/bin/
 wget https://github.com/inful/docbuilder/releases/latest/download/docbuilder_darwin_arm64.tar.gz
 tar -xzf docbuilder_darwin_arm64.tar.gz
 sudo mv docbuilder /usr/local/bin/
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/inful/docbuilder/releases/latest/download/docbuilder_windows_amd64.zip" -OutFile "docbuilder.zip"
-Expand-Archive -Path docbuilder.zip -DestinationPath .
 ```
 
 ### Docker
