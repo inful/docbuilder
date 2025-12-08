@@ -89,6 +89,140 @@ jobs:
           ./docbuilder --version
           ./docbuilder --help
 
+  docs-generation:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install Hugo Extended
+        run: |
+          HUGO_VERSION="0.152.2"
+          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
+          tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
+          sudo mv hugo /usr/local/bin/
+          hugo version
+
+      - name: Build DocBuilder
+        run: go build -v -o docbuilder ./cmd/docbuilder
+
+      - name: Create test repository with docs
+        run: |
+          mkdir -p /tmp/test-docs-repo/docs
+          cd /tmp/test-docs-repo
+          git init
+          git config user.name "CI Bot"
+          git config user.email "ci@example.com"
+          
+          # Create sample documentation
+          cat > docs/_index.md << 'EOF'
+          ---
+          title: "DocBuilder Documentation"
+          linkTitle: "Documentation"
+          weight: 1
+          ---
+          
+          # Welcome to DocBuilder
+          
+          DocBuilder is a tool for aggregating documentation from multiple Git repositories.
+          EOF
+          
+          cat > docs/getting-started.md << 'EOF'
+          ---
+          title: "Getting Started"
+          weight: 1
+          ---
+          
+          # Getting Started
+          
+          This guide will help you get started with DocBuilder.
+          
+          ## Installation
+          
+          Download the latest release from GitHub.
+          EOF
+          
+          cat > docs/configuration.md << 'EOF'
+          ---
+          title: "Configuration"
+          weight: 2
+          ---
+          
+          # Configuration
+          
+          DocBuilder uses YAML configuration files.
+          EOF
+          
+          git add .
+          git commit -m "Initial documentation"
+
+      - name: Create DocBuilder config
+        run: |
+          cat > ci-config.yaml << 'EOF'
+          repositories:
+            - url: /tmp/test-docs-repo
+              name: docbuilder
+              branch: main
+              paths: [docs]
+          
+          hugo:
+            title: 'DocBuilder CI Test'
+            description: 'Testing DocBuilder documentation generation in CI'
+            base_url: 'https://example.com'
+            theme: 'hextra'
+            render: true
+          
+          output:
+            directory: './generated-site'
+            clean: true
+          EOF
+
+      - name: Generate and build documentation site
+        run: |
+          ./docbuilder build -c ci-config.yaml -v
+          
+          # Verify the site was generated
+          test -d generated-site || (echo "Site directory not created" && exit 1)
+          test -f generated-site/hugo.yaml || (echo "Hugo config not created" && exit 1)
+          test -d generated-site/content || (echo "Content directory not created" && exit 1)
+          
+          # Verify Hugo rendered the site
+          test -d generated-site/public || (echo "Hugo public directory not created" && exit 1)
+          test -f generated-site/public/index.html || (echo "Hugo index.html not created" && exit 1)
+
+      - name: Upload generated site as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-docs-site
+          path: generated-site/public/
+          retention-days: 7
+
+      - name: Site generation summary
+        run: |
+          echo "## 📚 Documentation Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Successfully generated static documentation site!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- **Content files**: $(find generated-site/content -name '*.md' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Generated pages**: $(find generated-site/public -name '*.html' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site size**: $(du -sh generated-site/public | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Generated Structure" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          tree -L 2 generated-site/public || ls -la generated-site/public >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
   docker-build-test:
     name: Docker Build Test
     runs-on: ubuntu-latest
