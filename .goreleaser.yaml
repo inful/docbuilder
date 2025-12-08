@@ -1,0 +1,127 @@
+# GoReleaser configuration for DocBuilder
+# https://goreleaser.com/customization/
+
+version: 2
+
+# Customize the project metadata
+project_name: docbuilder
+
+# Build configuration
+builds:
+  - id: docbuilder
+    main: ./cmd/docbuilder
+    binary: docbuilder
+    
+    # Build for multiple platforms
+    goos:
+      - linux
+      - darwin
+      - windows
+    
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    
+    goarm:
+      - "7"
+    
+    # Ignore specific platform combinations that don't make sense
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    
+    # Build flags
+    flags:
+      - -trimpath
+    
+    # Linker flags for version injection
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    
+    # Environment variables for the build
+    env:
+      - CGO_ENABLED=0
+
+# Archive configuration
+archives:
+  - id: default
+    # Files to include in the archive
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - config.example.yaml
+
+# Checksum generation
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Changelog generation
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - 'Merge pull request'
+      - 'Merge branch'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance Improvements
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+# GitHub Release configuration
+release:
+  github:
+    owner: inful
+    name: docbuilder
+  
+  # Release name template
+  name_template: "{{.ProjectName}} {{.Version}}"
+  
+  # Draft release (set to false for auto-publish)
+  draft: false
+  
+  # Pre-release detection
+  prerelease: auto
+  
+  # Release notes
+  header: |
+    ## DocBuilder {{.Version}}
+    
+    Download the appropriate binary for your platform below.
+  
+  footer: |
+    ## Docker Images
+    
+    Multi-architecture Docker images are also available:
+    
+    ```bash
+    docker pull ghcr.io/inful/docbuilder:{{.Version}}
+    ```
+    
+    See the [documentation](https://github.com/inful/docbuilder) for more information.
+
+# Snapshots (for non-tag builds)
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# Metadata for downstream tooling
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
