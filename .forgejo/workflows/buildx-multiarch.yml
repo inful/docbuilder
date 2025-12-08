@@ -38,6 +38,9 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Set up Docker Buildx
+      env:
+        DOCKER_TLS_CERTDIR: ""
+        DOCKER_HOST: unix:///var/run/docker.sock
       run: |
         echo "🔧 Setting up Docker Buildx for multi-arch builds..."
         
