@@ -33,7 +33,7 @@ func NewConfigWatcher(configPath string, daemon *Daemon) (*ConfigWatcher, error)
 	// Resolve absolute path for consistent watching
 	absPath, err := filepath.Abs(configPath)
 	if err != nil {
-		watcher.Close()
+		_ = watcher.Close() // Best effort cleanup
 		return nil, fmt.Errorf("failed to resolve config path: %w", err)
 	}
 

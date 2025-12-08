@@ -188,7 +188,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	}
 
 	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(absPath), 0o750); err != nil {
 		env.t.Logf("Failed to create parent dir for binary %s: %v", absPath, err)
 		env.runner.binaryPath = absPath
 		return env
@@ -248,5 +248,5 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 }
 
 func (env *MockCLIEnvironment) createDir(name string) error {
-	return os.MkdirAll(filepath.Join(env.TempDir, name), 0o755)
+	return os.MkdirAll(filepath.Join(env.TempDir, name), 0o750)
 }

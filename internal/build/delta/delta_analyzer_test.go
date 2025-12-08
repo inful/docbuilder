@@ -111,7 +111,7 @@ func TestDeltaAnalyzer_QuickHashSingleRepoUnchanged(t *testing.T) {
 	repoName := "repo1"
 	repoURL := "https://example.com/org/repo1.git"
 	repoRoot := filepath.Join(tmp, repoName)
-	if err := os.MkdirAll(filepath.Join(repoRoot, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoRoot, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(repoRoot, "docs", "intro.md"), []byte("# Intro"), 0o600); err != nil {
@@ -133,7 +133,7 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	repoAName := "repoA"
 	repoAURL := "https://example.com/org/repoA.git"
 	repoARoot := filepath.Join(tmp, repoAName)
-	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir repoA: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(repoARoot, "docs", "a1.md"), []byte("# A1"), 0o600); err != nil {
@@ -144,7 +144,7 @@ func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	repoBName := "repoB"
 	repoBURL := "https://example.com/org/repoB.git"
 	repoBRoot := filepath.Join(tmp, repoBName)
-	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir repoB: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(repoBRoot, "docs", "b1.md"), []byte("# B1"), 0o600); err != nil {

@@ -112,7 +112,7 @@ func TestDivergenceHandling(t *testing.T) {
 
 	// Clone to local workspace repo (will become diverging later)
 	ws := filepath.Join(tmp, "ws")
-	if err := os.MkdirAll(ws, 0o755); err != nil {
+	if err := os.MkdirAll(ws, 0o750); err != nil {
 		t.Fatalf("mkdir ws: %v", err)
 	}
 	localPath := filepath.Join(ws, "repo")

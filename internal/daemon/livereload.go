@@ -96,14 +96,18 @@ func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		case <-hb.C:
 			if _, err := bw.WriteString(": ping\n\n"); err == nil {
-				bw.Flush()
+				if err := bw.Flush(); err != nil {
+					slog.Debug("livereload ping flush", "error", err)
+				}
 				flusher.Flush()
 			} else {
 				slog.Debug("livereload ping write", "error", err)
 			}
 		case hash := <-client.ch:
 			if _, err := bw.WriteString("data: {\"hash\":\"" + hash + "\"}\n\n"); err == nil {
-				bw.Flush()
+				if err := bw.Flush(); err != nil {
+					slog.Debug("livereload broadcast flush", "error", err)
+				}
 				flusher.Flush()
 			} else {
 				slog.Debug("livereload broadcast write", "error", err)

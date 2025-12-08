@@ -14,6 +14,7 @@ import (
 
 // helper to read file content quickly
 func mustRead(t *testing.T, path string) string {
+	// #nosec G304 - test helper
 	b, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)

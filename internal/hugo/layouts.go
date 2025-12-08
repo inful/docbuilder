@@ -20,7 +20,7 @@ func (g *Generator) generateBasicLayouts() error {
 	for path, content := range layouts {
 		fullPath := filepath.Join(g.buildRoot(), path)
 
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0750); err != nil {
 			return err
 		}
 

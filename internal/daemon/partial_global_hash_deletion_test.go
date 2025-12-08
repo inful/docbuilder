@@ -46,10 +46,10 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	// Create workspace clone directories simulating on-disk repos (unchanged repoB will have deletion)
 	repoARoot := filepath.Join(workspace, repoAName)
 	repoBRoot := filepath.Join(workspace, repoBName)
-	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoARoot, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir repoA: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoBRoot, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir repoB: %v", err)
 	}
 	// Initial files

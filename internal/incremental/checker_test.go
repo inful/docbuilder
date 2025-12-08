@@ -207,10 +207,10 @@ func TestCanReuseOutput(t *testing.T) {
 
 	// Create a valid output directory
 	outputDir := filepath.Join(tmpDir, "output")
-	if err := os.MkdirAll(filepath.Join(outputDir, "content"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(outputDir, "content"), 0750); err != nil {
 		t.Fatalf("failed to create output dir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(outputDir, "hugo.yaml"), []byte("title: Test"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(outputDir, "hugo.yaml"), []byte("title: Test"), 0600); err != nil {
 		t.Fatalf("failed to create hugo.yaml: %v", err)
 	}
 
@@ -235,7 +235,7 @@ func TestCanReuseOutput(t *testing.T) {
 
 	// Test with incomplete output directory
 	incompleteDir := filepath.Join(tmpDir, "incomplete")
-	if err := os.MkdirAll(incompleteDir, 0755); err != nil {
+	if err := os.MkdirAll(incompleteDir, 0750); err != nil {
 		t.Fatalf("failed to create incomplete dir: %v", err)
 	}
 

@@ -24,10 +24,10 @@ func TestDocumentationDiscovery(t *testing.T) {
 	docsDir := filepath.Join(repoDir, "docs")
 
 	// Create directories
-	if err := os.MkdirAll(filepath.Join(docsDir, "api"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(docsDir, "api"), 0o750); err != nil {
 		t.Fatalf("mkdir api: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(docsDir, "guides"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(docsDir, "guides"), 0o750); err != nil {
 		t.Fatalf("mkdir guides: %v", err)
 	}
 
@@ -154,7 +154,7 @@ func TestForgeNamespacingModes(t *testing.T) {
 	mkRepo := func(name, forgeType string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
 		docsDir := filepath.Join(repoDir, "docs")
-		if err := os.MkdirAll(docsDir, 0o755); err != nil {
+		if err := os.MkdirAll(docsDir, 0o750); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
 		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); err != nil {
@@ -221,7 +221,7 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 	mkRepo := func(name string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
 		docsDir := filepath.Join(repoDir, "docs")
-		if err := os.MkdirAll(docsDir, 0o755); err != nil {
+		if err := os.MkdirAll(docsDir, 0o750); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
 		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); err != nil {
@@ -293,7 +293,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			repoDir := filepath.Join(tempDir, repo.Name)
 			docsDir := filepath.Join(repoDir, "docs")
 
-			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+			if err := os.MkdirAll(docsDir, 0o750); err != nil {
 				t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, err)
 			}
 
@@ -307,7 +307,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 			for path, content := range docFiles {
 				fullPath := filepath.Join(repoDir, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 					t.Fatalf("Failed to create dir for %s: %v", fullPath, err)
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
@@ -435,7 +435,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			repoDir := filepath.Join(tempDir, repo.Name)
 			docsDir := filepath.Join(repoDir, "docs")
 
-			if err := os.MkdirAll(docsDir, 0755); err != nil {
+			if err := os.MkdirAll(docsDir, 0o750); err != nil {
 				t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, err)
 			}
 
@@ -474,7 +474,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 			for path, content := range docFiles {
 				fullPath := filepath.Join(repoDir, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 					t.Fatalf("Failed to create dir for %s: %v", fullPath, err)
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0600); err != nil {
@@ -586,7 +586,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			repoDir := filepath.Join(tempDir, repo.Name)
 			docsDir := filepath.Join(repoDir, "docs")
 
-			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+			if err := os.MkdirAll(docsDir, 0o750); err != nil {
 				t.Fatalf("Failed to create docs dir: %v", err)
 			}
 
@@ -620,7 +620,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 			for path, content := range testFiles {
 				fullPath := filepath.Join(repoDir, path)
-				if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 					t.Fatalf("Failed to create dir: %v", err)
 				}
 				if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
@@ -743,7 +743,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			repoDir := filepath.Join(tempDir, repo.Name)
 			docsDir := filepath.Join(repoDir, "docs")
 
-			if err := os.MkdirAll(docsDir, 0o755); err != nil {
+			if err := os.MkdirAll(docsDir, 0o750); err != nil {
 				t.Fatalf("Failed to create docs dir: %v", err)
 			}
 

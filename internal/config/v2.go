@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -130,7 +131,8 @@ func Load(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("configuration file not found: %s", configPath)
 	}
 
-	data, err := os.ReadFile(configPath)
+	// #nosec G304 - configPath is from CLI argument, user-controlled
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -288,7 +290,8 @@ func IsConfigVersion(configPath string) (bool, error) {
 		return false, fmt.Errorf("configuration file not found: %s", configPath)
 	}
 
-	data, err := os.ReadFile(configPath)
+	// #nosec G304 - configPath is from CLI argument, user-controlled
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		return false, fmt.Errorf("failed to read config file: %w", err)
 	}

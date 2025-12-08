@@ -155,7 +155,7 @@ func TestIncrementalBuildWorkflow(t *testing.T) {
 		buildManifest := createTestManifest(allDocFiles)
 
 		// Create output directory
-		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		if err := os.MkdirAll(outputDir, 0o750); err != nil {
 			t.Fatalf("failed to create output dir: %v", err)
 		}
 
@@ -350,19 +350,19 @@ func createTestRepo(t *testing.T, baseDir, repoName string, docPaths []string) (
 	t.Helper()
 
 	repoPath := filepath.Join(baseDir, "test-repos", repoName)
-	if err := os.MkdirAll(repoPath, 0o755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o750); err != nil {
 		t.Fatalf("failed to create repo dir: %v", err)
 	}
 
 	// Create doc files
 	for _, docPath := range docPaths {
 		fullPath := filepath.Join(repoPath, docPath)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 			t.Fatalf("failed to create doc dir: %v", err)
 		}
 
 		content := "# " + filepath.Base(docPath) + "\n\nTest documentation content.\n"
-		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
 			t.Fatalf("failed to write doc file: %v", err)
 		}
 	}
@@ -378,12 +378,12 @@ func modifyTestRepo(t *testing.T, repoPath, newFilePath string) {
 	t.Helper()
 
 	fullPath := filepath.Join(repoPath, newFilePath)
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
 		t.Fatalf("failed to create dir for new file: %v", err)
 	}
 
 	content := "# New Feature\n\nThis is a new documentation file.\n"
-	if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
 		t.Fatalf("failed to write new file: %v", err)
 	}
 }
@@ -456,6 +456,7 @@ func discoverDocs(t *testing.T, repoPath, repoName string) []docs.DocFile {
 
 		if filepath.Ext(path) == ".md" {
 			relPath, _ := filepath.Rel(docsDir, path)
+			// #nosec G304 - test code, path is from filepath.Walk
 			content, err := os.ReadFile(path)
 			if err != nil {
 				return err

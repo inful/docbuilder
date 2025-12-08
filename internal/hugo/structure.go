@@ -25,7 +25,7 @@ func (g *Generator) createHugoStructure() error {
 	root := g.buildRoot()
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
-		if err := os.MkdirAll(path, 0o755); err != nil {
+		if err := os.MkdirAll(path, 0o750); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", path, err)
 		}
 	}
@@ -38,7 +38,7 @@ func (g *Generator) beginStaging() error {
 	// Create sibling staging dir: <output>_stage (not inside output)
 	// For example: if outputDir is "site", create "site_stage" as a sibling
 	stage := g.outputDir + "_stage"
-	if err := os.MkdirAll(stage, 0o755); err != nil {
+	if err := os.MkdirAll(stage, 0o750); err != nil {
 		return err
 	}
 	g.stageDir = stage
@@ -83,7 +83,7 @@ func (g *Generator) finalizeStaging() error {
 			// Last resort: remove with chmod
 			_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
 				if err == nil {
-					_ = os.Chmod(path, 0o755)
+					_ = os.Chmod(path, 0o600)
 				}
 				return nil
 			})

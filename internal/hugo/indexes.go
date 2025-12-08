@@ -79,7 +79,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 	}
 	for repoName, files := range repoGroups {
 		indexPath := filepath.Join(g.buildRoot(), "content", repoName, "_index.md")
-		if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
 		frontMatter := map[string]any{"title": fmt.Sprintf("%s Documentation", titleCase(repoName)), "repository": repoName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
@@ -136,7 +136,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	for repoName, sections := range sectionGroups {
 		for sectionName, files := range sections {
 			indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
-			if err := os.MkdirAll(filepath.Dir(indexPath), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 			}
 			frontMatter := map[string]any{"title": fmt.Sprintf("%s - %s", titleCase(repoName), titleCase(sectionName)), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
@@ -209,6 +209,7 @@ func (g *Generator) loadIndexTemplate(kind string) (string, error) {
 		filepath.Join(base, "templates", kind+"_index.tmpl"),
 	}
 	for _, p := range candidates {
+		// #nosec G304 - p is from predefined template paths, base is controlled
 		b, err := os.ReadFile(p)
 		if err == nil {
 			slog.Debug("Loaded index template override", slog.String("kind", kind), logfields.Path(p))

@@ -31,6 +31,7 @@ func (g *Generator) ensureGoModForModules() error {
 		return moduleName
 	}
 	if _, err := os.Stat(goModPath); err == nil { // exists
+		// #nosec G304 - goModPath is internal, controlled by application
 		b, readErr := os.ReadFile(goModPath)
 		if readErr == nil {
 			lines := strings.SplitN(string(b), "\n", 2)
@@ -71,6 +72,7 @@ func (g *Generator) ensureGoModForModules() error {
 
 // ensureThemeVersionRequires appends require directives for known themes to pin versions
 func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
+	// #nosec G304 - goModPath is internal, controlled by application
 	b, err := os.ReadFile(goModPath)
 	if err != nil {
 		return err

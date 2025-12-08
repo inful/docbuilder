@@ -67,7 +67,7 @@ func makeBaseConfig(out string) *cfg.Config {
 func setupValidTestEnvironment(t *testing.T, out string) {
 	// Create minimal public structure
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("<html></html>"), 0o600); err != nil {
@@ -76,7 +76,7 @@ func setupValidTestEnvironment(t *testing.T, out string) {
 
 	// Create minimal content structure
 	contentDir := filepath.Join(out, "content")
-	if err := os.MkdirAll(contentDir, 0o755); err != nil {
+	if err := os.MkdirAll(contentDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(contentDir, "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -167,7 +167,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid directory
 		out := t.TempDir()
 		pubDir := filepath.Join(out, "public")
-		if err := os.MkdirAll(pubDir, 0o755); err != nil {
+		if err := os.MkdirAll(pubDir, 0o750); err != nil {
 			t.Fatalf("mkdir public: %v", err)
 		}
 		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o600); err != nil {
@@ -201,7 +201,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid content directory
 		out := t.TempDir()
 		contentDir := filepath.Join(out, "content")
-		if err := os.MkdirAll(contentDir, 0o755); err != nil {
+		if err := os.MkdirAll(contentDir, 0o750); err != nil {
 			t.Fatalf("mkdir content: %v", err)
 		}
 		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o600); err != nil {

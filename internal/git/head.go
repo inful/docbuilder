@@ -10,6 +10,7 @@ import (
 // It reads .git/HEAD and resolves symbolic references if needed.
 func ReadRepoHead(repoPath string) (string, error) {
 	headPath := filepath.Join(repoPath, ".git", "HEAD")
+	// #nosec G304 - headPath is internal git metadata, repoPath is controlled
 	data, err := os.ReadFile(headPath)
 	if err != nil {
 		return "", err
@@ -21,6 +22,7 @@ func ReadRepoHead(repoPath string) (string, error) {
 	if strings.HasPrefix(line, "ref:") {
 		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
 		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
+		// #nosec G304 - refPath is internal git metadata, repoPath is controlled
 		if refData, refErr := os.ReadFile(refPath); refErr == nil {
 			return strings.TrimSpace(string(refData)), nil
 		}

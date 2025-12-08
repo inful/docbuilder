@@ -34,7 +34,7 @@ func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) h
 
 	if bs.Git.WorkspaceDir != "" {
 		// Ensure workspace directory exists
-		if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
+		if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 			err = fmt.Errorf("failed to create workspace directory %s: %w", bs.Git.WorkspaceDir, err)
 			c.LogStageFailure(err)
 			return hugo.ExecutionFailure(err)

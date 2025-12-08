@@ -25,13 +25,13 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	tmp := t.TempDir()
 	outputDir := filepath.Join(tmp, "out")
 	workspace := filepath.Join(tmp, "workspace")
-	if err := os.MkdirAll(workspace, 0o755); err != nil {
+	if err := os.MkdirAll(workspace, 0o750); err != nil {
 		t.Fatalf("mkdir workspace: %v", err)
 	}
 
 	// Initialize a local git repository with one markdown file in docs/.
 	remote := filepath.Join(tmp, "remote-repo-one")
-	if err := os.MkdirAll(filepath.Join(remote, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(remote, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir docs: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(remote, "docs", "page.md"), []byte("# Page\n"), 0o600); err != nil {

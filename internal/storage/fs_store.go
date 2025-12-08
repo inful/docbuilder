@@ -36,7 +36,7 @@ func NewFSStore(basePath string) (*FSStore, error) {
 		filepath.Join(basePath, "refs", "builds"),
 	}
 	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0750); err != nil {
 			return nil, fmt.Errorf("create directory %s: %w", dir, err)
 		}
 	}
@@ -73,12 +73,12 @@ func (fs *FSStore) Put(ctx context.Context, obj *Object) (string, error) {
 
 	// Create object directory
 	objectDir := filepath.Dir(objectPath)
-	if err := os.MkdirAll(objectDir, 0755); err != nil {
+	if err := os.MkdirAll(objectDir, 0750); err != nil {
 		return "", fmt.Errorf("create object directory: %w", err)
 	}
 
 	// Write object data
-	if err := os.WriteFile(objectPath, obj.Data, 0644); err != nil {
+	if err := os.WriteFile(objectPath, obj.Data, 0600); err != nil {
 		return "", fmt.Errorf("write object: %w", err)
 	}
 
@@ -109,6 +109,7 @@ func (fs *FSStore) Get(ctx context.Context, hash string) (*Object, error) {
 	defer fs.mu.RUnlock()
 
 	objectPath := fs.objectPath(hash)
+	// #nosec G304 - objectPath is internal, constructed from sanitized hash
 	data, err := os.ReadFile(objectPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -293,6 +294,7 @@ func (fs *FSStore) metadataPath(hash string) string {
 // readMetadata reads object metadata from disk.
 func (fs *FSStore) readMetadata(hash string) (Metadata, error) {
 	metadataPath := fs.metadataPath(hash)
+	// #nosec G304 - metadataPath is internal, constructed from sanitized hash
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return Metadata{}, fmt.Errorf("read metadata: %w", err)
@@ -311,7 +313,7 @@ func (fs *FSStore) writeMetadata(hash string, metadata Metadata) error {
 	metadataPath := fs.metadataPath(hash)
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(metadataPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(metadataPath), 0750); err != nil {
 		return fmt.Errorf("create metadata directory: %w", err)
 	}
 
@@ -320,7 +322,7 @@ func (fs *FSStore) writeMetadata(hash string, metadata Metadata) error {
 		return fmt.Errorf("marshal metadata: %w", err)
 	}
 
-	if err := os.WriteFile(metadataPath, data, 0644); err != nil {
+	if err := os.WriteFile(metadataPath, data, 0600); err != nil {
 		return fmt.Errorf("write metadata: %w", err)
 	}
 
@@ -335,7 +337,7 @@ func (fs *FSStore) AddBuildRef(buildID string, hashes []string) error {
 	refPath := filepath.Join(fs.basePath, "refs", "builds", buildID)
 	data := strings.Join(hashes, "\n")
 
-	return os.WriteFile(refPath, []byte(data), 0644)
+	return os.WriteFile(refPath, []byte(data), 0600)
 }
 
 // GetBuildRef retrieves object hashes for a build ID.
@@ -344,6 +346,7 @@ func (fs *FSStore) GetBuildRef(buildID string) ([]string, error) {
 	defer fs.mu.RUnlock()
 
 	refPath := filepath.Join(fs.basePath, "refs", "builds", buildID)
+	// #nosec G304 - refPath is internal, buildID is sanitized
 	data, err := os.ReadFile(refPath)
 	if err != nil {
 		if os.IsNotExist(err) {

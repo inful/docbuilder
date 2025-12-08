@@ -72,7 +72,7 @@ func TestSkipEvaluator_SkipHappyPath(t *testing.T) {
 	out := t.TempDir()
 	// create minimal public and content structures
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	// create a non-empty artifact so public dir is considered valid
@@ -80,7 +80,7 @@ func TestSkipEvaluator_SkipHappyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentDir := filepath.Join(out, "content")
-	if err := os.MkdirAll(contentDir, 0o755); err != nil {
+	if err := os.MkdirAll(contentDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(contentDir, "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -110,13 +110,13 @@ func TestSkipEvaluator_SkipHappyPath(t *testing.T) {
 func TestSkipEvaluator_ConfigHashChange(t *testing.T) {
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatalf("mkdir public: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
 		t.Fatalf("write index: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -144,7 +144,7 @@ func TestSkipEvaluator_ConfigHashChange(t *testing.T) {
 // TestSkipEvaluator_PublicDirMissing triggers rebuild when public/ missing.
 func TestSkipEvaluator_PublicDirMissing(t *testing.T) {
 	out := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -169,13 +169,13 @@ func TestSkipEvaluator_PublicDirMissing(t *testing.T) {
 func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatalf("mkdir public: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
 		t.Fatalf("write index: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -200,13 +200,13 @@ func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 func TestSkipEvaluator_GlobalHashMismatch(t *testing.T) {
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatalf("mkdir public: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
 		t.Fatalf("write index: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -231,13 +231,13 @@ func TestSkipEvaluator_GlobalHashMismatch(t *testing.T) {
 func TestSkipEvaluator_MissingCommit(t *testing.T) {
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatalf("mkdir public: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
 		t.Fatalf("write index: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -261,13 +261,13 @@ func TestSkipEvaluator_MissingCommit(t *testing.T) {
 func TestSkipEvaluator_SetsTimestampsOnSkip(t *testing.T) {
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o755); err != nil {
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
 		t.Fatalf("mkdir public: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
 		t.Fatalf("write index: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
@@ -291,6 +291,7 @@ func TestSkipEvaluator_SetsTimestampsOnSkip(t *testing.T) {
 		t.Fatalf("timestamps not set correctly: %#v", rep)
 	}
 	// Ensure checksum updated
+	// #nosec G304 - test file path
 	raw, err := os.ReadFile(filepath.Join(out, "build-report.json"))
 	if err != nil {
 		t.Fatalf("read persisted report: %v", err)

@@ -151,6 +151,7 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 				}
 
 				// Compute file hash
+				// #nosec G304 - p is from filepath.Walk, within controlled directory
 				content, err := os.ReadFile(p)
 				if err != nil {
 					return fmt.Errorf("read %s: %w", p, err)
@@ -166,6 +167,7 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 			}
 		} else {
 			// Single file
+			// #nosec G304 - fullPath is validated and within controlled directory
 			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				return "", fmt.Errorf("read %s: %w", fullPath, err)

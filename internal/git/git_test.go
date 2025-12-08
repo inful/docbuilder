@@ -15,7 +15,7 @@ import (
 func TestPruneNonDocTopLevelNormalization(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoPath := filepath.Join(tmpDir, "repo")
-	if err := os.MkdirAll(repoPath, 0o755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o750); err != nil {
 		t.Fatalf("mkdir repo: %v", err)
 	}
 
@@ -23,7 +23,7 @@ func TestPruneNonDocTopLevelNormalization(t *testing.T) {
 	keepDirs := []string{"docs", "documentation"}
 	removeDirs := []string{"cmd", "pkg", "scripts", "misc"}
 	for _, d := range append(keepDirs, removeDirs...) {
-		if err := os.MkdirAll(filepath.Join(repoPath, d), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Join(repoPath, d), 0o750); err != nil {
 			t.Fatalf("mkdir %s: %v", d, err)
 		}
 	}
@@ -64,7 +64,7 @@ func TestPruneNonDocTopLevelNormalization(t *testing.T) {
 func TestPruneAllowDeny(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoPath := filepath.Join(tmpDir, "repo2")
-	if err := os.MkdirAll(repoPath, 0o755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o750); err != nil {
 		t.Fatalf("mkdir repo2: %v", err)
 	}
 
@@ -77,7 +77,7 @@ func TestPruneAllowDeny(t *testing.T) {
 				t.Fatalf("write %s: %v", n, err)
 			}
 		} else {
-			if err := os.MkdirAll(path, 0o755); err != nil {
+			if err := os.MkdirAll(path, 0o750); err != nil {
 				t.Fatalf("mkdir %s: %v", n, err)
 			}
 		}
@@ -109,7 +109,7 @@ func TestPruneAllowDeny(t *testing.T) {
 func TestPruneAllowDenyGlobs(t *testing.T) {
 	tmpDir := t.TempDir()
 	repoPath := filepath.Join(tmpDir, "repo3")
-	if err := os.MkdirAll(repoPath, 0o755); err != nil {
+	if err := os.MkdirAll(repoPath, 0o750); err != nil {
 		t.Fatalf("mkdir repo3: %v", err)
 	}
 
