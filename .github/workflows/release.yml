@@ -66,6 +66,36 @@ jobs:
           name: goreleaser-dist
           path: dist/
 
+      - name: Verify and normalize artifact structure
+        run: |
+          echo "📦 Verifying downloaded artifacts..."
+          echo "Listing dist/ directory:"
+          ls -la dist/ || true
+          
+          echo ""
+          echo "Finding all files in dist/ (max depth 3):"
+          find dist -maxdepth 3 -print || true
+          
+          # Check if artifacts are nested under dist/dist/
+          if [ -d dist/dist ]; then
+            echo ""
+            echo "⚠️  Detected nested dist/dist/ structure, normalizing..."
+            mv dist/dist/* dist/ && rmdir dist/dist
+            echo "✅ Normalized directory structure"
+            echo ""
+            echo "Updated dist/ contents:"
+            ls -la dist/
+          fi
+          
+          # Fail early if dist is empty
+          if [ -z "$(ls -A dist 2>/dev/null)" ]; then
+            echo "❌ ERROR: dist/ is empty or missing after download" >&2
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ Artifact verification complete"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
