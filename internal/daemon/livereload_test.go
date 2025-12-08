@@ -28,7 +28,7 @@ func TestLiveReload_InitialConnectReceivesNoReload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	reader := bufio.NewReader(resp.Body)
 	deadline := time.Now().Add(500 * time.Millisecond)
@@ -65,7 +65,7 @@ func TestLiveReload_BroadcastSendsEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	reader := bufio.NewReader(resp.Body)
 
@@ -108,7 +108,7 @@ func TestLiveReload_DuplicateBroadcastIgnored(t *testing.T) {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	reader := bufio.NewReader(resp.Body)
 
 	// First broadcast

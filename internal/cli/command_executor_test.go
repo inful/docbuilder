@@ -44,7 +44,7 @@ func TestCommandExecutorInit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	configPath := filepath.Join(tempDir, "test-config.yaml")
 
@@ -93,7 +93,7 @@ func TestCommandExecutorBuildValidation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create a minimal valid config file
 	configPath := filepath.Join(tempDir, "config.yaml")
@@ -205,7 +205,7 @@ func TestCommandExecutorIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	executor := NewCommandExecutor("integration-executor")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

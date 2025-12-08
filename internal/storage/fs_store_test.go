@@ -13,7 +13,7 @@ func TestFSStorePutAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 	data := []byte("test content for filesystem store")
@@ -60,7 +60,7 @@ func TestFSStoreExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
@@ -93,7 +93,7 @@ func TestFSStoreDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
@@ -126,15 +126,15 @@ func TestFSStoreList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
 	// Store multiple objects
-	store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree1")})
-	store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree2")})
-	store.Put(ctx, &Object{Type: ObjectTypeDocsManifest, Data: []byte("manifest1")})
-	store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("artifact1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree2")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeDocsManifest, Data: []byte("manifest1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("artifact1")})
 
 	// List all
 	allHashes, err := store.List(ctx, "")
@@ -161,7 +161,7 @@ func TestFSStoreDeduplication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
@@ -194,7 +194,7 @@ func TestFSStoreGC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
@@ -240,7 +240,7 @@ func TestFSStoreBuildRefs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	buildID := "build-123"
 	hashes := []string{"hash1", "hash2", "hash3"}
@@ -299,7 +299,7 @@ func TestFSStoreGetNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewFSStore failed: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 	_, err = store.Get(ctx, "nonexistent")

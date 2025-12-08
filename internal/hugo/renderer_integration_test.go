@@ -192,14 +192,14 @@ func TestRenderMode_Auto_WithoutEnvVars(t *testing.T) {
 	// Save and clear env vars
 	oldRunHugo := os.Getenv("DOCBUILDER_RUN_HUGO")
 	oldSkipHugo := os.Getenv("DOCBUILDER_SKIP_HUGO")
-	os.Unsetenv("DOCBUILDER_RUN_HUGO")
-	os.Unsetenv("DOCBUILDER_SKIP_HUGO")
+	_ = os.Unsetenv("DOCBUILDER_RUN_HUGO")
+	_ = os.Unsetenv("DOCBUILDER_SKIP_HUGO")
 	defer func() {
 		if oldRunHugo != "" {
-			os.Setenv("DOCBUILDER_RUN_HUGO", oldRunHugo)
+			_ = os.Setenv("DOCBUILDER_RUN_HUGO", oldRunHugo)
 		}
 		if oldSkipHugo != "" {
-			os.Setenv("DOCBUILDER_SKIP_HUGO", oldSkipHugo)
+			_ = os.Setenv("DOCBUILDER_SKIP_HUGO", oldSkipHugo)
 		}
 	}()
 
@@ -297,10 +297,9 @@ func TestRendererPrecedence(t *testing.T) {
 			cfg.Build.RenderMode = tt.renderMode
 
 			if tt.envRunHugo != "" {
-				os.Setenv("DOCBUILDER_RUN_HUGO", tt.envRunHugo)
-				defer os.Unsetenv("DOCBUILDER_RUN_HUGO")
+				_ = os.Setenv("DOCBUILDER_RUN_HUGO", tt.envRunHugo)
+				defer func() { _ = os.Unsetenv("DOCBUILDER_RUN_HUGO") }()
 			}
-
 			g := NewGenerator(cfg, dir)
 			if tt.customRenderer != nil {
 				g = g.WithRenderer(tt.customRenderer)

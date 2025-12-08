@@ -342,7 +342,7 @@ func TestRegistryConcurrency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			plugin := newMockPlugin("concurrent-plugin", "v1.0."+string(rune('0'+id)), PluginTypeTheme)
-			registry.Register(plugin)
+			_ = registry.Register(plugin)
 			done <- true
 		}(i)
 	}

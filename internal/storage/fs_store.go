@@ -268,11 +268,11 @@ func (fs *FSStore) deleteUnlocked(ctx context.Context, hash string) error {
 
 	// Delete metadata
 	metadataPath := fs.metadataPath(hash)
-	os.Remove(metadataPath) // Best effort
+	_ = os.Remove(metadataPath) // Best effort cleanup
 
 	// Try to remove empty directory
 	objectDir := filepath.Dir(objectPath)
-	os.Remove(objectDir) // Best effort
+	_ = os.Remove(objectDir) // Best effort cleanup
 
 	return nil
 }

@@ -86,12 +86,12 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Test loading
 	config, err := Load(tmpFile.Name())
@@ -177,12 +177,12 @@ hugo:
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	config, err := Load(tmpFile.Name())
 	if err != nil {
@@ -326,12 +326,12 @@ versioning:
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
-			defer os.Remove(tmpFile.Name())
+			defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 			if _, err := tmpFile.WriteString(tt.configContent); err != nil {
 				t.Fatalf("Failed to write config: %v", err)
 			}
-			tmpFile.Close()
+			_ = tmpFile.Close()
 
 			_, err = Load(tmpFile.Name())
 			if err == nil {
@@ -351,7 +351,7 @@ func TestInit(t *testing.T) {
 	configPath := tmpDir + "/test-init-v2.yaml"
 
 	// Clean up
-	defer os.Remove(configPath)
+	defer func() { _ = os.Remove(configPath) }()
 
 	// Test initialization
 	err := Init(configPath, false)
@@ -435,12 +435,12 @@ forges:
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
-			defer os.Remove(tmpFile.Name())
+			defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 			if _, err := tmpFile.WriteString(tt.configContent); err != nil {
 				t.Fatalf("Failed to write config: %v", err)
 			}
-			tmpFile.Close()
+			_ = tmpFile.Close()
 
 			isV2, err := IsConfigVersion(tmpFile.Name())
 
@@ -472,8 +472,8 @@ forges:
 
 func TestEnvironmentVariableExpansion(t *testing.T) {
 	// Set test environment variable
-	os.Setenv("TEST_TOKEN", "expanded-token-value")
-	defer os.Unsetenv("TEST_TOKEN")
+	_ = os.Setenv("TEST_TOKEN", "expanded-token-value")
+	defer func() { _ = os.Unsetenv("TEST_TOKEN") }()
 
 	configContent := `version: "2.0"
 forges:
@@ -490,12 +490,12 @@ hugo:
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	if _, err := tmpFile.WriteString(configContent); err != nil {
 		t.Fatalf("Failed to write config: %v", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	config, err := Load(tmpFile.Name())
 	if err != nil {
@@ -548,12 +548,12 @@ hugo:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {
@@ -620,12 +620,12 @@ hugo:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {
@@ -691,12 +691,12 @@ hugo:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {
@@ -754,12 +754,12 @@ hugo:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {
@@ -817,12 +817,12 @@ hugo:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {
@@ -871,12 +871,12 @@ monitoring:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpFile.Name())
+		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 		if _, err := tmpFile.WriteString(configContent); err != nil {
 			t.Fatalf("Failed to write config: %v", err)
 		}
-		tmpFile.Close()
+		_ = tmpFile.Close()
 
 		config, err := Load(tmpFile.Name())
 		if err != nil {

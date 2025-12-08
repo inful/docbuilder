@@ -90,7 +90,7 @@ func (s *SQLiteStore) GetByBuildID(ctx context.Context, buildID string) ([]Event
 	if err != nil {
 		return nil, fmt.Errorf("query events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return s.scanEvents(rows)
 }
@@ -107,7 +107,7 @@ func (s *SQLiteStore) GetRange(ctx context.Context, start, end time.Time) ([]Eve
 	if err != nil {
 		return nil, fmt.Errorf("query events: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	return s.scanEvents(rows)
 }
