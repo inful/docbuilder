@@ -24,7 +24,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: docker
 
     strategy:
       matrix:
@@ -37,13 +37,20 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-    
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      with:
-        driver-opts: network=host
+      run: |
+        echo "🔧 Setting up Docker Buildx for multi-arch builds..."
+        
+        # Check if buildx is available
+        docker buildx version || { echo "Installing buildx..."; docker buildx install; }
+        
+        # Create and use a new builder instance for multi-arch
+        docker buildx create --name multiarch --driver docker-container --use || docker buildx use multiarch
+        
+        # Bootstrap the builder
+        docker buildx inspect --bootstrap
+        
+        echo "✅ Docker Buildx ready for multi-arch builds"
 
     - name: Extract version info
       id: version
