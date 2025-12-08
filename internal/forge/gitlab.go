@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -227,11 +228,16 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
-	hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", repo.DefaultBranch)
-	if err != nil {
-		return fmt.Errorf("failed to check .docignore file: %w", err)
+	// Only check if docs folder exists, otherwise skip
+	if hasDocs {
+		hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", repo.DefaultBranch)
+		if err != nil {
+			return fmt.Errorf("failed to check .docignore file: %w", err)
+		}
+		repo.HasDocIgnore = hasDocIgnore
+	} else {
+		repo.HasDocIgnore = false
 	}
-	repo.HasDocIgnore = hasDocIgnore
 
 	return nil
 }
@@ -239,9 +245,10 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 // checkPathExists checks if a path exists in the project
 // projectID should be the numeric project ID (not the path)
 func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath, branch string) (bool, error) {
-	// GitLab API: /projects/:id/repository/files/:file_path where :id must be numeric project ID
+	// GitLab API: /projects/:id/repository/files/:file_path
+	// Both project ID and file path must be URL-encoded
 	endpoint := fmt.Sprintf("/projects/%s/repository/files/%s?ref=%s",
-		projectID, // Use numeric ID directly, don't URL-encode
+		url.PathEscape(projectID),
 		url.PathEscape(filePath),
 		url.PathEscape(branch))
 
@@ -262,7 +269,9 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath,
 		return false, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		// Log the full error for debugging
+		body, _ := io.ReadAll(resp.Body)
+		return false, fmt.Errorf("unexpected status code %d: %s (endpoint: %s)", resp.StatusCode, string(body), endpoint)
 	}
 
 	return true, nil
