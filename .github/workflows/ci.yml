@@ -145,23 +145,6 @@ jobs:
             directory: './generated-site'
             clean: true
           EOF
-              repositories:
-                - url: /tmp/test-docs-repo
-                  name: docbuilder
-                  branch: main
-                  paths: [docs]
-          
-          hugo:
-            title: 'DocBuilder CI Test'
-            description: 'Testing DocBuilder documentation generation in CI'
-            base_url: 'https://example.com'
-            theme: 'hextra'
-            render: true
-          
-          output:
-            directory: './generated-site'
-            clean: true
-          EOF
 
       - name: Generate and build documentation site
         run: |
