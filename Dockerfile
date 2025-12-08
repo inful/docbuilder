@@ -17,24 +17,39 @@ ARG GO_VERSION="1.24.0"
 ARG VERSION="dev"
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends git make ca-certificates curl wget xz-utils && rm -rf /var/lib/apt/lists/*
-# Download Go
-RUN GO_ARCH="${TARGETARCH}" && \
+
+# Install build dependencies in a single layer
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
+    git make ca-certificates curl wget xz-utils
+
+# Download Go with caching
+RUN --mount=type=cache,target=/tmp/downloads \
+    GO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then GO_ARCH="amd64"; fi && \
     if [ "${TARGETARCH}" = "arm64" ]; then GO_ARCH="arm64"; fi && \
     echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${GO_ARCH}" && \
-    wget -q "https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${GO_ARCH}.tar.gz" -O /tmp/go.tar.gz && \
-    tar -C /usr/local -xzf /tmp/go.tar.gz && \
-    rm /tmp/go.tar.gz
+    GO_FILE="go${GO_VERSION}.${TARGETOS}-${GO_ARCH}.tar.gz" && \
+    if [ ! -f "/tmp/downloads/${GO_FILE}" ]; then \
+      wget -q "https://go.dev/dl/${GO_FILE}" -O "/tmp/downloads/${GO_FILE}"; \
+    fi && \
+    tar -C /usr/local -xzf "/tmp/downloads/${GO_FILE}"
+
 ENV PATH="/usr/local/go/bin:$PATH"
-# Download Hugo Extended
-RUN HUGO_ARCH="${TARGETARCH}" && \
+
+# Download Hugo Extended with caching
+RUN --mount=type=cache,target=/tmp/downloads \
+    HUGO_ARCH="${TARGETARCH}" && \
     if [ "${TARGETARCH}" = "amd64" ]; then HUGO_ARCH="amd64"; fi && \
     if [ "${TARGETARCH}" = "arm64" ]; then HUGO_ARCH="arm64"; fi && \
     echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${HUGO_ARCH}" && \
-    curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" \
-    | tar -xz -C /tmp hugo && \
+    HUGO_FILE="hugo_extended_${HUGO_VERSION}_${TARGETOS}-${HUGO_ARCH}.tar.gz" && \
+    if [ ! -f "/tmp/downloads/${HUGO_FILE}" ]; then \
+      curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${HUGO_FILE}" \
+      -o "/tmp/downloads/${HUGO_FILE}"; \
+    fi && \
+    tar -xz -C /tmp -f "/tmp/downloads/${HUGO_FILE}" hugo && \
     mv /tmp/hugo /usr/local/bin/hugo && \
     chmod +x /usr/local/bin/hugo
 ARG TARGETOS=linux
@@ -51,18 +66,27 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
-# Copy source code
+# Copy pre-built binary from GoReleaser (if available) or build from source
+# This allows us to use pre-built binaries in CI for faster Docker builds
+COPY dist/ /dist/ 2>/dev/null || true
 COPY . .
 
-# Run format check
-
-# Build the binary (BuildKit cache mounts)
+# Use pre-built binary if available, otherwise build from source
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    echo "=== Building binary ===" && \
-    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-    go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/docbuilder ./cmd/docbuilder && \
-    echo "✅ Binary built successfully"
+    BINARY_PATH="/dist/docbuilder_${TARGETOS}_${TARGETARCH}*/docbuilder" && \
+    if ls $BINARY_PATH 1> /dev/null 2>&1; then \
+      echo "=== Using pre-built binary ==="  && \
+      mkdir -p /out && \
+      cp $BINARY_PATH /out/docbuilder && \
+      chmod +x /out/docbuilder && \
+      echo "✅ Using pre-built binary from GoReleaser"; \
+    else \
+      echo "=== Building binary from source ===" && \
+      CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+      go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/docbuilder ./cmd/docbuilder && \
+      echo "✅ Binary built from source"; \
+    fi
 
 # Test binary execution
 RUN echo "=== Testing binary ===" && \
