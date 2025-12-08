@@ -41,6 +41,7 @@ builds:
 # Archive configuration
 archives:
   - id: default
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
     # Files to include in the archive
     files:
       - LICENSE
