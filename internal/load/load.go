@@ -76,6 +76,7 @@ func (lt *LoadTester) ExecuteScenario(
 	var successfulCount int64
 	var failedCount int64
 	var cacheHits int64
+	var errorCount int64
 	var latenciesMu sync.Mutex
 
 	// Calculate ramp-up increment
@@ -117,13 +118,11 @@ func (lt *LoadTester) ExecuteScenario(
 					}
 				} else {
 					atomic.AddInt64(&failedCount, 1)
-					result.TotalErrors++
+					atomic.AddInt64(&errorCount, 1)
 				}
 			}
 		}()
-	}
-
-	// Feed requests
+	} // Feed requests
 	go func() {
 		for i := 0; i < scenario.TotalRequests; i++ {
 			select {
@@ -144,6 +143,7 @@ func (lt *LoadTester) ExecuteScenario(
 	result.FailedRequests = atomic.LoadInt64(&failedCount)
 	result.CacheHits = atomic.LoadInt64(&cacheHits)
 	result.CacheMisses = result.SuccessfulRequest - result.CacheHits
+	result.TotalErrors = int(atomic.LoadInt64(&errorCount))
 
 	// Calculate latency statistics
 	if len(result.Latencies) > 0 {

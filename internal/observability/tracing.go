@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 )
 
@@ -126,10 +127,15 @@ func EndSpan(span Span, err error) {
 }
 
 // GlobalTracerProvider holds the singleton tracer provider.
-var globalTracerProvider *TracerProvider
+var (
+	globalTracerProvider *TracerProvider
+	globalTracerMu       sync.RWMutex
+)
 
 // InitGlobalTracer initializes the global tracer provider.
 func InitGlobalTracer() *TracerProvider {
+	globalTracerMu.Lock()
+	defer globalTracerMu.Unlock()
 	if globalTracerProvider == nil {
 		globalTracerProvider = NewTracerProvider()
 	}
@@ -138,14 +144,19 @@ func InitGlobalTracer() *TracerProvider {
 
 // GetGlobalTracer returns the global tracer provider.
 func GetGlobalTracer() *TracerProvider {
-	if globalTracerProvider == nil {
+	globalTracerMu.RLock()
+	tracer := globalTracerProvider
+	globalTracerMu.RUnlock()
+	if tracer == nil {
 		return InitGlobalTracer()
 	}
-	return globalTracerProvider
+	return tracer
 }
 
 // SetGlobalTracer sets the global tracer provider (for testing).
 func SetGlobalTracer(tp *TracerProvider) {
+	globalTracerMu.Lock()
+	defer globalTracerMu.Unlock()
 	globalTracerProvider = tp
 }
 

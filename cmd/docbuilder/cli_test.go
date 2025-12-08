@@ -476,7 +476,7 @@ func (result *CLIResult) AssertPerformance(t *testing.T, maxDuration time.Durati
 // Cleanup removes temporary files and directories
 func (env *MockCLIEnvironment) Cleanup() {
 	for _, file := range env.tempFiles {
-		os.Remove(file)
+		_ = os.Remove(file)
 	}
 	// Note: workspaceDir is managed by testing.T.TempDir() and will be cleaned up automatically
 }
