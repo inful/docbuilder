@@ -20,7 +20,7 @@ type SQLiteStore struct {
 // NewSQLiteStore creates a new SQLite-based event store.
 // Use ":memory:" for in-memory database, or a file path for persistent storage.
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite database: %w", err)
 	}
