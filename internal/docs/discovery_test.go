@@ -17,7 +17,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create test repository structure
 	repoDir := filepath.Join(tempDir, "test-repo")
@@ -149,7 +149,7 @@ func TestForgeNamespacingModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	mkRepo := func(name, forgeType string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
@@ -216,7 +216,7 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	mkRepo := func(name string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
@@ -286,7 +286,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {
@@ -428,7 +428,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range allRepositories {
@@ -579,7 +579,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {
@@ -736,7 +736,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {

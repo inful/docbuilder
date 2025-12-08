@@ -47,9 +47,10 @@ func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foun
 	defer ss.store.mu.Unlock()
 
 	ss.store.statistics.TotalBuilds++
-	if build.Status == BuildStatusCompleted {
+	switch build.Status {
+	case BuildStatusCompleted:
 		ss.store.statistics.SuccessfulBuilds++
-	} else if build.Status == BuildStatusFailed {
+	case BuildStatusFailed:
 		ss.store.statistics.FailedBuilds++
 	}
 	ss.store.statistics.LastUpdated = time.Now()

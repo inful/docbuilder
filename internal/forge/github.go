@@ -236,7 +236,7 @@ func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, b
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return false, nil

@@ -93,10 +93,10 @@ func TestMockStoreList(t *testing.T) {
 	store := NewMockStore()
 	ctx := context.Background()
 
-	store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree1")})
-	store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree2")})
-	store.Put(ctx, &Object{Type: ObjectTypeDocsManifest, Data: []byte("manifest1")})
-	store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("artifact1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeRepoTree, Data: []byte("tree2")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeDocsManifest, Data: []byte("manifest1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("artifact1")})
 
 	allHashes, err := store.List(ctx, "")
 	if err != nil {
@@ -154,10 +154,10 @@ func TestMockStoreCallTracking(t *testing.T) {
 
 	obj := &Object{Type: ObjectTypeArtifact, Data: []byte("test")}
 	hash, _ := store.Put(ctx, obj)
-	store.Get(ctx, hash)
-	store.Exists(ctx, hash)
-	store.List(ctx, "")
-	store.Delete(ctx, hash)
+	_, _ = store.Get(ctx, hash)
+	_, _ = store.Exists(ctx, hash)
+	_, _ = store.List(ctx, "")
+	_ = store.Delete(ctx, hash)
 
 	calls := store.GetCalls()
 	if calls.Put != 1 {
@@ -181,8 +181,8 @@ func TestMockStoreReset(t *testing.T) {
 	store := NewMockStore()
 	ctx := context.Background()
 
-	store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("test1")})
-	store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("test2")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("test1")})
+	_, _ = store.Put(ctx, &Object{Type: ObjectTypeArtifact, Data: []byte("test2")})
 
 	if store.Size() != 2 {
 		t.Errorf("Expected 2 objects before reset, got %d", store.Size())

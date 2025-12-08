@@ -96,7 +96,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	if err != nil {
 		return fmt.Errorf("fsnotify: %w", err)
 	}
-	defer watcher.Close()
+	defer func() { _ = watcher.Close() }()
 
 	// Recursively add directories under docs
 	if err := addDirsRecursive(watcher, absDocs); err != nil {

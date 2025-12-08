@@ -155,13 +155,13 @@ func TestPercentileOrdering(t *testing.T) {
 
 	result := lt.ExecuteScenario(ctx, scenario, handler)
 
-	if !(result.P50Latency >= result.MinLatency && result.P50Latency <= result.MaxLatency) {
+	if result.P50Latency < result.MinLatency || result.P50Latency > result.MaxLatency {
 		t.Error("P50 not in valid range")
 	}
-	if !(result.P95Latency >= result.P50Latency && result.P95Latency <= result.MaxLatency) {
+	if result.P95Latency < result.P50Latency || result.P95Latency > result.MaxLatency {
 		t.Error("P95 should be >= P50")
 	}
-	if !(result.P99Latency >= result.P95Latency && result.P99Latency <= result.MaxLatency) {
+	if result.P99Latency < result.P95Latency || result.P99Latency > result.MaxLatency {
 		t.Error("P99 should be >= P95")
 	}
 }

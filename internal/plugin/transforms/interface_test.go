@@ -177,8 +177,8 @@ func TestTransformRegistryList(t *testing.T) {
 	t1 := &mockTransform{name: "t1", version: "v1", stage: StageContent}
 	t2 := &mockTransform{name: "t2", version: "v1", stage: StageFrontmatter}
 
-	registry.Register(t1)
-	registry.Register(t2)
+	_ = registry.Register(t1)
+	_ = registry.Register(t2)
 
 	transforms := registry.List()
 	if len(transforms) != 2 {
@@ -195,7 +195,7 @@ func TestTransformRegistryApplyToContent(t *testing.T) {
 		version: "v1",
 		stage:   StageContent,
 	}
-	registry.Register(transform)
+	_ = registry.Register(transform)
 
 	input := &TransformInput{
 		FilePath: "test.md",
@@ -219,7 +219,7 @@ func TestTransformRegistryClear(t *testing.T) {
 	registry := NewTransformRegistry()
 
 	t1 := &mockTransform{name: "t1", version: "v1", stage: StageContent}
-	registry.Register(t1)
+	_ = registry.Register(t1)
 
 	if registry.Count() != 1 {
 		t.Fatal("Count should be 1 before clear")
@@ -246,7 +246,7 @@ func TestTransformRegistryCount(t *testing.T) {
 			version: "v1",
 			stage:   StageContent,
 		}
-		registry.Register(t)
+		_ = registry.Register(t)
 	}
 
 	if registry.Count() != 5 {
@@ -264,7 +264,7 @@ func TestTransformSkipped(t *testing.T) {
 		stage:    StageContent,
 		skipNext: true,
 	}
-	registry.Register(transform)
+	_ = registry.Register(transform)
 
 	input := &TransformInput{
 		FilePath: "test.md",
@@ -291,8 +291,8 @@ func TestMultipleTransforms(t *testing.T) {
 	t1 := &mockTransform{name: "t1", version: "v1", stage: StageContent, order: 1}
 	t2 := &mockTransform{name: "t2", version: "v1", stage: StageContent, order: 2}
 
-	registry.Register(t1)
-	registry.Register(t2)
+	_ = registry.Register(t1)
+	_ = registry.Register(t2)
 
 	input := &TransformInput{
 		FilePath: "test.md",

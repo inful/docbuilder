@@ -11,7 +11,7 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	projection := NewBuildHistoryProjection(store, 10)
 
@@ -92,7 +92,7 @@ func TestBuildHistoryProjection_BuildFailed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	projection := NewBuildHistoryProjection(store, 10)
 
@@ -124,7 +124,7 @@ func TestBuildHistoryProjection_Rebuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Store some events directly
 	buildID := "build-rebuild-test"
@@ -173,7 +173,7 @@ func TestBuildHistoryProjection_HistoryLimit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create projection with small max size
 	projection := NewBuildHistoryProjection(store, 3)
@@ -200,7 +200,7 @@ func TestBuildHistoryProjection_GetActiveBuild(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	projection := NewBuildHistoryProjection(store, 10)
 

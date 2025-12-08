@@ -285,31 +285,31 @@ func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, _ *http.Req
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// Write basic Prometheus metrics
-	fmt.Fprintf(w, "# HELP docbuilder_uptime_seconds Total uptime in seconds\n")
-	fmt.Fprintf(w, "# TYPE docbuilder_uptime_seconds gauge\n")
-	fmt.Fprintf(w, "docbuilder_uptime_seconds %f\n", time.Since(mc.startTime).Seconds())
+	_, _ = fmt.Fprintf(w, "# HELP docbuilder_uptime_seconds Total uptime in seconds\n")
+	_, _ = fmt.Fprintf(w, "# TYPE docbuilder_uptime_seconds gauge\n")
+	_, _ = fmt.Fprintf(w, "docbuilder_uptime_seconds %f\n", time.Since(mc.startTime).Seconds())
 
 	// Counters
 	for name, value := range snapshot.Counters {
-		fmt.Fprintf(w, "# HELP docbuilder_%s_total Total count of %s\n", name, name)
-		fmt.Fprintf(w, "# TYPE docbuilder_%s_total counter\n", name)
-		fmt.Fprintf(w, "docbuilder_%s_total %d\n", name, value)
+		_, _ = fmt.Fprintf(w, "# HELP docbuilder_%s_total Total count of %s\n", name, name)
+		_, _ = fmt.Fprintf(w, "# TYPE docbuilder_%s_total counter\n", name)
+		_, _ = fmt.Fprintf(w, "docbuilder_%s_total %d\n", name, value)
 	}
 
 	// Gauges
 	for name, value := range snapshot.Gauges {
-		fmt.Fprintf(w, "# HELP docbuilder_%s Current value of %s\n", name, name)
-		fmt.Fprintf(w, "# TYPE docbuilder_%s gauge\n", name)
-		fmt.Fprintf(w, "docbuilder_%s %d\n", name, value)
+		_, _ = fmt.Fprintf(w, "# HELP docbuilder_%s Current value of %s\n", name, name)
+		_, _ = fmt.Fprintf(w, "# TYPE docbuilder_%s gauge\n", name)
+		_, _ = fmt.Fprintf(w, "docbuilder_%s %d\n", name, value)
 	}
 
 	// System metrics
 	sys := snapshot.SystemMetrics
-	fmt.Fprintf(w, "# HELP docbuilder_goroutines Number of goroutines\n")
-	fmt.Fprintf(w, "# TYPE docbuilder_goroutines gauge\n")
-	fmt.Fprintf(w, "docbuilder_goroutines %d\n", sys.Goroutines)
+	_, _ = fmt.Fprintf(w, "# HELP docbuilder_goroutines Number of goroutines\n")
+	_, _ = fmt.Fprintf(w, "# TYPE docbuilder_goroutines gauge\n")
+	_, _ = fmt.Fprintf(w, "docbuilder_goroutines %d\n", sys.Goroutines)
 
-	fmt.Fprintf(w, "# HELP docbuilder_memory_alloc_bytes Allocated memory in bytes\n")
-	fmt.Fprintf(w, "# TYPE docbuilder_memory_alloc_bytes gauge\n")
-	fmt.Fprintf(w, "docbuilder_memory_alloc_bytes %f\n", sys.MemAllocMB*1024*1024)
+	_, _ = fmt.Fprintf(w, "# HELP docbuilder_memory_alloc_bytes Allocated memory in bytes\n")
+	_, _ = fmt.Fprintf(w, "# TYPE docbuilder_memory_alloc_bytes gauge\n")
+	_, _ = fmt.Fprintf(w, "docbuilder_memory_alloc_bytes %f\n", sys.MemAllocMB*1024*1024)
 }

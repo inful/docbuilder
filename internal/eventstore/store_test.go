@@ -12,7 +12,7 @@ func TestEventStoreAppendAndRetrieve(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 	buildID := "build-123"
@@ -56,7 +56,7 @@ func TestEventStoreGetRange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 	now := time.Now()
@@ -88,14 +88,14 @@ func TestEventStoreMultipleBuilds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
 	// Add events for different builds
-	store.Append(ctx, "build-1", "Event1", []byte("data1"), nil)
-	store.Append(ctx, "build-2", "Event2", []byte("data2"), nil)
-	store.Append(ctx, "build-1", "Event3", []byte("data3"), nil)
+	_ = store.Append(ctx, "build-1", "Event1", []byte("data1"), nil)
+	_ = store.Append(ctx, "build-2", "Event2", []byte("data2"), nil)
+	_ = store.Append(ctx, "build-1", "Event3", []byte("data3"), nil)
 
 	// Query build-1
 	events, err := store.GetByBuildID(ctx, "build-1")

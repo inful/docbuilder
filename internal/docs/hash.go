@@ -96,7 +96,7 @@ func ComputeDocsHash(docFiles []DocFile) (string, error) {
 			sort.Strings(keys)
 
 			for _, k := range keys {
-				h.Write([]byte(fmt.Sprintf("%s=%s\n", k, entry.Metadata[k])))
+				_, _ = fmt.Fprintf(h, "%s=%s\n", k, entry.Metadata[k])
 			}
 		}
 	}

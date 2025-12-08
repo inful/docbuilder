@@ -22,7 +22,7 @@ func TestStoreIntegrationWithRepoTree(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a test repository
 	repoPath := filepath.Join(tmpDir, "test-repo")
@@ -89,7 +89,7 @@ func TestStoreIntegrationWithDocsManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create test documentation files
 	docFiles := []docs.DocFile{
@@ -175,7 +175,7 @@ func TestStoreIntegrationWithBuildRef(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
@@ -260,17 +260,17 @@ func TestStoreIntegrationListByType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
 
 	// Store objects of different types
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeRepoTree, Data: []byte("tree1")})
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeRepoTree, Data: []byte("tree2")})
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeDocsManifest, Data: []byte("docs1")})
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact1")})
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact2")})
-	store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact3")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeRepoTree, Data: []byte("tree1")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeRepoTree, Data: []byte("tree2")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeDocsManifest, Data: []byte("docs1")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact1")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact2")})
+	_, _ = store.Put(ctx, &storage.Object{Type: storage.ObjectTypeArtifact, Data: []byte("artifact3")})
 
 	// List all objects
 	all, err := store.List(ctx, "")
@@ -307,7 +307,7 @@ func TestStoreIntegrationWithConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Create a sample config
 	cfg := &config.Config{
