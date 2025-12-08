@@ -194,9 +194,15 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 		return env
 	}
 
-	// Always attempt to build the docbuilder binary at the requested path so
-	// tests use the latest source. If build fails, we fall back to the path
-	// so that a prebuilt binary (if present) might still be used.
+	// Check if binary already exists and is executable
+	if stat, err := os.Stat(absPath); err == nil && stat.Mode()&0o111 != 0 {
+		// Binary exists and is executable, use it
+		env.t.Logf("Using existing binary at %s", absPath)
+		env.runner.binaryPath = absPath
+		return env
+	}
+
+	// Binary doesn't exist or isn't executable, try to build it
 	buildCmd := exec.Command("go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder") //nolint:gosec // building test binary
 	buildCmd.Env = os.Environ()
 	if out, err := buildCmd.CombinedOutput(); err != nil {
@@ -206,6 +212,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 		return env
 	}
 
+	env.t.Logf("Built docbuilder binary at %s", absPath)
 	env.runner.binaryPath = absPath
 	return env
 }
