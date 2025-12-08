@@ -132,12 +132,14 @@ jobs:
           # Find and copy the correct binary for the target architecture
           RUN echo "Looking for binary for architecture: ${TARGETARCH}" && \
               if [ "${TARGETARCH}" = "amd64" ]; then \
-                find . -path "*/docbuilder_linux_amd64*/docbuilder" -exec cp {} /binary \; ; \
+                BINARY=$(find . -path "*/docbuilder_linux_amd64*/docbuilder" -print -quit) ; \
               elif [ "${TARGETARCH}" = "arm64" ]; then \
-                find . -path "*/docbuilder_linux_arm64*/docbuilder" -exec cp {} /binary \; ; \
+                BINARY=$(find . -path "*/docbuilder_linux_arm64*/docbuilder" -print -quit) ; \
               else \
                 echo "Unsupported architecture: ${TARGETARCH}" && exit 1; \
               fi && \
+              test -n "$BINARY" || (echo "Binary not found for ${TARGETARCH}" && exit 1) && \
+              cp "$BINARY" /binary && \
               chmod +x /binary && \
               ls -lh /binary
           
