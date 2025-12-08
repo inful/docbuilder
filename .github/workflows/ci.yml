@@ -116,64 +116,40 @@ jobs:
       - name: Build DocBuilder
         run: go build -v -o docbuilder ./cmd/docbuilder
 
-      - name: Create test repository with docs
-        run: |
-          mkdir -p /tmp/test-docs-repo/docs
-          cd /tmp/test-docs-repo
-          git init
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          
-          # Create sample documentation
-          cat > docs/_index.md << 'EOF'
-          ---
-          title: "DocBuilder Documentation"
-          linkTitle: "Documentation"
-          weight: 1
-          ---
-          
-          # Welcome to DocBuilder
-          
-          DocBuilder is a tool for aggregating documentation from multiple Git repositories.
-          EOF
-          
-          cat > docs/getting-started.md << 'EOF'
-          ---
-          title: "Getting Started"
-          weight: 1
-          ---
-          
-          # Getting Started
-          
-          This guide will help you get started with DocBuilder.
-          
-          ## Installation
-          
-          Download the latest release from GitHub.
-          EOF
-          
-          cat > docs/configuration.md << 'EOF'
-          ---
-          title: "Configuration"
-          weight: 2
-          ---
-          
-          # Configuration
-          
-          DocBuilder uses YAML configuration files.
-          EOF
-          
-          git add .
-          git commit -m "Initial documentation"
-
       - name: Create DocBuilder config
         run: |
           cat > ci-config.yaml << 'EOF'
-          repositories:
-            - url: /tmp/test-docs-repo
-              name: docbuilder
-              branch: main
-              paths: [docs]
+          version: "2.0"
+          
+          build:
+            clone_concurrency: 2
+          
+          forges:
+            - name: github-docbuilder
+              type: file
+              base_url: https://github.com/${{ github.repository }}
+              repositories:
+                - url: ${{ github.workspace }}
+                  name: docbuilder
+                  branch: ${{ github.ref_name }}
+                  paths: [docs]
+          
+          hugo:
+            title: 'DocBuilder Documentation'
+            description: 'Documentation for DocBuilder - aggregate docs from multiple Git repositories'
+            base_url: 'https://${{ github.repository_owner }}.github.io/docbuilder'
+            theme: 'hextra'
+            render: true
+          
+          output:
+            directory: './generated-site'
+            clean: true
+          EOF
+              repositories:
+                - url: /tmp/test-docs-repo
+                  name: docbuilder
+                  branch: main
+                  paths: [docs]
           
           hugo:
             title: 'DocBuilder CI Test'
