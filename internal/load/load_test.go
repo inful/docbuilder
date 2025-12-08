@@ -3,6 +3,7 @@ package load
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -66,17 +67,20 @@ func TestExecuteScenarioWithErrors(t *testing.T) {
 	ctx := context.Background()
 
 	scenario := LoadScenario{
-		Name:               "Error Test",
 		ConcurrentRequests: 5,
 		TotalRequests:      50,
 		CacheHitRate:       0.5,
 		RampUpDuration:     100 * time.Millisecond,
 	}
 
+	var mu sync.Mutex
 	errorCount := 0
 	handler := func(ctx context.Context) error {
+		mu.Lock()
 		errorCount++
-		if errorCount%2 == 0 {
+		count := errorCount
+		mu.Unlock()
+		if count%2 == 0 {
 			return fmt.Errorf("simulated error")
 		}
 		return nil
@@ -393,11 +397,15 @@ func TestContextCancellation(t *testing.T) {
 		RampUpDuration:     100 * time.Millisecond,
 	}
 
+	var mu sync.Mutex
 	requestsStarted := 0
 	handler := func(ctx context.Context) error {
+		mu.Lock()
 		requestsStarted++
+		count := requestsStarted
+		mu.Unlock()
 		time.Sleep(10 * time.Millisecond)
-		if requestsStarted > 50 {
+		if count > 50 {
 			cancel()
 		}
 		return nil
