@@ -1,8 +1,68 @@
 # DocBuilder CI/CD
 
-This document describes the CI/CD pipeline setup for DocBuilder using Forgejo Actions.
+This document describes the CI/CD pipeline setup for DocBuilder using both GitHub Actions and Forgejo Actions.
 
 ## Pipeline Overview
+
+DocBuilder supports CI/CD pipelines on multiple platforms:
+
+### GitHub Actions
+
+Multi-architecture Docker image builds are available through GitHub Actions workflow (`.github/workflows/docker-multiarch.yml`).
+
+### Forgejo Actions
+
+Complete CI/CD pipeline including testing, building, and deployment is available through Forgejo Actions.
+
+## GitHub Actions Workflows
+
+### 1. Multi-Arch Docker Build (`.github/workflows/docker-multiarch.yml`)
+
+Builds and pushes multi-architecture Docker images to GitHub Container Registry (GHCR).
+
+**Triggered on:**
+- Push to `main` branch
+- Git tags matching `v*.*.*` (e.g., v1.0.0)
+- Manual workflow dispatch
+
+**Features:**
+- Multi-architecture builds (linux/amd64, linux/arm64)
+- Automatic tagging strategy:
+  - Semver tags: `v1.2.3`, `v1.2`, `v1`
+  - Branch tags: `main`, `develop`
+  - SHA tags: `main-abc1234`
+  - `latest` tag for releases
+- GitHub Container Registry (ghcr.io) integration
+- Build caching with GitHub Actions cache
+- Comprehensive build summaries
+
+**Usage:**
+
+The workflow runs automatically on tag pushes. To manually trigger:
+
+1. Go to Actions → "Build and Push Multi-Arch Docker Images"
+2. Click "Run workflow"
+3. Optionally specify Hugo version
+4. Choose whether to push images to registry
+
+**Pulling images:**
+
+```bash
+# Latest release
+docker pull ghcr.io/inful/docbuilder:latest
+
+# Specific version
+docker pull ghcr.io/inful/docbuilder:v1.0.0
+
+# Branch build
+docker pull ghcr.io/inful/docbuilder:main
+```
+
+**Registry Authentication:**
+
+The workflow uses the built-in `GITHUB_TOKEN` for authentication. No additional secrets are required.
+
+## Forgejo Actions Workflows
 
 The CI/CD pipeline consists of several workflows:
 
@@ -112,6 +172,9 @@ Configure these environments in Forgejo:
 
 ### Multi-platform Support
 - Docker images built for `linux/amd64` and `linux/arm64`
+- GitHub Actions: Uses Docker Buildx with QEMU for cross-platform builds
+- Forgejo Actions: Uses Docker Buildx with native multi-arch support
+- Automatic platform detection and optimization
 
 ### Testing
 - Unit tests with coverage reporting

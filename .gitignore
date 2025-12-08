@@ -317,6 +317,7 @@ coverage.html
 # CI/CD artifacts
 .forgejo-runner/
 integration-test-config.yaml
+dist/
 
 test-site
 bin
