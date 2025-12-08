@@ -1,0 +1,217 @@
+name: Release with GoReleaser
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "🏷️  Version: $VERSION"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts for Docker build
+        uses: actions/upload-artifact@v4
+        with:
+          name: goreleaser-dist
+          path: dist/
+          retention-days: 1
+
+  docker-multiarch:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download goreleaser artifacts
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: goreleaser-dist
+          path: dist/
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Create Dockerfile for pre-built binaries
+        run: |
+          cat > Dockerfile.release << 'EOF'
+          # syntax=docker/dockerfile:1.6
+          
+          # Multi-stage build using goreleaser binaries
+          FROM ubuntu:22.04 AS tools
+          ARG TARGETOS=linux
+          ARG TARGETARCH
+          ARG HUGO_VERSION="0.152.2"
+          ENV DEBIAN_FRONTEND=noninteractive
+          
+          # Install Hugo Extended
+          RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
+              rm -rf /var/lib/apt/lists/* && \
+              echo "Downloading Hugo ${HUGO_VERSION} for ${TARGETOS}-${TARGETARCH}" && \
+              curl -fsSL "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_${TARGETOS}-${TARGETARCH}.tar.gz" \
+              | tar -xz -C /tmp hugo && \
+              mv /tmp/hugo /usr/local/bin/hugo && \
+              chmod +x /usr/local/bin/hugo && \
+              hugo version
+          
+          # Download Go toolchain
+          RUN GO_VERSION="1.24.0" && \
+              apt-get update && apt-get install -y --no-install-recommends wget xz-utils && \
+              rm -rf /var/lib/apt/lists/* && \
+              echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${TARGETARCH}" && \
+              wget -q "https://go.dev/dl/go${GO_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz" -O /tmp/go.tar.gz && \
+              tar -C /usr/local -xzf /tmp/go.tar.gz && \
+              rm /tmp/go.tar.gz
+          
+          # Stage to extract the correct binary
+          FROM ubuntu:22.04 AS binary-selector
+          ARG TARGETARCH
+          WORKDIR /binaries
+          
+          # Copy all goreleaser binaries
+          COPY dist/ ./
+          
+          # Find and copy the correct binary for the target architecture
+          RUN echo "Looking for binary for architecture: ${TARGETARCH}" && \
+              if [ "${TARGETARCH}" = "amd64" ]; then \
+                BINARY=$(find . -path "*/docbuilder_linux_amd64*/docbuilder" -print -quit) ; \
+              elif [ "${TARGETARCH}" = "arm64" ]; then \
+                BINARY=$(find . -path "*/docbuilder_linux_arm64*/docbuilder" -print -quit) ; \
+              else \
+                echo "Unsupported architecture: ${TARGETARCH}" && exit 1; \
+              fi && \
+              test -n "$BINARY" || (echo "Binary not found for ${TARGETARCH}" && exit 1) && \
+              cp "$BINARY" /binary && \
+              chmod +x /binary && \
+              ls -lh /binary
+          
+          # Final runtime image
+          FROM gcr.io/distroless/cc-debian12:nonroot AS runtime
+          ARG TARGETARCH
+          
+          USER nonroot:nonroot
+          WORKDIR /data
+          
+          # Copy the pre-built binary from goreleaser
+          COPY --from=binary-selector /binary /usr/local/bin/docbuilder
+          
+          # Copy Hugo and Go toolchain
+          COPY --from=tools /usr/local/bin/hugo /usr/local/bin/hugo
+          COPY --from=tools /usr/local/go /usr/local/go
+          COPY --from=tools /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+          
+          ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+          ENV HUGO_ENV=production
+          ENV GOROOT=/usr/local/go
+          ENV PATH="/usr/local/go/bin:${PATH}"
+          ENV GOPROXY=https://proxy.golang.org,direct
+          ENV GOSUMDB=sum.golang.org
+          ENV HUGO_MODULE_PROXY=https://proxy.golang.org,direct
+          
+          ENTRYPOINT ["/usr/local/bin/docbuilder"]
+          CMD ["daemon", "--config", "/config/config.yaml"]
+          EXPOSE 1313 8080 9090
+          EOF
+          
+          echo "✅ Created Dockerfile.release"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.release
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ needs.goreleaser.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build summary
+        run: |
+          echo "## 🎉 Release Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Binaries Released" >> $GITHUB_STEP_SUMMARY
+          echo "GoReleaser has built binaries for multiple platforms:" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux (amd64, arm64, arm)" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS (amd64, arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows (amd64)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "Multi-architecture Docker images pushed:" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Release Tags" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Quick Start" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Download binary" >> $GITHUB_STEP_SUMMARY
+          echo "# See GitHub release page for download links" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Or use Docker" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ github.repository }}:${{ needs.goreleaser.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
