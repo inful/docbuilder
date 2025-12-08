@@ -66,15 +66,13 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
-# Copy pre-built binary from GoReleaser (if available) or build from source
-# This allows us to use pre-built binaries in CI for faster Docker builds
-COPY dist/ /dist/ 2>/dev/null || true
+# Copy source code
 COPY . .
 
 # Use pre-built binary if available, otherwise build from source
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    BINARY_PATH="/dist/docbuilder_${TARGETOS}_${TARGETARCH}*/docbuilder" && \
+    BINARY_PATH="/src/dist/docbuilder_${TARGETOS}_${TARGETARCH}*/docbuilder" && \
     if ls $BINARY_PATH 1> /dev/null 2>&1; then \
       echo "=== Using pre-built binary ==="  && \
       mkdir -p /out && \
