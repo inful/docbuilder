@@ -87,6 +87,7 @@ func (se *SkipEvaluator) validateAndPopulateContext(ctx *Context) bool {
 // loadPreviousReport loads and validates the previous build report, populating the context.
 func (se *SkipEvaluator) loadPreviousReport(ctx *Context) bool {
 	prevPath := filepath.Join(ctx.OutDir, "build-report.json")
+	// #nosec G304 - prevPath is internal, OutDir is controlled by application
 	data, err := os.ReadFile(prevPath)
 	if err != nil {
 		if ctx.Logger != nil {
@@ -163,6 +164,7 @@ func (se *SkipEvaluator) updateStateAfterSkip(ctx Context, report *hugo.BuildRep
 	// Update report checksum
 	if ctx.PrevReport != nil && len(ctx.PrevReport.RawData) > 0 {
 		prevPath := filepath.Join(se.outDir, "build-report.json")
+		// #nosec G304 - prevPath is internal, outDir is controlled by application
 		if rb, err := os.ReadFile(prevPath); err == nil {
 			hs := sha256.Sum256(rb)
 			se.state.SetLastReportChecksum(hex.EncodeToString(hs[:]))

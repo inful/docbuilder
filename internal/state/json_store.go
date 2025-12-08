@@ -47,7 +47,7 @@ type stateSnapshot struct {
 
 // NewJSONStore creates a new JSON-based state store.
 func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
-	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return foundation.Err[*JSONStore, error](
 			foundation.InternalError("failed to create data directory").
 				WithCause(err).
@@ -192,6 +192,7 @@ func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error]
 func (js *JSONStore) loadFromDisk() error {
 	statePath := filepath.Join(js.dataDir, "daemon-state.json")
 
+	// #nosec G304 - statePath is internal, dataDir is controlled by application
 	data, err := os.ReadFile(statePath)
 	if err != nil {
 		if os.IsNotExist(err) {

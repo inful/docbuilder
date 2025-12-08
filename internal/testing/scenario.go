@@ -53,11 +53,11 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	configDir := filepath.Join(tempDir, "config")
 	outputDir := filepath.Join(tempDir, "output")
 
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	if err := os.MkdirAll(configDir, 0o750); err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 
@@ -80,7 +80,7 @@ func (env *TestEnvironment) Cleanup() {
 		env.Cancel()
 	}
 	if env.TempDir != "" {
-		os.RemoveAll(env.TempDir)
+		_ = os.RemoveAll(env.TempDir) // Best effort cleanup in test teardown
 	}
 }
 

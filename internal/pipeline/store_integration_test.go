@@ -26,12 +26,12 @@ func TestStoreIntegrationWithRepoTree(t *testing.T) {
 
 	// Create a test repository
 	repoPath := filepath.Join(tmpDir, "test-repo")
-	if err := os.MkdirAll(filepath.Join(repoPath, "docs"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoPath, "docs"), 0o750); err != nil {
 		t.Fatalf("Failed to create repo: %v", err)
 	}
 
 	testFile := filepath.Join(repoPath, "docs", "readme.md")
-	if err := os.WriteFile(testFile, []byte("# Test Documentation"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("# Test Documentation"), 0600); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 

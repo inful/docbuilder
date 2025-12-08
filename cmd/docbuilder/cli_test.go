@@ -140,7 +140,7 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 
 	for _, dir := range dirs {
 		dirPath := filepath.Join(env.workspaceDir, dir)
-		if err := os.MkdirAll(dirPath, 0o755); err != nil {
+		if err := os.MkdirAll(dirPath, 0o750); err != nil {
 			return err
 		}
 	}
@@ -300,7 +300,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 	env.outputCapture.WriteString("Generating Hugo static site...\n")
 
 	outputDir := filepath.Join(env.workspaceDir, "site")
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o750); err != nil {
 		env.errorCapture.WriteString("Failed to create output directory: " + err.Error())
 		return 1, nil
 	}
@@ -320,7 +320,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 
 		// Create directory if needed
 		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			continue
 		}
 

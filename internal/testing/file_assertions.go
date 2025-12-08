@@ -58,6 +58,7 @@ func (fa *FileAssertions) AssertFileContains(relativePath, expectedContent strin
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
 
+	// #nosec G304 - test helper, paths are controlled by test code
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		fa.t.Errorf("Failed to read file %s: %v", fullPath, err)
@@ -161,6 +162,7 @@ func (fa *FileAssertions) GetFileContent(relativePath string) string {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
 
+	// #nosec G304 - test helper, paths are controlled by test code
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		fa.t.Fatalf("Failed to read file %s: %v", fullPath, err)

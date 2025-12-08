@@ -51,7 +51,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	fetcher := hugo.NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 
 	// Ensure workspace directory structure
-	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
+	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 		err = fmt.Errorf("ensure workspace: %w", err)
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)

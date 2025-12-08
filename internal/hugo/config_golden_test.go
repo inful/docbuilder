@@ -13,6 +13,7 @@ import (
 
 // normalizeConfig removes volatile fields (dates) and sorts maps for stable serialization.
 func normalizeConfig(t *testing.T, path string) []byte {
+	// #nosec G304 - test helper
 	b, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read: %v", err)
@@ -42,6 +43,7 @@ func TestHugoConfigGolden_Hextra(t *testing.T) {
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
 	golden := filepath.Join("testdata", "hugo_config", "hextra.yaml")
+	// #nosec G304 - test file
 	want, err := os.ReadFile(golden)
 	if err != nil {
 		t.Fatalf("read golden: %v", err)
@@ -70,6 +72,7 @@ func TestHugoConfigGolden_Docsy(t *testing.T) {
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
 	golden := filepath.Join("testdata", "hugo_config", "docsy.yaml")
+	// #nosec G304 - test file
 	want, err := os.ReadFile(golden)
 	if err != nil {
 		t.Fatalf("read golden: %v", err)

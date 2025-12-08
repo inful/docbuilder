@@ -127,7 +127,10 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 	// Update queue length from build queue if available
 	if d.buildQueue != nil {
 		qLen := d.buildQueue.Length()
-		status.BuildStatus.QueueLength = int32(qLen)
+		if qLen > 2147483647 { // max int32
+			qLen = 2147483647
+		}
+		status.BuildStatus.QueueLength = int32(qLen) // #nosec G115 - bounds checked
 	} else {
 		status.BuildStatus.QueueLength = d.queueLength
 	}

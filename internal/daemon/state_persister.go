@@ -148,6 +148,7 @@ func (sp *StatePersisterImpl) persistReportChecksum(
 		return nil
 	}
 	reportPath := filepath.Join(outDir, "build-report.json")
+	// #nosec G304 - reportPath is internal, outDir is controlled by application
 	brData, err := os.ReadFile(reportPath)
 	if err != nil {
 		return nil //nolint:nilerr // Skip if report file doesn't exist

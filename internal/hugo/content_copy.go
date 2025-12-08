@@ -116,7 +116,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		// record hash of raw for potential future integrity verification (not persisted yet)
 		_ = sha256.Sum256(p.Raw)
 		outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
-		if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
 			return fmt.Errorf("%w: failed to create directory for %s: %w", herrors.ErrContentWriteFailed, outputPath, err)
 		}
 		// #nosec G306 -- content files are public documentation

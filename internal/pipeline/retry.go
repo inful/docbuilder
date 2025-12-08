@@ -45,7 +45,12 @@ func WithRetry(h Handler, policy RetryPolicy, dlq *DeadLetterQueue) Handler {
 				break
 			}
 			if attempt < policy.MaxAttempts {
-				backoff := policy.Backoff * time.Duration(1<<uint(attempt-1)) // exponential
+				// Exponential backoff with overflow protection
+				exp := attempt - 1
+				if exp > 30 { // prevent overflow in 1<<exp
+					exp = 30
+				}
+				backoff := policy.Backoff * time.Duration(1<<uint(exp)) // #nosec G115 - bounds checked
 				slog.Info("Retrying after failure", "event", e.Name(), "attempt", attempt, "backoff", backoff, "error", lastErr)
 				time.Sleep(backoff)
 			}

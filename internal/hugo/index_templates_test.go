@@ -22,7 +22,7 @@ func TestIndexTemplates_FallbackEmbedded(t *testing.T) {
 	g := newTestGenerator(t)
 	files := []docs.DocFile{{Repository: "repo1", Name: "doc1", Path: "doc1.md"}}
 	// create expected content root
-	if err := os.MkdirAll(filepath.Join(g.outputDir, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(g.outputDir, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	if err := g.generateIndexPages(files); err != nil {
@@ -42,10 +42,10 @@ func TestIndexTemplates_UserOverridePrecedence(t *testing.T) {
 	g := newTestGenerator(t)
 	// create override in highest precedence path
 	overrideDir := filepath.Join(g.outputDir, "templates", "index")
-	if err := os.MkdirAll(overrideDir, 0o755); err != nil {
+	if err := os.MkdirAll(overrideDir, 0o750); err != nil {
 		t.Fatalf("mkdir override: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(g.outputDir, "content"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(g.outputDir, "content"), 0o750); err != nil {
 		t.Fatalf("mkdir content: %v", err)
 	}
 	content := "CUSTOM MAIN TEMPLATE\n"

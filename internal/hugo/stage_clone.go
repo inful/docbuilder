@@ -25,7 +25,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	}
 	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
 	// Ensure workspace directory structure (previously via git client)
-	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o755); err != nil {
+	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	strategy := config.CloneStrategyFresh

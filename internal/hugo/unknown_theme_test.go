@@ -20,7 +20,7 @@ func TestUnknownThemeFallback(t *testing.T) {
 
 	g := NewGenerator(cfg, filepath.Join(tmp, "out"))
 	g.stageDir = filepath.Join(tmp, "stage")
-	if err := os.MkdirAll(g.stageDir, 0o755); err != nil {
+	if err := os.MkdirAll(g.stageDir, 0o750); err != nil {
 		t.Fatalf("mkdir staging: %v", err)
 	}
 	if err := g.generateHugoConfig(); err != nil {

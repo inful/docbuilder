@@ -21,13 +21,13 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	}
 	out := t.TempDir()
 	ws := filepath.Join(out, "workspace")
-	if err := os.MkdirAll(ws, 0o755); err != nil {
+	if err := os.MkdirAll(ws, 0o750); err != nil {
 		t.Fatalf("mkdir ws: %v", err)
 	}
 
 	// Initialize a real local git repository so clone stage succeeds.
 	repoDir := filepath.Join(out, "remote-repoA")
-	if err := os.MkdirAll(filepath.Join(repoDir, "docs"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(repoDir, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir docs: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(repoDir, "docs", "page.md"), []byte("# Page\n"), 0o600); err != nil {

@@ -27,7 +27,7 @@ func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 
 	store := &SQLiteStore{db: db}
 	if err := store.initialize(); err != nil {
-		db.Close()
+		_ = db.Close() // Best effort cleanup on initialization error
 		return nil, fmt.Errorf("initialize schema: %w", err)
 	}
 

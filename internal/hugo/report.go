@@ -191,7 +191,7 @@ func (r *BuildReport) Persist(root string) error {
 		r.finish()
 		r.deriveOutcome()
 	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
+	if err := os.MkdirAll(root, 0o750); err != nil {
 		return fmt.Errorf("ensure root for report: %w", err)
 	}
 	// JSON
