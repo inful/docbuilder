@@ -127,6 +127,26 @@ jobs:
               tar -C /usr/local -xzf /tmp/go.tar.gz && \
               rm /tmp/go.tar.gz
           
+          # Stage to extract the correct binary
+          FROM ubuntu:22.04 AS binary-selector
+          ARG TARGETARCH
+          WORKDIR /binaries
+          
+          # Copy all goreleaser binaries
+          COPY dist/ ./
+          
+          # Find and copy the correct binary for the target architecture
+          RUN echo "Looking for binary for architecture: ${TARGETARCH}" && \
+              if [ "${TARGETARCH}" = "amd64" ]; then \
+                find . -path "*/docbuilder_linux_amd64*/docbuilder" -exec cp {} /binary \; ; \
+              elif [ "${TARGETARCH}" = "arm64" ]; then \
+                find . -path "*/docbuilder_linux_arm64*/docbuilder" -exec cp {} /binary \; ; \
+              else \
+                echo "Unsupported architecture: ${TARGETARCH}" && exit 1; \
+              fi && \
+              chmod +x /binary && \
+              ls -lh /binary
+          
           # Final runtime image
           FROM gcr.io/distroless/cc-debian12:nonroot AS runtime
           ARG TARGETARCH
@@ -135,7 +155,7 @@ jobs:
           WORKDIR /data
           
           # Copy the pre-built binary from goreleaser
-          COPY dist/docbuilder_linux_${TARGETARCH}*/docbuilder /usr/local/bin/docbuilder
+          COPY --from=binary-selector /binary /usr/local/bin/docbuilder
           
           # Copy Hugo and Go toolchain
           COPY --from=tools /usr/local/bin/hugo /usr/local/bin/hugo
