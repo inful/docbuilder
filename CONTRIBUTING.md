@@ -409,6 +409,101 @@ Follow conventional commits:
 - `test:` - Test additions/changes
 - `chore:` - Maintenance tasks
 
+## Release Process
+
+Releases are automated using [GoReleaser](https://goreleaser.com/) and GitHub Actions. The workflow builds binaries for multiple platforms and creates multi-architecture Docker images.
+
+### Creating a Release
+
+1. **Ensure CHANGELOG.md is Updated**:
+   - Document all changes since the last release
+   - Group changes by category (Features, Bug Fixes, etc.)
+   - Follow [Keep a Changelog](https://keepachangelog.com/) format
+
+2. **Tag the Release**:
+   ```bash
+   # Create an annotated tag
+   git tag -a v1.2.3 -m "Release v1.2.3"
+   
+   # Push the tag
+   git push origin v1.2.3
+   ```
+
+3. **Automated Build**:
+   - GitHub Actions automatically triggers the release workflow
+   - GoReleaser builds binaries for:
+     - Linux (amd64, arm64, arm)
+     - macOS (amd64, arm64)
+     - Windows (amd64)
+   - Multi-architecture Docker images are built and pushed to GitHub Container Registry
+
+4. **Verify the Release**:
+   - Check GitHub releases page for the new release
+   - Verify binaries are attached
+   - Test Docker images:
+     ```bash
+     docker pull ghcr.io/inful/docbuilder:v1.2.3
+     docker run ghcr.io/inful/docbuilder:v1.2.3 --version
+     ```
+
+### Release Artifacts
+
+Each release includes:
+- **Binaries**: Pre-compiled executables for all supported platforms
+- **Archives**: Tar.gz (Linux/macOS) and zip (Windows) with LICENSE, README, and example config
+- **Checksums**: SHA256 checksums for all artifacts
+- **Docker Images**: Multi-arch images tagged with:
+  - `v1.2.3` - Specific version
+  - `v1.2` - Minor version
+  - `v1` - Major version
+  - `latest` - Latest release
+
+### Docker Image Usage
+
+The release Docker images use pre-built binaries from GoReleaser:
+
+```bash
+# Pull the image
+docker pull ghcr.io/inful/docbuilder:latest
+
+# Run the daemon
+docker run -v ./config.yaml:/config/config.yaml \
+  -v ./output:/data \
+  -p 8080:8080 \
+  ghcr.io/inful/docbuilder:latest
+
+# Run a one-time build
+docker run -v ./config.yaml:/config/config.yaml \
+  -v ./output:/data \
+  ghcr.io/inful/docbuilder:latest build --config /config/config.yaml
+```
+
+### Testing Releases Locally
+
+Before tagging a release, you can test the GoReleaser configuration:
+
+```bash
+# Install GoReleaser
+go install github.com/goreleaser/goreleaser@latest
+
+# Test release build (snapshot mode)
+goreleaser build --snapshot --clean
+
+# Test full release process (dry run)
+goreleaser release --snapshot --clean
+
+# Check the artifacts
+ls -la dist/
+```
+
+### Pre-releases
+
+For beta or release candidate versions, use appropriate tag formats:
+- `v1.2.3-beta.1` - Beta release
+- `v1.2.3-rc.1` - Release candidate
+
+GoReleaser automatically detects these as pre-releases on GitHub.
+
 ## Getting Help
 
 - **Issues**: Open an issue for bugs or feature requests
