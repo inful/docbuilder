@@ -216,17 +216,18 @@ func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*
 
 // CheckDocumentation checks if repository has docs folder and .docignore
 func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
-	projectPath := repo.FullName
+	// Use project ID instead of path for GitLab API
+	projectID := repo.ID
 
 	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, projectPath, "docs", repo.DefaultBranch)
+	hasDocs, err := c.checkPathExists(ctx, projectID, "docs", repo.DefaultBranch)
 	if err != nil {
 		return fmt.Errorf("failed to check docs folder: %w", err)
 	}
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
-	hasDocIgnore, err := c.checkPathExists(ctx, projectPath, ".docignore", repo.DefaultBranch)
+	hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", repo.DefaultBranch)
 	if err != nil {
 		return fmt.Errorf("failed to check .docignore file: %w", err)
 	}
@@ -236,9 +237,11 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 }
 
 // checkPathExists checks if a path exists in the project
-func (c *GitLabClient) checkPathExists(ctx context.Context, projectPath, filePath, branch string) (bool, error) {
+// projectID should be the numeric project ID (not the path)
+func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath, branch string) (bool, error) {
+	// GitLab API: /projects/:id/repository/files/:file_path where :id must be numeric project ID
 	endpoint := fmt.Sprintf("/projects/%s/repository/files/%s?ref=%s",
-		url.PathEscape(projectPath),
+		projectID, // Use numeric ID directly, don't URL-encode
 		url.PathEscape(filePath),
 		url.PathEscape(branch))
 
