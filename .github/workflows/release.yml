@@ -81,8 +81,10 @@ jobs:
             echo ""
             echo "⚠️  Detected nested dist/dist/ structure, normalizing..."
             # Move all files including hidden files, handle empty directory gracefully
-            find dist/dist -mindepth 1 -maxdepth 1 -exec mv {} dist/ \;
-            rmdir dist/dist
+            # Use -n to prevent overwrites in case of naming conflicts
+            find dist/dist -mindepth 1 -maxdepth 1 -exec mv -n {} dist/ \;
+            # Remove the nested directory (use rm -rf for robustness)
+            rm -rf dist/dist
             echo "✅ Normalized directory structure"
             echo ""
             echo "Updated dist/ contents:"
