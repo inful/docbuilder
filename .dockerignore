@@ -5,10 +5,16 @@
 **/*.log
 **/node_modules
 **/tmp
-**/dist
+# Include dist/ for pre-built binaries from GoReleaser
+# **/dist
 **/bin
 **/site
 **/public
 **/.env*
 **/*.test
 **/testforge.test
+# Ignore test and example files
+test/
+**/*_test.go
+*.md
+!README.md

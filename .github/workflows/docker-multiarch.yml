@@ -1,5 +1,10 @@
 name: Build and Push Multi-Arch Docker Images
 
+# Cancel in-progress runs on new commits to save build time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     tags:
@@ -25,7 +30,37 @@ env:
   HUGO_VERSION: ${{ github.event.inputs.hugo_version || '0.152.2' }}
 
 jobs:
+  # Build binaries with GoReleaser for efficiency
+  goreleaser-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run GoReleaser (build only)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --snapshot --clean --config .goreleaser.yaml
+
+      - name: Upload binaries for Docker build
+        uses: actions/upload-artifact@v4
+        with:
+          name: goreleaser-binaries
+          path: dist/
+          retention-days: 1
+
   build-and-push:
+    needs: goreleaser-build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,11 +77,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Download pre-built binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: goreleaser-binaries
+          path: dist/
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Extract version info
         id: version
@@ -112,8 +157,12 @@ jobs:
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
             HUGO_VERSION=${{ env.HUGO_VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=buildkit-${{ matrix.target.name }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.target.name }}
+          cache-to: type=gha,mode=max,scope=buildkit-${{ matrix.target.name }}
+          provenance: false
+          sbom: false
 
       - name: Build summary
         if: always()
