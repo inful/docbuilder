@@ -116,54 +116,25 @@ jobs:
       - name: Build DocBuilder
         run: go build -v -o docbuilder ./cmd/docbuilder
 
-      - name: Create DocBuilder config
+      - name: Generate documentation site
         run: |
-          cat > ci-config.yaml << 'EOF'
-          version: "2.0"
-          
-          build:
-            clone_concurrency: 2
-          
-          forges:
-            - name: github-docbuilder
-              type: file
-              base_url: https://github.com/${{ github.repository }}
-              repositories:
-                - url: ${{ github.workspace }}
-                  name: docbuilder
-                  branch: ${{ github.ref_name }}
-                  paths: [docs]
-          
-          hugo:
-            title: 'DocBuilder Documentation'
-            description: 'Documentation for DocBuilder - aggregate docs from multiple Git repositories'
-            base_url: 'https://${{ github.repository_owner }}.github.io/docbuilder'
-            theme: 'hextra'
-            render: true
-          
-          output:
-            directory: './generated-site'
-            clean: true
-          EOF
-
-      - name: Generate and build documentation site
-        run: |
-          ./docbuilder build -c ci-config.yaml -v
+          ./docbuilder generate \
+            --docs-dir ./docs \
+            --output ./public \
+            --theme hextra \
+            --title "DocBuilder Documentation" \
+            --base-url "https://${{ github.repository_owner }}.github.io/docbuilder" \
+            --render
           
           # Verify the site was generated
-          test -d generated-site || (echo "Site directory not created" && exit 1)
-          test -f generated-site/hugo.yaml || (echo "Hugo config not created" && exit 1)
-          test -d generated-site/content || (echo "Content directory not created" && exit 1)
-          
-          # Verify Hugo rendered the site
-          test -d generated-site/public || (echo "Hugo public directory not created" && exit 1)
-          test -f generated-site/public/index.html || (echo "Hugo index.html not created" && exit 1)
+          test -d public || (echo "Public directory not created" && exit 1)
+          test -f public/index.html || (echo "index.html not created" && exit 1)
 
       - name: Upload generated site as artifact
         uses: actions/upload-artifact@v4
         with:
           name: generated-docs-site
-          path: generated-site/public/
+          path: public/
           retention-days: 7
 
       - name: Site generation summary
@@ -173,13 +144,13 @@ jobs:
           echo "Successfully generated static documentation site!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📊 Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- **Content files**: $(find generated-site/content -name '*.md' | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Generated pages**: $(find generated-site/public -name '*.html' | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Site size**: $(du -sh generated-site/public | cut -f1)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Content files**: $(find docs -name '*.md' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Generated pages**: $(find public -name '*.html' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Site size**: $(du -sh public | cut -f1)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📁 Generated Structure" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          tree -L 2 generated-site/public || ls -la generated-site/public >> $GITHUB_STEP_SUMMARY
+          tree -L 2 public || ls -la public >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   docker-build-test:
