@@ -46,16 +46,18 @@ func (t *FrontMatterParserV2) Version() string {
 	return "2.0.0"
 }
 
-// Priority returns the execution priority.
-func (t *FrontMatterParserV2) Priority() int {
-	return t.config.Priority
+// Stage returns the transformation stage.
+func (t *FrontMatterParserV2) Stage() TransformStage {
+	return StageParse
 }
 
 // Dependencies returns the transformer dependencies.
 func (t *FrontMatterParserV2) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
-		RequiredBefore:              []string{},
-		RequiredAfter:               []string{},
+		MustRunAfter:                []string{}, // No dependencies, runs first
+		MustRunBefore:               []string{},
+		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredAfter:               []string{}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
 		RequiresContent:             true,
@@ -200,16 +202,18 @@ func (t *FrontMatterBuilderV3) Version() string {
 	return "3.0.0"
 }
 
-// Priority returns the execution priority.
-func (t *FrontMatterBuilderV3) Priority() int {
-	return t.config.Priority
+// Stage returns the transformation stage.
+func (t *FrontMatterBuilderV3) Stage() TransformStage {
+	return StageBuild
 }
 
 // Dependencies returns the transformer dependencies.
 func (t *FrontMatterBuilderV3) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
-		RequiredBefore:              []string{},
-		RequiredAfter:               []string{"front_matter_parser_v2"},
+		MustRunAfter:                []string{"front_matter_parser_v2"},
+		MustRunBefore:               []string{},
+		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredAfter:               []string{"front_matter_parser_v2"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
 		RequiresContent:             false,
@@ -330,16 +334,18 @@ func (t *EditLinkInjectorV3) Version() string {
 	return "3.0.0"
 }
 
-// Priority returns the execution priority.
-func (t *EditLinkInjectorV3) Priority() int {
-	return t.config.Priority
+// Stage returns the transformation stage.
+func (t *EditLinkInjectorV3) Stage() TransformStage {
+	return StageEnrich
 }
 
 // Dependencies returns the transformer dependencies.
 func (t *EditLinkInjectorV3) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
-		RequiredBefore:              []string{},
-		RequiredAfter:               []string{"front_matter_builder_v3"},
+		MustRunAfter:                []string{"front_matter_builder_v3"},
+		MustRunBefore:               []string{},
+		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredAfter:               []string{"front_matter_builder_v3"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
 		RequiresContent:             false,
@@ -472,16 +478,18 @@ func (t *ContentProcessorV2) Version() string {
 	return "2.0.0"
 }
 
-// Priority returns the execution priority.
-func (t *ContentProcessorV2) Priority() int {
-	return t.config.Priority
+// Stage returns the transformation stage.
+func (t *ContentProcessorV2) Stage() TransformStage {
+	return StageTransform
 }
 
 // Dependencies returns the transformer dependencies.
 func (t *ContentProcessorV2) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
-		RequiredBefore:              []string{},
-		RequiredAfter:               []string{"edit_link_injector_v3"},
+		MustRunAfter:                []string{"edit_link_injector_v3"},
+		MustRunBefore:               []string{},
+		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredAfter:               []string{"edit_link_injector_v3"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
 		RequiresContent:             true,

@@ -180,7 +180,6 @@ func TestFrontMatterParserV2(t *testing.T) {
 	parser := NewFrontMatterParserV2()
 
 	assert.Equal(t, "front_matter_parser_v2", parser.Name())
-	assert.Equal(t, 10, parser.Priority())
 
 	// Test with front matter
 	content := `---
@@ -246,7 +245,6 @@ func TestFrontMatterBuilderV3(t *testing.T) {
 	builder := NewFrontMatterBuilderV3()
 
 	assert.Equal(t, "front_matter_builder_v3", builder.Name())
-	assert.Equal(t, 20, builder.Priority())
 
 	file := docs.DocFile{
 		Path:       "docs/api/example.md",
@@ -384,6 +382,7 @@ func (m *mockEditLinkResolver) SupportsFile(_ docs.DocFile) bool {
 type mockTransformer struct {
 	name     string
 	priority int
+	stage    TransformStage
 	enabled  bool
 }
 
@@ -391,6 +390,12 @@ func (m *mockTransformer) Name() string                          { return m.name
 func (m *mockTransformer) Description() string                   { return "Mock transformer" }
 func (m *mockTransformer) Version() string                       { return "1.0.0" }
 func (m *mockTransformer) Priority() int                         { return m.priority }
+func (m *mockTransformer) Stage() TransformStage {
+	if m.stage == "" {
+		return StageParse // Default stage
+	}
+	return m.stage
+}
 func (m *mockTransformer) Dependencies() TransformerDependencies { return TransformerDependencies{} }
 func (m *mockTransformer) Configuration() TransformerConfiguration {
 	return TransformerConfiguration{Enabled: m.enabled}

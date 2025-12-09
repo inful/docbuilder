@@ -55,7 +55,7 @@ type TransformInput struct {
 }
 
 // TransformPlugin extends the base Plugin interface with transform-specific methods.
-// DEPRECATED: Use TransformPlugin for new transforms.
+// DEPRECATED: Use TransformPluginV2 for new transforms.
 type TransformPlugin interface {
 	plugin.Plugin
 
@@ -82,7 +82,7 @@ type TransformDependencies struct {
 	MustRunBefore []string
 }
 
-// TransformPlugin is the new dependency-based plugin transform interface.
+// TransformPluginV2 is the new dependency-based plugin transform interface.
 // BaseTransformPlugin provides default implementations for transform lifecycle methods.
 type BaseTransformPlugin struct {
 	plugin.BasePlugin
@@ -125,14 +125,44 @@ func (r *TransformRegistry) Register(transform TransformPlugin) error {
 	return nil
 }
 
+// RegisterV2 adds a dependency-based transform plugin to the registry.
+func (r *TransformRegistry) RegisterV2(transform TransformPluginV2) error {
+	if transform == nil {
+		return fmt.Errorf("cannot register nil transform")
+	}
+
+	metadata := transform.Metadata()
+	if err := metadata.Validate(); err != nil {
+		return fmt.Errorf("invalid transform metadata: %w", err)
+	}
+
+	// Verify it's a transform type
+	if metadata.Type != plugin.PluginTypeTransform {
+		return fmt.Errorf("plugin %s has type %s, expected %s", metadata.Name, metadata.Type, plugin.PluginTypeTransform)
+	}
+
+	r.transformsV2 = append(r.transformsV2, transform)
+	return nil
+}
+
+// SetUseV2 enables the new dependency-based system.
+func (r *TransformRegistry) SetUseV2(enabled bool) {
+	r.useV2 = enabled
+}
+
+// GetUseV2 returns whether V2 system is enabled.
+func (r *TransformRegistry) GetUseV2() bool {
+	return r.useV2
+}
+
 // topologicalSortPlugins performs dependency resolution for plugin transforms.
-func topologicalSortPlugins(transforms []TransformPlugin) ([]TransformPlugin, error) {
+func topologicalSortPlugins(transforms []TransformPluginV2) ([]TransformPluginV2, error) {
 	if len(transforms) == 0 {
 		return transforms, nil
 	}
 
 	// Build name -> transform map
-	byName := make(map[string]TransformPlugin)
+	byName := make(map[string]TransformPluginV2)
 	for _, t := range transforms {
 		byName[t.Metadata().Name] = t
 	}
@@ -180,7 +210,7 @@ func topologicalSortPlugins(transforms []TransformPlugin) ([]TransformPlugin, er
 	// Sort queue for deterministic ordering
 	sort.Strings(queue)
 
-	var result []TransformPlugin
+	var result []TransformPluginV2
 	for len(queue) > 0 {
 		// Pop from queue
 		current := queue[0]
@@ -210,37 +240,69 @@ func topologicalSortPlugins(transforms []TransformPlugin) ([]TransformPlugin, er
 }
 
 // ApplyToContent applies all registered transforms to content.
-// Transforms are applied in dependency-based topological order.
+// Transforms are applied in order according to their Order() value (V1) or Dependencies (V2).
 func (r *TransformRegistry) ApplyToContent(input *TransformInput) (*TransformResult, error) {
 	result := &TransformResult{
 		Content:  input.Content,
 		Metadata: input.Metadata,
 	}
 
-	// Use dependency-based ordering
-	sorted, err := topologicalSortPlugins(r.transforms)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sort transforms: %w", err)
-	}
-
-	for _, transform := range sorted {
-		if !transform.ShouldApply(input) {
-			continue
+	if r.useV2 {
+		// Use V2 dependency-based ordering
+		sorted, err := topologicalSortPlugins(r.transformsV2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sort transforms: %w", err)
 		}
 
-		input.Content = result.Content
-		input.Metadata = result.Metadata
+		for _, transform := range sorted {
+			if !transform.ShouldApply(input) {
+				continue
+			}
 
-		trResult := transform.Apply(input)
-		if trResult.Error != nil {
-			return nil, fmt.Errorf("transform %s failed: %w", transform.Metadata().Name, trResult.Error)
+			input.Content = result.Content
+			input.Metadata = result.Metadata
+
+			trResult := transform.Apply(input)
+			if trResult.Error != nil {
+				return nil, fmt.Errorf("transform %s failed: %w", transform.Metadata().Name, trResult.Error)
+			}
+
+			if !trResult.Skipped {
+				result.Content = trResult.Content
+				if trResult.Metadata != nil {
+					for k, v := range trResult.Metadata {
+						result.Metadata[k] = v
+					}
+				}
+			}
 		}
+	} else {
+		// Use V1 priority-based ordering (sort by Order())
+		sorted := make([]TransformPlugin, len(r.transforms))
+		copy(sorted, r.transforms)
+		sort.Slice(sorted, func(i, j int) bool {
+			return sorted[i].Order() < sorted[j].Order()
+		})
 
-		if !trResult.Skipped {
-			result.Content = trResult.Content
-			if trResult.Metadata != nil {
-				for k, v := range trResult.Metadata {
-					result.Metadata[k] = v
+		for _, transform := range sorted {
+			if !transform.ShouldApply(input) {
+				continue
+			}
+
+			input.Content = result.Content
+			input.Metadata = result.Metadata
+
+			trResult := transform.Apply(input)
+			if trResult.Error != nil {
+				return nil, fmt.Errorf("transform %s failed: %w", transform.Metadata().Name, trResult.Error)
+			}
+
+			if !trResult.Skipped {
+				result.Content = trResult.Content
+				if trResult.Metadata != nil {
+					for k, v := range trResult.Metadata {
+						result.Metadata[k] = v
+					}
 				}
 			}
 		}

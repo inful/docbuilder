@@ -13,10 +13,23 @@ type HextraTypeEnforcer struct{}
 
 func (t HextraTypeEnforcer) Name() string { return "hextra_type_enforcer" }
 
-func (t HextraTypeEnforcer) Priority() int {
-	// Run late (after defaults at 50, edit links at 60, shortcode escaper at 85)
-	// but before serializer (90)
-	return 89
+func (t HextraTypeEnforcer) Stage() TransformStage {
+	return StageFinalize
+}
+
+func (t HextraTypeEnforcer) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"shortcode_escaper"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             false,
+		ModifiesFrontMatter:         true,
+		RequiresConfig:              true,
+		RequiresThemeInfo:           true,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
 }
 
 func (t HextraTypeEnforcer) Transform(p PageAdapter) error {

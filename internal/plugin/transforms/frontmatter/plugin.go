@@ -49,15 +49,19 @@ func (p *FrontmatterTransform) Stage() transforms.TransformStage {
 	return transforms.StageFrontmatter
 }
 
+// Dependencies returns the dependency constraints for this transform.
+// FrontmatterTransform has no dependencies as it runs early in the pipeline.
+func (p *FrontmatterTransform) Dependencies() transforms.TransformDependencies {
+	return transforms.TransformDependencies{
+		MustRunAfter:  []string{}, // No dependencies
+		MustRunBefore: []string{}, // No specific ordering required
+	}
+}
+
 // ShouldApply returns true for markdown files with frontmatter.
 func (p *FrontmatterTransform) ShouldApply(input *transforms.TransformInput) bool {
 	// Apply to files with .md or .markdown extension
 	return strings.HasSuffix(input.FilePath, ".md") || strings.HasSuffix(input.FilePath, ".markdown")
-}
-
-// Order returns execution priority (negative for early execution).
-func (p *FrontmatterTransform) Order() int {
-	return -100 // High priority, execute early
 }
 
 // Apply processes frontmatter in the content.

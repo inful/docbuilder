@@ -17,17 +17,6 @@ import (
 // The concrete Page type lives in hugo package; we interact via reflection-free field access using type assertions.
 // For simplicity we rely on the struct shape remaining stable; Phase 2 can formalize a minimal interface.
 
-// priority constants (gaps allow future insertion)
-const (
-	prFrontMatterParse = 10
-	prFrontMatterMerge = 40
-	prRelLink          = 50
-	prSerialize        = 90
-	// Active (V2) priorities
-	prFrontMatterBuildV2 = 22
-	prEditLinkV2         = 32
-)
-
 // generatorProvider is set by hugo package prior to running registry pipeline (late binding to avoid import cycle).
 var generatorProvider func() any
 
@@ -38,8 +27,27 @@ func SetGeneratorProvider(fn func() any) { generatorProvider = fn }
 
 type FrontMatterParser struct{}
 
-func (t FrontMatterParser) Name() string  { return "front_matter_parser" }
-func (t FrontMatterParser) Priority() int { return prFrontMatterParse }
+func (t FrontMatterParser) Name() string { return "front_matter_parser" }
+
+func (t FrontMatterParser) Stage() TransformStage {
+	return StageParse
+}
+
+func (t FrontMatterParser) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             true,
+		ModifiesFrontMatter:         true,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
+}
+
 func (t FrontMatterParser) Transform(p PageAdapter) error {
 	// Accept either PageShim or any object exposing required facade subset.
 	var (
@@ -75,8 +83,27 @@ func (t FrontMatterParser) Transform(p PageAdapter) error {
 
 type MergeFrontMatter struct{}
 
-func (t MergeFrontMatter) Name() string  { return "front_matter_merge" }
-func (t MergeFrontMatter) Priority() int { return prFrontMatterMerge }
+func (t MergeFrontMatter) Name() string { return "front_matter_merge" }
+
+func (t MergeFrontMatter) Stage() TransformStage {
+	return StageMerge
+}
+
+func (t MergeFrontMatter) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"edit_link_injector_v2"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: true,
+		ModifiesContent:             false,
+		ModifiesFrontMatter:         true,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
+}
+
 func (t MergeFrontMatter) Transform(p PageAdapter) error {
 	if shim, ok := p.(*PageShim); ok {
 		shim.ApplyPatchesFacade()
@@ -87,8 +114,27 @@ func (t MergeFrontMatter) Transform(p PageAdapter) error {
 
 type RelativeLinkRewriter struct{}
 
-func (t RelativeLinkRewriter) Name() string  { return "relative_link_rewriter" }
-func (t RelativeLinkRewriter) Priority() int { return prRelLink }
+func (t RelativeLinkRewriter) Name() string { return "relative_link_rewriter" }
+
+func (t RelativeLinkRewriter) Stage() TransformStage {
+	return StageTransform
+}
+
+func (t RelativeLinkRewriter) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"front_matter_merge"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             true,
+		ModifiesFrontMatter:         false,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           true,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        true,
+	}
+}
+
 func (t RelativeLinkRewriter) Transform(p PageAdapter) error {
 	if shim, ok := p.(*PageShim); ok {
 		if shim.RewriteLinks != nil {
@@ -101,8 +147,27 @@ func (t RelativeLinkRewriter) Transform(p PageAdapter) error {
 
 type Serializer struct{}
 
-func (t Serializer) Name() string  { return "front_matter_serialize" }
-func (t Serializer) Priority() int { return prSerialize }
+func (t Serializer) Name() string { return "front_matter_serialize" }
+
+func (t Serializer) Stage() TransformStage {
+	return StageSerialize
+}
+
+func (t Serializer) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"front_matter_merge"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: true,
+		ModifiesContent:             false,
+		ModifiesFrontMatter:         false,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
+}
+
 func (t Serializer) Transform(p PageAdapter) error {
 	if shim, ok := p.(*PageShim); ok {
 		return shim.Serialize()
@@ -159,20 +224,41 @@ func (p *PageShim) Serialize() error {
 }
 
 func init() {
+	// Register all transforms with dependency-based registry
 	Register(FrontMatterParser{})
 	Register(FrontMatterBuilderV2{})
 	Register(EditLinkInjectorV2{})
 	Register(MergeFrontMatter{})
 	Register(RelativeLinkRewriter{})
 	Register(Serializer{})
+	
 	_ = fmt.Sprintf
 }
 
 // FrontMatterBuilderV2 builds base front matter (without editURL) and adds a patch.
 type FrontMatterBuilderV2 struct{}
 
-func (t FrontMatterBuilderV2) Name() string  { return "front_matter_builder_v2" }
-func (t FrontMatterBuilderV2) Priority() int { return prFrontMatterBuildV2 }
+func (t FrontMatterBuilderV2) Name() string { return "front_matter_builder_v2" }
+
+func (t FrontMatterBuilderV2) Stage() TransformStage {
+	return StageBuild
+}
+
+func (t FrontMatterBuilderV2) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"front_matter_parser"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: true,
+		ModifiesContent:             false,
+		ModifiesFrontMatter:         true,
+		RequiresConfig:              true,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           true,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        true,
+	}
+}
+
 func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
 	shim, ok := p.(*PageShim)
 	if !ok {
@@ -213,8 +299,27 @@ func (t FrontMatterBuilderV2) Transform(p PageAdapter) error {
 // EditLinkInjectorV2 adds editURL if missing using resolver logic, separate from base builder.
 type EditLinkInjectorV2 struct{}
 
-func (t EditLinkInjectorV2) Name() string  { return "edit_link_injector_v2" }
-func (t EditLinkInjectorV2) Priority() int { return prEditLinkV2 }
+func (t EditLinkInjectorV2) Name() string { return "edit_link_injector_v2" }
+
+func (t EditLinkInjectorV2) Stage() TransformStage {
+	return StageEnrich
+}
+
+func (t EditLinkInjectorV2) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"front_matter_builder_v2"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             false,
+		ModifiesFrontMatter:         true,
+		RequiresConfig:              true,
+		RequiresThemeInfo:           true,
+		RequiresForgeInfo:           true,
+		RequiresEditLinkResolver:    true,
+		RequiresFileMetadata:        true,
+	}
+}
+
 func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 	shim, ok := p.(*PageShim)
 	if !ok || shim == nil {

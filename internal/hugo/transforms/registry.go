@@ -1,81 +1,75 @@
 package transforms
 
 // Package transforms provides a pluggable registry for content transformers.
-// It is an extraction of the previously inlined pipeline in transform.go (Phase 2 roadmap).
 
 import (
 	"fmt"
-	"sort"
 )
 
 // PageAdapter is a minimal abstraction to decouple registry from concrete hugo.Page.
 // We accept an interface satisfied by *hugo.Page; defined here to avoid import cycle.
 type PageAdapter interface{}
 
-// Transformer defines a content transformation stage.
-type Transformer interface {
-	Name() string
-	Transform(p PageAdapter) error
-	Priority() int // lower runs first; legacy pipeline used explicit ordering
-}
+// Transformer is defined in dependencies.go (dependency-based interface)
 
-// simple priority list registry
-var reg = map[string]Transformer{}
+// Registry for dependency-based transformers
+var registry = map[string]Transformer{}
 
-// Register adds a transformer (idempotent by name). Intended to be called from init() of transformer files.
+// Register adds a dependency-based transformer to the registry.
 func Register(t Transformer) {
 	if t != nil {
-		if _, ok := reg[t.Name()]; !ok {
-			reg[t.Name()] = t
+		if _, ok := registry[t.Name()]; !ok {
+			registry[t.Name()] = t
 		}
 	}
 }
 
-// List returns transformers sorted by Priority (stable by name for equal priority).
-func List() []Transformer {
-	items := make([]Transformer, 0, len(reg))
-	for _, t := range reg {
+// List returns transformers sorted by stages and dependencies.
+func List() ([]Transformer, error) {
+	items := make([]Transformer, 0, len(registry))
+	for _, t := range registry {
 		items = append(items, t)
 	}
-	sort.SliceStable(items, func(i, j int) bool {
-		if items[i].Priority() == items[j].Priority() {
-			return items[i].Name() < items[j].Name()
-		}
-		return items[i].Priority() < items[j].Priority()
-	})
-	return items
+	return BuildPipeline(items)
 }
 
-// BuildPipeline constructs a concrete execution slice filtering by optional allowlist.
-func BuildPipeline(include map[string]struct{}) ([]Transformer, error) {
-	all := List()
+// BuildPipelineWithFilter constructs a dependency-based pipeline with optional filtering.
+func BuildPipelineWithFilter(include map[string]struct{}) ([]Transformer, error) {
+	all, err := List()
+	if err != nil {
+		return nil, err
+	}
+	
 	if len(include) == 0 {
 		return all, nil
 	}
+	
 	var out []Transformer
 	for _, t := range all {
 		if _, ok := include[t.Name()]; ok {
 			out = append(out, t)
 		}
 	}
+	
 	if len(out) == 0 {
 		return nil, fmt.Errorf("no transformers matched provided filter")
 	}
+	
 	return out, nil
 }
 
 // --- Test helpers (non-exported) ---
 // snapshotRegistry returns a shallow copy for test isolation.
 func snapshotRegistry() map[string]Transformer {
-	cp := make(map[string]Transformer, len(reg))
-	for k, v := range reg {
+	cp := make(map[string]Transformer, len(registry))
+	for k, v := range registry {
 		cp[k] = v
 	}
 	return cp
 }
 
 // restoreRegistry replaces the registry map (test only).
-func restoreRegistry(cp map[string]Transformer) { reg = cp }
+func restoreRegistry(cp map[string]Transformer) { registry = cp }
 
 // SnapshotForTest exposes a registry snapshot (test only).
 func SnapshotForTest() map[string]Transformer { return snapshotRegistry() }

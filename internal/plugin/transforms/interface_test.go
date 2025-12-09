@@ -39,6 +39,10 @@ func (m *mockTransform) Stage() TransformStage {
 	return m.stage
 }
 
+func (m *mockTransform) Dependencies() TransformDependencies {
+	return TransformDependencies{} // No dependencies for mock
+}
+
 func (m *mockTransform) Order() int {
 	return m.order
 }
@@ -107,15 +111,6 @@ func TestTransformInput(t *testing.T) {
 
 	if string(input.Content) != "# Title" {
 		t.Errorf("Content = %q, expected '# Title'", string(input.Content))
-	}
-}
-
-// TestBaseTransformPluginOrder tests default order.
-func TestBaseTransformPluginOrder(t *testing.T) {
-	base := &BaseTransformPlugin{}
-
-	if base.Order() != 0 {
-		t.Errorf("Order() = %d, expected 0", base.Order())
 	}
 }
 

@@ -88,15 +88,6 @@ func TestFrontmatterTransformShouldApply(t *testing.T) {
 	}
 }
 
-func TestFrontmatterTransformOrder(t *testing.T) {
-	ft := NewFrontmatterTransform()
-	order := ft.Order()
-
-	if order != -100 {
-		t.Errorf("Expected order -100, got %d", order)
-	}
-}
-
 func TestFrontmatterTransformApply(t *testing.T) {
 	ft := NewFrontmatterTransform()
 

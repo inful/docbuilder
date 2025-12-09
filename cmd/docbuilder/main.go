@@ -19,6 +19,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 	"github.com/alecthomas/kong"
 )
@@ -32,12 +33,13 @@ type CLI struct {
 	Verbose bool             `short:"v" help:"Enable verbose logging"`
 	Version kong.VersionFlag `name:"version" help:"Show version and exit"`
 
-	Build    BuildCmd    `cmd:"" help:"Build documentation site from configured repositories"`
-	Init     InitCmd     `cmd:"" help:"Initialize a new configuration file"`
-	Discover DiscoverCmd `cmd:"" help:"Discover documentation files without building"`
-	Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
-	Preview  PreviewCmd  `cmd:"" help:"Preview local docs with live reload (no git polling)"`
-	Generate GenerateCmd `cmd:"" help:"Generate static site from local docs directory (for CI/CD)"`
+	Build     BuildCmd     `cmd:"" help:"Build documentation site from configured repositories"`
+	Init      InitCmd      `cmd:"" help:"Initialize a new configuration file"`
+	Discover  DiscoverCmd  `cmd:"" help:"Discover documentation files without building"`
+	Daemon    DaemonCmd    `cmd:"" help:"Start daemon mode for continuous documentation updates"`
+	Preview   PreviewCmd   `cmd:"" help:"Preview local docs with live reload (no git polling)"`
+	Generate  GenerateCmd  `cmd:"" help:"Generate static site from local docs directory (for CI/CD)"`
+	Visualize VisualizeCmd `cmd:"" help:"Visualize the transform pipeline (text, mermaid, dot, json)"`
 }
 
 // Common context passed to subcommands if we need to share global state later.
@@ -76,6 +78,13 @@ type GenerateCmd struct {
 	Title   string `name:"title" help:"Site title" default:"Documentation"`
 	BaseURL string `name:"base-url" help:"Base URL for the site" default:"/"`
 	Render  bool   `name:"render" help:"Run Hugo to render the site" default:"true"`
+}
+
+// VisualizeCmd implements the 'visualize' command.
+type VisualizeCmd struct {
+	Format string `short:"f" help:"Output format: text, mermaid, dot, json" default:"text" enum:"text,mermaid,dot,json"`
+	Output string `short:"o" help:"Output file path (optional, prints to stdout if not specified)"`
+	List   bool   `short:"l" help:"List available formats and exit"`
 }
 
 // AfterApply runs after flag parsing; setup logging once.
@@ -765,4 +774,44 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.Chmod(dst, srcInfo.Mode())
+}
+
+// Run executes the visualize command.
+func (cmd *VisualizeCmd) Run(_ *Global, _ *CLI) error {
+	// Import defaults package to register transforms
+	_ = hugo.NewGenerator(&config.Config{}, "")
+	
+	// Handle --list flag
+	if cmd.List {
+		fmt.Println("Available visualization formats:")
+		fmt.Println()
+		for _, format := range tr.GetSupportedFormats() {
+			desc := tr.GetFormatDescription(format)
+			fmt.Printf("  %-10s %s\n", format, desc)
+		}
+		fmt.Println()
+		fmt.Println("Usage examples:")
+		fmt.Println("  docbuilder visualize                    # Text format to stdout")
+		fmt.Println("  docbuilder visualize -f mermaid         # Mermaid diagram to stdout")
+		fmt.Println("  docbuilder visualize -f dot -o pipe.dot # DOT format to file")
+		return nil
+	}
+	
+	// Generate visualization
+	output, err := tr.VisualizePipeline(tr.VisualizationFormat(cmd.Format))
+	if err != nil {
+		return fmt.Errorf("failed to visualize pipeline: %w", err)
+	}
+	
+	// Write to file or stdout
+	if cmd.Output != "" {
+		if err := os.WriteFile(cmd.Output, []byte(output), 0644); err != nil {
+			return fmt.Errorf("failed to write output file: %w", err)
+		}
+		slog.Info("Pipeline visualization written", "file", cmd.Output, "format", cmd.Format)
+	} else {
+		fmt.Print(output)
+	}
+	
+	return nil
 }

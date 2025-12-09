@@ -7,6 +7,20 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
+// TransformStage represents a major phase in the typed transformation pipeline.
+// This aligns with the core transforms stage model.
+type TransformStage string
+
+const (
+	StageParse      TransformStage = "parse"      // Extract/parse source content
+	StageBuild      TransformStage = "build"      // Generate base metadata
+	StageEnrich     TransformStage = "enrich"     // Add computed fields
+	StageMerge      TransformStage = "merge"      // Combine/merge data
+	StageTransform  TransformStage = "transform"  // Modify content
+	StageFinalize   TransformStage = "finalize"   // Post-process
+	StageSerialize  TransformStage = "serialize"  // Output generation
+)
+
 // ContentPage represents a strongly-typed page being transformed.
 // This replaces the interface{} approach with compile-time type safety.
 type ContentPage struct {
@@ -68,7 +82,8 @@ type TypedTransformer interface {
 	Transform(page *ContentPage, context *TransformContext) (*TransformationResult, error)
 
 	// Metadata
-	Priority() int
+	Priority() int // DEPRECATED: Use Dependencies().MustRunAfter/MustRunBefore instead
+	Stage() TransformStage
 	Dependencies() TransformerDependencies
 	Configuration() TransformerConfiguration
 
@@ -79,9 +94,13 @@ type TypedTransformer interface {
 
 // TransformerDependencies defines what a transformer needs to run properly.
 type TransformerDependencies struct {
-	// Order dependencies
-	RequiredBefore []string // Must run before these transformers
-	RequiredAfter  []string // Must run after these transformers
+	// Order dependencies (aligned with core transforms pattern)
+	MustRunAfter  []string // Must run after these transformers
+	MustRunBefore []string // Must run before these transformers
+
+	// Legacy order dependencies (DEPRECATED)
+	RequiredBefore []string // DEPRECATED: Use MustRunBefore instead
+	RequiredAfter  []string // DEPRECATED: Use MustRunAfter instead
 
 	// Feature dependencies
 	RequiresOriginalFrontMatter bool
@@ -171,6 +190,7 @@ func (r *TypedTransformerRegistry) List() []TypedTransformer {
 }
 
 // ListByPriority returns transformers sorted by priority.
+// DEPRECATED: Use ListByDependencies() for dependency-based ordering.
 func (r *TypedTransformerRegistry) ListByPriority() []TypedTransformer {
 	transformers := r.List()
 
@@ -190,9 +210,169 @@ func (r *TypedTransformerRegistry) ListByPriority() []TypedTransformer {
 	return transformers
 }
 
+// ListByDependencies returns transformers sorted by stage and dependencies.
+func (r *TypedTransformerRegistry) ListByDependencies() ([]TypedTransformer, error) {
+	transformers := r.List()
+	return buildTypedPipeline(transformers)
+}
+
+// buildTypedPipeline constructs execution order using stages and dependencies.
+func buildTypedPipeline(transformers []TypedTransformer) ([]TypedTransformer, error) {
+	// Stage order for typed transformers (matches core transforms)
+	stageOrder := []TransformStage{
+		StageParse,
+		StageBuild,
+		StageEnrich,
+		StageMerge,
+		StageTransform,
+		StageFinalize,
+		StageSerialize,
+	}
+
+	// Group by stage
+	byStage := make(map[TransformStage][]TypedTransformer)
+	for _, t := range transformers {
+		stage := t.Stage()
+		byStage[stage] = append(byStage[stage], t)
+	}
+
+	// Sort each stage by dependencies using topological sort
+	var result []TypedTransformer
+	for _, stage := range stageOrder {
+		stageTransforms, exists := byStage[stage]
+		if !exists {
+			continue
+		}
+
+		sorted, err := topologicalSortTyped(stageTransforms)
+		if err != nil {
+			return nil, fmt.Errorf("stage %s: %w", stage, err)
+		}
+
+		result = append(result, sorted...)
+	}
+
+	return result, nil
+}
+
+// topologicalSortTyped performs dependency resolution for typed transformers.
+func topologicalSortTyped(transformers []TypedTransformer) ([]TypedTransformer, error) {
+	if len(transformers) == 0 {
+		return transformers, nil
+	}
+
+	// Build name -> transform map
+	byName := make(map[string]TypedTransformer)
+	for _, t := range transformers {
+		byName[t.Name()] = t
+	}
+
+	// Build adjacency list (dependencies graph)
+	graph := make(map[string][]string)
+	inDegree := make(map[string]int)
+
+	for _, t := range transformers {
+		name := t.Name()
+		deps := t.Dependencies()
+
+		if _, exists := graph[name]; !exists {
+			graph[name] = []string{}
+		}
+
+		// Handle new MustRunAfter dependencies
+		for _, dep := range deps.MustRunAfter {
+			if _, exists := byName[dep]; exists {
+				graph[dep] = append(graph[dep], name)
+				inDegree[name]++
+			}
+			// Skip if dependency not in this stage
+		}
+
+		// Handle new MustRunBefore dependencies
+		for _, after := range deps.MustRunBefore {
+			if _, exists := byName[after]; exists {
+				graph[name] = append(graph[name], after)
+				inDegree[after]++
+			}
+			// Skip if dependency not in this stage
+		}
+
+		// Handle legacy RequiredAfter (maps to MustRunAfter)
+		for _, dep := range deps.RequiredAfter {
+			if _, exists := byName[dep]; exists {
+				graph[dep] = append(graph[dep], name)
+				inDegree[name]++
+			}
+		}
+
+		// Handle legacy RequiredBefore (maps to MustRunBefore)
+		for _, after := range deps.RequiredBefore {
+			if _, exists := byName[after]; exists {
+				graph[name] = append(graph[name], after)
+				inDegree[after]++
+			}
+		}
+	}
+
+	// Kahn's algorithm for topological sort
+	var queue []string
+	for _, t := range transformers {
+		name := t.Name()
+		if inDegree[name] == 0 {
+			queue = append(queue, name)
+		}
+	}
+
+	// Keep deterministic ordering
+	sortStrings(queue)
+
+	var result []TypedTransformer
+	for len(queue) > 0 {
+		// Pop from queue
+		current := queue[0]
+		queue = queue[1:]
+
+		result = append(result, byName[current])
+
+		// Process neighbors
+		neighbors := graph[current]
+		sortStrings(neighbors)
+
+		for _, neighbor := range neighbors {
+			inDegree[neighbor]--
+			if inDegree[neighbor] == 0 {
+				queue = append(queue, neighbor)
+				sortStrings(queue)
+			}
+		}
+	}
+
+	// Check for cycles
+	if len(result) != len(transformers) {
+		return nil, fmt.Errorf("circular dependency detected in typed transformers")
+	}
+
+	return result, nil
+}
+
+// sortStrings sorts a string slice in-place for deterministic ordering.
+func sortStrings(s []string) {
+	for i := 0; i < len(s)-1; i++ {
+		for j := i + 1; j < len(s); j++ {
+			if s[i] > s[j] {
+				s[i], s[j] = s[j], s[i]
+			}
+		}
+	}
+}
+
 // BuildExecutionPlan creates an execution plan with dependency resolution.
 func (r *TypedTransformerRegistry) BuildExecutionPlan(filter []string) ([]TypedTransformer, error) {
-	available := r.ListByPriority()
+	// Use dependency-based ordering (V2)
+	available, err := r.ListByDependencies()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build execution plan: %w", err)
+	}
 
 	// Apply filter if provided
 	if len(filter) > 0 {
@@ -210,9 +390,6 @@ func (r *TypedTransformerRegistry) BuildExecutionPlan(filter []string) ([]TypedT
 		available = filtered
 	}
 
-	// Note: full dependency resolution (graph/toposort) is intentionally deferred.
-	// Current behavior: priority-sorted list with optional filter. When we add
-	// real ordering constraints, implement a DAG + topo sort here.
 	return available, nil
 }
 

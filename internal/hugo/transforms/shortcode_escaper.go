@@ -11,9 +11,24 @@ import (
 type ShortcodeEscaper struct{}
 
 func (s ShortcodeEscaper) Name() string { return "shortcode_escaper" }
-func (s ShortcodeEscaper) Priority() int {
-	// Run before serializer (90) but after content is assembled
-	return 85
+
+func (s ShortcodeEscaper) Stage() TransformStage {
+	return StageFinalize
+}
+
+func (s ShortcodeEscaper) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"strip_first_heading"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             true,
+		ModifiesFrontMatter:         false,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
 }
 
 var (
