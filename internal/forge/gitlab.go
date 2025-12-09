@@ -220,17 +220,32 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	// Use project ID instead of path for GitLab API
 	projectID := repo.ID
 
+	// Use default branch, or fall back to common defaults if not set
+	branch := repo.DefaultBranch
+	if branch == "" {
+		// Try common default branch names
+		branch = "main"
+	}
+
 	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, projectID, "docs", repo.DefaultBranch)
+	hasDocs, err := c.checkPathExists(ctx, projectID, "docs", branch)
 	if err != nil {
-		return fmt.Errorf("failed to check docs folder: %w", err)
+		// If main doesn't work, try master as fallback
+		if branch == "main" && repo.DefaultBranch == "" {
+			hasDocs, err = c.checkPathExists(ctx, projectID, "docs", "master")
+			if err != nil {
+				return fmt.Errorf("failed to check docs folder: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to check docs folder: %w", err)
+		}
 	}
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
 	// Only check if docs folder exists, otherwise skip
 	if hasDocs {
-		hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", repo.DefaultBranch)
+		hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", branch)
 		if err != nil {
 			return fmt.Errorf("failed to check .docignore file: %w", err)
 		}
