@@ -420,6 +420,7 @@ func runBuild(cfg *config.Config, outputDir string, incremental, verbose bool) e
 
 	// Clone/update all repositories
 	repoPaths := make(map[string]string)
+	repositoriesSkipped := 0
 	for _, repo := range cfg.Repositories {
 		slog.Info("Processing repository", "name", repo.Name, "url", repo.URL)
 
@@ -434,14 +435,27 @@ func runBuild(cfg *config.Config, outputDir string, incremental, verbose bool) e
 
 		if err != nil {
 			slog.Error("Failed to process repository", "name", repo.Name, "error", err)
-			return err
+			// Continue with remaining repositories instead of failing
+			repositoriesSkipped++
+			continue
 		}
 
 		repoPaths[repo.Name] = repoPath
 		slog.Info("Repository processed", "name", repo.Name, "path", repoPath)
 	}
 
-	slog.Info("All repositories processed successfully", "count", len(repoPaths))
+	if repositoriesSkipped > 0 {
+		slog.Warn("Some repositories were skipped due to errors",
+			"skipped", repositoriesSkipped,
+			"successful", len(repoPaths),
+			"total", len(cfg.Repositories))
+	}
+
+	if len(repoPaths) == 0 {
+		return fmt.Errorf("no repositories could be cloned successfully")
+	}
+
+	slog.Info("All repositories processed", "successful", len(repoPaths), "skipped", repositoriesSkipped)
 
 	// Discover documentation files
 	slog.Info("Starting documentation discovery")

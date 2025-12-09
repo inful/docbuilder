@@ -12,7 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// DocFile represents a discovered documentation file
+// DocFile represents a discovered documentation file or asset
 type DocFile struct {
 	Path         string            // Absolute path to the file
 	RelativePath string            // Path relative to the docs directory
@@ -24,6 +24,7 @@ type DocFile struct {
 	Extension    string            // File extension
 	Content      []byte            // File content (loaded on demand)
 	Metadata     map[string]string // Additional metadata from config
+	IsAsset      bool              // True for images and other non-markdown files
 }
 
 // Discovery handles documentation file discovery
@@ -137,8 +138,12 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 			return nil
 		}
 
-		// Only process markdown files
-		if !isMarkdownFile(path) {
+		// Check if it's a markdown file or an asset
+		isMarkdown := isMarkdownFile(path)
+		isAssetFile := isAsset(path)
+
+		// Skip files that are neither markdown nor assets
+		if !isMarkdown && !isAssetFile {
 			return nil
 		}
 
@@ -169,14 +174,20 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 			Name:         strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())),
 			Extension:    filepath.Ext(info.Name()),
 			Metadata:     copyMetadata(metadata),
+			IsAsset:      isAssetFile,
 		}
 
 		files = append(files, docFile)
 
-		slog.Debug("Discovered documentation file",
+		fileType := "documentation"
+		if isAssetFile {
+			fileType = "asset"
+		}
+		slog.Debug("Discovered file",
 			logfields.File(relPath),
 			logfields.Repository(repoName),
-			slog.String("section", section))
+			slog.String("section", section),
+			slog.String("type", fileType))
 
 		return nil
 	})
@@ -222,6 +233,27 @@ func (df *DocFile) GetHugoPath() string {
 func isMarkdownFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	return ext == ".md" || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
+}
+
+// isAsset checks if a file is an asset (image, etc.)
+func isAsset(filename string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	assetExtensions := []string{
+		// Images
+		".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico",
+		// Documents
+		".pdf",
+		// Video
+		".mp4", ".webm", ".ogv",
+		// Other
+		".csv", ".json", ".yaml", ".yml", ".xml",
+	}
+	for _, assetExt := range assetExtensions {
+		if ext == assetExt {
+			return true
+		}
+	}
+	return false
 }
 
 // isIgnoredFile checks if a file should be ignored

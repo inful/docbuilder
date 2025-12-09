@@ -223,14 +223,12 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 			observability.ErrorContext(ctx, "Failed to process repository",
 				slog.String("name", repo.Name),
 				slog.String("error", err.Error()))
-			result.Status = BuildStatusFailed
-			result.EndTime = time.Now()
-			result.Duration = result.EndTime.Sub(startTime)
+			// Log the error but continue with remaining repositories
 			s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), false)
 			s.recorder.IncCloneRepoResult(false)
-			s.recorder.IncStageResult("clone", metrics.ResultFatal)
-			s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-			return result, dberrors.GitError("failed to clone repository").WithContext("repo", repo.Name).WithContext("error", err.Error()).Build()
+			// Track this as a skipped repository, not a fatal error
+			result.RepositoriesSkipped++
+			continue
 		}
 
 		s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), true)
@@ -244,7 +242,14 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	s.recorder.IncStageResult("clone", metrics.ResultSuccess)
 
 	result.Repositories = len(repoPaths)
-	observability.InfoContext(ctx, "All repositories processed", slog.Int("count", len(repoPaths)))
+	if result.RepositoriesSkipped > 0 {
+		observability.InfoContext(ctx, "Repository processing completed",
+			slog.Int("successful", len(repoPaths)),
+			slog.Int("skipped", result.RepositoriesSkipped),
+			slog.Int("total", len(req.Config.Repositories)))
+	} else {
+		observability.InfoContext(ctx, "All repositories processed", slog.Int("count", len(repoPaths)))
+	}
 
 	// Stage 3: Discover documentation files
 	stageStart = time.Now()

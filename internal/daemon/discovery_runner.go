@@ -139,7 +139,8 @@ func (dr *DiscoveryRunner) SafeRun(daemonStatus func() Status) {
 	if daemonStatus() != StatusRunning {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// Use longer timeout for large instances with many repositories
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {

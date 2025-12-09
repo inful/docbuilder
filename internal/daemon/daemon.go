@@ -119,7 +119,16 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.httpServer = NewHTTPServer(cfg, daemon)
 
 	// Create canonical BuildService (Phase D - Single Execution Pipeline)
-	buildService := build.NewBuildService()
+	buildService := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfg any, outputDir string) build.HugoGenerator {
+			// Type assert cfg to *config.Config
+			configTyped, ok := cfg.(*config.Config)
+			if !ok {
+				slog.Error("Invalid config type passed to Hugo generator factory")
+				return nil
+			}
+			return hugo.NewGenerator(configTyped, outputDir)
+		})
 	buildAdapter := NewBuildServiceAdapter(buildService)
 
 	// Initialize build queue with the canonical builder
@@ -508,6 +517,29 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 
 	initialDiscoveryTimer := time.NewTimer(3 * time.Second)
 	defer initialDiscoveryTimer.Stop()
+
+	// If explicit repositories are configured (no forges), trigger an immediate build
+	if len(d.config.Repositories) > 0 && len(d.config.Forges) == 0 {
+		slog.Info("Explicit repositories configured, triggering initial build", slog.Int("repositories", len(d.config.Repositories)))
+		go func() {
+			// Trigger build with explicit repositories
+			job := &BuildJob{
+				ID:        fmt.Sprintf("initial-build-%d", time.Now().Unix()),
+				Type:      BuildTypeManual,
+				Priority:  PriorityNormal,
+				CreatedAt: time.Now(),
+				TypedMeta: &BuildJobMetadata{
+					V2Config:      d.config,
+					Repositories:  d.config.Repositories,
+					StateManager:  d.stateManager,
+					LiveReloadHub: d.liveReload,
+				},
+			}
+			if err := d.buildQueue.Enqueue(job); err != nil {
+				slog.Error("Failed to enqueue initial build", logfields.Error(err))
+			}
+		}()
+	}
 
 	for {
 		select {

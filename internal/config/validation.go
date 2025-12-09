@@ -48,9 +48,14 @@ func (cv *configurationValidator) validate() error {
 
 // validateForges validates forge configuration.
 func (cv *configurationValidator) validateForges() error {
-	// Check if at least one forge is configured
+	// If repositories are explicitly configured, forges are optional
+	if len(cv.config.Forges) == 0 && len(cv.config.Repositories) == 0 {
+		return fmt.Errorf("either forges or repositories must be configured")
+	}
+
+	// Skip forge validation if no forges configured (direct repository mode)
 	if len(cv.config.Forges) == 0 {
-		return fmt.Errorf("at least one forge must be configured")
+		return nil
 	}
 
 	// Track forge names for duplicates
