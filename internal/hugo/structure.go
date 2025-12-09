@@ -35,9 +35,17 @@ func (g *Generator) createHugoStructure() error {
 
 // beginStaging creates an isolated staging directory for atomic build output.
 func (g *Generator) beginStaging() error {
-	// Create sibling staging dir: <output>_stage (not inside output)
-	// For example: if outputDir is "site", create "site_stage" as a sibling
-	stage := g.outputDir + "_stage"
+	// Determine staging directory based on base_directory configuration
+	var stage string
+	if g.config.Output.BaseDirectory != "" {
+		// When base_directory is set, create staging as {base}/staging
+		// and output will be at {base}/{directory}
+		stage = filepath.Join(g.config.Output.BaseDirectory, "staging")
+	} else {
+		// Default: create sibling staging dir: <output>_stage (not inside output)
+		// For example: if outputDir is "site", create "site_stage" as a sibling
+		stage = g.outputDir + "_stage"
+	}
 	if err := os.MkdirAll(stage, 0o750); err != nil {
 		return err
 	}

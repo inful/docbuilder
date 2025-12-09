@@ -90,6 +90,27 @@ func (c *CLI) AfterApply() error {
 	return nil
 }
 
+// resolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.
+// Priority: CLI flag > config base_directory + directory > config directory
+func resolveOutputDir(cliOutput string, cfg *config.Config) string {
+	// If CLI flag is provided and not the default, use it directly
+	if cliOutput != "" && cliOutput != "./site" {
+		return cliOutput
+	}
+
+	// If base_directory is configured, combine it with directory
+	if cfg.Output.BaseDirectory != "" {
+		return filepath.Join(cfg.Output.BaseDirectory, cfg.Output.Directory)
+	}
+
+	// Otherwise use configured directory (or CLI default)
+	if cfg.Output.Directory != "" {
+		return cfg.Output.Directory
+	}
+
+	return cliOutput // fallback to CLI default
+}
+
 func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	cfg, err := config.Load(root.Config)
 	if err != nil {
@@ -111,7 +132,10 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			return fmt.Errorf("auto-discovery failed: %w", err)
 		}
 	}
-	return runBuild(cfg, b.Output, b.Incremental, root.Verbose)
+
+	// Resolve output directory with base_directory support
+	outputDir := resolveOutputDir(b.Output, cfg)
+	return runBuild(cfg, outputDir, b.Incremental, root.Verbose)
 }
 
 func (i *InitCmd) Run(_ *Global, root *CLI) error {
