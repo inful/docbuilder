@@ -4,26 +4,28 @@ import (
 	"testing"
 )
 
-// TestOrdering ensures priority ordering then name tiebreaker.
+// TestOrdering ensures transforms are ordered by stage and dependencies.
 func TestOrdering(t *testing.T) {
-	ts := List()
+	ts, err := List()
+	if err != nil {
+		t.Fatalf("List() failed: %v", err)
+	}
 	if len(ts) == 0 {
 		t.Skip("no transformers registered")
 	}
-	lastPri := -999
-	lastName := ""
+	
+	// Verify stage ordering (stages should only move forward)
+	lastStage := StageParse
 	for i, tr := range ts {
-		pri := tr.Priority()
-		name := tr.Name()
+		stage := tr.Stage()
 		if i > 0 {
-			if pri < lastPri {
-				t.Fatalf("out of order: %s (%d) preceded by higher priority %d", name, pri, lastPri)
-			}
-			if pri == lastPri && name < lastName {
-				t.Fatalf("name tiebreaker order incorrect: %s before %s", name, lastName)
+			lastIndex := StageIndex(lastStage)
+			currentIndex := StageIndex(stage)
+			if currentIndex < lastIndex {
+				t.Fatalf("stage ordering violation: %s (%s) comes after %s (%s)",
+					tr.Name(), stage, ts[i-1].Name(), lastStage)
 			}
 		}
-		lastPri = pri
-		lastName = name
+		lastStage = stage
 	}
 }

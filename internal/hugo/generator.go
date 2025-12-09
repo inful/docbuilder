@@ -73,6 +73,30 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	return g
 }
 
+// ValidateTransformPipeline validates the transform pipeline configuration.
+// This is called automatically during build, but can be called explicitly for validation.
+// Returns an error if the pipeline has critical issues that would prevent execution.
+func (g *Generator) ValidateTransformPipeline() error {
+	result := tr.ValidatePipeline()
+	
+	// Log warnings (non-fatal)
+	for _, warning := range result.Warnings {
+		slog.Warn("Transform pipeline validation warning", slog.String("warning", warning))
+	}
+	
+	// Return error if validation failed
+	if !result.Valid {
+		var errMsg strings.Builder
+		errMsg.WriteString("transform pipeline validation failed:\n")
+		for _, err := range result.Errors {
+			errMsg.WriteString(fmt.Sprintf("  - %s\n", err))
+		}
+		return fmt.Errorf("%s", errMsg.String())
+	}
+	
+	return nil
+}
+
 // EditLinkResolver exposes the internal resolver for transforms (read-only behavior).
 func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string } {
 	return g.editLinkResolver

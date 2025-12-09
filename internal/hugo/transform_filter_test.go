@@ -23,12 +23,28 @@ func (m markerTransform) Transform(p tr.PageAdapter) error {
 	return nil
 }
 
+// V2 interface
+func (m markerTransform) Stage() tr.TransformStage {
+	return tr.StageTransform // Same as relativelink rewriter at 50
+}
+
+func (m markerTransform) Dependencies() tr.TransformDependencies {
+	return tr.TransformDependencies{
+		MustRunAfter: []string{"front_matter_merge"}, // Run after merge
+	}
+}
+
 // We register the marker inside test to avoid polluting global registry for other tests; copy List then restore.
 func TestTransformFiltering_EnableDisable(t *testing.T) {
 	// Snapshot registry and restore after
 	snap := tr.SnapshotForTest()
 	defer tr.RestoreForTest(snap)
-	tr.Register(markerTransform{})
+	
+	// Register in both V1 and V2 registries
+	marker := markerTransform{}
+	tr.Register(marker)
+	tr.Register(marker)
+	
 	// Build config disabling marker
 	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Filtering", Theme: "hextra", Transforms: &config.HugoTransforms{Disable: []string{"_marker"}}}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"org"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	g := NewGenerator(cfg, t.TempDir())

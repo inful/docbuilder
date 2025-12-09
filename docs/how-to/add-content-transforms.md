@@ -14,17 +14,35 @@ DocBuilder uses a **pluggable transform pipeline** that processes markdown files
 
 ## Transform Pipeline Architecture
 
-Transformers run in priority order during the **CopyContent** stage:
+Transformers run in dependency-based order organized by **stages** during the **CopyContent** stage:
 
 ```
-1. Front Matter Parser (10)     - Extract YAML headers
-2. Front Matter Builder (22)    - Add repository metadata
-3. Edit Link Injector (32)      - Generate edit URLs
-4. Front Matter Merge (40)      - Combine metadata
-5. Relative Link Rewriter (50)  - Fix relative links
-6. [Your Custom Transform]      - Your transformation
-7. Serializer (90)              - Write final YAML + content
+Stage: parse
+  1. Front Matter Parser          - Extract YAML headers
+
+Stage: build
+  2. Front Matter Builder         - Add repository metadata
+
+Stage: enrich
+  3. Edit Link Injector           - Generate edit URLs
+
+Stage: merge
+  4. Front Matter Merge           - Combine metadata
+
+Stage: transform
+  5. Relative Link Rewriter       - Fix relative links
+  6. [Your Custom Transform]      - Your transformation
+
+Stage: finalize
+  7. Strip First Heading          - Remove duplicate titles
+  8. Shortcode Escaper            - Escape Hugo shortcodes
+  9. Hextra Type Enforcer         - Set page types
+
+Stage: serialize
+  10. Serializer                  - Write final YAML + content
 ```
+
+Within each stage, transforms are ordered by their declared dependencies.
 
 ## Creating a Custom Transformer
 
@@ -47,8 +65,14 @@ func (t MyCustomTransform) Name() string {
     return "my_custom_transform"
 }
 
-func (t MyCustomTransform) Priority() int {
-    return 55 // Runs after link rewriting (50), before serialization (90)
+func (t MyCustomTransform) Stage() TransformStage {
+    return StageTransform // Runs during the transform stage
+}
+
+func (t MyCustomTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"}, // Run after link rewriting
+    }
 }
 
 func (t MyCustomTransform) Transform(p PageAdapter) error {
@@ -95,8 +119,13 @@ Replace specific text patterns across all files:
 ```go
 type ContentReplacer struct{}
 
-func (t ContentReplacer) Name() string  { return "content_replacer" }
-func (t ContentReplacer) Priority() int { return 55 }
+func (t ContentReplacer) Name() string { return "content_replacer" }
+func (t ContentReplacer) Stage() TransformStage { return StageTransform }
+func (t ContentReplacer) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"},
+    }
+}
 
 func (t ContentReplacer) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
@@ -120,8 +149,13 @@ Inject additional front matter fields:
 ```go
 type CustomMetadata struct{}
 
-func (t CustomMetadata) Name() string  { return "custom_metadata" }
-func (t CustomMetadata) Priority() int { return 25 } // After builder, before merge
+func (t CustomMetadata) Name() string { return "custom_metadata" }
+func (t CustomMetadata) Stage() TransformStage { return StageBuild }
+func (t CustomMetadata) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"front_matter_builder_v2"},
+    }
+}
 
 func (t CustomMetadata) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
@@ -152,8 +186,13 @@ Transform GitHub-style alert syntax:
 ```go
 type AdmonitionConverter struct{}
 
-func (t AdmonitionConverter) Name() string  { return "admonition_converter" }
-func (t AdmonitionConverter) Priority() int { return 55 }
+func (t AdmonitionConverter) Name() string { return "admonition_converter" }
+func (t AdmonitionConverter) Stage() TransformStage { return StageTransform }
+func (t AdmonitionConverter) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"},
+    }
+}
 
 func (t AdmonitionConverter) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
@@ -183,8 +222,13 @@ Add metadata or transform code block syntax:
 ```go
 type CodeBlockEnhancer struct{}
 
-func (t CodeBlockEnhancer) Name() string  { return "code_block_enhancer" }
-func (t CodeBlockEnhancer) Priority() int { return 55 }
+func (t CodeBlockEnhancer) Name() string { return "code_block_enhancer" }
+func (t CodeBlockEnhancer) Stage() TransformStage { return StageTransform }
+func (t CodeBlockEnhancer) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"},
+    }
+}
 
 func (t CodeBlockEnhancer) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
@@ -208,8 +252,13 @@ Apply transformations based on file properties:
 ```go
 type ConditionalTransform struct{}
 
-func (t ConditionalTransform) Name() string  { return "conditional_transform" }
-func (t ConditionalTransform) Priority() int { return 55 }
+func (t ConditionalTransform) Name() string { return "conditional_transform" }
+func (t ConditionalTransform) Stage() TransformStage { return StageTransform }
+func (t ConditionalTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"},
+    }
+}
 
 func (t ConditionalTransform) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
@@ -255,26 +304,51 @@ type PageShim struct {
 
 **Important:** Don't call `Serialize()` in your transform - it's automatically called by the pipeline.
 
-## Setting Transform Priority
+## Setting Transform Stage and Dependencies
 
-Priority determines execution order (lower runs first):
+Transforms are organized by **stages** and **dependencies** (not priorities):
 
-| Priority | Stage | Example |
-|----------|-------|---------|
-| 10 | Front matter parsing | Extract YAML headers |
-| 20-30 | Metadata injection | Add repository info, build data |
-| 30-40 | Content enrichment | Edit links, custom metadata |
-| 40-50 | Front matter finalization | Merge user + generated data |
-| 50-60 | Content transformations | Link rewriting, syntax conversion |
-| 60-80 | Post-processing | Validation, cleanup |
-| 90+ | Serialization | Write final YAML + content |
+### Available Stages
+
+| Stage | Purpose | Example Transforms |
+|-------|---------|-------------------|
+| `StageParse` | Extract/parse source content | Front matter parsing |
+| `StageBuild` | Generate base metadata | Repository info, titles |
+| `StageEnrich` | Add computed fields | Edit links, custom metadata |
+| `StageMerge` | Combine/merge data | Merge user + generated data |
+| `StageTransform` | Modify content | Link rewriting, syntax conversion |
+| `StageFinalize` | Post-process | Strip headings, escape shortcodes |
+| `StageSerialize` | Output generation | Write final YAML + content |
+
+### Declaring Dependencies
+
+Use `Dependencies()` to specify ordering within a stage:
+
+```go
+func (t MyTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        // This transform must run after these transforms
+        MustRunAfter: []string{"front_matter_merge", "relative_link_rewriter"},
+        
+        // This transform must run before these transforms
+        MustRunBefore: []string{"front_matter_serialize"},
+        
+        // Capability flags (for documentation)
+        RequiresOriginalFrontMatter: false,
+        ModifiesContent:             true,
+        ModifiesFrontMatter:         false,
+    }
+}
+```
 
 **Guidelines:**
-- **10-20:** Early processing (parsing, reading)
-- **20-40:** Metadata manipulation
-- **40-60:** Content transformation
-- **60-90:** Finalization and validation
-- **90+:** Output serialization
+- **StageParse:** Early processing (parsing, reading)
+- **StageBuild-StageEnrich:** Metadata manipulation
+- **StageTransform:** Content modification
+- **StageFinalize:** Cleanup and validation
+- **StageSerialize:** Output serialization
+
+**Within each stage**, transforms are ordered by their dependency declarations using topological sort.
 
 ## Controlling Transforms via Configuration
 
@@ -474,10 +548,14 @@ func init() {
 }
 ```
 
-**Verify priority:**
+**Verify stage and dependencies:**
 ```go
-func (t MyTransform) Priority() int {
-    return 55 // Must return valid int
+func (t MyTransform) Stage() TransformStage {
+    return StageTransform // Must return valid stage
+}
+
+func (t MyTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{} // Define dependencies
 }
 ```
 

@@ -18,8 +18,19 @@ import (
 
 // copyContentFiles copies documentation files to Hugo content directory
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
-	regs := tr.List()
-	if len(regs) == 0 {
+	// Validate transform pipeline before execution
+	if err := g.ValidateTransformPipeline(); err != nil {
+		return fmt.Errorf("%w: %w", herrors.ErrContentTransformFailed, err)
+	}
+	
+	// Build transform pipeline
+	transformList, err := tr.List()
+	if err != nil {
+		return fmt.Errorf("%w: failed to build transform pipeline: %w", herrors.ErrContentTransformFailed, err)
+	}
+	slog.Debug("Using dependency-based transform pipeline", slog.Int("count", len(transformList)))
+	
+	if len(transformList) == 0 {
 		return fmt.Errorf("%w: no transforms available", herrors.ErrContentTransformFailed)
 	}
 	for _, file := range docFiles {
@@ -91,8 +102,10 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				p.Raw = []byte(combined)
 				return nil
 			}
-			for _, rt := range regs { // ordered
-				name := rt.Name()
+			for _, transform := range transformList { // ordered by dependencies
+				name := transform.Name()
+				
+				// Apply filtering if configured
 				if disableSet != nil {
 					if _, blocked := disableSet[name]; blocked {
 						continue
@@ -103,8 +116,9 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 						continue
 					}
 				}
+				
 				start := time.Now()
-				err := rt.Transform(shim)
+				err := transform.Transform(shim)
 				dur := time.Since(start)
 				success := err == nil
 				if g.recorder != nil {
@@ -114,7 +128,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 					if g.recorder != nil {
 						g.recorder.IncContentTransformFailure(name)
 					}
-					return fmt.Errorf("%w: %s failed for %s: %w", herrors.ErrContentTransformFailed, rt.Name(), file.Path, err)
+					return fmt.Errorf("%w: %s failed for %s: %w", herrors.ErrContentTransformFailed, name, file.Path, err)
 				}
 			}
 			// Sync back mutated fields

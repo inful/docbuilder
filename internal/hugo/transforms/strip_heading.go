@@ -11,9 +11,23 @@ type stripFirstHeadingTransform struct{}
 
 func (t stripFirstHeadingTransform) Name() string { return "strip_first_heading" }
 
-func (t stripFirstHeadingTransform) Priority() int {
-	// Run after link rewrites (50) but before shortcode escaping (85)
-	return 55
+func (t stripFirstHeadingTransform) Stage() TransformStage {
+	return StageTransform
+}
+
+func (t stripFirstHeadingTransform) Dependencies() TransformDependencies {
+	return TransformDependencies{
+		MustRunAfter:                []string{"relative_link_rewriter"},
+		MustRunBefore:               []string{},
+		RequiresOriginalFrontMatter: false,
+		ModifiesContent:             true,
+		ModifiesFrontMatter:         false,
+		RequiresConfig:              false,
+		RequiresThemeInfo:           false,
+		RequiresForgeInfo:           false,
+		RequiresEditLinkResolver:    false,
+		RequiresFileMetadata:        false,
+	}
 }
 
 func (t stripFirstHeadingTransform) Transform(p PageAdapter) error {
