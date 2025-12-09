@@ -62,6 +62,9 @@ type BuildResult struct {
 	// Repositories is the count of processed repositories.
 	Repositories int
 
+	// RepositoriesSkipped is the count of repositories that failed to clone/process.
+	RepositoriesSkipped int
+
 	// FilesProcessed is the count of documentation files handled.
 	FilesProcessed int
 

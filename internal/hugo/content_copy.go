@@ -28,6 +28,16 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			return ctx.Err()
 		default:
 		}
+
+		// Handle assets differently - just copy them without processing
+		if file.IsAsset {
+			if err := g.copyAssetFile(file); err != nil {
+				return fmt.Errorf("failed to copy asset %s: %w", file.Path, err)
+			}
+			continue
+		}
+
+		// Process markdown files with transforms
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
@@ -130,6 +140,36 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		}
 	}
 	slog.Info("Copied all content files", slog.Int("count", len(docFiles)))
+	return nil
+}
+
+// copyAssetFile copies an asset file (image, etc.) to Hugo content directory without processing
+func (g *Generator) copyAssetFile(file docs.DocFile) error {
+	// Read the asset file
+	content, err := os.ReadFile(file.Path)
+	if err != nil {
+		return fmt.Errorf("%w: failed to read asset %s: %w", herrors.ErrContentWriteFailed, file.Path, err)
+	}
+
+	// Calculate output path - assets go in same location as markdown files
+	outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
+
+	// Create directory if needed
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+		return fmt.Errorf("%w: failed to create directory for %s: %w", herrors.ErrContentWriteFailed, outputPath, err)
+	}
+
+	// Copy asset file as-is
+	// #nosec G306 -- asset files are public documentation resources
+	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+		return fmt.Errorf("%w: failed to write asset %s: %w", herrors.ErrContentWriteFailed, outputPath, err)
+	}
+
+	slog.Debug("Copied asset file",
+		slog.String("source", file.RelativePath),
+		slog.String("destination", file.GetHugoPath()),
+		slog.String("type", file.Extension))
+
 	return nil
 }
 

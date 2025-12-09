@@ -36,6 +36,14 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 		return nil, nil
 	}
 
+	// For discovery builds, use the discovered repositories instead of config file repos
+	if job.Type == BuildTypeDiscovery && job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
+		// Create a copy of the config to avoid modifying the original
+		cfgCopy := *cfg
+		cfgCopy.Repositories = job.TypedMeta.Repositories
+		cfg = &cfgCopy
+	}
+
 	// Extract output directory
 	outDir := cfg.Output.Directory
 	if outDir == "" {

@@ -142,6 +142,15 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		return nil // No daemon config to apply defaults to
 	}
 
+	// Set daemon-specific build defaults
+	// In daemon mode, always render by default (unless explicitly disabled)
+	if cfg.Build.RenderMode == "" || cfg.Build.RenderMode == RenderModeAuto {
+		cfg.Build.RenderMode = RenderModeAlways
+	}
+	// Note: LiveReload is NOT enabled by default in daemon mode
+	// It's designed for local development with file watching, not production serving
+	// Enable it explicitly in config if you want live reload on rebuild events
+
 	if cfg.Daemon.HTTP.DocsPort == 0 {
 		cfg.Daemon.HTTP.DocsPort = 8080
 	}

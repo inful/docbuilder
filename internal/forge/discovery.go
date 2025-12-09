@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -127,29 +128,79 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 	var validRepos []*Repository
 	var filteredRepos []*Repository
 
-	for _, repo := range repositories {
-		// Check if repository has documentation
-		if err := client.CheckDocumentation(ctx, repo); err != nil {
-			slog.Warn("Failed to check documentation status",
-				"forge", client.GetName(),
-				"repository", repo.FullName,
-				"error", err)
-			// Continue processing, but assume no docs
-			repo.HasDocs = false
-			repo.HasDocIgnore = false
-		}
+	// Check documentation status concurrently (max 20 at a time)
+	const maxConcurrency = 20
+	sem := make(chan struct{}, maxConcurrency)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	checkedCount := 0
 
-		// Apply filtering logic
-		if ds.shouldIncludeRepository(repo) {
-			validRepos = append(validRepos, repo)
-		} else {
-			filteredRepos = append(filteredRepos, repo)
-			slog.Debug("Repository filtered out",
-				"forge", client.GetName(),
-				"repository", repo.FullName,
-				"reason", ds.getFilterReason(repo))
+	for _, repo := range repositories {
+		wg.Add(1)
+		go func(r *Repository) {
+			defer wg.Done()
+			sem <- struct{}{}        // Acquire semaphore
+			defer func() { <-sem }() // Release semaphore
+
+			// Check if repository has documentation
+			if err := client.CheckDocumentation(ctx, r); err != nil {
+				slog.Warn("Failed to check documentation status",
+					"forge", client.GetName(),
+					"repository", r.FullName,
+					"error", err)
+				// Continue processing, but assume no docs
+				r.HasDocs = false
+				r.HasDocIgnore = false
+			}
+
+			// Log first few checks for debugging
+			mu.Lock()
+			checkedCount++
+			if checkedCount <= 5 {
+				slog.Info("Documentation check sample",
+					"forge", client.GetName(),
+					"repository", r.FullName,
+					"has_docs", r.HasDocs,
+					"has_docignore", r.HasDocIgnore,
+					"default_branch", r.DefaultBranch,
+					"project_id", r.ID)
+			}
+			mu.Unlock()
+
+			// Apply filtering logic with mutex protection
+			mu.Lock()
+			defer mu.Unlock()
+			if ds.shouldIncludeRepository(r) {
+				validRepos = append(validRepos, r)
+			} else {
+				filteredRepos = append(filteredRepos, r)
+				slog.Debug("Repository filtered out",
+					"forge", client.GetName(),
+					"repository", r.FullName,
+					"reason", ds.getFilterReason(r))
+			}
+		}(repo)
+	}
+
+	// Wait for all checks to complete
+	wg.Wait()
+
+	// Log statistics about documentation checks
+	docsFound := 0
+	docsIgnored := 0
+	for _, repo := range repositories {
+		if repo.HasDocs {
+			docsFound++
+		}
+		if repo.HasDocIgnore {
+			docsIgnored++
 		}
 	}
+	slog.Info("Documentation check completed",
+		"forge", client.GetName(),
+		"total_repos", originalCount,
+		"repos_with_docs", docsFound,
+		"repos_with_docignore", docsIgnored)
 
 	if originalCount > 0 && len(validRepos) == 0 {
 		if len(ds.filtering.IncludePatterns) > 0 {

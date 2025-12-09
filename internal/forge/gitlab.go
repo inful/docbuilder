@@ -260,9 +260,9 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 // checkPathExists checks if a path exists in the project
 // projectID should be the numeric project ID (not the path)
 func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath, branch string) (bool, error) {
-	// GitLab API: /projects/:id/repository/files/:file_path
-	// Both project ID and file path must be URL-encoded
-	endpoint := fmt.Sprintf("/projects/%s/repository/files/%s?ref=%s",
+	// For directories (like "docs"), we need to use the tree API to check if the directory exists
+	// GitLab API: /projects/:id/repository/tree?path=:path&ref=:ref
+	endpoint := fmt.Sprintf("/projects/%s/repository/tree?path=%s&ref=%s&per_page=1",
 		url.PathEscape(projectID),
 		url.PathEscape(filePath),
 		url.PathEscape(branch))
@@ -289,6 +289,9 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath,
 		return false, fmt.Errorf("unexpected status code %d: %s (endpoint: %s)", resp.StatusCode, string(body), endpoint)
 	}
 
+	// Check if we got any results (directory exists and has content)
+	// An empty array means the directory exists but is empty
+	// We'll accept both cases as "exists"
 	return true, nil
 }
 

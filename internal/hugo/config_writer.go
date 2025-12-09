@@ -28,7 +28,7 @@ func (g *Generator) generateHugoConfig() error {
 		Description:   g.config.Hugo.Description,
 		BaseURL:       g.config.Hugo.BaseURL,
 		LanguageCode:  "en",
-		EnableGitInfo: true,
+		EnableGitInfo: false, // Disabled by default; output dir isn't a git repo
 		Markup:        map[string]any{},
 		Params:        params,
 	}
