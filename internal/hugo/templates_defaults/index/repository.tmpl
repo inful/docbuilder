@@ -1,7 +1,21 @@
-# {{ titleCase .FrontMatter.repository }} Documentation
+{{ if .RepositoryInfo -}}
+{{ if .RepositoryInfo.Description -}}
+{{ .RepositoryInfo.Description }}
+
+{{ end -}}
+{{ if .RepositoryInfo.URL -}}
+**Repository:** [{{ .RepositoryInfo.URL }}]({{ .RepositoryInfo.URL }})
+{{ end -}}
+{{ if .RepositoryInfo.Branch -}}
+**Branch:** `{{ .RepositoryInfo.Branch }}`
+{{ end -}}
+{{ if .RepositoryInfo.Tags }}
+**Tags:** {{ range $key, $value := .RepositoryInfo.Tags }}`{{ $key }}:{{ $value }}` {{ end }}
+{{ end }}
+{{ end }}
 
 {{ range $section, $files := .Sections -}}
-{{ if eq $section "root" }}## Documentation Files
+{{ if eq $section "root" }}## Sections
 {{ else }}## {{ titleCase $section }}
 {{ end }}
 {{ range $files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section }}/{{ .Name }}{{ else }}{{ .Name }}{{ end }}/)

@@ -111,6 +111,10 @@ func ComputeBaseFrontMatterTyped(name, repository, forge, section string, metada
 
 	// Metadata passthrough (only when missing from existing)
 	for k, v := range metadata {
+		// Skip 'type' field - it should be controlled by theme/Hugo, not repository tags
+		if k == "type" {
+			continue
+		}
 		if _, had := existing[k]; !had {
 			// Prefer known fields when applicable
 			switch k {

@@ -57,6 +57,11 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 		}
 	}
 
+	// Ensure type: docs for Hextra theme (must come after metadata to override tags)
+	if in.Config != nil && in.Config.Hugo.ThemeType() == config.ThemeHextra {
+		fm["type"] = "docs"
+	}
+
 	// Per-page edit URL (Hextra only) if not already present – tests expect BuildFrontMatter to set it.
 	if _, exists := fm["editURL"]; !exists {
 		if in.Config != nil && in.Config.Hugo.ThemeType() == config.ThemeHextra {
