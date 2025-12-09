@@ -2,6 +2,7 @@ package forge
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -9,8 +10,22 @@ import (
 )
 
 // newHTTPClient30s returns a shared HTTP client with a 30s timeout.
+// The client respects HTTP_PROXY, HTTPS_PROXY, and NO_PROXY environment variables.
 func newHTTPClient30s() *http.Client { //nolint:ireturn // returning concrete *http.Client is intentional; callers need full API
-	return &http.Client{Timeout: 30 * time.Second}
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment, // Respects HTTP_PROXY, HTTPS_PROXY, NO_PROXY
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
 }
 
 // withDefaults applies default API/base URLs when empty.
