@@ -175,7 +175,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 			}
-			frontMatter := map[string]any{"title": fmt.Sprintf("%s - %s", titleCase(repoName), titleCase(sectionName)), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+			frontMatter := map[string]any{"title": titleCase(sectionName), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
 			fmData, err := yaml.Marshal(frontMatter)
 			if err != nil {
 				return fmt.Errorf("failed to marshal front matter: %w", err)

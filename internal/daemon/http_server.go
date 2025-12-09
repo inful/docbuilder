@@ -268,7 +268,9 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	mux := http.NewServeMux()
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
 	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
+	mux.HandleFunc("/healthz", s.monitoringHandlers.HandleHealthCheck) // Kubernetes-style alias
 	mux.HandleFunc("/ready", s.handleReadiness)
+	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
 
 	// LiveReload endpoints (SSE + script) if enabled - MUST be before root handler
 	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
@@ -429,8 +431,10 @@ func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.List
 
 	// Health check endpoint
 	mux.HandleFunc(s.config.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
+	mux.HandleFunc("/healthz", s.monitoringHandlers.HandleHealthCheck) // Kubernetes-style alias
 	// Readiness endpoint: only ready when a rendered site exists under <output>/public
 	mux.HandleFunc("/ready", s.handleReadiness)
+	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
 	// Add enhanced health check endpoint (if daemon is available)
 	if s.daemon != nil {
 		mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
