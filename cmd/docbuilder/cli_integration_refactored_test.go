@@ -190,7 +190,7 @@ func TestRefactoredConfigValidation(t *testing.T) {
 					return &testutils.TestResult{Success: false}
 				}
 
-				expectedError := "at least one forge must be configured"
+				expectedError := "either forges or repositories must be configured"
 				if !containsString(err.Error(), expectedError) {
 					t.Errorf("Expected error to contain %q, got: %v", expectedError, err)
 					return &testutils.TestResult{Success: false}

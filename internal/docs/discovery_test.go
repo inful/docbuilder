@@ -642,15 +642,40 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		}
 
 		// Verify filtering results
-		expectedValidFiles := 6 // index.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
-		expectedTotalFiles := len(repositories) * expectedValidFiles
+		expectedMarkdownFiles := 6 // index.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
+		expectedAssetFiles := 2     // data.json, image.png
+		expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
 
 		if len(docFiles) != expectedTotalFiles {
-			t.Errorf("Expected %d valid files, got %d", expectedTotalFiles, len(docFiles))
+			t.Errorf("Expected %d total files, got %d", expectedTotalFiles, len(docFiles))
 		}
 
-		// Verify no ignored files are included
+		// Count markdown and asset files
+		markdownCount := 0
+		assetCount := 0
 		for _, file := range docFiles {
+			if file.IsAsset {
+				assetCount++
+			} else {
+				markdownCount++
+			}
+		}
+
+		expectedMarkdownTotal := len(repositories) * expectedMarkdownFiles
+		expectedAssetTotal := len(repositories) * expectedAssetFiles
+		if markdownCount != expectedMarkdownTotal {
+			t.Errorf("Expected %d markdown files, got %d", expectedMarkdownTotal, markdownCount)
+		}
+		if assetCount != expectedAssetTotal {
+			t.Errorf("Expected %d asset files, got %d", expectedAssetTotal, assetCount)
+		}
+
+		// Verify no ignored markdown files are included
+		for _, file := range docFiles {
+			if file.IsAsset {
+				continue // Skip validation for asset files
+			}
+
 			filename := filepath.Base(file.RelativePath)
 
 			// Check for ignored markdown files
@@ -658,12 +683,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				t.Errorf("Ignored file should not be included: %s", file.RelativePath)
 			}
 
-			// Check for non-markdown files
-			if !isMarkdownFile(filename) {
-				t.Errorf("Non-markdown file should not be included: %s", file.RelativePath)
-			}
-
-			// Verify file extensions
+			// Verify markdown file extensions
 			validExtensions := []string{".md", ".markdown", ".mdown", ".mkd"}
 			hasValidExtension := false
 			for _, ext := range validExtensions {
@@ -673,7 +693,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				}
 			}
 			if !hasValidExtension {
-				t.Errorf("File with invalid extension included: %s", file.RelativePath)
+				t.Errorf("Markdown file with invalid extension: %s", file.RelativePath)
 			}
 		}
 
