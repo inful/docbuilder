@@ -322,7 +322,11 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 	}}
 
 	// Create workspace for processing
-	wsManager := workspace.NewManager("")
+	wsDir := cfg.Build.WorkspaceDir
+	if wsDir == "" {
+		wsDir = "" // Will use temp dir
+	}
+	wsManager := workspace.NewManager(wsDir)
 	if err := wsManager.Create(); err != nil {
 		return fmt.Errorf("create workspace: %w", err)
 	}
@@ -426,7 +430,11 @@ func runBuild(cfg *config.Config, outputDir string, incremental, verbose bool) e
 		"incremental", incremental)
 
 	// Create workspace manager
-	wsManager := workspace.NewManager("")
+	wsDir := cfg.Build.WorkspaceDir
+	if wsDir == "" {
+		wsDir = "" // Will use temp dir
+	}
+	wsManager := workspace.NewManager(wsDir)
 	if err := wsManager.Create(); err != nil {
 		return err
 	}
@@ -532,7 +540,11 @@ func runDiscover(cfg *config.Config, specificRepo string) error {
 	slog.Info("Starting documentation discovery", "repositories", len(cfg.Repositories))
 
 	// Create workspace manager
-	wsManager := workspace.NewManager("")
+	wsDir := cfg.Build.WorkspaceDir
+	if wsDir == "" {
+		wsDir = "" // Will use temp dir
+	}
+	wsManager := workspace.NewManager(wsDir)
 	if err := wsManager.Create(); err != nil {
 		return err
 	}

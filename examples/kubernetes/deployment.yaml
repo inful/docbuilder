@@ -35,12 +35,19 @@ data:
           displayPoweredBy: true
     
     output:
-      directory: "/data/output"
+      # Use base_directory for Kubernetes volume mount
+      # All build artifacts go under /data:
+      #   - Output: /data/site
+      #   - Staging: /data/staging  
+      #   - Workspace: /data/workspace (git clones)
+      base_directory: "/data"
+      directory: "site"
       clean: true
     
     build:
       incremental: false
       render_mode: "always"
+      # workspace_dir is auto-set to /data/workspace when base_directory is configured
 
 ---
 apiVersion: v1
