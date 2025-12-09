@@ -253,7 +253,7 @@ forges:
 			configContent: `version: "2.0"
 hugo:
   title: Test`,
-			expectedError: "at least one forge must be configured",
+			expectedError: "either forges or repositories must be configured",
 		},
 		{
 			name: "Duplicate forge names",

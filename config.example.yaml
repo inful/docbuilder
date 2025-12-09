@@ -24,7 +24,8 @@ repositories:
       token: "${GIT_ACCESS_TOKEN}"
 build:
   # Optional persistent workspace for cloned repositories.
-  # If omitted defaults to ./site/_workspace.
+  # If omitted and base_directory is set, defaults to {base_directory}/workspace.
+  # If omitted and base_directory is not set, defaults to ./site/_workspace.
   # Place outside output.directory to persist clones between builds for faster incremental updates.
   workspace_dir: ./site/_workspace
 hugo:
@@ -50,5 +51,11 @@ hugo:
         weight: 20
 
 output:
+  # Optional: Base directory for all build artifacts (useful for Kubernetes volume mounts)
+  # When set:
+  #   - Output: {base_directory}/{directory}
+  #   - Staging: {base_directory}/staging
+  #   - Workspace: {base_directory}/workspace (if workspace_dir not explicitly set)
+  # base_directory: "/mnt/docs"
   directory: "./site"
   clean: true

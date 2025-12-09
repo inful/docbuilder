@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -29,6 +30,7 @@ type EnhancedMockForgeClient struct {
 	// Error tracking
 	lastError      error
 	operationCount int
+	mu             sync.Mutex // protects operationCount
 }
 
 // RateLimitConfig defines rate limiting parameters
@@ -427,7 +429,9 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 
 // simulateFailures simulates various failure modes
 func (m *EnhancedMockForgeClient) simulateFailures() error {
+	m.mu.Lock()
 	m.operationCount++
+	m.mu.Unlock()
 
 	// Simulate response delay
 	if m.responseDelay > 0 {
