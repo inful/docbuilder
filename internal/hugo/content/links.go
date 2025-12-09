@@ -7,13 +7,15 @@ import (
 )
 
 // RewriteRelativeMarkdownLinks rewrites relative markdown links that end with .md/.markdown
-// to their extensionless form so Hugo's pretty URLs work. Anchors are preserved.
+// to their extensionless form with trailing slashes for Hugo's pretty URLs. Anchors are preserved.
 // Rules:
-// - Only adjust links that are NOT absolute (http/https/mailto), not starting with '#', and not starting with '/'
-// - Rewrites foo.md -> foo, foo.md#anchor -> foo#anchor
-// - Supports ./ and ../ prefixes transparently (kept as-is except extension removal)
-// - Leaves README.md alone if removal would produce empty target (defensive)
-func RewriteRelativeMarkdownLinks(content string) string {
+//   - Only adjust links that are NOT absolute (http/https/mailto) or anchor-only ('#')
+//   - Rewrites foo.md -> foo/, foo.md#anchor -> foo/#anchor
+//   - Supports ./ and ../ prefixes transparently (kept as-is except extension removal)
+//   - If repositoryName is provided, links starting with / are treated as repository-root-relative
+//     and are prefixed with /{forge}/{repository}/ or /{repository}/ depending on forge presence
+//   - Leaves README.md alone if removal would produce empty target (defensive)
+func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeName string) string {
 	linkRe := regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?P<link>[^)]+)\)`)
 	return linkRe.ReplaceAllStringFunc(content, func(m string) string {
 		matches := linkRe.FindStringSubmatch(m)
@@ -23,9 +25,46 @@ func RewriteRelativeMarkdownLinks(content string) string {
 		text := matches[1]
 		link := matches[2]
 		low := strings.ToLower(link)
-		if strings.HasPrefix(low, "http://") || strings.HasPrefix(low, "https://") || strings.HasPrefix(low, "mailto:") || strings.HasPrefix(link, "#") || strings.HasPrefix(link, "/") {
+		// Skip external links, anchors, and mailto
+		if strings.HasPrefix(low, "http://") || strings.HasPrefix(low, "https://") || strings.HasPrefix(low, "mailto:") || strings.HasPrefix(link, "#") {
 			return m
 		}
+
+		// Handle repository-root-relative links (start with /)
+		// These need to be prefixed with repository (and forge if present) to work in Hugo
+		if strings.HasPrefix(link, "/") && repositoryName != "" {
+			anchor := ""
+			if idx := strings.IndexByte(link, '#'); idx >= 0 {
+				anchor = link[idx:]
+				link = link[:idx]
+			}
+			lowerPath := strings.ToLower(link)
+			trimmed := link
+			if strings.HasSuffix(lowerPath, ".md") {
+				trimmed = link[:len(link)-3]
+			} else if strings.HasSuffix(lowerPath, ".markdown") {
+				trimmed = link[:len(link)-9]
+			}
+			if trimmed == "" {
+				return m
+			}
+			// Add trailing slash for Hugo's pretty URLs
+			if !strings.HasSuffix(trimmed, "/") {
+				trimmed = trimmed + "/"
+			}
+			// Build the Hugo-absolute path with repository (and forge if present)
+			var prefix string
+			if forgeName != "" {
+				prefix = fmt.Sprintf("/%s/%s", forgeName, repositoryName)
+			} else {
+				prefix = fmt.Sprintf("/%s", repositoryName)
+			}
+			return fmt.Sprintf("[%s](%s%s%s)", text, prefix, trimmed, anchor)
+		}
+
+		// Handle page-relative links (no leading /)
+		// Hugo URLs are one level deeper than source files (page name becomes a directory)
+		// So ../foo.md in source needs to become ../../foo/ in Hugo
 		anchor := ""
 		if idx := strings.IndexByte(link, '#'); idx >= 0 {
 			anchor = link[idx:]
@@ -41,6 +80,15 @@ func RewriteRelativeMarkdownLinks(content string) string {
 			}
 			if trimmed == "" {
 				return m
+			}
+			// Add trailing slash for Hugo's pretty URLs
+			if !strings.HasSuffix(trimmed, "/") {
+				trimmed = trimmed + "/"
+			}
+			// Adjust relative parent paths for Hugo's deeper URL structure
+			// ../foo → ../../foo (add one more level up)
+			if strings.HasPrefix(trimmed, "../") {
+				trimmed = "../" + trimmed
 			}
 			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
 		}

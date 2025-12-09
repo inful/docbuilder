@@ -1,6 +1,6 @@
 baseURL: ""
 description: ""
-enableGitInfo: true
+enableGitInfo: false
 languageCode: en
 markup:
     goldmark:

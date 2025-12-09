@@ -40,8 +40,8 @@ func TestPipelineGolden(t *testing.T) {
 			t.Fatalf("expected front matter to contain %q; got:\n%s", needle, content)
 		}
 	}
-	// Link rewrite expectation (extension removed)
-	if !strings.Contains(content, "[rel](./ref)") {
-		t.Fatalf("expected relative link extension removed; got:\n%s", content)
+	// Link rewrite expectation (extension removed and trailing slash added)
+	if !strings.Contains(content, "[rel](./ref/)") {
+		t.Fatalf("expected relative link extension removed with trailing slash; got:\n%s", content)
 	}
 }

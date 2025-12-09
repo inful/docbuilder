@@ -72,7 +72,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				},
 				BackingAddPatch: func(pt fmcore.FrontMatterPatch) { p.Patches = append(p.Patches, pt) },
 				ApplyPatches:    func() { p.applyPatches() },
-				RewriteLinks:    func(s string) string { return RewriteRelativeMarkdownLinks(s) },
+				RewriteLinks:    func(s string) string { return RewriteRelativeMarkdownLinks(s, file.Repository, file.Forge) },
 			}
 			shim.SerializeFn = func() error {
 				if p.MergedFrontMatter == nil {

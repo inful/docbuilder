@@ -6,6 +6,7 @@ import (
 )
 
 // RewriteRelativeMarkdownLinks delegates to content.RewriteRelativeMarkdownLinks.
-func RewriteRelativeMarkdownLinks(content string) string {
-	return c.RewriteRelativeMarkdownLinks(content)
+// If repositoryName is provided, links starting with / are treated as repository-root-relative.
+func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeName string) string {
+	return c.RewriteRelativeMarkdownLinks(content, repositoryName, forgeName)
 }

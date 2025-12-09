@@ -33,8 +33,10 @@ func TestIndexTemplates_FallbackEmbedded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read main index: %v", err)
 	}
-	if !strings.Contains(string(b), "# Test Site") {
-		t.Fatalf("expected embedded template output, got:\n%s", string(b))
+	got := string(b)
+	// Check for title in frontmatter and repository list (H1 # Test Site gets stripped by transform)
+	if !strings.Contains(got, "title: Test Site") || !strings.Contains(got, "## Repositories") {
+		t.Fatalf("expected embedded template with title in frontmatter and repositories section, got:\n%s", got)
 	}
 }
 

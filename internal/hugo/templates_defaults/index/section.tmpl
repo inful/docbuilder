@@ -1,4 +1,2 @@
-# {{ titleCase .SectionName }}
-
 {{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ .Name }}/)
 {{ end }}

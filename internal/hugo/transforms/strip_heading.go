@@ -11,7 +11,10 @@ type stripFirstHeadingTransform struct{}
 
 func (t stripFirstHeadingTransform) Name() string { return "strip_first_heading" }
 
-func (t stripFirstHeadingTransform) Priority() int { return 50 } // Run early, before link rewrites
+func (t stripFirstHeadingTransform) Priority() int {
+	// Run after link rewrites (50) but before shortcode escaping (85)
+	return 55
+}
 
 func (t stripFirstHeadingTransform) Transform(p PageAdapter) error {
 	pg, ok := p.(*PageShim)
