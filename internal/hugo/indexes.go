@@ -75,20 +75,24 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 	repoGroups := make(map[string][]docs.DocFile)
 	for _, file := range docFiles {
-		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
+		// Only include markdown files in repository indexes, not assets
+		if !file.IsAsset {
+			repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
+		}
 	}
 	for repoName, files := range repoGroups {
 		indexPath := filepath.Join(g.buildRoot(), "content", repoName, "_index.md")
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
-		frontMatter := map[string]any{"title": fmt.Sprintf("%s Documentation", titleCase(repoName)), "repository": repoName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
 		fmData, err := yaml.Marshal(frontMatter)
 		if err != nil {
 			return fmt.Errorf("failed to marshal front matter: %w", err)
 		}
 		sectionGroups := make(map[string][]docs.DocFile)
 		for _, file := range files {
+			// files already filtered to exclude assets, so no need to check again
 			s := file.Section
 			if s == "" {
 				s = "root"
@@ -98,6 +102,15 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		tplRaw := g.mustIndexTemplate("repository")
 		ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
 		ctx["Sections"] = sectionGroups
+		// Add repository metadata if available
+		if repoConfig := g.findRepositoryConfig(repoName); repoConfig != nil {
+			ctx["RepositoryInfo"] = map[string]any{
+				"URL":         repoConfig.URL,
+				"Branch":      repoConfig.Branch,
+				"Description": repoConfig.Description,
+				"Tags":        repoConfig.Tags,
+			}
+		}
 		tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
 		if err != nil {
 			return fmt.Errorf("parse repository index template: %w", err)
@@ -122,6 +135,16 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 	return nil
 }
 
+// findRepositoryConfig looks up the config.Repository by name
+func (g *Generator) findRepositoryConfig(name string) *config.Repository {
+	for i := range g.config.Repositories {
+		if g.config.Repositories[i].Name == name {
+			return &g.config.Repositories[i]
+		}
+	}
+	return nil
+}
+
 func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	sectionGroups := make(map[string]map[string][]docs.DocFile)
 	for _, file := range docFiles {
@@ -135,6 +158,19 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	}
 	for repoName, sections := range sectionGroups {
 		for sectionName, files := range sections {
+			// Skip sections that only contain assets (no markdown files)
+			hasMarkdown := false
+			for _, f := range files {
+				if !f.IsAsset {
+					hasMarkdown = true
+					break
+				}
+			}
+			if !hasMarkdown {
+				slog.Debug("Skipping section index for asset-only directory", logfields.Repository(repoName), logfields.Section(sectionName))
+				continue
+			}
+
 			indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
 			if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)

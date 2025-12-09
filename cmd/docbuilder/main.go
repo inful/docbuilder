@@ -357,7 +357,7 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 
 		// Verify the public directory exists
 		if _, err := os.Stat(publicDir); os.IsNotExist(err) {
-			return fmt.Errorf("Hugo did not generate public directory")
+			return fmt.Errorf("hugo did not generate public directory")
 		}
 
 		// Clean the output directory if it exists
@@ -707,13 +707,17 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() {
+		_ = srcFile.Close()
+	}()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() {
+		_ = dstFile.Close()
+	}()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
 		return err
