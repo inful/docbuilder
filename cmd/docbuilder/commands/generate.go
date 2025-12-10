@@ -8,9 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // GenerateCmd implements the 'generate' command for CI/CD pipelines.
@@ -84,25 +82,11 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 	}}
 
 	// Create workspace for processing
-	wsDir := cfg.Build.WorkspaceDir
-	if wsDir == "" {
-		wsDir = "" // Will use temp dir
-	}
-	wsManager := workspace.NewManager(wsDir)
-	if err := wsManager.Create(); err != nil {
+	wsManager, err := CreateWorkspace(cfg)
+	if err != nil {
 		return fmt.Errorf("create workspace: %w", err)
 	}
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			slog.Warn("Failed to cleanup workspace", "error", err)
-		}
-	}()
-
-	// Create Git client
-	gitClient := git.NewClient(wsManager.GetPath())
-	if err := gitClient.EnsureWorkspace(); err != nil {
-		return fmt.Errorf("ensure workspace: %w", err)
-	}
+	defer CleanupWorkspace(wsManager)
 
 	// Process the local docs directory
 	slog.Info("Processing local documentation", "path", g.DocsDir)

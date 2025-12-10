@@ -1,12 +1,17 @@
 package commands
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 	"github.com/alecthomas/kong"
 )
 
@@ -130,4 +135,84 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.Chmod(dst, srcInfo.Mode())
+}
+
+// CreateWorkspace creates a workspace manager and initializes it.
+// The caller is responsible for calling CleanupWorkspace when done.
+func CreateWorkspace(cfg *config.Config) (*workspace.Manager, error) {
+	wsDir := cfg.Build.WorkspaceDir
+	wsManager := workspace.NewManager(wsDir)
+	if err := wsManager.Create(); err != nil {
+		return nil, err
+	}
+	return wsManager, nil
+}
+
+// CleanupWorkspace cleans up a workspace manager, logging any errors.
+func CleanupWorkspace(wsManager *workspace.Manager) {
+	if err := wsManager.Cleanup(); err != nil {
+		slog.Warn("Failed to cleanup workspace", "error", err)
+	}
+}
+
+// CreateGitClient creates a git client with the given workspace and config.
+func CreateGitClient(wsManager *workspace.Manager, cfg *config.Config) (*git.Client, error) {
+	gitClient := git.NewClient(wsManager.GetPath()).WithBuildConfig(&cfg.Build)
+	if err := gitClient.EnsureWorkspace(); err != nil {
+		return nil, err
+	}
+	return gitClient, nil
+}
+
+// ApplyAutoDiscovery applies forge auto-discovery if repositories are empty and forges are configured.
+func ApplyAutoDiscovery(ctx context.Context, cfg *config.Config) error {
+	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+		repos, err := AutoDiscoverRepositories(ctx, cfg)
+		if err != nil {
+			return fmt.Errorf("auto-discovery failed: %w", err)
+		}
+		cfg.Repositories = repos
+	}
+	return nil
+}
+
+// AutoDiscoverRepositories builds a forge manager from v2 config and returns converted repositories.
+func AutoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]config.Repository, error) {
+	manager := forge.NewForgeManager()
+
+	// Instantiate forge clients
+	for _, f := range v2cfg.Forges {
+		var client forge.Client
+		var err error
+		switch f.Type {
+		case config.ForgeForgejo:
+			client, err = forge.NewForgejoClient(f)
+		case config.ForgeGitHub:
+			client, err = forge.NewGitHubClient(f)
+		case config.ForgeGitLab:
+			client, err = forge.NewGitLabClient(f)
+		default:
+			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
+			continue
+		}
+		if err != nil {
+			slog.Error("Failed to create forge client", "forge", f.Name, "error", err)
+			continue
+		}
+		manager.AddForge(f, client)
+	}
+
+	filtering := v2cfg.Filtering
+	if filtering == nil {
+		filtering = &config.FilteringConfig{}
+	}
+
+	service := forge.NewDiscoveryService(manager, filtering)
+	result, err := service.DiscoverAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	repos := service.ConvertToConfigRepositories(result.Repositories, manager)
+	slog.Info("Auto-discovery completed", "repositories", len(repos))
+	return repos, nil
 }

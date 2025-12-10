@@ -7,8 +7,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // DiscoverCmd implements the 'discover' command.
@@ -21,12 +19,8 @@ func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
-		if repos, err := AutoDiscoverRepositories(context.Background(), cfg); err == nil {
-			cfg.Repositories = repos
-		} else {
-			return fmt.Errorf("auto-discovery failed: %w", err)
-		}
+	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
+		return err
 	}
 	return RunDiscover(cfg, d.Repository)
 }
@@ -35,23 +29,15 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	slog.Info("Starting documentation discovery", "repositories", len(cfg.Repositories))
 
 	// Create workspace manager
-	wsDir := cfg.Build.WorkspaceDir
-	if wsDir == "" {
-		wsDir = "" // Will use temp dir
-	}
-	wsManager := workspace.NewManager(wsDir)
-	if err := wsManager.Create(); err != nil {
+	wsManager, err := CreateWorkspace(cfg)
+	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			slog.Warn("Failed to cleanup workspace", "error", err)
-		}
-	}()
+	defer CleanupWorkspace(wsManager)
 
 	// Create Git client
-	gitClient := git.NewClient(wsManager.GetPath())
-	if err := gitClient.EnsureWorkspace(); err != nil {
+	gitClient, err := CreateGitClient(wsManager, cfg)
+	if err != nil {
 		return err
 	}
 
