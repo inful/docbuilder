@@ -339,7 +339,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 					if s.config.Build.LiveReload {
 						scriptTag = fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script>`, s.config.Daemon.HTTP.LiveReloadPort)
 					}
-					_, _ = w.Write([]byte(fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s</body></html>`, scriptTag)))
+					_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s</body></html>`, scriptTag)
 					return
 				}
 			}
@@ -492,23 +492,23 @@ func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.List
 // nolint:unparam // This method currently never returns an error.
 func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
-	
+
 	// CORS middleware for LiveReload server (allows cross-origin requests from docs port)
 	corsMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-			
+
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}
-	
+
 	// LiveReload SSE endpoint
 	if s.daemon != nil && s.daemon.liveReload != nil {
 		mux.Handle("/livereload", corsMiddleware(s.daemon.liveReload))
@@ -534,7 +534,7 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
 		})
 		slog.Info("LiveReload dedicated server registered")
 	}
-	
+
 	// LiveReload server needs no timeouts for long-lived SSE connections
 	s.liveReloadServer = &http.Server{Handler: mux, ReadTimeout: 0, WriteTimeout: 0, IdleTimeout: 300 * time.Second}
 	return s.startServerWithListener("livereload", s.liveReloadServer, ln)

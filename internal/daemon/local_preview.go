@@ -245,26 +245,26 @@ func addDirsRecursive(w *fsnotify.Watcher, root string) error {
 // shouldIgnoreEvent returns true for filesystem events that should not trigger rebuilds
 func shouldIgnoreEvent(path string) bool {
 	base := filepath.Base(path)
-	
+
 	// Ignore hidden files
 	if strings.HasPrefix(base, ".") {
 		return true
 	}
-	
+
 	// Ignore editor temp/swap files
-	if strings.HasSuffix(base, "~") || 
-	   strings.HasSuffix(base, ".swp") || 
-	   strings.HasSuffix(base, ".swx") ||
-	   strings.HasPrefix(base, ".#") ||
-	   strings.HasPrefix(base, "#") && strings.HasSuffix(base, "#") {
+	if strings.HasSuffix(base, "~") ||
+		strings.HasSuffix(base, ".swp") ||
+		strings.HasSuffix(base, ".swx") ||
+		strings.HasPrefix(base, ".#") ||
+		strings.HasPrefix(base, "#") && strings.HasSuffix(base, "#") {
 		return true
 	}
-	
+
 	// Ignore common lock files
 	if base == ".DS_Store" || base == "Thumbs.db" {
 		return true
 	}
-	
+
 	return false
 }
 
