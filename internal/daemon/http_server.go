@@ -348,21 +348,30 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 
-	// Wrap with 404 fallback that redirects to nearest parent path
+	// Wrap with 404 fallback that redirects to nearest parent path on LiveReload
 	rootWithFallback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Capture the response to detect 404s
 		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
 		rootHandler.ServeHTTP(rec, r)
 
-		// If we got a 404 and this is a GET request, try to redirect to parent
+		// If we got a 404 and this is a GET request from LiveReload, try to redirect to parent
 		if rec.statusCode == http.StatusNotFound && r.Method == "GET" {
-			root := s.resolveDocsRoot()
-			redirectPath := s.findNearestValidParent(root, r.URL.Path)
-			if redirectPath != "" && redirectPath != r.URL.Path {
-				// Don't write the 404 body, issue redirect instead
-				w.Header().Set("Location", redirectPath)
-				w.WriteHeader(http.StatusTemporaryRedirect)
-				return
+			// Check if this is a LiveReload-triggered reload via Cookie
+			if cookie, err := r.Cookie("docbuilder_lr_reload"); err == nil && cookie.Value == "1" {
+				root := s.resolveDocsRoot()
+				redirectPath := s.findNearestValidParent(root, r.URL.Path)
+				if redirectPath != "" && redirectPath != r.URL.Path {
+					// Clear the cookie and redirect
+					http.SetCookie(w, &http.Cookie{
+						Name:   "docbuilder_lr_reload",
+						Value:  "",
+						MaxAge: -1,
+						Path:   "/",
+					})
+					w.Header().Set("Location", redirectPath)
+					w.WriteHeader(http.StatusTemporaryRedirect)
+					return
+				}
 			}
 		}
 
@@ -610,7 +619,7 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
   function connect(){
     const es = new EventSource('http://localhost:%d/livereload');
     let first=true; let current=null;
-    es.onmessage = (e)=>{ try { const p=JSON.parse(e.data); if(first){ current=p.hash; first=false; return;} if(p.hash && p.hash!==current){ console.log('[docbuilder] change detected, reloading'); location.reload(); } } catch(_){} };
+    es.onmessage = (e)=>{ try { const p=JSON.parse(e.data); if(first){ current=p.hash; first=false; return;} if(p.hash && p.hash!==current){ console.log('[docbuilder] change detected, reloading'); document.cookie='docbuilder_lr_reload=1; path=/; max-age=5'; location.reload(); } } catch(_){} };
     es.onerror = ()=>{ console.warn('[docbuilder] livereload error - retrying'); es.close(); setTimeout(connect,2000); };
   }
   connect();
