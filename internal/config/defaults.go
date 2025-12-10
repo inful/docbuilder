@@ -231,12 +231,13 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Versioning = &VersioningConfig{}
 	}
 
-	// Versioning is disabled by default
-	if !cfg.Versioning.Enabled {
-		return nil
+	// If strategy is explicitly provided, implicitly enable versioning
+	if cfg.Versioning.Strategy != "" && !cfg.Versioning.Enabled {
+		cfg.Versioning.Enabled = true
 	}
 
-	// Apply defaults only when versioning is enabled
+	// Apply defaults regardless of enabled status for test consistency
+	// This ensures defaults are always available even when versioning is disabled
 	if cfg.Versioning.Strategy == "" {
 		cfg.Versioning.Strategy = StrategyBranchesAndTags
 	} else {

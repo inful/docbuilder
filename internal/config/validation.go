@@ -300,19 +300,20 @@ func (cv *configurationValidator) validateVersioning() error {
 		return nil
 	}
 
-	// Skip validation if versioning is disabled
-	if !cv.config.Versioning.Enabled {
-		return nil
+	// If strategy is explicitly provided, validate it regardless of enabled status
+	// This catches configuration errors early
+	if cv.config.Versioning.Strategy != "" {
+		switch cv.config.Versioning.Strategy {
+		case StrategyBranchesAndTags, StrategyBranchesOnly, StrategyTagsOnly:
+			// Valid versioning strategies
+		default:
+			return fmt.Errorf("invalid versioning strategy: %s", cv.config.Versioning.Strategy)
+		}
 	}
 
-	// Validate strategy only when versioning is enabled
-	switch cv.config.Versioning.Strategy {
-	case StrategyBranchesAndTags, StrategyBranchesOnly, StrategyTagsOnly:
-		// Valid versioning strategies
-	case "":
+	// If versioning is explicitly enabled, require a strategy
+	if cv.config.Versioning.Enabled && cv.config.Versioning.Strategy == "" {
 		return fmt.Errorf("versioning.strategy is required when versioning.enabled is true")
-	default:
-		return fmt.Errorf("invalid versioning strategy: %s", cv.config.Versioning.Strategy)
 	}
 
 	return nil

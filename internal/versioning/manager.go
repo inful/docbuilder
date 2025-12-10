@@ -218,12 +218,6 @@ func (vm *DefaultVersionManager) ListAllRepositories() ([]*RepositoryVersions, e
 	return repositories, nil
 }
 
-// getGitReferences retrieves all Git references (branches and tags) from the repository
-// nolint:unparam // error reserved for future git backends that may fail reference lookup
-func (vm *DefaultVersionManager) getGitReferences(repoURL string) ([]*GitReference, error) {
-	return vm.getGitReferencesWithAuth(repoURL, nil)
-}
-
 func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig interface{}) ([]*GitReference, error) {
 	var refs []*git.RemoteReference
 	var err error

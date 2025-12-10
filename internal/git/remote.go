@@ -30,21 +30,16 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 
 	remote := git.NewRemote(memory.NewStorage(), remoteConfig)
 
-	// Setup authentication - try to find a matching repository config
-	var auth interface{}
-	if c.buildCfg != nil {
-		// Note: We don't have direct access to repository auth config here
-		// This is a limitation - ideally we'd pass auth info through the call
-		// For now, we'll attempt without auth and let it fail if needed
-		auth = nil
-	}
+	// TODO: Setup authentication
+	// Currently not implemented - will be added when we have access to repository auth config
+	// For now, we'll attempt without auth and let it fail if needed
 
 	// List references
 	listOptions := &git.ListOptions{}
-	if auth != nil {
-		// listOptions.Auth = auth.(transport.AuthMethod)
-		// Currently not setting auth - will be added in next iteration
-	}
+	// TODO: Add auth support for remote.List
+	// if auth != nil {
+	//     listOptions.Auth = auth.(transport.AuthMethod)
+	// }
 
 	refs, err := remote.List(listOptions)
 	if err != nil {
