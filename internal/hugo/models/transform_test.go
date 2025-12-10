@@ -386,10 +386,10 @@ type mockTransformer struct {
 	enabled  bool
 }
 
-func (m *mockTransformer) Name() string                          { return m.name }
-func (m *mockTransformer) Description() string                   { return "Mock transformer" }
-func (m *mockTransformer) Version() string                       { return "1.0.0" }
-func (m *mockTransformer) Priority() int                         { return m.priority }
+func (m *mockTransformer) Name() string        { return m.name }
+func (m *mockTransformer) Description() string { return "Mock transformer" }
+func (m *mockTransformer) Version() string     { return "1.0.0" }
+func (m *mockTransformer) Priority() int       { return m.priority }
 func (m *mockTransformer) Stage() TransformStage {
 	if m.stage == "" {
 		return StageParse // Default stage

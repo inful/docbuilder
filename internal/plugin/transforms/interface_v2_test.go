@@ -141,8 +141,8 @@ func TestTopologicalSortPluginsSimple(t *testing.T) {
 			},
 		},
 		&mockTransformV2{
-			name:  "first",
-			stage: StageContent,
+			name:         "first",
+			stage:        StageContent,
 			dependencies: TransformDependencies{},
 		},
 		&mockTransformV2{
@@ -251,8 +251,8 @@ func TestFrontmatterTransformImplementsV2(t *testing.T) {
 func TestV2WithMustRunBefore(t *testing.T) {
 	transforms := []TransformPlugin{
 		&mockTransformV2{
-			name:  "last",
-			stage: StageContent,
+			name:         "last",
+			stage:        StageContent,
 			dependencies: TransformDependencies{},
 		},
 		&mockTransformV2{

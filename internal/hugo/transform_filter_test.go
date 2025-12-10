@@ -39,12 +39,12 @@ func TestTransformFiltering_EnableDisable(t *testing.T) {
 	// Snapshot registry and restore after
 	snap := tr.SnapshotForTest()
 	defer tr.RestoreForTest(snap)
-	
+
 	// Register in both V1 and V2 registries
 	marker := markerTransform{}
 	tr.Register(marker)
 	tr.Register(marker)
-	
+
 	// Build config disabling marker
 	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Filtering", Theme: "hextra", Transforms: &config.HugoTransforms{Disable: []string{"_marker"}}}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"org"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	g := NewGenerator(cfg, t.TempDir())

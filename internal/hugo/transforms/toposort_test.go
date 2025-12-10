@@ -11,10 +11,10 @@ type mockTransformer struct {
 	dependencies TransformDependencies
 }
 
-func (m mockTransformer) Name() string                         { return m.name }
-func (m mockTransformer) Stage() TransformStage                { return m.stage }
-func (m mockTransformer) Dependencies() TransformDependencies  { return m.dependencies }
-func (m mockTransformer) Transform(p PageAdapter) error        { return nil }
+func (m mockTransformer) Name() string                        { return m.name }
+func (m mockTransformer) Stage() TransformStage               { return m.stage }
+func (m mockTransformer) Dependencies() TransformDependencies { return m.dependencies }
+func (m mockTransformer) Transform(p PageAdapter) error       { return nil }
 
 // TestTopologicalSort_Simple tests basic linear dependencies
 func TestTopologicalSort_Simple(t *testing.T) {
@@ -174,8 +174,8 @@ func TestTopologicalSort_MustRunBefore(t *testing.T) {
 			},
 		},
 		mockTransformer{
-			name:  "second",
-			stage: StageParse,
+			name:         "second",
+			stage:        StageParse,
 			dependencies: TransformDependencies{},
 		},
 	}
@@ -265,13 +265,13 @@ func TestBuildPipeline_CrossStageOrder(t *testing.T) {
 			},
 		},
 		mockTransformer{
-			name:  "build_a",
-			stage: StageBuild,
+			name:         "build_a",
+			stage:        StageBuild,
 			dependencies: TransformDependencies{},
 		},
 		mockTransformer{
-			name:  "parse_x",
-			stage: StageParse,
+			name:         "parse_x",
+			stage:        StageParse,
 			dependencies: TransformDependencies{},
 		},
 	}
@@ -299,8 +299,8 @@ func TestBuildPipeline_CrossStageOrder(t *testing.T) {
 func TestBuildPipeline_InvalidStage(t *testing.T) {
 	transforms := []Transformer{
 		mockTransformer{
-			name:  "invalid",
-			stage: TransformStage("invalid_stage"),
+			name:         "invalid",
+			stage:        TransformStage("invalid_stage"),
 			dependencies: TransformDependencies{},
 		},
 	}

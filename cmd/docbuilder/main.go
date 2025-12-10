@@ -780,7 +780,7 @@ func copyFile(src, dst string) error {
 func (cmd *VisualizeCmd) Run(_ *Global, _ *CLI) error {
 	// Import defaults package to register transforms
 	_ = hugo.NewGenerator(&config.Config{}, "")
-	
+
 	// Handle --list flag
 	if cmd.List {
 		fmt.Println("Available visualization formats:")
@@ -796,13 +796,13 @@ func (cmd *VisualizeCmd) Run(_ *Global, _ *CLI) error {
 		fmt.Println("  docbuilder visualize -f dot -o pipe.dot # DOT format to file")
 		return nil
 	}
-	
+
 	// Generate visualization
 	output, err := tr.VisualizePipeline(tr.VisualizationFormat(cmd.Format))
 	if err != nil {
 		return fmt.Errorf("failed to visualize pipeline: %w", err)
 	}
-	
+
 	// Write to file or stdout
 	if cmd.Output != "" {
 		if err := os.WriteFile(cmd.Output, []byte(output), 0644); err != nil {
@@ -812,6 +812,6 @@ func (cmd *VisualizeCmd) Run(_ *Global, _ *CLI) error {
 	} else {
 		fmt.Print(output)
 	}
-	
+
 	return nil
 }
