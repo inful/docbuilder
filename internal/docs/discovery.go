@@ -225,8 +225,14 @@ func (df *DocFile) GetHugoPath() string {
 		parts = append(parts, strings.ToLower(df.Section))
 	}
 
+	// Convert user-provided index.md to _index.md for Hugo section pages
+	filename := strings.ToLower(df.Name)
+	if filename == "index" {
+		filename = "_index"
+	}
+	
 	// Lowercase the filename for URL compatibility
-	parts = append(parts, strings.ToLower(df.Name)+df.Extension)
+	parts = append(parts, filename+df.Extension)
 	return filepath.Join(parts...)
 }
 

@@ -171,14 +171,24 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 		for sectionName, files := range sections {
 			// Skip sections that only contain assets (no markdown files)
 			hasMarkdown := false
+			hasUserIndex := false
 			for _, f := range files {
 				if !f.IsAsset {
 					hasMarkdown = true
-					break
+					// Check if this section has a user-provided index.md file
+					if f.Name == "index" && f.Section == sectionName {
+						hasUserIndex = true
+					}
 				}
 			}
 			if !hasMarkdown {
 				slog.Debug("Skipping section index for asset-only directory", logfields.Repository(repoName), logfields.Section(sectionName))
+				continue
+			}
+			
+			// Skip generating _index.md if user provided an index.md
+			if hasUserIndex {
+				slog.Debug("Using user-provided index.md for section", logfields.Repository(repoName), logfields.Section(sectionName))
 				continue
 			}
 
