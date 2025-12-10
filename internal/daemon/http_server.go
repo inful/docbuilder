@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"bytes"
 	"context"
 	stdErrors "errors"
 	"fmt"
@@ -516,46 +515,90 @@ func injectLiveReloadScript(next http.Handler) http.Handler {
 }
 
 // liveReloadInjector wraps an http.ResponseWriter to inject the LiveReload client script
-// into HTML responses before </body> tag.
+// into HTML responses before </body> tag. Uses buffering with a size limit to prevent stalls.
 type liveReloadInjector struct {
 	http.ResponseWriter
-	statusCode int
-	buf        bytes.Buffer
+	statusCode    int
+	buffer        []byte
+	headerWritten bool
+	passthrough   bool
+	maxSize       int
 }
 
 func newLiveReloadInjector(w http.ResponseWriter, _ *http.Request) *liveReloadInjector {
 	return &liveReloadInjector{
 		ResponseWriter: w,
-		statusCode:     http.StatusOK, // default status
+		statusCode:     http.StatusOK,
+		maxSize:        512 * 1024, // 512KB max - typical HTML page
 	}
 }
 
 func (l *liveReloadInjector) WriteHeader(code int) {
 	l.statusCode = code
-	// Don't write header yet - we buffer everything
+	// Don't write header yet unless in passthrough mode
+	if l.passthrough {
+		l.ResponseWriter.WriteHeader(code)
+		l.headerWritten = true
+	}
 }
 
 func (l *liveReloadInjector) Write(data []byte) (int, error) {
-	// Buffer all content
-	return l.buf.Write(data)
+	// Check Content-Type on first write
+	if !l.headerWritten && !l.passthrough && l.buffer == nil {
+		contentType := l.ResponseWriter.Header().Get("Content-Type")
+		isHTML := contentType == "" || strings.Contains(contentType, "text/html")
+
+		if !isHTML {
+			// Not HTML - passthrough
+			l.passthrough = true
+			l.ResponseWriter.WriteHeader(l.statusCode)
+			l.headerWritten = true
+			return l.ResponseWriter.Write(data)
+		}
+
+		l.buffer = make([]byte, 0, 64*1024) // Start with 64KB
+	}
+
+	if l.passthrough {
+		return l.ResponseWriter.Write(data)
+	}
+
+	// Check if buffering would exceed limit
+	if len(l.buffer)+len(data) > l.maxSize {
+		// Too large - switch to passthrough, flush buffer, write remaining
+		l.passthrough = true
+		l.ResponseWriter.Header().Del("Content-Length")
+		l.ResponseWriter.WriteHeader(l.statusCode)
+		l.headerWritten = true
+
+		if len(l.buffer) > 0 {
+			if _, err := l.ResponseWriter.Write(l.buffer); err != nil {
+				return 0, err
+			}
+		}
+		return l.ResponseWriter.Write(data)
+	}
+
+	// Buffer the data
+	l.buffer = append(l.buffer, data...)
+	return len(data), nil
 }
 
 // finalize must be called after the handler completes to inject the script
 func (l *liveReloadInjector) finalize() {
-	if l.buf.Len() > 0 {
-		// Inject LiveReload script before </body>
-		html := l.buf.String()
-		script := `<script src="/livereload.js"></script></body>`
-		html = strings.Replace(html, "</body>", script, 1)
-
-		// Remove Content-Length header as we're modifying the content
-		l.ResponseWriter.Header().Del("Content-Length")
-
-		// Write header and modified HTML
-		l.ResponseWriter.WriteHeader(l.statusCode)
-		_, _ = l.ResponseWriter.Write([]byte(html))
-	} else {
-		// Empty response - write status code anyway to avoid hanging connection
-		l.ResponseWriter.WriteHeader(l.statusCode)
+	if l.passthrough || len(l.buffer) == 0 {
+		if !l.headerWritten {
+			l.ResponseWriter.WriteHeader(l.statusCode)
+		}
+		return
 	}
+
+	// Inject script before </body>
+	html := string(l.buffer)
+	script := `<script src="/livereload.js"></script></body>`
+	modified := strings.Replace(html, "</body>", script, 1)
+
+	l.ResponseWriter.Header().Del("Content-Length")
+	l.ResponseWriter.WriteHeader(l.statusCode)
+	_, _ = l.ResponseWriter.Write([]byte(modified))
 }
