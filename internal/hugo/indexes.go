@@ -147,15 +147,26 @@ func (g *Generator) findRepositoryConfig(name string) *config.Repository {
 
 func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	sectionGroups := make(map[string]map[string][]docs.DocFile)
+	allSections := make(map[string]map[string]bool) // Track all sections including intermediate ones
+	
 	for _, file := range docFiles {
 		if file.Section == "" {
 			continue
 		}
 		if sectionGroups[file.Repository] == nil {
 			sectionGroups[file.Repository] = make(map[string][]docs.DocFile)
+			allSections[file.Repository] = make(map[string]bool)
 		}
 		sectionGroups[file.Repository][file.Section] = append(sectionGroups[file.Repository][file.Section], file)
+		
+		// Track all parent sections to ensure intermediate directories get _index.md files
+		section := file.Section
+		for section != "" && section != "." {
+			allSections[file.Repository][section] = true
+			section = filepath.Dir(section)
+		}
 	}
+	
 	for repoName, sections := range sectionGroups {
 		for sectionName, files := range sections {
 			// Skip sections that only contain assets (no markdown files)
@@ -206,6 +217,54 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 				return fmt.Errorf("failed to write section index: %w", err)
 			}
 			slog.Debug("Generated section index", logfields.Repository(repoName), logfields.Section(sectionName), logfields.Path(indexPath))
+		}
+		
+		// Create _index.md for intermediate sections that don't have files directly in them
+		// This ensures proper nesting in Hugo's navigation
+		for sectionName := range allSections[repoName] {
+			// Skip if we already created an index for this section
+			if _, hasFiles := sections[sectionName]; hasFiles {
+				continue
+			}
+			
+			indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
+			if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
+				return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
+			}
+			
+			// Use only the last segment of the section path for the title
+			sectionTitle := filepath.Base(sectionName)
+			frontMatter := map[string]any{"title": titleCase(sectionTitle), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+			fmData, err := yaml.Marshal(frontMatter)
+			if err != nil {
+				return fmt.Errorf("failed to marshal front matter: %w", err)
+			}
+			
+			// Use a simple template for intermediate sections
+			tplRaw := g.mustIndexTemplate("section")
+			ctx := buildIndexTemplateContext(g, []docs.DocFile{}, map[string][]docs.DocFile{}, frontMatter)
+			ctx["SectionName"] = sectionName
+			ctx["Files"] = []docs.DocFile{}
+			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
+			if err != nil {
+				return fmt.Errorf("parse section index template: %w", err)
+			}
+			var buf bytes.Buffer
+			if err := tpl.Execute(&buf, ctx); err != nil {
+				return fmt.Errorf("exec section index template: %w", err)
+			}
+			body := buf.String()
+			var content string
+			if !strings.HasPrefix(body, "---\n") {
+				content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body)
+			} else {
+				content = body
+			}
+			// #nosec G306 -- index pages are public content
+			if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
+				return fmt.Errorf("failed to write intermediate section index: %w", err)
+			}
+			slog.Debug("Generated intermediate section index", logfields.Repository(repoName), logfields.Section(sectionName), logfields.Path(indexPath))
 		}
 	}
 	return nil
