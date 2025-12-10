@@ -147,8 +147,8 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 			return nil
 		}
 
-		// Skip hidden files and common non-doc files
-		if strings.HasPrefix(info.Name(), ".") || isIgnoredFile(info.Name()) {
+		// Skip hidden files
+		if strings.HasPrefix(info.Name(), ".") {
 			return nil
 		}
 
@@ -162,6 +162,11 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 		section := filepath.Dir(relPath)
 		if section == "." {
 			section = "" // Root level
+		}
+
+		// Only ignore README.md and similar files at the root level
+		if section == "" && isIgnoredFile(info.Name()) {
+			return nil
 		}
 
 		docFile := DocFile{
