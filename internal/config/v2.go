@@ -59,7 +59,7 @@ type DaemonConfig struct {
 
 // HTTPConfig represents HTTP server configuration for the daemon, including ports for docs, webhooks, and admin endpoints.
 type HTTPConfig struct {
-	DocsPort       int `yaml:"docs_port"`        // Documentation serving port
+	DocsPort       int `yaml:"docs_port"`       // Documentation serving port
 	WebhookPort    int `yaml:"webhook_port"`    // Webhook reception port
 	AdminPort      int `yaml:"admin_port"`      // Admin/status endpoints port
 	LiveReloadPort int `yaml:"livereload_port"` // LiveReload SSE endpoint port (separate to avoid HTTP/1.1 blocking)
