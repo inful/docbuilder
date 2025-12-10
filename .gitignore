@@ -322,3 +322,5 @@ dist/
 test-site
 bin
 testconfig.yml
+dev-config.yaml
+forgejo.yaml

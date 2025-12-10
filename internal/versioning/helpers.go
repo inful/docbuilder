@@ -1,4 +1,4 @@
-package main
+package versioning
 
 import (
 	"fmt"
@@ -6,24 +6,23 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
-// expandRepositoriesWithVersions takes the base repository configuration and expands
+// ExpandRepositoriesWithVersions takes the base repository configuration and expands
 // it into multiple repositories if versioning is enabled, one per version.
-func expandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) ([]config.Repository, error) {
+func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) ([]config.Repository, error) {
 	// If versioning is disabled or not configured, return repos as-is
 	if cfg.Versioning == nil || !cfg.Versioning.Enabled || cfg.Versioning.DefaultBranchOnly {
 		return cfg.Repositories, nil
 	}
 
-	versionManager := versioning.NewVersionManager(gitClient)
+	versionManager := NewVersionManager(gitClient)
 	var expandedRepos []config.Repository
 
 	for _, repo := range cfg.Repositories {
 		// Convert config.VersioningConfig to versioning.VersionConfig
-		versionConfig := &versioning.VersionConfig{
-			Strategy:    versioning.VersionStrategy(cfg.Versioning.Strategy),
+		versionConfig := &VersionConfig{
+			Strategy:    VersionStrategy(cfg.Versioning.Strategy),
 			MaxVersions: cfg.Versioning.MaxVersionsPerRepo,
 		}
 
@@ -65,7 +64,7 @@ func expandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			versionedRepo.Branch = version.Name // Use Name as branch/tag reference
 			versionedRepo.Version = version.DisplayName
 			versionedRepo.IsVersioned = true
-			versionedRepo.IsTag = (version.Type == versioning.VersionTypeTag)
+			versionedRepo.IsTag = (version.Type == VersionTypeTag)
 
 			slog.Debug("Creating versioned repository",
 				"name", repo.Name,

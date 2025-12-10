@@ -1,4 +1,4 @@
-package main
+package incremental
 
 import (
 	"crypto/sha256"
@@ -9,13 +9,12 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/incremental"
 )
 
-// computeRepoHashes computes content hashes for all cloned repositories.
+// ComputeRepoHashes computes content hashes for all cloned repositories.
 // Returns a slice of RepoHash structs that can be used for cache checking.
-func computeRepoHashes(repos []config.Repository, repoPaths map[string]string) ([]incremental.RepoHash, error) {
-	var repoHashes []incremental.RepoHash
+func ComputeRepoHashes(repos []config.Repository, repoPaths map[string]string) ([]RepoHash, error) {
+	var repoHashes []RepoHash
 
 	for _, repo := range repos {
 		repoPath, ok := repoPaths[repo.Name]
@@ -42,7 +41,7 @@ func computeRepoHashes(repos []config.Repository, repoPaths map[string]string) (
 			return nil, fmt.Errorf("get commit for %s: %w", repo.Name, err)
 		}
 
-		repoHashes = append(repoHashes, incremental.RepoHash{
+		repoHashes = append(repoHashes, RepoHash{
 			Name:   repo.Name,
 			Commit: commit,
 			Hash:   hash,
@@ -52,18 +51,18 @@ func computeRepoHashes(repos []config.Repository, repoPaths map[string]string) (
 	return repoHashes, nil
 }
 
-// computeSimpleBuildSignature creates a simplified build signature for cache checking
+// ComputeSimpleBuildSignature creates a simplified build signature for cache checking
 // without requiring a full BuildPlan (which is only used in Phase 3 pipeline).
-func computeSimpleBuildSignature(cfg *config.Config, repoHashes []incremental.RepoHash) (*incremental.BuildSignature, error) {
+func ComputeSimpleBuildSignature(cfg *config.Config, repoHashes []RepoHash) (*BuildSignature, error) {
 	// Sort repos by name for determinism
-	sorted := make([]incremental.RepoHash, len(repoHashes))
+	sorted := make([]RepoHash, len(repoHashes))
 	copy(sorted, repoHashes)
 	sort.Slice(sorted, func(i, j int) bool {
 		return sorted[i].Name < sorted[j].Name
 	})
 
 	// Create signature with essential fields
-	sig := &incremental.BuildSignature{
+	sig := &BuildSignature{
 		RepoHashes: sorted,
 		Theme:      cfg.Hugo.Theme,
 		ThemeVer:   "",         // Simple version doesn't track theme version

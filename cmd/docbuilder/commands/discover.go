@@ -1,0 +1,110 @@
+package commands
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
+)
+
+// DiscoverCmd implements the 'discover' command.
+type DiscoverCmd struct {
+	Repository string `short:"r" help:"Specific repository to discover (optional)"`
+}
+
+func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
+	cfg, err := config.Load(root.Config)
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
+		if repos, err := AutoDiscoverRepositories(context.Background(), cfg); err == nil {
+			cfg.Repositories = repos
+		} else {
+			return fmt.Errorf("auto-discovery failed: %w", err)
+		}
+	}
+	return RunDiscover(cfg, d.Repository)
+}
+
+func RunDiscover(cfg *config.Config, specificRepo string) error {
+	slog.Info("Starting documentation discovery", "repositories", len(cfg.Repositories))
+
+	// Create workspace manager
+	wsDir := cfg.Build.WorkspaceDir
+	if wsDir == "" {
+		wsDir = "" // Will use temp dir
+	}
+	wsManager := workspace.NewManager(wsDir)
+	if err := wsManager.Create(); err != nil {
+		return err
+	}
+	defer func() {
+		if err := wsManager.Cleanup(); err != nil {
+			slog.Warn("Failed to cleanup workspace", "error", err)
+		}
+	}()
+
+	// Create Git client
+	gitClient := git.NewClient(wsManager.GetPath())
+	if err := gitClient.EnsureWorkspace(); err != nil {
+		return err
+	}
+
+	// Filter repositories if specific one requested
+	var reposToProcess []config.Repository
+	if specificRepo != "" {
+		for _, repo := range cfg.Repositories {
+			if repo.Name == specificRepo {
+				reposToProcess = []config.Repository{repo}
+				break
+			}
+		}
+		if len(reposToProcess) == 0 {
+			return fmt.Errorf("repository '%s' not found in configuration", specificRepo)
+		}
+	} else {
+		reposToProcess = cfg.Repositories
+	}
+
+	// Clone repositories
+	repoPaths := make(map[string]string)
+	for _, repo := range reposToProcess {
+		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
+
+		repoPath, err := gitClient.CloneRepository(repo)
+		if err != nil {
+			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
+			return err
+		}
+
+		repoPaths[repo.Name] = repoPath
+	}
+
+	// Discover documentation files
+	discovery := docs.NewDiscovery(reposToProcess, &cfg.Build)
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		return err
+	}
+
+	// Print discovery results
+	slog.Info("Discovery completed", "total_files", len(docFiles))
+
+	filesByRepo := discovery.GetDocFilesByRepository()
+	for repoName, files := range filesByRepo {
+		slog.Info("Repository files", "repository", repoName, "count", len(files))
+		for _, file := range files {
+			slog.Info("  File discovered",
+				"path", file.RelativePath,
+				"section", file.Section,
+				"hugo_path", file.GetHugoPath())
+		}
+	}
+
+	return nil
+}
