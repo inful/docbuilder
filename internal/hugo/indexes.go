@@ -203,10 +203,26 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			if err != nil {
 				return fmt.Errorf("failed to marshal front matter: %w", err)
 			}
+			
+			// Find immediate child subsections
+			var subsections []string
+			for otherSection := range allSections[repoName] {
+				// Check if otherSection is a direct child of sectionName
+				if strings.HasPrefix(otherSection, sectionName+"/") {
+					// Get the relative path from this section
+					relPath := strings.TrimPrefix(otherSection, sectionName+"/")
+					// Only include if it's an immediate child (no further slashes)
+					if !strings.Contains(relPath, "/") {
+						subsections = append(subsections, relPath)
+					}
+				}
+			}
+			
 			tplRaw := g.mustIndexTemplate("section")
 			ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
 			ctx["SectionName"] = sectionName
 			ctx["Files"] = files
+			ctx["Subsections"] = subsections
 			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 			if err != nil {
 				return fmt.Errorf("parse section index template: %w", err)
@@ -250,11 +266,26 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 				return fmt.Errorf("failed to marshal front matter: %w", err)
 			}
 			
+			// Find immediate child subsections for intermediate sections
+			var subsections []string
+			for otherSection := range allSections[repoName] {
+				// Check if otherSection is a direct child of sectionName
+				if strings.HasPrefix(otherSection, sectionName+"/") {
+					// Get the relative path from this section
+					relPath := strings.TrimPrefix(otherSection, sectionName+"/")
+					// Only include if it's an immediate child (no further slashes)
+					if !strings.Contains(relPath, "/") {
+						subsections = append(subsections, relPath)
+					}
+				}
+			}
+			
 			// Use a simple template for intermediate sections
 			tplRaw := g.mustIndexTemplate("section")
 			ctx := buildIndexTemplateContext(g, []docs.DocFile{}, map[string][]docs.DocFile{}, frontMatter)
 			ctx["SectionName"] = sectionName
 			ctx["Files"] = []docs.DocFile{}
+			ctx["Subsections"] = subsections
 			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 			if err != nil {
 				return fmt.Errorf("parse section index template: %w", err)
