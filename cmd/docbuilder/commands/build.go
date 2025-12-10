@@ -9,14 +9,11 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/forge"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/incremental"
 	"git.home.luguber.info/inful/docbuilder/internal/manifest"
 	"git.home.luguber.info/inful/docbuilder/internal/storage"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
-	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // BuildCmd implements the 'build' command.
@@ -40,12 +37,8 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			slog.Warn("Ignoring invalid --render-mode value", "value", b.RenderMode)
 		}
 	}
-	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
-		if repos, err := AutoDiscoverRepositories(context.Background(), cfg); err == nil {
-			cfg.Repositories = repos
-		} else {
-			return fmt.Errorf("auto-discovery failed: %w", err)
-		}
+	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
+		return err
 	}
 
 	// Resolve output directory with base_directory support
@@ -91,23 +84,15 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	_ = stageCache
 
 	// Create workspace manager
-	wsDir := cfg.Build.WorkspaceDir
-	if wsDir == "" {
-		wsDir = "" // Will use temp dir
-	}
-	wsManager := workspace.NewManager(wsDir)
-	if err := wsManager.Create(); err != nil {
+	wsManager, err := CreateWorkspace(cfg)
+	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			slog.Warn("Failed to cleanup workspace", "error", err)
-		}
-	}()
+	defer CleanupWorkspace(wsManager)
 
 	// Create Git client with build config for auth support
-	gitClient := git.NewClient(wsManager.GetPath()).WithBuildConfig(&cfg.Build)
-	if err := gitClient.EnsureWorkspace(); err != nil {
+	gitClient, err := CreateGitClient(wsManager, cfg)
+	if err != nil {
 		return err
 	}
 
@@ -262,45 +247,4 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 
 	fmt.Println("Build completed successfully")
 	return nil
-}
-
-// AutoDiscoverRepositories builds a forge manager from v2 config and returns converted repositories.
-func AutoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]config.Repository, error) {
-	manager := forge.NewForgeManager()
-
-	// Instantiate forge clients
-	for _, f := range v2cfg.Forges {
-		var client forge.Client
-		var err error
-		switch f.Type {
-		case config.ForgeForgejo:
-			client, err = forge.NewForgejoClient(f)
-		case config.ForgeGitHub:
-			client, err = forge.NewGitHubClient(f)
-		case config.ForgeGitLab:
-			client, err = forge.NewGitLabClient(f)
-		default:
-			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
-			continue
-		}
-		if err != nil {
-			slog.Error("Failed to create forge client", "forge", f.Name, "error", err)
-			continue
-		}
-		manager.AddForge(f, client)
-	}
-
-	filtering := v2cfg.Filtering
-	if filtering == nil {
-		filtering = &config.FilteringConfig{}
-	}
-
-	service := forge.NewDiscoveryService(manager, filtering)
-	result, err := service.DiscoverAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-	repos := service.ConvertToConfigRepositories(result.Repositories, manager)
-	slog.Info("Auto-discovery completed", "repositories", len(repos))
-	return repos, nil
 }
