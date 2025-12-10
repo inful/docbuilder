@@ -27,6 +27,8 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 
 - Clone documentation from multiple Git repositories
 - Support for various authentication methods (SSH, tokens, basic auth)
+- **Multi-version documentation**: Build from multiple branches/tags with automatic version discovery
+- **Incremental builds**: Cache-aware execution skips unchanged repositories for faster CI pipelines
 - Conditional forge-level namespacing: when multiple distinct forge types are present (via `tags.forge_type`), content paths become `content/<forge>/<repository>/...`; single-forge builds keep `content/<repository>/...`.
 - Stable documentation set fingerprint: `BuildReport.DocFilesHash` (SHA-256 of sorted Hugo paths) now computed for both full (discovery) and direct generation paths. Persisted globally plus per‑repository (single‑repo builds share the same value) enabling fast incremental skip decisions across daemon restarts.
 - Incremental delta analysis: partial rebuilds when only a subset of repositories change (quick on-disk doc tree hashing heuristic).

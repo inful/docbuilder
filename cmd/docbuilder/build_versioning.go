@@ -12,8 +12,8 @@ import (
 // expandRepositoriesWithVersions takes the base repository configuration and expands
 // it into multiple repositories if versioning is enabled, one per version.
 func expandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) ([]config.Repository, error) {
-	// If no versioning config, return repos as-is
-	if cfg.Versioning == nil || cfg.Versioning.DefaultBranchOnly {
+	// If versioning is disabled or not configured, return repos as-is
+	if cfg.Versioning == nil || !cfg.Versioning.Enabled || cfg.Versioning.DefaultBranchOnly {
 		return cfg.Repositories, nil
 	}
 
@@ -35,8 +35,8 @@ func expandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			versionConfig.TagPatterns = cfg.Versioning.TagPatterns
 		}
 
-		// Discover versions for this repository
-		result, err := versionManager.DiscoverVersions(repo.URL, versionConfig)
+		// Discover versions for this repository (pass repo for auth)
+		result, err := versionManager.DiscoverVersionsWithAuth(repo.URL, versionConfig, repo.Auth)
 		if err != nil {
 			slog.Warn("Failed to discover versions for repository, using single version",
 				"repo", repo.Name,
@@ -65,6 +65,13 @@ func expandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			versionedRepo.Branch = version.Name // Use Name as branch/tag reference
 			versionedRepo.Version = version.DisplayName
 			versionedRepo.IsVersioned = true
+			versionedRepo.IsTag = (version.Type == versioning.VersionTypeTag)
+
+			slog.Debug("Creating versioned repository",
+				"name", repo.Name,
+				"version", version.Name,
+				"type", string(version.Type),
+				"is_tag", versionedRepo.IsTag)
 
 			// Update name to include version for uniqueness
 			versionedRepo.Name = fmt.Sprintf("%s-%s", repo.Name, version.DisplayName)

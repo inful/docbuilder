@@ -37,32 +37,32 @@ Transforms implement:
 
 ```go
 type Transformer interface {
-  Name() string      // stable identifier, lowercase snake_case
-  Priority() int     // lower runs earlier; gaps reserved for future insertion
+  Name() string                        // stable identifier, lowercase snake_case
+  Stage() TransformStage               // execution stage (parse, build, enrich, etc.)
+  Dependencies() TransformDependencies // explicit ordering constraints
   Transform(PageAdapter) error
 }
-```go
+```
 
-Registration occurs in `init()` via `transforms.Register(t)`. The registry produces a sorted slice by `(priority, name)`.
+Registration occurs in `init()` via `transforms.Register(t)`. The registry produces an ordered slice by:
+1. **Stage order** (parse → build → enrich → merge → transform → finalize → serialize)
+2. **Dependency resolution** within each stage using topological sort
 
-### Current Priority Bands
+### Current Transform Stages
 
-| Priority | Transform                | Purpose |
-|----------|--------------------------|---------|
-| 10       | front_matter_parser      | Extract existing front matter & strip it |
-| 22       | front_matter_builder_v2  | Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL) |
-| 32       | edit_link_injector_v2    | Adds `editURL` with set-if-missing semantics using **centralized resolver** & **capability-gated** theme detection |
-| 40       | front_matter_merge       | Apply ordered patches into merged map |
-| 50       | relative_link_rewriter   | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
-| 90       | front_matter_serialize   | Serialize merged front matter + body |
+| Stage | Transforms | Purpose |
+|-------|------------|---------|  
+| parse | front_matter_parser | Extract existing front matter & strip it |
+| build | front_matter_builder_v2 | Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL) |
+| enrich | edit_link_injector_v2 | Adds `editURL` with set-if-missing semantics using **centralized resolver** & **capability-gated** theme detection |
+| merge | front_matter_merge | Apply ordered patches into merged map |
+| transform | relative_link_rewriter | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
+| finalize | strip_first_heading, shortcode_escaper, hextra_type_enforcer | Post-process content |
+| serialize | front_matter_serialize | Serialize merged front matter + body |
 
-Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.
-
-**Edit Link Generation (Post-Consolidation)**: Edit links are now generated exclusively through `hugo.EditLinkResolver` which centralizes path normalization, forge type detection, and theme capability checking. The previous `fmcore.ResolveEditLink` function has been removed. This ensures consistent behavior and eliminates the risk of `docs/docs/` path duplication. Theme capability flags (`ThemeCapabilities.WantsPerPageEditLinks`) and forge capability flags (`ForgeCapabilities.SupportsEditLinks`) gate edit link injection at the transform level.
+Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.**Edit Link Generation (Post-Consolidation)**: Edit links are now generated exclusively through `hugo.EditLinkResolver` which centralizes path normalization, forge type detection, and theme capability checking. The previous `fmcore.ResolveEditLink` function has been removed. This ensures consistent behavior and eliminates the risk of `docs/docs/` path duplication. Theme capability flags (`ThemeCapabilities.WantsPerPageEditLinks`) and forge capability flags (`ForgeCapabilities.SupportsEditLinks`) gate edit link injection at the transform level.
 
 Removed legacy transforms (`front_matter_builder`, `edit_link_injector`) under the greenfield policy (no backward compatibility shims maintained). If you had explicit allowlists containing them, replace with their V2 counterparts.
-
-Keep `90` high to leave space for future pre-serialization transforms (e.g., code fence augmentation, heading slug injection) at 60–80.
 
 ## PageShim & Hooks
 
@@ -99,7 +99,7 @@ Still-present facade utilities (available via shim fields / hooks):
 
 ## Front Matter Patching Semantics
 
-Patches (`FrontMatterPatch`) are applied in ascending `Priority`; later patches win unless keys are protected.
+Patches (`FrontMatterPatch`) are applied in transform execution order (stage + dependencies); later patches win unless keys are protected.
 
 Merge modes:
 
@@ -130,29 +130,44 @@ See `transform_conflicts_test.go` for locked expectations.
 
 ## Adding a New Transform
 
-1. Select a priority band (avoid collisions; use gaps 55, 60, 65... if between rewrite and serialize).
-2. Implement a struct with `Name()`, `Priority()`, `Transform(PageAdapter) error`.
-3. Register in `init()` inside a new file under `internal/hugo/transforms/` (keep single concern per file when possible).
-4. Access `PageShim` via type assertion (`shim, ok := p.(*PageShim)`); guard if absent.
-5. Mutate only `shim.Content` or attach front matter patches through hooks if you need to prepend/append modifications; avoid directly mutating internal maps outside merge stage unless you know the ordering implications.
-6. Add unit tests:
-   - Ordering: confirm your transform appears at expected index relative to neighbors.
+1. Select a stage (`StageParse`, `StageBuild`, `StageEnrich`, `StageMerge`, `StageTransform`, `StageFinalize`, or `StageSerialize`).
+2. Declare dependencies on other transforms using `MustRunAfter` and/or `MustRunBefore`.
+3. Implement a struct with `Name()`, `Stage()`, `Dependencies()`, `Transform(PageAdapter) error`.
+4. Register in `init()` inside a new file under `internal/hugo/transforms/` (keep single concern per file when possible).
+5. Access `PageShim` via type assertion (`shim, ok := p.(*PageShim)`); guard if absent.
+6. Mutate only `shim.Content` or attach front matter patches through hooks if you need to prepend/append modifications; avoid directly mutating internal maps outside merge stage unless you know the ordering implications.
+7. Add unit tests:
+   - Ordering: confirm your transform appears at expected position relative to neighbors.
    - Behavior: given sample content, assert expected modifications.
-7. If transform alters front matter, add/update conflict tests if behavior touches protected keys.
+8. If transform alters front matter, add/update conflict tests if behavior touches protected keys.
 
 ### Example Skeleton
 
 ```go
 type CodeBlockCounter struct{}
 
-func (t CodeBlockCounter) Name() string  { return "code_block_counter" }
-func (t CodeBlockCounter) Priority() int { return 55 } // after link rewrite before serialize
+func (t CodeBlockCounter) Name() string { return "code_block_counter" }
+
+func (t CodeBlockCounter) Stage() TransformStage {
+  return StageTransform // Runs during content transformation stage
+}
+
+func (t CodeBlockCounter) Dependencies() TransformDependencies {
+  return TransformDependencies{
+    MustRunAfter: []string{"relative_link_rewriter"},
+  }
+}
+
 func (t CodeBlockCounter) Transform(p transforms.PageAdapter) error {
   shim, ok := p.(*transforms.PageShim)
   if !ok { return nil }
   count := strings.Count(shim.Content, "```") / 2
   // Add patch with set-if-missing semantics
-  // (would require exposing a hook or extending shim to push patches; current approach is to add a dedicated patch injector transform)
+  shim.AddPatch(fmcore.FrontMatterPatch{
+    Key:   "code_block_count",
+    Value: count,
+    Mode:  fmcore.MergeSetIfMissing,
+  })
   return nil
 }
 

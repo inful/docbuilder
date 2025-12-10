@@ -27,15 +27,9 @@ func (p *TokenProvider) CreateAuth(authConfig *config.AuthConfig) (transport.Aut
 		return nil, fmt.Errorf("token authentication requires a token")
 	}
 
-	// Use specified username, or default to "token" (GitHub convention)
-	// GitLab uses "oauth2" or any non-empty string, GitHub uses "token"
-	username := authConfig.Username
-	if username == "" {
-		username = "token"
-	}
-
+	// Most Git hosting services use "token" as the username for token auth
 	return &http.BasicAuth{
-		Username: username,
+		Username: "token",
 		Password: authConfig.Token,
 	}, nil
 }

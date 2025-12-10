@@ -88,6 +88,7 @@ type FilteringConfig struct {
 
 // VersioningConfig represents multi-version documentation configuration, including strategy and version limits.
 type VersioningConfig struct {
+	Enabled            bool               `yaml:"enabled"`               // Enable multi-version documentation
 	Strategy           VersioningStrategy `yaml:"strategy"`              // typed: branches_and_tags|branches_only|tags_only
 	DefaultBranchOnly  bool               `yaml:"default_branch_only"`   // Only build default branch
 	BranchPatterns     []string           `yaml:"branch_patterns"`       // Branch patterns to include

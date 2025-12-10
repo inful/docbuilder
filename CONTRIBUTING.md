@@ -147,17 +147,14 @@ Content transforms process individual markdown files during the copy stage.
 
 ### 1. Create Transform Package
 
-Create `internal/hugo/transforms/my_transform/`:
+Create `internal/hugo/transforms/my_transform.go`:
 
 ```go
-package my_transform
+package transforms
 
 import (
-    "git.home.luguber.info/inful/docbuilder/internal/docs"
     "git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
-
-const Priority = 25 // Choose appropriate priority
 
 type MyTransform struct{}
 
@@ -165,33 +162,60 @@ func (t MyTransform) Name() string {
     return "my_transform"
 }
 
-func (t MyTransform) Priority() int {
-    return Priority
+func (t MyTransform) Stage() TransformStage {
+    return StageTransform // Choose appropriate stage
 }
 
-func (t MyTransform) Transform(file docs.DocFile, fm *fmcore.FrontMatter) error {
-    // Modify file content or front matter
-    fm.Set("my_field", "my_value")
+func (t MyTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter: []string{"relative_link_rewriter"}, // Declare dependencies
+    }
+}
+
+func (t MyTransform) Transform(p PageAdapter) error {
+    // Type assert to access page data
+    shim, ok := p.(*PageShim)
+    if !ok {
+        return nil
+    }
+    
+    // Modify content or add front matter patches
+    shim.AddPatch(fmcore.FrontMatterPatch{
+        Key:   "my_field",
+        Value: "my_value",
+        Mode:  fmcore.MergeSetIfMissing,
+    })
     return nil
 }
 
 func init() {
     // Register with the transform registry
-    transforms.Register(MyTransform{})
+    Register(MyTransform{})
 }
 ```
 
-### 2. Choose Priority
+### 2. Choose Stage and Dependencies
 
-Transform priorities determine execution order:
-- **10**: Front matter parsing
-- **20**: Front matter building  
-- **30**: Edit link injection
-- **40**: Front matter merge
-- **50**: Link rewriting
-- **90**: Front matter serialization
+Transforms are organized into stages:
+- **StageParse**: Extract/parse source content (e.g., front matter parsing)
+- **StageBuild**: Generate base metadata (e.g., repository info, titles)
+- **StageEnrich**: Add computed fields (e.g., edit links)
+- **StageMerge**: Combine/merge data (e.g., merge user + generated metadata)
+- **StageTransform**: Modify content (e.g., link rewriting, syntax conversion)
+- **StageFinalize**: Post-process (e.g., strip headings, escape shortcodes)
+- **StageSerialize**: Output generation (e.g., write final YAML + content)
 
-Choose a priority that fits your transform's role in the pipeline.
+Within each stage, declare dependencies to control ordering:
+```go
+func (t MyTransform) Dependencies() TransformDependencies {
+    return TransformDependencies{
+        MustRunAfter:  []string{"other_transform"},  // Run after these
+        MustRunBefore: []string{"another_transform"}, // Run before these
+    }
+}
+```
+
+Choose a stage that fits your transform's role in the pipeline.
 
 ### 3. Import the Transform
 

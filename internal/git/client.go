@@ -46,7 +46,13 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL, Progress: os.Stdout}
 	if repo.Branch != "" {
-		cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
+		if repo.IsTag {
+			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
+			slog.Debug("Cloning tag reference", logfields.Name(repo.Name), slog.String("tag", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
+		} else {
+			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
+			slog.Debug("Cloning branch reference", logfields.Name(repo.Name), slog.String("branch", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
+		}
 		cloneOptions.SingleBranch = true
 	}
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {

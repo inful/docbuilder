@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -30,6 +31,11 @@ func NewVersionManager(gitClient *git.Client) *DefaultVersionManager {
 
 // DiscoverVersions discovers available versions for a repository
 func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *VersionConfig) (*VersionDiscoveryResult, error) {
+	return vm.DiscoverVersionsWithAuth(repoURL, config, nil)
+}
+
+// DiscoverVersionsWithAuth discovers available versions for a repository with authentication
+func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig interface{}) (*VersionDiscoveryResult, error) {
 	slog.Info("Discovering versions for repository", "repo_url", repoURL, "strategy", config.Strategy)
 
 	// Get existing versions for comparison
@@ -46,8 +52,8 @@ func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *Versio
 		},
 	}
 
-	// Get Git references from the repository
-	refs, err := vm.getGitReferences(repoURL)
+	// Get Git references from the repository with auth
+	refs, err := vm.getGitReferencesWithAuth(repoURL, authConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git references: %w", err)
 	}
@@ -214,39 +220,53 @@ func (vm *DefaultVersionManager) ListAllRepositories() ([]*RepositoryVersions, e
 
 // getGitReferences retrieves all Git references (branches and tags) from the repository
 // nolint:unparam // error reserved for future git backends that may fail reference lookup
-func (vm *DefaultVersionManager) getGitReferences(_ string) ([]*GitReference, error) {
-	// This is a placeholder implementation
-	// In a real implementation, this would use git ls-remote or similar
-	// For now, we'll simulate some references
+func (vm *DefaultVersionManager) getGitReferences(repoURL string) ([]*GitReference, error) {
+	return vm.getGitReferencesWithAuth(repoURL, nil)
+}
 
-	references := []*GitReference{
-		{
-			Name:      "main",
-			Type:      VersionTypeBranch,
-			CommitSHA: "abc123",
-			CreatedAt: time.Now().Add(-30 * 24 * time.Hour),
-		},
-		{
-			Name:      "develop",
-			Type:      VersionTypeBranch,
-			CommitSHA: "def456",
-			CreatedAt: time.Now().Add(-7 * 24 * time.Hour),
-		},
-		{
-			Name:      "v1.0.0",
-			Type:      VersionTypeTag,
-			CommitSHA: "ghi789",
-			CreatedAt: time.Now().Add(-14 * 24 * time.Hour),
-		},
-		{
-			Name:      "v1.1.0",
-			Type:      VersionTypeTag,
-			CommitSHA: "jkl012",
-			CreatedAt: time.Now().Add(-3 * 24 * time.Hour),
-		},
+func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig interface{}) ([]*GitReference, error) {
+	var refs []*git.RemoteReference
+	var err error
+
+	// Try to use auth if provided
+	if authConfig != nil {
+		// Type assert to *config.AuthConfig
+		if ac, ok := authConfig.(*config.AuthConfig); ok && ac != nil {
+			refs, err = vm.gitClient.ListRemoteReferencesWithAuth(repoURL, ac)
+		} else {
+			// Fall back to no auth
+			refs, err = vm.gitClient.ListRemoteReferences(repoURL)
+		}
+	} else {
+		refs, err = vm.gitClient.ListRemoteReferences(repoURL)
 	}
 
-	return references, nil
+	if err != nil {
+		return nil, fmt.Errorf("failed to list remote references: %w", err)
+	}
+
+	var gitRefs []*GitReference
+	for _, ref := range refs {
+		gitRef := &GitReference{
+			Name:      ref.Name,
+			CommitSHA: ref.Hash,
+			CreatedAt: ref.CreatedAt,
+		}
+
+		// Determine reference type based on name
+		if strings.HasPrefix(ref.RefName, "refs/heads/") {
+			gitRef.Type = VersionTypeBranch
+		} else if strings.HasPrefix(ref.RefName, "refs/tags/") {
+			gitRef.Type = VersionTypeTag
+		} else {
+			// Skip other reference types (like pull requests, etc.)
+			continue
+		}
+
+		gitRefs = append(gitRefs, gitRef)
+	}
+
+	return gitRefs, nil
 }
 
 // getDefaultBranch determines the default branch for the repository
@@ -302,6 +322,12 @@ func (vm *DefaultVersionManager) convertReferenceToVersion(ref *GitReference, co
 		include = (ref.Type == VersionTypeBranch && vm.matchesPatterns(ref.Name, config.BranchPatterns)) ||
 			(ref.Type == VersionTypeTag && vm.matchesPatterns(ref.Name, config.TagPatterns))
 	}
+
+	slog.Debug("Evaluating reference for inclusion",
+		"name", ref.Name,
+		"type", string(ref.Type),
+		"strategy", string(config.Strategy),
+		"include", include)
 
 	if !include {
 		return nil

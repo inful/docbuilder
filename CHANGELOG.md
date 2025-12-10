@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Incremental Build System**: Cache-aware execution with build-level caching
+  - `build.enable_incremental` flag enables caching (default: false)
+  - `build.cache_dir` configures cache location (default: .docbuilder-cache)
+  - Build signature computation from repository commits, theme, and config
+  - Early exit when build signature matches cached manifest
+  - Manifest storage in filesystem object store with SHA256 content addressing
+- **Multi-Version Documentation**: Automatic version discovery and expansion
+  - `versioning.enabled` flag enables multi-version builds (default: false)
+  - `versioning.strategy` selects branches, tags, or both (default: branches_and_tags)
+  - Remote Git reference listing without cloning via go-git Remote.List()
+  - Repository expansion: single config entry → multiple versioned clones
+  - Tag support: Proper refs/tags/ prefix for Git tag clones
+  - `Repository.IsTag` field distinguishes tags from branches during clone
+  - Version metadata in Hugo config for version switchers
+- Automatic multi-forge content namespacing: when documentation is built from repositories spanning more than one forge type, Markdown is written under `content/<forge>/<repository>/...`; single-forge builds retain the previous `content/<repository>/...` layout. (`DocFile.Forge` field added.)
+- `BuildReport.CloneStageSkipped` to distinguish pipelines without a clone stage.
+- Index template reporting: `IndexTemplates` with source (embedded|file) and path.
+- Structured issue taxonomy via `ReportIssue` (`Issues` slice in `BuildReport`).
+- Stable hash of discovered documentation file set: `BuildReport.DocFilesHash` (SHA-256 hex of sorted Hugo paths) for consumer-side cache invalidation and change detection.
+
 ### Removed
 
 - Legacy `Page.FrontMatter` field replaced by patch-based system (`OriginalFrontMatter`, `Patches`, `MergedFrontMatter`).

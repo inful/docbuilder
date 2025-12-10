@@ -77,7 +77,42 @@ Or run Hugo manually afterwards:
 
 ## 6. Incremental Workflow
 
-Switch to automatic update strategy to reuse clones:
+Enable incremental builds to skip unchanged repositories:
+
+```yaml
+build:
+  enable_incremental: true
+  cache_dir: .docbuilder-cache
+  clone_strategy: auto  # Reuse existing clones
+```
+
+On subsequent runs, DocBuilder will:
+- Check cached build manifests
+- Skip builds if inputs haven't changed
+- Significantly speed up CI pipelines
+
+## 7. Multi-Version Documentation (Optional)
+
+To build documentation from multiple branches/tags:
+
+```yaml
+versioning:
+  enabled: true
+  strategy: branches_and_tags
+  max_versions_per_repo: 5
+  tag_patterns:
+    - "v*"           # Semantic versions
+    - "[0-9]*"       # Numeric tags
+  branch_patterns:
+    - "main"
+    - "develop"
+```
+
+This will:
+- Discover all matching branches/tags
+- Clone each version separately
+- Generate version-specific content paths
+- Create Hugo config with version metadata
 
 ```yaml
 build:
