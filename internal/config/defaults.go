@@ -178,6 +178,9 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.HTTP.AdminPort == 0 {
 		cfg.Daemon.HTTP.AdminPort = 8082
 	}
+	if cfg.Daemon.HTTP.LiveReloadPort == 0 {
+		cfg.Daemon.HTTP.LiveReloadPort = 8083
+	}
 	if cfg.Daemon.Sync.Schedule == "" {
 		cfg.Daemon.Sync.Schedule = "0 */4 * * *" // Every 4 hours
 	}

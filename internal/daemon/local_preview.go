@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -207,11 +208,16 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 			if !ok {
 				return nil
 			}
+			// Skip events for hidden files, swap files, and temp files
+			if shouldIgnoreEvent(ev.Name) {
+				continue
+			}
 			if ev.Op&fsnotify.Create == fsnotify.Create {
 				if fi, err := os.Stat(ev.Name); err == nil && fi.IsDir() {
 					_ = addDirsRecursive(watcher, ev.Name)
 				}
 			}
+			slog.Debug("File change detected", "path", ev.Name, "op", ev.Op.String())
 			trigger()
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -234,6 +240,32 @@ func addDirsRecursive(w *fsnotify.Watcher, root string) error {
 		}
 		return nil
 	})
+}
+
+// shouldIgnoreEvent returns true for filesystem events that should not trigger rebuilds
+func shouldIgnoreEvent(path string) bool {
+	base := filepath.Base(path)
+	
+	// Ignore hidden files
+	if strings.HasPrefix(base, ".") {
+		return true
+	}
+	
+	// Ignore editor temp/swap files
+	if strings.HasSuffix(base, "~") || 
+	   strings.HasSuffix(base, ".swp") || 
+	   strings.HasSuffix(base, ".swx") ||
+	   strings.HasPrefix(base, ".#") ||
+	   strings.HasPrefix(base, "#") && strings.HasSuffix(base, "#") {
+		return true
+	}
+	
+	// Ignore common lock files
+	if base == ".DS_Store" || base == "Thumbs.db" {
+		return true
+	}
+	
+	return false
 }
 
 func buildFromLocal(cfg *config.Config, docsPath string) (bool, error) {

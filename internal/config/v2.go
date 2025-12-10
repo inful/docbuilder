@@ -59,9 +59,10 @@ type DaemonConfig struct {
 
 // HTTPConfig represents HTTP server configuration for the daemon, including ports for docs, webhooks, and admin endpoints.
 type HTTPConfig struct {
-	DocsPort    int `yaml:"docs_port"`    // Documentation serving port
-	WebhookPort int `yaml:"webhook_port"` // Webhook reception port
-	AdminPort   int `yaml:"admin_port"`   // Admin/status endpoints port
+	DocsPort       int `yaml:"docs_port"`        // Documentation serving port
+	WebhookPort    int `yaml:"webhook_port"`    // Webhook reception port
+	AdminPort      int `yaml:"admin_port"`      // Admin/status endpoints port
+	LiveReloadPort int `yaml:"livereload_port"` // LiveReload SSE endpoint port (separate to avoid HTTP/1.1 blocking)
 }
 
 // SyncConfig represents synchronization configuration for repository discovery and build queueing.
@@ -194,9 +195,10 @@ func Init(configPath string, force bool) error {
 		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
-				DocsPort:    8080,
-				WebhookPort: 8081,
-				AdminPort:   8082,
+				DocsPort:       8080,
+				WebhookPort:    8081,
+				AdminPort:      8082,
+				LiveReloadPort: 8083,
 			},
 			Sync: SyncConfig{
 				Schedule:         "0 */4 * * *",
