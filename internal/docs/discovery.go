@@ -230,7 +230,7 @@ func (df *DocFile) GetHugoPath() string {
 	if filename == "index" {
 		filename = "_index"
 	}
-	
+
 	// Lowercase the filename for URL compatibility
 	parts = append(parts, filename+df.Extension)
 	return filepath.Join(parts...)
