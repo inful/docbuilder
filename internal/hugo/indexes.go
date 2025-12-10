@@ -49,7 +49,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	// File-based template overrides
 	tplRaw := g.mustIndexTemplate("main")
 	ctx := buildIndexTemplateContext(g, docFiles, repoGroups, frontMatter)
-	tpl, err := template.New("main_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+	tpl, err := template.New("main_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 	if err != nil {
 		return fmt.Errorf("parse main index template: %w", err)
 	}
@@ -111,7 +111,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 				"Tags":        repoConfig.Tags,
 			}
 		}
-		tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+		tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 		if err != nil {
 			return fmt.Errorf("parse repository index template: %w", err)
 		}
@@ -184,7 +184,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
 			ctx["SectionName"] = sectionName
 			ctx["Files"] = files
-			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll}).Parse(tplRaw)
+			tpl, err := template.New("section_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 			if err != nil {
 				return fmt.Errorf("parse section index template: %w", err)
 			}

@@ -112,7 +112,8 @@ func ValidatePipeline() *ValidationResult {
 		}
 	}
 
-	// Core transforms that should always run
+	// Core transforms that should always run, plus standalone transforms that are
+	// intentionally not referenced by others (theme-specific, optional features, etc.)
 	coreTransforms := map[string]bool{
 		"front_matter_parser":     true,
 		"front_matter_builder_v2": true,
@@ -120,6 +121,9 @@ func ValidatePipeline() *ValidationResult {
 		"front_matter_merge":      true,
 		"relative_link_rewriter":  true,
 		"front_matter_serialize":  true,
+		"hextra_type_enforcer":    true, // Theme-specific transform, intentionally standalone
+		"strip_first_heading":     true, // Optional content transform
+		"shortcode_escaper":       true, // Optional content transform
 	}
 
 	for _, t := range transforms {

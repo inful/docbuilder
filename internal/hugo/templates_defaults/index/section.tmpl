@@ -1,2 +1,2 @@
-{{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ .Name }}/)
+{{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ .Name | lower }}/)
 {{ end }}

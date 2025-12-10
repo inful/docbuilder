@@ -18,6 +18,6 @@
 {{ if eq $section "root" }}## Sections
 {{ else }}## {{ titleCase $section }}
 {{ end }}
-{{ range $files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section }}/{{ .Name }}{{ else }}{{ .Name }}{{ end }}/)
+{{ range $files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section | lower }}/{{ .Name | lower }}{{ else }}{{ .Name | lower }}{{ end }}/)
 {{ end }}
 {{ end }}

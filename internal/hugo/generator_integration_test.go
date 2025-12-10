@@ -184,7 +184,8 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 		}
 
 		// Validate a sample file has proper front matter
-		readmePath := filepath.Join(repoDir, "README.md")
+		// Note: GetHugoPath lowercases filenames for URL compatibility
+		readmePath := filepath.Join(repoDir, "readme.md")
 		if content, err := os.ReadFile(readmePath); err != nil {
 			t.Fatalf("Failed to read README for %s: %v", repo.Name, err)
 		} else {
