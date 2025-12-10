@@ -12,13 +12,13 @@ import (
 type TransformStage string
 
 const (
-	StageParse      TransformStage = "parse"      // Extract/parse source content
-	StageBuild      TransformStage = "build"      // Generate base metadata
-	StageEnrich     TransformStage = "enrich"     // Add computed fields
-	StageMerge      TransformStage = "merge"      // Combine/merge data
-	StageTransform  TransformStage = "transform"  // Modify content
-	StageFinalize   TransformStage = "finalize"   // Post-process
-	StageSerialize  TransformStage = "serialize"  // Output generation
+	StageParse     TransformStage = "parse"     // Extract/parse source content
+	StageBuild     TransformStage = "build"     // Generate base metadata
+	StageEnrich    TransformStage = "enrich"    // Add computed fields
+	StageMerge     TransformStage = "merge"     // Combine/merge data
+	StageTransform TransformStage = "transform" // Modify content
+	StageFinalize  TransformStage = "finalize"  // Post-process
+	StageSerialize TransformStage = "serialize" // Output generation
 )
 
 // ContentPage represents a strongly-typed page being transformed.

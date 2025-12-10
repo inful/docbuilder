@@ -39,22 +39,22 @@ func BuildPipelineWithFilter(include map[string]struct{}) ([]Transformer, error)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(include) == 0 {
 		return all, nil
 	}
-	
+
 	var out []Transformer
 	for _, t := range all {
 		if _, ok := include[t.Name()]; ok {
 			out = append(out, t)
 		}
 	}
-	
+
 	if len(out) == 0 {
 		return nil, fmt.Errorf("no transformers matched provided filter")
 	}
-	
+
 	return out, nil
 }
 

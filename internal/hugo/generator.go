@@ -78,12 +78,12 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 // Returns an error if the pipeline has critical issues that would prevent execution.
 func (g *Generator) ValidateTransformPipeline() error {
 	result := tr.ValidatePipeline()
-	
+
 	// Log warnings (non-fatal)
 	for _, warning := range result.Warnings {
 		slog.Warn("Transform pipeline validation warning", slog.String("warning", warning))
 	}
-	
+
 	// Return error if validation failed
 	if !result.Valid {
 		var errMsg strings.Builder
@@ -93,7 +93,7 @@ func (g *Generator) ValidateTransformPipeline() error {
 		}
 		return fmt.Errorf("%s", errMsg.String())
 	}
-	
+
 	return nil
 }
 

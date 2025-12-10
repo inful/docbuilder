@@ -13,7 +13,7 @@ func TestOrdering(t *testing.T) {
 	if len(ts) == 0 {
 		t.Skip("no transformers registered")
 	}
-	
+
 	// Verify stage ordering (stages should only move forward)
 	lastStage := StageParse
 	for i, tr := range ts {

@@ -265,7 +265,7 @@ func TestCommandExecutorIntegration(t *testing.T) {
 	}
 
 	buildResult := executor.ExecuteBuild(ctx, buildReq)
-	
+
 	// Build may succeed with warnings (0 files) if repo clone fails
 	// Check for either case: error result OR success with warnings
 	if buildResult.IsErr() {

@@ -643,7 +643,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 		// Verify filtering results
 		expectedMarkdownFiles := 6 // index.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
-		expectedAssetFiles := 2     // data.json, image.png
+		expectedAssetFiles := 2    // data.json, image.png
 		expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
 
 		if len(docFiles) != expectedTotalFiles {

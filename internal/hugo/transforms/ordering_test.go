@@ -11,29 +11,29 @@ func TestStageGrouping(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List() failed: %v", err)
 	}
-	
+
 	// Track stage transitions
 	var lastStage TransformStage
 	stageCount := make(map[TransformStage]int)
-	
+
 	for i, tr := range transformList {
 		stage := tr.Stage()
 		stageCount[stage]++
-		
+
 		if i > 0 {
 			// Verify stages only move forward, never backward
 			lastIndex := StageIndex(lastStage)
 			currentIndex := StageIndex(stage)
-			
+
 			if currentIndex < lastIndex {
 				t.Errorf("Stage ordering violation at position %d: %s (stage %s) after %s (stage %s)",
 					i, tr.Name(), stage, transformList[i-1].Name(), lastStage)
 			}
 		}
-		
+
 		lastStage = stage
 	}
-	
+
 	// Log stage distribution
 	t.Logf("Stage distribution:")
 	for _, stage := range StageOrder {
@@ -49,17 +49,17 @@ func TestDependenciesSatisfied(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List() failed: %v", err)
 	}
-	
+
 	// Build execution order map
 	position := make(map[string]int)
 	for i, tr := range transformList {
 		position[tr.Name()] = i
 	}
-	
+
 	// Verify all dependencies are satisfied
 	for i, tr := range transformList {
 		deps := tr.Dependencies()
-		
+
 		// Check MustRunAfter
 		for _, depName := range deps.MustRunAfter {
 			depPos, exists := position[depName]
@@ -72,7 +72,7 @@ func TestDependenciesSatisfied(t *testing.T) {
 					tr.Name(), i, depName, depPos)
 			}
 		}
-		
+
 		// Check MustRunBefore
 		for _, afterName := range deps.MustRunBefore {
 			afterPos, exists := position[afterName]
@@ -98,11 +98,11 @@ func TestNoCycles(t *testing.T) {
 		}
 		t.Fatalf("List() failed: %v", err)
 	}
-	
+
 	if len(pipeline) == 0 {
 		t.Fatal("List() returned empty pipeline")
 	}
-	
+
 	t.Logf("Successfully built pipeline with %d transforms", len(pipeline))
 }
 
@@ -113,11 +113,11 @@ func TestAllRegisteredTransformsInPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List() failed: %v", err)
 	}
-	
+
 	if len(pipeline) == 0 {
 		t.Fatal("List() returned empty pipeline")
 	}
-	
+
 	// Verify no duplicates
 	seen := make(map[string]bool)
 	for _, tr := range pipeline {
@@ -126,6 +126,6 @@ func TestAllRegisteredTransformsInPipeline(t *testing.T) {
 		}
 		seen[tr.Name()] = true
 	}
-	
+
 	t.Logf("Pipeline contains %d unique transforms", len(pipeline))
 }

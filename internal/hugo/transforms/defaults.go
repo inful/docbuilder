@@ -231,7 +231,7 @@ func init() {
 	Register(MergeFrontMatter{})
 	Register(RelativeLinkRewriter{})
 	Register(Serializer{})
-	
+
 	_ = fmt.Sprintf
 }
 

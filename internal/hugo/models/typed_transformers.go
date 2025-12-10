@@ -212,7 +212,7 @@ func (t *FrontMatterBuilderV3) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
 		MustRunAfter:                []string{"front_matter_parser_v2"},
 		MustRunBefore:               []string{},
-		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredBefore:              []string{},                         // Legacy (deprecated)
 		RequiredAfter:               []string{"front_matter_parser_v2"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
@@ -344,7 +344,7 @@ func (t *EditLinkInjectorV3) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
 		MustRunAfter:                []string{"front_matter_builder_v3"},
 		MustRunBefore:               []string{},
-		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredBefore:              []string{},                          // Legacy (deprecated)
 		RequiredAfter:               []string{"front_matter_builder_v3"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
@@ -488,7 +488,7 @@ func (t *ContentProcessorV2) Dependencies() TransformerDependencies {
 	return TransformerDependencies{
 		MustRunAfter:                []string{"edit_link_injector_v3"},
 		MustRunBefore:               []string{},
-		RequiredBefore:              []string{}, // Legacy (deprecated)
+		RequiredBefore:              []string{},                        // Legacy (deprecated)
 		RequiredAfter:               []string{"edit_link_injector_v3"}, // Legacy (deprecated)
 		RequiresOriginalFrontMatter: false,
 		RequiresFrontMatterPatches:  false,
