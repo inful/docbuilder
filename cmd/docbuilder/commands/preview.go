@@ -20,6 +20,7 @@ type PreviewCmd struct {
 	Title     string `name:"title" help:"Site title." default:"Local Preview"`
 	BaseURL   string `name:"base-url" help:"Base URL used in Hugo config." default:"http://localhost:1316"`
 	Port      int    `name:"port" help:"Docs server port." default:"1316"`
+	NoLiveReload bool `name:"no-live-reload" help:"Disable LiveReload SSE and script injection for preview."`
 }
 
 func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
@@ -44,9 +45,10 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	// Initialize daemon config
 	cfg.Daemon = &config.DaemonConfig{
 		HTTP: config.HTTPConfig{
-			DocsPort:    p.Port,
-			WebhookPort: p.Port + 1,
-			AdminPort:   p.Port + 2,
+			DocsPort:       p.Port,
+			WebhookPort:    p.Port + 1,
+			AdminPort:      p.Port + 2,
+			LiveReloadPort: p.Port + 3,
 		},
 	}
 
@@ -70,7 +72,8 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	cfg.Hugo.BaseURL = p.BaseURL
 	cfg.Hugo.Theme = p.Theme
 	cfg.Build.RenderMode = config.RenderModeAlways
-	cfg.Build.LiveReload = true
+	// Enable LiveReload by default for preview, unless explicitly disabled.
+	cfg.Build.LiveReload = !p.NoLiveReload
 
 	// Single local repository entry pointing to DocsDir
 	cfg.Repositories = []config.Repository{{

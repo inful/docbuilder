@@ -60,12 +60,13 @@ func parseHugoError(errStr string) string {
 
 // HTTPServer manages HTTP endpoints (docs, webhooks, admin) for the daemon.
 type HTTPServer struct {
-	docsServer    *http.Server
-	webhookServer *http.Server
-	adminServer   *http.Server
-	config        *config.Config
-	daemon        *Daemon // Reference to main daemon service
-	errorAdapter  *derrors.HTTPErrorAdapter
+	docsServer       *http.Server
+	webhookServer    *http.Server
+	adminServer      *http.Server
+	liveReloadServer *http.Server
+	config           *config.Config
+	daemon           *Daemon // Reference to main daemon service
+	errorAdapter     *derrors.HTTPErrorAdapter
 
 	// Handler modules
 	monitoringHandlers *handlers.MonitoringHandlers
@@ -192,6 +193,10 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		{name: "webhook", port: s.config.Daemon.HTTP.WebhookPort},
 		{name: "admin", port: s.config.Daemon.HTTP.AdminPort},
 	}
+	// Add LiveReload port if LiveReload is enabled
+	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
+		binds = append(binds, preBind{name: "livereload", port: s.config.Daemon.HTTP.LiveReloadPort})
+	}
 	var bindErrs []error
 	for i := range binds {
 		addr := fmt.Sprintf(":%d", binds[i].port)
@@ -223,10 +228,22 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to start admin server: %w", err)
 	}
 
-	slog.Info("HTTP servers started",
-		slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
-		slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
-		slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort))
+	// Start LiveReload server if enabled
+	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil && len(binds) > 3 {
+		if err := s.startLiveReloadServerWithListener(ctx, binds[3].ln); err != nil {
+			return fmt.Errorf("failed to start livereload server: %w", err)
+		}
+		slog.Info("HTTP servers started",
+			slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
+			slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
+			slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort),
+			slog.Int("livereload_port", s.config.Daemon.HTTP.LiveReloadPort))
+	} else {
+		slog.Info("HTTP servers started",
+			slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
+			slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
+			slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort))
+	}
 	return nil
 }
 
@@ -235,6 +252,12 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 	var errs []error
 
 	// Stop servers in reverse order
+	if s.liveReloadServer != nil {
+		if err := s.liveReloadServer.Shutdown(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("livereload server shutdown: %w", err))
+		}
+	}
+
 	if s.adminServer != nil {
 		if err := s.adminServer.Shutdown(ctx); err != nil {
 			errs = append(errs, fmt.Errorf("admin server shutdown: %w", err))
@@ -271,18 +294,6 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	mux.HandleFunc("/ready", s.handleReadiness)
 	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
 
-	// LiveReload endpoints (SSE + script) if enabled - MUST be before root handler
-	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		mux.Handle("/livereload", s.daemon.liveReload)
-		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-			if _, err := w.Write([]byte(LiveReloadScript)); err != nil {
-				slog.Error("failed to write livereload script", "error", err)
-			}
-		})
-		slog.Info("LiveReload HTTP endpoints registered")
-	}
-
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
@@ -312,7 +323,11 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 						if buildErr != nil {
 							errorMsg = parseHugoError(buildErr.Error())
 						}
-						_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title><style>body{font-family:sans-serif;max-width:800px;margin:50px auto;padding:20px}h1{color:#d32f2f}pre{background:#f5f5f5;padding:15px;border-radius:4px;overflow-x:auto}</style></head><body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build. Fix the error below and save to rebuild automatically.</p><h2>Error Details:</h2><pre>%s</pre><p><small>This page will refresh automatically when you fix the error.</small></p><script src="/livereload.js"></script></body></html>`, errorMsg)
+						scriptTag := ""
+						if s.config.Build.LiveReload {
+							scriptTag = fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script>`, s.config.Daemon.HTTP.LiveReloadPort)
+						}
+						_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title><style>body{font-family:sans-serif;max-width:800px;margin:50px auto;padding:20px}h1{color:#d32f2f}pre{background:#f5f5f5;padding:15px;border-radius:4px;overflow-x:auto}</style></head><body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build. Fix the error below and save to rebuild automatically.</p><h2>Error Details:</h2><pre>%s</pre><p><small>This page will refresh automatically when you fix the error.</small></p>%s</body></html>`, errorMsg, scriptTag)
 						return
 					}
 				}
@@ -320,7 +335,11 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 				if r.URL.Path == "/" || r.URL.Path == "" {
 					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(http.StatusServiceUnavailable)
-					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p><script src="/livereload.js"></script></body></html>`))
+					scriptTag := ""
+					if s.config.Build.LiveReload {
+						scriptTag = fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script>`, s.config.Daemon.HTTP.LiveReloadPort)
+					}
+					_, _ = w.Write([]byte(fmt.Sprintf(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s</body></html>`, scriptTag)))
 					return
 				}
 			}
@@ -332,7 +351,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	// Wrap with LiveReload injection middleware if enabled
 	var rootWithMiddleware http.Handler = rootHandler
 	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		rootWithMiddleware = injectLiveReloadScript(rootHandler)
+		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootHandler, s.config.Daemon.HTTP.LiveReloadPort)
 	}
 
 	mux.Handle("/", s.mchain(rootWithMiddleware))
@@ -340,11 +359,8 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	// API endpoint for documentation status
 	mux.HandleFunc("/api/status", s.apiHandlers.HandleDocsStatus)
 
-	// Docs server needs long/no timeouts for SSE (LiveReload) connections
-	// ReadTimeout: 0 = no timeout (SSE connections are long-lived)
-	// WriteTimeout: 0 = no timeout (SSE connections send periodic pings)
-	// IdleTimeout: still set to close truly idle connections
-	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 0, WriteTimeout: 0, IdleTimeout: 300 * time.Second}
+	// Docs server now uses standard timeouts since SSE moved to separate port
+	s.docsServer = &http.Server{Handler: mux, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("docs", s.docsServer, ln)
 }
 
@@ -472,6 +488,58 @@ func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.List
 	return s.startServerWithListener("admin", s.adminServer, ln)
 }
 
+// startLiveReloadServerWithListener starts the dedicated LiveReload SSE server.
+// nolint:unparam // This method currently never returns an error.
+func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net.Listener) error {
+	mux := http.NewServeMux()
+	
+	// CORS middleware for LiveReload server (allows cross-origin requests from docs port)
+	corsMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			
+			next.ServeHTTP(w, r)
+		})
+	}
+	
+	// LiveReload SSE endpoint
+	if s.daemon != nil && s.daemon.liveReload != nil {
+		mux.Handle("/livereload", corsMiddleware(s.daemon.liveReload))
+		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, r *http.Request) {
+			// Add CORS headers for script loading
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+			// Generate script that connects to this dedicated port
+			script := fmt.Sprintf(`(() => {
+  if (window.__DOCBUILDER_LR__) return;
+  window.__DOCBUILDER_LR__=true;
+  function connect(){
+    const es = new EventSource('http://localhost:%d/livereload');
+    let first=true; let current=null;
+    es.onmessage = (e)=>{ try { const p=JSON.parse(e.data); if(first){ current=p.hash; first=false; return;} if(p.hash && p.hash!==current){ console.log('[docbuilder] change detected, reloading'); location.reload(); } } catch(_){} };
+    es.onerror = ()=>{ console.warn('[docbuilder] livereload error - retrying'); es.close(); setTimeout(connect,2000); };
+  }
+  connect();
+})();`, s.config.Daemon.HTTP.LiveReloadPort)
+			if _, err := w.Write([]byte(script)); err != nil {
+				slog.Error("failed to write livereload script", "error", err)
+			}
+		})
+		slog.Info("LiveReload dedicated server registered")
+	}
+	
+	// LiveReload server needs no timeouts for long-lived SSE connections
+	s.liveReloadServer = &http.Server{Handler: mux, ReadTimeout: 0, WriteTimeout: 0, IdleTimeout: 300 * time.Second}
+	return s.startServerWithListener("livereload", s.liveReloadServer, ln)
+}
+
 // startServerWithListener launches an http.Server on a pre-bound listener or binds itself.
 // It standardizes goroutine startup and error logging across server types.
 func (s *HTTPServer) startServerWithListener(kind string, srv *http.Server, ln net.Listener) error {
@@ -494,9 +562,9 @@ func (s *HTTPServer) startServerWithListener(kind string, srv *http.Server, ln n
 
 // inline middleware removed in favor of internal/server/middleware
 
-// injectLiveReloadScript is a middleware that injects the LiveReload client script
-// into HTML responses.
-func injectLiveReloadScript(next http.Handler) http.Handler {
+// injectLiveReloadScriptWithPort is a middleware that injects the LiveReload client script
+// into HTML responses, configured to connect to the specified port.
+func (s *HTTPServer) injectLiveReloadScriptWithPort(next http.Handler, port int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only inject into HTML pages (not assets, API endpoints, etc.)
 		path := r.URL.Path
@@ -508,7 +576,7 @@ func injectLiveReloadScript(next http.Handler) http.Handler {
 			return
 		}
 
-		injector := newLiveReloadInjector(w, r)
+		injector := newLiveReloadInjectorWithPort(w, r, port)
 		next.ServeHTTP(injector, r)
 		injector.finalize()
 	})
@@ -523,13 +591,15 @@ type liveReloadInjector struct {
 	headerWritten bool
 	passthrough   bool
 	maxSize       int
+	port          int
 }
 
-func newLiveReloadInjector(w http.ResponseWriter, _ *http.Request) *liveReloadInjector {
+func newLiveReloadInjectorWithPort(w http.ResponseWriter, _ *http.Request, port int) *liveReloadInjector {
 	return &liveReloadInjector{
 		ResponseWriter: w,
 		statusCode:     http.StatusOK,
 		maxSize:        512 * 1024, // 512KB max - typical HTML page
+		port:           port,
 	}
 }
 
@@ -595,7 +665,7 @@ func (l *liveReloadInjector) finalize() {
 
 	// Inject script before </body>
 	html := string(l.buffer)
-	script := `<script src="/livereload.js"></script></body>`
+	script := fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script></body>`, l.port)
 	modified := strings.Replace(html, "</body>", script, 1)
 
 	l.ResponseWriter.Header().Del("Content-Length")
