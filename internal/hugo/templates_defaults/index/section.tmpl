@@ -1,2 +1,8 @@
-{{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ lower (replaceAll .Name " " "-") }}/)
-{{ end }}
+{{- if .Subsections -}}
+{{- range .Subsections -}}
+- [{{ titleCase (replaceAll . "-" " ") }}](./{{ lower (replaceAll . " " "-") }}/)
+{{ end -}}
+{{- end -}}
+{{- range .Files -}}
+- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ lower (replaceAll .Name " " "-") }}/)
+{{ end -}}
