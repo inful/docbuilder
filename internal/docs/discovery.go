@@ -217,15 +217,16 @@ func (df *DocFile) GetHugoPath() string {
 	//   Multiple forges:             content/{forge}/{repository}/{section}/{name}.md
 	parts := []string{"content"}
 	if df.Forge != "" {
-		parts = append(parts, df.Forge)
+		parts = append(parts, strings.ToLower(df.Forge))
 	}
-	parts = append(parts, df.Repository)
+	parts = append(parts, strings.ToLower(df.Repository))
 
 	if df.Section != "" {
-		parts = append(parts, df.Section)
+		parts = append(parts, strings.ToLower(df.Section))
 	}
 
-	parts = append(parts, df.Name+df.Extension)
+	// Lowercase the filename for URL compatibility
+	parts = append(parts, strings.ToLower(df.Name)+df.Extension)
 	return filepath.Join(parts...)
 }
 

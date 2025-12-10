@@ -186,8 +186,10 @@ func TestForgeNamespacingModes(t *testing.T) {
 		if f.Forge == "" {
 			t.Fatalf("expected forge set in auto mode with multi-forge")
 		}
-		if !strings.Contains(f.GetHugoPath(), f.Forge+string(filepath.Separator)+f.Repository) {
-			t.Fatalf("hugo path missing forge segment: %s", f.GetHugoPath())
+		// GetHugoPath lowercases components for URL compatibility
+		expectedSegment := strings.ToLower(f.Forge) + string(filepath.Separator) + strings.ToLower(f.Repository)
+		if !strings.Contains(f.GetHugoPath(), expectedSegment) {
+			t.Fatalf("hugo path missing forge segment: %s (expected %s)", f.GetHugoPath(), expectedSegment)
 		}
 	}
 
