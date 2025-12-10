@@ -348,10 +348,32 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 
+	// Wrap with 404 fallback that redirects to nearest parent path
+	rootWithFallback := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Capture the response to detect 404s
+		rec := &responseRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		rootHandler.ServeHTTP(rec, r)
+
+		// If we got a 404 and this is a GET request, try to redirect to parent
+		if rec.statusCode == http.StatusNotFound && r.Method == "GET" {
+			root := s.resolveDocsRoot()
+			redirectPath := s.findNearestValidParent(root, r.URL.Path)
+			if redirectPath != "" && redirectPath != r.URL.Path {
+				// Don't write the 404 body, issue redirect instead
+				w.Header().Set("Location", redirectPath)
+				w.WriteHeader(http.StatusTemporaryRedirect)
+				return
+			}
+		}
+
+		// If not redirecting, flush the captured response
+		rec.Flush()
+	})
+
 	// Wrap with LiveReload injection middleware if enabled
-	var rootWithMiddleware http.Handler = rootHandler
+	var rootWithMiddleware http.Handler = rootWithFallback
 	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootHandler, s.config.Daemon.HTTP.LiveReloadPort)
+		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithFallback, s.config.Daemon.HTTP.LiveReloadPort)
 	}
 
 	mux.Handle("/", s.mchain(rootWithMiddleware))
@@ -395,6 +417,71 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	}
 
 	return out
+}
+
+// findNearestValidParent walks up the URL path hierarchy to find the nearest existing page
+func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
+	// Clean the path
+	urlPath = filepath.Clean(urlPath)
+
+	// Try parent paths, working upward
+	for urlPath != "/" && urlPath != "." {
+		urlPath = filepath.Dir(urlPath)
+		if urlPath == "." {
+			urlPath = "/"
+		}
+
+		// Check if this path exists as index.html
+		testPath := filepath.Join(root, urlPath, "index.html")
+		if _, err := os.Stat(testPath); err == nil {
+			// Ensure path ends with / for directory-style URLs
+			if !strings.HasSuffix(urlPath, "/") {
+				urlPath += "/"
+			}
+			return urlPath
+		}
+
+		// Also check direct file
+		if urlPath != "/" {
+			testPath = filepath.Join(root, urlPath)
+			if stat, err := os.Stat(testPath); err == nil && !stat.IsDir() {
+				return urlPath
+			}
+		}
+	}
+
+	// Fall back to root
+	return "/"
+}
+
+// responseRecorder captures the status code and body from the underlying handler
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+	written    bool
+	body       []byte
+}
+
+func (r *responseRecorder) WriteHeader(code int) {
+	if !r.written {
+		r.statusCode = code
+		r.written = true
+	}
+	// Don't write to underlying writer yet - we might redirect
+}
+
+func (r *responseRecorder) Write(b []byte) (int, error) {
+	r.body = append(r.body, b...)
+	return len(b), nil
+}
+
+func (r *responseRecorder) Flush() {
+	if r.written {
+		r.ResponseWriter.WriteHeader(r.statusCode)
+	}
+	if len(r.body) > 0 {
+		_, _ = r.ResponseWriter.Write(r.body)
+	}
 }
 
 // nolint:unparam // This method currently never returns an error.
