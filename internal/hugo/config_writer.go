@@ -62,6 +62,15 @@ func (g *Generator) generateHugoConfig() error {
 	// Phase 4: dynamic fields
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
+	// Phase 4.5: version metadata collection (for version switchers in themes)
+	if g.config.Versioning != nil && !g.config.Versioning.DefaultBranchOnly {
+		versionInfo := g.collectVersionMetadata()
+		if len(versionInfo) > 0 {
+			params["versions"] = versionInfo
+			slog.Debug("Added version metadata to Hugo config", "repo_count", len(versionInfo))
+		}
+	}
+
 	// Phase 5: module/theme block
 	if g.config.Hugo.Theme != "" {
 		if feats.UsesModules && feats.ModulePath != "" {
@@ -147,6 +156,50 @@ func (g *Generator) generateHugoConfig() error {
 	}
 	slog.Info("Generated Hugo configuration", logfields.Path(configPath))
 	return nil
+}
+
+// collectVersionMetadata collects version information from versioned repositories
+// Returns a map of base repository names to their available versions
+func (g *Generator) collectVersionMetadata() map[string]any {
+	versionsByBase := make(map[string][]map[string]any)
+
+	for _, repo := range g.config.Repositories {
+		// Skip non-versioned repos
+		if !repo.IsVersioned {
+			continue
+		}
+
+		// Extract base repo name from tags
+		baseRepo := repo.Name
+		if base, ok := repo.Tags["base_repo"]; ok {
+			baseRepo = base
+		}
+
+		// Create version entry
+		versionEntry := map[string]any{
+			"name":    repo.Name,
+			"version": repo.Version,
+			"branch":  repo.Branch,
+		}
+
+		// Add optional metadata from tags
+		if vtype, ok := repo.Tags["version_type"]; ok {
+			versionEntry["type"] = vtype
+		}
+		if repo.Description != "" {
+			versionEntry["description"] = repo.Description
+		}
+
+		versionsByBase[baseRepo] = append(versionsByBase[baseRepo], versionEntry)
+	}
+
+	// Convert to generic map for YAML serialization
+	result := make(map[string]any)
+	for base, versions := range versionsByBase {
+		result[base] = versions
+	}
+
+	return result
 }
 
 // (legacy param helpers removed)
