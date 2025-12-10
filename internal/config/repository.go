@@ -11,4 +11,5 @@ type Repository struct {
 	Tags        map[string]string `yaml:"tags,omitempty"`    // Additional metadata (forge discovery, etc.)
 	Version     string            `yaml:"version,omitempty"` // Version label when expanded from versioning discovery
 	IsVersioned bool              `yaml:"-"`                 // Internal flag indicating this repo was created from version expansion
+	IsTag       bool              `yaml:"-"`                 // Internal flag indicating this is a tag reference (not a branch)
 }

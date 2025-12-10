@@ -7,6 +7,7 @@ This page enumerates the primary configuration sections and fields currently sup
 ```yaml
 repositories: []    # List of repositories to aggregate
 build: {}           # Performance & workspace tuning
+versioning: {}      # Multi-version documentation (optional)
 hugo: {}            # Hugo site metadata & theme
 output: {}          # Output directory behavior
 ```
@@ -43,6 +44,46 @@ output: {}          # Output directory behavior
 | retry_max_delay | duration | 30s | Maximum backoff delay cap. |
 | workspace_dir | string | derived | Explicit workspace override path. |
 | namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
+| enable_incremental | bool | false | Enable incremental builds with caching. |
+| cache_dir | string | .docbuilder-cache | Cache directory for build manifests. |
+| enable_incremental | bool | false | Enable incremental builds with caching. |
+| cache_dir | string | .docbuilder-cache | Cache directory for build manifests. |
+
+## Versioning Section
+
+Enables multi-version documentation by discovering and building multiple branches/tags from each repository.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| enabled | bool | false | Enable multi-version documentation. |
+| strategy | enum | branches_and_tags | Version selection: `branches_and_tags`, `branches_only`, or `tags_only`. |
+| default_branch_only | bool | false | Build only the default branch (overrides strategy). |
+| branch_patterns | []string | [\"*\"] | Branch name patterns to include (glob). |
+| tag_patterns | []string | [\"*\"] | Tag name patterns to include (glob). |
+| max_versions_per_repo | int | 10 | Maximum versions to build per repository. |
+
+### Versioning Examples
+
+```yaml
+versioning:
+  enabled: true
+  strategy: branches_and_tags
+  max_versions_per_repo: 5
+  tag_patterns:
+    - \"v*\"           # Match semantic versions
+    - \"[0-9]*\"       # Match numeric tags
+  branch_patterns:
+    - \"main\"
+    - \"develop\"
+    - \"release/*\"
+```
+
+With versioning enabled, DocBuilder:
+- Discovers available branches/tags from each repository
+- Expands each repository into multiple versioned builds
+- Clones each version separately (branches use `refs/heads/`, tags use `refs/tags/`)
+- Organizes content under repository-version paths
+- Generates Hugo configuration with version metadata for version switchers
 
 ## Hugo Section
 
@@ -141,6 +182,48 @@ containers:
 ## Namespacing Behavior
 
 When `namespace_forges=auto` and more than one distinct forge is present across repositories, content paths are written under `content/<forge>/<repo>/...`. Otherwise they remain `content/<repo>/...`.
+
+## Incremental Builds
+
+When `build.enable_incremental: true`, DocBuilder caches build manifests to skip unchanged repositories:
+
+1. **Build Signature Computation**: Hashes repository commits, theme, and config
+2. **Cache Check**: Compares with previous build manifest in `build.cache_dir`
+3. **Early Exit**: Skips entire build if signature matches
+4. **Manifest Storage**: Saves build metadata for next run
+
+### Cache Directory Structure
+
+```
+.docbuilder-cache/
+  manifests/
+    build-{timestamp}/
+      manifest.json    # Build metadata and signatures
+```
+
+### Build Manifest Contents
+
+- `build_id`: Unique build identifier
+- `signature`: Combined hash of all inputs
+- `repo_hashes[]`: Per-repository commit SHAs and content hashes
+- `theme`, `theme_version`: Hugo theme information
+- `config_hash`: Configuration fingerprint
+- `created_at`: Build timestamp
+
+### Performance Benefits
+
+- **Skip unchanged builds**: Identical inputs produce instant exit
+- **Repository-level tracking**: Future stage-level caching will skip individual repos
+- **CI optimization**: Detect documentation changes before expensive Hugo rendering
+
+### Usage Example
+
+```yaml
+build:
+  enable_incremental: true
+  cache_dir: .docbuilder-cache
+  clone_strategy: auto  # Reuse clones when possible
+```
 
 ## Recommendations
 

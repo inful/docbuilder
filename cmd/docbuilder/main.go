@@ -473,8 +473,8 @@ func runBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 		}
 	}()
 
-	// Create Git client
-	gitClient := git.NewClient(wsManager.GetPath())
+	// Create Git client with build config for auth support
+	gitClient := git.NewClient(wsManager.GetPath()).WithBuildConfig(&cfg.Build)
 	if err := gitClient.EnsureWorkspace(); err != nil {
 		return err
 	}
