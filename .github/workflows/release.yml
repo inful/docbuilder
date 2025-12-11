@@ -156,7 +156,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-,enable=${{ needs.goreleaser.outputs.is_release != 'true' }}
+            type=sha,prefix={{branch}}-,suffix=-${{ github.run_number }},enable=${{ needs.goreleaser.outputs.is_release != 'true' }}
             type=raw,value=latest,enable=${{ needs.goreleaser.outputs.is_release == 'true' }}
 
       - name: Build and push Docker image
