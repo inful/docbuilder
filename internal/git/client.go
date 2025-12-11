@@ -17,9 +17,10 @@ import (
 
 // Client handles Git operations for DocBuilder, including clone, update, and authentication.
 type Client struct {
-	workspaceDir string
-	buildCfg     *appcfg.BuildConfig // optional build config for strategy flags
-	inRetry      bool                // internal guard to avoid nested retry wrapping
+	workspaceDir    string
+	buildCfg        *appcfg.BuildConfig // optional build config for strategy flags
+	inRetry         bool                // internal guard to avoid nested retry wrapping
+	remoteHeadCache *RemoteHeadCache    // cache for remote HEAD refs to skip unnecessary fetches
 }
 
 // NewClient creates a new Git client with the specified workspace directory.
@@ -27,6 +28,12 @@ func NewClient(workspaceDir string) *Client { return &Client{workspaceDir: works
 
 // WithBuildConfig attaches a build configuration to the client for strategy flags (fluent helper).
 func (c *Client) WithBuildConfig(cfg *appcfg.BuildConfig) *Client { c.buildCfg = cfg; return c }
+
+// WithRemoteHeadCache attaches a remote HEAD cache to skip fetches for unchanged repositories.
+func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
+	c.remoteHeadCache = cache
+	return c
+}
 
 // CloneRepository clones a repository to the workspace directory.
 // If retry is enabled, it wraps the operation with retry logic.

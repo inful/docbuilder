@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/incremental"
 	"git.home.luguber.info/inful/docbuilder/internal/manifest"
@@ -65,6 +66,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	// Initialize cache storage if incremental builds are enabled
 	var buildCache *incremental.BuildCache
 	var stageCache *incremental.StageCache
+	var remoteHeadCache *git.RemoteHeadCache
 	if cfg.Build.EnableIncremental {
 		store, err := storage.NewFSStore(cfg.Build.CacheDir)
 		if err != nil {
@@ -78,6 +80,19 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 
 		buildCache = incremental.NewBuildCache(store, cfg.Build.CacheDir)
 		stageCache = incremental.NewStageCache(store)
+		
+		// Initialize remote HEAD cache
+		remoteHeadCache, err = git.NewRemoteHeadCache(cfg.Build.CacheDir)
+		if err != nil {
+			slog.Warn("Failed to initialize remote HEAD cache", "error", err)
+		} else {
+			defer func() {
+				if err := remoteHeadCache.Save(); err != nil {
+					slog.Warn("Failed to save remote HEAD cache", "error", err)
+				}
+			}()
+		}
+		
 		slog.Info("Incremental build cache initialized", "cache_dir", cfg.Build.CacheDir)
 	}
 	// StageCache reserved for future stage-level caching (Phase 1 steps 1.6-1.7)
@@ -90,10 +105,13 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	}
 	defer CleanupWorkspace(wsManager)
 
-	// Create Git client with build config for auth support
+	// Create Git client with build config for auth support and remote HEAD cache
 	gitClient, err := CreateGitClient(wsManager, cfg)
 	if err != nil {
 		return err
+	}
+	if remoteHeadCache != nil {
+		gitClient.WithRemoteHeadCache(remoteHeadCache)
 	}
 
 	// Step 2.5: Expand repositories with versioning if enabled
