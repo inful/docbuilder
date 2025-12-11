@@ -63,7 +63,7 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	// Renderer defaults to nil; stageRunHugo will use BinaryRenderer when needed.
 	// Use WithRenderer to inject custom/test renderers.
 	// Default observer bridges to recorder until dedicated observers added.
-	g.observer = recorderObserver{rec: g.recorder}
+	g.observer = recorderObserver{recorder: g.recorder}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 	// Provide generator accessor to transform registry (late binding without import cycle)
@@ -155,11 +155,11 @@ func (g *Generator) Config() *config.Config { return g.config }
 func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 	if r == nil {
 		g.recorder = metrics.NoopRecorder{}
-		g.observer = recorderObserver{rec: g.recorder}
+		g.observer = recorderObserver{recorder: g.recorder}
 		return g
 	}
 	g.recorder = r
-	g.observer = recorderObserver{rec: r}
+	g.observer = recorderObserver{recorder: r}
 	return g
 }
 

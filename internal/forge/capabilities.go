@@ -10,8 +10,8 @@ type Capabilities struct {
 	SupportsTopics    bool
 }
 
-// caps holds the canonical capability map keyed by normalized forge type.
-var caps = map[config.ForgeType]Capabilities{
+// capabilities holds the canonical capability map keyed by normalized forge type.
+var capabilities = map[config.ForgeType]Capabilities{
 	config.ForgeGitHub:  {SupportsEditLinks: true, SupportsWebhooks: true, SupportsTopics: true},
 	config.ForgeGitLab:  {SupportsEditLinks: true, SupportsWebhooks: true, SupportsTopics: true},
 	config.ForgeForgejo: {SupportsEditLinks: true, SupportsWebhooks: true},
@@ -19,4 +19,4 @@ var caps = map[config.ForgeType]Capabilities{
 }
 
 // GetCapabilities returns capability flags for the given forge type.
-func GetCapabilities(t config.ForgeType) Capabilities { return caps[t] }
+func GetCapabilities(t config.ForgeType) Capabilities { return capabilities[t] }
