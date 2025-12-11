@@ -80,7 +80,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 
 		buildCache = incremental.NewBuildCache(store, cfg.Build.CacheDir)
 		stageCache = incremental.NewStageCache(store)
-		
+
 		// Initialize remote HEAD cache
 		remoteHeadCache, err = git.NewRemoteHeadCache(cfg.Build.CacheDir)
 		if err != nil {
@@ -92,7 +92,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 				}
 			}()
 		}
-		
+
 		slog.Info("Incremental build cache initialized", "cache_dir", cfg.Build.CacheDir)
 	}
 	// StageCache reserved for future stage-level caching (Phase 1 steps 1.6-1.7)
@@ -136,9 +136,9 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 		var err error
 
 		if incrementalMode {
-			repoPath, err = gitClient.UpdateRepository(repo)
+			repoPath, err = gitClient.UpdateRepo(repo)
 		} else {
-			repoPath, err = gitClient.CloneRepository(repo)
+			repoPath, err = gitClient.CloneRepo(repo)
 		}
 
 		if err != nil {

@@ -27,8 +27,8 @@ func NewManagerWithRegistry(registry *providers.AuthProviderRegistry) *Manager {
 
 // CreateAuth creates authentication for the given configuration.
 // This is the main entry point for git operations needing authentication.
-func (m *Manager) CreateAuth(authConfig *config.AuthConfig) (transport.AuthMethod, error) {
-	result, err := m.registry.CreateAuth(authConfig)
+func (m *Manager) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
+	result, err := m.registry.CreateAuth(authCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +37,13 @@ func (m *Manager) CreateAuth(authConfig *config.AuthConfig) (transport.AuthMetho
 
 // CreateAuthWithContext creates authentication with additional context.
 // This allows for more sophisticated authentication strategies based on the repository or operation.
-func (m *Manager) CreateAuthWithContext(authConfig *config.AuthConfig, repositoryURL, operation string) (transport.AuthMethod, error) {
+func (m *Manager) CreateAuthWithContext(authCfg *config.AuthConfig, repoURL, operation string) (transport.AuthMethod, error) {
 	ctx := providers.AuthContext{
-		RepositoryURL: repositoryURL,
+		RepositoryURL: repoURL,
 		Operation:     operation,
 	}
 
-	result, err := m.registry.CreateAuthWithContext(authConfig, ctx)
+	result, err := m.registry.CreateAuthWithContext(authCfg, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,20 +52,20 @@ func (m *Manager) CreateAuthWithContext(authConfig *config.AuthConfig, repositor
 
 // ValidateAuthConfig validates an authentication configuration without creating the authentication.
 // This is useful for configuration validation phases.
-func (m *Manager) ValidateAuthConfig(authConfig *config.AuthConfig) error {
-	if authConfig == nil {
+func (m *Manager) ValidateAuthConfig(authCfg *config.AuthConfig) error {
+	if authCfg == nil {
 		return nil // None auth is valid
 	}
 
-	provider, exists := m.registry.GetProvider(authConfig.Type)
+	provider, exists := m.registry.GetProvider(authCfg.Type)
 	if !exists {
 		return &providers.AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "unsupported authentication type",
 		}
 	}
 
-	return provider.ValidateConfig(authConfig)
+	return provider.ValidateConfig(authCfg)
 }
 
 // GetSupportedTypes returns all supported authentication types.
@@ -83,16 +83,16 @@ func (m *Manager) GetSupportedTypes() []config.AuthType {
 var DefaultManager = NewManager()
 
 // CreateAuth is a convenience function that uses the default manager.
-func CreateAuth(authConfig *config.AuthConfig) (transport.AuthMethod, error) {
-	return DefaultManager.CreateAuth(authConfig)
+func CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
+	return DefaultManager.CreateAuth(authCfg)
 }
 
 // CreateAuthWithContext is a convenience function that uses the default manager.
-func CreateAuthWithContext(authConfig *config.AuthConfig, repositoryURL, operation string) (transport.AuthMethod, error) {
-	return DefaultManager.CreateAuthWithContext(authConfig, repositoryURL, operation)
+func CreateAuthWithContext(authCfg *config.AuthConfig, repoURL, operation string) (transport.AuthMethod, error) {
+	return DefaultManager.CreateAuthWithContext(authCfg, repoURL, operation)
 }
 
 // ValidateAuthConfig is a convenience function that uses the default manager.
-func ValidateAuthConfig(authConfig *config.AuthConfig) error {
-	return DefaultManager.ValidateAuthConfig(authConfig)
+func ValidateAuthConfig(authCfg *config.AuthConfig) error {
+	return DefaultManager.ValidateAuthConfig(authCfg)
 }

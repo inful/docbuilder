@@ -92,7 +92,7 @@ func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository)
 		fetchOpts.Depth = depth
 	}
 	if repo.Auth != nil {
-		auth, err := c.getAuthentication(repo.Auth)
+		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
 			return err
 		}

@@ -56,7 +56,7 @@ func NewCloneHandler(bus *Bus) Handler {
 		repoPaths := map[string]string{}
 		for _, repo := range cr.Plan.Config.Repositories {
 			slog.Info("Cloning repository", logfields.Repository(repo.Name), logfields.URL(repo.URL))
-			repoPath, err := gitClient.CloneRepository(repo)
+			repoPath, err := gitClient.CloneRepo(repo)
 			if err != nil {
 				return fmt.Errorf("clone repository %s: %w", repo.Name, err)
 			}

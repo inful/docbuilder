@@ -22,21 +22,21 @@ func (p *TokenProvider) Type() config.AuthType {
 }
 
 // CreateAuth creates token authentication from the configuration.
-func (p *TokenProvider) CreateAuth(authConfig *config.AuthConfig) (transport.AuthMethod, error) {
-	if authConfig.Token == "" {
+func (p *TokenProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
+	if authCfg.Token == "" {
 		return nil, fmt.Errorf("token authentication requires a token")
 	}
 
 	// Most Git hosting services use "token" as the username for token auth
 	return &http.BasicAuth{
 		Username: "token",
-		Password: authConfig.Token,
+		Password: authCfg.Token,
 	}, nil
 }
 
 // ValidateConfig validates the token authentication configuration.
-func (p *TokenProvider) ValidateConfig(authConfig *config.AuthConfig) error {
-	if authConfig.Token == "" {
+func (p *TokenProvider) ValidateConfig(authCfg *config.AuthConfig) error {
+	if authCfg.Token == "" {
 		return fmt.Errorf("token authentication requires a token")
 	}
 
@@ -50,8 +50,8 @@ func (p *TokenProvider) Name() string {
 
 // CreateAuthWithContext creates token authentication with additional context.
 // This implements EnhancedAuthProvider to allow for context-aware token handling.
-func (p *TokenProvider) CreateAuthWithContext(authConfig *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
+func (p *TokenProvider) CreateAuthWithContext(authCfg *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
 	// Future enhancement: Could use different usernames based on the forge type
 	// For example, some services might use different username conventions
-	return p.CreateAuth(authConfig)
+	return p.CreateAuth(authCfg)
 }

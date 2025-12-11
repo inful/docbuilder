@@ -97,7 +97,7 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 	// Setup authentication
 	listOptions := &git.ListOptions{}
 	if authConfig != nil {
-		auth, err := c.getAuthentication(authConfig)
+		auth, err := c.getAuth(authConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup authentication: %w", err)
 		}
