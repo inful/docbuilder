@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
@@ -44,10 +45,14 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 		cfg = &cfgCopy
 	}
 
-	// Extract output directory
+	// Extract output directory and combine with base_directory if set
 	outDir := cfg.Output.Directory
 	if outDir == "" {
 		outDir = "./site"
+	}
+	// If base_directory is set and outDir is relative, combine them
+	if cfg.Output.BaseDirectory != "" && !filepath.IsAbs(outDir) {
+		outDir = filepath.Join(cfg.Output.BaseDirectory, outDir)
 	}
 
 	// Build the request

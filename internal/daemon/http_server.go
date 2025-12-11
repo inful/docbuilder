@@ -403,6 +403,10 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	if out == "" {
 		out = "./site"
 	}
+	// Combine with base_directory if set and path is relative
+	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
+		out = filepath.Join(s.config.Output.BaseDirectory, out)
+	}
 	// Normalize to absolute path once; failures just return original path
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {
@@ -520,6 +524,10 @@ func (s *HTTPServer) handleReadiness(w http.ResponseWriter, r *http.Request) {
 	out := s.config.Output.Directory
 	if out == "" {
 		out = "./site"
+	}
+	// Combine with base_directory if set and path is relative
+	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
+		out = filepath.Join(s.config.Output.BaseDirectory, out)
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {
