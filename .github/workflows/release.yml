@@ -100,6 +100,7 @@ jobs:
   docker-multiarch:
     needs: goreleaser
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.push_images == 'true'
     permissions:
       contents: read
       packages: write
@@ -171,9 +172,9 @@ jobs:
             VERSION=${{ needs.goreleaser.outputs.version }}
             HUGO_VERSION=${{ env.HUGO_VERSION }}
           cache-from: |
-            type=gha,scope=buildkit-release
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-release
-          cache-to: type=gha,mode=max,scope=buildkit-release
+            type=gha,scope=buildkit-${{ github.ref_name }}
+            type=gha,scope=buildkit-main
+          cache-to: type=gha,mode=max,scope=buildkit-${{ github.ref_name }}
           provenance: false
           sbom: false
 

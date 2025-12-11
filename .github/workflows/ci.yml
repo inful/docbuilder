@@ -31,9 +31,6 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - name: Download dependencies
-        run: go mod download
-
       - name: Build binary for integration tests
         run: mkdir -p bin && go build -o bin/docbuilder ./cmd/docbuilder
 
@@ -99,24 +96,56 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check for docs changes
+        id: docs_changed
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
+            if echo "$FILES" | grep -qE '^(docs/|cmd/docbuilder/.*generate|internal/hugo/)'; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Go
+        if: steps.docs_changed.outputs.changed == 'true'
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
 
+      - name: Cache Hugo
+        if: steps.docs_changed.outputs.changed == 'true'
+        id: cache-hugo
+        uses: actions/cache@v4
+        with:
+          path: /tmp/hugo
+          key: hugo-0.152.2-linux-amd64
+
       - name: Install Hugo Extended
+        if: steps.docs_changed.outputs.changed == 'true' && steps.cache-hugo.outputs.cache-hit != 'true'
         run: |
           HUGO_VERSION="0.152.2"
           wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
           tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
-          sudo mv hugo /usr/local/bin/
+          mkdir -p /tmp/hugo
+          mv hugo /tmp/hugo/
+
+      - name: Add Hugo to PATH
+        if: steps.docs_changed.outputs.changed == 'true'
+        run: |
+          sudo cp /tmp/hugo/hugo /usr/local/bin/
           hugo version
 
       - name: Build DocBuilder
+        if: steps.docs_changed.outputs.changed == 'true'
         run: go build -v -o docbuilder ./cmd/docbuilder
 
       - name: Generate documentation site
+        if: steps.docs_changed.outputs.changed == 'true'
         run: |
           ./docbuilder generate \
             --docs-dir ./docs \
@@ -131,13 +160,15 @@ jobs:
           test -f public/index.html || (echo "index.html not created" && exit 1)
 
       - name: Upload generated site as artifact
+        if: steps.docs_changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: generated-docs-site
           path: public/
-          retention-days: 7
+          retention-days: 3
 
       - name: Site generation summary
+        if: steps.docs_changed.outputs.changed == 'true'
         run: |
           echo "## 📚 Documentation Generation Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -156,6 +187,7 @@ jobs:
   docker-build-test:
     name: Docker Build Test
     runs-on: ubuntu-latest
+    needs: build
     if: github.event_name == 'pull_request'
     
     steps:
