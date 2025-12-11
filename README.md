@@ -4,7 +4,7 @@ See the `examples/` directory for complete configuration samples and test tools.
 
 # docbuilder
 
-> Greenfield Notice: The codebase has recently removed all transitional/legacy compatibility layers (deprecated V2 config aliases, legacy front matter field, outcome wrappers, retry helpers). If you previously depended on those symbols, consult the CHANGELOG for migration guidance.
+> Greenfield Notice: The codebase has recently removed all transitional/legacy compatibility layers (deprecated V2 config aliases, legacy front matter field, outcome wrappers, retry helpers).
 
 ## Stability & Versioning
 
@@ -78,13 +78,13 @@ Documentation files undergo a transform pipeline:
 2. **Front Matter Building** - Add repository metadata and edit links
 3. **Edit Link Injection** - Generate source edit URLs based on forge capabilities
 4. **Front Matter Merge** - Combine parsed and generated metadata
-5. **Link Rewriting** - Convert relative links to Hugo-compatible paths
+docbuilder build -c config.yaml --render-mode always
 6. **Front Matter Serialization** - Write final YAML headers
 
 ### Extension Points
 
 - **Themes**: Register new Hugo themes with capability declarations
-- **Transforms**: Add content processing steps to the transform registry
+docbuilder build -c config.yaml --render-mode never
 - **Forges**: Support new Git hosting platforms with authentication methods
 
 ## Installation
@@ -163,9 +163,6 @@ Example minimal `config.yaml` (direct build mode):
 repositories:
   - url: https://git.example.com/owner/repo.git
     name: my-docs
-    branch: main
-    paths:
-      - docs
     ## DocBuilder
 
     DocBuilder aggregates documentation from multiple Git repositories into a single Hugo site using a staged, observable pipeline.
@@ -251,9 +248,6 @@ If you explicitly set `build.workspace_dir`, that path is always used as-is.
 
 Rationale:
 
-- Separates transient build artifacts from long‑lived repository clones.
-- Keeps persistent clones out of the output tree so `output.clean` never erases them.
-- Enables quick incremental updates (`git fetch` + fast-forward) instead of full reclones.
 
 Startup Log Summary:
 
@@ -303,24 +297,19 @@ Future Enhancements (planned):
 
 ### Static Site Rendering (Running Hugo Automatically)
 
-By default DocBuilder only scaffolds a Hugo project (content + `hugo.yaml`). To also produce a pre-built static site (`site/public/`) you can opt in via environment variables:
-
 ```bash
-DOCBUILDER_RUN_HUGO=1 docbuilder build -c config.yaml
+docbuilder build -c config.yaml --render-mode always
 ```
 
 You can skip execution explicitly (useful in CI matrix) with:
 
 ```bash
-DOCBUILDER_SKIP_HUGO=1 docbuilder build -c config.yaml
+docbuilder build -c config.yaml --render-mode never
 ```
 
-Precedence:
- 
-1. If `DOCBUILDER_SKIP_HUGO=1` -> never run.
-2. Else if `DOCBUILDER_RUN_HUGO=1` -> run.
+1. If `build.render_mode` or `--render-mode` is `never` -> never run.
+2. If `build.render_mode` or `--render-mode` is `always` -> run.
 3. Else -> scaffold only.
-
 Hugo must be installed and on `PATH`. If the build fails, the scaffolded site remains available (warning is logged) so you can run `hugo` manually inside the output directory.
 
 ### Theme Support (Hextra & Docsy)
@@ -361,8 +350,6 @@ Front Matter Wrapping:
 - If you want full control, start your template with your own `---` fenced YAML and DocBuilder will not inject another one (you can still reference `.FrontMatter` inside the template if desired).
 
 Template Context (all kinds unless noted):
-
-| Key | Type | Description |
 |-----|------|-------------|
 | `.Site` | map | `{ Title, Description, BaseURL, Theme }` (theme type) |
 | `.FrontMatter` | map | Computed default front matter values before serialization |

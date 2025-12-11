@@ -311,6 +311,7 @@ daemon-data/*
 daemon-data/repos/daemon-state.json
 docker-test-output/output
 test-output/
+test-output.log
 coverage.out
 coverage.html
 
@@ -319,8 +320,16 @@ coverage.html
 integration-test-config.yaml
 dist/
 
+# Test artifacts
 test-site
+test-workspace
 bin
-testconfig.yml
-dev-config.yaml
-forgejo.yaml
+
+# Planning/refactor docs (use docs/ or issues instead)
+ARCHITECTURE_MIGRATION_PLAN.md
+REFACTOR_ROADMAP.md
+maintainability-refactor.md
+plan/
+
+# Local config files
+config.yaml
