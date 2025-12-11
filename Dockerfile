@@ -10,13 +10,25 @@ FROM ubuntu:22.04 AS downloader
 ARG TARGETOS=linux
 ARG TARGETARCH
 ARG HUGO_VERSION="0.152.2"
+ARG GO_VERSION="1.24.0"
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install minimal dependencies
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl
+    ca-certificates curl wget
+
+# Download Go with caching (needed for Hugo modules)
+RUN --mount=type=cache,target=/tmp/downloads \
+    GO_ARCH="${TARGETARCH}" && \
+    echo "Downloading Go ${GO_VERSION} for ${TARGETOS}-${GO_ARCH}" && \
+    GO_FILE="go${GO_VERSION}.${TARGETOS}-${GO_ARCH}.tar.gz" && \
+    if [ ! -f "/tmp/downloads/${GO_FILE}" ]; then \
+      wget -q "https://go.dev/dl/${GO_FILE}" -O "/tmp/downloads/${GO_FILE}"; \
+    fi && \
+    tar -C /usr/local -xzf "/tmp/downloads/${GO_FILE}" && \
+    /usr/local/go/bin/go version
 
 # Download Hugo Extended with caching
 RUN --mount=type=cache,target=/tmp/downloads \
@@ -74,8 +86,17 @@ COPY --from=binary /out/docbuilder /usr/local/bin/docbuilder
 COPY --from=downloader /usr/local/bin/hugo /usr/local/bin/hugo
 COPY --from=downloader /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
+# Copy Go runtime (required for Hugo modules)
+COPY --from=downloader /usr/local/go /usr/local/go
+
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
+ENV GOROOT=/usr/local/go
+ENV PATH="/usr/local/go/bin:${PATH}"
+# Prefer proxy-based module fetching to avoid system git dependency
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
+ENV HUGO_MODULE_PROXY=https://proxy.golang.org,direct
 
 ENTRYPOINT ["/usr/local/bin/docbuilder"]
 CMD ["daemon", "--config", "/config/config.yaml"]
