@@ -1,0 +1,45 @@
+# GoReleaser configuration for Docker-only builds
+# This config only builds Linux binaries for multi-arch Docker images
+version: 2
+
+project_name: docbuilder
+
+builds:
+  - id: docbuilder
+    main: ./cmd/docbuilder
+    binary: docbuilder
+    
+    # Only build for Linux (Docker target)
+    goos:
+      - linux
+    
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    
+    goarm:
+      - "7"
+    
+    flags:
+      - -trimpath
+    
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    
+    env:
+      - CGO_ENABLED=0
+
+# Disable archives for Docker-only builds
+archives:
+  - id: default
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - none*
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
