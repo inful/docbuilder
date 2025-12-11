@@ -85,6 +85,25 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
+		
+		// Check if repository has a README.md at root level to use instead
+		var readmeFile *docs.DocFile
+		for i := range files {
+			if files[i].Section == "" && strings.EqualFold(files[i].Name, "README") && files[i].Extension == ".md" {
+				readmeFile = &files[i]
+				break
+			}
+		}
+		
+		if readmeFile != nil {
+			// Use README.md as the repository index
+			if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
+				return err
+			}
+			slog.Debug("Using README.md as repository index", logfields.Repository(repoName), logfields.Path(indexPath))
+			continue
+		}
+		
 		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
 		fmData, err := yaml.Marshal(frontMatter)
 		if err != nil {
@@ -132,6 +151,76 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 		slog.Debug("Generated repository index", logfields.Repository(repoName), logfields.Path(indexPath))
 	}
+	return nil
+}
+
+// useReadmeAsIndex reads a README.md file and writes it as a repository _index.md,
+// ensuring proper front matter is added or preserved
+func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoName string) error {
+	// Use Content if already loaded, otherwise read from Path
+	var content []byte
+	var err error
+	if len(readmeFile.Content) > 0 {
+		content = readmeFile.Content
+	} else {
+		content, err = os.ReadFile(readmeFile.Path)
+		if err != nil {
+			return fmt.Errorf("failed to read README.md for %s: %w", repoName, err)
+		}
+	}
+
+	contentStr := string(content)	// Check if README already has front matter
+	if strings.HasPrefix(contentStr, "---\n") {
+		// README has front matter, parse it and ensure required fields
+		parts := strings.SplitN(contentStr, "---\n", 3)
+		if len(parts) >= 3 {
+			// Parse existing front matter
+			var existingFM map[string]any
+			if err := yaml.Unmarshal([]byte(parts[1]), &existingFM); err != nil {
+				return fmt.Errorf("failed to parse existing front matter in README.md: %w", err)
+			}
+			
+			// Ensure required fields are set
+			if existingFM["type"] == nil {
+				existingFM["type"] = "docs"
+			}
+			if existingFM["repository"] == nil {
+				existingFM["repository"] = repoName
+			}
+			if existingFM["date"] == nil {
+				existingFM["date"] = time.Now().Format("2006-01-02T15:04:05-07:00")
+			}
+			
+			// Re-marshal the front matter
+			fmData, err := yaml.Marshal(existingFM)
+			if err != nil {
+				return fmt.Errorf("failed to marshal updated front matter: %w", err)
+			}
+			
+			contentStr = fmt.Sprintf("---\n%s---\n%s", string(fmData), parts[2])
+		}
+	} else {
+		// No front matter, add it
+		frontMatter := map[string]any{
+			"title":      titleCase(repoName),
+			"repository": repoName,
+			"type":       "docs",
+			"date":       time.Now().Format("2006-01-02T15:04:05-07:00"),
+		}
+		
+		fmData, err := yaml.Marshal(frontMatter)
+		if err != nil {
+			return fmt.Errorf("failed to marshal front matter: %w", err)
+		}
+		
+		contentStr = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), contentStr)
+	}
+	
+	// #nosec G306 -- index pages are public content
+	if err := os.WriteFile(indexPath, []byte(contentStr), 0o644); err != nil {
+		return fmt.Errorf("failed to write repository index from README: %w", err)
+	}
+	
 	return nil
 }
 
