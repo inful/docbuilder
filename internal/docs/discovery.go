@@ -164,8 +164,8 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 			section = "" // Root level
 		}
 
-		// Only ignore README.md and similar files at the root level
-		if section == "" && isIgnoredFile(info.Name()) {
+		// Only ignore certain files at the root level (but keep README.md for use as repository index)
+		if section == "" && isIgnoredFile(info.Name()) && !strings.EqualFold(info.Name(), "README.md") {
 			return nil
 		}
 

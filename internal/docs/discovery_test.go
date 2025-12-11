@@ -71,9 +71,10 @@ func TestDocumentationDiscovery(t *testing.T) {
 		t.Fatalf("DiscoverDocs failed: %v", err)
 	}
 
-	// Verify results
+	// Verify results (now including README.md)
 	expectedFiles := []string{
 		"index.md",
+		"README.md",
 		"api/overview.md",
 		"api/reference.md",
 		"guides/getting-started.md",
@@ -83,9 +84,9 @@ func TestDocumentationDiscovery(t *testing.T) {
 		t.Errorf("Expected %d files, got %d", len(expectedFiles), len(docFiles))
 	}
 
-	// Check that README.md and .txt files are ignored
+	// Check that .txt files are ignored (README.md is now kept)
 	for _, file := range docFiles {
-		if file.Name == "README" || file.Extension == ".txt" {
+		if file.Extension == ".txt" {
 			t.Errorf("File should have been ignored: %s", file.RelativePath)
 		}
 	}
@@ -122,6 +123,9 @@ func TestMarkdownFileDetection(t *testing.T) {
 }
 
 func TestIgnoredFiles(t *testing.T) {
+	// Note: README.md is still in the ignored list, but discovery specifically
+	// excludes it from being ignored at root level (section == "") so it can
+	// be used as the repository index.
 	tests := []struct {
 		filename string
 		expected bool
@@ -503,11 +507,6 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			if file.Forge != "" {
 				forgeTypes[file.Forge]++
 			}
-
-			// Verify README.md files are ignored
-			if file.Name == "README" {
-				t.Errorf("README.md should be ignored but found: %s", file.RelativePath)
-			}
 		}
 
 		// Should have files from all forge types
@@ -526,19 +525,19 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		for repoName, files := range filesByRepo {
 			if strings.Contains(repoName, "github") {
 				githubRepoCount++
-				// GitHub repos should have 3 files (README.md ignored)
-				if len(files) != 3 {
-					t.Errorf("GitHub repo %s: expected 3 files, got %d", repoName, len(files))
+				// GitHub repos should have 4 files (README.md now included)
+				if len(files) != 4 {
+					t.Errorf("GitHub repo %s: expected 4 files, got %d", repoName, len(files))
 				}
 			} else if strings.Contains(repoName, "gitlab") {
 				gitlabRepoCount++
-				// GitLab repos should have 3 files
+				// GitLab repos should have 3 files (no README.md in test data)
 				if len(files) != 3 {
 					t.Errorf("GitLab repo %s: expected 3 files, got %d", repoName, len(files))
 				}
 			} else if strings.Contains(repoName, "forgejo") {
 				forgejoRepoCount++
-				// Forgejo repos should have 3 files
+				// Forgejo repos should have 3 files (no README.md in test data)
 				if len(files) != 3 {
 					t.Errorf("Forgejo repo %s: expected 3 files, got %d", repoName, len(files))
 				}
@@ -602,8 +601,8 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				"docs/tutorial/basics.md":   "# Basics",
 				"docs/tutorial/advanced.md": "# Advanced",
 
-				// Files that should be ignored
-				"docs/README.md":       "# README - should be ignored",
+				// Files that should be ignored (except README.md which is used as repository index)
+				"docs/README.md":       "# README - used as repository index",
 				"docs/CONTRIBUTING.md": "# Contributing - should be ignored",
 				"docs/CHANGELOG.md":    "# Changelog - should be ignored",
 				"docs/LICENSE.md":      "# License - should be ignored",
@@ -644,7 +643,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		}
 
 		// Verify filtering results
-		expectedMarkdownFiles := 6 // index.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
+		expectedMarkdownFiles := 7 // index.md, README.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
 		expectedAssetFiles := 2    // data.json, image.png
 		expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
 
@@ -680,8 +679,8 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 
 			filename := filepath.Base(file.RelativePath)
 
-			// Check for ignored markdown files
-			if isIgnoredFile(filename) {
+			// Check for ignored markdown files (except README.md which is now kept at root level)
+			if isIgnoredFile(filename) && !strings.EqualFold(filename, "README.md") {
 				t.Errorf("Ignored file should not be included: %s", file.RelativePath)
 			}
 
