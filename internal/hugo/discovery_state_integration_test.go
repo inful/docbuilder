@@ -1,5 +1,4 @@
 //go:build disabled_discovery_state_integration
-// +build disabled_discovery_state_integration
 
 package hugo
 
