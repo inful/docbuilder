@@ -56,7 +56,7 @@ type DeltaAnalyzer struct {
 }
 
 // NewDeltaAnalyzer constructs a new analyzer instance.
-func NewDeltaAnalyzer(st DeltaStateAccess) *DeltaAnalyzer { return &DeltaAnalyzer{state: st} }
+func NewDeltaAnalyzer(state DeltaStateAccess) *DeltaAnalyzer { return &DeltaAnalyzer{state: state} }
 
 // WithWorkspace configures the analyzer with a workspace directory containing cloned repositories.
 // This enables a lightweight pre-discovery doc path hash by scanning known doc roots (default: 'docs', 'documentation').
@@ -79,16 +79,16 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 	}
 	docRoots := []string{"docs", "documentation"}
 	paths := make([]string, 0, 32)
-	for _, dr := range docRoots {
-		base := filepath.Join(root, dr)
+	for _, docRoot := range docRoots {
+		base := filepath.Join(root, docRoot)
 		if fi, err := os.Stat(base); err == nil && fi.IsDir() {
 			if walkErr := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
 				if err != nil || d == nil || d.IsDir() {
 					return nil //nolint:nilerr // best-effort quick hash; skip per-file errors
 				}
 				name := d.Name()
-				ln := strings.ToLower(name)
-				if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
+				lowerName := strings.ToLower(name)
+				if strings.HasSuffix(lowerName, ".md") || strings.HasSuffix(lowerName, ".markdown") {
 					rel, rerr := filepath.Rel(root, p)
 					if rerr == nil {
 						paths = append(paths, filepath.ToSlash(rel))
@@ -125,33 +125,33 @@ func (da *DeltaAnalyzer) Analyze(_ string, repos []cfg.Repository) DeltaPlan {
 	changed := make([]string, 0, len(repos))
 	unknown := 0
 	reasons := make(map[string]string, len(repos))
-	for _, r := range repos {
-		docHash := da.state.GetRepoDocFilesHash(r.URL)
-		commit := da.state.GetRepoLastCommit(r.URL)
+	for _, repo := range repos {
+		docHash := da.state.GetRepoDocFilesHash(repo.URL)
+		commit := da.state.GetRepoLastCommit(repo.URL)
 		// Case 1: incomplete metadata forces rebuild
 		if docHash == "" || commit == "" {
 			if docHash == "" && commit == "" {
 				unknown++
 			}
-			reasons[r.URL] = RepoReasonUnknown
-			changed = append(changed, r.URL)
+			reasons[repo.URL] = RepoReasonUnknown
+			changed = append(changed, repo.URL)
 			continue
 		}
 		// Case 2: attempt quick hash diff if workspace available
 		if da.workspaceDir != "" {
-			if quick := da.computeQuickRepoHash(r.Name); quick != "" {
+			if quick := da.computeQuickRepoHash(repo.Name); quick != "" {
 				if quick != docHash { // mismatch => changed
-					reasons[r.URL] = RepoReasonQuickHashDiff
-					changed = append(changed, r.URL)
+					reasons[repo.URL] = RepoReasonQuickHashDiff
+					changed = append(changed, repo.URL)
 					continue
 				}
 				// match => unchanged
-				reasons[r.URL] = RepoReasonUnchanged
+				reasons[repo.URL] = RepoReasonUnchanged
 				continue
 			}
 		}
 		// Case 3: have metadata but no quick hash available; treat as unchanged (optimistic) for now
-		reasons[r.URL] = RepoReasonUnchanged
+		reasons[repo.URL] = RepoReasonUnchanged
 	}
 
 	if len(changed) == 0 {

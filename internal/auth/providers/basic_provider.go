@@ -22,24 +22,24 @@ func (p *BasicProvider) Type() config.AuthType {
 }
 
 // CreateAuth creates basic authentication from the configuration.
-func (p *BasicProvider) CreateAuth(authConfig *config.AuthConfig) (transport.AuthMethod, error) {
-	if authConfig.Username == "" || authConfig.Password == "" {
+func (p *BasicProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
+	if authCfg.Username == "" || authCfg.Password == "" {
 		return nil, fmt.Errorf("basic authentication requires username and password")
 	}
 
 	return &http.BasicAuth{
-		Username: authConfig.Username,
-		Password: authConfig.Password,
+		Username: authCfg.Username,
+		Password: authCfg.Password,
 	}, nil
 }
 
 // ValidateConfig validates the basic authentication configuration.
-func (p *BasicProvider) ValidateConfig(authConfig *config.AuthConfig) error {
-	if authConfig.Username == "" {
+func (p *BasicProvider) ValidateConfig(authCfg *config.AuthConfig) error {
+	if authCfg.Username == "" {
 		return fmt.Errorf("basic authentication requires a username")
 	}
 
-	if authConfig.Password == "" {
+	if authCfg.Password == "" {
 		return fmt.Errorf("basic authentication requires a password")
 	}
 

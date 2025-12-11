@@ -17,7 +17,7 @@ func TestGoldenForgeCapabilities(t *testing.T) {
 		SupportsTopics    bool             `json:"topics"`
 	}
 	var rows []row
-	for ft, c := range caps {
+	for ft, c := range capabilities {
 		rows = append(rows, row{Forge: ft, SupportsEditLinks: c.SupportsEditLinks, SupportsWebhooks: c.SupportsWebhooks, SupportsTopics: c.SupportsTopics})
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Forge < rows[j].Forge })

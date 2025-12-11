@@ -71,8 +71,8 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 	t.Helper()
 	docRoots := []string{"docs", "documentation"}
 	paths := []string{}
-	for _, dr := range docRoots {
-		base := filepath.Join(repoRoot, dr)
+	for _, docRoot := range docRoots {
+		base := filepath.Join(repoRoot, docRoot)
 		fi, err := os.Stat(base)
 		if err != nil || !fi.IsDir() {
 			continue
@@ -81,8 +81,8 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 			if err != nil || d == nil || d.IsDir() {
 				return nil
 			}
-			ln := strings.ToLower(d.Name())
-			if strings.HasSuffix(ln, ".md") || strings.HasSuffix(ln, ".markdown") {
+			name := strings.ToLower(d.Name())
+			if strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".markdown") {
 				rel, rerr := filepath.Rel(repoRoot, p)
 				if rerr == nil {
 					paths = append(paths, filepath.ToSlash(rel))
