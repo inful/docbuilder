@@ -66,9 +66,9 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	var path string
 	var err error
 	if attemptUpdate {
-		path, err = client.UpdateRepository(repo)
+		path, err = client.UpdateRepo(repo)
 	} else {
-		path, err = client.CloneRepository(repo)
+		path, err = client.CloneRepo(repo)
 	}
 	res.Path = path
 	res.PreHead = preHead

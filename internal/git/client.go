@@ -35,9 +35,9 @@ func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
 	return c
 }
 
-// CloneRepository clones a repository to the workspace directory.
+// CloneRepo clones a repository to the workspace directory.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) CloneRepository(repo appcfg.Repository) (string, error) {
+func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
 	if c.inRetry {
 		return c.cloneOnce(repo)
 	}
@@ -66,7 +66,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 		cloneOptions.Depth = c.buildCfg.ShallowDepth
 	}
 	if repo.Auth != nil {
-		auth, err := c.getAuthentication(repo.Auth)
+		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
 			return "", fmt.Errorf("failed to setup authentication: %w", err)
 		}
@@ -111,9 +111,9 @@ func classifyCloneError(url string, err error) error {
 	return fmt.Errorf("failed to clone repository %s: %w", url, err)
 }
 
-// UpdateRepository updates an existing repository or clones it if missing.
+// UpdateRepo updates an existing repository or clones it if missing.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) UpdateRepository(repo appcfg.Repository) (string, error) {
+func (c *Client) UpdateRepo(repo appcfg.Repository) (string, error) {
 	if c.inRetry {
 		return c.updateOnce(repo)
 	}

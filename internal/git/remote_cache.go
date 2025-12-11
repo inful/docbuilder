@@ -12,9 +12,9 @@ import (
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-git/go-git/v5"
+	ggitcfg "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-	ggitcfg "github.com/go-git/go-git/v5/config"
 )
 
 // RemoteHeadCache stores the last known remote HEAD for repositories
@@ -68,7 +68,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 
 	var auth transport.AuthMethod
 	if repo.Auth != nil {
-		a, err := c.getAuthentication(repo.Auth)
+		a, err := c.getAuth(repo.Auth)
 		if err != nil {
 			return "", fmt.Errorf("authentication: %w", err)
 		}

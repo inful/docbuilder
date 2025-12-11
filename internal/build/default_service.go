@@ -214,9 +214,9 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		var err error
 
 		if req.Incremental {
-			repoPath, err = gitClient.UpdateRepository(repo)
+			repoPath, err = gitClient.UpdateRepo(repo)
 		} else {
-			repoPath, err = gitClient.CloneRepository(repo)
+			repoPath, err = gitClient.CloneRepo(repo)
 		}
 
 		if err != nil {

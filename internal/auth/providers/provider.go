@@ -15,11 +15,11 @@ type AuthProvider interface {
 
 	// CreateAuth creates a transport.AuthMethod from the given configuration.
 	// Returns nil, nil for no authentication (AuthTypeNone).
-	CreateAuth(config *config.AuthConfig) (transport.AuthMethod, error)
+	CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error)
 
 	// ValidateConfig validates the authentication configuration for this provider.
 	// This allows each provider to enforce its own requirements.
-	ValidateConfig(config *config.AuthConfig) error
+	ValidateConfig(authCfg *config.AuthConfig) error
 
 	// Name returns a human-readable name for this provider (for logging/debugging).
 	Name() string
@@ -38,7 +38,7 @@ type EnhancedAuthProvider interface {
 
 	// CreateAuthWithContext creates authentication with additional context.
 	// This allows providers to customize behavior based on the operation or repository.
-	CreateAuthWithContext(config *config.AuthConfig, ctx AuthContext) (transport.AuthMethod, error)
+	CreateAuthWithContext(authCfg *config.AuthConfig, ctx AuthContext) (transport.AuthMethod, error)
 }
 
 // ProviderResult wraps the result of authentication creation with metadata.
@@ -80,33 +80,33 @@ func (r *AuthProviderRegistry) GetProvider(authType config.AuthType) (AuthProvid
 }
 
 // CreateAuth creates authentication using the appropriate provider.
-func (r *AuthProviderRegistry) CreateAuth(authConfig *config.AuthConfig) (*ProviderResult, error) {
-	if authConfig == nil {
-		authConfig = &config.AuthConfig{Type: config.AuthTypeNone}
+func (r *AuthProviderRegistry) CreateAuth(authCfg *config.AuthConfig) (*ProviderResult, error) {
+	if authCfg == nil {
+		authCfg = &config.AuthConfig{Type: config.AuthTypeNone}
 	}
 
-	provider, exists := r.GetProvider(authConfig.Type)
+	provider, exists := r.GetProvider(authCfg.Type)
 	if !exists {
 		return nil, &AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "unsupported authentication type",
 		}
 	}
 
 	// Validate configuration first
-	if err := provider.ValidateConfig(authConfig); err != nil {
+	if err := provider.ValidateConfig(authCfg); err != nil {
 		return nil, &AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "configuration validation failed",
 			Cause:   err,
 		}
 	}
 
 	// Create authentication
-	auth, err := provider.CreateAuth(authConfig)
+	auth, err := provider.CreateAuth(authCfg)
 	if err != nil {
 		return nil, &AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "failed to create authentication",
 			Cause:   err,
 		}
@@ -120,23 +120,23 @@ func (r *AuthProviderRegistry) CreateAuth(authConfig *config.AuthConfig) (*Provi
 }
 
 // CreateAuthWithContext creates authentication with context using enhanced providers when available.
-func (r *AuthProviderRegistry) CreateAuthWithContext(authConfig *config.AuthConfig, ctx AuthContext) (*ProviderResult, error) {
-	if authConfig == nil {
-		authConfig = &config.AuthConfig{Type: config.AuthTypeNone}
+func (r *AuthProviderRegistry) CreateAuthWithContext(authCfg *config.AuthConfig, ctx AuthContext) (*ProviderResult, error) {
+	if authCfg == nil {
+		authCfg = &config.AuthConfig{Type: config.AuthTypeNone}
 	}
 
-	provider, exists := r.GetProvider(authConfig.Type)
+	provider, exists := r.GetProvider(authCfg.Type)
 	if !exists {
 		return nil, &AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "unsupported authentication type",
 		}
 	}
 
 	// Validate configuration first
-	if err := provider.ValidateConfig(authConfig); err != nil {
+	if err := provider.ValidateConfig(authCfg); err != nil {
 		return nil, &AuthError{
-			Type:    authConfig.Type,
+			Type:    authCfg.Type,
 			Message: "configuration validation failed",
 			Cause:   err,
 		}
@@ -144,10 +144,10 @@ func (r *AuthProviderRegistry) CreateAuthWithContext(authConfig *config.AuthConf
 
 	// Try enhanced provider first
 	if enhancedProvider, ok := provider.(EnhancedAuthProvider); ok {
-		auth, err := enhancedProvider.CreateAuthWithContext(authConfig, ctx)
+		auth, err := enhancedProvider.CreateAuthWithContext(authCfg, ctx)
 		if err != nil {
 			return nil, &AuthError{
-				Type:    authConfig.Type,
+				Type:    authCfg.Type,
 				Message: "failed to create authentication with context",
 				Cause:   err,
 			}
@@ -161,7 +161,7 @@ func (r *AuthProviderRegistry) CreateAuthWithContext(authConfig *config.AuthConf
 	}
 
 	// Fall back to regular provider
-	return r.CreateAuth(authConfig)
+	return r.CreateAuth(authCfg)
 }
 
 // AuthError represents an authentication-related error.

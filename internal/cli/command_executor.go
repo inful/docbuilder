@@ -260,7 +260,7 @@ func (e *DefaultCommandExecutor) ExecuteDiscover(ctx context.Context, req Discov
 	for _, repo := range reposToProcess {
 		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
 
-		repoPath, err := gitClient.CloneRepository(repo)
+		repoPath, err := gitClient.CloneRepo(repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return foundation.Err[DiscoverResponse](err)

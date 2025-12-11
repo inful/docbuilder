@@ -24,8 +24,8 @@ func (p *SSHProvider) Type() config.AuthType {
 }
 
 // CreateAuth creates SSH authentication from the configuration.
-func (p *SSHProvider) CreateAuth(authConfig *config.AuthConfig) (transport.AuthMethod, error) {
-	keyPath := authConfig.KeyPath
+func (p *SSHProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
+	keyPath := authCfg.KeyPath
 	if keyPath == "" {
 		keyPath = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 	}
@@ -39,8 +39,8 @@ func (p *SSHProvider) CreateAuth(authConfig *config.AuthConfig) (transport.AuthM
 }
 
 // ValidateConfig validates the SSH authentication configuration.
-func (p *SSHProvider) ValidateConfig(authConfig *config.AuthConfig) error {
-	keyPath := authConfig.KeyPath
+func (p *SSHProvider) ValidateConfig(authCfg *config.AuthConfig) error {
+	keyPath := authCfg.KeyPath
 	if keyPath == "" {
 		keyPath = filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa")
 	}
@@ -60,8 +60,8 @@ func (p *SSHProvider) Name() string {
 
 // CreateAuthWithContext creates SSH authentication with additional context.
 // This implements EnhancedAuthProvider to allow for context-aware SSH key selection.
-func (p *SSHProvider) CreateAuthWithContext(authConfig *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
+func (p *SSHProvider) CreateAuthWithContext(authCfg *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
 	// For now, SSH provider doesn't use context, but this allows for future enhancements
 	// like per-repository SSH keys or operation-specific key selection
-	return p.CreateAuth(authConfig)
+	return p.CreateAuth(authCfg)
 }
