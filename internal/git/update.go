@@ -25,24 +25,46 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 		return "", fmt.Errorf("worktree: %w", err)
 	}
 
-	// 1. Fetch remote refs
-	if err := c.fetchOrigin(repository, repo); err != nil {
-		return "", classifyFetchError(repo.URL, err)
-	}
-
-	// 2. Resolve target branch
+	// Resolve target branch early
 	branch, err := resolveTargetBranch(repository, repo)
 	if err != nil {
 		return "", err
 	}
 
-	// 3. Checkout/create local branch & obtain refs
+	// Check if remote HEAD has changed using cache (skip fetch if unchanged)
+	fetchNeeded := true
+	var remoteSHA string
+	if c.remoteHeadCache != nil {
+		changed, sha, checkErr := c.CheckRemoteChanged(c.remoteHeadCache, repo, branch)
+		if checkErr == nil {
+			fetchNeeded = changed
+			remoteSHA = sha
+		}
+	}
+
+	// 1. Fetch remote refs (only if needed)
+	if fetchNeeded {
+		if err := c.fetchOrigin(repository, repo); err != nil {
+			return "", classifyFetchError(repo.URL, err)
+		}
+
+		// Update cache with new remote HEAD
+		if c.remoteHeadCache != nil && remoteSHA != "" {
+			c.remoteHeadCache.Set(repo.URL, branch, remoteSHA)
+		}
+	} else {
+		slog.Info("Skipped fetch (remote unchanged)",
+			logfields.Name(repo.Name),
+			slog.String("commit", remoteSHA[:8]))
+	}
+
+	// 2. Checkout/create local branch & obtain refs
 	localRef, remoteRef, err := checkoutAndGetRefs(repository, wt, branch)
 	if err != nil {
 		return "", err
 	}
 
-	// 4. Fast-forward or handle divergence
+	// 3. Fast-forward or handle divergence
 	if err := c.syncWithRemote(repository, wt, repo, branch, localRef, remoteRef); err != nil {
 		// Divergence without hard reset is treated as permanent (REMOTE_DIVERGED)
 		if strings.Contains(strings.ToLower(err.Error()), "diverged") {
@@ -51,10 +73,10 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 		return "", err
 	}
 
-	// 5. Post-update hygiene (clean/prune)
+	// 4. Post-update hygiene (clean/prune)
 	c.postUpdateCleanup(wt, repoPath, repo)
 
-	// 6. Logging
+	// 5. Logging
 	logRepositoryUpdated(repository, repo, branch)
 	return repoPath, nil
 }
