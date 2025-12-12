@@ -97,7 +97,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		// See docs/reference/index-files.md for complete documentation
 		var userIndexFile *docs.DocFile
 		var readmeFile *docs.DocFile
-		
+
 		for i := range files {
 			if files[i].Section == "" && files[i].Extension == ".md" {
 				if strings.EqualFold(files[i].Name, "index") {
@@ -110,20 +110,34 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 
 		// Use index.md if present, otherwise fall back to README.md
 		if userIndexFile != nil {
+			// Check if already written by copyContentFiles as _index.md
+			if _, err := os.Stat(indexPath); err == nil {
+				slog.Debug("Using user-provided index.md as repository index (already processed)",
+					logfields.Repository(repoName),
+					logfields.Path(indexPath))
+				continue
+			}
 			if err := g.useReadmeAsIndex(userIndexFile, indexPath, repoName); err != nil {
 				return err
 			}
-			slog.Debug("Using user-provided index.md as repository index", 
-				logfields.Repository(repoName), 
+			slog.Debug("Using user-provided index.md as repository index",
+				logfields.Repository(repoName),
 				logfields.Path(indexPath))
 			continue
 		} else if readmeFile != nil {
+			// Check if README was already written as _index.md by copyContentFiles
+			if _, err := os.Stat(indexPath); err == nil {
+				slog.Debug("Using README.md as repository index (already processed)",
+					logfields.Repository(repoName),
+					logfields.Path(indexPath))
+				continue
+			}
 			// Use README.md as the repository index
 			if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
 				return err
 			}
-			slog.Debug("Using README.md as repository index", 
-				logfields.Repository(repoName), 
+			slog.Debug("Using README.md as repository index",
+				logfields.Repository(repoName),
 				logfields.Path(indexPath))
 			continue
 		}
@@ -179,17 +193,24 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 }
 
 // useReadmeAsIndex reads a README.md file and writes it as a repository _index.md,
-// ensuring proper front matter is added or preserved
+// ensuring proper front matter is added or preserved.
+// Since README.md is treated as a regular file during content copy, we need to read
+// the transformed version and adapt it as an index.
 func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoName string) error {
-	// Use Content if already loaded, otherwise read from Path
-	var content []byte
-	var err error
-	if len(readmeFile.Content) > 0 {
-		content = readmeFile.Content
-	} else {
-		content, err = os.ReadFile(readmeFile.Path)
-		if err != nil {
-			return fmt.Errorf("failed to read README.md for %s: %w", repoName, err)
+	// README.md has already been processed through the transform pipeline and written
+	// as readme.md in the content directory. Read the TRANSFORMED version.
+	transformedPath := filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
+	content, err := os.ReadFile(transformedPath)
+	if err != nil {
+		// Fallback to source if transformed file doesn't exist
+		slog.Warn("Transformed README not found, using source", "path", transformedPath, "error", err)
+		if len(readmeFile.Content) > 0 {
+			content = readmeFile.Content
+		} else {
+			content, err = os.ReadFile(readmeFile.Path)
+			if err != nil {
+				return fmt.Errorf("failed to read README.md for %s: %w", repoName, err)
+			}
 		}
 	}
 
@@ -243,6 +264,12 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(contentStr), 0o644); err != nil {
 		return fmt.Errorf("failed to write repository index from README: %w", err)
+	}
+
+	// Remove the original readme.md file since we've promoted it to _index.md
+	transformedPath = filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
+	if err = os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
+		slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
 	}
 
 	return nil

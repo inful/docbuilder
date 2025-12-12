@@ -15,7 +15,7 @@ func TestRewriteRelativeMarkdownLinks(t *testing.T) {
 		{"Markdown long ext [Ref](guide.markdown)", "Markdown long ext [Ref](guide/)"},
 	}
 	for i, c := range cases {
-		got := RewriteRelativeMarkdownLinks(c.in, "", "")
+		got := RewriteRelativeMarkdownLinks(c.in, "", "", false) // false = not an index page
 		if got != c.want {
 			t.Errorf("case %d: got %q want %q", i, got, c.want)
 		}
@@ -53,9 +53,28 @@ func TestRewriteRelativeMarkdownLinks_RepositoryRootRelative(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		got := RewriteRelativeMarkdownLinks(c.in, c.repo, c.forge)
+		got := RewriteRelativeMarkdownLinks(c.in, c.repo, c.forge, false) // false = not an index page
 		if got != c.want {
 			t.Errorf("case %d: got %q want %q", i, got, c.want)
+		}
+	}
+}
+
+func TestRewriteRelativeMarkdownLinks_IndexPages(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		// Index pages (_index.md or README.md) are at section root, so relative links don't need extra ../
+		{"See [Doc](foo.md) for details", "See [Doc](foo/) for details"},
+		{"[Anchor](bar.md#sec)", "[Anchor](bar/#sec)"},
+		{"Subdirectory [Link](how-to/authentication.md)", "Subdirectory [Link](how-to/authentication/)"},
+		{"Up one [Ref](../other.md)", "Up one [Ref](../other/)"}, // No extra ../ for index pages
+		{"Two up [Ref](../../another.md)", "Two up [Ref](../../another/)"},
+	}
+	for i, c := range cases {
+		got := RewriteRelativeMarkdownLinks(c.in, "", "", true) // true = index page
+		if got != c.want {
+			t.Errorf("index page case %d: got %q want %q", i, got, c.want)
 		}
 	}
 }

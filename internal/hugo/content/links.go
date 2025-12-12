@@ -14,8 +14,9 @@ import (
 //   - Supports ./ and ../ prefixes transparently (kept as-is except extension removal)
 //   - If repositoryName is provided, links starting with / are treated as repository-root-relative
 //     and are prefixed with /{forge}/{repository}/ or /{repository}/ depending on forge presence
+//   - isIndexPage: if true, the file is a _index.md at the section root, so relative links don't need extra ../
 //   - Leaves README.md alone if removal would produce empty target (defensive)
-func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeName string) string {
+func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeName string, isIndexPage bool) string {
 	linkRe := regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?P<link>[^)]+)\)`)
 	return linkRe.ReplaceAllStringFunc(content, func(m string) string {
 		matches := linkRe.FindStringSubmatch(m)
@@ -86,8 +87,9 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 				trimmed = trimmed + "/"
 			}
 			// Adjust relative parent paths for Hugo's deeper URL structure
-			// ../foo → ../../foo (add one more level up)
-			if strings.HasPrefix(trimmed, "../") {
+			// Regular pages: ../foo → ../../foo (add one more level up)
+			// Index pages (_index.md): ../foo stays as ../foo (already at section root)
+			if !isIndexPage && strings.HasPrefix(trimmed, "../") {
 				trimmed = "../" + trimmed
 			}
 			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
