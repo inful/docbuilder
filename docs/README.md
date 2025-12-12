@@ -31,6 +31,7 @@ Welcome to the DocBuilder documentation! This documentation follows the [Diátax
 
 - [CLI Reference](reference/cli.md) - Command-line interface documentation
 - [Configuration Reference](reference/configuration.md) - Complete config file specification
+- [Index File Handling](reference/index-files.md) - How index files are processed and precedence rules
 - [Build Report Reference](reference/report.md) - Build report format and fields
 
 **Best for:** Looking up specific information, API details
@@ -107,6 +108,7 @@ Welcome to the DocBuilder documentation! This documentation follows the [Diátax
 
 - [Add Content Transforms](how-to/add-content-transforms.md)
 - [Customize Index Pages](how-to/customize-index-pages.md)
+- [Index File Handling](reference/index-files.md)
 - [Theme Customization Tutorial](tutorials/theme-customization.md)
 - [Configuration Reference](reference/configuration.md)
 
