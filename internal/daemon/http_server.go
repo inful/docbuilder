@@ -417,6 +417,9 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	// First, try the public directory (fully rendered site)
 	public := filepath.Join(out, "public")
 	if st, err := os.Stat(public); err == nil && st.IsDir() {
+		slog.Debug("Serving from primary public directory",
+			slog.String("path", public),
+			slog.Time("modified", st.ModTime()))
 		return public
 	}
 
@@ -426,9 +429,17 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	prevPublic := filepath.Join(prev, "public")
 	if st, err := os.Stat(prevPublic); err == nil && st.IsDir() {
 		// Serve from previous backup to avoid empty responses during atomic rename
+		slog.Warn("Serving from backup directory - primary public missing",
+			slog.String("backup_path", prevPublic),
+			slog.String("expected_path", public),
+			slog.Time("backup_modified", st.ModTime()))
 		return prevPublic
 	}
 
+	slog.Warn("No public directory found, serving from output root",
+		slog.String("path", out),
+		slog.String("expected_public", public),
+		slog.String("expected_backup", prevPublic))
 	return out
 }
 

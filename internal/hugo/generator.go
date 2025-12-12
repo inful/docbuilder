@@ -253,6 +253,31 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	if err := g.finalizeStaging(); err != nil {
 		return nil, fmt.Errorf("finalize staging: %w", err)
 	}
+
+	// Verify public directory exists and log details
+	publicDir := filepath.Join(g.outputDir, "public")
+	if stat, err := os.Stat(publicDir); err == nil && stat.IsDir() {
+		// Count files in public directory
+		var fileCount int
+		_ = filepath.Walk(publicDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		slog.Info("Public directory verified after finalization",
+			slog.String("path", publicDir),
+			slog.Int("files", fileCount),
+			slog.Time("modified", stat.ModTime()),
+			slog.Bool("static_rendered", report.StaticRendered))
+	} else {
+		slog.Warn("Public directory not found after finalization",
+			slog.String("expected_path", publicDir),
+			slog.String("output_dir", g.outputDir),
+			slog.Bool("static_rendered", report.StaticRendered),
+			slog.String("error", fmt.Sprintf("%v", err)))
+	}
+
 	if _, ok := report.StageDurations[string(StageCloneRepos)]; ok {
 		report.CloneStageSkipped = false
 	}
@@ -265,7 +290,12 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
 		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
 	}
-	slog.Info("Hugo site generation completed", slog.String("output", g.outputDir), slog.Int("repos", report.Repositories), slog.Int("files", report.Files), slog.Int("errors", len(report.Errors)))
+	slog.Info("Hugo site generation completed",
+		slog.String("output", g.outputDir),
+		slog.Int("repos", report.Repositories),
+		slog.Int("files", report.Files),
+		slog.Int("errors", len(report.Errors)),
+		slog.String("outcome", string(report.Outcome)))
 	return report, nil
 }
 

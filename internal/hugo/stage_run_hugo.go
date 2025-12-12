@@ -32,11 +32,19 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 	if renderer == nil {
 		renderer = &BinaryRenderer{}
 	}
+	slog.Info("Executing Hugo renderer",
+		slog.String("root", root),
+		slog.String("renderer_type", fmt.Sprintf("%T", renderer)))
 	if err := renderer.Execute(root); err != nil {
-		slog.Warn("Renderer execution failed", "error", err)
+		slog.Error("Renderer execution failed",
+			slog.String("error", err.Error()),
+			slog.String("root", root))
 		// Return error regardless of mode - let caller decide how to handle
 		return newFatalStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
+	slog.Info("Hugo renderer completed successfully",
+		slog.String("root", root),
+		slog.Bool("static_rendered", true))
 	return nil
 }
