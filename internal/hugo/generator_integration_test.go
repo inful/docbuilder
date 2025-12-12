@@ -184,10 +184,10 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 		}
 
 		// Validate a sample file has proper front matter
-		// Note: GetHugoPath lowercases filenames for URL compatibility
-		readmePath := filepath.Join(repoDir, "readme.md")
-		if content, err := os.ReadFile(readmePath); err != nil {
-			t.Fatalf("Failed to read README for %s: %v", repo.Name, err)
+		// When README.md is the only index file, it becomes _index.md
+		indexPath := filepath.Join(repoDir, "_index.md")
+		if content, err := os.ReadFile(indexPath); err != nil {
+			t.Fatalf("Failed to read index for %s: %v", repo.Name, err)
 		} else {
 			contentStr := string(content)
 			if !strings.Contains(contentStr, "repository: "+repo.Name) {

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -83,7 +84,10 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 				},
 				BackingAddPatch: func(pt fmcore.FrontMatterPatch) { p.Patches = append(p.Patches, pt) },
 				ApplyPatches:    func() { p.applyPatches() },
-				RewriteLinks:    func(s string) string { return RewriteRelativeMarkdownLinks(s, file.Repository, file.Forge) },
+				RewriteLinks: func(s string) string {
+					isIndex := strings.ToLower(file.Name) == "index" || strings.ToLower(file.Name) == "readme"
+					return RewriteRelativeMarkdownLinks(s, file.Repository, file.Forge, isIndex)
+				},
 			}
 			shim.SerializeFn = func() error {
 				if p.MergedFrontMatter == nil {
