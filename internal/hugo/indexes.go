@@ -86,21 +86,45 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
 
-		// Check if repository has a README.md at root level to use instead
+		// Check if repository has index.md or README.md at root level to use instead
+		// Precedence: index.md > README.md > auto-generate
+		//
+		// Case 1: Only README.md exists → README.md becomes repository _index.md
+		// Case 2: Neither exists → auto-generate repository _index.md
+		// Case 3: Only index.md exists → index.md becomes repository _index.md
+		// Case 4: Both exist → index.md becomes _index.md, README.md copied as regular doc
+		//
+		// See docs/reference/index-files.md for complete documentation
+		var userIndexFile *docs.DocFile
 		var readmeFile *docs.DocFile
+		
 		for i := range files {
-			if files[i].Section == "" && strings.EqualFold(files[i].Name, "README") && files[i].Extension == ".md" {
-				readmeFile = &files[i]
-				break
+			if files[i].Section == "" && files[i].Extension == ".md" {
+				if strings.EqualFold(files[i].Name, "index") {
+					userIndexFile = &files[i]
+				} else if strings.EqualFold(files[i].Name, "README") {
+					readmeFile = &files[i]
+				}
 			}
 		}
 
-		if readmeFile != nil {
+		// Use index.md if present, otherwise fall back to README.md
+		if userIndexFile != nil {
+			if err := g.useReadmeAsIndex(userIndexFile, indexPath, repoName); err != nil {
+				return err
+			}
+			slog.Debug("Using user-provided index.md as repository index", 
+				logfields.Repository(repoName), 
+				logfields.Path(indexPath))
+			continue
+		} else if readmeFile != nil {
 			// Use README.md as the repository index
 			if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
 				return err
 			}
-			slog.Debug("Using README.md as repository index", logfields.Repository(repoName), logfields.Path(indexPath))
+			slog.Debug("Using README.md as repository index", 
+				logfields.Repository(repoName), 
+				logfields.Path(indexPath))
 			continue
 		}
 
