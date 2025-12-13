@@ -69,7 +69,7 @@ func setupTestRepo(t *testing.T, repoPath string) string {
 	// go-git creates a branch based on Git's default, so we rename if needed
 	headRef, err := repo.Head()
 	require.NoError(t, err, "failed to get HEAD")
-	
+
 	if headRef.Name().Short() != "main" {
 		// Create 'main' branch pointing to current HEAD
 		mainRef := headRef.Name()
@@ -78,10 +78,10 @@ func setupTestRepo(t *testing.T, repoPath string) string {
 			Create: true,
 		})
 		require.NoError(t, err, "failed to create main branch")
-		
+
 		// Delete the old default branch if it's not main
 		if mainRef.Short() != "main" {
-			err = repo.Storer.RemoveReference(mainRef)
+			_ = repo.Storer.RemoveReference(mainRef)
 			// Ignore error if reference doesn't exist
 		}
 	}
@@ -124,13 +124,13 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
 	_, err = io.Copy(dstFile, srcFile)
 	return err
@@ -397,7 +397,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 
 		// Write to /tmp for debugging
 		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
-		os.WriteFile(debugPath, body, 0644)
+		_ = os.WriteFile(debugPath, body, 0644)
 		t.Logf("Wrote body to: %s", debugPath)
 	}
 }
@@ -406,7 +406,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 func buildStructureTree(rootDir string) map[string]interface{} {
 	tree := make(map[string]interface{})
 
-	filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || path == rootDir {
 			return err
 		}
@@ -486,7 +486,7 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 			// Read HTML file
 			htmlFile, err := os.Open(htmlPath)
 			require.NoError(t, err, "failed to open HTML file: %s", sample.File)
-			defer htmlFile.Close()
+			defer func() { _ = htmlFile.Close() }()
 
 			// Parse HTML
 			doc, err := html.Parse(htmlFile)

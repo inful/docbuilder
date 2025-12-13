@@ -119,6 +119,33 @@ make build
 
 ## Code Conventions
 
+**See [docs/STYLE_GUIDE.md](../docs/STYLE_GUIDE.md) for complete naming conventions and style rules.**
+
+### Quick Reference
+
+**Variable Naming:**
+- Use consistent abbreviations: `repo` (not `repository`), `cfg` (not `config`/`configuration`), `auth` (not `authentication`), `dir` (not `directory`)
+- Scope-based naming: single letters for very short scopes (< 10 lines), abbreviated for function parameters, descriptive for struct fields
+- Boolean variables: prefix with `is`, `has`, `should`, `can`, `enable`
+- Examples: `authCfg *config.AuthConfig`, `repoURL string`, `buildCfg *BuildConfig`
+
+**Function Naming:**
+- Public functions: descriptive, full words (e.g., `CloneRepo`, `UpdateRepo`, `ComputeRepoHash`)
+- Private functions: can use abbreviations (e.g., `getAuth`, `fetchOrigin`)
+- No `Get`/`Set` prefixes for simple accessors; use `Get` when fetching requires computation/I/O
+- Predicate functions read like questions: `IsAncestor()`, `HasAuth()`, `ShouldRetry()`
+
+**Type Naming:**
+- Use full words without abbreviations: `RemoteHeadCache`, `BuildConfig`, `AuthProvider`
+- Error types suffix with `Error`: `AuthError`, `NotFoundError`, `NetworkTimeoutError`
+- Interface types prefer `-er` suffix: `Cloner`, `Generator`
+
+**Error Handling:**
+- Package-level errors prefix with `Err`: `ErrNotFound`, `ErrUnauthorized`
+- Error messages start with lowercase, be specific, include context with `%w`
+- Example: `fmt.Errorf("failed to clone repository %s: %w", repo.URL, err)`
+
+**Other Conventions:**
 - Use structured logging with `slog` package throughout
 - File paths must be absolute when passed between packages
 - Hugo paths use forward slashes even on Windows (`filepath.ToSlash()`)
