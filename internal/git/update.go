@@ -54,7 +54,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 				logfields.Name(repo.Name),
 				slog.String("branch", branch))
 		}
-		
+
 		if err := c.fetchOrigin(repository, repo); err != nil {
 			return "", classifyFetchError(repo.URL, err)
 		}
