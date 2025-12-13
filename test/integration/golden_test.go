@@ -16,7 +16,7 @@ import (
 
 var (
 	updateGolden = flag.Bool("update-golden", false, "Update golden files")
-	skipRender   = flag.Bool("skip-render", false, "Skip Hugo rendering (faster)")
+	_ = flag.Bool("skip-render", false, "Skip Hugo rendering (faster)") // Reserved for future use
 )
 
 // TestGolden_HextraBasic tests the complete build pipeline with a basic Hextra theme repository.
@@ -1072,11 +1072,11 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	require.NoError(t, cmd.Run())
 
 	// Configure git
-	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
+	_ = exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	_ = exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
 
 	// Add files but don't commit (this creates an edge case)
-	exec.Command("git", "-C", tmpDir, "add", ".").Run()
+	_ = exec.Command("git", "-C", tmpDir, "add", ".").Run()
 
 	// Load configuration
 	cfg := loadGoldenConfig(t, "../../test/testdata/configs/hextra-basic.yaml")
