@@ -34,7 +34,9 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 	if len(transformList) == 0 {
 		return fmt.Errorf("%w: no transforms available", herrors.ErrContentTransformFailed)
 	}
-	for _, file := range docFiles {
+	// Use index-based iteration to enable mutating DocFile.TransformedBytes
+	for i := range docFiles {
+		file := &docFiles[i]
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -43,7 +45,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 
 		// Handle assets differently - just copy them without processing
 		if file.IsAsset {
-			if err := g.copyAssetFile(file); err != nil {
+			if err := g.copyAssetFile(*file); err != nil {
 				return fmt.Errorf("failed to copy asset %s: %w", file.Path, err)
 			}
 			continue
@@ -53,7 +55,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("failed to load content for %s: %w", file.Path, err)
 		}
-		p := &Page{File: file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
+		p := &Page{File: *file, Raw: file.Content, Content: string(file.Content), OriginalFrontMatter: nil, Patches: nil}
 		{
 			// Prepare transform filtering
 			var enableSet, disableSet map[string]struct{}
@@ -74,7 +76,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 			// Build adapter shim (two-phase to allow Serialize closure to reference shim)
 			shim := &tr.PageShim{
 				FilePath:            file.RelativePath,
-				Doc:                 file,
+				Doc:                 *file,
 				Content:             p.Content,
 				OriginalFrontMatter: p.OriginalFrontMatter,
 				HadFrontMatter:      p.HadFrontMatter,
@@ -143,6 +145,13 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 		}
 		// record hash of raw for potential future integrity verification (not persisted yet)
 		_ = sha256.Sum256(p.Raw)
+
+		// Capture transformed content for use by index generation stage
+		file.TransformedBytes = p.Raw
+		slog.Debug("Captured transformed content",
+			slog.String("file", file.RelativePath),
+			slog.Int("bytes", len(p.Raw)))
+
 		outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
 			return fmt.Errorf("%w: failed to create directory for %s: %w", herrors.ErrContentWriteFailed, outputPath, err)

@@ -1,264 +1,334 @@
-# ADR-001: In-Memory Content Pipeline Architecture
+# ADR-002: Fix Index Stage Pipeline Bypass
 
 ## Status
 
-Proposed
+Accepted - Implemented 2025-12-13
 
 ## Context
 
-The current Hugo content generation pipeline has a design issue where content is processed through multiple stages that involve unnecessary disk I/O operations:
+### Current Architecture (Mostly Correct)
 
-1. **Discovery Stage**: Reads files from source repositories into memory (`DocFile.Content`)
+DocBuilder **already implements** an in-memory content pipeline with proper separation of concerns:
+
+1. **Discovery Stage** (`stageDiscoverDocs`): Reads files from source repositories into memory once
 2. **Transform Stage** (`copyContentFiles`): 
-   - Loads content into memory
-   - Runs transform pipeline (front matter parsing, link rewriting, etc.)
-   - **Writes transformed content to disk** in the Hugo staging directory
-3. **Index Stage** (`stageIndexes`):
-   - **Re-reads files from disk** (either source or staging directory)
-   - Manually processes front matter (bypassing the transform pipeline)
-   - Writes final index files
+   - Loads content into memory (`file.LoadContent()`)
+   - Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.)
+   - Processes content **entirely in memory** via `Page` struct
+   - Writes final transformed output to disk **once**
+3. **Index Stage** (`stageIndexes`): Generates repository/section index pages
+4. **Hugo Render** (`stageRunHugo`): Runs Hugo on the prepared content tree
 
-### Problems with Current Architecture
+**The transform pipeline is already in-memory and works correctly** with:
+- ✅ Single source read during discovery
+- ✅ In-memory transformation via `Page` struct
+- ✅ Dependency-based transform ordering
+- ✅ Single write after all transforms complete
+- ✅ Front matter patching and merging
+- ✅ Link rewriting through the pipeline
 
-1. **Duplicate Disk I/O**: Content is written to disk after transformation, then immediately re-read for index routing
-2. **Pipeline Bypass**: The index stage re-reads source files and manually manipulates content, bypassing transforms
-3. **Bug Potential**: The bypass caused the README link rewriting bug (fixed in commit fixing README.md → _index.md conversion)
-4. **Duplicate Logic**: Front matter handling exists in both the transform pipeline and index stage
-5. **Unclear Data Flow**: Content flows through pipeline → disk → re-read → process, making it hard to reason about
-6. **Testing Complexity**: Must verify both pipeline transforms AND index stage manual processing
+### The Actual Problem: Index Stage Bypass
 
-### Specific Example of the Problem
+**One specific issue** exists in `/internal/hugo/indexes.go` where README.md files are promoted to `_index.md`:
 
-When README.md becomes a section index (_index.md):
+The `useReadmeAsIndex` function:
+1. **Re-reads the source README.md file from disk** (bypassing transformed content)
+2. **Manually parses and manipulates front matter** (duplicating transform logic)
+3. **Overwrites the already-transformed file** at the index location
 
 ```go
-// Transform stage: README.md processed through pipeline
-file.LoadContent()                    // Disk read #1
-runTransformPipeline(file)           // Links rewritten, front matter added
-writeFile(hugPath, transformed)      // Disk write #1
-
-// Index stage: Re-processes the same content
-rawContent := readFile(source)       // Disk read #2 (bypasses pipeline!)
-// Manually manipulate front matter (duplicate logic)
-writeFile(indexPath, reprocessed)    // Disk write #2 (overwrites transformed content!)
+// indexes.go (current problematic code)
+func (g *Generator) useReadmeAsIndex(...) {
+    // ❌ Bypasses pipeline: re-reads source instead of using transformed content
+    readmeContent, _ := os.ReadFile(readmeSourcePath)
+    
+    // ❌ Duplicates logic: manually parses front matter
+    fm := parseFrontMatter(readmeContent)
+    
+    // ❌ Loses transforms: overwrites pipeline output with source content
+    os.WriteFile(indexPath, readmeContent, 0644)
+}
 ```
 
-This caused transformed links to be lost when the index stage overwrote the pipeline output.
+**Impact**: When README.md is promoted to `_index.md`, transformations applied by the pipeline (especially link rewrites) are lost because the index stage writes the original untransformed content.
+
+### Why This Happened
+
+The index stage was written before the transform pipeline was fully established. It predates the current dependency-based transform system and operates on the assumption that it needs to read source files directly.
 
 ## Decision
 
-Refactor the content pipeline to maintain transformed content **in memory** until final write, eliminating intermediate disk operations and pipeline bypasses.
+**Fix the index stage to use already-transformed content** instead of re-reading source files. This is a targeted fix that eliminates the pipeline bypass without requiring a full architectural refactor.
 
-### New Architecture
+### Core Insight
+
+The existing architecture is **already correct** - we don't need to refactor the pipeline. We only need to:
+1. Capture transformed content after the pipeline runs
+2. Make it available to the index stage
+3. Stop re-reading source files in index generation
+
+### Minimal Changes Required
+
+**Change 1: Add field to track transformed content**
+
+```go
+// internal/docs/discovery.go
+type DocFile struct {
+    // ... existing fields ...
+    Content          []byte  // Original source (already exists)
+    TransformedBytes []byte  // NEW: After transform pipeline
+    // ... existing fields ...
+}
+```
+
+**Change 2: Capture transformed content in copyContentFiles**
+
+```go
+// internal/hugo/content_copy.go
+func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
+    for i := range docFiles {
+        // ... existing transform pipeline code ...
+        
+        // NEW: Store transformed bytes for later use
+        docFiles[i].TransformedBytes = p.Raw
+        
+        // Existing: Write to disk
+        os.WriteFile(outputPath, p.Raw, 0644)
+    }
+}
+```
+
+**Change 3: Fix index generation to use transformed content**
+
+```go
+// internal/hugo/indexes.go
+func (g *Generator) useReadmeAsIndex(file docs.DocFile, ...) error {
+    // BEFORE: rawContent, _ := os.ReadFile(readmeSourcePath)
+    // AFTER: Use already-transformed content
+    if len(file.TransformedBytes) == 0 {
+        return fmt.Errorf("README not yet transformed: %s", file.Path)
+    }
+    
+    // No need to re-parse or manipulate - just copy transformed content
+    indexPath := filepath.Join(g.buildRoot(), "content", ...)
+    return os.WriteFile(indexPath, file.TransformedBytes, 0644)
+}
+```
+
+### Architecture After Fix
 
 ```
 ┌──────────────┐
 │  Discovery   │ Load source files once
+│              │ DocFile.Content populated
 └──────┬───────┘
-       │ (SourceContent in memory)
        │
 ┌──────▼───────┐
-│  Transform   │ Process through pipeline
-│  Pipeline    │ (front matter, links, etc.)
+│  Transform   │ Process through pipeline (in-memory)
+│  Pipeline    │ DocFile.TransformedBytes populated ← NEW
 └──────┬───────┘
-       │ (TransformedContent in memory)
        │
 ┌──────▼───────┐
-│   Routing    │ Decide output paths
-│   Stage      │ (index promotion, etc.)
+│Content Write │ Write transformed content to disk
+│              │ (copyContentFiles)
 └──────┬───────┘
-       │ (OutputPath determined)
        │
 ┌──────▼───────┐
-│   Write      │ Single write to staging
-│   Stage      │ (from TransformedContent)
+│Index Stage   │ Use DocFile.TransformedBytes ← FIXED
+│              │ (no re-reading source)
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│ Hugo Render  │ Build final static site
 └──────────────┘
 ```
 
-### Data Model Changes
-
-Enhance `DocFile` to carry both source and transformed content:
-
-```go
-type DocFile struct {
-    // Existing fields
-    Path         string
-    RelativePath string
-    Repository   string
-    Section      string
-    Name         string
-    Extension    string
-    
-    // Content evolution
-    SourceContent      []byte   // Original from disk (immutable)
-    TransformedContent []byte   // After pipeline (mutable through pipeline)
-    
-    // Computed/cached fields
-    HugoPath           string   // Cached from GetHugoPath()
-    OutputPath         string   // Final output path (after routing)
-    IsIndexCandidate   bool     // Flagged during discovery
-    
-    // Existing fields
-    Metadata    map[string]string
-    IsAsset     bool
-}
-```
-
-### Pipeline Stages
-
-**Stage 1: Discovery & Load** (already exists, minimal change)
-```go
-func (d *Discovery) DiscoverDocs(...) ([]DocFile, error) {
-    // ... existing discovery ...
-    file.SourceContent = readFile(path)  // Single read
-    file.IsIndexCandidate = (file.Name == "index" || file.Name == "README")
-    return files
-}
-```
-
-**Stage 2: Transform** (refactored to not write)
-```go
-func (g *Generator) transformContent(files []DocFile) error {
-    for i := range files {
-        if files[i].IsAsset {
-            files[i].TransformedContent = files[i].SourceContent
-            continue
-        }
-        
-        // Run transform pipeline (existing logic)
-        transformed := g.runPipeline(&files[i])
-        files[i].TransformedContent = transformed  // Store in memory
-        // NO DISK WRITE HERE
-    }
-    return nil
-}
-```
-
-**Stage 3: Routing** (new, replaces index stage logic)
-```go
-func (g *Generator) routeContent(files []DocFile) error {
-    for i := range files {
-        // Default output path
-        files[i].OutputPath = files[i].GetHugoPath()
-        
-        // Index routing logic (uses in-memory transformed content)
-        if files[i].IsIndexCandidate && shouldBeIndex(&files[i], files) {
-            files[i].OutputPath = getIndexPath(&files[i])
-        }
-    }
-    return nil
-}
-```
-
-**Stage 4: Write** (new, single write pass)
-```go
-func (g *Generator) writeContent(files []DocFile) error {
-    for _, file := range files {
-        outputPath := filepath.Join(g.buildRoot(), file.OutputPath)
-        os.MkdirAll(filepath.Dir(outputPath), 0750)
-        os.WriteFile(outputPath, file.TransformedContent, 0644)
-    }
-    return nil
-}
-```
-
-### Pipeline Execution Order
-
-```go
-func (g *Generator) GenerateSite(files []DocFile) error {
-    // ... config, layout stages ...
-    
-    if err := g.transformContent(files); err != nil {
-        return err
-    }
-    
-    if err := g.routeContent(files); err != nil {
-        return err
-    }
-    
-    if err := g.writeContent(files); err != nil {
-        return err
-    }
-    
-    // ... Hugo render stage ...
-}
-```
+**Key principle**: Transform pipeline remains authoritative. Index stage becomes a pure consumer of transformed content.
 
 ## Consequences
 
 ### Positive
 
-1. **Single Disk Read**: Each source file read exactly once during discovery
-2. **Single Disk Write**: Each output file written exactly once after all processing
-3. **No Pipeline Bypass**: All content flows through the transform pipeline, no exceptions
-4. **Clearer Data Flow**: Linear flow from source → transform → route → write
-5. **Better Testability**: Can inspect `TransformedContent` at any stage
-6. **Elimination of Duplicate Logic**: Front matter handling only in transform pipeline
-7. **Memory-Efficient**: Content already loaded for transforms, no additional memory cost
-8. **Bug Prevention**: Impossible to overwrite transformed content by re-reading source
+1. **Pipeline Integrity**: All content flows through transform pipeline with no bypasses
+2. **Bug Fix**: README.md → _index.md conversion preserves link rewrites and other transforms
+3. **Eliminates Duplicate Logic**: Front matter parsing happens only in transform pipeline
+4. **Minimal Changes**: ~15 lines of code vs. full refactor
+5. **Low Risk**: Doesn't change core architecture, just fixes data flow
+6. **Better Testability**: Can verify transformed content is used consistently
+7. **Future-Proof**: Makes it easier to add new transforms knowing they'll apply everywhere
 
 ### Negative
 
-1. **Memory Usage**: Must hold both source and transformed content in memory
-   - Mitigation: Most doc sites have <1000 files, <10MB total
-   - Already loading content for transforms anyway
-2. **Refactoring Effort**: Requires changes to multiple stages
-   - Affected files: `content_copy.go`, `indexes.go`, stage pipeline
-   - Existing tests need updates
-3. **Breaking Changes**: Internal API changes to stage interfaces
-   - Mitigation: Internal implementation only, no user-facing changes
+1. **Minimal Memory Overhead**: Adds `TransformedBytes` field to `DocFile`
+   - Mitigation: Negligible impact (content already in memory during transform)
+   - Only populated for markdown files, not assets
+2. **Pass-by-value consideration**: `docFiles` slice must be passed by reference or returned
+   - Current code already uses `[]docs.DocFile` slice which shares backing array
+   - May need to ensure mutations are visible across function boundaries
 
-### Risk Mitigation
+### Trade-offs Avoided
 
-1. **Gradual Migration**: Implement new stages alongside old, feature-flag the switch
-2. **Comprehensive Testing**: Validate with existing test suite before removing old code
-3. **Memory Monitoring**: Add metrics to track memory usage in large doc sets
-4. **Rollback Plan**: Keep old code path available via feature flag initially
+By **not** doing a full refactor, we avoid:
+- ❌ Rewriting working transform pipeline
+- ❌ Changing stage interfaces
+- ❌ Updating all transform implementations
+- ❌ Extensive test updates
+- ❌ Risk of introducing new bugs in working code
 
 ## Implementation Plan
 
-### Phase 1: Data Model (Week 1)
-- [ ] Add `TransformedContent` and `OutputPath` fields to `DocFile`
-- [ ] Add `IsIndexCandidate` flag computed during discovery
-- [ ] Ensure backward compatibility (empty fields for now)
+### Phase 1: Foundation (Day 1-2)
 
-### Phase 2: Transform Stage (Week 2)
-- [ ] Refactor `copyContentFiles` to store transformed content in memory
-- [ ] Add feature flag `DOCBUILDER_IN_MEMORY_PIPELINE=true`
-- [ ] Write to disk only if flag disabled (old behavior)
-- [ ] Update tests to verify in-memory content
+**Files Modified**: 1 file, 2 lines
+- [ ] Add `TransformedBytes []byte` field to `DocFile` struct in `internal/docs/discovery.go`
+- [ ] Add godoc comment explaining field purpose
+- [ ] Run tests to ensure no breakage from schema change
 
-### Phase 3: Routing Stage (Week 3)
-- [ ] Create new `routeContent` stage
-- [ ] Migrate index routing logic from `stageIndexes`
-- [ ] Use `TransformedContent` instead of re-reading
-- [ ] Update tests for routing logic
-
-### Phase 4: Write Stage (Week 4)
-- [ ] Create new `writeContent` stage
-- [ ] Write from `TransformedContent` to `OutputPath`
-- [ ] Validate output matches old behavior
-- [ ] Performance testing
-
-### Phase 5: Cleanup (Week 5)
-- [ ] Remove old `useReadmeAsIndex` and manual processing code
-- [ ] Remove feature flag, make new pipeline default
-- [ ] Update documentation
-- [ ] Archive this ADR as Accepted
-
-## References
-
-- [Current content_copy.go implementation](../../internal/hugo/content_copy.go)
-- [Current indexes.go implementation](../../internal/hugo/indexes.go)
-- [Transform pipeline design](../../CONTENT_TRANSFORMS.md)
-- Related bug fix: README.md link rewriting bypass issue
-
-## Notes
-
-This ADR was created after discovering that the index stage was bypassing the transform pipeline, causing transformed content (specifically link rewrites) to be lost when README.md files were promoted to _index.md. The proposed architecture eliminates the bypass entirely by making pipeline processing mandatory for all content.
+**Acceptance**: Field compiles, tests pass
 
 ---
 
-**Created**: 2025-12-12  
+### Phase 2: Capture Transformed Content (Day 2-3)
+
+**Files Modified**: 1 file, ~3 lines
+- [ ] In `internal/hugo/content_copy.go`, after transform pipeline completes:
+  ```go
+  // After: shim.SerializeFn()
+  docFiles[i].TransformedBytes = p.Raw
+  ```
+- [ ] Ensure this happens inside the loop that processes each file
+- [ ] Add debug logging to verify field is populated
+
+**Acceptance**: `TransformedBytes` populated for markdown files after pipeline
+
+**Testing**:
+- [ ] Add test to verify `TransformedBytes` matches `p.Raw`
+- [ ] Verify assets skip this (only markdown files)
+
+---
+
+### Phase 3: Fix Index Generation (Day 3-5)
+
+**Files Modified**: 1 file, ~10-15 lines
+
+**3a. Modify `useReadmeAsIndex` function**:
+- [ ] Replace `os.ReadFile(readmeSourcePath)` with `file.TransformedBytes`
+- [ ] Remove manual front matter parsing (already in transformed content)
+- [ ] Add validation that `TransformedBytes` is populated
+- [ ] Simplify logic - just copy transformed bytes to index location
+
+**3b. Update calling code**:
+- [ ] Ensure `useReadmeAsIndex` receives `DocFile` with `TransformedBytes`
+- [ ] Pass full `DocFile` instead of just paths where needed
+
+**Acceptance**: README.md promoted to _index.md preserves transforms
+
+**Testing**:
+- [ ] Test README.md with relative links becomes _index.md with rewritten links
+- [ ] Test README.md with added front matter from pipeline is preserved
+- [ ] Test multiple repositories with README files
+
+---
+
+### Phase 4: Integration Testing (Day 5-7)
+
+**Files Modified**: Test files only
+
+- [ ] Run existing `TestPipelineReadmeLinks` - should now pass
+- [ ] Add test for front matter preservation in README → _index.md
+- [ ] Test with multiple themes (Hextra, Docsy)
+- [ ] Test edge cases:
+  - README without front matter
+  - README in subdirectories
+  - Repositories without README files
+- [ ] Run full integration test suite
+
+**Acceptance**: All existing tests pass, README transforms preserved
+
+---
+
+### Phase 5: Documentation & Cleanup (Day 7-8)
+
+- [ ] Update `CONTENT_TRANSFORMS.md` to document that transforms apply to all files including index promotions
+- [ ] Add comments in `indexes.go` explaining why we use `TransformedBytes`
+- [ ] Update this ADR status to "Accepted"
+- [ ] Add CHANGELOG entry for bug fix
+
+**Optional Cleanup** (can be separate PR):
+- [ ] Remove now-unused manual front matter parsing in index stage
+- [ ] Consolidate duplicate path resolution logic
+- [ ] Add metrics for transform pipeline coverage
+
+---
+
+### Timeline Summary
+
+- **Total Effort**: 1-2 weeks (with testing)
+- **Code Changes**: ~20 lines across 2 files
+- **Test Changes**: ~50-100 lines for comprehensive coverage
+- **Risk Level**: Low (targeted fix, no architectural changes)
+
+---
+
+### Rollback Plan
+
+If issues discovered:
+1. **Immediate**: Revert `useReadmeAsIndex` to read from disk (restore 1 function)
+2. **Short-term**: Add feature flag to toggle between old/new behavior
+3. **Long-term**: Keep `TransformedBytes` field for future use, fix bugs incrementally
+
+---
+
+### Success Criteria
+
+1. ✅ README.md files promoted to _index.md preserve all transforms
+2. ✅ Links in README → _index.md are correctly rewritten
+3. ✅ Front matter patches from pipeline are present in index files
+4. ✅ No regression in existing functionality
+5. ✅ All tests pass
+6. ✅ No performance degradation
+
+## References
+
+- [Transform pipeline implementation](../../internal/hugo/content_copy.go)
+- [Index generation](../../internal/hugo/indexes.go)
+- [DocFile struct](../../internal/docs/discovery.go)
+- [Transform pipeline design](../../CONTENT_TRANSFORMS.md)
+- [Page struct with in-memory processing](../../internal/hugo/transform.go)
+- [BuildState architecture](../../internal/hugo/build_state.go)
+
+## Related Issues
+
+- README.md link rewriting bypass when promoted to _index.md
+- Front matter patches not applied to index files
+- Duplicate front matter parsing logic in index stage
+
+## Notes
+
+### Discovery Process
+
+This ADR was created after investigating why README.md files lost transform pipeline changes when promoted to `_index.md`. Initial analysis suggested the entire pipeline needed refactoring, but deeper investigation revealed:
+
+1. **The transform pipeline already works correctly** - it processes content in-memory with proper dependency ordering
+2. **The bug is isolated** - only the index generation stage bypasses the pipeline
+3. **The fix is minimal** - capture and reuse transformed content instead of re-reading sources
+
+### Key Learnings
+
+- **Don't assume the architecture is broken** - investigate thoroughly before proposing large refactors
+- **The codebase already implements best practices** - in-memory processing, dependency resolution, staged execution
+- **Targeted fixes are often better** - 20 lines beats rewriting thousands
+
+### Future Enhancements
+
+This fix enables:
+- Confidence that all transforms apply universally
+- Easier debugging (single authoritative transformed content)
+- Future optimization: avoid duplicate writes for README/index cases
+
+---
+
+**Created**: 2025-12-13  
+**Updated**: 2025-12-13 (revised after codebase analysis)  
 **Author**: Development Team  
-**Decision**: Pending Implementation
+**Decision**: Proposed → Implementation Ready
