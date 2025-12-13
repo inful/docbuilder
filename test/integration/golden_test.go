@@ -165,3 +165,103 @@ func TestGolden_FrontmatterInjection(t *testing.T) {
 	// Verify content structure and front matter
 	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
 }
+
+// TestGolden_TwoRepos tests basic multi-repository aggregation.
+// This test verifies:
+// - Multiple repositories cloned successfully
+// - Content from different repos organized under separate sections
+// - No conflicts between repositories
+// - Index pages generated for each repository
+func TestGolden_TwoRepos(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repositories from testdata
+	repo1Path := setupTestRepo(t, "../../test/testdata/repos/multi-repo/two-repos/repo1")
+	repo2Path := setupTestRepo(t, "../../test/testdata/repos/multi-repo/two-repos/repo2")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/two-repos.yaml")
+
+	// Point configuration to temporary repositories
+	require.Len(t, cfg.Repositories, 2, "expected exactly two repositories in config")
+	cfg.Repositories[0].URL = repo1Path
+	cfg.Repositories[1].URL = repo2Path
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/two-repos"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_DocsyBasic tests basic Docsy theme features.
+// This test verifies:
+// - Docsy theme configuration and parameters
+// - linkTitle support in front matter
+// - GitHub repo integration
+// - Standard Docsy UI parameters
+func TestGolden_DocsyBasic(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/themes/docsy-basic")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/docsy-basic.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/docsy-basic"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}

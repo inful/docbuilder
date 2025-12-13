@@ -1,0 +1,76 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing multi-repository aggregation",
+        "title": "Multi-Repo Documentation",
+        "type": "docs"
+      },
+      "contentHash": "sha256:0718973f0c534d46"
+    },
+    "content/repository-one/_index.md": {
+      "frontmatter": {
+        "repository": "repository-one",
+        "title": "Repository-one",
+        "type": "docs"
+      },
+      "contentHash": "sha256:64be6a9a964d736d"
+    },
+    "content/repository-one/api.md": {
+      "frontmatter": {
+        "repository": "repository-one",
+        "title": "API Reference",
+        "weight": 2
+      },
+      "contentHash": "sha256:d528cf5721094f6d"
+    },
+    "content/repository-one/guide.md": {
+      "frontmatter": {
+        "repository": "repository-one",
+        "title": "Getting Started Guide",
+        "weight": 1
+      },
+      "contentHash": "sha256:00ac02a783a9867d"
+    },
+    "content/repository-two/_index.md": {
+      "frontmatter": {
+        "repository": "repository-two",
+        "title": "Repository-two",
+        "type": "docs"
+      },
+      "contentHash": "sha256:6ebefe9eae5911de"
+    },
+    "content/repository-two/deployment.md": {
+      "frontmatter": {
+        "repository": "repository-two",
+        "title": "Deployment Guide",
+        "weight": 2
+      },
+      "contentHash": "sha256:64d3cc36ef297867"
+    },
+    "content/repository-two/tutorial.md": {
+      "frontmatter": {
+        "repository": "repository-two",
+        "title": "Advanced Tutorial",
+        "weight": 1
+      },
+      "contentHash": "sha256:ed05a3972a7e0d5f"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "repository-one": {
+      "_index.md": {},
+      "api.md": {},
+      "guide.md": {}
+    },
+    "repository-two": {
+      "_index.md": {},
+      "deployment.md": {},
+      "tutorial.md": {}
+    }
+  }
+}

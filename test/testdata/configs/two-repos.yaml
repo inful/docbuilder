@@ -1,0 +1,21 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/multi-repo/two-repos/repo1
+    name: repository-one
+    branch: main
+    paths: ["docs"]
+  - url: ../test/testdata/repos/multi-repo/two-repos/repo2
+    name: repository-two
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Multi-Repo Documentation"
+  description: "Testing multi-repository aggregation"
+  base_url: "http://localhost"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true
