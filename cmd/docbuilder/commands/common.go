@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
@@ -38,13 +39,39 @@ type CLI struct {
 // AfterApply runs after flag parsing; setup logging once.
 // nolint:unparam // AfterApply currently never returns an error.
 func (c *CLI) AfterApply() error {
-	level := slog.LevelInfo
-	if c.Verbose {
-		level = slog.LevelDebug
-	}
+	level := parseLogLevel(c.Verbose)
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
 	slog.SetDefault(logger)
 	return nil
+}
+
+// parseLogLevel determines the log level from DOCBUILDER_LOG_LEVEL env var or verbose flag.
+// Precedence: --verbose flag > DOCBUILDER_LOG_LEVEL > default (info)
+func parseLogLevel(verbose bool) slog.Level {
+	// Verbose flag takes precedence for backwards compatibility
+	if verbose {
+		return slog.LevelDebug
+	}
+
+	// Check DOCBUILDER_LOG_LEVEL environment variable
+	if envLevel := os.Getenv("DOCBUILDER_LOG_LEVEL"); envLevel != "" {
+		switch strings.ToLower(envLevel) {
+		case "debug":
+			return slog.LevelDebug
+		case "info":
+			return slog.LevelInfo
+		case "warn", "warning":
+			return slog.LevelWarn
+		case "error":
+			return slog.LevelError
+		default:
+			// Invalid value, log warning and use default
+			fmt.Fprintf(os.Stderr, "Warning: Invalid DOCBUILDER_LOG_LEVEL=%q, using 'info'. Valid values: debug, info, warn, error\n", envLevel)
+		}
+	}
+
+	// Default to info level
+	return slog.LevelInfo
 }
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.

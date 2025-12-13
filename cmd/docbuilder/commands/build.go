@@ -51,11 +51,8 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
 
-	// Set logging level
-	level := slog.LevelInfo
-	if verbose {
-		level = slog.LevelDebug
-	}
+	// Set logging level (parseLogLevel handles both verbose flag and DOCBUILDER_LOG_LEVEL)
+	level := parseLogLevel(verbose)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
 	slog.Info("Starting documentation build",
