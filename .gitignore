@@ -334,3 +334,4 @@ plan/
 # Local config files
 config.yaml
 internal/hugo/content/repo/page.md
+test/testdata/configs/ignored/
