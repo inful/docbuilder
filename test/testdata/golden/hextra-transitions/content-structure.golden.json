@@ -1,0 +1,45 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Test documentation site demonstrating View Transitions API integration",
+        "title": "View Transitions Demo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:59fa9b2b81a69691"
+    },
+    "content/transitions-demo/_index.md": {
+      "frontmatter": {
+        "repository": "transitions-demo",
+        "title": "Readme",
+        "type": "docs"
+      },
+      "contentHash": "sha256:46e1232ef6721d00"
+    },
+    "content/transitions-demo/configuration.md": {
+      "frontmatter": {
+        "repository": "transitions-demo",
+        "title": "Configuration"
+      },
+      "contentHash": "sha256:c858187383c811c4"
+    },
+    "content/transitions-demo/getting-started.md": {
+      "frontmatter": {
+        "repository": "transitions-demo",
+        "title": "Getting Started"
+      },
+      "contentHash": "sha256:934e388e6a0be17f"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "transitions-demo": {
+      "_index.md": {},
+      "configuration.md": {},
+      "getting-started.md": {}
+    }
+  }
+}

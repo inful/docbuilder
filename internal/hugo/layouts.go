@@ -8,13 +8,14 @@ import (
 // generateBasicLayouts creates basic Hugo layout templates
 func (g *Generator) generateBasicLayouts() error {
 	layouts := map[string]string{
-		"layouts/_default/baseof.html": baseofTemplate,
-		"layouts/_default/single.html": singleTemplate,
-		"layouts/_default/list.html":   listTemplate,
-		"layouts/partials/head.html":   headTemplate,
-		"layouts/partials/header.html": headerTemplate,
-		"layouts/partials/footer.html": footerTemplate,
-		"layouts/index.html":           indexTemplate,
+		"layouts/_default/baseof.html":      baseofTemplate,
+		"layouts/_default/single.html":      singleTemplate,
+		"layouts/_default/list.html":        listTemplate,
+		"layouts/partials/head.html":        headTemplate,
+		"layouts/partials/header.html":      headerTemplate,
+		"layouts/partials/footer.html":      footerTemplate,
+		"layouts/partials/transitions.html": transitionsPartial,
+		"layouts/index.html":                indexTemplate,
 	}
 
 	for path, content := range layouts {
@@ -107,6 +108,7 @@ const headTemplate = `<meta charset="utf-8">
 {{ else if .Site.Params.description }}
 <meta name="description" content="{{ .Site.Params.description }}">
 {{ end }}
+{{ partial "transitions.html" . }}
 <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -197,3 +199,15 @@ const indexTemplate = `{{ define "main" }}
   {{ end }}
 </section>
 {{ end }}`
+
+const transitionsPartial = `{{ if .Site.Params.enable_transitions -}}
+{{- $duration := .Site.Params.transition_duration | default "300ms" -}}
+<link rel="stylesheet" href="{{ "view-transitions.css" | relURL }}">
+<script src="{{ "view-transitions.js" | relURL }}" defer></script>
+<style>
+:root {
+  --view-transition-duration: {{ $duration }};
+}
+</style>
+{{- end }}
+`
