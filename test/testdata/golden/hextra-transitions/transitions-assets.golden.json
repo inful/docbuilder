@@ -1,0 +1,20 @@
+{
+  "css": {
+    "exists": true,
+    "size": 974,
+    "contentHash": "sha256:6cc974546be65d26",
+    "markers": [
+      "@view-transition",
+      "--view-transition-duration"
+    ]
+  },
+  "js": {
+    "exists": true,
+    "size": 3517,
+    "contentHash": "sha256:46984a3366a68576",
+    "markers": [
+      "startViewTransition",
+      "document.startViewTransition"
+    ]
+  }
+}

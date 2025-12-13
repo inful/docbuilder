@@ -62,6 +62,14 @@ func (g *Generator) generateHugoConfig() error {
 	// Phase 4: dynamic fields
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
+	// View Transitions API params
+	if g.config.Hugo.EnableTransitions {
+		params["enable_transitions"] = true
+		if g.config.Hugo.TransitionDuration != "" {
+			params["transition_duration"] = g.config.Hugo.TransitionDuration
+		}
+	}
+
 	// Phase 4.5: version metadata collection (for version switchers in themes)
 	if g.config.Versioning != nil && !g.config.Versioning.DefaultBranchOnly {
 		versionInfo := g.collectVersionMetadata()

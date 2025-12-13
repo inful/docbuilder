@@ -213,6 +213,96 @@ func normalizeFrontMatter(fm map[string]interface{}) {
 	}
 }
 
+// TransitionsAssets represents the View Transitions API assets for golden testing.
+type TransitionsAssets struct {
+	CSS TransitionsAsset `json:"css"`
+	JS  TransitionsAsset `json:"js"`
+}
+
+// TransitionsAsset represents a single asset file with verification data.
+type TransitionsAsset struct {
+	Exists      bool     `json:"exists"`
+	Size        int64    `json:"size"`
+	ContentHash string   `json:"contentHash"`
+	Markers     []string `json:"markers"`
+}
+
+// verifyTransitionsAssets verifies View Transitions API assets were generated correctly.
+func verifyTransitionsAssets(t *testing.T, outputDir, goldenPath string, updateGolden bool) {
+	t.Helper()
+
+	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
+	jsPath := filepath.Join(outputDir, "static", "view-transitions.js")
+
+	actual := TransitionsAssets{
+		CSS: verifyAssetFile(t, cssPath, []string{"@view-transition", "--view-transition-duration"}),
+		JS:  verifyAssetFile(t, jsPath, []string{"startViewTransition", "document.startViewTransition"}),
+	}
+
+	if updateGolden {
+		data, err := json.MarshalIndent(actual, "", "  ")
+		require.NoError(t, err, "failed to marshal transitions assets")
+
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		require.NoError(t, err, "failed to create golden directory")
+
+		err = os.WriteFile(goldenPath, data, 0644)
+		require.NoError(t, err, "failed to write golden file")
+
+		t.Logf("Updated golden file: %s", goldenPath)
+		return
+	}
+
+	goldenData, err := os.ReadFile(goldenPath)
+	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
+
+	var expected TransitionsAssets
+	err = json.Unmarshal(goldenData, &expected)
+	require.NoError(t, err, "failed to parse golden transitions assets")
+
+	actualJSON, _ := json.MarshalIndent(actual, "", "  ")
+	expectedJSON, _ := json.MarshalIndent(expected, "", "  ")
+
+	require.JSONEq(t, string(expectedJSON), string(actualJSON), "Transitions assets mismatch")
+}
+
+// verifyAssetFile checks if an asset file exists and verifies it contains expected markers.
+func verifyAssetFile(t *testing.T, path string, markers []string) TransitionsAsset {
+	t.Helper()
+
+	asset := TransitionsAsset{
+		Markers: []string{},
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			asset.Exists = false
+			return asset
+		}
+		t.Fatalf("failed to stat asset file %s: %v", path, err)
+	}
+
+	asset.Exists = true
+	asset.Size = info.Size()
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err, "failed to read asset file: %s", path)
+
+	hash := sha256.Sum256(content)
+	asset.ContentHash = fmt.Sprintf("sha256:%x", hash[:8])
+
+	// Check for expected markers in content
+	contentStr := string(content)
+	for _, marker := range markers {
+		if strings.Contains(contentStr, marker) {
+			asset.Markers = append(asset.Markers, marker)
+		}
+	}
+
+	return asset
+}
+
 // normalizeBodyContent removes or replaces dynamic content from markdown body.
 // This ensures golden tests are reproducible even when file paths change.
 func normalizeBodyContent(body []byte) []byte {
