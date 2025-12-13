@@ -1,0 +1,48 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "description": "Testing Docsy theme features",
+        "title": "Docsy Documentation",
+        "type": "docs"
+      },
+      "contentHash": "sha256:b57265d13c1306af"
+    },
+    "content/docsy-project/_index.md": {
+      "frontmatter": {
+        "repository": "docsy-project",
+        "title": "Docsy-project",
+        "type": "docs"
+      },
+      "contentHash": "sha256:129b2576aeaf6348"
+    },
+    "content/docsy-project/overview.md": {
+      "frontmatter": {
+        "description": "A comprehensive overview of the project",
+        "linkTitle": "Overview",
+        "repository": "docsy-project",
+        "title": "Overview",
+        "weight": 1
+      },
+      "contentHash": "sha256:500534199c8998db"
+    },
+    "content/docsy-project/tasks.md": {
+      "frontmatter": {
+        "description": "Common tasks and procedures",
+        "linkTitle": "Tasks",
+        "repository": "docsy-project",
+        "title": "Tasks",
+        "weight": 2
+      },
+      "contentHash": "sha256:39b1c4c067b2a244"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "docsy-project": {
+      "_index.md": {},
+      "overview.md": {},
+      "tasks.md": {}
+    }
+  }
+}

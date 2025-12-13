@@ -78,7 +78,7 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 
 **Goal**: Cover essential themes and transformations
 
-**Status**: 3/13 test cases completed (23%)
+**Status**: 5/13 test cases completed (38%)
 
 #### Test Cases to Add
 
@@ -87,7 +87,7 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 - [x] `hextra-math/` - KaTeX math rendering ✅
 - [ ] `hextra-search/` - Search index generation
 - [ ] `hextra-multilang/` - Multi-language support
-- [ ] `docsy-basic/` - Basic Docsy theme features
+- [x] `docsy-basic/` - Basic Docsy theme features ✅
 - [ ] `docsy-api/` - Docsy API documentation layout
 
 **Transformation Tests** (`testdata/repos/transforms/`)
@@ -98,7 +98,7 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 - [ ] `menu-generation/` - Automatic menu creation
 
 **Multi-Repo Tests** (`testdata/repos/multi-repo/`)
-- [ ] `two-repos/` - Basic multi-repo aggregation
+- [x] `two-repos/` - Basic multi-repo aggregation ✅
 - [ ] `conflicting-paths/` - Same-named files from different repos
 - [ ] `different-themes/` - Verify single theme applies to all
 
@@ -126,11 +126,15 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 **Tests Added:**
 - ✅ `TestGolden_HextraMath` - Verifies KaTeX math rendering configuration
 - ✅ `TestGolden_FrontmatterInjection` - Tests metadata injection and editURL handling
+- ✅ `TestGolden_TwoRepos` - Basic multi-repository aggregation
+- ✅ `TestGolden_DocsyBasic` - Basic Docsy theme features and parameters
 
 **Verification:**
-- ✅ All 3 tests pass consistently with `-count=5`
-- ✅ Execution time: ~70ms for all tests
+- ✅ All 5 tests pass consistently with `-count=3` (15 test runs)
+- ✅ Execution time: ~140ms per test
 - ✅ Zero flaky failures after reproducibility fixes
+
+**Phase 2 Progress: 5/13 test cases completed (38%)**
 
 ---
 

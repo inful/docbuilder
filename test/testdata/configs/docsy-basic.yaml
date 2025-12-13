@@ -1,0 +1,20 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/themes/docsy-basic
+    name: docsy-project
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Docsy Documentation"
+  description: "Testing Docsy theme features"
+  base_url: "http://localhost"
+  theme: "docsy"
+  params:
+    github_repo: "https://github.com/example/docsy-project"
+    github_branch: "main"
+
+output:
+  directory: "./test-output"
+  clean: true
