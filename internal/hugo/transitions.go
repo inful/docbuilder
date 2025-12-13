@@ -15,7 +15,7 @@ var transitionJS []byte
 // copyTransitionAssets copies View Transitions API assets to the static directory
 func (g *Generator) copyTransitionAssets() error {
 	// Only copy if transitions are enabled
-	if g.config == nil || g.config.Hugo.EnableTransitions == false {
+	if g.config == nil || !g.config.Hugo.EnableTransitions {
 		return nil
 	}
 
