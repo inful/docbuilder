@@ -163,48 +163,28 @@ Example minimal `config.yaml` (direct build mode):
 repositories:
   - url: https://git.example.com/owner/repo.git
     name: my-docs
-    ## DocBuilder
+    branch: main
+    paths: ["docs"]
+    auth:
+      type: token
+      token: "${GIT_ACCESS_TOKEN}"
 
-    DocBuilder aggregates documentation from multiple Git repositories into a single Hugo site using a staged, observable pipeline.
+hugo:
+  title: "My Documentation"
+  description: "Documentation site"
+  base_url: "https://docs.example.com"
+  theme: hextra
 
-    This repository now follows the Diátaxis documentation structure. Please consult the dedicated docs instead of this (formerly large) README.
+output:
+  directory: "./site"
+  clean: true
+```
 
-    ### Documentation Map
+Example with V2 auto-discovery (Forgejo):
 
-    | Purpose | Location |
-    |---------|----------|
-    | Tutorial (start here) | `docs/tutorials/getting-started.md` |
-    | How‑To guides | `docs/how-to/` |
-    | Reference (CLI, config, report) | `docs/reference/` |
-    | Explanations (architecture, rationale) | `docs/explanation/` |
-
-    ### Quick Glance Features
-
-    - Multi-repository aggregation with token/SSH/basic auth
-    - Conditional forge namespacing (`namespace_forges`) to avoid collisions
-    - Theme integration (Hextra, Docsy) via Hugo Modules
-    - Incremental & shallow clone strategies for speed
-    - Optional Hugo execution (env flags) producing `public/`
-    - Structured build report (`build-report.json`) with stable `doc_files_hash`
-    - Index template override system with safe defaults
-    - Pruning of non-doc paths to shrink workspace
-
-    ### Fast Start
-
-    ```bash
-    make build
-    ./bin/docbuilder init -c config.yaml
-    ./bin/docbuilder build -c config.yaml -v
-    ```
-
-    Full details: see the Tutorial and How‑To guides.
-
-    ### Stability Notice
-
-    Pre‑1.0: minor field or struct adjustments may occur; monitor `CHANGELOG.md`. Treat unknown JSON fields as optional for forward compatibility.
-
-    ---
-    For deeper context (design choices, extension points) open `docs/explanation/architecture.md`.
+```yaml
+version: "2.0"
+forges:
   - name: "forgejo"
     type: "forgejo"
     api_url: "https://git.example.com/api/v1"
@@ -213,8 +193,16 @@ repositories:
     auth:
       type: token
       token: "${FORGEJO_TOKEN}"
+
 filtering:
   required_paths: ["docs"]
+
+hugo:
+  title: "My Documentation"
+  description: "Auto-discovered repositories"
+  base_url: "https://docs.example.com"
+  theme: hextra
+
 output:
   directory: "./site"
   clean: true
