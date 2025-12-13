@@ -1,0 +1,73 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing automatic menu generation from front matter",
+        "title": "Menu Generation Testing",
+        "type": "docs"
+      },
+      "contentHash": "sha256:d31e886153a6976d"
+    },
+    "content/menu-docs/_index.md": {
+      "frontmatter": {
+        "repository": "menu-docs",
+        "title": "Menu-docs",
+        "type": "docs"
+      },
+      "contentHash": "sha256:1e6bf109e2d46539"
+    },
+    "content/menu-docs/api.md": {
+      "frontmatter": {
+        "menu": {
+          "main": {
+            "parent": "Reference",
+            "weight": 30
+          }
+        },
+        "repository": "menu-docs",
+        "title": "API Documentation",
+        "weight": 3
+      },
+      "contentHash": "sha256:12efa7567cde212d"
+    },
+    "content/menu-docs/guide.md": {
+      "frontmatter": {
+        "menu": {
+          "main": {
+            "name": "Guide",
+            "weight": 20
+          }
+        },
+        "repository": "menu-docs",
+        "title": "User Guide",
+        "weight": 2
+      },
+      "contentHash": "sha256:a67828a70efea21b"
+    },
+    "content/menu-docs/intro.md": {
+      "frontmatter": {
+        "menu": {
+          "main": {
+            "weight": 10
+          }
+        },
+        "repository": "menu-docs",
+        "title": "Introduction",
+        "weight": 1
+      },
+      "contentHash": "sha256:081b81403e2bea43"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "menu-docs": {
+      "_index.md": {},
+      "api.md": {},
+      "guide.md": {},
+      "intro.md": {}
+    }
+  }
+}

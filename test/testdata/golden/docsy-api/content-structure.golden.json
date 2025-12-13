@@ -1,0 +1,63 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "description": "Testing Docsy theme with API documentation layout",
+        "title": "Docsy API Documentation",
+        "type": "docs"
+      },
+      "contentHash": "sha256:45460f2b35a44920"
+    },
+    "content/api-docs/_index.md": {
+      "frontmatter": {
+        "repository": "api-docs",
+        "title": "Api-docs",
+        "type": "docs"
+      },
+      "contentHash": "sha256:e99660667245d854"
+    },
+    "content/api-docs/api/_index.md": {
+      "frontmatter": {
+        "repository": "api-docs",
+        "section": "api",
+        "title": "Api"
+      },
+      "contentHash": "sha256:b35114db824e8b67"
+    },
+    "content/api-docs/api/rest.md": {
+      "frontmatter": {
+        "description": "RESTful API reference documentation\n",
+        "linkTitle": "REST API",
+        "repository": "api-docs",
+        "section": "api",
+        "title": "REST API",
+        "type": "docs",
+        "weight": 1
+      },
+      "contentHash": "sha256:a43e0e5d3a39fa23"
+    },
+    "content/api-docs/api/websocket.md": {
+      "frontmatter": {
+        "description": "Real-time WebSocket API documentation\n",
+        "linkTitle": "WebSocket",
+        "repository": "api-docs",
+        "section": "api",
+        "title": "WebSocket API",
+        "type": "docs",
+        "weight": 2
+      },
+      "contentHash": "sha256:1bf9b9e0aacb55a3"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "api-docs": {
+      "_index.md": {},
+      "api": {
+        "_index.md": {},
+        "rest.md": {},
+        "websocket.md": {}
+      }
+    }
+  }
+}
