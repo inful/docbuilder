@@ -1,0 +1,21 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/multi-repo/conflicting-paths/repo-a
+    name: repo-a
+    branch: main
+    paths: ["docs"]
+  - url: ../test/testdata/repos/multi-repo/conflicting-paths/repo-b
+    name: repo-b
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Conflicting Paths Test"
+  description: "Testing handling of same-named files from different repos"
+  base_url: "http://localhost"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true

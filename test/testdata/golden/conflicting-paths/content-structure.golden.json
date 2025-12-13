@@ -1,0 +1,76 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing handling of same-named files from different repos",
+        "title": "Conflicting Paths Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:84cce28b245de492"
+    },
+    "content/repo-a/_index.md": {
+      "frontmatter": {
+        "repository": "repo-a",
+        "title": "Repo-a",
+        "type": "docs"
+      },
+      "contentHash": "sha256:8e139d7375f5319d"
+    },
+    "content/repo-a/api.md": {
+      "frontmatter": {
+        "repository": "repo-a",
+        "title": "API Documentation (Repository A)",
+        "weight": 2
+      },
+      "contentHash": "sha256:c17e1663bf1fe7e1"
+    },
+    "content/repo-a/setup.md": {
+      "frontmatter": {
+        "repository": "repo-a",
+        "title": "Setup Guide (Repository A)",
+        "weight": 1
+      },
+      "contentHash": "sha256:4d5856d7346c7309"
+    },
+    "content/repo-b/_index.md": {
+      "frontmatter": {
+        "repository": "repo-b",
+        "title": "Repo-b",
+        "type": "docs"
+      },
+      "contentHash": "sha256:d36bf1a09400bdbc"
+    },
+    "content/repo-b/setup.md": {
+      "frontmatter": {
+        "repository": "repo-b",
+        "title": "Setup Guide (Repository B)",
+        "weight": 1
+      },
+      "contentHash": "sha256:be6db5928081baac"
+    },
+    "content/repo-b/tutorial.md": {
+      "frontmatter": {
+        "repository": "repo-b",
+        "title": "Tutorial (Repository B)",
+        "weight": 2
+      },
+      "contentHash": "sha256:384c2740d9850cca"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "repo-a": {
+      "_index.md": {},
+      "api.md": {},
+      "setup.md": {}
+    },
+    "repo-b": {
+      "_index.md": {},
+      "setup.md": {},
+      "tutorial.md": {}
+    }
+  }
+}

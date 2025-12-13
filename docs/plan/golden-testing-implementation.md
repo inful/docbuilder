@@ -78,7 +78,7 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 
 **Goal**: Cover essential themes and transformations
 
-**Status**: 7/13 test cases completed (54%)
+**Status**: 9/13 test cases completed (69%)
 
 #### Test Cases to Add
 
@@ -94,12 +94,12 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 - [x] `frontmatter-injection/` - editURL, metadata injection ✅
 - [ ] `cross-repo-links/` - Link transformation between repos
 - [x] `image-paths/` - Asset path handling ✅
-- [ ] `section-indexes/` - `_index.md` generation
+- [x] `section-indexes/` - `_index.md` generation ✅
 - [ ] `menu-generation/` - Automatic menu creation
 
 **Multi-Repo Tests** (`testdata/repos/multi-repo/`)
 - [x] `two-repos/` - Basic multi-repo aggregation ✅
-- [ ] `conflicting-paths/` - Same-named files from different repos
+- [x] `conflicting-paths/` - Same-named files from different repos ✅
 - [ ] `different-themes/` - Verify single theme applies to all
 
 **Configuration**: Create corresponding YAML configs in `testdata/configs/`
@@ -135,12 +135,16 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 - ✅ `TestGolden_HextraSearch` - Search index generation with FlexSearch integration
 - ✅ `TestGolden_ImagePaths` - Asset path handling, image references, static file copying
 
+**Tests Added (Session 4):**
+- ✅ `TestGolden_SectionIndexes` - Automatic _index.md generation for nested sections
+- ✅ `TestGolden_ConflictingPaths` - Same-named files from different repos handled correctly
+
 **Verification:**
-- ✅ All 7 tests pass consistently with `-count=3` (21 test runs)
-- ✅ Execution time: ~87ms per test, ~609ms total for all tests
+- ✅ All 9 tests pass consistently with `-count=2` (18 test runs)
+- ✅ Execution time: ~53ms per test, ~476ms total for all tests
 - ✅ Zero flaky failures after reproducibility fixes
 
-**Phase 2 Progress: 7/13 test cases completed (54%)**
+**Phase 2 Progress: 9/13 test cases completed (69%)**
 
 ---
 
@@ -417,12 +421,12 @@ var (
 - ✅ Test helpers implemented with normalization
 - ✅ Golden files generated and verified
 
-### Phase 2 (In Progress - 54% complete)
-- 🚧 7/13 test cases completed (hextra-basic, hextra-math, hextra-search, frontmatter-injection, image-paths, two-repos, docsy-basic)
+### Phase 2 (In Progress - 69% complete)
+- 🚧 9/13 test cases completed (hextra-basic, hextra-math, hextra-search, frontmatter-injection, image-paths, section-indexes, two-repos, conflicting-paths, docsy-basic)
 - ✅ Hextra theme tested with basic, math, and search features
 - ✅ Docsy theme tested with basic features
-- ✅ Multi-repository aggregation verified
-- ✅ Content transformations verified (frontmatter injection, image paths)
+- ✅ Multi-repository aggregation verified (two repos, conflicting paths)
+- ✅ Content transformations verified (frontmatter injection, image paths, section indexes)
 - ✅ Reproducibility issues identified and fixed
 - ✅ Debug tooling added for test failures
 
@@ -550,10 +554,15 @@ var (
 - Code added: ~100 lines (tests)
 - Golden files: 4 new files (~7KB total)
 
+**Code Statistics (Session 4):**
+- New files: 12 test data files (section-indexes, conflicting-paths)
+- Code added: ~100 lines (tests)
+- Golden files: 4 new files (~8KB total)
+
 **Test Results:**
-- Total tests: 7 (hextra-basic, hextra-math, frontmatter-injection, two-repos, docsy-basic, hextra-search, image-paths)
-- Pass rate: 100% with `-count=3`
-- Execution time: ~87ms per test, ~609ms total
+- Total tests: 9 (hextra-basic, hextra-math, hextra-search, frontmatter-injection, image-paths, section-indexes, two-repos, conflicting-paths, docsy-basic)
+- Pass rate: 100% with `-count=2`
+- Execution time: ~53ms per test, ~476ms total
 - Flaky tests: 0
 
 ### Lessons Learned
@@ -583,6 +592,8 @@ var (
 12. ~~Add docsy-basic test case~~ ✅
 13. ~~Add hextra-search test case~~ ✅
 14. ~~Add image-paths test case~~ ✅
+15. ~~Add section-indexes test case~~ ✅
+16. ~~Add conflicting-paths test case~~ ✅
 
 ### Next Immediate Tasks
 
@@ -593,10 +604,10 @@ var (
 5. **→ Add docsy-api test case**
 6. **→ Add cross-repo-links test case**
 7. ~~Add image-paths test case~~ ✅
-8. **→ Add section-indexes test case**
+8. ~~Add section-indexes test case~~ ✅
 9. **→ Add menu-generation test case**
-10. **→ Add conflicting-paths test case**
-11. **→ Expand to 13 test cases total (Phase 2 complete)**
+10. ~~Add conflicting-paths test case~~ ✅
+11. **→ Expand to 13 test cases total (Phase 2 complete) - 4 more needed**
 12. **→ Document new debugging features in test README**
 
 ## References
