@@ -33,6 +33,11 @@ hugo:
   description: "Aggregated documentation from multiple repositories"
   base_url: "https://docs.example.com"
   theme: "hextra"
+  
+  # Optional: Enable smooth page transitions (Hextra theme only)
+  # enable_page_transitions: true
+  # page_transition_duration: 300  # milliseconds (default: 300)
+  
   params:
     search:
       enable: true
