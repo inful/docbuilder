@@ -379,10 +379,13 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 		rec.Flush()
 	})
 
+	// Wrap with Cache-Control headers for static assets
+	rootWithCaching := s.addCacheControlHeaders(rootWithFallback)
+
 	// Wrap with LiveReload injection middleware if enabled
-	var rootWithMiddleware http.Handler = rootWithFallback
+	rootWithMiddleware := rootWithCaching
 	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithFallback, s.config.Daemon.HTTP.LiveReloadPort)
+		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithCaching, s.config.Daemon.HTTP.LiveReloadPort)
 	}
 
 	mux.Handle("/", s.mchain(rootWithMiddleware))
@@ -476,6 +479,50 @@ func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
 
 	// Fall back to root
 	return "/"
+}
+
+// addCacheControlHeaders wraps a handler to add appropriate Cache-Control headers for static assets.
+// Different asset types receive different cache durations:
+// - Immutable assets (CSS, JS, fonts, images): 1 year (31536000s)
+// - HTML pages: no cache (to ensure content updates are immediately visible)
+// - Other assets: short cache (5 minutes)
+func (s *HTTPServer) addCacheControlHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// Determine cache policy based on file extension
+		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
+			// CSS and JavaScript - cache for 1 year (Hugo typically uses content hashing)
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else if strings.HasSuffix(path, ".woff") || strings.HasSuffix(path, ".woff2") ||
+			strings.HasSuffix(path, ".ttf") || strings.HasSuffix(path, ".eot") ||
+			strings.HasSuffix(path, ".otf") {
+			// Web fonts - cache for 1 year
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else if strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".jpg") ||
+			strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".gif") ||
+			strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp") ||
+			strings.HasSuffix(path, ".ico") {
+			// Images - cache for 1 week
+			w.Header().Set("Cache-Control", "public, max-age=604800")
+		} else if strings.HasSuffix(path, ".pdf") || strings.HasSuffix(path, ".zip") ||
+			strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".gz") {
+			// Downloadable files - cache for 1 day
+			w.Header().Set("Cache-Control", "public, max-age=86400")
+		} else if strings.HasSuffix(path, ".json") && !strings.Contains(path, "search") {
+			// JSON data files (except search indices) - cache for 5 minutes
+			w.Header().Set("Cache-Control", "public, max-age=300")
+		} else if strings.HasSuffix(path, ".xml") {
+			// XML files (RSS, sitemaps) - cache for 1 hour
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+		} else if strings.HasSuffix(path, ".html") || path == "/" || !strings.Contains(path, ".") {
+			// HTML pages and directories - no cache to ensure content updates are visible
+			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
+		}
+		// For all other files, don't set Cache-Control (let browser use default behavior)
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // responseRecorder captures the status code and body from the underlying handler
