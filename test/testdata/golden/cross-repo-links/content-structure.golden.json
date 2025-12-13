@@ -1,0 +1,76 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing link transformation between repositories",
+        "title": "Cross-Repository Links",
+        "type": "docs"
+      },
+      "contentHash": "sha256:5104cf641481c9af"
+    },
+    "content/backend/_index.md": {
+      "frontmatter": {
+        "repository": "backend",
+        "title": "Backend",
+        "type": "docs"
+      },
+      "contentHash": "sha256:0478574de84e3537"
+    },
+    "content/backend/api.md": {
+      "frontmatter": {
+        "repository": "backend",
+        "title": "Backend API",
+        "weight": 1
+      },
+      "contentHash": "sha256:b355be90a7a56b46"
+    },
+    "content/backend/auth.md": {
+      "frontmatter": {
+        "repository": "backend",
+        "title": "Backend Authentication",
+        "weight": 2
+      },
+      "contentHash": "sha256:36646f227e6875a6"
+    },
+    "content/frontend/_index.md": {
+      "frontmatter": {
+        "repository": "frontend",
+        "title": "Frontend",
+        "type": "docs"
+      },
+      "contentHash": "sha256:5157d54044efdfc0"
+    },
+    "content/frontend/guide.md": {
+      "frontmatter": {
+        "repository": "frontend",
+        "title": "Frontend Guide",
+        "weight": 1
+      },
+      "contentHash": "sha256:142a68f2ee71a433"
+    },
+    "content/frontend/setup.md": {
+      "frontmatter": {
+        "repository": "frontend",
+        "title": "Frontend Setup",
+        "weight": 2
+      },
+      "contentHash": "sha256:dc1b9404b25a854d"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "backend": {
+      "_index.md": {},
+      "api.md": {},
+      "auth.md": {}
+    },
+    "frontend": {
+      "_index.md": {},
+      "guide.md": {},
+      "setup.md": {}
+    }
+  }
+}

@@ -1,0 +1,21 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/transforms/cross-repo-links/repo-frontend
+    name: frontend
+    branch: main
+    paths: ["docs"]
+  - url: ../test/testdata/repos/transforms/cross-repo-links/repo-backend
+    name: backend
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Cross-Repository Links"
+  description: "Testing link transformation between repositories"
+  base_url: "http://localhost"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true
