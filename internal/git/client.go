@@ -51,7 +51,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 		return "", fmt.Errorf("failed to remove existing directory: %w", err)
 	}
 
-	cloneOptions := &git.CloneOptions{URL: repo.URL, Progress: os.Stdout}
+	cloneOptions := &git.CloneOptions{URL: repo.URL}
 	if repo.Branch != "" {
 		if repo.IsTag {
 			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
