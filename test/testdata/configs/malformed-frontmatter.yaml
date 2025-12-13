@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: REPLACE_WITH_TEMP_PATH
+    name: malformed-frontmatter
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Malformed Front Matter Test"
+  description: "Testing graceful handling of invalid YAML in front matter"
+  base_url: "http://localhost:1313"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true

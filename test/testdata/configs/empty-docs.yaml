@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: REPLACE_WITH_TEMP_PATH
+    name: empty-docs
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Empty Docs Test"
+  description: "Testing repository with no markdown files"
+  base_url: "http://localhost:1313"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true

@@ -1,0 +1,122 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing deeply nested directory structures",
+        "title": "Deep Nesting Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:27825ca46e3a3dd0"
+    },
+    "content/deep-nesting/_index.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "title": "Deep-nesting",
+        "type": "docs"
+      },
+      "contentHash": "sha256:805b857619d6c77c"
+    },
+    "content/deep-nesting/level1/_index.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1",
+        "title": "Level1"
+      },
+      "contentHash": "sha256:0a871a44e3e7e048"
+    },
+    "content/deep-nesting/level1/doc.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1",
+        "title": "Level 1",
+        "weight": 2
+      },
+      "contentHash": "sha256:8b0de63c5d862fc6"
+    },
+    "content/deep-nesting/level1/level2/_index.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2",
+        "title": "Level2"
+      },
+      "contentHash": "sha256:c7dc8a28786336ca"
+    },
+    "content/deep-nesting/level1/level2/doc.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2",
+        "title": "Level 2",
+        "weight": 3
+      },
+      "contentHash": "sha256:48e8257d62dddab3"
+    },
+    "content/deep-nesting/level1/level2/level3/_index.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2/level3",
+        "title": "Level3"
+      },
+      "contentHash": "sha256:cb475e15a8e9c036"
+    },
+    "content/deep-nesting/level1/level2/level3/doc.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2/level3",
+        "title": "Level 3",
+        "weight": 4
+      },
+      "contentHash": "sha256:0a3cec69dcb0ca27"
+    },
+    "content/deep-nesting/level1/level2/level3/level4/_index.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2/level3/level4",
+        "title": "Level4"
+      },
+      "contentHash": "sha256:c38c193b7560a47f"
+    },
+    "content/deep-nesting/level1/level2/level3/level4/deep-doc.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "section": "level1/level2/level3/level4",
+        "title": "Level 4",
+        "weight": 5
+      },
+      "contentHash": "sha256:b28b006c139dca90"
+    },
+    "content/deep-nesting/root.md": {
+      "frontmatter": {
+        "repository": "deep-nesting",
+        "title": "Root Level",
+        "weight": 1
+      },
+      "contentHash": "sha256:35723671ea1ef074"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "deep-nesting": {
+      "_index.md": {},
+      "level1": {
+        "_index.md": {},
+        "doc.md": {},
+        "level2": {
+          "_index.md": {},
+          "doc.md": {},
+          "level3": {
+            "_index.md": {},
+            "doc.md": {},
+            "level4": {
+              "_index.md": {},
+              "deep-doc.md": {}
+            }
+          }
+        }
+      },
+      "root.md": {}
+    }
+  }
+}

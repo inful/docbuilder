@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: REPLACE_WITH_TEMP_PATH
+    name: deep-nesting
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Deep Nesting Test"
+  description: "Testing deeply nested directory structures"
+  base_url: "http://localhost:1313"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true
