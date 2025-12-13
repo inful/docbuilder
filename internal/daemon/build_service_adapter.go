@@ -57,8 +57,9 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 
 	// Build the request
 	req := build.BuildRequest{
-		Config:    cfg,
-		OutputDir: outDir,
+		Config:      cfg,
+		OutputDir:   outDir,
+		Incremental: true, // Daemon mode uses incremental updates to leverage remote HEAD cache
 		Options: build.BuildOptions{
 			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,
 		},
