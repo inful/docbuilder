@@ -52,6 +52,7 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 
 	// Execute remaining validation rules
 	remainingRules := NewRuleChain(
+		VersionMismatchRule{}, // Check version changes first
 		ContentIntegrityRule{},
 		GlobalDocHashRule{},
 		PerRepoDocHashRule{},

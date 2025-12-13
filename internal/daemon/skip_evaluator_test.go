@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -47,11 +48,13 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 	// nolint:unparam // Test helper accepts fixed values in call sites by design.
 	_ = repos
 	prev := struct {
-		Repositories  int    `json:"repositories"`
-		Files         int    `json:"files"`
-		RenderedPages int    `json:"rendered_pages"`
-		DocFilesHash  string `json:"doc_files_hash"`
-	}{repos, files, rendered, docHash}
+		Repositories      int    `json:"repositories"`
+		Files             int    `json:"files"`
+		RenderedPages     int    `json:"rendered_pages"`
+		DocFilesHash      string `json:"doc_files_hash"`
+		DocBuilderVersion string `json:"doc_builder_version"`
+		HugoVersion       string `json:"hugo_version"`
+	}{repos, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
 	b, err := json.Marshal(prev)
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
@@ -300,4 +303,88 @@ func TestSkipEvaluator_SetsTimestampsOnSkip(t *testing.T) {
 	if st.lastReportChecksum != hex.EncodeToString(sum[:]) {
 		t.Fatalf("checksum not updated on skip")
 	}
+}
+
+// TestSkipEvaluator_VersionMismatch ensures version changes force rebuild.
+func TestSkipEvaluator_VersionMismatch(t *testing.T) {
+	out := t.TempDir()
+	pubDir := filepath.Join(out, "public")
+	if err := os.MkdirAll(pubDir, 0o750); err != nil {
+		t.Fatalf("mkdir public: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
+		t.Fatalf("write index: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
+		t.Fatalf("mkdir content: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
+		t.Fatalf("write doc.md: %v", err)
+	}
+	st := newFakeSkipState()
+	repo := cfg.Repository{Name: "r1", URL: "u", Branch: "main"}
+	conf1 := makeBaseConfig(out)
+	conf1.Repositories = []cfg.Repository{repo}
+	gen := newTestGenerator(t, conf1, out)
+	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
+	st.repoLastCommit[repo.URL] = "c1"
+	st.repoDocHash[repo.URL] = "h1"
+
+	// Write previous report with different DocBuilder version
+	writePrevReportWithVersions(t, out, 1, 1, 1, "h1", st, "1.0.0", "")
+	st.lastGlobalDocFiles = "h1"
+
+	// Evaluate should force rebuild due to version mismatch
+	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo}); ok || rep != nil {
+		t.Fatalf("expected rebuild due to version mismatch (docbuilder)")
+	}
+}
+
+// writePrevReportWithVersions is like writePrevReport but includes version fields.
+func writePrevReportWithVersions(t *testing.T, outDir string, repos, files, rendered int, docHash string, st *fakeSkipState, dbVersion, hugoVersion string) {
+	t.Helper()
+	report := map[string]any{
+		"schema_version":        1,
+		"repositories":          repos,
+		"files":                 files,
+		"rendered_pages":        rendered,
+		"doc_files_hash":        docHash,
+		"doc_builder_version":   dbVersion,
+		"hugo_version":          hugoVersion,
+		"outcome":               "success",
+		"start":                 time.Now().Format(time.RFC3339),
+		"end":                   time.Now().Format(time.RFC3339),
+		"stage_durations":       map[string]string{},
+		"stage_error_kinds":     map[string]string{},
+		"stage_counts":          map[string]any{},
+		"index_templates":       map[string]any{},
+		"delta_repo_reasons":    map[string]string{},
+		"errors":                []string{},
+		"warnings":              []string{},
+		"issues":                []any{},
+		"cloned_repositories":   0,
+		"failed_repositories":   0,
+		"skipped_repositories":  0,
+		"static_rendered":       false,
+		"retries":               0,
+		"retries_exhausted":     false,
+		"skip_reason":           "",
+		"clone_stage_skipped":   false,
+		"delta_decision":        "",
+		"delta_changed_repos":   []string{},
+		"config_hash":           "",
+		"pipeline_version":      0,
+		"effective_render_mode": "",
+	}
+	data, err := json.Marshal(report)
+	if err != nil {
+		t.Fatalf("marshal report: %v", err)
+	}
+	path := filepath.Join(outDir, "build-report.json")
+	// #nosec G306 - test file permissions
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write report: %v", err)
+	}
+	sum := sha256.Sum256(data)
+	st.lastReportChecksum = hex.EncodeToString(sum[:])
 }

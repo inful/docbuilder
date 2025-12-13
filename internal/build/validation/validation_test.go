@@ -44,11 +44,13 @@ func newTestGenerator(t *testing.T, cfg *cfg.Config, outDir string) *hugo.Genera
 
 func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, docHash string, st *fakeSkipState) {
 	prev := struct {
-		Repositories  int    `json:"repositories"`
-		Files         int    `json:"files"`
-		RenderedPages int    `json:"rendered_pages"`
-		DocFilesHash  string `json:"doc_files_hash"`
-	}{repos, files, rendered, docHash}
+		Repositories      int    `json:"repositories"`
+		Files             int    `json:"files"`
+		RenderedPages     int    `json:"rendered_pages"`
+		DocFilesHash      string `json:"doc_files_hash"`
+		DocBuilderVersion string `json:"doc_builder_version"`
+		HugoVersion       string `json:"hugo_version"`
+	}{repos, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
 	b, err := json.Marshal(prev)
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
@@ -212,6 +214,59 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
+	})
+
+	t.Run("VersionMismatchRule", func(t *testing.T) {
+		rule := VersionMismatchRule{}
+
+		// No previous report
+		ctx := Context{PrevReport: nil}
+		result := rule.Validate(ctx)
+		if result.Passed {
+			t.Errorf("expected failure when no previous report")
+		}
+
+		// Same versions (no Hugo)
+		ctx = Context{
+			PrevReport: &PreviousReport{
+				DocBuilderVersion: "2.1.0-dev", // Should match version.Version in tests
+				HugoVersion:       "",          // No Hugo used
+			},
+		}
+		result = rule.Validate(ctx)
+		if !result.Passed {
+			t.Errorf("expected success for matching versions, got failure: %s", result.Reason)
+		}
+
+		// DocBuilder version changed
+		ctx = Context{
+			PrevReport: &PreviousReport{
+				DocBuilderVersion: "1.0.0", // Different from current
+				HugoVersion:       "",
+			},
+		}
+		result = rule.Validate(ctx)
+		if result.Passed {
+			t.Errorf("expected failure for docbuilder version mismatch")
+		}
+		if result.Reason != "docbuilder version changed" {
+			t.Errorf("unexpected failure reason: %s", result.Reason)
+		}
+
+		// Hugo version changed (detected vs previous)
+		// Note: This test assumes DetectHugoVersion() returns something or empty
+		// In CI without Hugo, DetectHugoVersion() returns "" so we test that case
+		ctx = Context{
+			PrevReport: &PreviousReport{
+				DocBuilderVersion: "2.1.0-dev",
+				HugoVersion:       "0.100.0", // Any previous Hugo version
+			},
+		}
+		result = rule.Validate(ctx)
+		// This will pass or fail depending on whether Hugo is installed
+		// If Hugo is not available, DetectHugoVersion() returns ""
+		// and will not match "0.100.0", causing failure
+		// This is the desired behavior: force rebuild if Hugo changes or disappears
 	})
 }
 

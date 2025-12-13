@@ -30,11 +30,13 @@ type Context struct {
 
 // PreviousReport holds parsed data from the previous build report.
 type PreviousReport struct {
-	Repositories  int    `json:"repositories"`
-	Files         int    `json:"files"`
-	RenderedPages int    `json:"rendered_pages"`
-	DocFilesHash  string `json:"doc_files_hash"`
-	RawData       []byte `json:"-"` // original JSON bytes for checksum
+	Repositories      int    `json:"repositories"`
+	Files             int    `json:"files"`
+	RenderedPages     int    `json:"rendered_pages"`
+	DocFilesHash      string `json:"doc_files_hash"`
+	DocBuilderVersion string `json:"doc_builder_version"`
+	HugoVersion       string `json:"hugo_version"`
+	RawData           []byte `json:"-"` // original JSON bytes for checksum
 }
 
 // Result indicates whether validation passed and provides context.

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
 // BuildOutcome is the typed enumeration of final build result states.
@@ -63,6 +65,10 @@ type BuildReport struct {
 	PipelineVersion int
 	// EffectiveRenderMode records the resolved render mode after considering config + legacy envs.
 	EffectiveRenderMode string
+	// DocBuilderVersion is the version of the docbuilder binary that created this build.
+	DocBuilderVersion string
+	// HugoVersion is the version of the hugo binary used to render this build (empty if not rendered).
+	HugoVersion string
 }
 
 // AddIssue appends a structured issue and mirrors severity into Errors/Warnings slices.
@@ -137,16 +143,23 @@ type StageCount struct {
 
 func newBuildReport(repos, files int) *BuildReport {
 	return &BuildReport{
-		SchemaVersion:   1,
-		Repositories:    repos,
-		Files:           files,
-		Start:           time.Now(),
-		StageDurations:  make(map[string]time.Duration),
-		StageErrorKinds: make(map[StageName]StageErrorKind),
-		StageCounts:     make(map[StageName]StageCount),
-		IndexTemplates:  make(map[string]IndexTemplateInfo),
+		SchemaVersion:     1,
+		Repositories:      repos,
+		Files:             files,
+		Start:             time.Now(),
+		StageDurations:    make(map[string]time.Duration),
+		StageErrorKinds:   make(map[StageName]StageErrorKind),
+		StageCounts:       make(map[StageName]StageCount),
+		IndexTemplates:    make(map[string]IndexTemplateInfo),
+		DocBuilderVersion: getDocBuilderVersion(),
+		HugoVersion:       DetectHugoVersion(),
 		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
+}
+
+// getDocBuilderVersion returns the current docbuilder version.
+func getDocBuilderVersion() string {
+	return version.Version
 }
 
 func (r *BuildReport) finish() { r.End = time.Now() }

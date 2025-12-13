@@ -3,6 +3,9 @@ package validation
 import (
 	"os"
 	"path/filepath"
+
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
 // BasicPrerequisitesRule validates basic prerequisites for skip evaluation.
@@ -66,6 +69,36 @@ func (r PublicDirectoryRule) Validate(ctx Context) Result {
 	}
 	if len(entries) == 0 {
 		return Failure("public directory is empty")
+	}
+
+	return Success()
+}
+
+// VersionMismatchRule validates that DocBuilder and Hugo versions haven't changed.
+// If either version differs from the previous build, a rebuild is forced to ensure
+// compatibility and that new features/fixes take effect.
+type VersionMismatchRule struct{}
+
+func (r VersionMismatchRule) Name() string { return "version_mismatch" }
+
+func (r VersionMismatchRule) Validate(ctx Context) Result {
+	if ctx.PrevReport == nil {
+		return Failure("no previous report available")
+	}
+
+	// Check DocBuilder version
+	currentDocBuilderVersion := version.Version
+	if currentDocBuilderVersion != ctx.PrevReport.DocBuilderVersion {
+		return Failure("docbuilder version changed")
+	}
+
+	// Check Hugo version (only if Hugo was used in previous build)
+	// Empty previous Hugo version means Hugo wasn't executed
+	if ctx.PrevReport.HugoVersion != "" {
+		currentHugoVersion := hugo.DetectHugoVersion()
+		if currentHugoVersion != ctx.PrevReport.HugoVersion {
+			return Failure("hugo version changed")
+		}
 	}
 
 	return Success()
