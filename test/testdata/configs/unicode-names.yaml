@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: REPLACE_WITH_TEMP_PATH
+    name: unicode-names
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Unicode Names Test"
+  description: "Testing files with non-ASCII characters in names"
+  base_url: "http://localhost:1313"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true

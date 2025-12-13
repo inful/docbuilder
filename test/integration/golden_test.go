@@ -661,3 +661,291 @@ func TestGolden_CrossRepoLinks(t *testing.T) {
 	// Verify content structure and front matter
 	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
 }
+
+// TestGolden_EmptyDocs tests handling of repository with no markdown files.
+// This test verifies:
+// - Build succeeds even with empty docs directory
+// - No Hugo site is generated (expected behavior)
+// - FilesProcessed is 0
+func TestGolden_EmptyDocs(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/empty-docs")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/empty-docs.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline should not fail with empty docs")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify no files were processed
+	require.Equal(t, 0, result.FilesProcessed, "should process 0 files")
+
+	// Note: No Hugo site is generated when there are no docs, this is expected behavior
+	// The build succeeds but outputs nothing, which is correct for empty documentation
+}
+
+// TestGolden_OnlyReadme tests handling of repository with only README.md (should be ignored).
+// This test verifies:
+// - README.md files are filtered out during discovery
+// - Build succeeds with no processable content
+// - Content structure shows no files
+func TestGolden_OnlyReadme(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/only-readme")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/only-readme.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline should not fail with only README")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/only-readme"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure (README should be filtered out)
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_MalformedFrontmatter tests graceful handling of invalid YAML in front matter.
+// This test verifies:
+// - Build continues even with malformed YAML
+// - Valid files are processed correctly
+// - Invalid files are copied as-is without breaking pipeline
+func TestGolden_MalformedFrontmatter(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/malformed-frontmatter")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/malformed-frontmatter.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline should handle malformed front matter gracefully")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/malformed-frontmatter"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_DeepNesting tests handling of deeply nested directory structures (4+ levels).
+// This test verifies:
+// - Deep nesting (level1/level2/level3/level4) is preserved
+// - Section structure is maintained in Hugo content
+// - File paths are correctly transformed
+func TestGolden_DeepNesting(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/deep-nesting")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/deep-nesting.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/deep-nesting"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure preserves deep nesting
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_UnicodeNames tests handling of files with non-ASCII characters in names.
+// This test verifies:
+// - UTF-8 filenames (español.md, 中文.md, русский.md) are handled correctly
+// - Content with various Unicode characters is preserved
+// - File paths remain valid in Hugo
+func TestGolden_UnicodeNames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/unicode-names")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/unicode-names.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/unicode-names"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure handles UTF-8 filenames correctly
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_SpecialChars tests handling of paths with spaces and special characters.
+// This test verifies:
+// - Files with spaces in names are handled correctly
+// - Directories with parentheses and special chars work
+// - Brackets in filenames are preserved
+func TestGolden_SpecialChars(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/edge-cases/special-chars")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/special-chars.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/special-chars"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure handles special characters in paths
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+

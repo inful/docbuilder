@@ -1,0 +1,56 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing files with non-ASCII characters in names",
+        "title": "Unicode Names Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:a55ebc6b46034f3d"
+    },
+    "content/unicode-names/_index.md": {
+      "frontmatter": {
+        "repository": "unicode-names",
+        "title": "Unicode-names",
+        "type": "docs"
+      },
+      "contentHash": "sha256:312a5b65efc75277"
+    },
+    "content/unicode-names/español.md": {
+      "frontmatter": {
+        "repository": "unicode-names",
+        "title": "Documento en Español",
+        "weight": 1
+      },
+      "contentHash": "sha256:77714faeeff0859e"
+    },
+    "content/unicode-names/русский.md": {
+      "frontmatter": {
+        "repository": "unicode-names",
+        "title": "Cyrillic Documentation",
+        "weight": 3
+      },
+      "contentHash": "sha256:e78b424e683cf371"
+    },
+    "content/unicode-names/中文.md": {
+      "frontmatter": {
+        "repository": "unicode-names",
+        "title": "Chinese Documentation",
+        "weight": 2
+      },
+      "contentHash": "sha256:a6cc15a8520aeba2"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "unicode-names": {
+      "_index.md": {},
+      "español.md": {},
+      "русский.md": {},
+      "中文.md": {}
+    }
+  }
+}

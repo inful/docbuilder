@@ -1,0 +1,46 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing graceful handling of invalid YAML in front matter",
+        "title": "Malformed Front Matter Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:17c8b7df9c085353"
+    },
+    "content/malformed-frontmatter/_index.md": {
+      "frontmatter": {
+        "repository": "malformed-frontmatter",
+        "title": "Malformed-frontmatter",
+        "type": "docs"
+      },
+      "contentHash": "sha256:0171fda7f860f00c"
+    },
+    "content/malformed-frontmatter/invalid-yaml.md": {
+      "frontmatter": {
+        "repository": "malformed-frontmatter",
+        "title": "Invalid Yaml"
+      },
+      "contentHash": "sha256:421cd238805319c3"
+    },
+    "content/malformed-frontmatter/valid.md": {
+      "frontmatter": {
+        "repository": "malformed-frontmatter",
+        "title": "Valid Document",
+        "weight": 10
+      },
+      "contentHash": "sha256:6e738bf8adfc99fa"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "malformed-frontmatter": {
+      "_index.md": {},
+      "invalid-yaml.md": {},
+      "valid.md": {}
+    }
+  }
+}

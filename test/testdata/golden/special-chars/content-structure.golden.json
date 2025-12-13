@@ -1,0 +1,59 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing paths with spaces and special characters",
+        "title": "Special Characters Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:7af677f0182af45b"
+    },
+    "content/special-chars/_index.md": {
+      "frontmatter": {
+        "repository": "special-chars",
+        "title": "Special-chars",
+        "type": "docs"
+      },
+      "contentHash": "sha256:860fc66af1e79f3f"
+    },
+    "content/special-chars/file with spaces.md": {
+      "frontmatter": {
+        "repository": "special-chars",
+        "title": "File With Spaces",
+        "weight": 1
+      },
+      "contentHash": "sha256:0825fb67aec8ac5b"
+    },
+    "content/special-chars/special-chars (test)/_index.md": {
+      "frontmatter": {
+        "repository": "special-chars",
+        "section": "special-chars (test)",
+        "title": "Special-chars (test)"
+      },
+      "contentHash": "sha256:f3bdc7f46f6ddd9e"
+    },
+    "content/special-chars/special-chars (test)/doc-[brackets].md": {
+      "frontmatter": {
+        "repository": "special-chars",
+        "section": "special-chars (test)",
+        "title": "Special Characters",
+        "weight": 2
+      },
+      "contentHash": "sha256:ef24c11013632b47"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "special-chars": {
+      "_index.md": {},
+      "file with spaces.md": {},
+      "special-chars (test)": {
+        "_index.md": {},
+        "doc-[brackets].md": {}
+      }
+    }
+  }
+}
