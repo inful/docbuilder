@@ -1,0 +1,56 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing search index generation with Hextra",
+        "title": "Searchable Documentation",
+        "type": "docs"
+      },
+      "contentHash": "sha256:b855b7f1f411efd5"
+    },
+    "content/search-docs/_index.md": {
+      "frontmatter": {
+        "repository": "search-docs",
+        "title": "Search-docs",
+        "type": "docs"
+      },
+      "contentHash": "sha256:90e3be6d708f3dca"
+    },
+    "content/search-docs/api-reference.md": {
+      "frontmatter": {
+        "repository": "search-docs",
+        "title": "API Reference",
+        "weight": 2
+      },
+      "contentHash": "sha256:f116d1519c28ff3e"
+    },
+    "content/search-docs/overview.md": {
+      "frontmatter": {
+        "repository": "search-docs",
+        "title": "Product Overview",
+        "weight": 1
+      },
+      "contentHash": "sha256:22c199ccd2deb882"
+    },
+    "content/search-docs/troubleshooting.md": {
+      "frontmatter": {
+        "repository": "search-docs",
+        "title": "Troubleshooting Guide",
+        "weight": 3
+      },
+      "contentHash": "sha256:c8e5d33e28621044"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "search-docs": {
+      "_index.md": {},
+      "api-reference.md": {},
+      "overview.md": {},
+      "troubleshooting.md": {}
+    }
+  }
+}
