@@ -13,11 +13,11 @@
     },
     "content/hextra-basic/_index.md": {
       "frontmatter": {
-        "description": "A basic test repository for Hextra theme",
         "repository": "hextra-basic",
-        "title": "Welcome to Hextra Basic"
+        "title": "Hextra-basic",
+        "type": "docs"
       },
-      "contentHash": "sha256:4d86df6057933668"
+      "contentHash": "sha256:64be6a9a964d736d"
     },
     "content/hextra-basic/api.md": {
       "frontmatter": {
