@@ -40,7 +40,9 @@ builds:
     # Linker flags for version injection
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
     
     # Environment variables for the build
     env:
