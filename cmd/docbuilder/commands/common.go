@@ -22,8 +22,8 @@ type Global struct {
 
 // CLI definition & global flags - used by commands that need access to root config.
 type CLI struct {
-	Config  string           `short:"c" help:"Configuration file path" default:"config.yaml"`
-	Verbose bool             `short:"v" help:"Enable verbose logging"`
+	Config  string           `short:"c" env:"DOCBUILDER_CONFIG" help:"Configuration file path" default:"config.yaml"`
+	Verbose bool             `short:"v" env:"DOCBUILDER_VERBOSE" help:"Enable verbose logging"`
 	Version kong.VersionFlag `name:"version" help:"Show version and exit"`
 
 	Build     BuildCmd     `cmd:"" help:"Build documentation site from configured repositories"`
