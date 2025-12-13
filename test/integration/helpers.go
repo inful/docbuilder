@@ -40,7 +40,7 @@ func setupTestRepo(t *testing.T, repoPath string) string {
 	err := copyDir(repoPath, tmpDir)
 	require.NoError(t, err, "failed to copy test repo files")
 
-	cmd := exec.Command("git", "init")
+	cmd := exec.Command("git", "init", "-b", "main")
 	cmd.Dir = tmpDir
 	require.NoError(t, cmd.Run(), "failed to initialize git repo")
 
