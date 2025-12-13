@@ -1,0 +1,69 @@
+baseURL: http://localhost
+description: Testing automatic menu generation from front matter
+enableGitInfo: false
+languageCode: en
+markup:
+    goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                enable: true
+        renderer:
+            unsafe: true
+    highlight:
+        lineNos: true
+        noClasses: false
+        style: github
+        tabWidth: 4
+menu:
+    main:
+        - name: Search
+          params:
+            type: search
+          weight: 4
+        - name: Theme
+          params:
+            label: false
+            type: theme-toggle
+          weight: 98
+module:
+    imports:
+        - path: github.com/imfing/hextra
+outputs:
+    home:
+        - HTML
+        - RSS
+        - JSON
+params:
+    editURL:
+        enable: true
+    mermaid: {}
+    navbar:
+        width: normal
+    offlineSearch: true
+    offlineSearchMaxResults: 25
+    offlineSearchSummaryLength: 200
+    search:
+        enable: true
+        flexsearch:
+            index: content
+            tokenize: forward
+            version: 0.8.143
+        type: flexsearch
+    theme:
+        default: system
+        displayToggle: true
+    ui:
+        navbar_logo: true
+        sidebar_menu_compact: false
+        sidebar_menu_foldable: true
+        sidebar_search_disable: false
+title: Menu Generation Testing

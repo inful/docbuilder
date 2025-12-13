@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/transforms/menu-generation
+    name: menu-docs
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Menu Generation Testing"
+  description: "Testing automatic menu generation from front matter"
+  base_url: "http://localhost"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true
