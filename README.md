@@ -160,7 +160,7 @@ GIT_ACCESS_TOKEN=your_git_access_token_here
 Example minimal `config.yaml` (direct build mode):
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 repositories:
   - url: https://git.example.com/owner/repo.git
@@ -623,7 +623,7 @@ Supported fields:
 Example configuration demonstrating all knobs:
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 build:
   clone_concurrency: 6            # bounded automatically by repository count
@@ -672,7 +672,7 @@ Notes & semantics:
 Minimal incremental-friendly snippet:
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 build:
   clone_strategy: auto
@@ -685,7 +685,7 @@ build:
 Disable all optimizations (legacy full clone behavior):
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 build:
   clone_strategy: fresh
@@ -701,7 +701,7 @@ If you encounter mysterious missing images or includes after enabling pruning, r
 Retry settings apply to transient stage failures (e.g., network clone issues):
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 build:
   max_retries: 2              # number of retry attempts after the first try (default 2)
@@ -722,7 +722,7 @@ Metrics:
 Below is an extended example combining repository definitions, Hugo settings, and the new build tuning options:
 
 ```yaml
-version: "1.0"
+version: "2.0"
 
 repositories:
   - url: https://git.example.com/org/service-a.git
