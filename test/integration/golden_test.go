@@ -16,7 +16,7 @@ import (
 
 var (
 	updateGolden = flag.Bool("update-golden", false, "Update golden files")
-	_ = flag.Bool("skip-render", false, "Skip Hugo rendering (faster)") // Reserved for future use
+	_            = flag.Bool("skip-render", false, "Skip Hugo rendering (faster)") // Reserved for future use
 )
 
 // TestGolden_HextraBasic tests the complete build pipeline with a basic Hextra theme repository.
