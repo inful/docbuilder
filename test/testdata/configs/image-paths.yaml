@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - url: ../test/testdata/repos/transforms/image-paths
+    name: image-docs
+    branch: main
+    paths: ["docs"]
+
+hugo:
+  title: "Image Path Testing"
+  description: "Testing asset path handling and transformations"
+  base_url: "http://localhost"
+  theme: "hextra"
+
+output:
+  directory: "./test-output"
+  clean: true

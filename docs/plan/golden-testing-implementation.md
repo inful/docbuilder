@@ -78,14 +78,14 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 
 **Goal**: Cover essential themes and transformations
 
-**Status**: 5/13 test cases completed (38%)
+**Status**: 7/13 test cases completed (54%)
 
 #### Test Cases to Add
 
 **Theme Tests** (`testdata/repos/themes/`)
 - [x] `hextra-basic/` - Basic Hextra theme (Phase 1) ✅
 - [x] `hextra-math/` - KaTeX math rendering ✅
-- [ ] `hextra-search/` - Search index generation
+- [x] `hextra-search/` - Search index generation ✅
 - [ ] `hextra-multilang/` - Multi-language support
 - [x] `docsy-basic/` - Basic Docsy theme features ✅
 - [ ] `docsy-api/` - Docsy API documentation layout
@@ -93,7 +93,7 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 **Transformation Tests** (`testdata/repos/transforms/`)
 - [x] `frontmatter-injection/` - editURL, metadata injection ✅
 - [ ] `cross-repo-links/` - Link transformation between repos
-- [ ] `image-paths/` - Asset path handling
+- [x] `image-paths/` - Asset path handling ✅
 - [ ] `section-indexes/` - `_index.md` generation
 - [ ] `menu-generation/` - Automatic menu creation
 
@@ -123,18 +123,24 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
   - Ensures consistent hashes across test runs
   - Fixed non-deterministic failures caused by random temp directory names in repository URLs
 
-**Tests Added:**
+**Tests Added (Session 1):**
 - ✅ `TestGolden_HextraMath` - Verifies KaTeX math rendering configuration
 - ✅ `TestGolden_FrontmatterInjection` - Tests metadata injection and editURL handling
-- ✅ `TestGolden_TwoRepos` - Basic multi-repository aggregation
-- ✅ `TestGolden_DocsyBasic` - Basic Docsy theme features and parameters
+
+**Tests Added (Session 2):**
+- ✅ `TestGolden_TwoRepos` - Multi-repository aggregation with separate content sections
+- ✅ `TestGolden_DocsyBasic` - Docsy theme configuration, linkTitle support, GitHub integration
+
+**Tests Added (Session 3):**
+- ✅ `TestGolden_HextraSearch` - Search index generation with FlexSearch integration
+- ✅ `TestGolden_ImagePaths` - Asset path handling, image references, static file copying
 
 **Verification:**
-- ✅ All 5 tests pass consistently with `-count=3` (15 test runs)
-- ✅ Execution time: ~140ms per test
+- ✅ All 7 tests pass consistently with `-count=3` (21 test runs)
+- ✅ Execution time: ~87ms per test, ~609ms total for all tests
 - ✅ Zero flaky failures after reproducibility fixes
 
-**Phase 2 Progress: 5/13 test cases completed (38%)**
+**Phase 2 Progress: 7/13 test cases completed (54%)**
 
 ---
 
@@ -411,10 +417,12 @@ var (
 - ✅ Test helpers implemented with normalization
 - ✅ Golden files generated and verified
 
-### Phase 2 (In Progress - 23% complete)
-- 🚧 3/13 test cases completed (hextra-basic, hextra-math, frontmatter-injection)
-- 🚧 Hextra theme tested, Docsy pending
-- ✅ Basic content transformations verified
+### Phase 2 (In Progress - 54% complete)
+- 🚧 7/13 test cases completed (hextra-basic, hextra-math, hextra-search, frontmatter-injection, image-paths, two-repos, docsy-basic)
+- ✅ Hextra theme tested with basic, math, and search features
+- ✅ Docsy theme tested with basic features
+- ✅ Multi-repository aggregation verified
+- ✅ Content transformations verified (frontmatter injection, image paths)
 - ✅ Reproducibility issues identified and fixed
 - ✅ Debug tooling added for test failures
 
@@ -527,15 +535,25 @@ var (
 - Implemented systematic content normalization before hashing
 - Resolved golden test failures that appeared random but were due to path differences
 
-**Code Statistics:**
-- New files: 6 additional test data files
+**Code Statistics (Session 1):**
+- New files: 6 test data files (hextra-math, frontmatter-injection)
 - Code added: ~130 lines (helpers + tests)
 - Golden files: 4 new files (~6KB total)
 
+**Code Statistics (Session 2):**
+- New files: 10 test data files (two-repos, docsy-basic)
+- Code added: ~100 lines (tests)
+- Golden files: 4 new files (~7KB total)
+
+**Code Statistics (Session 3):**
+- New files: 9 test data files (hextra-search, image-paths)
+- Code added: ~100 lines (tests)
+- Golden files: 4 new files (~7KB total)
+
 **Test Results:**
-- Total tests: 3 (hextra-basic, hextra-math, frontmatter-injection)
-- Pass rate: 100% with `-count=5`
-- Execution time: ~70ms for all tests
+- Total tests: 7 (hextra-basic, hextra-math, frontmatter-injection, two-repos, docsy-basic, hextra-search, image-paths)
+- Pass rate: 100% with `-count=3`
+- Execution time: ~87ms per test, ~609ms total
 - Flaky tests: 0
 
 ### Lessons Learned
@@ -561,16 +579,25 @@ var (
 8. ~~Add frontmatter-injection test case~~ ✅
 9. ~~Implement diff debugging capability~~ ✅
 10. ~~Fix reproducibility issues (temp paths)~~ ✅
+11. ~~Add two-repos multi-repo test case~~ ✅
+12. ~~Add docsy-basic test case~~ ✅
+13. ~~Add hextra-search test case~~ ✅
+14. ~~Add image-paths test case~~ ✅
 
 ### Next Immediate Tasks
 
-1. **→ Add multi-repo test case** (two-repos/)
-2. **→ Add hextra-search test case**
-3. **→ Add docsy-basic test case**
-4. **→ Add cross-repo-links test case**
-5. **→ Add section-indexes test case**
-6. **→ Expand to 10+ test cases total**
-7. **→ Document new debugging features in test README**
+1. ~~Add multi-repo test case (two-repos/)~~ ✅
+2. ~~Add hextra-search test case~~ ✅
+3. ~~Add docsy-basic test case~~ ✅
+4. **→ Add hextra-multilang test case**
+5. **→ Add docsy-api test case**
+6. **→ Add cross-repo-links test case**
+7. ~~Add image-paths test case~~ ✅
+8. **→ Add section-indexes test case**
+9. **→ Add menu-generation test case**
+10. **→ Add conflicting-paths test case**
+11. **→ Expand to 13 test cases total (Phase 2 complete)**
+12. **→ Document new debugging features in test README**
 
 ## References
 

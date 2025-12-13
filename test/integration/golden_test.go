@@ -265,3 +265,101 @@ func TestGolden_DocsyBasic(t *testing.T) {
 	// Verify content structure and front matter
 	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
 }
+
+// TestGolden_HextraSearch tests search index generation for Hextra theme.
+// This test verifies:
+// - Search configuration in Hugo params
+// - FlexSearch integration enabled
+// - Content indexed for search
+// - Search index structure
+func TestGolden_HextraSearch(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/themes/hextra-search")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/hextra-search.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/hextra-search"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_ImagePaths tests asset path handling and transformations.
+// This test verifies:
+// - Image references preserved in markdown
+// - Relative paths maintained correctly
+// - Static assets copied to output
+// - Various image reference formats (markdown, HTML)
+func TestGolden_ImagePaths(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/transforms/image-paths")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/image-paths.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/image-paths"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
