@@ -263,27 +263,24 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 
 // useReadmeAsIndex reads a README.md file and writes it as a repository _index.md,
 // ensuring proper front matter is added or preserved.
-// Since README.md is treated as a regular file during content copy, we need to read
-// the transformed version and adapt it as an index.
+// It uses the already-transformed content from DocFile.TransformedBytes to ensure
+// all pipeline transforms (link rewrites, front matter patches, etc.) are preserved.
+// This prevents the index stage from bypassing the transform pipeline.
 func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoName string) error {
-	// README.md has already been processed through the transform pipeline and written
-	// as readme.md in the content directory. Read the TRANSFORMED version.
-	transformedPath := filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
-	content, err := os.ReadFile(transformedPath)
-	if err != nil {
-		// Fallback to source if transformed file doesn't exist
-		slog.Warn("Transformed README not found, using source", "path", transformedPath, "error", err)
-		if len(readmeFile.Content) > 0 {
-			content = readmeFile.Content
-		} else {
-			content, err = os.ReadFile(readmeFile.Path)
-			if err != nil {
-				return fmt.Errorf("failed to read README.md for %s: %w", repoName, err)
-			}
-		}
+	// Use already-transformed content from the transform pipeline
+	if len(readmeFile.TransformedBytes) == 0 {
+		return fmt.Errorf("%w: README not yet transformed: %s (ensure copyContentFiles ran first)",
+			herrors.ErrContentTransformFailed, readmeFile.Path)
 	}
 
-	contentStr := string(content) // Check if README already has front matter
+	slog.Debug("Using transformed README as index",
+		slog.String("source", readmeFile.RelativePath),
+		slog.String("index", indexPath),
+		slog.Int("bytes", len(readmeFile.TransformedBytes)))
+
+	contentStr := string(readmeFile.TransformedBytes)
+
+	// Check if README already has front matter (it should, from transforms)
 	if strings.HasPrefix(contentStr, "---\n") {
 		// README has front matter, parse it and ensure required fields
 		parts := strings.SplitN(contentStr, "---\n", 3)
@@ -330,14 +327,20 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 		contentStr = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), contentStr)
 	}
 
+	// Create directory if needed
+	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
+		return fmt.Errorf("failed to create index directory: %w", err)
+	}
+
+	// Write the index file
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(contentStr), 0o644); err != nil {
 		return fmt.Errorf("failed to write repository index from README: %w", err)
 	}
 
 	// Remove the original readme.md file since we've promoted it to _index.md
-	transformedPath = filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
-	if err = os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
+	transformedPath := filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
+	if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
 		slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
 	}
 

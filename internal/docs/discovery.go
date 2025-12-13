@@ -14,17 +14,18 @@ import (
 
 // DocFile represents a discovered documentation file or asset
 type DocFile struct {
-	Path         string            // Absolute path to the file
-	RelativePath string            // Path relative to the docs directory
-	DocsBase     string            // The configured docs base path for this repo (e.g., "docs" or ".")
-	Repository   string            // Repository name
-	Forge        string            // Optional forge namespace (empty when single or not namespaced)
-	Section      string            // Documentation section/directory
-	Name         string            // File name without extension
-	Extension    string            // File extension
-	Content      []byte            // File content (loaded on demand)
-	Metadata     map[string]string // Additional metadata from config
-	IsAsset      bool              // True for images and other non-markdown files
+	Path             string            // Absolute path to the file
+	RelativePath     string            // Path relative to the docs directory
+	DocsBase         string            // The configured docs base path for this repo (e.g., "docs" or ".")
+	Repository       string            // Repository name
+	Forge            string            // Optional forge namespace (empty when single or not namespaced)
+	Section          string            // Documentation section/directory
+	Name             string            // File name without extension
+	Extension        string            // File extension
+	Content          []byte            // File content (loaded on demand)
+	TransformedBytes []byte            // Content after transform pipeline (populated during copyContentFiles)
+	Metadata         map[string]string // Additional metadata from config
+	IsAsset          bool              // True for images and other non-markdown files
 }
 
 // Discovery handles documentation file discovery

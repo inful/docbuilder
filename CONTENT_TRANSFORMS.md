@@ -16,6 +16,16 @@ This document explains DocBuilder's markdown content transform architecture: how
 3. Each transformer mutates a `PageShim` (bridging to the internal `Page`).
 4. Front matter is parsed, patches are accumulated, merged, then content and merged front matter are serialized back to bytes.
 
+## Transform Coverage
+
+All transforms registered in the pipeline apply to **all markdown files** including:
+- Regular documentation pages
+- README.md files
+- README.md files promoted to _index.md (repository/section indexes)
+- Custom index pages
+
+The index generation stage uses already-transformed content via `DocFile.TransformedBytes`, ensuring transforms are never bypassed. Previously, the index stage would re-read source files and bypass the transform pipeline, but this has been fixed as of ADR-002 implementation.
+
 ## Capability System
 
 **Forge Capabilities** (`internal/forge/capabilities.go`): Each forge type declares feature support flags:
