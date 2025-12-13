@@ -407,13 +407,14 @@ func buildStructureTree(rootDir string) map[string]interface{} {
 
 	return tree
 }
+
 // RenderedSample represents an HTML element to verify in rendered output.
 type RenderedSample struct {
-	File        string   `json:"file"`        // Relative path to HTML file in public/
-	Selector    string   `json:"selector"`    // CSS-like selector (simplified)
-	ExpectCount int      `json:"expectCount"` // Expected number of matches (0 = must not exist)
-	ContainsText string  `json:"containsText,omitempty"` // Text that should be present
-	Attributes  map[string]string `json:"attributes,omitempty"` // Expected attributes
+	File         string            `json:"file"`                   // Relative path to HTML file in public/
+	Selector     string            `json:"selector"`               // CSS-like selector (simplified)
+	ExpectCount  int               `json:"expectCount"`            // Expected number of matches (0 = must not exist)
+	ContainsText string            `json:"containsText,omitempty"` // Text that should be present
+	Attributes   map[string]string `json:"attributes,omitempty"`   // Expected attributes
 }
 
 // RenderedSamples is a collection of HTML verification samples.
@@ -427,7 +428,7 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 	t.Helper()
 
 	publicDir := filepath.Join(outputDir, "public")
-	
+
 	// Check if public directory exists (Hugo must have rendered)
 	if _, err := os.Stat(publicDir); os.IsNotExist(err) {
 		t.Skip("Skipping HTML verification - public directory not found (Hugo rendering disabled)")
@@ -451,7 +452,7 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 	for _, sample := range samples.Samples {
 		t.Run(sample.File+":"+sample.Selector, func(t *testing.T) {
 			htmlPath := filepath.Join(publicDir, sample.File)
-			
+
 			// Read HTML file
 			htmlFile, err := os.Open(htmlPath)
 			require.NoError(t, err, "failed to open HTML file: %s", sample.File)
@@ -463,10 +464,10 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 
 			// Find matching elements
 			matches := findElements(doc, sample.Selector)
-			
+
 			// Verify count
-			require.Equal(t, sample.ExpectCount, len(matches), 
-				"selector %s in %s: expected %d matches, got %d", 
+			require.Equal(t, sample.ExpectCount, len(matches),
+				"selector %s in %s: expected %d matches, got %d",
 				sample.Selector, sample.File, sample.ExpectCount, len(matches))
 
 			// Verify text content if specified
@@ -478,8 +479,8 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 						break
 					}
 				}
-				require.True(t, found, 
-					"selector %s in %s: expected to contain text %q", 
+				require.True(t, found,
+					"selector %s in %s: expected to contain text %q",
 					sample.Selector, sample.File, sample.ContainsText)
 			}
 
@@ -506,20 +507,20 @@ func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGol
 // Supports: tag, .class, #id, tag.class, tag#id
 func findElements(n *html.Node, selector string) []*html.Node {
 	var results []*html.Node
-	
+
 	// Parse simple selector
 	tag, class, id := parseSimpleSelector(selector)
-	
+
 	var walk func(*html.Node)
 	walk = func(node *html.Node) {
 		if node.Type == html.ElementNode {
 			match := true
-			
+
 			// Check tag
 			if tag != "" && node.Data != tag {
 				match = false
 			}
-			
+
 			// Check class
 			if match && class != "" {
 				classAttr := getAttr(node, "class")
@@ -527,24 +528,24 @@ func findElements(n *html.Node, selector string) []*html.Node {
 					match = false
 				}
 			}
-			
+
 			// Check id
 			if match && id != "" {
 				if getAttr(node, "id") != id {
 					match = false
 				}
 			}
-			
+
 			if match {
 				results = append(results, node)
 			}
 		}
-		
+
 		for child := node.FirstChild; child != nil; child = child.NextSibling {
 			walk(child)
 		}
 	}
-	
+
 	walk(n)
 	return results
 }
@@ -558,14 +559,14 @@ func parseSimpleSelector(selector string) (tag, class, id string) {
 		id = selector[idx+1:]
 		return
 	}
-	
+
 	// Find . for class
 	if idx := strings.Index(selector, "."); idx >= 0 {
 		tag = selector[:idx]
 		class = selector[idx+1:]
 		return
 	}
-	
+
 	// Just tag
 	tag = selector
 	return
@@ -586,13 +587,13 @@ func containsText(n *html.Node, text string) bool {
 	if n.Type == html.TextNode {
 		return strings.Contains(strings.ToLower(n.Data), strings.ToLower(text))
 	}
-	
+
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
 		if containsText(child, text) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 

@@ -987,16 +987,16 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 	}
 
 	result, err := svc.Run(context.Background(), req)
-	
+
 	// Build service is graceful - logs errors but may return success
 	// Verify that either we got an error OR the build shows skipped repos
 	if err == nil && result.Status == build.BuildStatusSuccess {
 		// Check that the repository was actually skipped
 		if result.RepositoriesSkipped == 0 && result.Repositories > 0 {
-			t.Errorf("build succeeded with invalid repository - expected repository to be skipped but got: Processed=%d, Skipped=%d", 
+			t.Errorf("build succeeded with invalid repository - expected repository to be skipped but got: Processed=%d, Skipped=%d",
 				result.Repositories, result.RepositoriesSkipped)
 		} else {
-			t.Logf("Build handled invalid repo gracefully - Processed: %d, Skipped: %d", 
+			t.Logf("Build handled invalid repo gracefully - Processed: %d, Skipped: %d",
 				result.Repositories, result.RepositoriesSkipped)
 		}
 	} else if err != nil {
@@ -1037,7 +1037,7 @@ func TestGolden_Error_InvalidConfig(t *testing.T) {
 	}
 
 	result, err := svc.Run(context.Background(), req)
-	
+
 	// Build may succeed with warning since empty config is technically valid
 	// The key is it doesn't crash
 	t.Logf("Build result with empty config - Status: %v, Error: %v", result.Status, err)
@@ -1058,23 +1058,23 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 
 	// Create a git repo without any commits
 	tmpDir := t.TempDir()
-	
+
 	// Create a minimal docs directory
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0755))
-	
+
 	testFile := filepath.Join(docsDir, "test.md")
 	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0644))
-	
+
 	// Initialize git but don't commit
 	cmd := exec.Command("git", "init")
 	cmd.Dir = tmpDir
 	require.NoError(t, cmd.Run())
-	
+
 	// Configure git
 	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
 	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
-	
+
 	// Add files but don't commit (this creates an edge case)
 	exec.Command("git", "-C", tmpDir, "add", ".").Run()
 
@@ -1099,7 +1099,7 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	}
 
 	result, err := svc.Run(context.Background(), req)
-	
+
 	// Build may succeed with warnings or fail gracefully
 	// The key is it shouldn't panic or crash
 	if err == nil {
