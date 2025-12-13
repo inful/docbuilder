@@ -45,6 +45,63 @@ jobs:
           fail_ci_if_error: false
         continue-on-error: true
 
+  golden-tests:
+    name: Golden Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cache Hugo
+        id: cache-hugo
+        uses: actions/cache@v4
+        with:
+          path: /tmp/hugo
+          key: hugo-0.152.2-linux-amd64
+
+      - name: Install Hugo Extended
+        if: steps.cache-hugo.outputs.cache-hit != 'true'
+        run: |
+          HUGO_VERSION="0.152.2"
+          wget -q "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz"
+          tar -xzf "hugo_extended_${HUGO_VERSION}_linux-amd64.tar.gz" hugo
+          mkdir -p /tmp/hugo
+          mv hugo /tmp/hugo/
+
+      - name: Add Hugo to PATH
+        run: |
+          sudo cp /tmp/hugo/hugo /usr/local/bin/
+          hugo version
+
+      - name: Run golden tests
+        run: go test -v -timeout=10m ./test/integration -run=TestGolden
+
+      - name: Check for uncommitted golden files
+        if: failure()
+        run: |
+          if git diff --quiet test/testdata/golden/; then
+            echo "✅ Golden files are up to date"
+          else
+            echo "❌ Golden files were modified during test execution!"
+            echo ""
+            echo "This usually means:"
+            echo "1. Code changes affected output but golden files weren't updated"
+            echo "2. Tests were run with -update-golden locally but changes not committed"
+            echo ""
+            echo "Changed files:"
+            git diff --name-only test/testdata/golden/
+            echo ""
+            echo "To fix: run 'go test ./test/integration -update-golden' and commit the changes"
+            exit 1
+          fi
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

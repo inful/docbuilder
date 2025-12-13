@@ -467,6 +467,59 @@ Warnings are emitted if every repository is filtered out so you can adjust patte
 - `docbuilder init` - Initialize a new configuration file
 - `docbuilder build --incremental` - Update existing repositories instead of fresh clone
 
+## Testing
+
+DocBuilder includes comprehensive test coverage through multiple testing strategies:
+
+### Golden Tests
+
+Golden tests verify end-to-end functionality by comparing generated output against known-good "golden" files. These tests cover:
+
+- **Theme Support**: Hextra and Docsy theme generation
+- **Content Transformations**: Front matter injection, link rewrites, image paths
+- **Multi-Repository**: Repository aggregation and conflict resolution
+- **Edge Cases**: Empty docs, Unicode filenames, deep nesting, malformed input
+- **HTML Rendering**: DOM verification of rendered static sites
+
+Run golden tests:
+
+```bash
+# Run all golden tests
+go test ./test/integration -run=TestGolden -v
+
+# Run specific test
+go test ./test/integration -run=TestGolden_HextraBasic -v
+
+# Update golden files when output changes are expected
+go test ./test/integration -run=TestGolden_HextraBasic -update-golden
+
+# Skip in short mode for faster test runs
+go test ./test/integration -short
+```
+
+**CI Integration**: Golden tests run automatically on every PR via GitHub Actions with Hugo pre-installed.
+
+**Documentation**: See [docs/testing/golden-test-implementation.md](docs/testing/golden-test-implementation.md) for implementation details.
+
+### Unit Tests
+
+Run the complete test suite:
+
+```bash
+# All tests with race detection and coverage
+go test -v -race -coverprofile=coverage.out ./...
+
+# Quick tests (skip slow integration tests)
+go test -short ./...
+```
+
+### Test Organization
+
+- `test/integration/` - Golden tests and integration test helpers
+- `test/testdata/` - Test fixtures, configurations, and golden files
+- `internal/*/` - Unit tests alongside production code
+
+
 ## Development
 
 ```bash
