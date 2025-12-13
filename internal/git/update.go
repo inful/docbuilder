@@ -44,6 +44,17 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 1. Fetch remote refs (only if needed)
 	if fetchNeeded {
+		if remoteSHA != "" {
+			slog.Info("Repository changed, fetching updates",
+				logfields.Name(repo.Name),
+				slog.String("branch", branch),
+				slog.String("remote_commit", remoteSHA[:8]))
+		} else {
+			slog.Info("Fetching repository updates",
+				logfields.Name(repo.Name),
+				slog.String("branch", branch))
+		}
+		
 		if err := c.fetchOrigin(repository, repo); err != nil {
 			return "", classifyFetchError(repo.URL, err)
 		}
@@ -53,8 +64,9 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 			c.remoteHeadCache.Set(repo.URL, branch, remoteSHA)
 		}
 	} else {
-		slog.Info("Skipped fetch (remote unchanged)",
+		slog.Info("Repository unchanged, skipping fetch",
 			logfields.Name(repo.Name),
+			slog.String("branch", branch),
 			slog.String("commit", remoteSHA[:8]))
 	}
 
