@@ -11,8 +11,11 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
@@ -40,21 +43,48 @@ func setupTestRepo(t *testing.T, repoPath string) string {
 	err := copyDir(repoPath, tmpDir)
 	require.NoError(t, err, "failed to copy test repo files")
 
-	cmd := exec.Command("git", "init", "-b", "main")
-	cmd.Dir = tmpDir
-	require.NoError(t, cmd.Run(), "failed to initialize git repo")
+	// Initialize git repository using go-git
+	repo, err := git.PlainInit(tmpDir, false)
+	require.NoError(t, err, "failed to initialize git repo")
 
-	configUser := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test")
-	require.NoError(t, configUser.Run(), "failed to configure git user.name")
+	// Get the worktree
+	w, err := repo.Worktree()
+	require.NoError(t, err, "failed to get worktree")
 
-	configEmail := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com")
-	require.NoError(t, configEmail.Run(), "failed to configure git user.email")
+	// Add all files
+	err = w.AddGlob(".")
+	require.NoError(t, err, "failed to add files to git")
 
-	addCmd := exec.Command("git", "-C", tmpDir, "add", ".")
-	require.NoError(t, addCmd.Run(), "failed to add files to git")
+	// Create initial commit
+	_, err = w.Commit("Initial test commit", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "Test",
+			Email: "test@example.com",
+			When:  time.Now(),
+		},
+	})
+	require.NoError(t, err, "failed to create initial commit")
 
-	commitCmd := exec.Command("git", "-C", tmpDir, "commit", "-m", "Initial test commit")
-	require.NoError(t, commitCmd.Run(), "failed to create initial commit")
+	// Ensure branch is named 'main' for consistency with test configs
+	// go-git creates a branch based on Git's default, so we rename if needed
+	headRef, err := repo.Head()
+	require.NoError(t, err, "failed to get HEAD")
+	
+	if headRef.Name().Short() != "main" {
+		// Create 'main' branch pointing to current HEAD
+		mainRef := headRef.Name()
+		err = w.Checkout(&git.CheckoutOptions{
+			Branch: "refs/heads/main",
+			Create: true,
+		})
+		require.NoError(t, err, "failed to create main branch")
+		
+		// Delete the old default branch if it's not main
+		if mainRef.Short() != "main" {
+			err = repo.Storer.RemoveReference(mainRef)
+			// Ignore error if reference doesn't exist
+		}
+	}
 
 	return tmpDir
 }
