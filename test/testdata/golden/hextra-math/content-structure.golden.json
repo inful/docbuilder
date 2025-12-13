@@ -1,0 +1,39 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Test KaTeX math rendering in Hextra theme",
+        "title": "Math Documentation Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:f8429d4fa970ad6e"
+    },
+    "content/hextra-math/_index.md": {
+      "frontmatter": {
+        "repository": "hextra-math",
+        "title": "Hextra-math",
+        "type": "docs"
+      },
+      "contentHash": "sha256:129bd9502648a64f"
+    },
+    "content/hextra-math/advanced.md": {
+      "frontmatter": {
+        "description": "Complex mathematical formulas and notation",
+        "repository": "hextra-math",
+        "title": "Advanced Mathematical Concepts",
+        "weight": 2
+      },
+      "contentHash": "sha256:6d87d52a3302ab92"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "hextra-math": {
+      "_index.md": {},
+      "advanced.md": {}
+    }
+  }
+}

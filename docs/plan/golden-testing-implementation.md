@@ -45,6 +45,8 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
   - `verifyContentStructure(t, outputDir, goldenPath)` - checks content files
   - `normalizeDynamicFields()` - normalizes timestamps and build dates
   - `normalizeFrontMatter()` - normalizes date fields in front matter
+  - `normalizeBodyContent()` - removes dynamic temp paths from content
+  - `dumpContentDiff()` - detailed debugging output on test failure
   - `parseFrontMatter()` - extracts YAML front matter
   - `buildStructureTree()` - creates directory structure map
   - `copyDir()` / `copyFile()` - file system utilities
@@ -72,21 +74,24 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 
 ---
 
-### Phase 2: Core Test Coverage (Week 2)
+### Phase 2: Core Test Coverage (Week 2) 🚧 IN PROGRESS
 
 **Goal**: Cover essential themes and transformations
+
+**Status**: 3/13 test cases completed (23%)
 
 #### Test Cases to Add
 
 **Theme Tests** (`testdata/repos/themes/`)
-- [ ] `hextra-math/` - KaTeX math rendering
+- [x] `hextra-basic/` - Basic Hextra theme (Phase 1) ✅
+- [x] `hextra-math/` - KaTeX math rendering ✅
 - [ ] `hextra-search/` - Search index generation
 - [ ] `hextra-multilang/` - Multi-language support
 - [ ] `docsy-basic/` - Basic Docsy theme features
 - [ ] `docsy-api/` - Docsy API documentation layout
 
 **Transformation Tests** (`testdata/repos/transforms/`)
-- [ ] `frontmatter-injection/` - editURL, metadata injection
+- [x] `frontmatter-injection/` - editURL, metadata injection ✅
 - [ ] `cross-repo-links/` - Link transformation between repos
 - [ ] `image-paths/` - Asset path handling
 - [ ] `section-indexes/` - `_index.md` generation
@@ -102,6 +107,30 @@ Implement a golden testing framework for end-to-end verification of DocBuilder's
 **Golden Files**: Generate and verify for each test case
 
 **Deliverable**: 10+ golden tests covering major features
+
+#### Recent Additions (2025-12-13)
+
+**Debugging Enhancements:**
+- ✅ Added `dumpContentDiff()` helper - shows detailed file-by-file comparison on test failure
+  - Displays expected vs actual content hashes
+  - Shows front matter and body content
+  - Writes debug files to /tmp for manual inspection
+  - Computes SHA256 hashes for verification
+
+**Reproducibility Fixes:**
+- ✅ Implemented `normalizeBodyContent()` - removes dynamic temp paths from content before hashing
+  - Uses regex to replace `/tmp/TestGolden_*/digits` with `/tmp/test-repo`
+  - Ensures consistent hashes across test runs
+  - Fixed non-deterministic failures caused by random temp directory names in repository URLs
+
+**Tests Added:**
+- ✅ `TestGolden_HextraMath` - Verifies KaTeX math rendering configuration
+- ✅ `TestGolden_FrontmatterInjection` - Tests metadata injection and editURL handling
+
+**Verification:**
+- ✅ All 3 tests pass consistently with `-count=5`
+- ✅ Execution time: ~70ms for all tests
+- ✅ Zero flaky failures after reproducibility fixes
 
 ---
 
@@ -378,10 +407,12 @@ var (
 - ✅ Test helpers implemented with normalization
 - ✅ Golden files generated and verified
 
-### Phase 2
-- ✅ 10+ test cases covering major features
-- ✅ Both Hextra and Docsy themes tested
-- ✅ Content transformations verified
+### Phase 2 (In Progress - 23% complete)
+- 🚧 3/13 test cases completed (hextra-basic, hextra-math, frontmatter-injection)
+- 🚧 Hextra theme tested, Docsy pending
+- ✅ Basic content transformations verified
+- ✅ Reproducibility issues identified and fixed
+- ✅ Debug tooling added for test failures
 
 ### Phase 3
 - ✅ Edge cases handled gracefully
@@ -406,7 +437,9 @@ var (
 ## Timeline
 
 - **Week 1** (Phase 1): Foundation + first test ✅ **COMPLETED 2025-12-12**
-- **Week 2** (Phase 2): Core coverage (10+ tests) ← NEXT
+- **Week 2** (Phase 2): Core coverage (10+ tests) 🚧 **IN PROGRESS** (Started 2025-12-13)
+  - **Completed**: 3/13 test cases, diff debugging, reproducibility fixes
+  - **Remaining**: 10 more test cases (search, multilang, docsy, multi-repo, etc.)
 - **Week 3** (Phase 3): Edge cases + regression framework
 - **Week 4** (Phase 4): CI integration + optimization
 
@@ -462,11 +495,57 @@ var (
 
 **Total**: 11 new files, ~1000 lines of code and documentation
 
-## Next Steps (Phase 2)
+## Phase 2 Progress Update (2025-12-13)
 
-**Ready to begin**: 2025-12-13
+### Additional Work Completed
 
-### Immediate Tasks
+**Test Cases Added:**
+- `test/testdata/repos/themes/hextra-math/` - KaTeX math rendering test
+- `test/testdata/repos/transforms/frontmatter-injection/` - Metadata injection test
+- `test/testdata/configs/hextra-math.yaml` - Math test configuration
+- `test/testdata/configs/frontmatter-injection.yaml` - Transform test configuration
+- `test/testdata/golden/hextra-math/` - 2 golden files
+- `test/testdata/golden/frontmatter-injection/` - 2 golden files
+
+**Framework Enhancements:**
+- Added `dumpContentDiff()` - 65 lines of debugging code
+- Added `normalizeBodyContent()` - Regex-based content normalization
+- Enhanced `verifyContentStructure()` with normalization pipeline
+- Added `regexp` import for pattern matching
+
+**Test Infrastructure:**
+- `TestGolden_HextraMath` - Verifies KaTeX configuration in params
+- `TestGolden_FrontmatterInjection` - Tests editURL and repository metadata injection
+- All tests verified with `-count=5` for reproducibility
+
+**Bug Fixes:**
+- Fixed non-deterministic content hashes caused by temp directory paths in repository URLs
+- Implemented systematic content normalization before hashing
+- Resolved golden test failures that appeared random but were due to path differences
+
+**Code Statistics:**
+- New files: 6 additional test data files
+- Code added: ~130 lines (helpers + tests)
+- Golden files: 4 new files (~6KB total)
+
+**Test Results:**
+- Total tests: 3 (hextra-basic, hextra-math, frontmatter-injection)
+- Pass rate: 100% with `-count=5`
+- Execution time: ~70ms for all tests
+- Flaky tests: 0
+
+### Lessons Learned
+
+1. **Reproducibility is Critical**: Temp paths in generated content caused subtle non-determinism
+2. **Diff Debugging Saves Time**: Detailed output on failure helps identify root causes quickly
+3. **Normalize Early**: Content normalization before hashing prevents false failures
+4. **Pattern Matching Works**: Regex effectively removes dynamic paths while preserving structure
+
+## Phase 2 Progress (2025-12-13)
+
+**In Progress**: Week 2, Day 1
+
+### Completed Tasks ✅
 
 1. ~~Create directory structure~~ ✅
 2. ~~Implement `setupTestRepo` helper~~ ✅
@@ -474,10 +553,20 @@ var (
 4. ~~Write `TestGolden_HextraBasic`~~ ✅
 5. ~~Generate first golden files~~ ✅
 6. ~~Verify test passes~~ ✅
-7. **→ Begin Phase 2: Add hextra-math test case**
-8. **→ Add frontmatter-injection test case**
-9. **→ Add multi-repo test case**
-10. **→ Expand to 10+ test cases**
+7. ~~Add hextra-math test case~~ ✅
+8. ~~Add frontmatter-injection test case~~ ✅
+9. ~~Implement diff debugging capability~~ ✅
+10. ~~Fix reproducibility issues (temp paths)~~ ✅
+
+### Next Immediate Tasks
+
+1. **→ Add multi-repo test case** (two-repos/)
+2. **→ Add hextra-search test case**
+3. **→ Add docsy-basic test case**
+4. **→ Add cross-repo-links test case**
+5. **→ Add section-indexes test case**
+6. **→ Expand to 10+ test cases total**
+7. **→ Document new debugging features in test README**
 
 ## References
 

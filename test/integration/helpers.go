@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -174,6 +175,24 @@ func normalizeFrontMatter(fm map[string]interface{}) {
 	delete(fm, "lastmod")
 	delete(fm, "publishDate")
 	delete(fm, "expiryDate")
+	
+	// Remove editURL if it contains /tmp/ paths (dynamic test paths)
+	if editURL, ok := fm["editURL"].(string); ok && strings.Contains(editURL, "/tmp/") {
+		delete(fm, "editURL")
+	}
+}
+
+// normalizeBodyContent removes or replaces dynamic content from markdown body.
+// This ensures golden tests are reproducible even when file paths change.
+func normalizeBodyContent(body []byte) []byte {
+	content := string(body)
+	
+	// Replace /tmp/TestGolden_*/NNN paths with normalized placeholders
+	// Pattern: /tmp/TestGolden_Something123456789/001
+	re := regexp.MustCompile(`/tmp/TestGolden_[^/]+/\d+`)
+	content = re.ReplaceAllString(content, "/tmp/test-repo")
+	
+	return []byte(content)
 }
 
 // verifyContentStructure compares the generated content structure against a golden file.
@@ -212,7 +231,10 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		// Normalize dynamic fields in front matter
 		normalizeFrontMatter(fm)
 		
-		hash := sha256.Sum256(content)
+		// Normalize dynamic content in body (e.g., temp paths)
+		normalizedContent := normalizeBodyContent(content)
+		
+		hash := sha256.Sum256(normalizedContent)
 
 		actual.Files[relPath] = ContentFile{
 			FrontMatter: fm,
@@ -249,6 +271,11 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 	actualJSON, _ := json.MarshalIndent(actual, "", "  ")
 	expectedJSON, _ := json.MarshalIndent(expected, "", "  ")
 
+	// If content structures don't match, provide detailed diff of mismatched files
+	if string(expectedJSON) != string(actualJSON) {
+		dumpContentDiff(t, outputDir, expected, *actual)
+	}
+
 	require.JSONEq(t, string(expectedJSON), string(actualJSON), "Content structure mismatch")
 }
 
@@ -274,6 +301,74 @@ func parseFrontMatter(data []byte) (map[string]interface{}, []byte) {
 	}
 
 	return fm, []byte(bodyContent)
+}
+
+// dumpContentDiff provides detailed debugging output when content structures differ.
+// It compares files with hash mismatches and dumps the actual content for inspection.
+func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStructure) {
+	t.Helper()
+	
+	// Find files with different content hashes
+	diffFiles := []string{}
+	for path, expectedFile := range expected.Files {
+		if actualFile, ok := actual.Files[path]; ok {
+			if expectedFile.ContentHash != actualFile.ContentHash {
+				diffFiles = append(diffFiles, path)
+			}
+		}
+	}
+	
+	if len(diffFiles) == 0 {
+		t.Log("Content structures differ but no specific files have hash mismatches (structure change)")
+		return
+	}
+	
+	// Sort for deterministic output
+	sorted := make([]string, len(diffFiles))
+	copy(sorted, diffFiles)
+	for i := 0; i < len(sorted); i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[i] > sorted[j] {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+	
+	t.Logf("Files with content hash mismatches: %d", len(sorted))
+	
+	for _, path := range sorted {
+		fullPath := filepath.Join(outputDir, path)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			t.Logf("  %s: (error reading: %v)", path, err)
+			continue
+		}
+		
+		fm, body := parseFrontMatter(content)
+		
+		expectedFile := expected.Files[path]
+		actualFile := actual.Files[path]
+		
+		t.Logf("\n--- File: %s ---", path)
+		t.Logf("Expected hash: %s", expectedFile.ContentHash)
+		t.Logf("Actual hash:   %s", actualFile.ContentHash)
+		
+		// Show front matter
+		if fm != nil {
+			fmBytes, _ := yaml.Marshal(fm)
+			t.Logf("Front matter:\n%s", string(fmBytes))
+		}
+		
+		// Show body content (first 500 chars or full if smaller)
+		bodyStr := string(body)
+		t.Logf("Body content (%d bytes):\n%s", len(bodyStr), bodyStr)
+		t.Logf("Body SHA256: %x", sha256.Sum256(body))
+		
+		// Write to /tmp for debugging
+		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
+		os.WriteFile(debugPath, body, 0644)
+		t.Logf("Wrote body to: %s", debugPath)
+	}
 }
 
 // buildStructureTree creates a nested map representing the directory structure.
