@@ -2,6 +2,7 @@ package hugo
 
 import (
 	_ "embed"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -18,6 +19,8 @@ func (g *Generator) copyTransitionAssets() error {
 	if g.config == nil || !g.config.Hugo.EnableTransitions {
 		return nil
 	}
+
+	slog.Debug("View Transitions API enabled, copying transition assets")
 
 	staticDir := filepath.Join(g.buildRoot(), "static")
 	if err := os.MkdirAll(staticDir, 0o750); err != nil {
@@ -37,6 +40,11 @@ func (g *Generator) copyTransitionAssets() error {
 	if err := os.WriteFile(jsPath, transitionJS, 0644); err != nil {
 		return err
 	}
+
+	slog.Debug("View Transitions assets copied",
+		"css", "view-transitions.css",
+		"js", "view-transitions.js",
+		"duration", g.config.Hugo.TransitionDuration)
 
 	return nil
 }
