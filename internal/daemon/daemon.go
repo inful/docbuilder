@@ -663,6 +663,22 @@ func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.Config) err
 	}
 
 	slog.Info("Configuration reloaded successfully")
+
+	// Trigger a rebuild to apply the new configuration
+	// This is done outside the lock to avoid deadlock, so we return immediately
+	// and let the goroutine handle the build trigger
+	go func() {
+		// Use a short delay to ensure config is fully applied
+		time.Sleep(500 * time.Millisecond)
+
+		jobID := d.TriggerBuild()
+		if jobID != "" {
+			slog.Info("Triggered rebuild after config reload", "job_id", jobID)
+		} else {
+			slog.Warn("Failed to trigger rebuild after config reload - daemon may not be running")
+		}
+	}()
+
 	return nil
 }
 
