@@ -1,0 +1,91 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
+        "description": "Testing automatic _index.md generation for sections",
+        "title": "Section Index Testing",
+        "type": "docs"
+      },
+      "contentHash": "sha256:ecea862f87944c2f"
+    },
+    "content/section-docs/_index.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "Section-docs",
+        "type": "docs"
+      },
+      "contentHash": "sha256:4b03a41d30a81eda"
+    },
+    "content/section-docs/advanced/_index.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "advanced",
+        "title": "Advanced"
+      },
+      "contentHash": "sha256:cdbf3d19ea892942"
+    },
+    "content/section-docs/advanced/plugins.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "advanced",
+        "title": "Plugin System",
+        "weight": 2
+      },
+      "contentHash": "sha256:1a48a9b5bf943675"
+    },
+    "content/section-docs/advanced/themes.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "advanced",
+        "title": "Custom Themes",
+        "weight": 1
+      },
+      "contentHash": "sha256:503cccc2819b3041"
+    },
+    "content/section-docs/getting-started/_index.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "getting-started",
+        "title": "Getting-started"
+      },
+      "contentHash": "sha256:f1b22268f30d024b"
+    },
+    "content/section-docs/getting-started/configuration.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "getting-started",
+        "title": "Configuration",
+        "weight": 2
+      },
+      "contentHash": "sha256:6a1b550c2813f873"
+    },
+    "content/section-docs/getting-started/installation.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "section": "getting-started",
+        "title": "Installation",
+        "weight": 1
+      },
+      "contentHash": "sha256:998fbd1006eaaa8b"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "section-docs": {
+      "_index.md": {},
+      "advanced": {
+        "_index.md": {},
+        "plugins.md": {},
+        "themes.md": {}
+      },
+      "getting-started": {
+        "_index.md": {},
+        "configuration.md": {},
+        "installation.md": {}
+      }
+    }
+  }
+}

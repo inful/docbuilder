@@ -363,3 +363,103 @@ func TestGolden_ImagePaths(t *testing.T) {
 	// Verify content structure and front matter
 	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
 }
+
+// TestGolden_SectionIndexes tests automatic _index.md generation for sections.
+// This test verifies:
+// - _index.md files created for each directory/section
+// - Section metadata properly populated
+// - Nested sections handled correctly
+// - Section ordering and hierarchy
+func TestGolden_SectionIndexes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/transforms/section-indexes")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/section-indexes.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/section-indexes"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_ConflictingPaths tests handling of same-named files from different repositories.
+// This test verifies:
+// - Files with same names from different repos don't conflict
+// - Content organized under separate repository sections
+// - Both files preserved with correct content
+// - No data loss or overwriting
+func TestGolden_ConflictingPaths(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repositories from testdata
+	repoAPath := setupTestRepo(t, "../../test/testdata/repos/multi-repo/conflicting-paths/repo-a")
+	repoBPath := setupTestRepo(t, "../../test/testdata/repos/multi-repo/conflicting-paths/repo-b")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/conflicting-paths.yaml")
+
+	// Point configuration to temporary repositories
+	require.Len(t, cfg.Repositories, 2, "expected exactly two repositories in config")
+	cfg.Repositories[0].URL = repoAPath
+	cfg.Repositories[1].URL = repoBPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/conflicting-paths"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
