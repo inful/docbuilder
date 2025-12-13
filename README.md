@@ -78,13 +78,12 @@ Documentation files undergo a transform pipeline:
 2. **Front Matter Building** - Add repository metadata and edit links
 3. **Edit Link Injection** - Generate source edit URLs based on forge capabilities
 4. **Front Matter Merge** - Combine parsed and generated metadata
-docbuilder build -c config.yaml --render-mode always
+5. **Content Transformation** - Apply configured content transformations
 6. **Front Matter Serialization** - Write final YAML headers
 
 ### Extension Points
 
 - **Themes**: Register new Hugo themes with capability declarations
-docbuilder build -c config.yaml --render-mode never
 - **Forges**: Support new Git hosting platforms with authentication methods
 
 ## Installation
