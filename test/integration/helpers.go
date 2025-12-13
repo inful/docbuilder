@@ -14,6 +14,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 )
 
@@ -175,7 +176,7 @@ func normalizeFrontMatter(fm map[string]interface{}) {
 	delete(fm, "lastmod")
 	delete(fm, "publishDate")
 	delete(fm, "expiryDate")
-	
+
 	// Remove editURL if it contains /tmp/ paths (dynamic test paths)
 	if editURL, ok := fm["editURL"].(string); ok && strings.Contains(editURL, "/tmp/") {
 		delete(fm, "editURL")
@@ -186,12 +187,12 @@ func normalizeFrontMatter(fm map[string]interface{}) {
 // This ensures golden tests are reproducible even when file paths change.
 func normalizeBodyContent(body []byte) []byte {
 	content := string(body)
-	
+
 	// Replace /tmp/TestGolden_*/NNN paths with normalized placeholders
 	// Pattern: /tmp/TestGolden_Something123456789/001
 	re := regexp.MustCompile(`/tmp/TestGolden_[^/]+/\d+`)
 	content = re.ReplaceAllString(content, "/tmp/test-repo")
-	
+
 	return []byte(content)
 }
 
@@ -227,13 +228,13 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		}
 
 		fm, content := parseFrontMatter(data)
-		
+
 		// Normalize dynamic fields in front matter
 		normalizeFrontMatter(fm)
-		
+
 		// Normalize dynamic content in body (e.g., temp paths)
 		normalizedContent := normalizeBodyContent(content)
-		
+
 		hash := sha256.Sum256(normalizedContent)
 
 		actual.Files[relPath] = ContentFile{
@@ -307,7 +308,7 @@ func parseFrontMatter(data []byte) (map[string]interface{}, []byte) {
 // It compares files with hash mismatches and dumps the actual content for inspection.
 func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStructure) {
 	t.Helper()
-	
+
 	// Find files with different content hashes
 	diffFiles := []string{}
 	for path, expectedFile := range expected.Files {
@@ -317,12 +318,12 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 			}
 		}
 	}
-	
+
 	if len(diffFiles) == 0 {
 		t.Log("Content structures differ but no specific files have hash mismatches (structure change)")
 		return
 	}
-	
+
 	// Sort for deterministic output
 	sorted := make([]string, len(diffFiles))
 	copy(sorted, diffFiles)
@@ -333,9 +334,9 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 			}
 		}
 	}
-	
+
 	t.Logf("Files with content hash mismatches: %d", len(sorted))
-	
+
 	for _, path := range sorted {
 		fullPath := filepath.Join(outputDir, path)
 		content, err := os.ReadFile(fullPath)
@@ -343,27 +344,27 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 			t.Logf("  %s: (error reading: %v)", path, err)
 			continue
 		}
-		
+
 		fm, body := parseFrontMatter(content)
-		
+
 		expectedFile := expected.Files[path]
 		actualFile := actual.Files[path]
-		
+
 		t.Logf("\n--- File: %s ---", path)
 		t.Logf("Expected hash: %s", expectedFile.ContentHash)
 		t.Logf("Actual hash:   %s", actualFile.ContentHash)
-		
+
 		// Show front matter
 		if fm != nil {
 			fmBytes, _ := yaml.Marshal(fm)
 			t.Logf("Front matter:\n%s", string(fmBytes))
 		}
-		
+
 		// Show body content (first 500 chars or full if smaller)
 		bodyStr := string(body)
 		t.Logf("Body content (%d bytes):\n%s", len(bodyStr), bodyStr)
 		t.Logf("Body SHA256: %x", sha256.Sum256(body))
-		
+
 		// Write to /tmp for debugging
 		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
 		os.WriteFile(debugPath, body, 0644)
@@ -405,4 +406,218 @@ func buildStructureTree(rootDir string) map[string]interface{} {
 	})
 
 	return tree
+}
+// RenderedSample represents an HTML element to verify in rendered output.
+type RenderedSample struct {
+	File        string   `json:"file"`        // Relative path to HTML file in public/
+	Selector    string   `json:"selector"`    // CSS-like selector (simplified)
+	ExpectCount int      `json:"expectCount"` // Expected number of matches (0 = must not exist)
+	ContainsText string  `json:"containsText,omitempty"` // Text that should be present
+	Attributes  map[string]string `json:"attributes,omitempty"` // Expected attributes
+}
+
+// RenderedSamples is a collection of HTML verification samples.
+type RenderedSamples struct {
+	Samples []RenderedSample `json:"samples"`
+}
+
+// verifyRenderedSamples verifies specific HTML elements in rendered Hugo output.
+// This uses golang.org/x/net/html to parse and validate DOM structure.
+func verifyRenderedSamples(t *testing.T, outputDir, goldenPath string, updateGolden bool) {
+	t.Helper()
+
+	publicDir := filepath.Join(outputDir, "public")
+	
+	// Check if public directory exists (Hugo must have rendered)
+	if _, err := os.Stat(publicDir); os.IsNotExist(err) {
+		t.Skip("Skipping HTML verification - public directory not found (Hugo rendering disabled)")
+		return
+	}
+
+	if updateGolden {
+		t.Skip("Skipping HTML verification in update-golden mode (requires manual golden file creation)")
+		return
+	}
+
+	// Load golden samples
+	goldenData, err := os.ReadFile(goldenPath)
+	require.NoError(t, err, "failed to read golden samples file")
+
+	var samples RenderedSamples
+	err = json.Unmarshal(goldenData, &samples)
+	require.NoError(t, err, "failed to parse golden samples")
+
+	// Verify each sample
+	for _, sample := range samples.Samples {
+		t.Run(sample.File+":"+sample.Selector, func(t *testing.T) {
+			htmlPath := filepath.Join(publicDir, sample.File)
+			
+			// Read HTML file
+			htmlFile, err := os.Open(htmlPath)
+			require.NoError(t, err, "failed to open HTML file: %s", sample.File)
+			defer htmlFile.Close()
+
+			// Parse HTML
+			doc, err := html.Parse(htmlFile)
+			require.NoError(t, err, "failed to parse HTML: %s", sample.File)
+
+			// Find matching elements
+			matches := findElements(doc, sample.Selector)
+			
+			// Verify count
+			require.Equal(t, sample.ExpectCount, len(matches), 
+				"selector %s in %s: expected %d matches, got %d", 
+				sample.Selector, sample.File, sample.ExpectCount, len(matches))
+
+			// Verify text content if specified
+			if sample.ContainsText != "" && len(matches) > 0 {
+				found := false
+				for _, node := range matches {
+					if containsText(node, sample.ContainsText) {
+						found = true
+						break
+					}
+				}
+				require.True(t, found, 
+					"selector %s in %s: expected to contain text %q", 
+					sample.Selector, sample.File, sample.ContainsText)
+			}
+
+			// Verify attributes if specified
+			if len(sample.Attributes) > 0 && len(matches) > 0 {
+				for attrName, expectedValue := range sample.Attributes {
+					found := false
+					for _, node := range matches {
+						if getAttr(node, attrName) == expectedValue {
+							found = true
+							break
+						}
+					}
+					require.True(t, found,
+						"selector %s in %s: expected attribute %s=%q",
+						sample.Selector, sample.File, attrName, expectedValue)
+				}
+			}
+		})
+	}
+}
+
+// findElements searches for elements matching a simplified CSS selector.
+// Supports: tag, .class, #id, tag.class, tag#id
+func findElements(n *html.Node, selector string) []*html.Node {
+	var results []*html.Node
+	
+	// Parse simple selector
+	tag, class, id := parseSimpleSelector(selector)
+	
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node.Type == html.ElementNode {
+			match := true
+			
+			// Check tag
+			if tag != "" && node.Data != tag {
+				match = false
+			}
+			
+			// Check class
+			if match && class != "" {
+				classAttr := getAttr(node, "class")
+				if !strings.Contains(" "+classAttr+" ", " "+class+" ") {
+					match = false
+				}
+			}
+			
+			// Check id
+			if match && id != "" {
+				if getAttr(node, "id") != id {
+					match = false
+				}
+			}
+			
+			if match {
+				results = append(results, node)
+			}
+		}
+		
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	
+	walk(n)
+	return results
+}
+
+// parseSimpleSelector parses a simplified CSS selector into tag, class, and id.
+// Examples: "div", "div.container", "#main", "article#post"
+func parseSimpleSelector(selector string) (tag, class, id string) {
+	// Find # for id
+	if idx := strings.Index(selector, "#"); idx >= 0 {
+		tag = selector[:idx]
+		id = selector[idx+1:]
+		return
+	}
+	
+	// Find . for class
+	if idx := strings.Index(selector, "."); idx >= 0 {
+		tag = selector[:idx]
+		class = selector[idx+1:]
+		return
+	}
+	
+	// Just tag
+	tag = selector
+	return
+}
+
+// getAttr retrieves an attribute value from an HTML node.
+func getAttr(n *html.Node, key string) string {
+	for _, attr := range n.Attr {
+		if attr.Key == key {
+			return attr.Val
+		}
+	}
+	return ""
+}
+
+// containsText checks if a node or its descendants contain the specified text.
+func containsText(n *html.Node, text string) bool {
+	if n.Type == html.TextNode {
+		return strings.Contains(strings.ToLower(n.Data), strings.ToLower(text))
+	}
+	
+	for child := n.FirstChild; child != nil; child = child.NextSibling {
+		if containsText(child, text) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// renderHugoSite runs `hugo` command to generate static HTML from the Hugo site.
+// Returns the path to the public directory.
+func renderHugoSite(t *testing.T, hugoSiteDir string) string {
+	t.Helper()
+
+	// Check if hugo is available
+	if _, err := exec.LookPath("hugo"); err != nil {
+		t.Skip("Hugo not found in PATH, skipping HTML rendering tests")
+		return ""
+	}
+
+	// Run hugo build
+	cmd := exec.Command("hugo", "--quiet")
+	cmd.Dir = hugoSiteDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Hugo build output:\n%s", output)
+		require.NoError(t, err, "hugo build failed")
+	}
+
+	publicDir := filepath.Join(hugoSiteDir, "public")
+	require.DirExists(t, publicDir, "public directory should exist after hugo build")
+
+	return publicDir
 }
