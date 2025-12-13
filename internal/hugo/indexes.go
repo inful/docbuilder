@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -17,6 +17,65 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
 )
+
+// sortDocFiles sorts a slice of DocFile by path for deterministic ordering
+func sortDocFiles(files []docs.DocFile) {
+	sort.Slice(files, func(i, j int) bool {
+		// Sort by repository, then section, then name
+		if files[i].Repository != files[j].Repository {
+			return files[i].Repository < files[j].Repository
+		}
+		if files[i].Section != files[j].Section {
+			return files[i].Section < files[j].Section
+		}
+		return files[i].Name < files[j].Name
+	})
+}
+
+// sortedSectionMap creates a deterministically ordered slice of section entries
+type sectionEntry struct {
+	Name  string
+	Files []docs.DocFile
+}
+
+func makeSortedSections(sectionGroups map[string][]docs.DocFile) []sectionEntry {
+	sections := make([]sectionEntry, 0, len(sectionGroups))
+	for name, files := range sectionGroups {
+		sortDocFiles(files)
+		sections = append(sections, sectionEntry{Name: name, Files: files})
+	}
+	sort.Slice(sections, func(i, j int) bool {
+		// "root" section always comes first, then alphabetical
+		if sections[i].Name == "root" {
+			return true
+		}
+		if sections[j].Name == "root" {
+			return false
+		}
+		return sections[i].Name < sections[j].Name
+	})
+	return sections
+}
+
+// sortedTagMap creates a deterministically ordered slice of tag entries
+type tagEntry struct {
+	Key   string
+	Value string
+}
+
+func makeSortedTags(tags map[string]string) []tagEntry {
+	if tags == nil {
+		return nil
+	}
+	entries := make([]tagEntry, 0, len(tags))
+	for k, v := range tags {
+		entries = append(entries, tagEntry{Key: k, Value: v})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Key < entries[j].Key
+	})
+	return entries
+}
 
 // generateIndexPages creates index pages for sections and the main site
 func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
@@ -38,7 +97,8 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	for _, file := range docFiles {
 		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
 	}
-	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": time.Now().Format("2006-01-02T15:04:05-07:00"), "type": "docs"}
+	// Use fixed epoch date for reproducible builds (user can override via custom index.md)
+	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
 	if g.config.Hugo.ThemeType() == config.ThemeHextra {
 		frontMatter["cascade"] = map[string]any{"type": "docs"}
 	}
@@ -95,6 +155,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		// Case 4: Both exist → index.md becomes _index.md, README.md copied as regular doc
 		//
 		// See docs/reference/index-files.md for complete documentation
+		// Use fixed epoch date for reproducible builds (user can override via custom index.md)
 		var userIndexFile *docs.DocFile
 		var readmeFile *docs.DocFile
 
@@ -142,7 +203,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			continue
 		}
 
-		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": "2024-01-01T00:00:00Z"}
 		fmData, err := yaml.Marshal(frontMatter)
 		if err != nil {
 			return fmt.Errorf("failed to marshal front matter: %w", err)
@@ -156,17 +217,25 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			}
 			sectionGroups[s] = append(sectionGroups[s], file)
 		}
+
+		// Convert to sorted sections for deterministic template output
+		sortedSections := makeSortedSections(sectionGroups)
+
 		tplRaw := g.mustIndexTemplate("repository")
 		ctx := buildIndexTemplateContext(g, files, map[string][]docs.DocFile{repoName: files}, frontMatter)
-		ctx["Sections"] = sectionGroups
+		ctx["Sections"] = sortedSections
 		// Add repository metadata if available
 		if repoConfig := g.findRepositoryConfig(repoName); repoConfig != nil {
-			ctx["RepositoryInfo"] = map[string]any{
+			repoInfo := map[string]any{
 				"URL":         repoConfig.URL,
 				"Branch":      repoConfig.Branch,
 				"Description": repoConfig.Description,
-				"Tags":        repoConfig.Tags,
 			}
+			// Add sorted tags for deterministic output
+			if repoConfig.Tags != nil {
+				repoInfo["Tags"] = makeSortedTags(repoConfig.Tags)
+			}
+			ctx["RepositoryInfo"] = repoInfo
 		}
 		tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 		if err != nil {
@@ -233,7 +302,7 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 				existingFM["repository"] = repoName
 			}
 			if existingFM["date"] == nil {
-				existingFM["date"] = time.Now().Format("2006-01-02T15:04:05-07:00")
+				existingFM["date"] = "2024-01-01T00:00:00Z"
 			}
 
 			// Re-marshal the front matter
@@ -250,7 +319,7 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 			"title":      titleCase(repoName),
 			"repository": repoName,
 			"type":       "docs",
-			"date":       time.Now().Format("2006-01-02T15:04:05-07:00"),
+			"date":       "2024-01-01T00:00:00Z",
 		}
 
 		fmData, err := yaml.Marshal(frontMatter)
@@ -338,7 +407,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			}
 			// Use only the last segment of the section path for the title
 			sectionTitle := filepath.Base(sectionName)
-			frontMatter := map[string]any{"title": titleCase(sectionTitle), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+			frontMatter := map[string]any{"title": titleCase(sectionTitle), "repository": repoName, "section": sectionName, "date": "2024-01-01T00:00:00Z"}
 			fmData, err := yaml.Marshal(frontMatter)
 			if err != nil {
 				return fmt.Errorf("failed to marshal front matter: %w", err)
@@ -400,7 +469,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 
 			// Use only the last segment of the section path for the title
 			sectionTitle := filepath.Base(sectionName)
-			frontMatter := map[string]any{"title": titleCase(sectionTitle), "repository": repoName, "section": sectionName, "date": time.Now().Format("2006-01-02T15:04:05-07:00")}
+			frontMatter := map[string]any{"title": titleCase(sectionTitle), "repository": repoName, "section": sectionName, "date": "2024-01-01T00:00:00Z"}
 			fmData, err := yaml.Marshal(frontMatter)
 			if err != nil {
 				return fmt.Errorf("failed to marshal front matter: %w", err)
@@ -464,7 +533,7 @@ func buildIndexTemplateContext(g *Generator, docFiles []docs.DocFile, repoGroups
 	ctx["FrontMatter"] = frontMatter
 	ctx["Repositories"] = repoGroups
 	ctx["Files"] = docFiles
-	ctx["Now"] = time.Now()
+	// Removed: ctx["Now"] = time.Now() - use fixed date in frontmatter instead for reproducible builds
 	ctx["Stats"] = map[string]any{
 		"TotalFiles":        len(docFiles),
 		"TotalRepositories": len(repoGroups),

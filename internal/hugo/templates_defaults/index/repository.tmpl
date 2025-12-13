@@ -10,14 +10,14 @@
 **Branch:** `{{ .RepositoryInfo.Branch }}`
 {{ end -}}
 {{ if .RepositoryInfo.Tags }}
-**Tags:** {{ range $key, $value := .RepositoryInfo.Tags }}`{{ $key }}:{{ $value }}` {{ end }}
+**Tags:** {{ range .RepositoryInfo.Tags }}`{{ .Key }}:{{ .Value }}` {{ end }}
 {{ end }}
 {{ end }}
 
-{{ range $section, $files := .Sections -}}
-{{ if eq $section "root" }}## Sections
-{{ else }}## {{ titleCase $section }}
+{{ range .Sections -}}
+{{ if eq .Name "root" }}## Sections
+{{ else }}## {{ titleCase .Name }}
 {{ end }}
-{{ range $files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section | lower }}/{{ .Name | lower }}{{ else }}{{ .Name | lower }}{{ end }}/)
+{{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section | lower }}/{{ .Name | lower }}{{ else }}{{ .Name | lower }}{{ end }}/)
 {{ end }}
 {{ end }}
