@@ -21,6 +21,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // Status represents the current state of the daemon
@@ -120,6 +121,10 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Create canonical BuildService (Phase D - Single Execution Pipeline)
 	buildService := build.NewBuildService().
+		WithWorkspaceFactory(func() *workspace.Manager {
+			// Use repo_cache_dir from daemon config for persistent repository storage
+			return workspace.NewManager(cfg.Daemon.Storage.RepoCacheDir)
+		}).
 		WithHugoGeneratorFactory(func(cfg any, outputDir string) build.HugoGenerator {
 			// Type assert cfg to *config.Config
 			configTyped, ok := cfg.(*config.Config)
