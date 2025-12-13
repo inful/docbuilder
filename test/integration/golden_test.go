@@ -561,3 +561,103 @@ func TestGolden_DocsyAPI(t *testing.T) {
 	// Verify content structure and front matter
 	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
 }
+
+// TestGolden_HextraMultilang tests multi-language support with Hextra theme.
+// This test verifies:
+// - Multiple language directories (en/, es/)
+// - Language-specific content organization
+// - defaultContentLanguage parameter
+// - Content duplication across languages
+func TestGolden_HextraMultilang(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, "../../test/testdata/repos/themes/hextra-multilang")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/hextra-multilang.yaml")
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/hextra-multilang"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
+
+// TestGolden_CrossRepoLinks tests link transformation between repositories.
+// This test verifies:
+// - Cross-repository markdown links preserved
+// - Relative links maintained correctly
+// - Link paths updated for Hugo structure
+// - No broken links between repos
+func TestGolden_CrossRepoLinks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	// Create temporary git repositories from testdata
+	frontendPath := setupTestRepo(t, "../../test/testdata/repos/transforms/cross-repo-links/repo-frontend")
+	backendPath := setupTestRepo(t, "../../test/testdata/repos/transforms/cross-repo-links/repo-backend")
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, "../../test/testdata/configs/cross-repo-links.yaml")
+
+	// Point configuration to temporary repositories
+	require.Len(t, cfg.Repositories, 2, "expected exactly two repositories in config")
+	cfg.Repositories[0].URL = frontendPath
+	cfg.Repositories[1].URL = backendPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Create build service
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	// Execute build pipeline
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	result, err := svc.Run(context.Background(), req)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify generated Hugo configuration
+	goldenDir := "../../test/testdata/golden/cross-repo-links"
+	verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+
+	// Verify content structure and front matter
+	verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+}
