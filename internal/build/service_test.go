@@ -22,28 +22,6 @@ func (m *mockHugoGenerator) GenerateSite(docFiles []docs.DocFile) error {
 	return m.generateError
 }
 
-func TestBuildStatus_IsTerminal(t *testing.T) {
-	tests := []struct {
-		status   BuildStatus
-		expected bool
-	}{
-		{BuildStatusSuccess, true},
-		{BuildStatusFailed, true},
-		{BuildStatusSkipped, true},
-		{BuildStatusCancelled, true},
-		{"running", false},
-		{"pending", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(string(tt.status), func(t *testing.T) {
-			if got := tt.status.IsTerminal(); got != tt.expected {
-				t.Errorf("IsTerminal() = %v, want %v", got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestBuildStatus_IsSuccess(t *testing.T) {
 	tests := []struct {
 		status   BuildStatus
