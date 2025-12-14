@@ -4,8 +4,8 @@ This documentation demonstrates smooth page transitions using the View Transitio
 
 ## Features
 
-- Smooth page navigation
-- Configurable transition duration
+- Smooth page navigation using CSS-only View Transitions API
+- No JavaScript required - browser-native transitions
 - Graceful degradation for unsupported browsers
 
 ## Usage

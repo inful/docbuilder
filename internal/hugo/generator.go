@@ -75,7 +75,6 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	slog.Debug("Hugo generator created",
 		"theme", cfg.Hugo.ThemeType(),
 		"enable_transitions", cfg.Hugo.EnableTransitions,
-		"transition_duration", cfg.Hugo.TransitionDuration,
 		"output_dir", outputDir)
 
 	return g

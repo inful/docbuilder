@@ -65,7 +65,6 @@ params:
     theme:
         default: system
         displayToggle: true
-    transition_duration: 400ms
     ui:
         navbar_logo: true
         sidebar_menu_compact: false

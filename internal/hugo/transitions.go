@@ -49,8 +49,7 @@ func (g *Generator) copyTransitionAssets() error {
 
 	slog.Debug("View Transitions assets copied",
 		"css", "view-transitions.css",
-		"partial", "layouts/_partials/custom/head-end.html",
-		"duration", g.config.Hugo.TransitionDuration)
+		"partial", "layouts/_partials/custom/head-end.html")
 
 	return nil
 }

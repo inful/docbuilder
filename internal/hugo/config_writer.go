@@ -65,11 +65,7 @@ func (g *Generator) generateHugoConfig() error {
 	// View Transitions API params
 	if g.config.Hugo.EnableTransitions {
 		params["enable_transitions"] = true
-		if g.config.Hugo.TransitionDuration != "" {
-			params["transition_duration"] = g.config.Hugo.TransitionDuration
-		}
-		slog.Debug("View Transitions enabled in Hugo config",
-			"duration", g.config.Hugo.TransitionDuration)
+		slog.Debug("View Transitions enabled in Hugo config")
 	}
 
 	// Phase 4.5: version metadata collection (for version switchers in themes)

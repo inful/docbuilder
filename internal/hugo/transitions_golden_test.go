@@ -13,10 +13,9 @@ func TestHugoConfigGolden_Transitions(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Title:              "Transitions Test Site",
-			Theme:              "hextra",
-			EnableTransitions:  true,
-			TransitionDuration: "400ms",
+			Title:             "Transitions Test Site",
+			Theme:             "hextra",
+			EnableTransitions: true,
 		},
 		Repositories: []config.Repository{
 			{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}},

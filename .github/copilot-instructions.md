@@ -433,8 +433,8 @@ Use the [Conventional Commits](https://www.conventionalcommits.org/) format:
 # Feature with scope
 git commit -m "feat(hugo): add View Transitions API support
 
-- Add EnableTransitions and TransitionDuration config options
-- Implement CSS and JS assets with go:embed
+- Add EnableTransitions config option
+- Implement CSS assets with go:embed
 - Add copyTransitionAssets() function
 - Update Hugo config generation to inject transition params
 - Add comprehensive unit and integration golden tests"

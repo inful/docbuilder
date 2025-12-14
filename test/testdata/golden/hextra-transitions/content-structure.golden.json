@@ -17,21 +17,21 @@
         "title": "Readme",
         "type": "docs"
       },
-      "contentHash": "sha256:46e1232ef6721d00"
+      "contentHash": "sha256:d4cd3e38b3cb8ffb"
     },
     "content/transitions-demo/configuration.md": {
       "frontmatter": {
         "repository": "transitions-demo",
         "title": "Configuration"
       },
-      "contentHash": "sha256:c858187383c811c4"
+      "contentHash": "sha256:6a067ce06c1f9d8e"
     },
     "content/transitions-demo/getting-started.md": {
       "frontmatter": {
         "repository": "transitions-demo",
         "title": "Getting Started"
       },
-      "contentHash": "sha256:934e388e6a0be17f"
+      "contentHash": "sha256:e7fe3ff594647f91"
     }
   },
   "structure": {
