@@ -70,6 +70,14 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	// so V2 transforms (front matter builder/edit link injector) can access configuration/time.
 	// Safe to set each construction; registry keeps last assignment.
 	tr.SetGeneratorProvider(func() any { return g })
+	
+	// Log Hugo configuration including transitions
+	slog.Debug("Hugo generator created",
+		"theme", cfg.Hugo.ThemeType(),
+		"enable_transitions", cfg.Hugo.EnableTransitions,
+		"transition_duration", cfg.Hugo.TransitionDuration,
+		"output_dir", outputDir)
+	
 	return g
 }
 
