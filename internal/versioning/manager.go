@@ -402,30 +402,3 @@ func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersion
 
 	return newCount, updatedCount, removedCount
 }
-
-// copyRepositoryVersions creates a deep copy of RepositoryVersions
-func (vm *DefaultVersionManager) copyRepositoryVersions(src *RepositoryVersions) *RepositoryVersions {
-	dst := &RepositoryVersions{
-		RepositoryURL:    src.RepositoryURL,
-		DefaultBranch:    src.DefaultBranch,
-		LastDiscovery:    src.LastDiscovery,
-		MaxVersionsLimit: src.MaxVersionsLimit,
-		Versions:         make([]*Version, len(src.Versions)),
-	}
-
-	for i, v := range src.Versions {
-		dst.Versions[i] = &Version{
-			Name:         v.Name,
-			Type:         v.Type,
-			DisplayName:  v.DisplayName,
-			IsDefault:    v.IsDefault,
-			Path:         v.Path,
-			CommitSHA:    v.CommitSHA,
-			CreatedAt:    v.CreatedAt,
-			LastModified: v.LastModified,
-			DocsPath:     v.DocsPath,
-		}
-	}
-
-	return dst
-}
