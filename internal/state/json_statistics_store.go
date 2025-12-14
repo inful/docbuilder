@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"time"
 
@@ -23,7 +24,7 @@ func (ss *jsonStatisticsStore) Get(_ context.Context) foundation.Result[*Statist
 func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foundation.Result[*Statistics, error] {
 	if stats == nil {
 		return foundation.Err[*Statistics, error](
-			foundation.ValidationError("statistics cannot be nil").Build(),
+			errors.ValidationError("statistics cannot be nil").Build(),
 		)
 	}
 
@@ -39,7 +40,7 @@ func (ss *jsonStatisticsStore) Update(_ context.Context, stats *Statistics) foun
 func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foundation.Result[struct{}, error] {
 	if build == nil {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("build cannot be nil").Build(),
+			errors.ValidationError("build cannot be nil").Build(),
 		)
 	}
 
@@ -58,7 +59,7 @@ func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foun
 	if ss.store.autoSaveEnabled {
 		if err := ss.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save build statistics").WithCause(err).Build(),
+				errors.InternalError("failed to save build statistics").WithCause(err).Build(),
 			)
 		}
 	}
@@ -69,7 +70,7 @@ func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foun
 func (ss *jsonStatisticsStore) RecordDiscovery(_ context.Context, documentCount int) foundation.Result[struct{}, error] {
 	if documentCount < 0 {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("document count cannot be negative").Build(),
+			errors.ValidationError("document count cannot be negative").Build(),
 		)
 	}
 
@@ -83,7 +84,7 @@ func (ss *jsonStatisticsStore) RecordDiscovery(_ context.Context, documentCount 
 	if ss.store.autoSaveEnabled {
 		if err := ss.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save discovery statistics").WithCause(err).Build(),
+				errors.InternalError("failed to save discovery statistics").WithCause(err).Build(),
 			)
 		}
 	}
@@ -104,7 +105,7 @@ func (ss *jsonStatisticsStore) Reset(_ context.Context) foundation.Result[struct
 	if ss.store.autoSaveEnabled {
 		if err := ss.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save statistics reset").WithCause(err).Build(),
+				errors.InternalError("failed to save statistics reset").WithCause(err).Build(),
 			)
 		}
 	}

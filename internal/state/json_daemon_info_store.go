@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"time"
 
@@ -23,7 +24,7 @@ func (ds *jsonDaemonInfoStore) Get(_ context.Context) foundation.Result[*DaemonI
 func (ds *jsonDaemonInfoStore) Update(_ context.Context, info *DaemonInfo) foundation.Result[*DaemonInfo, error] {
 	if info == nil {
 		return foundation.Err[*DaemonInfo, error](
-			foundation.ValidationError("daemon info cannot be nil").Build(),
+			errors.ValidationError("daemon info cannot be nil").Build(),
 		)
 	}
 
@@ -39,7 +40,7 @@ func (ds *jsonDaemonInfoStore) Update(_ context.Context, info *DaemonInfo) found
 func (ds *jsonDaemonInfoStore) UpdateStatus(_ context.Context, status string) foundation.Result[struct{}, error] {
 	if status == "" {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("status cannot be empty").Build(),
+			errors.ValidationError("status cannot be empty").Build(),
 		)
 	}
 
@@ -52,7 +53,7 @@ func (ds *jsonDaemonInfoStore) UpdateStatus(_ context.Context, status string) fo
 	if ds.store.autoSaveEnabled {
 		if err := ds.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save daemon status").WithCause(err).Build(),
+				errors.InternalError("failed to save daemon status").WithCause(err).Build(),
 			)
 		}
 	}

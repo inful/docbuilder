@@ -1,6 +1,7 @@
 package typed
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -73,11 +74,9 @@ func ParseHugoThemeType(s string) foundation.Result[HugoThemeType, error] {
 	theme, err := hugoThemeNormalizer.NormalizeWithError(s)
 	if err != nil {
 		return foundation.Err[HugoThemeType, error](
-			foundation.ValidationError(fmt.Sprintf("invalid theme type: %s", s)).
-				WithContext(foundation.Fields{
-					"input":        s,
-					"valid_values": []string{"hextra", "docsy", "book", "custom"},
-				}).
+			errors.ValidationError(fmt.Sprintf("invalid theme type: %s", s)).
+WithContext("input", s).
+WithContext("valid_values", []string{"hextra", "docsy", "book", "custom"}).
 				Build(),
 		)
 	}

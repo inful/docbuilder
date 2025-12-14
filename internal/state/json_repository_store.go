@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"sort"
 	"time"
@@ -16,7 +17,7 @@ type jsonRepositoryStore struct {
 func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) foundation.Result[*Repository, error] {
 	if repo == nil {
 		return foundation.Err[*Repository, error](
-			foundation.ValidationError("repository cannot be nil").Build(),
+			errors.ValidationError("repository cannot be nil").Build(),
 		)
 	}
 
@@ -31,8 +32,8 @@ func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) found
 	// Check if repository already exists
 	if _, exists := rs.store.repositories[repo.URL]; exists {
 		return foundation.Err[*Repository, error](
-			foundation.ValidationError("repository already exists").
-				WithContext(foundation.Fields{"url": repo.URL}).
+			errors.ValidationError("repository already exists").
+				WithContext("url", repo.URL).
 				Build(),
 		)
 	}
@@ -51,7 +52,7 @@ func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) found
 			// Remove from memory if save failed
 			delete(rs.store.repositories, repo.URL)
 			return foundation.Err[*Repository, error](
-				foundation.InternalError("failed to save repository").
+				errors.InternalError("failed to save repository").
 					WithCause(err).
 					Build(),
 			)
@@ -64,7 +65,7 @@ func (rs *jsonRepositoryStore) Create(_ context.Context, repo *Repository) found
 func (rs *jsonRepositoryStore) GetByURL(_ context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
 	if url == "" {
 		return foundation.Err[foundation.Option[*Repository], error](
-			foundation.ValidationError("URL cannot be empty").Build(),
+			errors.ValidationError("URL cannot be empty").Build(),
 		)
 	}
 
@@ -83,7 +84,7 @@ func (rs *jsonRepositoryStore) GetByURL(_ context.Context, url string) foundatio
 func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) foundation.Result[*Repository, error] {
 	if repo == nil {
 		return foundation.Err[*Repository, error](
-			foundation.ValidationError("repository cannot be nil").Build(),
+			errors.ValidationError("repository cannot be nil").Build(),
 		)
 	}
 
@@ -100,8 +101,8 @@ func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) found
 		func() { rs.store.repositories[repo.URL] = repo },
 		func() foundation.Result[*Repository, error] {
 			return foundation.Err[*Repository, error](
-				foundation.NotFoundError("repository").
-					WithContext(foundation.Fields{"url": repo.URL}).
+				errors.NotFoundError("repository").
+					WithContext("url", repo.URL).
 					Build(),
 			)
 		},
@@ -152,8 +153,8 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 	repo, exists := rs.store.repositories[url]
 	if !exists {
 		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": url}).
+			errors.NotFoundError("repository").
+				WithContext("url", url).
 				Build(),
 		)
 	}
@@ -171,7 +172,7 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 	if rs.store.autoSaveEnabled {
 		if err := rs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save build count update").
+				errors.InternalError("failed to save build count update").
 					WithCause(err).
 					Build(),
 			)
@@ -184,7 +185,7 @@ func (rs *jsonRepositoryStore) IncrementBuildCount(_ context.Context, url string
 func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, count int) foundation.Result[struct{}, error] {
 	if count < 0 {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("document count cannot be negative").Build(),
+			errors.ValidationError("document count cannot be negative").Build(),
 		)
 	}
 
@@ -194,8 +195,8 @@ func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, c
 	repo, exists := rs.store.repositories[url]
 	if !exists {
 		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": url}).
+			errors.NotFoundError("repository").
+				WithContext("url", url).
 				Build(),
 		)
 	}
@@ -207,7 +208,7 @@ func (rs *jsonRepositoryStore) SetDocumentCount(_ context.Context, url string, c
 	if rs.store.autoSaveEnabled {
 		if err := rs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save document count update").
+				errors.InternalError("failed to save document count update").
 					WithCause(err).
 					Build(),
 			)
@@ -224,8 +225,8 @@ func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url, hash stri
 	repo, exists := rs.store.repositories[url]
 	if !exists {
 		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": url}).
+			errors.NotFoundError("repository").
+				WithContext("url", url).
 				Build(),
 		)
 	}
@@ -237,7 +238,7 @@ func (rs *jsonRepositoryStore) SetDocFilesHash(_ context.Context, url, hash stri
 	if rs.store.autoSaveEnabled {
 		if err := rs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save doc files hash update").
+				errors.InternalError("failed to save doc files hash update").
 					WithCause(err).
 					Build(),
 			)
@@ -254,8 +255,8 @@ func (rs *jsonRepositoryStore) SetDocFilePaths(_ context.Context, url string, pa
 	repo, exists := rs.store.repositories[url]
 	if !exists {
 		return foundation.Err[struct{}, error](
-			foundation.NotFoundError("repository").
-				WithContext(foundation.Fields{"url": url}).
+			errors.NotFoundError("repository").
+				WithContext("url", url).
 				Build(),
 		)
 	}
@@ -268,7 +269,7 @@ func (rs *jsonRepositoryStore) SetDocFilePaths(_ context.Context, url string, pa
 	if rs.store.autoSaveEnabled {
 		if err := rs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save doc file paths update").
+				errors.InternalError("failed to save doc file paths update").
 					WithCause(err).
 					Build(),
 			)

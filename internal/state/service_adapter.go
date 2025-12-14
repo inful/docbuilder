@@ -1,6 +1,7 @@
 package state
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"sync"
 	"time"
@@ -42,8 +43,8 @@ func (a *ServiceAdapter) Load() error {
 		return health.UnwrapErr()
 	}
 	if health.Unwrap().Status != "healthy" {
-		return foundation.InternalError("state store unhealthy").
-			WithContext(foundation.Fields{"status": health.Unwrap().Status}).
+		return errors.InternalError("state store unhealthy").
+			WithContext("status", health.Unwrap().Status).
 			Build()
 	}
 	a.mu.Lock()

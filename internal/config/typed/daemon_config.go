@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // DaemonModeType represents the daemon operation mode
@@ -70,11 +71,9 @@ func ParseDaemonModeType(s string) foundation.Result[DaemonModeType, error] {
 	mode, err := daemonModeNormalizer.NormalizeWithError(s)
 	if err != nil {
 		return foundation.Err[DaemonModeType, error](
-			foundation.ValidationError(fmt.Sprintf("invalid daemon mode: %s", s)).
-				WithContext(foundation.Fields{
-					"input":        s,
-					"valid_values": []string{"http", "webhook", "scheduled", "api"},
-				}).
+			errors.ValidationError(fmt.Sprintf("invalid daemon mode: %s", s)).
+				WithContext("input", s).
+				WithContext("valid_values", []string{"http", "webhook", "scheduled", "api"}).
 				Build(),
 		)
 	}
@@ -124,11 +123,9 @@ func ParseLogLevelType(s string) foundation.Result[LogLevelType, error] {
 	level, err := logLevelNormalizer.NormalizeWithError(s)
 	if err != nil {
 		return foundation.Err[LogLevelType, error](
-			foundation.ValidationError(fmt.Sprintf("invalid log level: %s", s)).
-				WithContext(foundation.Fields{
-					"input":        s,
-					"valid_values": []string{"debug", "info", "warn", "error", "fatal"},
-				}).
+			errors.ValidationError(fmt.Sprintf("invalid log level: %s", s)).
+				WithContext("input", s).
+				WithContext("valid_values", []string{"debug", "info", "warn", "error", "fatal"}).
 				Build(),
 		)
 	}

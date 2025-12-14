@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Validator represents a validation function.
@@ -78,10 +80,7 @@ func (vr ValidationResult) ToError() error {
 		messages = append(messages, err.Error())
 	}
 
-	return &ClassifiedError{
-		Code:    ErrorCodeValidation,
-		Message: strings.Join(messages, "; "),
-	}
+	return errors.ValidationError(strings.Join(messages, "; ")).Build()
 }
 
 // ValidatorChain allows chaining multiple validators.

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // jsonBuildStore implements BuildStore for the JSON store.
@@ -16,7 +17,7 @@ type jsonBuildStore struct {
 func (bs *jsonBuildStore) Create(_ context.Context, build *Build) foundation.Result[*Build, error] {
 	if build == nil {
 		return foundation.Err[*Build, error](
-			foundation.ValidationError("build cannot be nil").Build(),
+			errors.ValidationError("build cannot be nil").Build(),
 		)
 	}
 
@@ -37,7 +38,7 @@ func (bs *jsonBuildStore) Create(_ context.Context, build *Build) foundation.Res
 		if err := bs.store.saveToDiskUnsafe(); err != nil {
 			delete(bs.store.builds, build.ID)
 			return foundation.Err[*Build, error](
-				foundation.InternalError("failed to save build").WithCause(err).Build(),
+				errors.InternalError("failed to save build").WithCause(err).Build(),
 			)
 		}
 	}
@@ -48,7 +49,7 @@ func (bs *jsonBuildStore) Create(_ context.Context, build *Build) foundation.Res
 func (bs *jsonBuildStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Build], error] {
 	if id == "" {
 		return foundation.Err[foundation.Option[*Build], error](
-			foundation.ValidationError("ID cannot be empty").Build(),
+			errors.ValidationError("ID cannot be empty").Build(),
 		)
 	}
 
@@ -66,7 +67,7 @@ func (bs *jsonBuildStore) GetByID(_ context.Context, id string) foundation.Resul
 func (bs *jsonBuildStore) Update(_ context.Context, build *Build) foundation.Result[*Build, error] {
 	if build == nil {
 		return foundation.Err[*Build, error](
-			foundation.ValidationError("build cannot be nil").Build(),
+			errors.ValidationError("build cannot be nil").Build(),
 		)
 	}
 
@@ -82,8 +83,8 @@ func (bs *jsonBuildStore) Update(_ context.Context, build *Build) foundation.Res
 		func() { bs.store.builds[build.ID] = build },
 		func() foundation.Result[*Build, error] {
 			return foundation.Err[*Build, error](
-				foundation.NotFoundError("build").
-					WithContext(foundation.Fields{"id": build.ID}).
+				errors.NotFoundError("build").
+					WithContext("id", build.ID).
 					Build(),
 			)
 		},
@@ -149,7 +150,7 @@ func (bs *jsonBuildStore) Delete(_ context.Context, id string) foundation.Result
 func (bs *jsonBuildStore) Cleanup(_ context.Context, maxBuilds int) foundation.Result[int, error] {
 	if maxBuilds <= 0 {
 		return foundation.Err[int, error](
-			foundation.ValidationError("maxBuilds must be positive").Build(),
+			errors.ValidationError("maxBuilds must be positive").Build(),
 		)
 	}
 
@@ -181,7 +182,7 @@ func (bs *jsonBuildStore) Cleanup(_ context.Context, maxBuilds int) foundation.R
 	if bs.store.autoSaveEnabled {
 		if err := bs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[int, error](
-				foundation.InternalError("failed to save build cleanup").WithCause(err).Build(),
+				errors.InternalError("failed to save build cleanup").WithCause(err).Build(),
 			)
 		}
 	}

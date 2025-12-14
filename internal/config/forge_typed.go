@@ -1,6 +1,7 @@
 package config
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"fmt"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -45,8 +46,9 @@ func ParseForgeTyped(s string) foundation.Result[ForgeTyped, error] {
 	forgeType, err := forgeTypeNormalizer.NormalizeWithError(s)
 	if err != nil {
 		return foundation.Err[ForgeTyped, error](
-			foundation.ValidationError(fmt.Sprintf("invalid forge type: %s", s)).
-				WithContext(foundation.Fields{"input": s, "valid_values": []string{"github", "gitlab", "forgejo"}}).
+			errors.ValidationError(fmt.Sprintf("invalid forge type: %s", s)).
+				WithContext("input", s).
+				WithContext("valid_values", []string{"github", "gitlab", "forgejo"}).
 				Build(),
 		)
 	}
