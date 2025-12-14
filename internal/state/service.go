@@ -4,7 +4,6 @@ import (
 "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
@@ -166,37 +165,6 @@ func (ss *Service) GetDaemonInfoStore() DaemonInfoStore {
 // This ensures consistency across multiple state operations.
 func (ss *Service) WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
 	return ss.store.WithTransaction(ctx, fn)
-}
-
-// BackupTo creates a backup of the current state to the specified directory.
-func (ss *Service) BackupTo(ctx context.Context, backupDir string) foundation.Result[string, error] {
-	health := ss.store.Health(ctx)
-	if health.IsErr() {
-		return foundation.Err[string, error](
-			errors.InternalError("cannot backup unhealthy store").
-				WithCause(health.UnwrapErr()).
-				Build(),
-		)
-	}
-
-	// For JSON store, we can copy the state file
-	if _, ok := ss.store.(*JSONStore); ok {
-		backupPath := filepath.Join(backupDir, fmt.Sprintf("daemon-state-backup-%d.json",
-			health.Unwrap().CheckedAt.Unix()))
-
-		// This is a simplified backup - a real implementation would handle
-		// atomic copies, verification, etc.
-		return foundation.Ok[string, error](backupPath)
-	}
-
-	return foundation.Err[string, error](
-		errors.InternalError("backup not supported for this store type").Build(),
-	)
-}
-
-// DataDirectory returns the data directory used by the state service.
-func (ss *Service) DataDirectory() string {
-	return ss.dataDir
 }
 
 // Migrate performs any necessary data migrations for schema changes.
