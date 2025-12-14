@@ -1051,6 +1051,24 @@ func GenerateEditLink(file DocFile, repo Repository) string {
 
 ## 12. Content Processing
 
+### 12.0 Design Principles
+
+**Dual Compatibility Goal:**
+
+DocBuilder's content processing system is designed to ensure documentation works correctly in **both** contexts:
+
+1. **Source Forge Context** - Links and content render correctly when viewing files directly in GitHub, GitLab, or Forgejo web interfaces
+2. **Generated Hugo Site Context** - The same links and content work correctly in the rendered static site after transformation
+
+This dual compatibility is achieved through the transform pipeline, which automatically rewrites links and adjusts content during the build process. Users write standard relative markdown links (e.g., `[guide](../guide.md)`) that work in their forge, and the pipeline transforms them to Hugo-compatible paths (e.g., `[guide](../../guide/)`) for the static site.
+
+**Key Design Decisions:**
+
+- Relative links (page-relative and repository-root-relative) are preserved in source for forge compatibility
+- Transform pipeline handles all conversions to Hugo URL structure
+- No manual link maintenance required - write once, works everywhere
+- Transformations are deterministic and testable via golden tests
+
 ### 12.1 Transform Pipeline Architecture
 
 **Location:** `internal/hugo/transforms/`
