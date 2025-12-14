@@ -2,6 +2,20 @@
 
 When writing markdown documentation that will be processed by DocBuilder, you have three options for linking between documents.
 
+## Design Goal: Dual Compatibility
+
+**DocBuilder's link transformation system is designed so your documentation works in both contexts:**
+
+1. **In the source forge** (GitHub, GitLab, Forgejo) - Links work correctly when viewing files directly in the repository web interface
+2. **In the generated Hugo site** - The same links are transformed to work with Hugo's URL structure
+
+This dual compatibility means you can write standard relative markdown links (like `[guide](../guide.md)`) and they'll work correctly when:
+- Developers browse documentation directly in GitHub/GitLab
+- Users view the rendered documentation site
+- Documentation is reviewed in pull requests/merge requests
+
+The transform pipeline automatically rewrites links during the build process. You write links once, and they work everywhere.
+
 ## Link Types
 
 ### 1. Page-Relative Links (Recommended for Nearby Files)
