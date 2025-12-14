@@ -20,7 +20,6 @@ import (
 	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra" //nolint:revive // theme registration
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
-	"git.home.luguber.info/inful/docbuilder/internal/repository"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -324,43 +323,6 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	// Compute configuration snapshot hash early; stageGenerateConfig will backfill for other paths.
 	bs.Pipeline.ConfigHash = g.computeConfigHash()
 	report.ConfigHash = bs.Pipeline.ConfigHash
-
-	// Apply repository filter if config has patterns (future extension: config fields).
-	// Placeholder: look for params under g.config.Hugo.Params["filter"] map with keys include/exclude.
-	if g.config != nil && g.config.Hugo.Params != nil {
-		if raw, ok := g.config.Hugo.Params["filter"]; ok {
-			if m, ok2 := raw.(map[string]any); ok2 {
-				var includes, excludes []string
-				if v, ok := m["include"].([]any); ok {
-					for _, it := range v {
-						if s, ok := it.(string); ok {
-							includes = append(includes, s)
-						}
-					}
-				}
-				if v, ok := m["exclude"].([]any); ok {
-					for _, it := range v {
-						if s, ok := it.(string); ok {
-							excludes = append(excludes, s)
-						}
-					}
-				}
-				if len(includes) > 0 || len(excludes) > 0 {
-					if f, err := repository.NewFilter(includes, excludes); err == nil {
-						filtered := make([]config.Repository, 0, len(repositories))
-						for _, r := range repositories {
-							if ok, _ := f.Include(r); ok {
-								filtered = append(filtered, r)
-							} else {
-								report.SkippedRepositories++
-							}
-						}
-						repositories = filtered
-					}
-				}
-			}
-		}
-	}
 
 	bs.Git.Repositories = repositories
 	bs.Git.WorkspaceDir = filepath.Clean(workspaceDir)
