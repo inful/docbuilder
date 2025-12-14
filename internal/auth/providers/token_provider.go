@@ -47,11 +47,3 @@ func (p *TokenProvider) ValidateConfig(authCfg *config.AuthConfig) error {
 func (p *TokenProvider) Name() string {
 	return "TokenProvider"
 }
-
-// CreateAuthWithContext creates token authentication with additional context.
-// This implements EnhancedAuthProvider to allow for context-aware token handling.
-func (p *TokenProvider) CreateAuthWithContext(authCfg *config.AuthConfig, _ AuthContext) (transport.AuthMethod, error) {
-	// Future enhancement: Could use different usernames based on the forge type
-	// For example, some services might use different username conventions
-	return p.CreateAuth(authCfg)
-}
