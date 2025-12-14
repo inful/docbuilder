@@ -15,32 +15,18 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
-// DeltaManager handles delta-related operations during post-persistence stage
-type DeltaManager interface {
-	// AttachDeltaMetadata adds delta information to the build report
-	AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan *DeltaPlan, job *BuildJob)
+// deltaManager provides delta-related helper functions for build operations.
+// This is a stateless helper that was previously an interface with single implementation.
+type deltaManager struct{}
 
-	// RecomputeGlobalDocHash recalculates the global documentation hash for partial builds
-	RecomputeGlobalDocHash(
-		report *hugo.BuildReport,
-		deltaPlan *DeltaPlan,
-		stateMgr services.StateManager,
-		job *BuildJob,
-		workspace string,
-		cfg *config.Config,
-	) (int, error) // returns deletions detected
-}
-
-// DeltaManagerImpl implements DeltaManager
-type DeltaManagerImpl struct{}
-
-// NewDeltaManager creates a new delta manager
-func NewDeltaManager() DeltaManager {
-	return &DeltaManagerImpl{}
+// NewDeltaManager creates a delta manager helper.
+// Kept for backward compatibility with existing tests.
+func NewDeltaManager() *deltaManager {
+	return &deltaManager{}
 }
 
 // AttachDeltaMetadata adds delta information to the build report
-func (dm *DeltaManagerImpl) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan *DeltaPlan, job *BuildJob) {
+func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan *DeltaPlan, job *BuildJob) {
 	if deltaPlan == nil {
 		return
 	}
@@ -71,7 +57,7 @@ func (dm *DeltaManagerImpl) AttachDeltaMetadata(report *hugo.BuildReport, deltaP
 // which is the proper abstraction for repository metadata operations.
 
 // RecomputeGlobalDocHash recalculates the global documentation hash for partial builds
-func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
+func (dm *deltaManager) RecomputeGlobalDocHash(
 	report *hugo.BuildReport,
 	deltaPlan *DeltaPlan,
 	stateMgr services.StateManager,
@@ -137,7 +123,7 @@ func (dm *DeltaManagerImpl) RecomputeGlobalDocHash(
 }
 
 // scanForDeletions scans a repository for current markdown files and compares with persisted paths
-func (dm *DeltaManagerImpl) scanForDeletions(repo config.Repository, workspace string, persistedPaths []string) ([]string, int, error) {
+func (dm *deltaManager) scanForDeletions(repo config.Repository, workspace string, persistedPaths []string) ([]string, int, error) {
 	repoRoot := filepath.Join(workspace, repo.Name)
 
 	fi, err := os.Stat(repoRoot)
@@ -200,7 +186,7 @@ func (dm *DeltaManagerImpl) scanForDeletions(repo config.Repository, workspace s
 }
 
 // computePathsHash computes a SHA256 hash of file paths
-func (dm *DeltaManagerImpl) computePathsHash(paths []string) string {
+func (dm *deltaManager) computePathsHash(paths []string) string {
 	h := sha256.New()
 	for _, p := range paths {
 		h.Write([]byte(p))
