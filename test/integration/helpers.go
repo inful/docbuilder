@@ -246,7 +246,7 @@ func verifyTransitionsAssets(t *testing.T, outputDir, goldenPath string, updateG
 	actual := TransitionsAssets{
 		CSS:     verifyAssetFile(t, cssPath, []string{"@view-transition", "--view-transition-duration"}),
 		JS:      verifyAssetFile(t, jsPath, []string{"startViewTransition", "document.startViewTransition"}),
-		Partial: verifyPartialFile(t, partialPath, []string{".Site.Params.enable_transitions", "/view-transitions.css", "/view-transitions.js"}),
+		Partial: verifyPartialFile(t, partialPath, []string{".Site.Params.enable_transitions", "/view-transitions.css", "/view-transitions.js", ".Site.Params.transition_duration"}),
 	}
 
 	if updateGolden {
