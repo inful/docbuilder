@@ -2,7 +2,10 @@
 
 **Version:** 2.0  
 **Status:** Production (December 2025)  
+**Last Updated:** December 14, 2025
 **Document Purpose:** Complete specification enabling reimplementation of DocBuilder from scratch
+
+**Architecture Note:** This specification describes the current transform-based architecture using dependency-ordered content processing pipeline.
 
 ---
 
@@ -29,6 +32,7 @@
 19. [File System Outputs](#19-file-system-outputs)
 20. [Algorithms](#20-algorithms)
 21. [Test Requirements](#21-test-requirements)
+22. [Package Architecture](#22-package-architecture)
 
 ---
 
@@ -414,18 +418,27 @@ docbuilder preview [flags]
 
 ### 6.1 Pipeline Stages
 
-The build pipeline executes 8 sequential stages:
+The build pipeline executes these sequential stages:
 
 | Stage | Name | Description |
 |-------|------|-------------|
 | 1 | PrepareOutput | Initialize output directories |
 | 2 | CloneRepos | Clone/update Git repositories |
-| 3 | DiscoverDocs | Find markdown files |
-| 4 | GenerateConfig | Create hugo.yaml |
+| 3 | DiscoverDocs | Find markdown files and assets |
+| 4 | GenerateConfig | Create hugo.yaml with theme settings |
 | 5 | Layouts | Copy theme templates |
-| 6 | CopyContent | Process and copy markdown |
+| 6 | CopyContent | **Execute transform pipeline on each file** |
 | 7 | Indexes | Generate index pages |
 | 8 | RunHugo | Execute Hugo (optional) |
+
+**Note:** Stage 6 is where the transform system executes. Each file goes through:
+- Parse stage (extract front matter)
+- Build stage (generate defaults)
+- Enrich stage (add metadata)
+- Merge stage (apply patches)
+- Transform stage (content modifications)
+- Finalize stage (post-processing)
+- Serialize stage (output YAML + markdown)
 
 ### 6.2 Stage 1: PrepareOutput
 
@@ -528,24 +541,30 @@ The build pipeline executes 8 sequential stages:
 
 ### 6.7 Stage 6: CopyContent
 
-**Input:** DocFiles, staging directory
+**Input:** DocFiles, staging directory, transform configuration
 
 **Algorithm:**
 ```
 For each DocFile:
-1. Read file content
-2. Parse existing front matter (YAML between ---)
-3. Build new front matter:
-   - title (from filename if not set)
-   - date (current time if not set)
-   - repository, forge, section
-   - editURL (theme-specific)
-4. Merge: existing + new (existing takes precedence)
-5. Serialize front matter back to YAML
-6. Write to content/{forge?}/{repo}/{section}/{file}.md
+1. Load file content into Page struct
+2. Create PageShim facade for transform pipeline
+3. Build transform list from registry:
+   a. Fetch all registered transforms
+   b. Sort by stage and dependencies (topological order)
+   c. Apply enable/disable filters from config
+4. Execute transforms in order:
+   a. Parse: Extract front matter → OriginalFrontMatter
+   b. Build: Generate defaults via BuildFrontMatter()
+   c. Enrich: Add repository/forge/section metadata
+   d. Merge: Apply front matter patches
+   e. Transform: Rewrite links, process content
+   f. Finalize: Strip headings, escape shortcodes
+   g. Serialize: Output YAML + markdown
+5. Write transformed content to:
+   content/{forge?}/{repo}/{section}/{file}.md
 ```
 
-**Output:** Populated content/ directory
+**Output:** Populated content/ directory with transformed markdown files
 
 ### 6.8 Stage 7: Indexes
 
@@ -1032,9 +1051,58 @@ func GenerateEditLink(file DocFile, repo Repository) string {
 
 ## 12. Content Processing
 
-### 12.1 Front Matter Processing
+### 12.1 Transform Pipeline Architecture
 
-**Input File:**
+**Location:** `internal/hugo/transforms/`
+
+Content processing uses a **registry-based transform pipeline** with dependency ordering:
+
+**Transform Stages:**
+1. **Parse** - Extract front matter from markdown
+2. **Build** - Generate default front matter fields
+3. **Enrich** - Add repository/forge metadata
+4. **Merge** - Apply front matter patches
+5. **Transform** - Content transformations (link rewriting, etc.)
+6. **Finalize** - Post-processing (heading stripping, escaping)
+7. **Serialize** - Final YAML + content output
+
+**Transform Interface:**
+```go
+type Transformer interface {
+    Name() string
+    Stage() TransformStage
+    Dependencies() TransformDependencies
+    Transform(PageAdapter) error
+}
+```
+
+**PageAdapter Pattern:**
+Transforms operate on `PageShim` which provides:
+- `GetContent() string` / `SetContent(string)`
+- `GetOriginalFrontMatter() map[string]any`
+- `SetOriginalFrontMatter(map[string]any, bool)`
+- `AddPatch(FrontMatterPatch)` - Queue front matter changes
+- `ApplyPatches()` - Merge all patches
+- `Serialize() error` - Final output
+
+**Processing Flow:**
+```
+1. Load markdown file → DocFile
+2. Create Page with raw content
+3. Build PageShim facade
+4. Execute transforms in dependency order:
+   - front_matter_parser: Extract YAML
+   - front_matter_builder_v2: Generate defaults
+   - edit_link_injector_v2: Add edit URLs (if enabled)
+   - relative_link_rewriter: Fix markdown links
+   - strip_first_heading: Remove H1 (optional)
+   - shortcode_escaper: Escape Hugo shortcodes
+   - hextra_type_enforcer: Set type=docs (Hextra only)
+   - front_matter_serialize: Output final YAML + content
+5. Write to content/{forge?}/{repo}/{section}/file.md
+```
+
+**Example Input:**
 ```markdown
 ---
 title: Existing Title
@@ -1044,22 +1112,7 @@ custom: value
 # Content here
 ```
 
-**Processing:**
-```go
-1. Parse YAML front matter between --- markers
-2. Build additional fields:
-   - title: from filename if not set (kebab-to-title)
-   - date: current time if not set
-   - repository: repo name
-   - forge: forge namespace (if namespacing)
-   - section: directory path
-   - editURL: generated link (Hextra only)
-3. Merge: existing values take precedence
-4. Serialize back to YAML
-5. Combine with content
-```
-
-**Output File:**
+**Example Output:**
 ```markdown
 ---
 title: Existing Title
@@ -1074,7 +1127,103 @@ editURL: https://github.com/owner/repo/edit/main/docs/guides/page.md
 # Content here
 ```
 
-### 12.2 Title Generation from Filename
+### 12.2 Transform System Details
+
+**Registry Location:** `internal/hugo/transforms/`
+
+**Transform Lifecycle:**
+
+1. **Registration** - Transforms register in `init()`:
+```go
+func init() {
+    transforms.Register(FrontMatterParser{})
+}
+```
+
+2. **Dependency Resolution** - Build pipeline via topological sort:
+```go
+type TransformDependencies struct {
+    MustRunAfter  []string  // Must execute after these transforms
+    MustRunBefore []string  // Must execute before these transforms
+    // Capability flags
+    RequiresOriginalFrontMatter bool
+    ModifiesContent             bool
+    ModifiesFrontMatter         bool
+    RequiresConfig              bool
+    RequiresThemeInfo           bool
+    RequiresForgeInfo           bool
+    RequiresEditLinkResolver    bool
+    RequiresFileMetadata        bool
+}
+```
+
+3. **Execution** - Process page through transforms:
+```go
+transformList, err := transforms.List() // Sorted by dependencies
+for _, transform := range transformList {
+    if err := transform.Transform(pageShim); err != nil {
+        return err
+    }
+}
+```
+
+**Built-in Transforms:**
+
+| Transform | Stage | Purpose |
+|-----------|-------|---------|
+| front_matter_parser | Parse | Extract YAML from markdown |
+| front_matter_builder_v2 | Build | Generate default fields |
+| edit_link_injector_v2 | Enrich | Add editURL (theme-specific) |
+| relative_link_rewriter | Transform | Fix relative markdown links |
+| strip_first_heading | Finalize | Remove H1 if configured |
+| shortcode_escaper | Finalize | Escape Hugo shortcodes |
+| hextra_type_enforcer | Finalize | Set type=docs (Hextra) |
+| front_matter_serialize | Serialize | Output final YAML+content |
+
+**Transform Filtering:**
+
+Configuration can enable/disable transforms:
+```yaml
+hugo:
+  transforms:
+    enable:  ["front_matter_parser", "relative_link_rewriter"]
+    disable: ["strip_first_heading"]
+```
+
+### 12.3 Front Matter Patch System
+
+**Location:** `internal/hugo/fmcore/`
+
+Transforms add patches instead of directly mutating front matter:
+
+```go
+type FrontMatterPatch struct {
+    Key           string
+    Value         any
+    Mode          MergeMode
+    ArrayStrategy ArrayStrategy
+    Source        string  // Transform name
+}
+```
+
+**Merge Modes:**
+- `MergeDeep` - Recursively merge maps
+- `MergeReplace` - Overwrite value
+- `MergeSetIfMissing` - Only set if key absent
+
+**Patch Application:**
+```go
+shim.AddPatch(fmcore.FrontMatterPatch{
+    Key:   "editURL",
+    Value: "https://github.com/...",
+    Mode:  fmcore.MergeSetIfMissing,
+    Source: "edit_link_injector_v2",
+})
+```
+
+All patches are applied during merge stage, with conflict tracking.
+
+### 12.4 Title Generation from Filename
 
 ```go
 func titleFromFilename(name string) string {
@@ -1103,7 +1252,7 @@ func titleFromFilename(name string) string {
 - `api_reference.md` → `Api Reference`
 - `README.md` → `Readme` (but README is ignored)
 
-### 12.3 Index Page Generation
+### 12.5 Index Page Generation
 
 **Main Index (`content/_index.md`):**
 ```yaml
@@ -1382,17 +1531,21 @@ for {
 
 ## 17. Error Handling
 
+**Location:** `internal/foundation/errors/`
+
 ### 17.1 Error Type
 
 ```go
 type ClassifiedError struct {
-    category ErrorCategory  // Type-safe category enum
-    severity ErrorSeverity  // Fatal, Error, Warning, Info
-    retry    RetryStrategy  // Never, Immediate, Backoff, RateLimit, User
+    category ErrorCategory
+    severity ErrorSeverity
+    retry    RetryStrategy
     message  string
     cause    error
-    context  ErrorContext   // map[string]any
+    context  ErrorContext
 }
+
+type ErrorContext map[string]any
 
 type ErrorCategory string
 const (
@@ -1422,33 +1575,40 @@ const (
 
 type RetryStrategy string
 const (
-    RetryNever      RetryStrategy = "never"
-    RetryImmediate  RetryStrategy = "immediate"
-    RetryBackoff    RetryStrategy = "backoff"
-    RetryRateLimit  RetryStrategy = "rate_limit"
-    RetryUserAction RetryStrategy = "user"
+    RetryNever      RetryStrategy = "never"      // Permanent failure, don't retry
+    RetryImmediate  RetryStrategy = "immediate"  // Retry immediately
+    RetryBackoff    RetryStrategy = "backoff"    // Retry with exponential backoff
+    RetryRateLimit  RetryStrategy = "rate_limit" // Retry after rate limit window
+    RetryUserAction RetryStrategy = "user"       // Requires user intervention
 )
 ```
 
 ### 17.2 Error Construction
 
 ```go
-// Validation error with context
-func ValidationError(message string) *ErrorBuilder
+// Create new error with category
+func NewError(category ErrorCategory, message string) *ErrorBuilder
 
 // Wrap existing error
 func WrapError(err error, category ErrorCategory, message string) *ErrorBuilder
 
-// Builder pattern
-builder.WithContext(key string, value any) *ErrorBuilder
-builder.WithSeverity(severity ErrorSeverity) *ErrorBuilder
-builder.WithRetry(strategy RetryStrategy) *ErrorBuilder
-builder.Build() error
+// Convenience constructors
+func ValidationError(message string) *ErrorBuilder
+func ConfigError(message string) *ErrorBuilder
+func AuthError(message string) *ErrorBuilder
+func NotFoundError(message string) *ErrorBuilder
 
-// Options
-func WithContext(ctx map[string]any) Option
-func WithRetryable(retryable bool) Option
-func WithSeverity(severity Severity) Option
+// Builder methods (fluent API)
+func (b *ErrorBuilder) WithContext(key string, value any) *ErrorBuilder
+func (b *ErrorBuilder) WithSeverity(severity ErrorSeverity) *ErrorBuilder
+func (b *ErrorBuilder) WithRetry(strategy RetryStrategy) *ErrorBuilder
+func (b *ErrorBuilder) Build() *ClassifiedError
+
+// Example usage
+err := errors.ValidationError("invalid forge type").
+    WithContext("input", forgeType).
+    WithContext("valid_values", []string{"github", "gitlab"}).
+    Build()
 ```
 
 ### 17.3 Retry Logic
@@ -1731,6 +1891,101 @@ test -f /tmp/test-output/build-report.json
 
 ---
 
+## 22. Package Architecture
+
+### 22.1 Core Packages
+
+| Package | Location | Purpose |
+|---------|----------|---------|
+| **CLI Commands** | `cmd/docbuilder/commands/` | Command implementations (build, init, daemon, preview, etc.) |
+| **Build Service** | `internal/build/` | Build pipeline orchestration |
+| **Configuration** | `internal/config/` | YAML parsing and validation |
+| **Git Client** | `internal/git/` | Repository clone/update operations |
+| **Documentation Discovery** | `internal/docs/` | File discovery and path computation |
+| **Hugo Generator** | `internal/hugo/` | Hugo site generation |
+| **Transform System** | `internal/hugo/transforms/` | Content processing pipeline |
+| **Front Matter Core** | `internal/hugo/fmcore/` | Front matter patching and merging |
+| **Theme System** | `internal/hugo/theme/` | Theme interface and implementations |
+| **Forge Integration** | `internal/forge/` | GitHub/GitLab/Forgejo clients |
+| **Error Foundation** | `internal/foundation/errors/` | Classified error system |
+| **Daemon** | `internal/daemon/` | Long-running service mode |
+| **Workspace** | `internal/workspace/` | Temporary directory management |
+
+### 22.2 Transform Package Structure
+
+```
+internal/hugo/transforms/
+├── registry.go              # Transform registration
+├── dependencies.go          # Transformer interface
+├── toposort.go              # Dependency ordering
+├── defaults.go              # PageShim facade
+├── adapters.go              # PageAdapter interface
+├── front_matter_parser.go   # (built-in)
+├── front_matter_builder_v2.go
+├── edit_link_v2.go
+├── relative_link_rewriter.go
+├── strip_heading.go
+├── shortcode_escaper.go
+├── hextra_type.go
+└── front_matter_serialize.go
+```
+
+### 22.3 Key Interfaces
+
+**Transformer Interface:**
+```go
+// internal/hugo/transforms/dependencies.go
+type Transformer interface {
+    Name() string
+    Stage() TransformStage
+    Dependencies() TransformDependencies
+    Transform(PageAdapter) error
+}
+```
+
+**Theme Interface:**
+```go
+// internal/hugo/theme/theme.go
+type Theme interface {
+    Name() config.Theme
+    Features() ThemeFeatures
+    ApplyParams(ctx ParamContext, params map[string]any)
+    CustomizeRoot(ctx ParamContext, root map[string]any)
+}
+```
+
+**Forge Interface:**
+```go
+// internal/forge/forge.go
+type Forge interface {
+    Name() string
+    Type() string
+    ListRepositories(ctx context.Context, org string) ([]*Repository, error)
+    GetRepository(ctx context.Context, owner, repo string) (*Repository, error)
+    GetFileContent(ctx context.Context, owner, repo, path, ref string) ([]byte, error)
+    Capabilities() Capabilities
+}
+```
+
+### 22.4 Data Flow
+
+```
+Configuration (config.yaml)
+    ↓
+CLI Commands (cmd/docbuilder/commands/)
+    ↓
+Build Service (internal/build/)
+    ├→ Git Client (internal/git/) → Clone repositories
+    ├→ Documentation Discovery (internal/docs/) → Find markdown files
+    └→ Hugo Generator (internal/hugo/)
+        ├→ Theme System (theme/) → Apply theme defaults
+        ├→ Transform Pipeline (transforms/) → Process content
+        │   └→ Front Matter Core (fmcore/) → Patch merging
+        └→ Hugo execution → Rendered site
+```
+
+---
+
 ## Appendix A: Example Configuration
 
 ```yaml
@@ -1820,6 +2075,7 @@ output:
 | Version | Date | Changes |
 |---------|------|---------|
 | 2.0 | December 2025 | Initial comprehensive specification |
+| 2.0.1 | December 14, 2025 | Updated to reflect transform-based architecture, corrected error handling, added package architecture section |
 
 ---
 
