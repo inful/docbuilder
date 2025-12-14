@@ -1,8 +1,4 @@
 {{- if .Site.Params.enable_transitions -}}
-<!-- View Transitions API Support -->
+<!-- View Transitions API - CSS-only cross-page transitions -->
 <link rel="stylesheet" href="/view-transitions.css">
-<script defer src="/view-transitions.js"></script>
-<script>
-  window.viewTransitionDuration = '{{ .Site.Params.transition_duration | default "100ms" }}';
-</script>
 {{- end -}}

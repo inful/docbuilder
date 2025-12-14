@@ -10,9 +10,6 @@ import (
 //go:embed assets/view-transitions.css
 var transitionCSS []byte
 
-//go:embed assets/view-transitions.js
-var transitionJS []byte
-
 //go:embed assets/view-transitions-head.html
 var transitionHeadPartial []byte
 
@@ -38,13 +35,6 @@ func (g *Generator) copyTransitionAssets() error {
 		return err
 	}
 
-	// Copy JS file
-	jsPath := filepath.Join(staticDir, "view-transitions.js")
-	// #nosec G306 -- static JS file is a public asset
-	if err := os.WriteFile(jsPath, transitionJS, 0644); err != nil {
-		return err
-	}
-
 	// Copy head partial for Hextra theme integration
 	// Hextra automatically includes layouts/_partials/custom/head-end.html at the end of <head>
 	customPartialsDir := filepath.Join(g.buildRoot(), "layouts", "_partials", "custom")
@@ -59,7 +49,6 @@ func (g *Generator) copyTransitionAssets() error {
 
 	slog.Debug("View Transitions assets copied",
 		"css", "view-transitions.css",
-		"js", "view-transitions.js",
 		"partial", "layouts/_partials/custom/head-end.html",
 		"duration", g.config.Hugo.TransitionDuration)
 

@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,12 +64,6 @@ func TestViewTransitions_Enabled(t *testing.T) {
 		t.Errorf("CSS file should exist: %v", err)
 	}
 
-	// Verify JS file was created
-	jsPath := filepath.Join(gen.buildRoot(), "static", "view-transitions.js")
-	if _, err := os.Stat(jsPath); err != nil {
-		t.Errorf("JS file should exist: %v", err)
-	}
-
 	// Verify file contents are not empty
 	cssData, err := os.ReadFile(cssPath)
 	if err != nil {
@@ -78,12 +73,9 @@ func TestViewTransitions_Enabled(t *testing.T) {
 		t.Error("CSS file is empty")
 	}
 
-	jsData, err := os.ReadFile(jsPath)
-	if err != nil {
-		t.Fatalf("read JS: %v", err)
-	}
-	if len(jsData) == 0 {
-		t.Error("JS file is empty")
+	// Verify CSS contains @view-transition rule
+	if !bytes.Contains(cssData, []byte("@view-transition")) {
+		t.Error("CSS should contain @view-transition rule")
 	}
 }
 
@@ -156,20 +148,21 @@ func TestViewTransitions_Integration(t *testing.T) {
 		t.Fatalf("GenerateSite: %v", err)
 	}
 
-	// Verify transition assets exist in output
+	// Verify CSS exists in output
 	cssPath := filepath.Join(tmp, "static", "view-transitions.css")
 	if _, err := os.Stat(cssPath); err != nil {
 		t.Errorf("CSS file should exist in output: %v", err)
 	}
 
-	jsPath := filepath.Join(tmp, "static", "view-transitions.js")
-	if _, err := os.Stat(jsPath); err != nil {
-		t.Errorf("JS file should exist in output: %v", err)
+	// Verify the head partial exists (contains CSS link only, no JS)
+	partialPath := filepath.Join(tmp, "layouts", "_partials", "custom", "head-end.html")
+	if _, err := os.Stat(partialPath); err != nil {
+		t.Errorf("Head partial should exist: %v", err)
 	}
 
-	// Verify the transitions partial exists
-	partialPath := filepath.Join(tmp, "layouts", "partials", "transitions.html")
-	if _, err := os.Stat(partialPath); err != nil {
-		t.Errorf("Transitions partial should exist: %v", err)
+	// Verify JS does NOT exist (CSS-only approach)
+	jsPath := filepath.Join(tmp, "static", "view-transitions.js")
+	if _, err := os.Stat(jsPath); err == nil {
+		t.Error("JS file should NOT exist (CSS-only approach)")
 	}
 }
