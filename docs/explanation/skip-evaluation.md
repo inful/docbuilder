@@ -33,8 +33,8 @@ A **full rebuild** will occur when **any** of these conditions are detected:
 ### Components
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    BuildService                         │
+┌────────────────────────────────────────────────────────┐
+│                    BuildService                        │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │            SkipEvaluatorFactory                  │  │
 │  │  Creates evaluator with:                         │  │
@@ -42,19 +42,19 @@ A **full rebuild** will occur when **any** of these conditions are detected:
 │  │  - State manager (commit/config tracking)        │  │
 │  │  - Hugo generator (config hash computation)      │  │
 │  └──────────────────────────────────────────────────┘  │
-│                           │                             │
-│                           ▼                             │
+│                           │                            │
+│                           ▼                            │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │         SkipEvaluator (daemon wrapper)           │  │
 │  │  Delegates to validation-based evaluator         │  │
 │  └──────────────────────────────────────────────────┘  │
-│                           │                             │
-│                           ▼                             │
+│                           │                            │
+│                           ▼                            │
 │  ┌──────────────────────────────────────────────────┐  │
 │  │    validation.SkipEvaluator (core logic)         │  │
 │  │  Executes validation rule chain                  │  │
 │  └──────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────┘
 ```
 
 ### Validation Rules

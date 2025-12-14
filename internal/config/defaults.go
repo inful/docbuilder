@@ -91,18 +91,6 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Build.RetryMaxDelay = "30s"
 	}
 
-	// Cache defaults
-	if cfg.Build.CacheDir == "" {
-		cfg.Build.CacheDir = "./.docbuilder-cache"
-	}
-	// EnableIncremental defaults to true unless explicitly set to false
-	if !cfg.Build.EnableIncremental {
-		// If it's false, we need to check if it was explicitly set or just default
-		// Since we can't easily detect this, default to true for now
-		// Users who want to disable must explicitly set: enable_incremental: false
-		cfg.Build.EnableIncremental = true
-	}
-
 	return nil
 }
 
@@ -165,13 +153,13 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Build.RenderMode == "" || cfg.Build.RenderMode == RenderModeAuto {
 		cfg.Build.RenderMode = RenderModeAlways
 	}
-	
+
 	// Enable skip evaluation by default in daemon mode for efficiency
 	// This prevents unnecessary rebuilds when nothing has changed
 	if !cfg.Build.SkipIfUnchanged {
 		cfg.Build.SkipIfUnchanged = true
 	}
-	
+
 	// Note: LiveReload is NOT enabled by default in daemon mode
 	// It's designed for local development with file watching, not production serving
 	// Enable it explicitly in config if you want live reload on rebuild events

@@ -23,7 +23,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
-	
+
 	ggit "github.com/go-git/go-git/v5"
 )
 
@@ -145,7 +145,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			}
 			gen := hugo.NewGenerator(daemon.config, outputDir)
 			inner := NewSkipEvaluator(outputDir, daemon.stateManager, gen)
-			
+
 			// Wrap in adapter to match build.SkipEvaluator interface
 			return &skipEvaluatorAdapter{inner: inner}
 		})
@@ -478,13 +478,13 @@ func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hu
 			return err
 		}
 	}
-	
+
 	// Update state manager after successful builds
 	// This is critical for skip evaluation to work correctly on subsequent builds
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
 	}
-	
+
 	return nil
 }
 
@@ -496,24 +496,24 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 		d.stateManager.SetLastConfigHash(report.ConfigHash)
 		slog.Debug("Updated config hash in state", "hash", report.ConfigHash)
 	}
-	
+
 	// Update global doc files hash
 	if report.DocFilesHash != "" {
 		d.stateManager.SetLastGlobalDocFilesHash(report.DocFilesHash)
 		slog.Debug("Updated global doc files hash in state", "hash", report.DocFilesHash)
 	}
-	
+
 	// Update repository commits and hashes
 	// Read from persistent workspace (repo_cache_dir/working) to get current commit SHAs
 	workspacePath := filepath.Join(d.config.Daemon.Storage.RepoCacheDir, "working")
 	for _, repo := range d.config.Repositories {
 		repoPath := filepath.Join(workspacePath, repo.Name)
-		
+
 		// Check if repository exists
 		if _, err := os.Stat(filepath.Join(repoPath, ".git")); err != nil {
 			continue // Skip if not a git repository
 		}
-		
+
 		// Open git repository to get current commit
 		gitRepo, err := ggit.PlainOpen(repoPath)
 		if err != nil {
@@ -523,7 +523,7 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 				"error", err)
 			continue
 		}
-		
+
 		// Get HEAD reference
 		ref, err := gitRepo.Head()
 		if err != nil {
@@ -532,19 +532,19 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 				"error", err)
 			continue
 		}
-		
+
 		commit := ref.Hash().String()
-		
+
 		// Initialize repository state if needed
 		d.stateManager.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
-		
+
 		// Update commit in state
 		d.stateManager.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, commit)
 		slog.Debug("Updated repository commit in state",
 			"repository", repo.Name,
 			"commit", commit[:8])
 	}
-	
+
 	// Save state to disk
 	if err := d.stateManager.Save(); err != nil {
 		slog.Warn("Failed to save state after build", "error", err)
