@@ -86,24 +86,31 @@ Each sub-state has:
 
 ### 4. Unified Error Handling
 
-All errors use `foundation.DocBuilderError`:
+All errors use `internal/foundation/errors.ClassifiedError`:
 
 ```go
-type DocBuilderError struct {
-    Code       ErrorCode
-    Message    string
-    Cause      error
-    Context    map[string]any
-    Severity   Severity
-    Retryable  bool
+type ClassifiedError struct {
+    category ErrorCategory  // Type-safe category enum
+    severity ErrorSeverity  // Fatal, Error, Warning, Info
+    retry    RetryStrategy  // Never, Immediate, Backoff, RateLimit, User
+    message  string
+    cause    error
+    context  ErrorContext   // map[string]any
 }
 ```
 
 **Error Categories:**
-- Configuration errors (non-retryable)
-- Network errors (retryable)
-- Filesystem errors (transient)
-- Validation errors (non-retryable)
+- `CategoryConfig`, `CategoryValidation` (non-retryable, user-facing)
+- `CategoryNetwork`, `CategoryGit` (retryable with backoff)
+- `CategoryFileSystem` (transient, retry immediate)
+- `CategoryAuth`, `CategoryNotFound` (non-retryable)
+
+**Key Features:**
+- Type-safe categories and severity levels
+- Built-in retry semantics
+- HTTP/CLI adapters for boundary translation
+- Fluent builder API for error construction
+- Structured context via `WithContext(key, value)`
 
 ---
 

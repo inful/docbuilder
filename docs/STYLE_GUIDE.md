@@ -467,59 +467,106 @@ import (
 
 ## Error Handling
 
+### Unified Error System
+
+DocBuilder uses `internal/foundation/errors` package for all error handling. This provides:
+- Type-safe error categories (`ErrorCategory`)
+- Structured error context
+- Retry semantics
+- HTTP and CLI adapters
+
 ### Error Variables
 
-Prefix package-level errors with `Err`:
+Prefix package-level sentinel errors with `Err`:
 
 ```go
 // ✅ Good
 var (
-    ErrNotFound      = errors.New("repository not found")
-    ErrUnauthorized  = errors.New("authentication failed")
-    ErrInvalidConfig = errors.New("invalid configuration")
+    ErrNotFound      = errors.New(errors.CategoryNotFound, "repository not found").Build()
+    ErrUnauthorized  = errors.New(errors.CategoryAuth, "authentication failed").Build()
+    ErrInvalidConfig = errors.ValidationError("invalid configuration").Build()
 )
 
 // ❌ Bad
 var (
-    NotFoundError = errors.New("repository not found")
-    Unauthorized  = errors.New("authentication failed")
+    NotFoundError = errors.New("repository not found") // No category
+    Unauthorized  = errors.New("authentication failed") // No category
 )
+```
+
+### Error Construction
+
+Use the fluent builder API:
+
+```go
+// ✅ Good - validation error with context
+return errors.ValidationError("invalid forge type").
+    WithContext("input", forgeType).
+    WithContext("valid_values", []string{"github", "gitlab"}).
+    Build()
+
+// ✅ Good - wrapping errors
+return errors.WrapError(err, errors.CategoryGit, "failed to clone repository").
+    WithContext("url", repo.URL).
+    WithContext("branch", repo.Branch).
+    Build()
+
+// ❌ Bad - raw errors
+return fmt.Errorf("failed to clone: %w", err) // No category or context
 ```
 
 ### Error Messages
 
 - Start with **lowercase**
 - Be **specific and actionable**
-- Include **context** using `fmt.Errorf` with `%w`
+- Add context using `WithContext(key, value)` instead of string formatting
+
+### Error Categories
+
+Available categories in `internal/foundation/errors/categories.go`:
+
+- **User-facing**: `CategoryConfig`, `CategoryValidation`, `CategoryAuth`, `CategoryNotFound`, `CategoryAlreadyExists`
+- **External**: `CategoryNetwork`, `CategoryGit`, `CategoryForge`
+- **Build**: `CategoryBuild`, `CategoryHugo`, `CategoryFileSystem`
+- **Runtime**: `CategoryRuntime`, `CategoryDaemon`, `CategoryInternal`
+
+### Error Detection
 
 ```go
-// ✅ Good
-return fmt.Errorf("failed to clone repository %s: %w", repo.URL, err)
-return fmt.Errorf("authentication: %w", err)
+// ✅ Good - extract classified error
+if classified, ok := errors.AsClassified(err); ok {
+    if classified.Category() == errors.CategoryValidation {
+        // Handle validation error
+    }
+}
 
-// ❌ Bad
-return fmt.Errorf("Error cloning repository") // Starts with capital
-return err // No context
-return fmt.Errorf("clone failed: %v", err) // Use %w not %v
+// ✅ Good - check category using helper
+if errors.HasCategory(err, errors.CategoryAuth) {
+    // Handle auth error
+}
+
+// ❌ Bad - old pattern
+var classified *foundation.ClassifiedError
+if foundation.AsClassified(err, &classified) {
+    // Old API - no longer exists
+}
 ```
 
 ### Typed Errors
 
+For package-specific errors, use the builder:
+
 ```go
-// ✅ Good - structured error with context
-type AuthError struct {
-    Op  string // Operation (e.g., "clone", "fetch")
-    URL string
-    Err error
+// ✅ Good - use builder for custom errors
+func NewAuthError(op, url string, cause error) error {
+    return errors.WrapError(cause, errors.CategoryAuth, "authentication failed").
+        WithContext("operation", op).
+        WithContext("url", url).
+        Build()
 }
 
-func (e *AuthError) Error() string {
-    return fmt.Sprintf("%s auth error for %s: %v", e.Op, e.URL, e.Err)
-}
-
-func (e *AuthError) Unwrap() error {
-    return e.Err
-}
+// Usage
+return NewAuthError("clone", repo.URL, err)
 ```
 
 ## Comments and Documentation

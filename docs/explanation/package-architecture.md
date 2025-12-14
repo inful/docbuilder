@@ -23,47 +23,64 @@ This document provides detailed information about each internal package in DocBu
 **Key Types:**
 
 ```go
-type DocBuilderError struct {
-    Code      ErrorCode
-    Message   string
-    Cause     error
-    Context   map[string]any
-    Severity  Severity
-    Retryable bool
+type ClassifiedError struct {
+    category ErrorCategory  // Type-safe category enum
+    severity ErrorSeverity  // Fatal, Error, Warning, Info
+    retry    RetryStrategy  // Never, Immediate, Backoff, RateLimit, User
+    message  string
+    cause    error
+    context  ErrorContext   // map[string]any
 }
 
-type ErrorCode string
-type Severity string
+type ErrorCategory string  // Type-safe enum
+type ErrorSeverity string  // Type-safe enum
+type RetryStrategy string  // Type-safe enum
 ```
 
-**Error Codes:**
-- `ErrCodeConfig` - Configuration errors
-- `ErrCodeGitClone` - Git clone failures
-- `ErrCodeGitAuth` - Authentication failures
-- `ErrCodeDiscovery` - Documentation discovery errors
-- `ErrCodeHugoGeneration` - Hugo generation failures
-- `ErrCodeValidation` - Validation errors
+**Error Categories:**
+- `CategoryConfig` - Configuration errors
+- `CategoryGit` - Git operations (clone, fetch, auth)
+- `CategoryAuth` - Authentication failures
+- `CategoryNotFound` - Resource not found errors
+- `CategoryValidation` - Input validation errors
+- `CategoryHugo` - Hugo generation failures
+- `CategoryBuild` - Build pipeline errors
+- `CategoryNetwork` - Network connectivity issues
+- `CategoryFileSystem` - File I/O errors
+- `CategoryDaemon` - Daemon/service errors
+- `CategoryInternal` - Internal/unexpected errors
 
 **Usage:**
 
 ```go
-return foundation.NewDocBuilderError(
-    foundation.ErrCodeGitClone,
-    "failed to clone repository",
-    err,
-    foundation.WithContext(map[string]any{
-        "repository": repoURL,
-        "branch": branch,
-    }),
-    foundation.WithRetryable(true),
-)
+// Validation error with context
+return errors.ValidationError("invalid theme").
+    WithContext("input", theme).
+    WithContext("valid_values", []string{"hextra", "docsy"}).
+    Build()
+
+// Wrap existing error with category
+return errors.WrapError(err, errors.CategoryGit, "failed to clone repository").
+    WithContext("repository", repoURL).
+    WithContext("branch", branch).
+    WithRetry(errors.RetryBackoff).
+    Build()
+
+// Extract and check error category
+if classified, ok := errors.AsClassified(err); ok {
+    if classified.Category() == errors.CategoryAuth {
+        // Handle authentication error
+    }
+}
 ```
 
 **Design Rationale:**
-- Single error type eliminates error handling fragmentation
-- Context map provides debugging information
-- Retryable flag enables automatic retry logic
+- Type-safe categories eliminate string-based error codes
+- Fluent builder API makes error construction consistent
+- Context map provides structured debugging information
+- Retry strategy is built into error classification
 - Severity levels support alerting and filtering
+- HTTP/CLI adapters translate errors at system boundaries
 
 ---
 

@@ -507,15 +507,19 @@ Before completing any task, verify:
 - Interface types prefer `-er` suffix: `Cloner`, `Generator`
 
 **Error Handling:**
-- Package-level errors prefix with `Err`: `ErrNotFound`, `ErrUnauthorized`
-- Error messages start with lowercase, be specific, include context with `%w`
-- Example: `fmt.Errorf("failed to clone repository %s: %w", repo.URL, err)`
+- Use `internal/foundation/errors` package for all error construction
+- Package-level sentinel errors prefix with `Err`: `ErrNotFound`, `ErrUnauthorized`
+- Build errors with fluent API: `errors.ValidationError("msg").WithContext("key", val).Build()`
+- Error categories are type-safe: `errors.CategoryValidation`, `errors.CategoryAuth`, `errors.CategoryNotFound`
+- Extract classified errors: `classified, ok := errors.AsClassified(err)`
+- Error messages start with lowercase, be specific, include context
+- Example: `errors.WrapError(err, errors.CategoryGit, "failed to clone repository").WithContext("url", repo.URL).Build()`
 
 **Other Conventions:**
 - Use structured logging with `slog` package throughout
 - File paths must be absolute when passed between packages
 - Hugo paths use forward slashes even on Windows (`filepath.ToSlash()`)
-- Error wrapping with `fmt.Errorf("context: %w", err)` pattern
+- Error wrapping uses the errors package builder pattern
 - Configuration validation happens in `config.Load()` with sensible defaults
 
 ## Integration Points
