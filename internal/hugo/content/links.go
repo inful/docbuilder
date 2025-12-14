@@ -82,14 +82,29 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 			if trimmed == "" {
 				return m
 			}
+			// Normalize ./ prefix for regular pages (non-index)
+			// For index pages (_index.md), preserve ./ to maintain section-relative context
+			// For regular pages, ./foo.md and foo.md are equivalent and both need ../
+			hasCurrentDirPrefix := strings.HasPrefix(trimmed, "./")
+			if hasCurrentDirPrefix && !isIndexPage {
+				trimmed = trimmed[2:] // Remove ./ for regular pages
+			}
 			// Add trailing slash for Hugo's pretty URLs
 			if !strings.HasSuffix(trimmed, "/") {
 				trimmed = trimmed + "/"
 			}
-			// Adjust relative parent paths for Hugo's deeper URL structure
-			// Regular pages: ../foo → ../../foo (add one more level up)
-			// Index pages (_index.md): ../foo stays as ../foo (already at section root)
-			if !isIndexPage && strings.HasPrefix(trimmed, "../") {
+			// Adjust relative paths for Hugo's deeper URL structure
+			// Hugo URLs are one level deeper than source files because the page name becomes a directory
+			// For regular pages (not _index.md):
+			//   - Same-directory link:   architecture.md       → ../architecture/
+			//   - Same-directory explicit: ./ref.md            → ../ref/  (after ./ removal)
+			//   - Parent directory link: ../other.md           → ../../other/
+			//   - Child directory link:  guide/setup.md        → ../guide/setup/
+			// For index pages (_index.md): relative links stay as-is (already at section root)
+			//   - Same-directory link:   guide.md              → guide/
+			//   - Same-directory explicit: ./guide.md          → ./guide/ (preserve ./)
+			//   - Parent directory link: ../other.md           → ../other/
+			if !isIndexPage {
 				trimmed = "../" + trimmed
 			}
 			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)

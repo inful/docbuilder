@@ -4,15 +4,16 @@ import "testing"
 
 func TestRewriteRelativeMarkdownLinks(t *testing.T) {
 	cases := []struct{ in, want string }{
-		{"See [Doc](foo.md) for details", "See [Doc](foo/) for details"},
-		{"[Anchor](bar.md#sec)", "[Anchor](bar/#sec)"},
+		{"See [Doc](foo.md) for details", "See [Doc](../foo/) for details"}, // same-dir needs ../
+		{"[Anchor](bar.md#sec)", "[Anchor](../bar/#sec)"},                    // same-dir with anchor
 		{"Absolute [Link](https://example.com/file.md)", "Absolute [Link](https://example.com/file.md)"},
 		{"Image ref ![Alt](img.png)", "Image ref ![Alt](img.png)"}, // images unaffected
 		{"Mail [Me](mailto:test@example.com)", "Mail [Me](mailto:test@example.com)"},
 		{"Hash [Ref](#local)", "Hash [Ref](#local)"},
-		{"Nested ./path [Ref](./sub/thing.md)", "Nested ./path [Ref](./sub/thing/)"},
-		{"Up one [Ref](../other.md)", "Up one [Ref](../../other/)"}, // Hugo needs extra ../
-		{"Markdown long ext [Ref](guide.markdown)", "Markdown long ext [Ref](guide/)"},
+		{"Nested ./path [Ref](./sub/thing.md)", "Nested ./path [Ref](../sub/thing/)"}, // ./ removed for regular page, then ../ added
+		{"Up one [Ref](../other.md)", "Up one [Ref](../../other/)"},                       // Hugo needs extra ../
+		{"Markdown long ext [Ref](guide.markdown)", "Markdown long ext [Ref](../guide/)"}, // same-dir needs ../
+		{"Child dir [Ref](guide/setup.md)", "Child dir [Ref](../guide/setup/)"},           // subdirectory also needs ../
 	}
 	for i, c := range cases {
 		got := RewriteRelativeMarkdownLinks(c.in, "", "", false) // false = not an index page
