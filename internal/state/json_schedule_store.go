@@ -134,30 +134,3 @@ func (ss *jsonScheduleStore) List(_ context.Context) foundation.Result[[]Schedul
 
 	return foundation.Ok[[]Schedule, error](schedules)
 }
-
-func (ss *jsonScheduleStore) GetActive(_ context.Context) foundation.Result[[]Schedule, error] {
-	ss.store.mu.RLock()
-	defer ss.store.mu.RUnlock()
-
-	schedules := make([]Schedule, 0)
-	for _, schedule := range ss.store.schedules {
-		// Check if schedule is active
-		if schedule.IsActive {
-			schedules = append(schedules, *schedule)
-		}
-	}
-
-	// Sort by next run time
-	sort.Slice(schedules, func(i, j int) bool {
-		// Handle Option[time.Time] properly
-		if !schedules[i].NextRun.IsSome() {
-			return false
-		}
-		if !schedules[j].NextRun.IsSome() {
-			return true
-		}
-		return schedules[i].NextRun.Unwrap().Before(schedules[j].NextRun.Unwrap())
-	})
-
-	return foundation.Ok[[]Schedule, error](schedules)
-}

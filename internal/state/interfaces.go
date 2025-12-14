@@ -75,9 +75,6 @@ type ScheduleStore interface {
 
 	// Delete removes a schedule by ID.
 	Delete(ctx context.Context, id string) foundation.Result[struct{}, error]
-
-	// GetActive returns only active schedules.
-	GetActive(ctx context.Context) foundation.Result[[]Schedule, error]
 }
 
 // StatisticsStore handles statistics persistence and calculations.
