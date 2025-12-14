@@ -88,8 +88,6 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	// 4. Post-update hygiene (clean/prune)
 	c.postUpdateCleanup(wt, repoPath, repo)
 
-	// 5. Logging
-	logRepositoryUpdated(repository, repo, branch)
 	return repoPath, nil
 }
 
@@ -193,15 +191,6 @@ func (c *Client) postUpdateCleanup(wt *git.Worktree, repoPath string, repo appcf
 		if err := c.pruneNonDocTopLevel(repoPath, repo); err != nil {
 			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
 		}
-	}
-}
-
-// logRepositoryUpdated logs a repository update summary, including the short commit hash if available.
-func logRepositoryUpdated(repository *git.Repository, repo appcfg.Repository, branch string) {
-	if headRef, err := repository.Head(); err == nil {
-		slog.Info("Repository updated", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", headRef.Hash().String()[:8]))
-	} else {
-		slog.Info("Repository updated", logfields.Name(repo.Name), slog.String("branch", branch))
 	}
 }
 
