@@ -78,7 +78,7 @@ Removed legacy transforms (`front_matter_builder`, `edit_link_injector`) under t
 
 `PageShim` (in `internal/hugo/transforms/defaults.go`) exposes only required fields + function hooks. The transform layer now operates via facade-style getters/setters and an adapter that allows future direct `PageFacade` implementations. Custom transformers MUST avoid reaching into unlisted struct fields; rely on the facade methods below. A golden test (`pipeline_golden_test.go`) locks baseline behavior.
 
-As of 2025-09-30 the shim gained a `BackingAddPatch` hook so facade patches registered by transforms propagate to the underlying concrete `Page` early (supporting conflict recording that previously happened only during final merge). This enabled safe removal of legacy closure fields (`BuildFrontMatter`, `InjectEditLink`).
+As of 2025-09-30 the shim gained a `BackingAddPatch` hook so facade patches registered by transforms propagate to the underlying concrete `Page` early (supporting conflict recording that previously happened only during final merge).
 
 ### PageFacade Methods (Current Stable Set)
 
@@ -95,17 +95,12 @@ As of 2025-09-30 the shim gained a `BackingAddPatch` hook so facade patches regi
 
 The stability test (`page_facade_stability_test.go`) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. `Serialize()` was promoted into the facade (2025-09-30) eliminating the special serializer closure path.
 
-Deprecated legacy closure helpers removed (replaced by V2 transforms):
+### Supporting Functions
 
-- `BuildFrontMatter(now time.Time)`
-- `InjectEditLink()`
+The transform system uses these standalone functions to process pages:
 
-Still-present facade utilities (available via shim fields / hooks):
-
-- `ApplyPatches()` – performs merge (`Page.applyPatches`).
-- `RewriteLinks(string) string` – markdown link rewriting.
-- `Serialize()` – final YAML + content emission.
-- `SyncOriginal(fm, had)` – lets parser propagate parsed original front matter before builder patches.
+- `BuildFrontMatter(FrontMatterInput)` – Generates front matter from file metadata, config, and existing values (in `internal/hugo/frontmatter.go`). Used by `front_matter_builder_v2` transform.
+- `ApplyPatches()` – Merges pending patches into final front matter (facade method on `Page.applyPatches`).
 
 ## Front Matter Patching Semantics
 
