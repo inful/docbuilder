@@ -8,7 +8,7 @@
 /* Default transition timing - can be overridden via inline style */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: var(--view-transition-duration, 300ms);
+  animation-duration: 300ms;
   animation-timing-function: ease-in-out;
 }
 

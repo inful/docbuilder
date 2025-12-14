@@ -43,7 +43,6 @@ func TestViewTransitions_Enabled(t *testing.T) {
 	tmp := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Hugo.EnableTransitions = true
-	cfg.Hugo.TransitionDuration = "500ms"
 
 	gen := NewGenerator(cfg, tmp)
 	if err := gen.beginStaging(); err != nil {
@@ -85,7 +84,6 @@ func TestViewTransitions_ConfigParams(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test Site"
 	cfg.Hugo.EnableTransitions = true
-	cfg.Hugo.TransitionDuration = "400ms"
 
 	gen := NewGenerator(cfg, tmp)
 	if err := gen.beginStaging(); err != nil {
@@ -114,11 +112,6 @@ func TestViewTransitions_ConfigParams(t *testing.T) {
 	if !strings.Contains(configStr, "enable_transitions: true") {
 		t.Error("Config should contain enable_transitions: true")
 	}
-
-	// Check for transition_duration param
-	if !strings.Contains(configStr, "transition_duration: 400ms") {
-		t.Error("Config should contain transition_duration: 400ms")
-	}
 }
 
 // TestViewTransitions_Integration verifies the full pipeline with transitions
@@ -127,7 +120,6 @@ func TestViewTransitions_Integration(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Transitions Test"
 	cfg.Hugo.EnableTransitions = true
-	cfg.Hugo.TransitionDuration = "350ms"
 
 	gen := NewGenerator(cfg, tmp)
 

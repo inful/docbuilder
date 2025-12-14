@@ -16,7 +16,6 @@ hugo:
   description: "Test build with Hugo documentation"
   base_url: "https://test.example.com"
   enable_page_transitions: true
-  transition_duration: "0.3s"
 
 output:
   directory: "./test-site"

@@ -4,15 +4,14 @@ import "strings"
 
 // HugoConfig represents Hugo-specific configuration
 type HugoConfig struct {
-	Theme              string            `yaml:"theme,omitempty"` // raw theme string from config; normalized via ThemeType()
-	BaseURL            string            `yaml:"base_url,omitempty"`
-	Title              string            `yaml:"title"`
-	Description        string            `yaml:"description,omitempty"`
-	Params             map[string]any    `yaml:"params,omitempty"`
-	Menu               map[string][]Menu `yaml:"menu,omitempty"`
-	Transforms         *HugoTransforms   `yaml:"transforms,omitempty"`              // optional transform filtering
-	EnableTransitions  bool              `yaml:"enable_page_transitions,omitempty"` // enables View Transitions API for smooth page transitions
-	TransitionDuration string            `yaml:"transition_duration,omitempty"`     // CSS duration for transitions (default: 300ms)
+	Theme             string            `yaml:"theme,omitempty"` // raw theme string from config; normalized via ThemeType()
+	BaseURL           string            `yaml:"base_url,omitempty"`
+	Title             string            `yaml:"title"`
+	Description       string            `yaml:"description,omitempty"`
+	Params            map[string]any    `yaml:"params,omitempty"`
+	Menu              map[string][]Menu `yaml:"menu,omitempty"`
+	Transforms        *HugoTransforms   `yaml:"transforms,omitempty"`              // optional transform filtering
+	EnableTransitions bool              `yaml:"enable_page_transitions,omitempty"` // enables View Transitions API for smooth page transitions
 }
 
 // HugoTransforms allows users to enable/disable specific named content transforms.

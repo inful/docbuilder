@@ -13,7 +13,6 @@ hugo:
   base_url: "http://localhost:1313/"
   theme: "hextra"
   enable_page_transitions: true
-  transition_duration: "400ms"
   params:
     navbar:
       displayTitle: true

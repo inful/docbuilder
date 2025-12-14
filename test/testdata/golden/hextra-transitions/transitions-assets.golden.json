@@ -1,11 +1,10 @@
 {
   "css": {
     "exists": true,
-    "size": 974,
-    "contentHash": "sha256:6cc974546be65d26",
+    "size": 941,
+    "contentHash": "sha256:0d82f88a1bebdc1c",
     "markers": [
-      "@view-transition",
-      "--view-transition-duration"
+      "@view-transition"
     ]
   },
   "js": {

@@ -36,7 +36,6 @@ hugo:
   
   # Optional: Enable smooth page transitions (Hextra theme only)
   # enable_page_transitions: true
-  # page_transition_duration: 300  # milliseconds (default: 300)
   
   params:
     search:
