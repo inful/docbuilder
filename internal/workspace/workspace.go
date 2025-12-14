@@ -98,17 +98,3 @@ func (m *Manager) Cleanup() error {
 	m.tempDir = ""
 	return nil
 }
-
-// CreateSubdir creates a subdirectory within the workspace
-func (m *Manager) CreateSubdir(name string) (string, error) {
-	if m.tempDir == "" {
-		return "", fmt.Errorf("workspace not created")
-	}
-
-	subdir := filepath.Join(m.tempDir, name)
-	if err := os.MkdirAll(subdir, 0o750); err != nil {
-		return "", fmt.Errorf("failed to create subdirectory: %w", err)
-	}
-
-	return subdir, nil
-}
