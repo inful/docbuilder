@@ -97,16 +97,6 @@ func (env *TestEnvironment) WithTimeout(timeout time.Duration) *TestEnvironment 
 	return env
 }
 
-// AddResource stores a resource in the environment
-func (env *TestEnvironment) AddResource(key string, value interface{}) {
-	env.Resources[key] = value
-}
-
-// GetResource retrieves a resource from the environment
-func (env *TestEnvironment) GetResource(key string) interface{} {
-	return env.Resources[key]
-}
-
 // ConfigPath returns the path to the configuration file
 func (env *TestEnvironment) ConfigPath() string {
 	return filepath.Join(env.ConfigDir, "docbuilder.yaml")
@@ -200,21 +190,5 @@ func (result *TestResult) AssertOutputContains(t *testing.T, expected string) {
 	}
 	if !found {
 		t.Errorf("Expected output to contain %q, but it was not found in: %s", expected, result.Output)
-	}
-}
-
-// AssertDuration validates that the test completed within expected time
-func (result *TestResult) AssertDuration(t *testing.T, maxDuration time.Duration) {
-	t.Helper()
-	if result.Duration > maxDuration {
-		t.Errorf("Test took %v, expected less than %v", result.Duration, maxDuration)
-	}
-}
-
-// AssertFilesCreated validates that expected number of files were created
-func (result *TestResult) AssertFilesCreated(t *testing.T, minCount int) {
-	t.Helper()
-	if len(result.FilesCreated) < minCount {
-		t.Errorf("Expected at least %d files created, got %d", minCount, len(result.FilesCreated))
 	}
 }

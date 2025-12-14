@@ -31,16 +31,6 @@ func (fa *FileAssertions) AssertFileExists(relativePath string) *FileAssertions 
 	return fa
 }
 
-// AssertFileNotExists validates that a file does not exist
-func (fa *FileAssertions) AssertFileNotExists(relativePath string) *FileAssertions {
-	fa.t.Helper()
-	fullPath := filepath.Join(fa.baseDir, relativePath)
-	if _, err := os.Stat(fullPath); err == nil {
-		fa.t.Errorf("Expected file to not exist: %s", fullPath)
-	}
-	return fa
-}
-
 // AssertDirExists validates that a directory exists
 func (fa *FileAssertions) AssertDirExists(relativePath string) *FileAssertions {
 	fa.t.Helper()
@@ -94,78 +84,4 @@ func (fa *FileAssertions) AssertMinFileCount(relativePath string, minCount int) 
 		fa.t.Errorf("Expected at least %d files in %s, found %d", minCount, relativePath, fileCount)
 	}
 	return fa
-}
-
-// AssertFileSize validates that a file has the expected size range
-func (fa *FileAssertions) AssertFileSize(relativePath string, minSize, maxSize int64) *FileAssertions {
-	fa.t.Helper()
-	fullPath := filepath.Join(fa.baseDir, relativePath)
-
-	stat, err := os.Stat(fullPath)
-	if err != nil {
-		fa.t.Errorf("Failed to stat file %s: %v", fullPath, err)
-		return fa
-	}
-
-	size := stat.Size()
-	if size < minSize {
-		fa.t.Errorf("File %s is too small: %d bytes (minimum: %d)", relativePath, size, minSize)
-	}
-	if size > maxSize {
-		fa.t.Errorf("File %s is too large: %d bytes (maximum: %d)", relativePath, size, maxSize)
-	}
-	return fa
-}
-
-// CountFiles returns the number of files in a directory (non-recursive)
-func (fa *FileAssertions) CountFiles(relativePath string) int {
-	fa.t.Helper()
-	fullPath := filepath.Join(fa.baseDir, relativePath)
-
-	entries, err := os.ReadDir(fullPath)
-	if err != nil {
-		fa.t.Logf("Failed to read directory %s: %v", fullPath, err)
-		return 0
-	}
-
-	count := 0
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			count++
-		}
-	}
-	return count
-}
-
-// ListFiles returns a list of file names in a directory
-func (fa *FileAssertions) ListFiles(relativePath string) []string {
-	fa.t.Helper()
-	fullPath := filepath.Join(fa.baseDir, relativePath)
-
-	entries, err := os.ReadDir(fullPath)
-	if err != nil {
-		fa.t.Logf("Failed to read directory %s: %v", fullPath, err)
-		return nil
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			files = append(files, entry.Name())
-		}
-	}
-	return files
-}
-
-// GetFileContent reads and returns the content of a file
-func (fa *FileAssertions) GetFileContent(relativePath string) string {
-	fa.t.Helper()
-	fullPath := filepath.Join(fa.baseDir, relativePath)
-
-	// #nosec G304 - test helper, paths are controlled by test code
-	content, err := os.ReadFile(fullPath)
-	if err != nil {
-		fa.t.Fatalf("Failed to read file %s: %v", fullPath, err)
-	}
-	return string(content)
 }
