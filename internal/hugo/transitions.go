@@ -46,11 +46,12 @@ func (g *Generator) copyTransitionAssets() error {
 	}
 
 	// Copy head partial for Hextra theme integration
-	partialsDir := filepath.Join(g.buildRoot(), "layouts", "partials", "head")
-	if err := os.MkdirAll(partialsDir, 0o750); err != nil {
+	// Hextra automatically includes layouts/_partials/custom/head-end.html at the end of <head>
+	customPartialsDir := filepath.Join(g.buildRoot(), "layouts", "_partials", "custom")
+	if err := os.MkdirAll(customPartialsDir, 0o750); err != nil {
 		return err
 	}
-	headPartialPath := filepath.Join(partialsDir, "custom.html")
+	headPartialPath := filepath.Join(customPartialsDir, "head-end.html")
 	// #nosec G306 -- HTML partial is a public template file
 	if err := os.WriteFile(headPartialPath, transitionHeadPartial, 0644); err != nil {
 		return err
@@ -59,7 +60,7 @@ func (g *Generator) copyTransitionAssets() error {
 	slog.Debug("View Transitions assets copied",
 		"css", "view-transitions.css",
 		"js", "view-transitions.js",
-		"partial", "layouts/partials/head/custom.html",
+		"partial", "layouts/_partials/custom/head-end.html",
 		"duration", g.config.Hugo.TransitionDuration)
 
 	return nil
