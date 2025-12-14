@@ -201,11 +201,11 @@ const indexTemplate = `{{ define "main" }}
 {{ end }}`
 
 const transitionsPartial = `{{ if .Site.Params.enable_transitions -}}
-{{- $duration := .Site.Params.transition_duration | default "300ms" -}}
+{{- $duration := .Site.Params.transition_duration | default "100ms" -}}
 <link rel="stylesheet" href="{{ "view-transitions.css" | relURL }}">
 <script src="{{ "view-transitions.js" | relURL }}" defer></script>
 <script>
-  window.viewTransitionDuration = '{{ .Site.Params.transition_duration | default "2000ms" }}';
+  window.viewTransitionDuration = '{{ .Site.Params.transition_duration | default "100ms" }}';
 </script>
 <style>
 :root {
