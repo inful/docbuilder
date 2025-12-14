@@ -686,62 +686,49 @@ type FileEventStore struct {
 
 ### `internal/services`
 
-**Purpose:** High-level business logic orchestration.
+**Purpose:** Service interface definitions for lifecycle management.
 
 **Package Structure:**
 
 ```
 services/
-├── build_service.go       # Build orchestration
-├── preview_service.go     # Preview server
-└── discovery_service.go   # Discovery-only mode
+└── interfaces.go          # ManagedService, StateManager interfaces
 ```
 
-**BuildService:**
+**Key Interfaces:**
 
 ```go
-type BuildService struct {
-    config     *config.Config
-    pipeline   *pipeline.Runner
-    eventStore eventstore.EventStore
+type ManagedService interface {
+    Name() string
+    Start(ctx context.Context) error
+    Stop(ctx context.Context) error
+    Health() HealthStatus
+    Dependencies() []string
 }
 
-func (s *BuildService) Build(ctx context.Context) (*BuildReport, error)
-func (s *BuildService) Validate(ctx context.Context) error
-func (s *BuildService) Clean(ctx context.Context) error
-```
-
-**PreviewService:**
-
-```go
-type PreviewService struct {
-    config      *config.Config
-    buildSvc    *BuildService
-    hugoRunner  *hugo.Runner
-    watcher     *fsnotify.Watcher
+type StateManager interface {
+    Load() error
+    Save() error
+    IsLoaded() bool
+    LastSaved() *time.Time
 }
 
-func (s *PreviewService) Start(ctx context.Context) error
-func (s *PreviewService) Stop() error
-```
-
-**DiscoveryService:**
-
-```go
-type DiscoveryService struct {
-    config *config.Config
-    git    *git.Client
-    docs   *docs.Discovery
+type HealthStatus struct {
+    Status  string
+    Message string
+    CheckAt time.Time
 }
-
-func (s *DiscoveryService) Discover(ctx context.Context) (*DiscoveryReport, error)
 ```
+
+**Usage:**
+- Daemon implements `ManagedService` interface
+- State managers implement `StateManager` interface
+- Provides common contracts for service orchestration
 
 **Design Rationale:**
-- Services compose infrastructure
-- Single responsibility per service
-- Context-based cancellation
-- Return domain types (reports)
+- Interface-only package (no concrete implementations)
+- Enables decoupled service management
+- Standard health checking pattern
 
 ### `internal/build` *(Current Pipeline)*
 

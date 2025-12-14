@@ -365,33 +365,29 @@ eventstore/
 ### Application Packages
 
 #### `internal/services/`
-High-level business logic:
+
+Service interfaces for lifecycle management:
 
 ```
 services/
-├── build_service.go       # Build orchestration
-├── preview_service.go     # Preview server
-└── discovery_service.go   # Discovery-only mode
+└── interfaces.go          # ManagedService, StateManager interfaces
 ```
 
-#### `internal/pipeline/`
-Pipeline execution:
+Defines contracts for service lifecycle (Start, Stop, Health) and state persistence (Load, Save).
+
+#### `internal/build/`
+
+Sequential pipeline for documentation generation:
 
 ```
-pipeline/
-├── runner.go          # Pipeline orchestration
-├── executor.go        # Stage execution
-├── stages/            # Stage implementations
-│   ├── prepare.go
-│   ├── clone.go
-│   ├── discover.go
-│   ├── generate.go
-│   ├── layouts.go
-│   ├── content.go
-│   ├── indexes.go
-│   └── hugo.go
-└── change_detector.go # Incremental build logic
+build/
+├── service.go             # BuildService interface  
+├── default_service.go     # Default pipeline executor
+├── stages.go              # Stage definitions
+└── report.go              # Build reporting
 ```
+
+Executes pipeline stages (PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig → Layouts → CopyContent → Indexes → RunHugo).
 
 #### `internal/incremental/` *(Removed)*
 
