@@ -133,6 +133,18 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 				return nil
 			}
 			return hugo.NewGenerator(configTyped, outputDir)
+		}).
+		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
+			// Create skip evaluator with state manager access
+			// Will be populated after state manager is initialized
+			if daemon.stateManager == nil {
+				return nil
+			}
+			gen := hugo.NewGenerator(daemon.config, outputDir)
+			inner := NewSkipEvaluator(outputDir, daemon.stateManager, gen)
+			
+			// Wrap in adapter to match build.SkipEvaluator interface
+			return &skipEvaluatorAdapter{inner: inner}
 		})
 	buildAdapter := NewBuildServiceAdapter(buildService)
 

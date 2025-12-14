@@ -165,6 +165,13 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Build.RenderMode == "" || cfg.Build.RenderMode == RenderModeAuto {
 		cfg.Build.RenderMode = RenderModeAlways
 	}
+	
+	// Enable skip evaluation by default in daemon mode for efficiency
+	// This prevents unnecessary rebuilds when nothing has changed
+	if !cfg.Build.SkipIfUnchanged {
+		cfg.Build.SkipIfUnchanged = true
+	}
+	
 	// Note: LiveReload is NOT enabled by default in daemon mode
 	// It's designed for local development with file watching, not production serving
 	// Enable it explicitly in config if you want live reload on rebuild events
