@@ -74,14 +74,6 @@ func (s *DefaultBuildService) WithHugoGeneratorFactory(factory HugoGeneratorFact
 	return s
 }
 
-// WithMetricsRecorder sets the metrics recorder for observability.
-func (s *DefaultBuildService) WithMetricsRecorder(r metrics.Recorder) *DefaultBuildService {
-	if r != nil {
-		s.recorder = r
-	}
-	return s
-}
-
 // WithSkipEvaluatorFactory sets the factory for creating skip evaluators.
 // When set and Options.SkipIfUnchanged is true, the service will check
 // if the build can be skipped before executing the full pipeline.
@@ -132,8 +124,8 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		if evaluator != nil {
 			// Convert repositories to []any for the generic interface
 			repos := make([]any, len(req.Config.Repositories))
-			for i, r := range req.Config.Repositories {
-				repos[i] = r
+			for i, repo := range req.Config.Repositories {
+				repos[i] = repo
 			}
 
 			if skipReport, canSkip := evaluator.Evaluate(repos); canSkip {

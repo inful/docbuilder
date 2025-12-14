@@ -37,14 +37,8 @@ type BuildOptions struct {
 	// Verbose enables detailed logging during the build.
 	Verbose bool
 
-	// DryRun simulates the build without writing output.
-	DryRun bool
-
 	// SkipIfUnchanged enables skip evaluation when content hasn't changed.
 	SkipIfUnchanged bool
-
-	// Concurrency controls parallel repository processing (0 = sequential).
-	Concurrency int
 }
 
 // BuildResult contains the outcome of a build execution.
@@ -100,12 +94,6 @@ const (
 	// BuildStatusCancelled indicates the build was cancelled.
 	BuildStatusCancelled BuildStatus = "cancelled"
 )
-
-// IsTerminal returns true if the status represents a final state.
-func (s BuildStatus) IsTerminal() bool {
-	return s == BuildStatusSuccess || s == BuildStatusFailed ||
-		s == BuildStatusSkipped || s == BuildStatusCancelled
-}
 
 // IsSuccess returns true if the build completed successfully.
 func (s BuildStatus) IsSuccess() bool {
