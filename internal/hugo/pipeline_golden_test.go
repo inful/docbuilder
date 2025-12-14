@@ -41,7 +41,8 @@ func TestPipelineGolden(t *testing.T) {
 		}
 	}
 	// Link rewrite expectation (extension removed and trailing slash added)
-	if !strings.Contains(content, "[rel](./ref/)") {
+	// For regular pages, ./ref.md becomes ../ref/ (go up one level, then into ref/)
+	if !strings.Contains(content, "[rel](../ref/)") {
 		t.Fatalf("expected relative link extension removed with trailing slash; got:\n%s", content)
 	}
 }
