@@ -96,22 +96,6 @@ type ForgeSummary struct {
 	AutoDiscover  bool     `json:"auto_discover"`
 }
 
-// BuildTriggerResponse represents the build trigger API response.
-type BuildTriggerResponse struct {
-	Status    string    `json:"status"`
-	Message   string    `json:"message"`
-	JobID     string    `json:"job_id,omitempty"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
-// ErrorResponse represents an error API response.
-type ErrorResponse struct {
-	Status    string    `json:"status"`
-	Error     string    `json:"error"`
-	Details   string    `json:"details,omitempty"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
 // BuildStatusResponse represents build status information.
 type BuildStatusResponse struct {
 	Status       string          `json:"status"`
