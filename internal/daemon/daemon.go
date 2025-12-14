@@ -49,12 +49,12 @@ type Daemon struct {
 	forgeManager  *forge.Manager
 	discovery     *forge.DiscoveryService
 	configWatcher *ConfigWatcher
-	metrics        *MetricsCollector
-	httpServer     *HTTPServer
-	scheduler      *Scheduler
-	buildQueue     *BuildQueue
-	stateManager   state.DaemonStateManager
-	liveReload     *LiveReloadHub
+	metrics       *MetricsCollector
+	httpServer    *HTTPServer
+	scheduler     *Scheduler
+	buildQueue    *BuildQueue
+	stateManager  state.DaemonStateManager
+	liveReload    *LiveReloadHub
 
 	// Event sourcing components (Phase B)
 	eventStore      eventstore.Store
