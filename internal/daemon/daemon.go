@@ -122,8 +122,8 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Create canonical BuildService (Phase D - Single Execution Pipeline)
 	buildService := build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
-			// Use repo_cache_dir from daemon config for persistent repository storage
-			return workspace.NewManager(cfg.Daemon.Storage.RepoCacheDir)
+			// Use persistent workspace for incremental builds (repo_cache_dir/working)
+			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		}).
 		WithHugoGeneratorFactory(func(cfg any, outputDir string) build.HugoGenerator {
 			// Type assert cfg to *config.Config
