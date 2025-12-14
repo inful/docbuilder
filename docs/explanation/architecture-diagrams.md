@@ -1,5 +1,7 @@
 # Architecture Diagrams
 
+> **⚠️ DEPRECATION NOTICE**: This document is partially outdated and requires significant updates to reflect the current transform-based architecture. Many package references (`cli/`, `pipeline/`, `services/`) no longer exist. The layer view diagram has been updated, but other sections still reference old architecture. See [architecture.md](architecture.md) and [functional-specification.md](../reference/functional-specification.md) for current information.
+
 This document provides visual representations of DocBuilder's architecture using ASCII diagrams and Mermaid notation.
 
 ## Table of Contents
@@ -19,11 +21,12 @@ This document provides visual representations of DocBuilder's architecture using
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                         PRESENTATION LAYER                       │
+│                      COMMAND LAYER                               │
+│              (cmd/docbuilder/commands/)                          │
 │                                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
-│  │   CLI    │  │  Server  │  │  Daemon  │  │  Preview Server  │  │
-│  │  (Kong)  │  │  (HTTP)  │  │ (Watch)  │  │   (Hugo Live)    │  │
+│  │  Build   │  │  Daemon  │  │  Preview │  │     Discover     │  │
+│  │  (Kong)  │  │ (Watch)  │  │  (Live)  │  │   (Analysis)     │  │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┬─────────┘  │
 │       │             │             │                 │            │
 └───────┼─────────────┼─────────────┼─────────────────┼────────────┘
@@ -31,13 +34,14 @@ This document provides visual representations of DocBuilder's architecture using
         └─────────────┴─────────────┴─────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────┐
-│                    APPLICATION LAYER                            │
+│                    SERVICE LAYER                                │
+│             (internal/build, internal/daemon)                   │
 │                                                                 │
 │  ┌────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │
-│  │ BuildService   │  │ PreviewService  │  │ DiscoveryService │  │
+│  │ BuildService   │  │ DaemonService   │  │ DiscoveryService │  │
 │  │                │  │                 │  │                  │  │
-│  │ - Build()      │  │ - Start()       │  │ - Discover()     │  │
-│  │ - Validate()   │  │ - Watch()       │  │ - Report()       │  │
+│  │ - Run()        │  │ - Start()       │  │ - Discover()     │  │
+│  │ - Validate()   │  │ - Stop()        │  │ - Report()       │  │
 │  └────────┬───────┘  └────────┬────────┘  └────────┬─────────┘  │
 │           │                   │                    │            │
 └───────────┼───────────────────┼────────────────────┼────────────┘
@@ -45,35 +49,36 @@ This document provides visual representations of DocBuilder's architecture using
             └───────────────────┴────────────────────┘
                                 │
 ┌───────────────────────────────▼─────────────────────────────────────┐
-│                        PIPELINE LAYER                               │
+│                        PROCESSING LAYER                             │
+│  (internal/hugo, internal/docs, internal/hugo/transforms)           │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                    PipelineRunner                            │   │
+│  │                   Hugo Generator                             │   │
 │  │                                                              │   │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐     │   │
-│  │  │   Stage     │ │   Change    │ │   Event Emitter     │     │   │
-│  │  │  Executor   │ │  Detector   │ │                     │     │   │
+│  │  │  Transform  │ │   Theme     │ │   Report Builder    │     │   │
+│  │  │  Registry   │ │   System    │ │                     │     │   │
 │  │  └──────┬──────┘ └──────┬──────┘ └──────────┬──────────┘     │   │
 │  └─────────┼───────────────┼───────────────────┼────────────────┘   │
 │            │               │                   │                    │
 │  ┌─────────▼───────────────▼───────────────────▼──────────────┐     │
-│  │                    Pipeline Stages                         │     │
-│  │                                                            │     │
-│  │  PrepareOutput → CloneRepos → DiscoverDocs →               │     │
-│  │  GenerateConfig → Layouts → CopyContent →                  │     │
-│  │  Indexes → RunHugo                                         │     │
-│  └────────────────────────────────────────────────────────────┘     │
+│  │                  Transform Pipeline                       │     │
+│  │                                                          │     │
+│  │  Parse → Build → Enrich → Merge → Transform →            │     │
+│  │  Finalize → Serialize                                    │     │
+│  └──────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │
 ┌─────────────────────────────────▼────────────────────────────────┐
 │                          DOMAIN LAYER                            │
+│  (internal/config, internal/state, internal/docs)                │
 │                                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
 │  │  Config  │  │  State   │  │ DocFile  │  │  Repository      │  │
 │  │          │  │          │  │          │  │                  │  │
 │  │ - Hugo   │  │ - Git    │  │ - Path   │  │ - URL            │  │
-│  │ - Build  │  │ - Docs   │  │ - Front  │  │ - Branch         │  │
-│  │ - Repo   │  │ - Pipe   │  │   Matter │  │ - Auth           │  │
+│  │ - Build  │  │ - Docs   │  │ - Trans  │  │ - Branch         │  │
+│  │ - Forge  │  │ - Build  │  │   forms  │  │ - Auth           │  │
 │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┬─────────┘  │
 └───────┼─────────────┼─────────────┼─────────────────┼────────────┘
         │             │             │                 │
@@ -81,22 +86,27 @@ This document provides visual representations of DocBuilder's architecture using
                       │
 ┌─────────────────────▼───────────────────────────────────────────┐
 │                    INFRASTRUCTURE LAYER                         │
+│  (internal/git, internal/forge, internal/workspace)             │
 │                                                                 │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────────┐  │
-│  │   Git    │  │  Forge   │  │ Storage  │  │  Workspace      │  │
-│  │  Client  │  │ Clients  │  │          │  │  Manager        │  │
+│  │   Git    │  │  Forge   │  │ Event    │  │  Workspace      │  │
+│  │  Client  │  │ Clients  │  │ Store    │  │  Manager        │  │
 │  │          │  │          │  │          │  │                 │  │
-│  │ - Clone  │  │ - GitHub │  │ - FSStore│  │ - Create()      │  │
-│  │ - Update │  │ - GitLab │  │ - Cache  │  │ - Cleanup()     │  │
+│  │ - Clone  │  │ - GitHub │  │ - Append │  │ - Create()      │  │
+│  │ - Update │  │ - GitLab │  │ - Query  │  │ - Cleanup()     │  │
 │  │ - Auth   │  │ - Forgejo│  │          │  │                 │  │
-│  └──────────┘  └──────────┘  └──────────┘  └─────────────────┘  │
-│                                                                 │
-│  ┌──────────────────┐  ┌──────────────────┐                     │
-│  │   Event Store    │  │   Hugo Runner    │                     │
-│  │                  │  │                  │                     │
-│  │ - Append()       │  │ - Build()        │                     │
-│  │ - Query()        │  │ - Server()       │                     │
-│  └──────────────────┘  └──────────────────┘                     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────────┬────────┘  │
+│       │             │             │                 │           │
+│       └─────────────┴─────────────┴─────────────────┘           │
+│                             │                                   │
+│                    ┌────────▼────────┐                          │
+│                    │   Foundation    │                          │
+│                    │     Errors      │                          │
+│                    │                 │                          │
+│                    │ - ClassifiedErr │                          │
+│                    │ - Categories    │                          │
+│                    │ - Retry Logic   │                          │
+│                    └─────────────────┘                          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
