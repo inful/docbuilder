@@ -1,6 +1,6 @@
 # Architecture Diagrams
 
-> **⚠️ DEPRECATION NOTICE**: This document is partially outdated and requires significant updates to reflect the current transform-based architecture. Many package references (`cli/`, `pipeline/`, `services/`) no longer exist. The layer view diagram has been updated, but other sections still reference old architecture. See [Architecture Overview](/explanation/architecture/) and [Functional Specification](/reference/functional-specification/) for current information.
+> **⚠️ DEPRECATION NOTICE**: This document is partially outdated and requires significant updates to reflect the current transform-based architecture. Many package references (`cli/`, `pipeline/`, `services/`) no longer exist. The layer view diagram has been updated, but other sections still reference old architecture. See [architecture.md](architecture.md) and [functional-specification.md](../reference/functional-specification.md) for current information.
 
 This document provides visual representations of DocBuilder's architecture using ASCII diagrams and Mermaid notation.
 
