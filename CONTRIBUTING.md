@@ -368,15 +368,29 @@ func TestIntegration_FeatureName(t *testing.T)        // Integration test
 
 ### Error Handling
 ```go
-// Good: Wrap errors with context
-return fmt.Errorf("failed to process file %s: %w", filename, err)
+// Good: Use internal/foundation/errors package with context
+return errors.ValidationError("invalid file type").
+    WithContext("filename", filename).
+    WithContext("expected", []string{".md", ".markdown"}).
+    Build()
 
-// Good: Use typed errors where appropriate
-return newFatalStageError(StageName, err)
+// Good: Wrap errors with category and context
+return errors.WrapError(err, errors.CategoryGit, "failed to clone repository").
+    WithContext("url", repo.URL).
+    Build()
 
-// Avoid: Silent error ignoring
-_ = someFunction() // Only if truly safe
+// Good: Extract and check classified errors
+if classified, ok := errors.AsClassified(err); ok {
+    if classified.Category() == errors.CategoryAuth {
+        // Handle authentication error
+    }
+}
+
+// Avoid: Raw errors without classification
+return fmt.Errorf("failed to process: %w", err)  // Missing category
 ```
+
+See [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md#error-handling) and [docs/adr/ADR-000-uniform-error-handling.md](docs/adr/ADR-000-uniform-error-handling.md) for complete guidelines.
 
 ### Logging
 ```go

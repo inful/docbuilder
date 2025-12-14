@@ -1385,38 +1385,65 @@ for {
 ### 17.1 Error Type
 
 ```go
-type DocBuilderError struct {
-    Code      ErrorCode
-    Message   string
-    Cause     error
-    Context   map[string]any
-    Severity  Severity
-    Retryable bool
+type ClassifiedError struct {
+    category ErrorCategory  // Type-safe category enum
+    severity ErrorSeverity  // Fatal, Error, Warning, Info
+    retry    RetryStrategy  // Never, Immediate, Backoff, RateLimit, User
+    message  string
+    cause    error
+    context  ErrorContext   // map[string]any
 }
 
-type ErrorCode string
+type ErrorCategory string
 const (
-    ErrCodeConfig     ErrorCode = "CONFIG"
-    ErrCodeGitClone   ErrorCode = "GIT_CLONE"
-    ErrCodeGitAuth    ErrorCode = "GIT_AUTH"
-    ErrCodeDiscovery  ErrorCode = "DISCOVERY"
-    ErrCodeHugo       ErrorCode = "HUGO"
-    ErrCodeValidation ErrorCode = "VALIDATION"
-    ErrCodeIO         ErrorCode = "IO"
+    CategoryConfig        ErrorCategory = "config"
+    CategoryValidation    ErrorCategory = "validation"
+    CategoryAuth          ErrorCategory = "auth"
+    CategoryNotFound      ErrorCategory = "not_found"
+    CategoryAlreadyExists ErrorCategory = "already_exists"
+    CategoryNetwork       ErrorCategory = "network"
+    CategoryGit           ErrorCategory = "git"
+    CategoryForge         ErrorCategory = "forge"
+    CategoryBuild         ErrorCategory = "build"
+    CategoryHugo          ErrorCategory = "hugo"
+    CategoryFileSystem    ErrorCategory = "filesystem"
+    CategoryRuntime       ErrorCategory = "runtime"
+    CategoryDaemon        ErrorCategory = "daemon"
+    CategoryInternal      ErrorCategory = "internal"
 )
 
-type Severity string
+type ErrorSeverity string
 const (
-    SeverityError   Severity = "error"
-    SeverityWarning Severity = "warning"
-    SeverityInfo    Severity = "info"
+    SeverityFatal   ErrorSeverity = "fatal"
+    SeverityError   ErrorSeverity = "error"
+    SeverityWarning ErrorSeverity = "warning"
+    SeverityInfo    ErrorSeverity = "info"
+)
+
+type RetryStrategy string
+const (
+    RetryNever      RetryStrategy = "never"
+    RetryImmediate  RetryStrategy = "immediate"
+    RetryBackoff    RetryStrategy = "backoff"
+    RetryRateLimit  RetryStrategy = "rate_limit"
+    RetryUserAction RetryStrategy = "user"
 )
 ```
 
 ### 17.2 Error Construction
 
 ```go
-func NewError(code ErrorCode, message string, cause error, opts ...Option) *DocBuilderError
+// Validation error with context
+func ValidationError(message string) *ErrorBuilder
+
+// Wrap existing error
+func WrapError(err error, category ErrorCategory, message string) *ErrorBuilder
+
+// Builder pattern
+builder.WithContext(key string, value any) *ErrorBuilder
+builder.WithSeverity(severity ErrorSeverity) *ErrorBuilder
+builder.WithRetry(strategy RetryStrategy) *ErrorBuilder
+builder.Build() error
 
 // Options
 func WithContext(ctx map[string]any) Option
