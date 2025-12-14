@@ -131,15 +131,6 @@ func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) *CLI
 	return result
 }
 
-// AssertDurationLessThan validates that execution completed within expected time
-func (result *CLIResult) AssertDurationLessThan(t *testing.T, maxDuration time.Duration) *CLIResult {
-	t.Helper()
-	if result.Duration > maxDuration {
-		t.Errorf("Command took %v, expected less than %v", result.Duration, maxDuration)
-	}
-	return result
-}
-
 // AssertSuccess validates that the command succeeded (exit code 0, no error)
 func (result *CLIResult) AssertSuccess(t *testing.T) *CLIResult {
 	t.Helper()
@@ -233,27 +224,4 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 	builder.BuildAndSave(configPath)
 	env.configFile = configPath
 	return nil
-}
-
-// CreateProjectStructure creates a realistic project structure for testing
-func (env *MockCLIEnvironment) CreateProjectStructure() error {
-	// Create directories that would typically exist in a documentation project
-	dirs := []string{
-		"docs",
-		"content",
-		"static",
-		"layouts",
-	}
-
-	for _, dir := range dirs {
-		if err := env.createDir(dir); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (env *MockCLIEnvironment) createDir(name string) error {
-	return os.MkdirAll(filepath.Join(env.TempDir, name), 0o750)
 }
