@@ -215,8 +215,9 @@ func normalizeFrontMatter(fm map[string]interface{}) {
 
 // TransitionsAssets represents the View Transitions API assets for golden testing.
 type TransitionsAssets struct {
-	CSS TransitionsAsset `json:"css"`
-	JS  TransitionsAsset `json:"js"`
+	CSS     TransitionsAsset        `json:"css"`
+	JS      TransitionsAsset        `json:"js"`
+	Partial TransitionsPartialAsset `json:"partial"`
 }
 
 // TransitionsAsset represents a single asset file with verification data.
@@ -227,16 +228,25 @@ type TransitionsAsset struct {
 	Markers     []string `json:"markers"`
 }
 
+// TransitionsPartialAsset represents the Hugo partial template with verification data.
+type TransitionsPartialAsset struct {
+	Exists  bool     `json:"exists"`
+	Path    string   `json:"path"`
+	Markers []string `json:"markers"`
+}
+
 // verifyTransitionsAssets verifies View Transitions API assets were generated correctly.
 func verifyTransitionsAssets(t *testing.T, outputDir, goldenPath string, updateGolden bool) {
 	t.Helper()
 
 	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
 	jsPath := filepath.Join(outputDir, "static", "view-transitions.js")
+	partialPath := filepath.Join(outputDir, "layouts", "_partials", "custom", "head-end.html")
 
 	actual := TransitionsAssets{
-		CSS: verifyAssetFile(t, cssPath, []string{"@view-transition", "--view-transition-duration"}),
-		JS:  verifyAssetFile(t, jsPath, []string{"startViewTransition", "document.startViewTransition"}),
+		CSS:     verifyAssetFile(t, cssPath, []string{"@view-transition", "--view-transition-duration"}),
+		JS:      verifyAssetFile(t, jsPath, []string{"startViewTransition", "document.startViewTransition"}),
+		Partial: verifyPartialFile(t, partialPath, []string{".Site.Params.enable_transitions", "/view-transitions.css", "/view-transitions.js"}),
 	}
 
 	if updateGolden {
@@ -301,6 +311,40 @@ func verifyAssetFile(t *testing.T, path string, markers []string) TransitionsAss
 	}
 
 	return asset
+}
+
+// verifyPartialFile checks if a Hugo partial template exists and contains expected markers.
+func verifyPartialFile(t *testing.T, path string, markers []string) TransitionsPartialAsset {
+	t.Helper()
+
+	partial := TransitionsPartialAsset{
+		Path:    "layouts/_partials/custom/head-end.html",
+		Markers: []string{},
+	}
+
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			partial.Exists = false
+			return partial
+		}
+		t.Fatalf("failed to stat partial file %s: %v", path, err)
+	}
+
+	partial.Exists = true
+
+	content, err := os.ReadFile(path)
+	require.NoError(t, err, "failed to read partial file: %s", path)
+
+	// Check for expected markers in content
+	contentStr := string(content)
+	for _, marker := range markers {
+		if strings.Contains(contentStr, marker) {
+			partial.Markers = append(partial.Markers, marker)
+		}
+	}
+
+	return partial
 }
 
 // normalizeBodyContent removes or replaces dynamic content from markdown body.

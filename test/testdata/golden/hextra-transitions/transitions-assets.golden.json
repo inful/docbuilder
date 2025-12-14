@@ -16,5 +16,14 @@
       "startViewTransition",
       "document.startViewTransition"
     ]
+  },
+  "partial": {
+    "exists": true,
+    "path": "layouts/_partials/custom/head-end.html",
+    "markers": [
+      ".Site.Params.enable_transitions",
+      "/view-transitions.css",
+      "/view-transitions.js"
+    ]
   }
 }

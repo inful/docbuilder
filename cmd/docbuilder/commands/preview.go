@@ -71,7 +71,7 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	cfg.Hugo.Description = "DocBuilder local preview"
 	cfg.Hugo.BaseURL = p.BaseURL
 	cfg.Hugo.Theme = p.Theme
-	cfg.Hugo.EnableTransitions = true        // Enable View Transitions API by default in preview mode
+	cfg.Hugo.EnableTransitions = true // Enable View Transitions API by default in preview mode
 	cfg.Hugo.TransitionDuration = "300ms"
 	cfg.Build.RenderMode = config.RenderModeAlways
 	// Enable LiveReload by default for preview, unless explicitly disabled.
