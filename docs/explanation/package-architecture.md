@@ -558,28 +558,39 @@ func (c *Client) CleanWorkspace(path string) error
 
 ```go
 type Manager struct {
-    basePath string
+    baseDir    string
+    tempDir    string
+    persistent bool
 }
 
-func (m *Manager) Create() (string, error)
-func (m *Manager) CreateSubdir(name string) (string, error)
-func (m *Manager) Cleanup() error
+func NewManager(baseDir string) *Manager
+func NewPersistentManager(baseDir, subdirName string) *Manager
+func (m *Manager) Create() error
 func (m *Manager) GetPath() string
+func (m *Manager) Cleanup() error
 ```
 
 **Workspace Lifecycle:**
 
 ```
-1. Create() → /tmp/docbuilder-{timestamp}/
-2. Use workspace for build
-3. Cleanup() → Remove directory
+Ephemeral Mode:
+1. NewManager() → Configure base directory
+2. Create() → /tmp/docbuilder-{timestamp}/
+3. Use workspace for build
+4. Cleanup() → Remove directory
+
+Persistent Mode:
+1. NewPersistentManager() → Configure fixed path
+2. Create() → baseDir/subdirName (reused across builds)
+3. Use workspace for build
+4. Cleanup() → No-op (directory persists)
 ```
 
 **Features:**
-- Timestamped directories prevent conflicts
-- Subdirectory support for staging
+- Timestamped directories prevent conflicts (ephemeral mode)
+- Persistent directories for incremental builds (daemon mode)
 - Safe concurrent operations
-- Automatic cleanup on error
+- Automatic cleanup on error (ephemeral mode only)
 
 **Design Rationale:**
 - Simple focused interface
@@ -848,21 +859,24 @@ func (cd *ChangeDetector) DetectChanges(
 
 ## Presentation Layer
 
-### `internal/cli`
+### `cmd/docbuilder/commands`
 
-**Purpose:** Command-line interface using Kong.
+**Purpose:** Command-line interface using Kong framework.
 
 **Package Structure:**
 
 ```
-cli/
-├── root.go                # Root command
-├── build.go               # Build command
-├── init.go                # Init command
-├── discover.go            # Discovery command
-├── daemon.go              # Daemon command
-├── preview.go             # Preview command
-└── version.go             # Version command
+cmd/docbuilder/
+├── main.go                # CLI entry point
+└── commands/
+    ├── build.go           # Build command
+    ├── init.go            # Init command  
+    ├── discover.go        # Discovery command
+    ├── daemon.go          # Daemon command
+    ├── preview.go         # Preview command
+    ├── generate.go        # Generate command
+    ├── visualize.go       # Visualize command
+    └── common.go          # Shared helpers
 ```
 
 **Command Structure:**
@@ -876,7 +890,8 @@ type CLI struct {
     Discover DiscoverCmd `cmd:"" help:"Discover documentation"`
     Daemon   DaemonCmd   `cmd:"" help:"Run as daemon"`
     Preview  PreviewCmd  `cmd:"" help:"Preview documentation"`
-    Version  VersionCmd  `cmd:"" help:"Show version"`
+    Generate GenerateCmd `cmd:"" help:"Generate assets"`
+    Visualize VisualizeCmd `cmd:"" help:"Visualize pipeline"`
 }
 
 type BuildCmd struct {
@@ -887,9 +902,9 @@ type BuildCmd struct {
 
 func (cmd *BuildCmd) Run(ctx *Context) error {
     // Load config
-    // Create services
+    // Create build service
     // Execute build
-    // Handle errors
+    // Handle errors via foundation/errors CLI adapter
 }
 ```
 

@@ -144,15 +144,15 @@ For detailed architectural decisions, see the [ADR directory](../adr/):
 
 ```
 ┌─────────────────────────┐
-│   Presentation Layer    │  cmd/, cli/, server/
+│   Presentation Layer    │  cmd/docbuilder/commands, server/
 ├─────────────────────────┤
-│   Application Layer     │  services/, pipeline/
+│   Application Layer     │  build/, services/, daemon/
 ├─────────────────────────┤
 │     Domain Layer        │  config/, state/, docs/, hugo/, forge/
 ├─────────────────────────┤
-│  Infrastructure Layer   │  git/, workspace/, storage/, eventstore/
+│  Infrastructure Layer   │  git/, workspace/, eventstore/, auth/
 ├─────────────────────────┤
-│   Foundation Layer      │  foundation/errors/, validation/
+│   Foundation Layer      │  foundation/errors, logfields/, metrics/
 └─────────────────────────┘
 ```
 
