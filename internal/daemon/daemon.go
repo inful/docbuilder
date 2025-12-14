@@ -17,11 +17,9 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
-	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 
 	ggit "github.com/go-git/go-git/v5"
@@ -48,10 +46,9 @@ type Daemon struct {
 	mu             sync.RWMutex
 
 	// Core components
-	forgeManager   *forge.Manager
-	discovery      *forge.DiscoveryService
-	versionService *versioning.VersionService
-	configWatcher  *ConfigWatcher
+	forgeManager  *forge.Manager
+	discovery     *forge.DiscoveryService
+	configWatcher *ConfigWatcher
 	metrics        *MetricsCollector
 	httpServer     *HTTPServer
 	scheduler      *Scheduler
@@ -188,18 +185,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		slog.Warn("Failed to rebuild build history projection", logfields.Error(err))
 		// Non-fatal: projection will start empty
 	}
-
-	// Initialize version service
-	// Create a git client for version management (use same workspace as daemon)
-	gitClient := git.NewClient(stateDir)
-	versionManager := versioning.NewVersionManager(gitClient)
-
-	// For now, use default version config - this can be made configurable later
-	versionConfig := &versioning.VersionConfig{
-		Strategy:    versioning.StrategyDefaultOnly,
-		MaxVersions: 10,
-	}
-	daemon.versionService = versioning.NewVersionService(versionManager, versionConfig)
 
 	// Initialize config watcher if config file path is provided
 	if configFilePath != "" {
@@ -750,11 +735,6 @@ func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.Config) err
 		return fmt.Errorf("failed to reload forge manager: %w", err)
 	}
 
-	if err := d.reloadVersionService(ctx, oldConfig, newConfig); err != nil {
-		d.config = oldConfig // Rollback
-		return fmt.Errorf("failed to reload version service: %w", err)
-	}
-
 	slog.Info("Configuration reloaded successfully")
 
 	// Trigger a rebuild to apply the new configuration
@@ -799,34 +779,5 @@ func (d *Daemon) reloadForgeManager(_ context.Context, _, newConfig *config.Conf
 	d.discoveryRunner.UpdateConfig(newConfig)
 
 	slog.Info("Forge manager reloaded", slog.Int("forge_count", len(newConfig.Forges)))
-	return nil
-}
-
-// reloadVersionService updates the version service with new versioning configuration
-// nolint:unparam // This method currently never returns an error.
-func (d *Daemon) reloadVersionService(_ context.Context, _, newConfig *config.Config) error {
-	// Create new version configuration
-	versionConfig := &versioning.VersionConfig{
-		Strategy:    versioning.StrategyDefaultOnly,
-		MaxVersions: 10,
-	}
-
-	// Update versioning config if present in new config
-	if newConfig.Versioning != nil {
-		// Convert V2Config versioning to internal versioning config
-		versionConfig = versioning.GetVersioningConfig(newConfig)
-	}
-
-	// Create new version service
-	stateDir := newConfig.Daemon.Storage.RepoCacheDir
-	if stateDir == "" {
-		stateDir = "./daemon-data"
-	}
-	gitClient := git.NewClient(stateDir)
-	versionManager := versioning.NewVersionManager(gitClient)
-
-	d.versionService = versioning.NewVersionService(versionManager, versionConfig)
-
-	slog.Info("Version service reloaded")
 	return nil
 }

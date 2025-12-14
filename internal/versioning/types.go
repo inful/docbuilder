@@ -74,29 +74,11 @@ type VersionManager interface {
 	// DiscoverVersions discovers available versions for a repository
 	DiscoverVersions(repoURL string, config *VersionConfig) (*VersionDiscoveryResult, error)
 
-	// GetRepositoryVersions returns all versions for a repository
-	GetRepositoryVersions(repoURL string) (*RepositoryVersions, error)
-
-	// GetDefaultVersion returns the default version for a repository
-	GetDefaultVersion(repoURL string) (*Version, error)
-
 	// UpdateVersions updates the versions for a repository based on discovery
 	UpdateVersions(repoURL string, versions []*Version) error
 
 	// CleanupOldVersions removes old versions based on retention policy
 	CleanupOldVersions(repoURL string, config *VersionConfig) error
-
-	// ListAllRepositories returns all repositories with versions
-	ListAllRepositories() ([]*RepositoryVersions, error)
-}
-
-// VersionFilter represents criteria for filtering versions
-type VersionFilter struct {
-	IncludeTypes []VersionType  `json:"include_types,omitempty"` // Filter by version type
-	NamePatterns []string       `json:"name_patterns,omitempty"` // Glob patterns for names
-	ExcludeNames []string       `json:"exclude_names,omitempty"` // Specific names to exclude
-	MaxAge       *time.Duration `json:"max_age,omitempty"`       // Maximum age for versions
-	OnlyDefault  bool           `json:"only_default,omitempty"`  // Only include default version
 }
 
 // GitReference represents a Git branch or tag reference

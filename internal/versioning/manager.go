@@ -97,35 +97,6 @@ func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config
 	return result, nil
 }
 
-// GetRepositoryVersions returns all versions for a repository
-func (vm *DefaultVersionManager) GetRepositoryVersions(repoURL string) (*RepositoryVersions, error) {
-	vm.mu.RLock()
-	defer vm.mu.RUnlock()
-
-	if versions, exists := vm.repositories[repoURL]; exists {
-		// Return a copy to prevent external modification
-		return vm.copyRepositoryVersions(versions), nil
-	}
-
-	return nil, fmt.Errorf("repository not found: %s", repoURL)
-}
-
-// GetDefaultVersion returns the default version for a repository
-func (vm *DefaultVersionManager) GetDefaultVersion(repoURL string) (*Version, error) {
-	versions, err := vm.GetRepositoryVersions(repoURL)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, version := range versions.Versions {
-		if version.IsDefault {
-			return version, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no default version found for repository: %s", repoURL)
-}
-
 // UpdateVersions updates the versions for a repository
 func (vm *DefaultVersionManager) UpdateVersions(repoURL string, versions []*Version) error {
 	vm.mu.Lock()
@@ -203,19 +174,6 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 	}
 
 	return nil
-}
-
-// ListAllRepositories returns all repositories with versions
-func (vm *DefaultVersionManager) ListAllRepositories() ([]*RepositoryVersions, error) {
-	vm.mu.RLock()
-	defer vm.mu.RUnlock()
-
-	repositories := make([]*RepositoryVersions, 0, len(vm.repositories))
-	for _, repo := range vm.repositories {
-		repositories = append(repositories, vm.copyRepositoryVersions(repo))
-	}
-
-	return repositories, nil
 }
 
 func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig interface{}) ([]*GitReference, error) {
