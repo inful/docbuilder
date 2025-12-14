@@ -743,31 +743,48 @@ func (s *DiscoveryService) Discover(ctx context.Context) (*DiscoveryReport, erro
 - Context-based cancellation
 - Return domain types (reports)
 
-### `internal/pipeline`
+### `internal/build` *(Current Pipeline)*
 
-**Purpose:** Pipeline stage execution and orchestration.
+**Purpose:** Sequential pipeline for building documentation sites.
 
 **Package Structure:**
 
 ```
-pipeline/
-├── runner.go              # Pipeline orchestration
-├── executor.go            # Stage execution
-├── change_detector.go     # Incremental build logic
-└── stages/                # Stage implementations
-    ├── prepare.go         # PrepareOutput
-    ├── clone.go           # CloneRepos
-    ├── discover.go        # DiscoverDocs
-    ├── generate.go        # GenerateConfig
-    ├── layouts.go         # Layouts
-    ├── content.go         # CopyContent
-    ├── indexes.go         # Indexes
-    └── hugo.go            # RunHugo
+build/
+├── service.go             # BuildService implementation
+├── default_service.go     # Default pipeline executor
+├── stages.go              # Stage definitions
+└── report.go              # Build reporting
+```
+
+**Pipeline Stages:**
+
+```
+PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig →
+Layouts → CopyContent → Indexes → RunHugo (optional)
 ```
 
 **Key Interfaces:**
 
 ```go
+type BuildService interface {
+    Run(ctx context.Context, req BuildRequest) (*BuildReport, error)
+}
+
+type BuildRequest struct {
+    Config    *config.Config
+    OutputDir string
+}
+
+type BuildReport struct {
+    Status      BuildStatus
+    StartTime   time.Time
+    EndTime     time.Time  
+    Stages      []StageReport
+    Issues      []BuildIssue
+    Summary     string
+    Metrics     map[string]interface{}
+}
 type StageExecutor interface {
     Execute(ctx context.Context, state *state.BuildState) error
     Name() string
