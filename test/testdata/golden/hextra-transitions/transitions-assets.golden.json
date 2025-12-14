@@ -23,7 +23,8 @@
     "markers": [
       ".Site.Params.enable_transitions",
       "/view-transitions.css",
-      "/view-transitions.js"
+      "/view-transitions.js",
+      ".Site.Params.transition_duration"
     ]
   }
 }
