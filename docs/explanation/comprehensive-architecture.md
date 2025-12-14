@@ -402,21 +402,26 @@ pipeline/
 
 ### Presentation Packages
 
-#### `internal/cli/`
+#### `cmd/docbuilder/commands`
+
 Command-line interface:
 
 ```
-cli/
-├── root.go            # Root command
-├── build.go           # Build command
-├── init.go            # Init command
-├── discover.go        # Discovery command
-├── daemon.go          # Daemon command
-├── preview.go         # Preview command
-└── version.go         # Version command
+cmd/docbuilder/
+├── main.go            # CLI entry point
+└── commands/
+    ├── build.go       # Build command
+    ├── init.go        # Init command  
+    ├── discover.go    # Discovery command
+    ├── daemon.go      # Daemon command
+    ├── preview.go     # Preview command
+    ├── generate.go    # Generate command
+    ├── visualize.go   # Visualize command
+    └── common.go      # Shared helpers
 ```
 
-Uses [Kong](https://github.com/alecthomas/kong) for parsing.
+Uses [Kong](https://github.com/alecthomas/kong) for argument parsing.
+Error handling via `internal/foundation/errors` CLI adapter.
 
 #### `internal/server/`
 HTTP server:
