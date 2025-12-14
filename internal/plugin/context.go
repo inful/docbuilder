@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/storage"
 )
 
 // PluginContext provides plugins with access to DocBuilder services and state.
@@ -20,9 +19,6 @@ type PluginContext struct {
 
 	// Config is the DocBuilder configuration.
 	Config *config.Config
-
-	// ContentStore provides access to the content-addressable storage.
-	ContentStore storage.ObjectStore
 
 	// WorkspaceDir is the temporary directory for this build.
 	WorkspaceDir string
@@ -43,14 +39,12 @@ func NewPluginContext(
 	ctx context.Context,
 	logger *slog.Logger,
 	cfg *config.Config,
-	contentStore storage.ObjectStore,
 	workspaceDir, outputDir, buildID string,
 ) *PluginContext {
 	return &PluginContext{
 		Context:      ctx,
 		Logger:       logger,
 		Config:       cfg,
-		ContentStore: contentStore,
 		WorkspaceDir: workspaceDir,
 		OutputDir:    outputDir,
 		BuildID:      buildID,
@@ -70,7 +64,6 @@ func (pc *PluginContext) WithValue(key string, value interface{}) *PluginContext
 		Context:      pc.Context,
 		Logger:       pc.Logger,
 		Config:       pc.Config,
-		ContentStore: pc.ContentStore,
 		WorkspaceDir: pc.WorkspaceDir,
 		OutputDir:    pc.OutputDir,
 		BuildID:      pc.BuildID,

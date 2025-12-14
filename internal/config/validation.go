@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -198,11 +197,6 @@ func (cv *configurationValidator) validateBuild() error {
 		return err
 	}
 
-	// Validate cache configuration
-	if err := cv.validateCacheConfig(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -248,21 +242,6 @@ func (cv *configurationValidator) validateRetryDelays() error {
 			cv.config.Build.RetryMaxDelay, cv.config.Build.RetryInitialDelay)
 	}
 
-	return nil
-}
-
-// validateMaxRetries validates the maximum retry count.
-func (cv *configurationValidator) validateCacheConfig() error {
-	// Validate cache directory if incremental is enabled
-	if cv.config.Build.EnableIncremental {
-		if cv.config.Build.CacheDir == "" {
-			return fmt.Errorf("cache_dir must be specified when enable_incremental is true")
-		}
-		// Check if cache directory is writable (create if doesn't exist)
-		if err := ensureDirectoryWritable(cv.config.Build.CacheDir); err != nil {
-			return fmt.Errorf("cache_dir validation failed: %w", err)
-		}
-	}
 	return nil
 }
 
@@ -315,23 +294,6 @@ func (cv *configurationValidator) validateVersioning() error {
 	if cv.config.Versioning.Enabled && cv.config.Versioning.Strategy == "" {
 		return fmt.Errorf("versioning.strategy is required when versioning.enabled is true")
 	}
-
-	return nil
-}
-
-// ensureDirectoryWritable checks if a directory exists and is writable, creating it if necessary.
-func ensureDirectoryWritable(dir string) error {
-	// Try to create the directory (no-op if exists)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("cannot create directory: %w", err)
-	}
-
-	// Check if directory is writable by attempting to create a temp file
-	testFile := filepath.Join(dir, ".write-test")
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
-		return fmt.Errorf("directory is not writable: %w", err)
-	}
-	_ = os.Remove(testFile)
 
 	return nil
 }

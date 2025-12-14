@@ -27,10 +27,6 @@ type BuildConfig struct {
 	// detectDeletionsSpecified is set internally during load when the YAML explicitly sets detect_deletions.
 	// This lets defaults apply (true) only when user omitted the field entirely.
 	detectDeletionsSpecified bool `yaml:"-"`
-
-	// Incremental build caching
-	CacheDir          string `yaml:"cache_dir,omitempty"`          // directory for build cache storage
-	EnableIncremental bool   `yaml:"enable_incremental,omitempty"` // enable incremental build caching
 }
 
 // Custom unmarshal to detect if detect_deletions was explicitly set by user.

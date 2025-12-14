@@ -28,7 +28,7 @@ func (a *skipEvaluatorAdapter) Evaluate(repos []any) (report any, canSkip bool) 
 
 	// Call typed evaluator
 	buildReport, canSkip := a.inner.Evaluate(typedRepos)
-	
+
 	// Return as any
 	return buildReport, canSkip
 }

@@ -5,15 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/incremental"
-	"git.home.luguber.info/inful/docbuilder/internal/manifest"
-	"git.home.luguber.info/inful/docbuilder/internal/storage"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
@@ -60,41 +55,6 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 		"repositories", len(cfg.Repositories),
 		"incremental", incrementalMode)
 
-	// Initialize cache storage if incremental builds are enabled
-	var buildCache *incremental.BuildCache
-	var stageCache *incremental.StageCache
-	var remoteHeadCache *git.RemoteHeadCache
-	if cfg.Build.EnableIncremental {
-		store, err := storage.NewFSStore(cfg.Build.CacheDir)
-		if err != nil {
-			return fmt.Errorf("failed to initialize cache storage: %w", err)
-		}
-		defer func() {
-			if err := store.Close(); err != nil {
-				slog.Warn("Failed to close storage", "error", err)
-			}
-		}()
-
-		buildCache = incremental.NewBuildCache(store, cfg.Build.CacheDir)
-		stageCache = incremental.NewStageCache(store)
-
-		// Initialize remote HEAD cache
-		remoteHeadCache, err = git.NewRemoteHeadCache(cfg.Build.CacheDir)
-		if err != nil {
-			slog.Warn("Failed to initialize remote HEAD cache", "error", err)
-		} else {
-			defer func() {
-				if err := remoteHeadCache.Save(); err != nil {
-					slog.Warn("Failed to save remote HEAD cache", "error", err)
-				}
-			}()
-		}
-
-		slog.Info("Incremental build cache initialized", "cache_dir", cfg.Build.CacheDir)
-	}
-	// StageCache reserved for future stage-level caching (Phase 1 steps 1.6-1.7)
-	_ = stageCache
-
 	// Create workspace manager
 	wsManager, err := CreateWorkspace(cfg)
 	if err != nil {
@@ -102,13 +62,10 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	}
 	defer CleanupWorkspace(wsManager)
 
-	// Create Git client with build config for auth support and remote HEAD cache
+	// Create Git client with build config for auth support
 	gitClient, err := CreateGitClient(wsManager, cfg)
 	if err != nil {
 		return err
-	}
-	if remoteHeadCache != nil {
-		gitClient.WithRemoteHeadCache(remoteHeadCache)
 	}
 
 	// Step 2.5: Expand repositories with versioning if enabled
@@ -162,34 +119,6 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 
 	slog.Info("All repositories processed", "successful", len(repoPaths), "skipped", repositoriesSkipped)
 
-	// Step 1.5: Build-level cache check (if incremental enabled)
-	if cfg.Build.EnableIncremental && buildCache != nil {
-		// Compute repository hashes
-		repoHashes, err := incremental.ComputeRepoHashes(repositories, repoPaths)
-		if err != nil {
-			slog.Warn("Failed to compute repo hashes, continuing without cache", "error", err)
-		} else {
-			// Compute build signature
-			buildSig, err := incremental.ComputeSimpleBuildSignature(cfg, repoHashes)
-			if err != nil {
-				slog.Warn("Failed to compute build signature, continuing without cache", "error", err)
-			} else {
-				// Check if we can skip this build
-				shouldSkip, cachedBuild, err := buildCache.ShouldSkipBuild(buildSig)
-				if err != nil {
-					slog.Warn("Failed to check build cache", "error", err)
-				} else if shouldSkip {
-					slog.Info("Build cache hit - site is up to date",
-						"build_id", cachedBuild.BuildID,
-						"cached_at", cachedBuild.Timestamp)
-					fmt.Println("Build completed successfully (from cache)")
-					return nil
-				}
-				slog.Info("Build cache miss - proceeding with full build", "signature", buildSig.BuildHash)
-			}
-		}
-	}
-
 	// Discover documentation files
 	slog.Info("Starting documentation discovery")
 	discovery := docs.NewDiscovery(repositories, &cfg.Build)
@@ -220,45 +149,6 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	}
 
 	slog.Info("Hugo site generated successfully", "output", outputDir)
-
-	// Step 1.8: Save build manifest for future cache checks
-	if cfg.Build.EnableIncremental && buildCache != nil {
-		repoHashes, err := incremental.ComputeRepoHashes(repositories, repoPaths)
-		if err == nil {
-			buildSig, err := incremental.ComputeSimpleBuildSignature(cfg, repoHashes)
-			if err == nil {
-				// Create build manifest
-				buildManifest := &manifest.BuildManifest{
-					ID:        fmt.Sprintf("build-%d", time.Now().Unix()),
-					Timestamp: time.Now(),
-					Status:    "success",
-					Inputs: manifest.Inputs{
-						ConfigHash: buildSig.ConfigHash,
-					},
-					Plan: manifest.Plan{
-						Theme:      cfg.Hugo.Theme,
-						Transforms: []string{},
-					},
-				}
-
-				// Convert repo hashes to manifest format
-				for _, rh := range repoHashes {
-					buildManifest.Inputs.Repos = append(buildManifest.Inputs.Repos, manifest.RepoInput{
-						Name:   rh.Name,
-						Commit: rh.Commit,
-						Hash:   rh.Hash,
-					})
-				}
-
-				// Save the build
-				if err := buildCache.SaveBuild(buildSig, buildManifest, outputDir); err != nil {
-					slog.Warn("Failed to save build to cache", "error", err)
-				} else {
-					slog.Info("Build manifest saved to cache", "build_id", buildManifest.ID)
-				}
-			}
-		}
-	}
 
 	fmt.Println("Build completed successfully")
 	return nil

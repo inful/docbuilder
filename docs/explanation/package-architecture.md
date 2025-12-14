@@ -569,35 +569,12 @@ func (m *Manager) GetPath() string
 - Predictable naming convention
 - Explicit cleanup (no GC reliance)
 
-### `internal/storage`
+### `internal/storage` *(Removed)*
 
-**Purpose:** Content-addressed storage abstraction.
+**Note:** This package was removed as part of simplifying the CLI build process. The daemon's skip evaluation system (using `internal/state`) provides equivalent functionality without the complexity of content-addressable storage.
 
-**Key Types:**
+**Historical Purpose:** Content-addressed storage abstraction for CLI incremental builds.
 
-```go
-type FSStore struct {
-    basePath string
-}
-
-func (s *FSStore) Put(ctx context.Context, key string, data []byte) error
-func (s *FSStore) Get(ctx context.Context, key string) ([]byte, error)
-func (s *FSStore) Delete(ctx context.Context, key string) error
-func (s *FSStore) List(ctx context.Context) ([]string, error)
-func (s *FSStore) GC(ctx context.Context, keepKeys []string) error
-```
-
-**Storage Layout:**
-
-```
-basePath/
-└── objects/
-    ├── ab/
-    │   └── cdef1234... (hash[2:])
-    ├── 12/
-    │   └── 3456abcd...
-    └── ...
-```
 
 **Hash-Based Paths:**
 - SHA-256 hash of content
@@ -837,60 +814,18 @@ func (cd *ChangeDetector) DetectChanges(
 - Change detection enables incremental
 - Context propagation for cancellation
 
-### `internal/incremental`
+### `internal/incremental` *(Removed)*
 
-**Purpose:** Change detection and signature management.
+**Note:** This package was removed as part of simplifying the CLI build process. It provided change detection and signature caching for CLI incremental builds, but this functionality overlapped with the daemon's skip evaluation system. The daemon uses `internal/state` with rule-based validation instead, which is simpler and more maintainable.
 
-**Key Types:**
+**Historical Purpose:** Change detection and signature management for CLI incremental builds.
 
-```go
-type Detector struct {
-    cache *SignatureCache
-}
+**Previous Design:**
+- Multi-level detection (HEAD comparison, tree hashing, doc files hashing)
+- Signature cache persisted across builds
+- Hash-based comparison for determinism
+- Optional detection levels for speed vs accuracy trade-offs
 
-type Signature struct {
-    RepositoryName string
-    HEAD           string
-    DocFilesHash   string
-    Timestamp      time.Time
-}
-
-type SignatureCache struct {
-    signatures map[string]*Signature
-    mu         sync.RWMutex
-}
-```
-
-**Detection Strategy:**
-
-```
-Level 1: HEAD Comparison
-    ├─ Read .git/HEAD
-    ├─ Compare to cached HEAD
-    └─ Different? → Changed
-
-Level 2: Quick Hash (optional)
-    ├─ Hash directory tree
-    ├─ Compare to cached hash
-    └─ Different? → Changed
-
-Level 3: Doc Files Hash
-    ├─ Discover documentation
-    ├─ Sort Hugo paths
-    ├─ SHA-256 hash
-    ├─ Compare to cached hash
-    └─ Different? → Changed
-
-Level 4: Deletion Detection (optional)
-    ├─ Check for removed files
-    └─ Deletions found? → Changed
-```
-
-**Design Rationale:**
-- Multi-level detection trades off speed vs accuracy
-- Signature cache persists across builds
-- Hash-based comparison is deterministic
-- Optional levels provide flexibility
 
 ---
 

@@ -44,10 +44,7 @@ output: {}          # Output directory behavior
 | retry_max_delay | duration | 30s | Maximum backoff delay cap. |
 | workspace_dir | string | derived | Explicit workspace override path. |
 | namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
-| enable_incremental | bool | false | Enable incremental builds with caching. |
-| cache_dir | string | .docbuilder-cache | Cache directory for build manifests. |
-| enable_incremental | bool | false | Enable incremental builds with caching. |
-| cache_dir | string | .docbuilder-cache | Cache directory for build manifests. |
+| skip_if_unchanged | bool | daemon:true, CLI:false | Skip builds when nothing changed (daemon only). |
 
 ## Versioning Section
 
@@ -183,47 +180,18 @@ containers:
 
 When `namespace_forges=auto` and more than one distinct forge is present across repositories, content paths are written under `content/<forge>/<repo>/...`. Otherwise they remain `content/<repo>/...`.
 
-## Incremental Builds
+## Skip Evaluation (Daemon Mode)
 
-When `build.enable_incremental: true`, DocBuilder caches build manifests to skip unchanged repositories:
+When running in daemon mode, builds are automatically skipped when nothing has changed:
 
-1. **Build Signature Computation**: Hashes repository commits, theme, and config
-2. **Cache Check**: Compares with previous build manifest in `build.cache_dir`
-3. **Early Exit**: Skips entire build if signature matches
-4. **Manifest Storage**: Saves build metadata for next run
+1. **State Tracking**: Repository commits, config hash, and doc file hashes are saved after each successful build
+2. **Skip Rules**: Validates version, config, repository commits, and content integrity
+3. **Automatic**: Enabled by default in daemon mode (`skip_if_unchanged: true`)
+4. **CLI Mode**: Not used - CLI builds always run when explicitly requested
 
-### Cache Directory Structure
+This prevents unnecessary rebuilds when daemon polls/watches for changes but repositories haven't been updated.
 
-```
-.docbuilder-cache/
-  manifests/
-    build-{timestamp}/
-      manifest.json    # Build metadata and signatures
-```
-
-### Build Manifest Contents
-
-- `build_id`: Unique build identifier
-- `signature`: Combined hash of all inputs
-- `repo_hashes[]`: Per-repository commit SHAs and content hashes
-- `theme`, `theme_version`: Hugo theme information
-- `config_hash`: Configuration fingerprint
-- `created_at`: Build timestamp
-
-### Performance Benefits
-
-- **Skip unchanged builds**: Identical inputs produce instant exit
-- **Repository-level tracking**: Future stage-level caching will skip individual repos
-- **CI optimization**: Detect documentation changes before expensive Hugo rendering
-
-### Usage Example
-
-```yaml
-build:
-  enable_incremental: true
-  cache_dir: .docbuilder-cache
-  clone_strategy: auto  # Reuse clones when possible
-```
+For CLI mode, simply don't run `docbuilder build` if you don't want a build. No caching is needed.
 
 ## Recommendations
 

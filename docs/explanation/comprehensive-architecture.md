@@ -333,19 +333,12 @@ func (m *Manager) Cleanup() error
 - Tracks creation for cleanup
 - Safe concurrent operations
 
-#### `internal/storage/`
-Content-addressed storage:
+#### `internal/storage/` *(Removed)*
 
-```
-storage/
-├── fs_store.go        # Filesystem-based storage
-└── interface.go       # Storage abstraction
-```
+**Note:** This package was removed to simplify CLI build complexity. The daemon's skip evaluation uses `internal/state` instead.
 
-**Features:**
-- Hash-based object paths (`objects/{hash[:2]}/{hash[2:]}`)
-- Put/Get/Delete/List operations
-- Garbage collection support
+**Historical Purpose:** Content-addressed storage for CLI incremental builds with hash-based object paths, Put/Get/Delete/List operations, and garbage collection.
+
 
 #### `internal/eventstore/`
 Event persistence:
@@ -393,21 +386,12 @@ pipeline/
 └── change_detector.go # Incremental build logic
 ```
 
-#### `internal/incremental/`
-Change detection:
+#### `internal/incremental/` *(Removed)*
 
-```
-incremental/
-├── detector.go        # Change detection logic
-├── signature.go       # Content fingerprinting
-└── cache.go           # Signature cache
-```
+**Note:** This package was removed to simplify CLI build complexity. It overlapped with the daemon's skip evaluation system (which uses `internal/state` with rule-based validation).
 
-**Detection Strategy:**
-- Compare repository HEAD refs
-- Hash discovered documentation files
-- Skip unchanged repositories
-- Optional deletion detection
+**Historical Purpose:** Change detection for CLI incremental builds. Compared repository HEAD refs, hashed discovered documentation files, and cached signatures to skip unchanged repositories.
+
 
 ### Presentation Packages
 
