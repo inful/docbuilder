@@ -100,12 +100,9 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 			return nil, nil, nil, fmt.Errorf("failed to list organizations: %w", err)
 		}
 		for _, org := range orgs {
-			// Use ID for GitLab (numeric), Name for others (string identifier)
-			if org.ID != "" {
-				targetOrgs = append(targetOrgs, org.ID)
-			} else {
-				targetOrgs = append(targetOrgs, org.Name)
-			}
+			// Always use Name for API calls (GitHub/Forgejo use login names, GitLab accepts both ID and name)
+			// org.Name contains the appropriate identifier for API endpoints
+			targetOrgs = append(targetOrgs, org.Name)
 		}
 		slog.Info("Auto-discovered organizations", "forge", client.GetName(), "count", len(orgs))
 	}
