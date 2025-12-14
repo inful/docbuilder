@@ -1,6 +1,7 @@
 package state
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"fmt"
 	"path/filepath"
@@ -51,17 +52,15 @@ func (ss *Service) Start(ctx context.Context) error {
 	// Test that the store is healthy
 	health := ss.store.Health(ctx)
 	if health.IsErr() {
-		return foundation.InternalError("state store health check failed").
+		return errors.InternalError("state store health check failed").
 			WithCause(health.UnwrapErr()).
 			Build()
 	}
 
 	if health.Unwrap().Status != "healthy" {
-		return foundation.InternalError("state store is unhealthy").
-			WithContext(foundation.Fields{
-				"status":  health.Unwrap().Status,
-				"message": health.Unwrap().Message,
-			}).
+		return errors.InternalError("state store is unhealthy").
+			WithContext("status", health.Unwrap().Status).
+			WithContext("message", health.Unwrap().Message).
 			Build()
 	}
 
@@ -69,7 +68,7 @@ func (ss *Service) Start(ctx context.Context) error {
 	daemonStore := ss.store.DaemonInfo()
 	updateResult := daemonStore.UpdateStatus(ctx, "running")
 	if updateResult.IsErr() {
-		return foundation.InternalError("failed to update daemon status to running").
+		return errors.InternalError("failed to update daemon status to running").
 			WithCause(updateResult.UnwrapErr()).
 			Build()
 	}
@@ -92,7 +91,7 @@ func (ss *Service) Stop(ctx context.Context) error {
 	// Close the store to ensure data is persisted
 	closeResult := ss.store.Close(ctx)
 	if closeResult.IsErr() {
-		return foundation.InternalError("failed to close state store").
+		return errors.InternalError("failed to close state store").
 			WithCause(closeResult.UnwrapErr()).
 			Build()
 	}
@@ -174,7 +173,7 @@ func (ss *Service) BackupTo(ctx context.Context, backupDir string) foundation.Re
 	health := ss.store.Health(ctx)
 	if health.IsErr() {
 		return foundation.Err[string, error](
-			foundation.InternalError("cannot backup unhealthy store").
+			errors.InternalError("cannot backup unhealthy store").
 				WithCause(health.UnwrapErr()).
 				Build(),
 		)
@@ -191,7 +190,7 @@ func (ss *Service) BackupTo(ctx context.Context, backupDir string) foundation.Re
 	}
 
 	return foundation.Err[string, error](
-		foundation.InternalError("backup not supported for this store type").Build(),
+		errors.InternalError("backup not supported for this store type").Build(),
 	)
 }
 
@@ -216,7 +215,7 @@ func (ss *Service) Compact(ctx context.Context) foundation.Result[struct{}, erro
 	cleanupResult := buildStore.Cleanup(ctx, 1000) // Keep last 1000 builds
 	if cleanupResult.IsErr() {
 		return foundation.Err[struct{}, error](
-			foundation.InternalError("failed to cleanup old builds").
+			errors.InternalError("failed to cleanup old builds").
 				WithCause(cleanupResult.UnwrapErr()).
 				Build(),
 		)

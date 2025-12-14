@@ -2,6 +2,7 @@
 package services
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"fmt"
 	"log/slog"
@@ -115,13 +116,13 @@ func (so *ServiceOrchestrator) RegisterService(service ManagedService) foundatio
 	name := service.Name()
 	if name == "" {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("service name cannot be empty").Build(),
+			errors.ValidationError("service name cannot be empty").Build(),
 		)
 	}
 
 	if _, exists := so.services[name]; exists {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError(fmt.Sprintf("service %s already registered", name)).Build(),
+			errors.ValidationError(fmt.Sprintf("service %s already registered", name)).Build(),
 		)
 	}
 
@@ -140,7 +141,7 @@ func (so *ServiceOrchestrator) StartAll(ctx context.Context) error {
 	// Calculate start order based on dependencies
 	startOrder, err := so.calculateStartOrder()
 	if err != nil {
-		return foundation.InternalError("failed to calculate service start order").
+		return errors.InternalError("failed to calculate service start order").
 			WithCause(err).
 			Build()
 	}
@@ -168,7 +169,7 @@ func (so *ServiceOrchestrator) StopAll(ctx context.Context) error {
 	// Calculate stop order (reverse of start order)
 	startOrder, err := so.calculateStartOrder()
 	if err != nil {
-		return foundation.InternalError("failed to calculate service stop order").
+		return errors.InternalError("failed to calculate service stop order").
 			WithCause(err).
 			Build()
 	}
@@ -190,7 +191,7 @@ func (so *ServiceOrchestrator) StopAll(ctx context.Context) error {
 	}
 
 	if lastError != nil {
-		return foundation.InternalError("some services failed to stop gracefully").
+		return errors.InternalError("some services failed to stop gracefully").
 			WithCause(lastError).
 			Build()
 	}
@@ -310,7 +311,7 @@ func (so *ServiceOrchestrator) startService(ctx context.Context, name string) er
 	if err != nil {
 		so.status[name] = StatusFailed
 		so.lastErrors[name] = err
-		return foundation.InternalError(fmt.Sprintf("failed to start service %s", name)).
+		return errors.InternalError(fmt.Sprintf("failed to start service %s", name)).
 			WithCause(err).
 			Build()
 	}

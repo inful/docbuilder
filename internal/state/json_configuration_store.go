@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -14,7 +15,7 @@ type jsonConfigurationStore struct {
 func (cs *jsonConfigurationStore) Get(_ context.Context, key string) foundation.Result[foundation.Option[any], error] {
 	if key == "" {
 		return foundation.Err[foundation.Option[any], error](
-			foundation.ValidationError("key cannot be empty").Build(),
+			errors.ValidationError("key cannot be empty").Build(),
 		)
 	}
 
@@ -31,7 +32,7 @@ func (cs *jsonConfigurationStore) Get(_ context.Context, key string) foundation.
 func (cs *jsonConfigurationStore) Set(_ context.Context, key string, value any) foundation.Result[struct{}, error] {
 	if key == "" {
 		return foundation.Err[struct{}, error](
-			foundation.ValidationError("key cannot be empty").Build(),
+			errors.ValidationError("key cannot be empty").Build(),
 		)
 	}
 
@@ -43,7 +44,7 @@ func (cs *jsonConfigurationStore) Set(_ context.Context, key string, value any) 
 	if cs.store.autoSaveEnabled {
 		if err := cs.store.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save configuration").WithCause(err).Build(),
+				errors.InternalError("failed to save configuration").WithCause(err).Build(),
 			)
 		}
 	}

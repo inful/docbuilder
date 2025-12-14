@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"errors"
+	stdErrors "errors"
 	"sync"
 	"testing"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // MockService is a test implementation of ManagedService for orchestrator unit tests.
@@ -67,7 +67,7 @@ func (m *MockService) Start(ctx context.Context) error {
 	}
 
 	if m.failStart {
-		return errors.New("mock start failure")
+		return stdErrors.New("mock start failure")
 	}
 
 	m.isRunning = true
@@ -87,7 +87,7 @@ func (m *MockService) Stop(ctx context.Context) error {
 	}
 
 	if m.failStop {
-		return errors.New("mock stop failure")
+		return stdErrors.New("mock stop failure")
 	}
 
 	m.isRunning = false
@@ -218,9 +218,8 @@ func TestServiceOrchestrator(t *testing.T) {
 			t.Error("Expected error due to circular dependency")
 		}
 
-		var classified *foundation.ClassifiedError
-		if foundation.AsClassified(err, &classified) {
-			if classified.Code != foundation.ErrorCodeInternal {
+		if classified, ok := errors.AsClassified(err); ok {
+			if classified.Category() != errors.CategoryInternal {
 				t.Error("Expected internal error code for dependency cycle")
 			}
 		}

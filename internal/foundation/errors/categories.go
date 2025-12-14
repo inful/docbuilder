@@ -6,9 +6,11 @@ type ErrorCategory string
 
 const (
 	// User-facing configuration and input errors
-	CategoryConfig     ErrorCategory = "config"
-	CategoryValidation ErrorCategory = "validation"
-	CategoryAuth       ErrorCategory = "auth"
+	CategoryConfig        ErrorCategory = "config"
+	CategoryValidation    ErrorCategory = "validation"
+	CategoryAuth          ErrorCategory = "auth"
+	CategoryNotFound      ErrorCategory = "not_found"
+	CategoryAlreadyExists ErrorCategory = "already_exists"
 
 	// External system integration errors
 	CategoryNetwork ErrorCategory = "network"

@@ -1,6 +1,8 @@
 // Package errors provides a fluent builder for constructing ClassifiedError values with context.
 package errors
 
+import "fmt"
+
 // ErrorBuilder provides a fluent API for creating ClassifiedError instances.
 // This makes error creation consistent and discoverable throughout the codebase.
 type ErrorBuilder struct {
@@ -44,6 +46,12 @@ func (b *ErrorBuilder) WithSeverity(severity ErrorSeverity) *ErrorBuilder {
 // WithRetry sets the retry strategy.
 func (b *ErrorBuilder) WithRetry(strategy RetryStrategy) *ErrorBuilder {
 	b.retry = strategy
+	return b
+}
+
+// WithCause sets the underlying cause error.
+func (b *ErrorBuilder) WithCause(err error) *ErrorBuilder {
+	b.cause = err
 	return b
 }
 
@@ -166,4 +174,18 @@ func DaemonError(message string) *ErrorBuilder {
 // InternalError creates an internal error.
 func InternalError(message string) *ErrorBuilder {
 	return NewError(CategoryInternal, message).Fatal()
+}
+
+// NotFoundError creates a not-found error.
+func NotFoundError(resource string) *ErrorBuilder {
+	return NewError(CategoryNotFound, fmt.Sprintf("%s not found", resource)).
+		WithContext("resource", resource).
+		Fatal()
+}
+
+// AlreadyExistsError creates an already-exists error.
+func AlreadyExistsError(resource string) *ErrorBuilder {
+	return NewError(CategoryAlreadyExists, fmt.Sprintf("%s already exists", resource)).
+		WithContext("resource", resource).
+		Fatal()
 }

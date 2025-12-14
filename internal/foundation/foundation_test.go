@@ -147,43 +147,7 @@ func TestNormalizer(t *testing.T) {
 	})
 }
 
-func TestClassifiedError(t *testing.T) {
-	t.Run("Basic error creation", func(t *testing.T) {
-		err := NewError(ErrorCodeValidation, "test message").
-			WithSeverity(SeverityWarning).
-			WithComponent("test").
-			Build()
-
-		if err.Code != ErrorCodeValidation {
-			t.Error("Expected validation error code")
-		}
-
-		if err.Severity != SeverityWarning {
-			t.Error("Expected warning severity")
-		}
-
-		if err.Component != "test" {
-			t.Error("Expected component to be 'test'")
-		}
-	})
-
-	t.Run("Error detection", func(t *testing.T) {
-		err := ValidationError("test validation").Build()
-
-		if !IsErrorCode(err, ErrorCodeValidation) {
-			t.Error("Expected error to be validation error")
-		}
-
-		var classified *ClassifiedError
-		if !AsClassified(err, &classified) {
-			t.Error("Expected to extract classified error")
-		}
-
-		if classified.Code != ErrorCodeValidation {
-			t.Error("Expected extracted error to have validation code")
-		}
-	})
-}
+// Note: ClassifiedError tests have been moved to internal/foundation/errors/errors_test.go
 
 func TestValidation(t *testing.T) {
 	t.Run("Required validator", func(t *testing.T) {

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"sort"
 	"time"
@@ -16,7 +17,7 @@ type jsonScheduleStore struct {
 func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
 	if schedule == nil {
 		return foundation.Err[*Schedule, error](
-			foundation.ValidationError("schedule cannot be nil").Build(),
+			errors.ValidationError("schedule cannot be nil").Build(),
 		)
 	}
 
@@ -37,7 +38,7 @@ func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) found
 		if err := ss.store.saveToDiskUnsafe(); err != nil {
 			delete(ss.store.schedules, schedule.ID)
 			return foundation.Err[*Schedule, error](
-				foundation.InternalError("failed to save schedule").WithCause(err).Build(),
+				errors.InternalError("failed to save schedule").WithCause(err).Build(),
 			)
 		}
 	}
@@ -48,7 +49,7 @@ func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) found
 func (ss *jsonScheduleStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Schedule], error] {
 	if id == "" {
 		return foundation.Err[foundation.Option[*Schedule], error](
-			foundation.ValidationError("ID cannot be empty").Build(),
+			errors.ValidationError("ID cannot be empty").Build(),
 		)
 	}
 
@@ -66,7 +67,7 @@ func (ss *jsonScheduleStore) GetByID(_ context.Context, id string) foundation.Re
 func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
 	if schedule == nil {
 		return foundation.Err[*Schedule, error](
-			foundation.ValidationError("schedule cannot be nil").Build(),
+			errors.ValidationError("schedule cannot be nil").Build(),
 		)
 	}
 
@@ -82,8 +83,8 @@ func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) found
 		func() { ss.store.schedules[schedule.ID] = schedule },
 		func() foundation.Result[*Schedule, error] {
 			return foundation.Err[*Schedule, error](
-				foundation.NotFoundError("schedule").
-					WithContext(foundation.Fields{"id": schedule.ID}).
+				errors.NotFoundError("schedule").
+					WithContext("id", schedule.ID).
 					Build(),
 			)
 		},

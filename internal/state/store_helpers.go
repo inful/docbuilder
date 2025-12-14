@@ -1,6 +1,7 @@
 package state
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
@@ -28,7 +29,7 @@ func updateEntity[T any](
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[*T, error](
-				foundation.InternalError(saveErrMsg).WithCause(err).Build(),
+				errors.InternalError(saveErrMsg).WithCause(err).Build(),
 			)
 		}
 	}
@@ -54,7 +55,7 @@ func updateSimpleEntity[T any](
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[*T, error](
-				foundation.InternalError(saveErrMsg).WithCause(err).Build(),
+				errors.InternalError(saveErrMsg).WithCause(err).Build(),
 			)
 		}
 	}

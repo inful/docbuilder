@@ -1,6 +1,7 @@
 package state
 
 import (
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -49,9 +50,9 @@ type stateSnapshot struct {
 func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil {
 		return foundation.Err[*JSONStore, error](
-			foundation.InternalError("failed to create data directory").
+			errors.InternalError("failed to create data directory").
 				WithCause(err).
-				WithContext(foundation.Fields{"data_dir": dataDir}).
+				WithContext("data_dir", dataDir).
 				Build(),
 		)
 	}
@@ -77,9 +78,9 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 
 	if err := store.loadFromDisk(); err != nil {
 		return foundation.Err[*JSONStore, error](
-			foundation.InternalError("failed to load daemon state").
+			errors.InternalError("failed to load daemon state").
 				WithCause(err).
-				WithContext(foundation.Fields{"data_dir": dataDir}).
+				WithContext("data_dir", dataDir).
 				Build(),
 		)
 	}
@@ -131,7 +132,7 @@ func (js *JSONStore) WithTransaction(_ context.Context, fn func(Store) error) fo
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
 			return foundation.Err[struct{}, error](
-				foundation.InternalError("failed to save after transaction").
+				errors.InternalError("failed to save after transaction").
 					WithCause(err).
 					Build(),
 			)
@@ -179,7 +180,7 @@ func (js *JSONStore) Close(_ context.Context) foundation.Result[struct{}, error]
 	// Perform final save
 	if err := js.saveToDiskUnsafe(); err != nil {
 		return foundation.Err[struct{}, error](
-			foundation.InternalError("failed to save during close").
+			errors.InternalError("failed to save during close").
 				WithCause(err).
 				Build(),
 		)

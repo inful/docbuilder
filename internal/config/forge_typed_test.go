@@ -3,6 +3,8 @@ package config
 import (
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
@@ -39,14 +41,9 @@ func TestForgeTyped(t *testing.T) {
 
 		// Check error details
 		err := result.UnwrapErr()
-		var classified *foundation.ClassifiedError
-		if foundation.AsClassified(err, &classified) {
-			if classified.Code != foundation.ErrorCodeValidation {
+		if classified, ok := errors.AsClassified(err); ok {
+			if classified.Category() != errors.CategoryValidation {
 				t.Error("Expected validation error code")
-			}
-
-			if !classified.IsUserFacing() {
-				t.Error("Expected error to be user-facing")
 			}
 		} else {
 			t.Error("Expected classified error")

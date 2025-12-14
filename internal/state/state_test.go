@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // TestJSONStore demonstrates basic functionality of the new state management system.
@@ -144,7 +145,7 @@ func TestJSONStore(t *testing.T) {
 				if res.IsOk() {
 					t.Fatalf("%s unexpectedly succeeded for missing repository", tc.name)
 				}
-				if classified, ok := res.UnwrapErr().(*foundation.ClassifiedError); !ok || classified.Code != foundation.ErrorCodeNotFound {
+				if classified, ok := res.UnwrapErr().(*errors.ClassifiedError); !ok || classified.Category() != errors.CategoryNotFound {
 					t.Fatalf("%s returned wrong error: %v", tc.name, res.UnwrapErr())
 				}
 			}

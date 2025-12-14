@@ -1,6 +1,7 @@
 package state
 
 import (
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
     "git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
@@ -17,14 +18,14 @@ func deleteEntity(
 ) foundation.Result[struct{}, error] {
     if key == "" {
         return foundation.Err[struct{}, error](
-            foundation.ValidationError("key cannot be empty").Build(),
+            errors.ValidationError("key cannot be empty").Build(),
         )
     }
 
     if !exists() {
         return foundation.Err[struct{}, error](
-            foundation.NotFoundError(notFoundName).
-                WithContext(foundation.Fields{"key": key}).
+            errors.NotFoundError(notFoundName).
+                WithContext("key", key).
                 Build(),
         )
     }
@@ -33,7 +34,7 @@ func deleteEntity(
 
     if err := save(); err != nil {
         return foundation.Err[struct{}, error](
-            foundation.InternalError(saveErrorMessage).WithCause(err).Build(),
+            errors.InternalError(saveErrorMessage).WithCause(err).Build(),
         )
     }
 
