@@ -10,8 +10,8 @@
   },
   "js": {
     "exists": true,
-    "size": 3517,
-    "contentHash": "sha256:46984a3366a68576",
+    "size": 545,
+    "contentHash": "sha256:8b262fe5cf60a4df",
     "markers": [
       "startViewTransition",
       "document.startViewTransition"

@@ -1,4 +1,6 @@
 # Test configuration file
+version: "2.0"
+
 repositories:
   - url: https://git.home.luguber.info/inful/go-test-project.git
     name: go-test-project
@@ -13,6 +15,8 @@ hugo:
   title: "Test Documentation Site"
   description: "Test build with Hugo documentation"
   base_url: "https://test.example.com"
+  enable_page_transitions: true
+  transition_duration: "0.3s"
 
 output:
   directory: "./test-site"
