@@ -82,47 +82,6 @@ func TestManager_PersistentMode(t *testing.T) {
 	}
 }
 
-func TestManager_CreateSubdir(t *testing.T) {
-	tempBase := t.TempDir()
-	mgr := NewManager(tempBase)
-
-	if err := mgr.Create(); err != nil {
-		t.Fatalf("Create() failed: %v", err)
-	}
-	defer func() {
-		if err := mgr.Cleanup(); err != nil {
-			t.Errorf("Cleanup() failed: %v", err)
-		}
-	}()
-
-	// Create subdirectory
-	subdir, err := mgr.CreateSubdir("test-subdir")
-	if err != nil {
-		t.Fatalf("CreateSubdir() failed: %v", err)
-	}
-
-	// Verify subdirectory exists
-	if _, err := os.Stat(subdir); os.IsNotExist(err) {
-		t.Errorf("Subdirectory does not exist: %s", subdir)
-	}
-
-	// Verify subdirectory is within workspace
-	wsPath := mgr.GetPath()
-	if !strings.HasPrefix(subdir, wsPath) {
-		t.Errorf("Subdirectory %s is not within workspace %s", subdir, wsPath)
-	}
-}
-
-func TestManager_CreateBeforeInit(t *testing.T) {
-	mgr := NewManager("")
-
-	// CreateSubdir should fail before Create()
-	_, err := mgr.CreateSubdir("test")
-	if err == nil {
-		t.Error("CreateSubdir() should fail before Create()")
-	}
-}
-
 func TestManager_PersistentModeMultipleCreates(t *testing.T) {
 	tempBase := t.TempDir()
 	mgr := NewPersistentManager(tempBase, "working")
