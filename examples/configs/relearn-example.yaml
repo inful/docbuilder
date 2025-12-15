@@ -15,18 +15,52 @@ hugo:
   theme: "relearn"
   
   params:
-    # Relearn theme variant (auto, relearn-light, relearn-dark, learn, neon, blue, green, red)
-    themeVariant: "auto"
+    # Theme Variants - Simple Configuration
+    # Single variant: themeVariant: "relearn-dark"
+    # Multiple variants with selector:
+    themeVariant:
+      - "auto"              # OS light/dark detection (default)
+      - "relearn-light"     # Classic light theme
+      - "relearn-dark"      # Classic dark theme
+      - "neon"              # Experimental glowing theme
+      - "zen-light"         # Zen light variant
     
-    # Enable/disable features
-    showVisitedLinks: true
-    collapsibleMenu: true
-    disableSearch: false
-    disableBreadcrumb: false
+    # Auto mode fallbacks (OS light/dark)
+    themeVariantAuto:
+      - "relearn-light"     # Light mode
+      - "relearn-dark"      # Dark mode
     
-    # Edit page configuration
-    editURL:
-      enable: true
+    # Advanced variant configuration (uncomment to use)
+    # themeVariant:
+    #   - identifier: "relearn-auto"
+    #     name: "Relearn Light/Dark"
+    #     auto:
+    #       - "relearn-light"
+    #       - "relearn-dark"
+    #   - identifier: "neon"
+    #     name: "Neon Glow"
+    #   - identifier: "zen-auto"
+    #     name: "Zen Light/Dark"
+    #     auto:
+    #       - "zen-light"
+    #       - "zen-dark"
+    
+    # Navigation
+    showVisitedLinks: true      # Mark visited pages
+    collapsibleMenu: true       # Collapsible sidebar sections
+    alwaysopen: false           # Don't force sections open
+    disableBreadcrumb: false    # Show breadcrumb navigation
+    
+    # Features
+    disableLandingPageButton: true     # Hide landing page button
+    disableShortcutsTitle: false       # Show shortcuts in sidebar
+    disableTagHiddenPages: false       # Tag hidden pages
+    
+    # Footer
+    disableGeneratorVersion: false     # Show Hugo version
+    
+    # Edit page links (requires valid editURL pattern)
+    # editURL: "https://github.com/example/docs/edit/main/{FilePath}"
     
     # Mermaid diagrams
     mermaid:

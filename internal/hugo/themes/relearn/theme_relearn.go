@@ -30,8 +30,32 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 	// Users should configure it in their config if they want edit links
 
 	// Theme variant/color scheme
+	// Relearn supports multiple variants and OS auto-detection
+	// Simple mode: themeVariant = "relearn-light" or ["auto", "relearn-dark"]
+	// Advanced mode: themeVariant = [{identifier: "relearn-light", name: "Light", auto: ["relearn-light", "relearn-dark"]}]
 	if params["themeVariant"] == nil {
-		params["themeVariant"] = "auto" // auto, relearn-light, relearn-dark, etc.
+		// Default to auto mode with relearn-light/relearn-dark
+		params["themeVariant"] = []any{"auto", "relearn-light", "relearn-dark"}
+	}
+
+	// Optional: Configure auto mode fallbacks
+	// themeVariantAuto = ["relearn-light", "relearn-dark"] for OS light/dark mode
+	if params["themeVariantAuto"] == nil && params["themeVariant"] != nil {
+		// Check if themeVariant contains "auto"
+		hasAuto := false
+		if variants, ok := params["themeVariant"].([]any); ok {
+			for _, v := range variants {
+				if str, ok := v.(string); ok && str == "auto" {
+					hasAuto = true
+					break
+				}
+			}
+		} else if str, ok := params["themeVariant"].(string); ok && str == "auto" {
+			hasAuto = true
+		}
+		if hasAuto {
+			params["themeVariantAuto"] = []string{"relearn-light", "relearn-dark"}
+		}
 	}
 
 	// Disable generator notice in footer
