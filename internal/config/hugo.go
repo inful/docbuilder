@@ -10,7 +10,8 @@ type HugoConfig struct {
 	Description       string            `yaml:"description,omitempty"`
 	Params            map[string]any    `yaml:"params,omitempty"`
 	Menu              map[string][]Menu `yaml:"menu,omitempty"`
-	Transforms        *HugoTransforms   `yaml:"transforms,omitempty"`              // optional transform filtering
+	Taxonomies        map[string]string `yaml:"taxonomies,omitempty"`        // custom taxonomy definitions (e.g., "tag": "tags", "category": "categories")
+	Transforms        *HugoTransforms   `yaml:"transforms,omitempty"`        // optional transform filtering
 	EnableTransitions bool              `yaml:"enable_page_transitions,omitempty"` // enables View Transitions API for smooth page transitions
 }
 

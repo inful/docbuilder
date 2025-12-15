@@ -12,10 +12,11 @@ type RootConfig struct {
 	EnableGitInfo bool   `yaml:"enableGitInfo"`
 
 	// Flexible sections predominantly driven by theme features and user overrides
-	Markup  map[string]any      `yaml:"markup,omitempty"`
-	Params  map[string]any      `yaml:"params,omitempty"`
-	Outputs map[string][]string `yaml:"outputs,omitempty"`
-	Menu    map[string]any      `yaml:"menu,omitempty"`
+	Markup     map[string]any      `yaml:"markup,omitempty"`
+	Params     map[string]any      `yaml:"params,omitempty"`
+	Outputs    map[string][]string `yaml:"outputs,omitempty"`
+	Menu       map[string]any      `yaml:"menu,omitempty"`
+	Taxonomies map[string]string   `yaml:"taxonomies,omitempty"`
 
 	// Theme selection: use either Modules or Theme string
 	Module *ModuleConfig `yaml:"module,omitempty"`

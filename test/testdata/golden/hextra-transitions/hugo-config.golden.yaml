@@ -70,4 +70,7 @@ params:
         sidebar_menu_compact: false
         sidebar_menu_foldable: true
         sidebar_search_disable: false
+taxonomies:
+    category: categories
+    tag: tags
 title: View Transitions Demo
