@@ -1,3 +1,14 @@
+---
+title: "How To: Add Theme Support"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - themes
+  - hugo
+  - customization
+---
+
 # How To: Add or Use Theme Support
 
 DocBuilder currently provides optimized configuration for the `hextra`, `docsy`, and `relearn` Hugo themes via Hugo Modules.

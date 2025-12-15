@@ -1,3 +1,15 @@
+---
+title: "CI/CD Setup Guide"
+date: 2025-12-15
+categories:
+  - ci-cd
+tags:
+  - continuous-integration
+  - continuous-deployment
+  - docker
+  - gitea
+---
+
 # DocBuilder CI/CD
 
 This document describes the CI/CD pipeline setup for DocBuilder using both GitHub Actions and Forgejo Actions.

@@ -1,3 +1,14 @@
+---
+title: "How To: Configure Forge Namespacing"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - forge
+  - namespacing
+  - configuration
+---
+
 # How To: Configure Forge Namespacing
 
 Forge namespacing helps avoid repository name collisions when aggregating multiple hosting platforms (GitHub, GitLab, Forgejo, etc.).

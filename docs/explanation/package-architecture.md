@@ -1,3 +1,14 @@
+---
+title: "Package Architecture"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - packages
+  - code-organization
+---
+
 # Package Architecture Guide
 
 This document provides detailed information about each internal package in DocBuilder, including responsibilities, key types, interfaces, and usage patterns.

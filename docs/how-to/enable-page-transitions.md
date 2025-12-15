@@ -1,3 +1,14 @@
+---
+title: "How To: Enable Page Transitions"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - ui
+  - transitions
+  - hextra
+---
+
 # Enable Page Transitions
 
 This guide explains how to enable smooth page transitions using the View Transitions API in your Hextra-themed documentation site.

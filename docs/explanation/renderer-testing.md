@@ -1,3 +1,13 @@
+---
+title: "Renderer Testing"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - testing
+  - renderer
+---
+
 # Hugo Renderer Testing Strategy
 
 ## Overview

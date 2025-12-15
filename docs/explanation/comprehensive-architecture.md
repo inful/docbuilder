@@ -1,3 +1,14 @@
+---
+title: "Comprehensive Architecture"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - design
+  - deep-dive
+---
+
 # Comprehensive Architecture Documentation
 
 ## Table of Contents

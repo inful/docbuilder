@@ -1,3 +1,13 @@
+---
+title: "How To: Enable Multi-Version Documentation"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - versioning
+  - documentation
+---
+
 # How to Enable Multi-Version Documentation
 
 Build documentation from multiple branches and tags to provide version-specific documentation for your users.

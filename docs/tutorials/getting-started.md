@@ -1,3 +1,14 @@
+---
+title: "Getting Started Tutorial"
+date: 2025-12-15
+categories:
+  - tutorials
+tags:
+  - getting-started
+  - quickstart
+  - introduction
+---
+
 # Getting Started with DocBuilder
 
 This tutorial walks you through producing a multi‑repository Hugo documentation site in minutes.
