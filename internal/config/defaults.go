@@ -104,7 +104,7 @@ func (h *HugoDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Hugo.Title = "Documentation Portal"
 	}
 	if cfg.Hugo.Theme == "" {
-		cfg.Hugo.Theme = string(ThemeHextra)
+		cfg.Hugo.Theme = string(ThemeRelearn)
 	}
 	return nil
 }

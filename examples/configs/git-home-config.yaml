@@ -39,26 +39,25 @@ hugo:
   title: "Test Documentation Site"
   description: "Testing DocBuilder daemon mode"
   base_url: "http://localhost:8080"
-  theme: "hextra"
-  language_code: "en"
-  params:
-    version: "2.0.0"
-    editPage: true
+  # theme: "relearn"  # Default theme for all commands
+  # language_code: "en"
+  # params:
+  #   version: "2.0.0"
+  #   editPage: true
 
 # Daemon mode configuration
 daemon:
   http:
-    docs_port: 8080      # Documentation site serving port
-    webhook_port: 8081   # Webhook receiver port  
-    admin_port: 8082     # Admin/management API port
+    docs_port: 8081      # Documentation site serving port
+    webhook_port: 8082   # Webhook receiver port  
+    admin_port: 8083     # Admin/management API port
   sync:
     schedule: "*/2 * * * *"  # Every 15 minutes
     concurrent_builds: 2
     queue_size: 10
   storage:
     state_file: "./daemon-data/daemon-state.json"
-    repo_cache_dir: "./daemon-data/repos"
-    output_dir: "./daemon-data/site"
+    base_directory: "./tmp/daemon-data"
 build:
   clone_strategy: auto
   skip_if_unchanged: true
