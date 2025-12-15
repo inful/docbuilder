@@ -1,5 +1,4 @@
 baseURL: ""
-defaultContentLanguage: en
 description: ""
 enableGitInfo: false
 languageCode: en
@@ -39,6 +38,7 @@ params:
     disableBreadcrumb: false
     disableGeneratorVersion: false
     disableLandingPageButton: true
+    disableLanguageSwitchingButton: true
     disableShortcutsTitle: false
     disableTagHiddenPages: false
     math:

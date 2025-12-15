@@ -93,6 +93,11 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 		params["disableShortcutsTitle"] = false
 	}
 
+	// Disable language switching button
+	if params["disableLanguageSwitchingButton"] == nil {
+		params["disableLanguageSwitchingButton"] = true
+	}
+
 	// Additional functionality configurations
 	if params["disableTagHiddenPages"] == nil {
 		params["disableTagHiddenPages"] = false
@@ -114,16 +119,6 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 }
 
 func (Theme) CustomizeRoot(_ th.ParamContext, root map[string]any) {
-	// Relearn theme requires defaultContentLanguage for i18n translations
-	// Set it to match languageCode if not already set
-	if _, exists := root["defaultContentLanguage"]; !exists {
-		if langCode, ok := root["languageCode"].(string); ok && langCode != "" {
-			root["defaultContentLanguage"] = langCode
-		} else {
-			root["defaultContentLanguage"] = "en"
-		}
-	}
-
 	// Set default taxonomies if not already configured
 	// Relearn requires explicit taxonomy definitions to use Hugo's default taxonomies
 	if _, exists := root["taxonomies"]; !exists {
