@@ -1,3 +1,14 @@
+---
+title: "Namespacing Rationale"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - namespacing
+  - design-decisions
+---
+
 # Forge Namespacing Rationale
 
 ## Problem

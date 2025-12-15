@@ -1,3 +1,14 @@
+---
+title: "Configuration Reference"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - configuration
+  - yaml
+  - settings
+---
+
 # Configuration Reference
 
 This page enumerates the primary configuration sections and fields currently supported by DocBuilder's direct build mode.

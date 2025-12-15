@@ -1,3 +1,13 @@
+---
+title: "How To: Customize Index Pages"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - customization
+  - index-pages
+---
+
 # How To: Customize Index Pages
 
 DocBuilder generates three index page kinds using template resolution with safe defaults. You can override any of them.

@@ -1,3 +1,14 @@
+---
+title: "Functional Specification"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - specification
+  - requirements
+  - architecture
+---
+
 # DocBuilder Functional Specification
 
 **Version:** 2.0  

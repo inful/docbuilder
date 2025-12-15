@@ -1,3 +1,13 @@
+---
+title: "Architecture Overview"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - design
+---
+
 # Architecture Overview
 
 DocBuilder implements a staged pipeline to turn multiple Git repositories into a unified Hugo documentation site.

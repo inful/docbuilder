@@ -1,3 +1,16 @@
+---
+title: "ADR-000: Uniform Error Handling"
+date: 2025-10-03
+lastmod: 2025-12-14
+categories:
+  - architecture-decisions
+tags:
+  - error-handling
+  - foundation
+  - architecture
+weight: 1
+---
+
 # ADR-000: Uniform Error Handling Across DocBuilder
 
 Date: 2025-10-03  

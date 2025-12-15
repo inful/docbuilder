@@ -1,3 +1,14 @@
+---
+title: "CI Architecture Detection"
+date: 2025-12-15
+categories:
+  - ci-cd
+tags:
+  - continuous-integration
+  - docker
+  - multi-architecture
+---
+
 # CI Architecture Detection and Container Builds
 
 This document explains how the CI workflow handles different runner architectures and modern container build approaches.

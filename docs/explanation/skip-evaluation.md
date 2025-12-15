@@ -1,3 +1,13 @@
+---
+title: "Skip Evaluation Logic"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - optimization
+  - performance
+---
+
 # Skip Evaluation System
 
 ## Overview

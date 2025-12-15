@@ -1,3 +1,14 @@
+---
+title: "How To: Enable Hugo Rendering"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - hugo
+  - rendering
+  - static-sites
+---
+
 # How To: Enable Hugo Rendering
 
 By default DocBuilder scaffolds a Hugo site (content + config) without running the `hugo` binary. Enable automatic rendering to prebuild `public/`.

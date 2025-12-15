@@ -1,3 +1,14 @@
+---
+title: "How To: Write Cross-Document Links"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - documentation
+  - links
+  - markdown
+---
+
 # How to Write Cross-Document Links
 
 When writing markdown documentation that will be processed by DocBuilder, you have three options for linking between documents.
