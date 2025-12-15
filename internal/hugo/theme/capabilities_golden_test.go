@@ -22,7 +22,7 @@ func TestGoldenThemeCapabilities(t *testing.T) {
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Theme < rows[j].Theme })
 	b, _ := json.Marshal(rows)
 	got := string(b)
-	const expected = `[{"theme":"docsy","edit_links":false,"search_json":true},{"theme":"hextra","edit_links":true,"search_json":true}]`
+	const expected = `[{"theme":"docsy","edit_links":true,"search_json":true},{"theme":"hextra","edit_links":true,"search_json":true},{"theme":"relearn","edit_links":true,"search_json":true}]`
 	if got != expected {
 		t.Fatalf("theme capabilities changed\nexpected: %s\n     got: %s", expected, got)
 	}
