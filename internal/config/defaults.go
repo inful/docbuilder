@@ -195,6 +195,46 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
 	}
 
+	// Link verification defaults
+	if cfg.Daemon.LinkVerification == nil {
+		cfg.Daemon.LinkVerification = &LinkVerificationConfig{}
+	}
+	lv := cfg.Daemon.LinkVerification
+	if !lv.Enabled {
+		lv.Enabled = true // Default enabled
+	}
+	if lv.NATSURL == "" {
+		lv.NATSURL = "nats://localhost:4222"
+	}
+	if lv.Subject == "" {
+		lv.Subject = "docbuilder.links.broken"
+	}
+	if lv.KVBucket == "" {
+		lv.KVBucket = "docbuilder-link-cache"
+	}
+	if lv.CacheTTL == "" {
+		lv.CacheTTL = "24h"
+	}
+	if lv.CacheTTLFailures == "" {
+		lv.CacheTTLFailures = "1h"
+	}
+	if lv.MaxConcurrent == 0 {
+		lv.MaxConcurrent = 10
+	}
+	if lv.RequestTimeout == "" {
+		lv.RequestTimeout = "10s"
+	}
+	if lv.RateLimitDelay == "" {
+		lv.RateLimitDelay = "100ms"
+	}
+	// VerifyExternalOnly defaults to false (verify both internal and external)
+	if !lv.FollowRedirects {
+		lv.FollowRedirects = true // Default enabled
+	}
+	if lv.MaxRedirects == 0 {
+		lv.MaxRedirects = 3
+	}
+
 	return nil
 }
 
