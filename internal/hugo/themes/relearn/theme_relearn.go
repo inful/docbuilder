@@ -113,6 +113,15 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 	}
 }
 
-func (Theme) CustomizeRoot(_ th.ParamContext, _ map[string]any) {}
+func (Theme) CustomizeRoot(_ th.ParamContext, root map[string]any) {
+	// Set default taxonomies if not already configured
+	// Relearn requires explicit taxonomy definitions to use Hugo's default taxonomies
+	if _, exists := root["taxonomies"]; !exists {
+		root["taxonomies"] = map[string]string{
+			"category": "categories",
+			"tag":      "tags",
+		}
+	}
+}
 
 func init() { th.RegisterTheme(Theme{}) }
