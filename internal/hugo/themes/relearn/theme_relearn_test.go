@@ -113,6 +113,11 @@ func TestRelearnApplyParams(t *testing.T) {
 	} else {
 		t.Error("math should be a map with enable=true")
 	}
+
+	// Check language switching button is disabled by default
+	if params["disableLanguageSwitchingButton"] != true {
+		t.Errorf("disableLanguageSwitchingButton = %v, want true", params["disableLanguageSwitchingButton"])
+	}
 }
 
 func TestRelearnApplyParams_PreservesExisting(t *testing.T) {
