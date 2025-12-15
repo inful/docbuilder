@@ -63,9 +63,37 @@ func TestRelearnApplyParams(t *testing.T) {
 		t.Error("disableSearch should not be set by default (deprecated in v8+)")
 	}
 
-	// Check theme variant default
-	if params["themeVariant"] != "auto" {
-		t.Errorf("themeVariant = %v, want auto", params["themeVariant"])
+	// Check theme variant default - should be array with auto mode
+	if variants, ok := params["themeVariant"].([]any); ok {
+		if len(variants) != 3 {
+			t.Errorf("themeVariant length = %d, want 3", len(variants))
+		}
+		if variants[0] != "auto" {
+			t.Errorf("themeVariant[0] = %v, want auto", variants[0])
+		}
+		if variants[1] != "relearn-light" {
+			t.Errorf("themeVariant[1] = %v, want relearn-light", variants[1])
+		}
+		if variants[2] != "relearn-dark" {
+			t.Errorf("themeVariant[2] = %v, want relearn-dark", variants[2])
+		}
+	} else {
+		t.Errorf("themeVariant should be array, got %T", params["themeVariant"])
+	}
+
+	// Check themeVariantAuto default
+	if autoVariants, ok := params["themeVariantAuto"].([]string); ok {
+		if len(autoVariants) != 2 {
+			t.Errorf("themeVariantAuto length = %d, want 2", len(autoVariants))
+		}
+		if autoVariants[0] != "relearn-light" {
+			t.Errorf("themeVariantAuto[0] = %v, want relearn-light", autoVariants[0])
+		}
+		if autoVariants[1] != "relearn-dark" {
+			t.Errorf("themeVariantAuto[1] = %v, want relearn-dark", autoVariants[1])
+		}
+	} else {
+		t.Errorf("themeVariantAuto should be []string, got %T", params["themeVariantAuto"])
 	}
 
 	// Check Mermaid support
