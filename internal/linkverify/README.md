@@ -106,6 +106,13 @@ err = service.VerifyPages(context.Background(), pages)
 
 ## Features
 
+### NATS Connection Resilience
+- **Automatic Reconnection**: Infinite reconnect attempts with exponential backoff
+- **Non-Fatal Failures**: NATS unavailability doesn't crash the daemon
+- **Graceful Degradation**: Continues verification without cache when NATS is down
+- **Connection Handlers**: Logs reconnection events and reinitializes KV bucket
+- **Lazy Connection**: Service can be created even when NATS is unavailable
+
 ### Link Extraction
 - Extracts links from `<a>`, `<img>`, `<script>`, `<link>`, `<iframe>`, `<video>`, `<audio>`, `<source>` tags
 - Classifies as internal or external based on site base URL
@@ -172,10 +179,16 @@ sub, _ := nc.Subscribe("docbuilder.links.broken", func(m *nats.Msg) {
 
 ## Error Handling
 
-- NATS connection failures log warnings but don't fail builds
-- Individual link check failures are published as events
-- Service gracefully handles context cancellation
-- Close errors are logged but not propagated
+- **NATS Connection Failures**: Service creation succeeds even if NATS is down
+  - Initial connection attempt logs warning
+  - Automatic reconnection on first operation
+  - Infinite reconnect attempts with 2s base interval + jitter
+  - Operations gracefully degrade (skip cache) when NATS unavailable
+- **Event Publishing Failures**: Logged as errors but don't fail verification
+- **Cache Failures**: Logged but verification continues without cache
+- **Individual Link Failures**: Published as events, don't block other links
+- **Service Shutdown**: Gracefully handles context cancellation
+- **Close Errors**: Logged but not propagated
 
 ## Testing
 
