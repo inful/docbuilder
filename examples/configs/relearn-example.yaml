@@ -16,19 +16,19 @@ hugo:
   
   params:
     # Theme Variants - Simple Configuration
-    # Single variant: themeVariant: "relearn-dark"
+    # Single variant: themeVariant: "zen-dark"
     # Multiple variants with selector:
     themeVariant:
       - "auto"              # OS light/dark detection (default)
+      - "zen-light"         # Zen light variant (default for light mode)
+      - "zen-dark"          # Zen dark variant (default for dark mode)
       - "relearn-light"     # Classic light theme
-      - "relearn-dark"      # Classic dark theme
       - "neon"              # Experimental glowing theme
-      - "zen-light"         # Zen light variant
     
     # Auto mode fallbacks (OS light/dark)
     themeVariantAuto:
-      - "relearn-light"     # Light mode
-      - "relearn-dark"      # Dark mode
+      - "zen-light"         # Light mode
+      - "zen-dark"          # Dark mode
     
     # Advanced variant configuration (uncomment to use)
     # themeVariant:

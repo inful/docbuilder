@@ -31,15 +31,15 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 
 	// Theme variant/color scheme
 	// Relearn supports multiple variants and OS auto-detection
-	// Simple mode: themeVariant = "relearn-light" or ["auto", "relearn-dark"]
-	// Advanced mode: themeVariant = [{identifier: "relearn-light", name: "Light", auto: ["relearn-light", "relearn-dark"]}]
+	// Simple mode: themeVariant = "zen-light" or ["auto", "zen-dark"]
+	// Advanced mode: themeVariant = [{identifier: "zen-light", name: "Light", auto: ["zen-light", "zen-dark"]}]
 	if params["themeVariant"] == nil {
-		// Default to auto mode with relearn-light/relearn-dark
-		params["themeVariant"] = []any{"auto", "relearn-light", "relearn-dark"}
+		// Default to auto mode with zen-light/zen-dark
+		params["themeVariant"] = []any{"auto", "zen-light", "zen-dark"}
 	}
 
 	// Optional: Configure auto mode fallbacks
-	// themeVariantAuto = ["relearn-light", "relearn-dark"] for OS light/dark mode
+	// themeVariantAuto = ["zen-light", "zen-dark"] for OS light/dark mode
 	if params["themeVariantAuto"] == nil && params["themeVariant"] != nil {
 		// Check if themeVariant contains "auto"
 		hasAuto := false
@@ -54,7 +54,7 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 			hasAuto = true
 		}
 		if hasAuto {
-			params["themeVariantAuto"] = []string{"relearn-light", "relearn-dark"}
+			params["themeVariantAuto"] = []string{"zen-light", "zen-dark"}
 		}
 	}
 

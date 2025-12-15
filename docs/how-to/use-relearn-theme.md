@@ -252,8 +252,8 @@ DocBuilder automatically configures these defaults for Relearn:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `themeVariant` | `["auto", "relearn-light", "relearn-dark"]` | Auto light/dark mode with variant selector |
-| `themeVariantAuto` | `["relearn-light", "relearn-dark"]` | OS light/dark mode fallbacks |
+| `themeVariant` | `["auto", "zen-light", "zen-dark"]` | Auto light/dark mode with variant selector |
+| `themeVariantAuto` | `["zen-light", "zen-dark"]` | OS light/dark mode fallbacks |
 | `showVisitedLinks` | `true` | Mark visited pages |
 | `collapsibleMenu` | `true` | Collapsible sidebar sections |
 | `alwaysopen` | `false` | Don't force menu sections open |
