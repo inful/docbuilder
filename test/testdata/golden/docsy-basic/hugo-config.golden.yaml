@@ -40,4 +40,7 @@ params:
         sidebar_search_disable: false
         taxonomy_breadcrumb_disable: false
     version: main
+taxonomies:
+    category: categories
+    tag: tags
 title: Docsy Documentation

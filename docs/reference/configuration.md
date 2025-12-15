@@ -90,6 +90,49 @@ With versioning enabled, DocBuilder:
 | description | string | Site description. |
 | base_url | string | Hugo BaseURL. |
 | theme | enum | Supported optimized themes (`hextra`, `docsy`). |
+| taxonomies | map[string]string | Custom taxonomy definitions (optional). |
+
+### Taxonomies
+
+Hugo taxonomies allow you to classify and organize content. DocBuilder automatically configures the default Hugo taxonomies (`tags` and `categories`) but you can customize or extend them.
+
+**Default Configuration:**
+
+```yaml
+hugo:
+  taxonomies:
+    tag: tags
+    category: categories
+```
+
+**Custom Taxonomies:**
+
+```yaml
+hugo:
+  taxonomies:
+    tag: tags
+    category: categories
+    author: authors      # Custom taxonomy
+    topic: topics        # Custom taxonomy
+```
+
+The taxonomy key (e.g., `tag`, `author`) is the singular form used in Hugo's templates and URLs, while the value (e.g., `tags`, `authors`) is the plural form used for the collection.
+
+**Usage in Frontmatter:**
+
+Once configured, you can use taxonomies in your markdown frontmatter:
+
+```yaml
+---
+title: "My Documentation Page"
+tags: ["api", "golang", "tutorial"]
+categories: ["guides"]
+authors: ["john-doe"]
+topics: ["backend-development"]
+---
+```
+
+DocBuilder's FrontMatter model supports `tags`, `categories`, and `keywords` fields by default. Custom taxonomies can be added through the `Custom` field or by extending the FrontMatter structure.
 
 ## Output Section
 

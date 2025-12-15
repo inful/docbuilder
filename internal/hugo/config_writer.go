@@ -101,6 +101,18 @@ func (g *Generator) generateHugoConfig() error {
 		root.SetHomeOutputsHTMLRSSJSON()
 	}
 
+	// Phase 5.5: taxonomies configuration
+	// Set default taxonomies if not configured by user
+	if len(g.config.Hugo.Taxonomies) > 0 {
+		root.Taxonomies = g.config.Hugo.Taxonomies
+	} else {
+		// Use Hugo's default taxonomies
+		root.Taxonomies = map[string]string{
+			"tag":      "tags",
+			"category": "categories",
+		}
+	}
+
 	// Phase 6: menu
 	if feats.AutoMainMenu {
 		if g.config.Hugo.Menu == nil {

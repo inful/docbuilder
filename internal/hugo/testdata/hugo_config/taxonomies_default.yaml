@@ -1,5 +1,5 @@
-baseURL: http://localhost
-description: Testing automatic _index.md generation for sections
+baseURL: ""
+description: ""
 enableGitInfo: false
 languageCode: en
 markup:
@@ -34,6 +34,11 @@ menu:
             label: false
             type: theme-toggle
           weight: 98
+        - name: GitHub
+          params:
+            icon: github
+          url: https://github.com/org/repo1.git
+          weight: 99
 module:
     imports:
         - path: github.com/imfing/hextra
@@ -43,6 +48,7 @@ outputs:
         - RSS
         - JSON
 params:
+    build_date: IGNORE
     editURL:
         enable: true
     mermaid: {}
@@ -69,4 +75,4 @@ params:
 taxonomies:
     category: categories
     tag: tags
-title: Section Index Testing
+title: Taxonomies Test Site

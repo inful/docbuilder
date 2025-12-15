@@ -175,6 +175,11 @@ hugo:
   description: "Documentation site"
   base_url: "https://docs.example.com"
   theme: hextra
+  # Optional: customize taxonomies (defaults to tags and categories)
+  # taxonomies:
+  #   tag: tags
+  #   category: categories
+  #   author: authors
 
 output:
   directory: "./site"
