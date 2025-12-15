@@ -1,0 +1,55 @@
+baseURL: ""
+description: ""
+enableGitInfo: false
+languageCode: en
+markup:
+    goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                enable: true
+        renderer:
+            unsafe: true
+    highlight:
+        lineNos: true
+        noClasses: false
+        style: github
+        tabWidth: 4
+module:
+    imports:
+        - path: github.com/McShelby/hugo-theme-relearn
+outputs:
+    home:
+        - HTML
+        - RSS
+        - JSON
+params:
+    alwaysopen: false
+    build_date: IGNORE
+    collapsibleMenu: true
+    disableBreadcrumb: false
+    disableGeneratorVersion: false
+    disableLandingPageButton: true
+    disableShortcutsTitle: false
+    disableTagHiddenPages: false
+    math:
+        enable: true
+    mermaid:
+        enable: true
+    showVisitedLinks: true
+    themeVariant:
+        - auto
+        - zen-light
+        - zen-dark
+    themeVariantAuto:
+        - zen-light
+        - zen-dark
+title: Relearn Site

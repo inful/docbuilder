@@ -89,6 +89,75 @@ func TestHugoConfigGolden_Docsy(t *testing.T) {
 	}
 }
 
+func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title: "Relearn Site",
+			Theme: "relearn",
+		},
+		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
+	}
+	g := NewGenerator(cfg, out)
+	if err := g.generateHugoConfig(); err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
+	golden := filepath.Join("testdata", "hugo_config", "relearn_default_taxonomies.yaml")
+	// #nosec G304 - test file
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(actual)) {
+		writeMismatch(t, want, actual)
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			if err := os.WriteFile(golden, actual, 0o600); err != nil {
+				t.Fatalf("update golden: %v", err)
+			}
+			return
+		}
+		t.Fatalf("relearn default taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_RelearnDefaultTaxonomies to accept")
+	}
+}
+
+func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title: "Relearn Site with Custom Taxonomies",
+			Theme: "relearn",
+			Taxonomies: map[string]string{
+				"category":    "categories",
+				"tag":         "tags",
+				"mycustomtag": "mycustomtags",
+			},
+		},
+		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
+	}
+	g := NewGenerator(cfg, out)
+	if err := g.generateHugoConfig(); err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
+	golden := filepath.Join("testdata", "hugo_config", "relearn_custom_taxonomies.yaml")
+	// #nosec G304 - test file
+	want, err := os.ReadFile(golden)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(actual)) {
+		writeMismatch(t, want, actual)
+		if os.Getenv("UPDATE_GOLDEN") == "1" {
+			if err := os.WriteFile(golden, actual, 0o600); err != nil {
+				t.Fatalf("update golden: %v", err)
+			}
+			return
+		}
+		t.Fatalf("relearn custom taxonomies hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_RelearnCustomTaxonomies to accept")
+	}
+}
+
 // writeMismatch writes a simple diff-ish output to help debugging mismatches.
 func writeMismatch(t *testing.T, want, got []byte) {
 	// naive line diff for brevity

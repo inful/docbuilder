@@ -31,6 +31,7 @@ func (g *Generator) generateHugoConfig() error {
 		EnableGitInfo: false, // Disabled by default; output dir isn't a git repo
 		Markup:        map[string]any{},
 		Params:        params,
+		Taxonomies:    g.config.Hugo.Taxonomies,
 	}
 	// Apply default markup settings via helpers (same YAML shape)
 	root.EnsureGoldmarkRendererUnsafe()
