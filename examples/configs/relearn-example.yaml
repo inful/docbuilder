@@ -1,0 +1,41 @@
+# Example DocBuilder Configuration with Relearn Theme
+version: "2.0"
+
+repositories:
+  - name: my-docs
+    url: https://github.com/example/documentation.git
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Documentation Site"
+  description: "Technical documentation powered by Hugo Relearn theme"
+  base_url: "https://docs.example.com"
+  theme: "relearn"
+  
+  params:
+    # Relearn theme variant (auto, relearn-light, relearn-dark, learn, neon, blue, green, red)
+    themeVariant: "auto"
+    
+    # Enable/disable features
+    showVisitedLinks: true
+    collapsibleMenu: true
+    disableSearch: false
+    disableBreadcrumb: false
+    
+    # Edit page configuration
+    editURL:
+      enable: true
+    
+    # Mermaid diagrams
+    mermaid:
+      enable: true
+    
+    # Math support (MathJax)
+    math:
+      enable: true
+
+output:
+  directory: "./site"
+  clean: true

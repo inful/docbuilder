@@ -12,6 +12,9 @@ func TestThemeTypeNormalization(t *testing.T) {
 		{"  HExtra  ", ThemeHextra},
 		{"DOCSY", ThemeDocsy},
 		{"docsy", ThemeDocsy},
+		{"Relearn", ThemeRelearn},
+		{"relearn", ThemeRelearn},
+		{"  RELEARN  ", ThemeRelearn},
 		{"unknown", ""},
 		{"", ""},
 	}

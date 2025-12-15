@@ -131,7 +131,7 @@ You’ll see logs about unchanged repository heads and (when applicable) an unch
 ## 7. Next Steps
 
 - Customize landing pages with `templates/index/*.tmpl`.
-- Pick a supported theme (`hextra` or `docsy`).
+- Pick a supported theme (`hextra`, `docsy`, or `relearn`).
 - Integrate with CI: compare `doc_files_hash` between runs to skip downstream jobs.
 
 ---

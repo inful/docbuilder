@@ -1,12 +1,12 @@
 # How To: Add or Use Theme Support
 
-DocBuilder currently provides optimized configuration for the `hextra` and `docsy` Hugo themes via Hugo Modules.
+DocBuilder currently provides optimized configuration for the `hextra`, `docsy`, and `relearn` Hugo themes via Hugo Modules.
 
 ## Selecting a Theme
 
 ```yaml
 hugo:
-  theme: hextra   # or docsy
+  theme: hextra   # or docsy, or relearn
 ```
 
 A `go.mod` is auto-created in the output directory with required module imports.

@@ -53,7 +53,7 @@ DocBuilder is a documentation aggregation tool that:
 | Multi-Repository Aggregation | Combine docs from unlimited Git repositories |
 | Authentication | SSH keys, personal access tokens, basic auth |
 | Forge Integration | GitHub, GitLab, Forgejo/Gitea support |
-| Theme Support | Hextra and Docsy themes via Hugo Modules |
+| Theme Support | Hextra, Docsy, and Relearn themes via Hugo Modules |
 | Incremental Builds | Skip unchanged repositories |
 | Change Detection | SHA-256 fingerprinting of documentation sets |
 | Forge Namespacing | Prevent URL collisions across forges |
@@ -172,7 +172,7 @@ hugo:
   title: string          # Site title
   description: string    # Site description
   base_url: string       # Hugo baseURL
-  theme: enum            # "hextra" | "docsy"
+  theme: enum            # "hextra" | "docsy" | "relearn"
   language_code: string  # Default: "en-us"
   params: map            # Pass-through to Hugo params
 
