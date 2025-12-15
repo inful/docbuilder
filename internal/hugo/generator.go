@@ -16,8 +16,9 @@ import (
 	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 
 	// Import theme packages for registration side effects
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"  //nolint:revive // theme registration
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra" //nolint:revive // theme registration
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"   //nolint:revive // theme registration
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"  //nolint:revive // theme registration
+	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/relearn" //nolint:revive // theme registration
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"

@@ -89,7 +89,7 @@ With versioning enabled, DocBuilder:
 | title | string | Site title. |
 | description | string | Site description. |
 | base_url | string | Hugo BaseURL. |
-| theme | enum | Supported optimized themes (`hextra`, `docsy`). |
+| theme | enum | Supported optimized themes (`hextra`, `docsy`, `relearn`). |
 
 ## Output Section
 

@@ -26,8 +26,9 @@ type Theme string
 
 // Theme constants to avoid magic strings across generator logic.
 const (
-	ThemeHextra Theme = "hextra"
-	ThemeDocsy  Theme = "docsy"
+	ThemeHextra  Theme = "hextra"
+	ThemeDocsy   Theme = "docsy"
+	ThemeRelearn Theme = "relearn"
 )
 
 // ThemeType returns the normalized typed theme value (lowercasing the raw string). Unknown themes return "".
@@ -38,6 +39,8 @@ func (h HugoConfig) ThemeType() Theme {
 		return ThemeHextra
 	case string(ThemeDocsy):
 		return ThemeDocsy
+	case string(ThemeRelearn):
+		return ThemeRelearn
 	default:
 		return ""
 	}
