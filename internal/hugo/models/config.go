@@ -5,11 +5,12 @@ package models
 // to preserve existing YAML shape while providing compile-time fields for
 // common keys.
 type RootConfig struct {
-	Title         string `yaml:"title"`
-	Description   string `yaml:"description"`
-	BaseURL       string `yaml:"baseURL"`
-	LanguageCode  string `yaml:"languageCode"`
-	EnableGitInfo bool   `yaml:"enableGitInfo"`
+	Title                  string `yaml:"title"`
+	Description            string `yaml:"description"`
+	BaseURL                string `yaml:"baseURL"`
+	LanguageCode           string `yaml:"languageCode"`
+	DefaultContentLanguage string `yaml:"defaultContentLanguage,omitempty"`
+	EnableGitInfo          bool   `yaml:"enableGitInfo"`
 
 	// Flexible sections predominantly driven by theme features and user overrides
 	Markup     map[string]any      `yaml:"markup,omitempty"`

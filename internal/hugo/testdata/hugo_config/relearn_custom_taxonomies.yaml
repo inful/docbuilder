@@ -1,4 +1,5 @@
 baseURL: ""
+defaultContentLanguage: en
 description: ""
 enableGitInfo: false
 languageCode: en
