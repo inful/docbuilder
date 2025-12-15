@@ -53,6 +53,9 @@ func (g *Generator) generateHugoConfig() error {
 	if v, ok := tmpRoot["markup"].(map[string]any); ok {
 		root.Markup = v
 	}
+	if v, ok := tmpRoot["defaultContentLanguage"].(string); ok {
+		root.DefaultContentLanguage = v
+	}
 	g.cachedThemeFeatures = &feats
 
 	// Phase 3: user overrides (deep merge)
