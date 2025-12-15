@@ -7,7 +7,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
 
-// HextraTypeEnforcer ensures type: docs is set for Hextra theme pages
+// HextraTypeEnforcer ensures type: docs is set for all theme pages
 // This runs late (priority 95) to override any type values from repository tags/metadata
 type HextraTypeEnforcer struct{}
 
@@ -50,12 +50,7 @@ func (t HextraTypeEnforcer) Transform(p PageAdapter) error {
 		return nil
 	}
 
-	// Only apply for Hextra theme
-	if cfg.Hugo.ThemeType() != config.ThemeHextra {
-		return nil
-	}
-
-	// Force type: docs for Hextra (replace any existing type value)
+	// Force type: docs for all themes (replace any existing type value)
 	// Use very high patch priority to override all other patches
 	pg.AddPatch(fmcore.FrontMatterPatch{
 		Source:   "hextra_type_enforcer",

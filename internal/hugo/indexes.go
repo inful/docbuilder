@@ -99,9 +99,8 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	}
 	// Use fixed epoch date for reproducible builds (user can override via custom index.md)
 	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
-	if g.config.Hugo.ThemeType() == config.ThemeHextra {
-		frontMatter["cascade"] = map[string]any{"type": "docs"}
-	}
+	// Add cascade for all themes to ensure type: docs propagates to children
+	frontMatter["cascade"] = map[string]any{"type": "docs"}
 	fmData, err := yaml.Marshal(frontMatter)
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)

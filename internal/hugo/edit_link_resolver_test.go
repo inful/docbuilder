@@ -47,11 +47,11 @@ func TestEditLinkResolver_BasicForgeTypes(t *testing.T) {
 			wantPrefix: "https://code.example.org/team/project/_edit/main/docs/x/y/z.md",
 		},
 		{
-			name:      "non-hextra theme disables",
+			name:      "docsy theme also generates edit links",
 			theme:     config.ThemeDocsy,
 			cfg:       &config.Config{Hugo: config.HugoConfig{Theme: string(config.ThemeDocsy)}, Forges: []*config.ForgeConfig{{Name: "gh", Type: config.ForgeGitHub, BaseURL: "https://github.com", APIURL: "https://api.github.com", Organizations: []string{"org"}, Auth: &config.AuthConfig{Type: config.AuthTypeToken}}}, Repositories: []config.Repository{repo("https://github.com/org/repo1.git", "repo1", "main", "docs")}},
 			file:      docs.DocFile{Repository: "repo1", RelativePath: "a.md", DocsBase: "docs", Name: "a", Extension: ".md"},
-			wantEmpty: true,
+			wantPrefix: "https://github.com/org/repo1/edit/main/docs/a.md",
 		},
 		{
 			name:       "site level suppression via params.editURL.base",

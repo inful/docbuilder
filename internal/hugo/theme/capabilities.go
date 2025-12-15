@@ -9,8 +9,9 @@ type Capabilities struct {
 }
 
 var themeCaps = map[config.Theme]Capabilities{
-	config.ThemeHextra: {WantsPerPageEditLinks: true, SupportsSearchJSON: true},
-	config.ThemeDocsy:  {WantsPerPageEditLinks: false, SupportsSearchJSON: true},
+	config.ThemeHextra:  {WantsPerPageEditLinks: true, SupportsSearchJSON: true},
+	config.ThemeDocsy:   {WantsPerPageEditLinks: true, SupportsSearchJSON: true},
+	config.ThemeRelearn: {WantsPerPageEditLinks: true, SupportsSearchJSON: true},
 }
 
 // GetCapabilities returns the declared capabilities for a theme (zero value if unknown).

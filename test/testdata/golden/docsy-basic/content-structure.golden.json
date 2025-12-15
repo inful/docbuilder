@@ -2,6 +2,9 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "cascade": {
+          "type": "docs"
+        },
         "description": "Testing Docsy theme features",
         "title": "Docsy Documentation",
         "type": "docs"
