@@ -122,6 +122,12 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 	}
 
 	slog.Info("Total documentation files discovered", slog.Int("count", len(d.docFiles)))
+
+	// Detect case-insensitive path collisions
+	if err := d.detectPathCollisions(); err != nil {
+		return d.docFiles, err
+	}
+
 	return d.docFiles, nil
 }
 
@@ -342,8 +348,59 @@ func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 		slog.Debug("Found .docignore file", logfields.Path(docIgnorePath))
 		return true, nil
 	}
+
 	if os.IsNotExist(err) {
 		return false, nil
 	}
+
 	return false, fmt.Errorf("%w: %w", derrors.ErrDocIgnoreCheckFailed, err)
+}
+
+// detectPathCollisions checks for case-insensitive Hugo path collisions.
+// Returns an error if duplicate paths are found that would cause ambiguous page references in Hugo.
+func (d *Discovery) detectPathCollisions() error {
+	// Track Hugo path -> source file paths
+	seen := make(map[string][]string)
+
+	for _, file := range d.docFiles {
+		hugoPath := file.GetHugoPath()
+		sourcePath := filepath.Join(file.Repository, file.RelativePath)
+		seen[hugoPath] = append(seen[hugoPath], sourcePath)
+	}
+
+	// Check for collisions
+	var collisions []string
+	for hugoPath, sourcePaths := range seen {
+		if len(sourcePaths) > 1 {
+			// Remove duplicates (shouldn't happen, but be defensive)
+			unique := make(map[string]struct{})
+			for _, sp := range sourcePaths {
+				unique[sp] = struct{}{}
+			}
+
+			if len(unique) > 1 {
+				// True collision - different source files map to same Hugo path
+				var sources []string
+				for sp := range unique {
+					sources = append(sources, sp)
+				}
+				collisions = append(collisions, fmt.Sprintf("  Hugo path: %s\n    Source files: %v", hugoPath, sources))
+			}
+		}
+	}
+
+	if len(collisions) > 0 {
+		slog.Warn("Case-insensitive path collisions detected",
+			slog.Int("count", len(collisions)))
+
+		for _, collision := range collisions {
+			slog.Warn("Path collision", slog.String("details", collision))
+		}
+
+		return fmt.Errorf("%w: %d case-insensitive path collision(s) found - files with different casing map to same Hugo path:\n%s\n"+
+			"Hugo will treat these as ambiguous page references. Rename or remove conflicting files in source repositories",
+			derrors.ErrPathCollision, len(collisions), strings.Join(collisions, "\n"))
+	}
+
+	return nil
 }
