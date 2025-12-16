@@ -2,74 +2,70 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing automatic _index.md generation for sections",
         "title": "Section Index Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:ecea862f87944c2f"
+      "contentHash": "sha256:78f8334fc8b352ff"
     },
     "content/section-docs/_index.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "title": "Section-docs",
+        "title": "Section Docs",
         "type": "docs"
       },
-      "contentHash": "sha256:4b03a41d30a81eda"
+      "contentHash": "sha256:7f4fa5cdb1934dbf"
     },
     "content/section-docs/advanced/_index.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "advanced",
-        "title": "Advanced"
+        "title": "Advanced",
+        "type": "docs"
       },
-      "contentHash": "sha256:c9593027cb5d8473"
+      "contentHash": "sha256:49dd3596eb8580ef"
     },
     "content/section-docs/advanced/plugins.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "advanced",
         "title": "Plugin System",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:1a48a9b5bf943675"
+      "contentHash": "sha256:ba689b6a332af132"
     },
     "content/section-docs/advanced/themes.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "advanced",
         "title": "Custom Themes",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:503cccc2819b3041"
+      "contentHash": "sha256:ed1f8f74b47acaab"
     },
     "content/section-docs/getting-started/_index.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "getting-started",
-        "title": "Getting-started"
+        "title": "Getting Started",
+        "type": "docs"
       },
-      "contentHash": "sha256:6e4cceb5ba12e42d"
+      "contentHash": "sha256:7c14799147b5ea4d"
     },
     "content/section-docs/getting-started/configuration.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "getting-started",
         "title": "Configuration",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:6a1b550c2813f873"
+      "contentHash": "sha256:afc0a822baa8caa8"
     },
     "content/section-docs/getting-started/installation.md": {
       "frontmatter": {
         "repository": "section-docs",
-        "section": "getting-started",
         "title": "Installation",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:998fbd1006eaaa8b"
+      "contentHash": "sha256:bb3eea1dc9e23363"
     }
   },
   "structure": {

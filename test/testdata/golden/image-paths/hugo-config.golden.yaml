@@ -1,6 +1,11 @@
 baseURL: http://localhost
+defaultContentLanguage: en
 description: Testing asset path handling and transformations
 enableGitInfo: false
+languages:
+    en:
+        languageName: English
+        weight: 1
 markup:
     goldmark:
         extensions:
@@ -22,49 +27,35 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
-menu:
-    main:
-        - name: Search
-          params:
-            type: search
-          weight: 4
-        - name: Theme
-          params:
-            label: false
-            type: theme-toggle
-          weight: 98
 module:
     imports:
-        - path: github.com/imfing/hextra
+        - path: github.com/McShelby/hugo-theme-relearn
 outputs:
     home:
         - HTML
         - RSS
         - JSON
 params:
-    editURL:
+    alwaysopen: false
+    collapsibleMenu: true
+    disableBreadcrumb: false
+    disableGeneratorVersion: false
+    disableLandingPageButton: true
+    disableLanguageSwitchingButton: true
+    disableShortcutsTitle: false
+    disableTagHiddenPages: false
+    math:
         enable: true
-    mermaid: {}
-    navbar:
-        width: normal
-    offlineSearch: true
-    offlineSearchMaxResults: 25
-    offlineSearchSummaryLength: 200
-    search:
+    mermaid:
         enable: true
-        flexsearch:
-            index: content
-            tokenize: forward
-            version: 0.8.143
-        type: flexsearch
-    theme:
-        default: system
-        displayToggle: true
-    ui:
-        navbar_logo: true
-        sidebar_menu_compact: false
-        sidebar_menu_foldable: true
-        sidebar_search_disable: false
+    showVisitedLinks: true
+    themeVariant:
+        - auto
+        - zen-light
+        - zen-dark
+    themeVariantAuto:
+        - zen-light
+        - zen-dark
 taxonomies:
     category: categories
     tag: tags

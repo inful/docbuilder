@@ -34,6 +34,17 @@ func NewProcessor(cfg *config.Config) *Processor {
 //
 // Returns processed documents ready for Hugo site generation.
 func (p *Processor) ProcessContent(discovered []*Document, repoMetadata map[string]RepositoryInfo) ([]*Document, error) {
+	// Inject repository metadata (URL, commit) into discovered documents
+	// This must happen before generation/transformation so edit links work correctly
+	for _, doc := range discovered {
+		if doc.Repository != "" {
+			if repoInfo, ok := repoMetadata[doc.Repository]; ok {
+				doc.SourceURL = repoInfo.URL
+				doc.SourceCommit = repoInfo.Commit
+			}
+		}
+	}
+
 	// Phase 1: Generation - Create missing files
 	slog.Info("Pipeline: Starting generation phase", slog.Int("discovered", len(discovered)))
 
@@ -150,14 +161,15 @@ func defaultGenerators() []FileGenerator {
 func defaultTransforms(cfg *config.Config) []FileTransform {
 	return []FileTransform{
 		parseFrontMatter,               // 1. Parse YAML front matter from content
-		buildBaseFrontMatter,           // 2. Build base front matter structure
-		extractIndexTitle,              // 3. Extract H1 title from index files
-		stripHeading,                   // 4. Strip H1 if appropriate
-		rewriteRelativeLinks(cfg),      // 5. Fix markdown links
-		rewriteImageLinks,              // 6. Fix image paths
-		generateFromKeywords,           // 7. Create new files based on keywords (e.g., @glossary)
-		addRepositoryMetadata(cfg),     // 8. Add repo/commit/source metadata
-		addEditLink(cfg),               // 9. Generate edit URL
-		serializeDocument,              // 10. Serialize to final bytes (FM + content)
+		normalizeIndexFiles,            // 2. Rename README to _index
+		buildBaseFrontMatter,           // 3. Build base front matter structure
+		extractIndexTitle,              // 4. Extract H1 title from index files
+		stripHeading,                   // 5. Strip H1 if appropriate
+		rewriteRelativeLinks(cfg),      // 6. Fix markdown links
+		rewriteImageLinks,              // 7. Fix image paths
+		generateFromKeywords,           // 8. Create new files based on keywords (e.g., @glossary)
+		addRepositoryMetadata(cfg),     // 9. Add repo/commit/source metadata
+		addEditLink(cfg),               // 10. Generate edit URL
+		serializeDocument,              // 11. Serialize to final bytes (FM + content)
 	}
 }

@@ -2,14 +2,10 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing link transformation between repositories",
         "title": "Cross-Repository Links",
         "type": "docs"
       },
-      "contentHash": "sha256:5104cf641481c9af"
+      "contentHash": "sha256:4cdf9edb86152a3c"
     },
     "content/backend/_index.md": {
       "frontmatter": {
@@ -17,23 +13,25 @@
         "title": "Backend",
         "type": "docs"
       },
-      "contentHash": "sha256:0478574de84e3537"
+      "contentHash": "sha256:5cc122e35f4b32fd"
     },
     "content/backend/api.md": {
       "frontmatter": {
         "repository": "backend",
         "title": "Backend API",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:b355be90a7a56b46"
+      "contentHash": "sha256:469d7d15144fae3a"
     },
     "content/backend/auth.md": {
       "frontmatter": {
         "repository": "backend",
         "title": "Backend Authentication",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:36646f227e6875a6"
+      "contentHash": "sha256:365980300aef14c5"
     },
     "content/frontend/_index.md": {
       "frontmatter": {
@@ -41,23 +39,25 @@
         "title": "Frontend",
         "type": "docs"
       },
-      "contentHash": "sha256:5157d54044efdfc0"
+      "contentHash": "sha256:abe4dd5979d004a0"
     },
     "content/frontend/guide.md": {
       "frontmatter": {
         "repository": "frontend",
         "title": "Frontend Guide",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:142a68f2ee71a433"
+      "contentHash": "sha256:89ad853799ec8308"
     },
     "content/frontend/setup.md": {
       "frontmatter": {
         "repository": "frontend",
         "title": "Frontend Setup",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:dc1b9404b25a854d"
+      "contentHash": "sha256:e6774a0218066f1a"
     }
   },
   "structure": {

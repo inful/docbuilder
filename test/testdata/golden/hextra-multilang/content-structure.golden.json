@@ -2,74 +2,70 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing multi-language support with Hextra",
         "title": "Multi-Language Documentation",
         "type": "docs"
       },
-      "contentHash": "sha256:6a60c16b383320a7"
+      "contentHash": "sha256:7f504fadce4878c4"
     },
     "content/multilang-docs/_index.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "title": "Multilang-docs",
+        "title": "Multilang Docs",
         "type": "docs"
       },
-      "contentHash": "sha256:38567041ef024fd2"
+      "contentHash": "sha256:686df629cf5d6e12"
     },
     "content/multilang-docs/en/_index.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "en",
-        "title": "En"
+        "title": "En",
+        "type": "docs"
       },
-      "contentHash": "sha256:098307824cf2d8b2"
+      "contentHash": "sha256:9eeadef2bf807b72"
     },
     "content/multilang-docs/en/configuration.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "en",
         "title": "Configuration Guide",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:cc4bfdf7fc67168d"
+      "contentHash": "sha256:d783bdaa8a458b37"
     },
     "content/multilang-docs/en/getting-started.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "en",
         "title": "Getting Started",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:9c88e6c677783bbb"
+      "contentHash": "sha256:f56f0b38fe4d668c"
     },
     "content/multilang-docs/es/_index.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "es",
-        "title": "Es"
+        "title": "Es",
+        "type": "docs"
       },
-      "contentHash": "sha256:098307824cf2d8b2"
+      "contentHash": "sha256:caab5d7083e94e44"
     },
     "content/multilang-docs/es/configuration.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "es",
         "title": "Guía de Configuración",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:63aeebc6dc055de7"
+      "contentHash": "sha256:76f679a310d2990a"
     },
     "content/multilang-docs/es/getting-started.md": {
       "frontmatter": {
         "repository": "multilang-docs",
-        "section": "es",
         "title": "Comenzando",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:3e3ba437a149275c"
+      "contentHash": "sha256:ddd6800fd35b4f0c"
     }
   },
   "structure": {

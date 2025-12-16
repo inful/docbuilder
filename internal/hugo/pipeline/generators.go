@@ -10,7 +10,7 @@ import (
 func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	// Check if root index already exists
 	for _, doc := range ctx.Discovered {
-		if doc.Path == "_index.md" || doc.Path == "index.md" {
+		if doc.Path == "content/_index.md" || doc.Path == "content/index.md" {
 			return nil, nil // Already exists
 		}
 	}
@@ -27,7 +27,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	doc := &Document{
-		Path:        "_index.md",
+		Path:        "content/_index.md",
 		IsIndex:     true,
 		Generated:   true,
 		Content:     fmt.Sprintf("# %s\n\n%s\n", title, description),
@@ -78,7 +78,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			}
 
 			doc := &Document{
-				Path:        filepath.Join(repoPath, "_index.md"),
+				Path:        filepath.Join("content", repoPath, "_index.md"),
 				IsIndex:     true,
 				Generated:   true,
 				Repository:  repo,
@@ -144,7 +144,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			}
 
 			doc := &Document{
-				Path:        filepath.Join(sectionPath, "_index.md"),
+				Path:        filepath.Join("content", sectionPath, "_index.md"),
 				IsIndex:     true,
 				Generated:   true,
 				Repository:  repo,

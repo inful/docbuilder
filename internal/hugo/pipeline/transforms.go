@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"gopkg.in/yaml.v3"
@@ -89,6 +90,29 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 	return nil, nil
 }
 
+// normalizeIndexFiles renames README files to _index for Hugo compatibility.
+// This must run early before other transforms depend on the file name.
+func normalizeIndexFiles(doc *Document) ([]*Document, error) {
+	// Check if this is a README file at any level
+	if strings.EqualFold(doc.Name, "README") {
+		// Rename to _index for Hugo
+		// Update both Name and Path
+		doc.Name = "_index"
+		
+		// Update Path: replace README.md with _index.md at end
+		if strings.HasSuffix(doc.Path, "/README.md") || strings.HasSuffix(doc.Path, "/readme.md") {
+			doc.Path = doc.Path[:len(doc.Path)-len("README.md")] + "_index.md"
+		} else if strings.HasSuffix(doc.Path, "README.md") {
+			doc.Path = strings.TrimSuffix(doc.Path, "README.md") + "_index.md"
+		}
+		
+		// Mark as index file
+		doc.IsIndex = true
+	}
+	
+	return nil, nil
+}
+
 // buildBaseFrontMatter ensures basic front matter fields exist.
 // Adds title, type, and other base fields if not present.
 func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
@@ -100,6 +124,13 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 	// Set title from filename if not present
 	if _, ok := doc.FrontMatter["title"]; !ok {
 		doc.FrontMatter["title"] = titleCase(doc.Name)
+	}
+
+	// Set date if not present (use current time as fallback)
+	// Hugo requires a date field for proper sorting and organization
+	if _, ok := doc.FrontMatter["date"]; !ok {
+		// Use current time in RFC3339 format (Hugo standard)
+		doc.FrontMatter["date"] = time.Now().Format(time.RFC3339)
 	}
 
 	return nil, nil

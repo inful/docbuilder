@@ -1,8 +1,25 @@
 baseURL: http://localhost
+defaultContentLanguage: en
 description: Testing Docsy theme features
 enableGitInfo: false
+languages:
+    en:
+        languageName: English
+        weight: 1
 markup:
     goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                enable: true
         renderer:
             unsafe: true
     highlight:
@@ -12,33 +29,35 @@ markup:
         tabWidth: 4
 module:
     imports:
-        - path: github.com/google/docsy
+        - path: github.com/McShelby/hugo-theme-relearn
 outputs:
     home:
         - HTML
         - RSS
         - JSON
 params:
-    edit_page: true
+    alwaysopen: false
+    collapsibleMenu: true
+    disableBreadcrumb: false
+    disableGeneratorVersion: false
+    disableLandingPageButton: true
+    disableLanguageSwitchingButton: true
+    disableShortcutsTitle: false
+    disableTagHiddenPages: false
     github_branch: main
     github_repo: https://github.com/example/docsy-project
-    links:
-        developer: []
-        user: []
-    offlineSearch: true
-    offlineSearchMaxResults: 25
-    offlineSearchSummaryLength: 200
-    search: true
-    ui:
-        breadcrumb_disable: false
-        footer_about_disable: false
-        navbar_logo: true
-        navbar_translucent_over_cover_disable: false
-        sidebar_menu_compact: false
-        sidebar_menu_foldable: true
-        sidebar_search_disable: false
-        taxonomy_breadcrumb_disable: false
-    version: main
+    math:
+        enable: true
+    mermaid:
+        enable: true
+    showVisitedLinks: true
+    themeVariant:
+        - auto
+        - zen-light
+        - zen-dark
+    themeVariantAuto:
+        - zen-light
+        - zen-dark
 taxonomies:
     category: categories
     tag: tags

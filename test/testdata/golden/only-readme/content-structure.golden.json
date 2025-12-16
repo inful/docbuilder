@@ -2,22 +2,18 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing repository with only README.md (should be ignored)",
         "title": "Only README Test",
         "type": "docs"
       },
-      "contentHash": "sha256:96b3c53e4e0a2b61"
+      "contentHash": "sha256:c181dda0f383d8f0"
     },
     "content/only-readme/_index.md": {
       "frontmatter": {
         "repository": "only-readme",
-        "title": "Readme",
+        "title": "Project README",
         "type": "docs"
       },
-      "contentHash": "sha256:dcf21dd937655170"
+      "contentHash": "sha256:113fb4f3ad37e56a"
     }
   },
   "structure": {

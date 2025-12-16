@@ -2,40 +2,38 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Test documentation site for Hextra theme integration",
         "title": "Hextra Basic Test Documentation",
         "type": "docs"
       },
-      "contentHash": "sha256:2afc3227e5c324b5"
+      "contentHash": "sha256:a9de7ed150e54dd5"
     },
     "content/hextra-basic/_index.md": {
       "frontmatter": {
         "repository": "hextra-basic",
-        "title": "Hextra-basic",
+        "title": "Hextra Basic",
         "type": "docs"
       },
-      "contentHash": "sha256:64be6a9a964d736d"
+      "contentHash": "sha256:464bc11e60605c2b"
     },
     "content/hextra-basic/api.md": {
       "frontmatter": {
         "description": "API documentation and reference",
         "repository": "hextra-basic",
         "title": "API Reference",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:020acf25839c5af0"
+      "contentHash": "sha256:43e5729601c5a440"
     },
     "content/hextra-basic/guide.md": {
       "frontmatter": {
         "description": "A comprehensive guide for using the system",
         "repository": "hextra-basic",
         "title": "User Guide",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:b28cca6936913365"
+      "contentHash": "sha256:80b9e34cdcfacfba"
     }
   },
   "structure": {

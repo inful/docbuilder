@@ -2,22 +2,18 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing Docsy theme features",
         "title": "Docsy Documentation",
         "type": "docs"
       },
-      "contentHash": "sha256:b57265d13c1306af"
+      "contentHash": "sha256:c80de35aca68da7b"
     },
     "content/docsy-project/_index.md": {
       "frontmatter": {
         "repository": "docsy-project",
-        "title": "Docsy-project",
+        "title": "Docsy Project",
         "type": "docs"
       },
-      "contentHash": "sha256:129b2576aeaf6348"
+      "contentHash": "sha256:8b46196dfde2ae73"
     },
     "content/docsy-project/overview.md": {
       "frontmatter": {
@@ -25,9 +21,10 @@
         "linkTitle": "Overview",
         "repository": "docsy-project",
         "title": "Overview",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:500534199c8998db"
+      "contentHash": "sha256:492211762a964bc2"
     },
     "content/docsy-project/tasks.md": {
       "frontmatter": {
@@ -35,9 +32,10 @@
         "linkTitle": "Tasks",
         "repository": "docsy-project",
         "title": "Tasks",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:39b1c4c067b2a244"
+      "contentHash": "sha256:db80c3a4d9a99488"
     }
   },
   "structure": {

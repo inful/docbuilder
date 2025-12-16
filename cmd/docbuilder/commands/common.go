@@ -27,13 +27,12 @@ type CLI struct {
 	Verbose bool             `short:"v" env:"DOCBUILDER_VERBOSE" help:"Enable verbose logging"`
 	Version kong.VersionFlag `name:"version" help:"Show version and exit"`
 
-	Build     BuildCmd     `cmd:"" help:"Build documentation site from configured repositories"`
-	Init      InitCmd      `cmd:"" help:"Initialize a new configuration file"`
-	Discover  DiscoverCmd  `cmd:"" help:"Discover documentation files without building"`
-	Daemon    DaemonCmd    `cmd:"" help:"Start daemon mode for continuous documentation updates"`
-	Preview   PreviewCmd   `cmd:"" help:"Preview local docs with live reload (no git polling)"`
-	Generate  GenerateCmd  `cmd:"" help:"Generate static site from local docs directory (for CI/CD)"`
-	Visualize VisualizeCmd `cmd:"" help:"Visualize the transform pipeline (text, mermaid, dot, json)"`
+	Build    BuildCmd    `cmd:"" help:"Build documentation site from configured repositories"`
+	Init     InitCmd     `cmd:"" help:"Initialize a new configuration file"`
+	Discover DiscoverCmd `cmd:"" help:"Discover documentation files without building"`
+	Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
+	Preview  PreviewCmd  `cmd:"" help:"Preview local docs with live reload (no git polling)"`
+	Generate GenerateCmd `cmd:"" help:"Generate static site from local docs directory (for CI/CD)"`
 }
 
 // AfterApply runs after flag parsing; setup logging once.
