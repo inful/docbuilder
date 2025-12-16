@@ -352,7 +352,7 @@ func TestProcessContent_RepositoryMetadataInjection(t *testing.T) {
 	}
 	processor := NewProcessor(cfg)
 	processor.WithGenerators([]FileGenerator{}) // No generators
-	processor.WithTransforms([]FileTransform{})  // No transforms
+	processor.WithTransforms([]FileTransform{}) // No transforms
 
 	discovered := []*Document{
 		{
