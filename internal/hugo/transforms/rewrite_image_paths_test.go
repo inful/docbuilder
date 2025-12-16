@@ -89,6 +89,20 @@ Some text
 			content:  "Just some plain text without any images",
 			expectedOutput: "Just some plain text without any images",
 		},
+		{
+			name:     "mixed case filename should be lowercased",
+			fileName: "guide",
+			content:  "![alt text](./images/5_2_MR_ready.png)",
+			expectedOutput: "![alt text](../images/5_2_mr_ready.png)",
+		},
+		{
+			name:     "multiple mixed case filenames",
+			fileName: "guide",
+			content: `![img1](./images/File_A_B.png)
+![img2](./images/Another_MR_Screenshot.png)`,
+			expectedOutput: `![img1](../images/file_a_b.png)
+![img2](../images/another_mr_screenshot.png)`,
+		},
 	}
 
 	for _, tt := range tests {
