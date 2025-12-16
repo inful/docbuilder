@@ -1,0 +1,75 @@
+# Example DocBuilder Configuration with Relearn Theme
+version: "2.0"
+
+repositories:
+  - name: my-docs
+    url: https://github.com/example/documentation.git
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Documentation Site"
+  description: "Technical documentation powered by Hugo Relearn theme"
+  base_url: "https://docs.example.com"
+  theme: "relearn"
+  
+  params:
+    # Theme Variants - Simple Configuration
+    # Single variant: themeVariant: "zen-dark"
+    # Multiple variants with selector:
+    themeVariant:
+      - "auto"              # OS light/dark detection (default)
+      - "zen-light"         # Zen light variant (default for light mode)
+      - "zen-dark"          # Zen dark variant (default for dark mode)
+      - "relearn-light"     # Classic light theme
+      - "neon"              # Experimental glowing theme
+    
+    # Auto mode fallbacks (OS light/dark)
+    themeVariantAuto:
+      - "zen-light"         # Light mode
+      - "zen-dark"          # Dark mode
+    
+    # Advanced variant configuration (uncomment to use)
+    # themeVariant:
+    #   - identifier: "relearn-auto"
+    #     name: "Relearn Light/Dark"
+    #     auto:
+    #       - "relearn-light"
+    #       - "relearn-dark"
+    #   - identifier: "neon"
+    #     name: "Neon Glow"
+    #   - identifier: "zen-auto"
+    #     name: "Zen Light/Dark"
+    #     auto:
+    #       - "zen-light"
+    #       - "zen-dark"
+    
+    # Navigation
+    showVisitedLinks: true      # Mark visited pages
+    collapsibleMenu: true       # Collapsible sidebar sections
+    alwaysopen: false           # Don't force sections open
+    disableBreadcrumb: false    # Show breadcrumb navigation
+    
+    # Features
+    disableLandingPageButton: true     # Hide landing page button
+    disableShortcutsTitle: false       # Show shortcuts in sidebar
+    disableTagHiddenPages: false       # Tag hidden pages
+    
+    # Footer
+    disableGeneratorVersion: false     # Show Hugo version
+    
+    # Edit page links (requires valid editURL pattern)
+    # editURL: "https://github.com/example/docs/edit/main/{FilePath}"
+    
+    # Mermaid diagrams
+    mermaid:
+      enable: true
+    
+    # Math support (MathJax)
+    math:
+      enable: true
+
+output:
+  directory: "./site"
+  clean: true

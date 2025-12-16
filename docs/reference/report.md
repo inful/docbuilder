@@ -1,3 +1,14 @@
+---
+title: "Build Reports Reference"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - reports
+  - builds
+  - output
+---
+
 # Build Report Reference
 
 DocBuilder writes a machine-readable `build-report.json` and a summary `build-report.txt` after each build.

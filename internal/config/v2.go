@@ -52,9 +52,10 @@ type WebhookConfig struct {
 
 // DaemonConfig represents daemon-specific configuration, including HTTP, sync, and storage settings.
 type DaemonConfig struct {
-	HTTP    HTTPConfig    `yaml:"http"`
-	Sync    SyncConfig    `yaml:"sync"`
-	Storage StorageConfig `yaml:"storage"`
+	HTTP             HTTPConfig             `yaml:"http"`
+	Sync             SyncConfig             `yaml:"sync"`
+	Storage          StorageConfig          `yaml:"storage"`
+	LinkVerification *LinkVerificationConfig `yaml:"link_verification,omitempty"`
 }
 
 // HTTPConfig represents HTTP server configuration for the daemon, including ports for docs, webhooks, and admin endpoints.
@@ -119,6 +120,22 @@ type MonitoringHealth struct {
 type MonitoringLogging struct {
 	Level  LogLevel  `yaml:"level"`
 	Format LogFormat `yaml:"format"`
+}
+
+// LinkVerificationConfig represents configuration for automated link validation in daemon mode.
+type LinkVerificationConfig struct {
+	Enabled            bool   `yaml:"enabled"`              // Enable link verification (default: true)
+	NATSURL            string `yaml:"nats_url"`             // NATS server URL
+	Subject            string `yaml:"subject"`              // Subject for broken link events
+	KVBucket           string `yaml:"kv_bucket"`            // KV bucket name for link cache
+	CacheTTL           string `yaml:"cache_ttl"`            // TTL for successful link checks (e.g., "24h")
+	CacheTTLFailures   string `yaml:"cache_ttl_failures"`   // TTL for failed link checks (e.g., "1h")
+	MaxConcurrent      int    `yaml:"max_concurrent"`       // Max concurrent link checks
+	RequestTimeout     string `yaml:"request_timeout"`      // HTTP request timeout
+	RateLimitDelay     string `yaml:"rate_limit_delay"`     // Delay between requests
+	VerifyExternalOnly bool   `yaml:"verify_external_only"` // Only verify external links
+	FollowRedirects    bool   `yaml:"follow_redirects"`     // Follow HTTP redirects
+	MaxRedirects       int    `yaml:"max_redirects"`        // Maximum redirects to follow
 }
 
 // Load reads and validates a configuration file (version 2.x), expanding environment variables and applying normalization and defaults.
@@ -209,6 +226,20 @@ func Init(configPath string, force bool) error {
 				StateFile:    "./docbuilder-state.json",
 				RepoCacheDir: "./repositories",
 				OutputDir:    "./site",
+			},
+			LinkVerification: &LinkVerificationConfig{
+				Enabled:            true,
+				NATSURL:            "nats://localhost:4222",
+				Subject:            "docbuilder.links.broken",
+				KVBucket:           "docbuilder-link-cache",
+				CacheTTL:           "24h",
+				CacheTTLFailures:   "1h",
+				MaxConcurrent:      10,
+				RequestTimeout:     "10s",
+				RateLimitDelay:     "100ms",
+				VerifyExternalOnly: false,
+				FollowRedirects:    true,
+				MaxRedirects:       3,
 			},
 		},
 		Forges: []*ForgeConfig{

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
@@ -56,15 +57,24 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 	outStr := stdout.String()
 	errStr := stderr.String()
 	if outStr != "" {
-		slog.Debug("hugo stdout", "output", outStr)
+		// Log each line separately to avoid escaped newlines
+		for _, line := range strings.Split(strings.TrimSpace(outStr), "\n") {
+			if line != "" {
+				slog.Debug("hugo stdout", "line", line)
+			}
+		}
 	}
 	if errStr != "" {
-		slog.Warn("hugo stderr", "error_output", errStr)
+		// Log each line separately to avoid escaped newlines
+		for _, line := range strings.Split(strings.TrimSpace(errStr), "\n") {
+			if line != "" {
+				slog.Warn("hugo stderr", "line", line)
+			}
+		}
 	}
 
 	if err != nil {
-		// Include both stdout and stderr in error message for better diagnostics
-		// Hugo may output errors to either stream
+		// Log the combined error output line by line for readability
 		output := errStr
 		if output == "" {
 			output = outStr
@@ -73,8 +83,21 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 		}
 
 		if output != "" {
-			return fmt.Errorf("%w: %w: %s", herrors.ErrHugoExecutionFailed, err, output)
+			slog.Error("hugo execution failed - output details:")
+			for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+				if line == "" {
+					continue
+				}
+
+				// Parse Hugo ERROR lines to extract key information
+				if strings.HasPrefix(strings.TrimSpace(line), "ERROR render of") {
+					parseHugoRenderError(line)
+				} else {
+					slog.Error("  " + line)
+				}
+			}
 		}
+
 		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
 
@@ -87,6 +110,55 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 	}
 
 	return nil
+}
+
+// parseHugoRenderError extracts key information from Hugo's verbose ERROR lines
+// and logs them in a more readable structured format.
+func parseHugoRenderError(line string) {
+	// Extract the file path (between quotes after "ERROR render of")
+	// Example: ERROR render of "/path/to/file.md" failed: ...
+	var filePath string
+	if idx := strings.Index(line, `ERROR render of "`); idx >= 0 {
+		start := idx + len(`ERROR render of "`)
+		if end := strings.Index(line[start:], `"`); end >= 0 {
+			filePath = line[start : start+end]
+		}
+	}
+
+	// Extract the root cause (look for common error patterns)
+	var rootCause string
+	if idx := strings.LastIndex(line, "runtime error:"); idx >= 0 {
+		rootCause = strings.TrimSpace(line[idx:])
+	} else if idx := strings.LastIndex(line, "error calling"); idx >= 0 {
+		// Get a reasonable snippet around the error
+		snippet := line[idx:]
+		if len(snippet) > 200 {
+			snippet = snippet[:200] + "..."
+		}
+		rootCause = snippet
+	} else if idx := strings.Index(line, "failed:"); idx >= 0 {
+		// Take a snippet after "failed:"
+		snippet := strings.TrimSpace(line[idx+7:])
+		if len(snippet) > 200 {
+			snippet = snippet[:200] + "..."
+		}
+		rootCause = snippet
+	}
+
+	if filePath != "" && rootCause != "" {
+		slog.Error("  Hugo render error",
+			"file", filePath,
+			"cause", rootCause)
+	} else if filePath != "" {
+		slog.Error("  Hugo render error", "file", filePath)
+	} else {
+		// Fallback: truncate very long lines
+		if len(line) > 300 {
+			slog.Error("  " + line[:300] + "...")
+		} else {
+			slog.Error("  " + line)
+		}
+	}
 }
 
 // NoopRenderer performs no rendering; useful in tests or when only scaffolding is desired.

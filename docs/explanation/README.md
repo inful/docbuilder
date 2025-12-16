@@ -1,3 +1,12 @@
+---
+title: "Explanation Documentation"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - documentation
+---
+
 # Architecture Documentation Index
 
 This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.

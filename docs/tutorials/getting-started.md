@@ -1,3 +1,14 @@
+---
+title: "Getting Started Tutorial"
+date: 2025-12-15
+categories:
+  - tutorials
+tags:
+  - getting-started
+  - quickstart
+  - introduction
+---
+
 # Getting Started with DocBuilder
 
 This tutorial walks you through producing a multi‑repository Hugo documentation site in minutes.
@@ -131,7 +142,7 @@ You’ll see logs about unchanged repository heads and (when applicable) an unch
 ## 7. Next Steps
 
 - Customize landing pages with `templates/index/*.tmpl`.
-- Pick a supported theme (`hextra` or `docsy`).
+- Pick a supported theme (`hextra`, `docsy`, or `relearn`).
 - Integrate with CI: compare `doc_files_hash` between runs to skip downstream jobs.
 
 ---

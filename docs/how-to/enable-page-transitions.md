@@ -1,16 +1,29 @@
+---
+title: "How To: Enable Page Transitions"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - ui
+  - transitions
+  - hextra
+  - docsy
+  - relearn
+---
+
 # Enable Page Transitions
 
-This guide explains how to enable smooth page transitions using the View Transitions API in your Hextra-themed documentation site.
+This guide explains how to enable smooth page transitions using the View Transitions API in your Hugo-themed documentation site.
 
 ## Overview
 
-Page transitions provide a smooth, animated navigation experience between pages in your documentation site. DocBuilder supports the View Transitions API for Hextra themes, creating fluid animations when users navigate between documentation pages.
+Page transitions provide a smooth, animated navigation experience between pages in your documentation site. DocBuilder supports the View Transitions API for all supported themes (Hextra, Docsy, and Relearn), creating fluid animations when users navigate between documentation pages.
 
 The implementation uses browser-native CSS-only transitions with the `@view-transition { navigation: auto; }` rule, which means no JavaScript is required and all interactive elements (like search) continue to work correctly during and after transitions.
 
 ## Prerequisites
 
-- Hugo theme: `hextra` (View Transitions are currently only supported for Hextra)
+- Hugo theme: `hextra`, `docsy`, or `relearn`
 - Modern browser with View Transitions API support:
   - Chrome 126+
   - Edge 126+
@@ -25,7 +38,7 @@ Add the following to your `config.yaml` under the `hugo` section:
 ```yaml
 hugo:
   title: "My Documentation Site"
-  theme: "hextra"
+  theme: "hextra"  # or "docsy" or "relearn"
   
   # Enable page transitions
   enable_page_transitions: true
@@ -55,6 +68,10 @@ When enabled, DocBuilder:
 2. Adds the `@view-transition { navigation: auto; }` rule to enable browser-native transitions
 3. Automatically applies transitions to all page navigations
 4. Preserves all interactive elements (search, menus, etc.) without any DOM manipulation
+5. Uses theme-appropriate head partial integration:
+   - **Hextra**: `layouts/_partials/custom/head-end.html`
+   - **Docsy**: `layouts/partials/hooks/head-end.html`
+   - **Relearn**: `layouts/partials/custom-header.html`
 
 ## Browser Compatibility
 
@@ -81,30 +98,40 @@ After enabling transitions and rebuilding your site:
 ### Troubleshooting
 
 **Transitions not working:**
-- Verify `theme: "hextra"` is set (other themes not yet supported)
 - Check browser compatibility (use Chrome 126+ or Safari 18.2+ for testing)
 - Ensure you rebuilt the site after changing configuration
 - In daemon mode, the configuration reload should trigger an automatic rebuild
+- Verify the CSS file exists at `/static/view-transitions.css`
 
 **Interactive elements not working after transition:**
 - This should not happen with the CSS-only implementation
 - If you experience issues, please report a bug
 
+## Theme-Specific Notes
+
+### Hextra
+Works seamlessly with FlexSearch and theme switcher.
+
+### Docsy
+Compatible with Algolia/local search and Bootstrap components.
+
+### Relearn
+Works with Lunr search, Mermaid diagrams, and math rendering.
+
 ## Related Configuration
 
-View Transitions work well with other Hextra features:
+View Transitions work well with other theme features:
 
 ```yaml
 hugo:
-  theme: "hextra"
+  theme: "relearn"  # or "hextra" or "docsy"
   enable_page_transitions: true
   params:
+    # Theme-specific parameters work alongside transitions
     search:
       enable: true
-      type: flexsearch
-    theme:
-      default: system
-      displayToggle: true
+    mermaid:
+      enable: true
 ```
 
 ## Disabling Transitions

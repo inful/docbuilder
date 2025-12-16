@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313/
 description: Test automatic front matter injection (editURL, repository metadata)
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

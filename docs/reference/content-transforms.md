@@ -1,3 +1,13 @@
+---
+title: "Content Transforms Reference"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - transforms
+  - content-processing
+---
+
 # Content Transform Pipeline
 
 This document explains DocBuilder's markdown content transform architecture: how the registry works, built‑in transforms, how to add new ones, and the merge semantics for front matter.

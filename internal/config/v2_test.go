@@ -190,8 +190,8 @@ hugo:
 	}
 
 	// Verify defaults were applied
-	if config.Hugo.Theme != "hextra" {
-		t.Errorf("Default theme = %v, want hextra", config.Hugo.Theme)
+	if config.Hugo.Theme != "relearn" {
+		t.Errorf("Default theme = %v, want relearn", config.Hugo.Theme)
 	}
 
 	if config.Output.Directory != "./site" {

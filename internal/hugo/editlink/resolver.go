@@ -70,8 +70,8 @@ func (r *Resolver) Resolve(file docs.DocFile, cfg *config.Config) string {
 
 // shouldGenerateEditLink checks if edit links should be generated at all.
 func (r *Resolver) shouldGenerateEditLink(cfg *config.Config) bool {
-	// Only Hextra theme currently supports per-page edit links
-	return cfg != nil && cfg.Hugo.ThemeType() == config.ThemeHextra
+	// Edit links now work for all themes
+	return cfg != nil
 }
 
 // isSiteLevelSuppressed checks if edit links are suppressed at the site level.

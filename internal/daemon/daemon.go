@@ -15,9 +15,11 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
@@ -71,6 +73,9 @@ type Daemon struct {
 
 	// Discovery runner for forge discovery operations
 	discoveryRunner *DiscoveryRunner
+
+	// Link verification service
+	linkVerifier *linkverify.VerificationService
 
 	// Build status tracker for preview mode (optional, used by local preview)
 	buildStatus interface{ getStatus() (bool, error, bool) }
@@ -199,6 +204,21 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	if cfg.Build.LiveReload {
 		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
 		slog.Info("LiveReload hub initialized")
+	}
+
+	// Initialize link verification service if enabled
+	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
+		linkVerifier, err := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
+		if err != nil {
+			slog.Warn("Failed to initialize link verification service",
+				logfields.Error(err),
+				"enabled", false)
+		} else {
+			daemon.linkVerifier = linkVerifier
+			slog.Info("Link verification service initialized",
+				"nats_url", cfg.Daemon.LinkVerification.NATSURL,
+				"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
+		}
 	}
 
 	// Wire up event emitter for build queue (Phase B)
@@ -370,6 +390,13 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		d.liveReload.Shutdown()
 	}
 
+	// Close link verification service
+	if d.linkVerifier != nil {
+		if err := d.linkVerifier.Close(); err != nil {
+			slog.Error("Failed to close link verifier", logfields.Error(err))
+		}
+	}
+
 	// Save state
 	if d.stateManager != nil {
 		if err := d.stateManager.Save(); err != nil {
@@ -470,6 +497,11 @@ func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hu
 		d.updateStateAfterBuild(report)
 	}
 
+	// Trigger link verification after successful builds (low priority background task)
+	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.linkVerifier != nil {
+		go d.verifyLinksAfterBuild(buildID, report)
+	}
+
 	return nil
 }
 
@@ -534,6 +566,121 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 	if err := d.stateManager.Save(); err != nil {
 		slog.Warn("Failed to save state after build", "error", err)
 	}
+}
+
+// verifyLinksAfterBuild runs link verification in the background after a successful build.
+// This is a low-priority task that doesn't block the build pipeline.
+func (d *Daemon) verifyLinksAfterBuild(buildID string, report *hugo.BuildReport) {
+	// Create background context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
+	slog.Info("Starting link verification for build", "build_id", buildID)
+
+	// Collect page metadata from build report
+	pages, err := d.collectPageMetadata(buildID, report)
+	if err != nil {
+		slog.Error("Failed to collect page metadata for link verification",
+			"build_id", buildID,
+			"error", err)
+		return
+	}
+
+	// Verify links
+	if err := d.linkVerifier.VerifyPages(ctx, pages); err != nil {
+		slog.Warn("Link verification encountered errors",
+			"build_id", buildID,
+			"error", err)
+		return
+	}
+
+	slog.Info("Link verification completed successfully", "build_id", buildID)
+}
+
+// collectPageMetadata collects metadata for all pages in the build.
+func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) ([]*linkverify.PageMetadata, error) {
+	outputDir := d.config.Daemon.Storage.OutputDir
+	publicDir := filepath.Join(outputDir, "public")
+
+	var pages []*linkverify.PageMetadata
+
+	// Walk the public directory to find all HTML files
+	err := filepath.Walk(publicDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Only process HTML files
+		if info.IsDir() || !strings.HasSuffix(path, ".html") {
+			return nil
+		}
+
+		// Get relative path from public directory
+		relPath, err := filepath.Rel(publicDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Create basic DocFile structure (we don't have the original here)
+		// The link verifier mostly needs the path information
+		docFile := &docs.DocFile{
+			Path:         path,
+			RelativePath: relPath,
+			Repository:   extractRepoFromPath(relPath),
+			Name:         strings.TrimSuffix(filepath.Base(path), ".html"),
+		}
+
+		// Try to find corresponding content file to extract front matter
+		var frontMatter map[string]interface{}
+		contentPath := filepath.Join(outputDir, "content", strings.TrimSuffix(relPath, ".html")+".md")
+		if contentBytes, err := os.ReadFile(filepath.Clean(contentPath)); err == nil {
+			if fm, err := linkverify.ParseFrontMatter(contentBytes); err == nil {
+				frontMatter = fm
+			}
+		}
+
+		// Build rendered URL
+		renderedURL := d.config.Hugo.BaseURL
+		if !strings.HasSuffix(renderedURL, "/") {
+			renderedURL += "/"
+		}
+		renderedURL += strings.TrimPrefix(relPath, "/")
+
+		page := &linkverify.PageMetadata{
+			DocFile:      docFile,
+			HTMLPath:     path,
+			HugoPath:     contentPath,
+			RenderedPath: relPath,
+			RenderedURL:  renderedURL,
+			FrontMatter:  frontMatter,
+			BaseURL:      d.config.Hugo.BaseURL,
+			BuildID:      buildID,
+			BuildTime:    time.Now(),
+		}
+
+		pages = append(pages, page)
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk public directory: %w", err)
+	}
+
+	slog.Debug("Collected page metadata for link verification",
+		"build_id", buildID,
+		"page_count", len(pages))
+
+	return pages, nil
+}
+
+// extractRepoFromPath attempts to extract repository name from rendered path.
+// Rendered paths typically follow pattern: repo-name/section/file.html
+func extractRepoFromPath(path string) string {
+	parts := strings.Split(filepath.ToSlash(path), "/")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return "unknown"
 }
 
 // Compile-time check that Daemon implements BuildEventEmitter

@@ -1,3 +1,14 @@
+---
+title: "Go Style Guide"
+date: 2025-12-15
+categories:
+  - development
+tags:
+  - style-guide
+  - coding-standards
+  - go
+---
+
 # DocBuilder Go Style Guide
 
 This document defines naming conventions and coding style for the DocBuilder project to ensure consistency across the codebase.

@@ -1,3 +1,14 @@
+---
+title: "Golden Test Implementation"
+date: 2025-12-15
+categories:
+  - testing
+tags:
+  - golden-tests
+  - implementation
+  - testing-strategy
+---
+
 # Golden Test Implementation Summary
 
 ## Overview

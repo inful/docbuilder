@@ -1,3 +1,14 @@
+---
+title: "Pipeline Visualization"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - pipeline
+  - visualization
+  - diagrams
+---
+
 # Pipeline Visualization
 
 The `docbuilder visualize` command provides multiple ways to visualize the transform pipeline, making it easy to understand execution order, stage grouping, and dependency relationships.

@@ -1,3 +1,14 @@
+---
+title: "How To: Add Content Transforms"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - content-transforms
+  - development
+  - customization
+---
+
 # Add Content Transforms
 
 This guide shows you how to add custom transformations to markdown files before Hugo renders them.

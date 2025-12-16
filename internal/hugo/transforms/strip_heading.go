@@ -3,10 +3,14 @@ package transforms
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // stripFirstHeadingTransform removes the first H1 heading from markdown content
 // to avoid duplication with Hugo's title rendering from frontmatter.
+// 
+// EXCEPTION: index.md and README.md files become Hugo section indexes (_index.md)
+// and need their H1 heading as the section title, so we preserve it for those files.
 type stripFirstHeadingTransform struct{}
 
 func (t stripFirstHeadingTransform) Name() string { return "strip_first_heading" }
@@ -34,6 +38,13 @@ func (t stripFirstHeadingTransform) Transform(p PageAdapter) error {
 	pg, ok := p.(*PageShim)
 	if !ok {
 		return fmt.Errorf("strip_first_heading: unexpected page adapter type")
+	}
+
+	// Skip stripping for index.md and README.md files - they become Hugo section indexes
+	// (_index.md) and themes like Relearn require the H1 heading as the section title
+	fileName := strings.ToLower(pg.Doc.Name)
+	if fileName == "index" || fileName == "readme" {
+		return nil
 	}
 
 	// Pattern matches:

@@ -1,3 +1,14 @@
+---
+title: "Architecture Diagrams"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - diagrams
+  - visualization
+---
+
 # Architecture Diagrams
 
 > **⚠️ DEPRECATION NOTICE**: This document is partially outdated and requires significant updates to reflect the current transform-based architecture. Many package references (`cli/`, `pipeline/`, `services/`) no longer exist. The layer view diagram has been updated, but other sections still reference old architecture. See [architecture.md](architecture.md) and [functional-specification.md](../reference/functional-specification.md) for current information.

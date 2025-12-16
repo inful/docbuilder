@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313/
 description: Test documentation site demonstrating View Transitions API integration
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

@@ -1,7 +1,6 @@
 baseURL: http://localhost
 description: Testing automatic _index.md generation for sections
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

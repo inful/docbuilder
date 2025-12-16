@@ -1,3 +1,14 @@
+---
+title: "How To: Run Incremental Builds"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - performance
+  - incremental
+  - builds
+---
+
 # How To: Run Incremental Builds
 
 Incremental builds avoid recloning repositories and only fetch updates, saving time and bandwidth.

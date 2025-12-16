@@ -1,7 +1,6 @@
 baseURL: http://localhost
 description: Testing automatic menu generation from front matter
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

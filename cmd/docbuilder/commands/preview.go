@@ -16,7 +16,7 @@ import (
 type PreviewCmd struct {
 	DocsDir      string `name:"docs-dir" short:"d" help:"Path to local docs directory to watch." default:"./docs"`
 	OutputDir    string `name:"output" short:"o" help:"Output directory for the generated site (defaults to temp)." default:""`
-	Theme        string `name:"theme" help:"Hugo theme to use (hextra or docsy)." default:"hextra"`
+	Theme        string `name:"theme" help:"Hugo theme to use (hextra, docsy, or relearn)." default:"relearn"`
 	Title        string `name:"title" help:"Site title." default:"Local Preview"`
 	BaseURL      string `name:"base-url" help:"Base URL used in Hugo config." default:"http://localhost:1316"`
 	Port         int    `name:"port" help:"Docs server port." default:"1316"`
