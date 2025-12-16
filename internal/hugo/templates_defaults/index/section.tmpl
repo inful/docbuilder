@@ -1,8 +1,12 @@
 {{- if .Subsections -}}
 {{- range .Subsections -}}
-- [{{ titleCase (replaceAll . "-" " ") }}](./{{ lower (replaceAll . " " "-") }}/)
+- <a href="{{ lower (replaceAll . " " "-") }}">{{ titleCase (replaceAll . "-" " ") }}</a>
 {{ end -}}
 {{- end -}}
 {{- range .Files -}}
-- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ lower (replaceAll .Name " " "-") }}/)
+{{- if .IsAsset -}}
+- <a href="{{ lower (replaceAll .Name " " "-") }}.{{ .Extension }}">{{ titleCase (replaceAll .Name "-" " ") }}</a>
+{{- else -}}
+- <a href="{{ lower (replaceAll .Name " " "-") }}">{{ titleCase (replaceAll .Name "-" " ") }}</a>
+{{- end -}}
 {{ end -}}
