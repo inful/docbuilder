@@ -284,6 +284,11 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	duration := job.Duration
 	bq.mu.Unlock()
 
+	slog.Debug("Build job completed",
+		logfields.JobID(job.ID),
+		"has_error", err != nil,
+		"event_emitter_nil", bq.eventEmitter == nil)
+
 	// Emit completion/failure events (Phase B)
 	if bq.eventEmitter != nil {
 		// Always emit build report if available (for both success and failure)
@@ -291,10 +296,17 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 		if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
 			report = job.TypedMeta.BuildReport
 		}
+		slog.Debug("Build queue event emit check",
+			logfields.JobID(job.ID),
+			"emitter_nil", bq.eventEmitter == nil,
+			"typed_meta_nil", job.TypedMeta == nil,
+			"build_report_nil", report == nil)
 		if report != nil {
 			if emitErr := bq.eventEmitter.EmitBuildReport(ctx, job.ID, report); emitErr != nil {
 				slog.Warn("Failed to emit BuildReport event", logfields.JobID(job.ID), logfields.Error(emitErr))
 			}
+		} else {
+			slog.Debug("Skipping EmitBuildReport - report is nil", logfields.JobID(job.ID))
 		}
 
 		if err != nil {
