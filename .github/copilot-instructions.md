@@ -478,6 +478,44 @@ Before completing any task, verify:
 - Check authentication with verbose logging: `-v` flag
 - Test with both public and private repositories
 
+### Debugging Build Failures
+
+When debugging Hugo build failures or investigating content generation issues, use the `--keep-workspace` flag to preserve intermediate build artifacts:
+
+```bash
+# Preserve workspace and staging directories on build failure
+go run ./cmd/docbuilder build -o /tmp/output --keep-workspace -v
+
+# Local mode with workspace preservation (no git required)
+go run ./cmd/docbuilder build -o /tmp/output --docs-dir ./docs --keep-workspace -v
+```
+
+**What gets preserved:**
+- **Git workspace**: `/tmp/docbuilder-{timestamp}/` - Contains cloned repositories
+- **Staging directory**: `{output}_stage` - Hugo site before atomic promotion
+- **All intermediate files**: Discovered docs, generated content, Hugo config
+
+**When to use:**
+- Hugo build errors (ambiguous references, template errors, broken links)
+- Content transformation issues (frontmatter, path collisions)
+- Theme configuration problems
+- Investigating why specific files aren't being included
+
+**Inspection workflow:**
+1. Run build with `--keep-workspace`
+2. On failure, paths to preserved directories are displayed
+3. Inspect Hugo config: `cat {output}_stage/hugo.yaml`
+4. Check content structure: `tree {output}_stage/content/`
+5. Verify frontmatter: `head -n 20 {output}_stage/content/_index.md`
+6. Try manual Hugo build: `cd {output}_stage && hugo`
+
+**Cleanup:**
+Preserved directories are not automatically removed. Clean up manually when done:
+```bash
+rm -rf /tmp/docbuilder-*
+rm -rf /tmp/output_stage
+```
+
 ### Working with Configuration
 - Always test environment variable expansion with `.env` files  
 - Repository names become Hugo content sections - avoid spaces/special chars
