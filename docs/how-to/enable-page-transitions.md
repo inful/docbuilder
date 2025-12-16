@@ -100,7 +100,7 @@ After enabling transitions and rebuilding your site:
 **Transitions not working:**
 - Check browser compatibility (use Chrome 126+ or Safari 18.2+ for testing)
 - Ensure you rebuilt the site after changing configuration
-- In daemon mode, the configuration reload should trigger an automatic rebuild
+- In daemon mode, restart the daemon to apply configuration changes
 - Verify the CSS file exists at `/static/view-transitions.css`
 
 **Interactive elements not working after transition:**

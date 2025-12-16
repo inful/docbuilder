@@ -921,9 +921,8 @@ Register with event store.
 ### Maintenance
 
 **Configuration Updates:**
-- Hot reload daemon config
-- Validate before apply
-- Rollback on error
+- Restart daemon to apply new configuration
+- Validate before restart
 
 **State Management:**
 - State stored in `.docbuilder/`
