@@ -3,17 +3,17 @@ version: "2.0"
 # Fast development config with specific repos (no forge discovery)
 # This avoids the 1+ minute auto-discovery process
 repositories:
-  - url: "https://gitlab.mgmlab.net/sfb/prosjektkandidater.git"
-    name: "Prosjektkandidater"
-    branch: "master"
+  - url: "https://git.home.luguber.info/inful/test-doc.git"
+    name: "test-doc"
+    branch: "main"
     description: "Description"
     paths: ["docs"]
     tags:
-      team: "sfb"
+      team: "someteams"
       type: "internal"
     auth:
-      type: token
-      token: "${GITLAB_TOKEN}"
+      type: "token"
+      token: "${GIT_ACCESS_TOKEN}"
 
 build:
   clone_strategy: auto

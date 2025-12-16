@@ -16,7 +16,7 @@ import (
 // generateHugoConfig creates the Hugo configuration file with Relearn theme
 func (g *Generator) generateHugoConfig() error {
 	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
-	
+
 	// Phase 1: core defaults
 	params := map[string]any{}
 	root := &models.RootConfig{
@@ -28,14 +28,14 @@ func (g *Generator) generateHugoConfig() error {
 		Params:        params,
 		Taxonomies:    g.config.Hugo.Taxonomies,
 	}
-	
+
 	// Apply default markup settings
 	root.EnsureGoldmarkRendererUnsafe()
 	root.EnsureHighlightDefaults()
 
 	// Phase 2: Apply Relearn theme defaults
 	g.applyRelearnThemeDefaults(params)
-	
+
 	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
 		mergeParams(params, g.config.Hugo.Params)
@@ -90,7 +90,7 @@ func (g *Generator) generateHugoConfig() error {
 			"weight":       1,
 		},
 	}
-	
+
 	// Phase 7: Menu configuration (if provided)
 	if g.config.Hugo.Menu != nil {
 		converted := map[string]any{}
@@ -122,7 +122,7 @@ func (g *Generator) generateHugoConfig() error {
 	if err := g.ensureGoModForModules(); err != nil {
 		slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 	}
-	
+
 	slog.Info("Generated Hugo configuration with Relearn theme", logfields.Path(configPath))
 	slog.Debug("Hugo configuration content:\n" + string(data))
 
