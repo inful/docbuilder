@@ -15,17 +15,24 @@ func TestStripFirstHeading_PreservesHeadingForIndexFiles(t *testing.T) {
 		shouldStrip    bool
 	}{
 		{
-			name:           "index.md should preserve H1",
+			name:           "index.md should strip H1 when content starts with H1",
 			fileName:       "index",
 			inputContent:   "# This is a custom index\n\nSome content here.",
-			expectedOutput: "# This is a custom index\n\nSome content here.",
-			shouldStrip:    false,
+			expectedOutput: "Some content here.",
+			shouldStrip:    true,
 		},
 		{
-			name:           "README.md should preserve H1",
+			name:           "README.md should strip H1 when content starts with H1",
 			fileName:       "README",
 			inputContent:   "# Repository README\n\nWelcome text.",
-			expectedOutput: "# Repository README\n\nWelcome text.",
+			expectedOutput: "Welcome text.",
+			shouldStrip:    true,
+		},
+		{
+			name:           "README.md should preserve H1 when text exists before it",
+			fileName:       "README",
+			inputContent:   "Some intro text.\n\n# Repository README\n\nWelcome text.",
+			expectedOutput: "Some intro text.\n\n# Repository README\n\nWelcome text.",
 			shouldStrip:    false,
 		},
 		{
