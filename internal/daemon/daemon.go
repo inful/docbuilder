@@ -48,12 +48,11 @@ type Daemon struct {
 	mu             sync.RWMutex
 
 	// Core components
-	forgeManager  *forge.Manager
-	discovery     *forge.DiscoveryService
-	configWatcher *ConfigWatcher
-	metrics       *MetricsCollector
-	httpServer    *HTTPServer
-	scheduler     *Scheduler
+	forgeManager *forge.Manager
+	discovery    *forge.DiscoveryService
+	metrics      *MetricsCollector
+	httpServer   *HTTPServer
+	scheduler    *Scheduler
 	buildQueue    *BuildQueue
 	stateManager  state.DaemonStateManager
 	liveReload    *LiveReloadHub
@@ -191,15 +190,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		// Non-fatal: projection will start empty
 	}
 
-	// Initialize config watcher if config file path is provided
-	if configFilePath != "" {
-		var err error
-		daemon.configWatcher, err = NewConfigWatcher(configFilePath, daemon)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create config watcher: %w", err)
-		}
-	}
-
 	// Initialize livereload hub (opt-in)
 	if cfg.Build.LiveReload {
 		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
@@ -280,15 +270,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Start scheduler
 	d.scheduler.Start(ctx)
 
-	// Start config watcher if available
-	if d.configWatcher != nil {
-		if err := d.configWatcher.Start(ctx); err != nil {
-			slog.Error("Failed to start config watcher", "error", err)
-		} else {
-			slog.Info("Config watcher started")
-		}
-	}
-
 	d.status.Store(StatusRunning)
 	d.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
 	d.metrics.IncrementCounter("daemon_successful_starts")
@@ -366,12 +347,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	}
 
 	// Stop components in reverse order
-	if d.configWatcher != nil {
-		if err := d.configWatcher.Stop(ctx); err != nil {
-			slog.Error("Failed to stop config watcher", "error", err)
-		}
-	}
-
 	if d.scheduler != nil {
 		d.scheduler.Stop(ctx)
 	}
@@ -863,68 +838,4 @@ func (d *Daemon) GetConfig() *config.Config {
 	return d.config
 }
 
-// ReloadConfig reloads the daemon configuration and restarts affected services
-func (d *Daemon) ReloadConfig(ctx context.Context, newConfig *config.Config) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
 
-	slog.Info("Reloading daemon configuration")
-
-	// Store old config for rollback if needed
-	oldConfig := d.config
-
-	// Update daemon config
-	d.config = newConfig
-
-	// Restart components that depend on configuration
-	if err := d.reloadForgeManager(ctx, oldConfig, newConfig); err != nil {
-		d.config = oldConfig // Rollback
-		return fmt.Errorf("failed to reload forge manager: %w", err)
-	}
-
-	slog.Info("Configuration reloaded successfully")
-
-	// Trigger a rebuild to apply the new configuration
-	// This is done outside the lock to avoid deadlock, so we return immediately
-	// and let the goroutine handle the build trigger
-	go func() {
-		// Use a short delay to ensure config is fully applied
-		time.Sleep(500 * time.Millisecond)
-
-		jobID := d.TriggerBuild()
-		if jobID != "" {
-			slog.Info("Triggered rebuild after config reload", "job_id", jobID)
-		} else {
-			slog.Warn("Failed to trigger rebuild after config reload - daemon may not be running")
-		}
-	}()
-
-	return nil
-}
-
-// reloadForgeManager updates the forge manager with new forge configurations
-func (d *Daemon) reloadForgeManager(_ context.Context, _, newConfig *config.Config) error {
-	// Create new forge manager
-	newForgeManager := forge.NewForgeManager()
-	for _, forgeConfig := range newConfig.Forges {
-		client, err := forge.NewForgeClient(forgeConfig)
-		if err != nil {
-			return fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
-		}
-		newForgeManager.AddForge(forgeConfig, client)
-	}
-
-	// Replace forge manager
-	d.forgeManager = newForgeManager
-
-	// Update discovery service
-	d.discovery = forge.NewDiscoveryService(newForgeManager, newConfig.Filtering)
-
-	// Update discovery runner with new services
-	d.discoveryRunner.UpdateForgeManager(newForgeManager)
-	d.discoveryRunner.UpdateDiscoveryService(d.discovery)
-	d.discoveryRunner.UpdateConfig(newConfig)
-
-	slog.Info("Forge manager reloaded", slog.Int("forge_count", len(newConfig.Forges)))
-	return nil
-}
