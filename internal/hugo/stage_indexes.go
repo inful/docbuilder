@@ -6,6 +6,6 @@ import "context"
 // indexes during content processing. Kept as empty function to maintain build
 // stage compatibility.
 func stageIndexes(_ context.Context, bs *BuildState) error {
-// New pipeline already generates all indexes - nothing to do here
-return nil
+	// New pipeline already generates all indexes - nothing to do here
+	return nil
 }

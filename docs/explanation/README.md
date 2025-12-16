@@ -29,7 +29,7 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 - Core principles (clean architecture, event sourcing, typed state)
 - Detailed package structure and responsibilities
 - Data flow diagrams and sequences
-- Key subsystems deep dive (themes, forges, change detection)
+- Key subsystems deep dive (Relearn configuration, forges, change detection)
 - Extension points and operational considerations
 - Migration status summary
 - **Audience:** Senior engineers, architects, contributors
@@ -116,10 +116,10 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 - [Package Architecture Guide](package-architecture.md#internalfoundationerrors)
 - [ADR-000: Uniform Error Handling](../adr/ADR-000-uniform-error-handling.md)
 
-**Theme System:**
-- [Comprehensive Architecture](comprehensive-architecture.md#1-theme-system)
-- [Architecture Diagrams](architecture-diagrams.md#theme-system)
-- [How-To: Add Theme Support](../how-to/add-theme-support.md)
+**Relearn Configuration:**
+- [Comprehensive Architecture](comprehensive-architecture.md#1-relearn-theme-configuration)
+- [Architecture Diagrams](architecture-diagrams.md#relearn-theme-configuration)
+- [How-To: Use Relearn Theme](../how-to/use-relearn-theme.md)
 
 **Change Detection:**
 - [Comprehensive Architecture](comprehensive-architecture.md#3-change-detection)

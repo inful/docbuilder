@@ -106,7 +106,7 @@ Welcome to the DocBuilder documentation! This documentation follows the [Diátax
 
 - [Theme Customization Tutorial](tutorials/theme-customization.md)
 - [Add Theme Support](how-to/add-theme-support.md)
-- [Theme System Architecture](explanation/comprehensive-architecture.md#1-theme-system)
+- [Relearn Theme Configuration](explanation/comprehensive-architecture.md#1-relearn-theme-configuration)
 
 ### Performance Optimization
 
