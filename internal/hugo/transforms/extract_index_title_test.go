@@ -11,6 +11,7 @@ func TestExtractIndexTitle(t *testing.T) {
 	tests := []struct {
 		name               string
 		fileName           string
+		section            string
 		content            string
 		existingFrontMatter map[string]any
 		expectedTitle      string
@@ -64,6 +65,24 @@ func TestExtractIndexTitle(t *testing.T) {
 			expectedTitle:      "Trimmed Title",
 			shouldAddPatch:     true,
 		},
+		{
+			name:               "index.md with section uses section name as title",
+			fileName:           "index",
+			content:            "# Docs\n\nSome content.",
+			existingFrontMatter: map[string]any{},
+			expectedTitle:      "Vcfretriever",
+			shouldAddPatch:     true,
+			section:            "vcfretriever",
+		},
+		{
+			name:               "README.md with section uses section name as title",
+			fileName:           "README",
+			content:            "# Old Title\n\nWelcome text.",
+			existingFrontMatter: map[string]any{},
+			expectedTitle:      "My Project",
+			shouldAddPatch:     true,
+			section:            "my-project",
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,7 +90,8 @@ func TestExtractIndexTitle(t *testing.T) {
 			// Create a PageShim with the test data
 			shim := &PageShim{
 				Doc: docs.DocFile{
-					Name: tt.fileName,
+					Name:    tt.fileName,
+					Section: tt.section,
 				},
 				Content:             tt.content,
 				OriginalFrontMatter: tt.existingFrontMatter,
