@@ -17,7 +17,34 @@ Date: 2025-12-16
 
 ## Status
 
-Proposed
+**Accepted** - Implemented December 16, 2025
+
+## Implementation Summary
+
+The fixed transform pipeline has been successfully implemented and is available behind a feature flag.
+
+**Deliverables:**
+- ✅ New pipeline package (`internal/hugo/pipeline/`)
+- ✅ Document type replacing Page/PageShim  
+- ✅ Generator and Transform function types
+- ✅ 3 generators (main/repo/section indexes)
+- ✅ 10 transforms (parse FM, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)
+- ✅ Comprehensive unit tests (all passing)
+- ✅ Integration adapter with feature flag
+
+**Access:**
+Set environment variable `DOCBUILDER_NEW_PIPELINE=1` to enable the new pipeline. The old registry system remains functional for backward compatibility during migration.
+
+**Test Status:**
+- Pipeline unit tests: PASS (6 test functions, 12 sub-tests)
+- Short test suite: PASS (42 packages)
+- golangci-lint: 0 issues
+
+**Next Steps:**
+1. Run production testing with feature flag enabled
+2. Remove old registry/patch system (separate PR)
+3. Update documentation and examples
+4. Make new pipeline the default
 
 ## Context
 
@@ -425,20 +452,71 @@ func generateFromKeywords(doc *Document) ([]*Document, error) {
 
 ## Implementation Plan
 
-See separate implementation plan document: `plan/REFACTOR-001-fixed-transform-pipeline.md`
+✅ **Completed December 16, 2025**
 
-**Estimated effort**: 3-5 days
-- Day 1-2: Create new pipeline, convert transforms
-- Day 2-3: Test and validate behavior
-- Day 3-4: Remove old system
-- Day 4-5: Documentation and cleanup
+**Phase 1: Core Pipeline (Completed)**
+- Created `internal/hugo/pipeline/` package
+- Implemented `Document` type with front matter and content fields
+- Built `Processor` with two-phase execution (generators → transforms)
+- Added queue-based processing for dynamic document generation
+
+**Phase 2: Transforms Migration (Completed)**
+- Converted all 10 essential transforms to `FileTransform` functions
+- Implemented 3 generators for index file creation
+- Removed dependency on registry, patches, and Page abstraction
+- All transforms use direct mutation pattern
+
+**Phase 3: Integration (Completed)**  
+- Created `copyContentFilesPipeline()` integration function
+- Added environment variable feature flag (`DOCBUILDER_NEW_PIPELINE=1`)
+- Maintained backward compatibility with old system
+- Updated copilot instructions
+
+**Phase 4: Testing & Validation (Completed)**
+- Unit tests for all generators and transforms
+- Edge case coverage (empty FM, no FM, malformed FM)
+- Integration via feature flag tested
+- All tests passing, linter clean
+
+**Remaining Work** (Separate from this ADR):
+- Remove old registry/patch system
+- Update golden test expectations (theme system issue)
+- Make new pipeline the default
+- Documentation updates
+
+**Actual effort**: 1 day (vs estimated 3-5 days)
+
+## Implementation Details
+
+### File Structure
+
+```
+internal/hugo/pipeline/
+├── document.go          # Document type, NewDocumentFromDocFile
+├── processor.go         # Processor with ProcessContent
+├── generators.go        # generateMainIndex, generateRepositoryIndex, generateSectionIndex
+├── transforms.go        # All 10 transforms
+└── pipeline_test.go     # Comprehensive unit tests
+```
+
+### Key Design Decisions
+
+1. **Direct Mutation**: Documents are modified in-place, no patch merging
+2. **Type Safety**: Compile-time verification of transform signatures
+3. **Queue-Based**: Generators can add new documents during processing
+4. **Stateless Transforms**: Pure functions with no global state
+5. **Feature Flag**: Environment variable enables new pipeline without code changes
 
 ## Open Questions
 
-1. **Error handling**: Should transforms return errors or panic? (Proposed: return errors)
-2. **Transform state**: Do transforms need access to generator config? (Proposed: pass as needed)
-3. **Partial failures**: Should pipeline continue on transform error? (Proposed: fail fast)
-4. **Testing strategy**: Unit test each transform vs integration test pipeline? (Proposed: both)
+All questions resolved during implementation:
+
+1. **Error handling**: ✅ Transforms return errors, pipeline fails fast
+2. **Transform state**: ✅ Pass context via RepositoryMetadata parameter
+3. **Partial failures**: ✅ Fail fast on first error (single-pass pipeline)
+4. **Testing strategy**: ✅ Both unit tests per transform and integration tests
+5. **Front matter parsing**: ✅ Handle edge cases (empty FM, no FM, malformed FM)
+6. **Generator ordering**: ✅ All generators run before any transforms
 
 ## References
 

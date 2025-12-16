@@ -17,8 +17,20 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// copyContentFiles copies documentation files to Hugo content directory
+// copyContentFiles copies documentation files to Hugo content directory.
+// Supports both legacy registry-based pipeline and new fixed pipeline.
 func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFile) error {
+	// Check for new pipeline flag (environment variable for testing)
+	useNewPipeline := os.Getenv("DOCBUILDER_NEW_PIPELINE") == "1"
+
+	if useNewPipeline {
+		slog.Info("Using NEW fixed transform pipeline (ADR-003)")
+		return g.copyContentFilesPipeline(ctx, docFiles)
+	}
+
+	slog.Debug("Using legacy registry-based transform pipeline")
+
+	// Legacy pipeline implementation follows...
 	// Validate transform pipeline before execution
 	if err := g.ValidateTransformPipeline(); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrContentTransformFailed, err)
