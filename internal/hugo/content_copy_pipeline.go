@@ -119,6 +119,48 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 	slog.Info("Copied all content files using pipeline",
 		slog.Int("count", len(processedDocs)))
 
+	// Generate and write static assets (e.g., View Transitions)
+	if err := g.generateStaticAssets(processor); err != nil {
+		return fmt.Errorf("failed to generate static assets: %w", err)
+	}
+
+	return nil
+}
+
+// generateStaticAssets generates and writes static assets using pipeline generators.
+func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
+	assets, err := processor.GenerateStaticAssets()
+	if err != nil {
+		return fmt.Errorf("static asset generation failed: %w", err)
+	}
+
+	if len(assets) == 0 {
+		return nil
+	}
+
+	slog.Info("Writing static assets", slog.Int("count", len(assets)))
+
+	for _, asset := range assets {
+		outputPath := filepath.Join(g.buildRoot(), asset.Path)
+
+		// Create directory if needed
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+			return fmt.Errorf("%w: failed to create directory for %s: %w",
+				herrors.ErrContentWriteFailed, outputPath, err)
+		}
+
+		// Write asset file
+		// #nosec G306 -- static assets are public files
+		if err := os.WriteFile(outputPath, asset.Content, 0o644); err != nil {
+			return fmt.Errorf("%w: failed to write asset %s: %w",
+				herrors.ErrContentWriteFailed, outputPath, err)
+		}
+
+		slog.Debug("Wrote static asset",
+			slog.String("path", asset.Path),
+			slog.Int("bytes", len(asset.Content)))
+	}
+
 	return nil
 }
 
