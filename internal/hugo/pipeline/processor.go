@@ -10,17 +10,19 @@ import (
 // Processor runs the complete content processing pipeline.
 // It coordinates generators (create missing files) and transforms (modify content).
 type Processor struct {
-	config     *config.Config
-	generators []FileGenerator
-	transforms []FileTransform
+	config              *config.Config
+	generators          []FileGenerator
+	transforms          []FileTransform
+	staticAssetGenerators []StaticAssetGenerator
 }
 
 // NewProcessor creates a new pipeline processor with default generators and transforms.
 func NewProcessor(cfg *config.Config) *Processor {
 	p := &Processor{
-		config:     cfg,
-		generators: defaultGenerators(),
-		transforms: defaultTransforms(cfg),
+		config:                cfg,
+		generators:            defaultGenerators(),
+		transforms:            defaultTransforms(cfg),
+		staticAssetGenerators: defaultStaticAssetGenerators(),
 	}
 	return p
 }
@@ -146,6 +148,33 @@ func (p *Processor) WithTransforms(transforms []FileTransform) *Processor {
 	return p
 }
 
+// GenerateStaticAssets generates all static assets based on configuration.
+// Returns a list of assets to be written to the Hugo site root.
+func (p *Processor) GenerateStaticAssets() ([]*StaticAsset, error) {
+	slog.Info("Pipeline: Generating static assets")
+
+	ctx := &GenerationContext{
+		Config: p.config,
+	}
+
+	var allAssets []*StaticAsset
+	for i, generator := range p.staticAssetGenerators {
+		assets, err := generator(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("static asset generator %d failed: %w", i, err)
+		}
+		if len(assets) > 0 {
+			slog.Debug("Static asset generator created assets",
+				slog.Int("count", len(assets)),
+				slog.Int("generator", i))
+		}
+		allAssets = append(allAssets, assets...)
+	}
+
+	slog.Info("Pipeline: Static asset generation complete", slog.Int("total", len(allAssets)))
+	return allAssets, nil
+}
+
 // defaultGenerators returns the standard set of file generators.
 // Order matters: main index → repository indexes → section indexes.
 func defaultGenerators() []FileGenerator {
@@ -171,5 +200,12 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 		addRepositoryMetadata(cfg), // 9. Add repo/commit/source metadata
 		addEditLink(cfg),           // 10. Generate edit URL
 		serializeDocument,          // 11. Serialize to final bytes (FM + content)
+	}
+}
+
+// defaultStaticAssetGenerators returns the standard set of static asset generators.
+func defaultStaticAssetGenerators() []StaticAssetGenerator {
+	return []StaticAssetGenerator{
+		generateViewTransitionsAssets, // Generate View Transitions API assets if enabled
 	}
 }

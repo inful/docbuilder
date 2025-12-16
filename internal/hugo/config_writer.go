@@ -212,6 +212,11 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 			"enable": true,
 		}
 	}
+
+	// View Transitions API support
+	if g.config.Hugo.EnablePageTransitions {
+		params["enable_transitions"] = true
+	}
 }
 
 // collectVersionMetadata collects version information from versioned repositories
