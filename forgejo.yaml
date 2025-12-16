@@ -1,0 +1,52 @@
+version: "2.0"
+
+daemon:
+  http:
+    docs_port: 8080
+    admin_port: 8081
+    webhook_port: 8082
+  sync:
+    schedule: "*/5 * * * *"  # Every 5 minutes
+    queue_size: 100
+    concurrent_builds: 3
+  storage:
+    repo_cache_dir: "./daemon-data/repos"
+
+forges:
+  - name: "luguber"
+    type: "forgejo"
+    api_url: "https://git.home.luguber.info/api/v1"
+    base_url: "https://git.home.luguber.info"
+    auth:
+      type: "token"
+      token: "${LUGUBER_TOKEN}"
+
+filtering:
+  # Relaxed filtering: discover all repositories the user can read.
+  # Leave include_patterns empty to avoid accidental exclusion.
+  required_paths: []
+  include_patterns: []
+  # Keep only clearly unwanted paths; patterns apply to file discovery, not repo names.
+  exclude_patterns: ["**/node_modules/**", "**/.git/**"]
+
+versioning:
+  strategy: "branches_only"
+  max_versions_per_repo: 15
+
+hugo:
+  title: "Updated Documentation Hub"
+  description: "Automated documentation from multiple repositories (hot-reloaded)"
+  base_url: "http://localhost:8080"
+  theme: "hextra"
+
+monitoring:
+  health:
+    enabled: true
+    path: "/health"
+  metrics:
+    enabled: true
+    path: "/metrics"
+
+output:
+  directory: "./site"
+  clean: true

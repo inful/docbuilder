@@ -1,0 +1,41 @@
+version: "2.0"
+
+# Fast development config with specific repos (no forge discovery)
+# This avoids the 1+ minute auto-discovery process
+repositories:
+  - url: "https://gitlab.mgmlab.net/sfb/prosjektkandidater.git"
+    name: "Prosjektkandidater"
+    branch: "master"
+    description: "Description"
+    paths: ["docs"]
+    tags:
+      team: "sfb"
+      type: "internal"
+    auth:
+      type: token
+      token: "${GITLAB_TOKEN}"
+
+build:
+  clone_strategy: auto
+  clone_concurrency: 2
+  shallow_depth: 10
+  prune_non_doc_paths: false  # Keep everything to see images
+  prune_allow:
+    - LICENSE*
+    - README.*
+
+hugo:
+  title: "Documentation Hub (Dev)"
+  description: "Development documentation site"
+  base_url: "http://localhost:8080/"
+  theme: hextra
+  params:
+    page:
+      width: full
+
+output:
+  directory: "/tmp/dev-site"
+  clean: true
+daemon:
+  storage:
+    repo_cache_dir: /tmp/dev-var/lib/docbuilder

@@ -14,9 +14,9 @@ func TestRewriteImagePaths(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			name:     "rewrite relative image path in regular file",
-			fileName: "gitlab_guide",
-			content:  "![alt text](./images/screenshot.png)",
+			name:           "rewrite relative image path in regular file",
+			fileName:       "gitlab_guide",
+			content:        "![alt text](./images/screenshot.png)",
 			expectedOutput: "![alt text](../images/screenshot.png)",
 		},
 		{
@@ -32,27 +32,27 @@ Some text
 ![image2](../images/img2.jpg)`,
 		},
 		{
-			name:     "index file should not rewrite paths",
-			fileName: "index",
-			content:  "![alt](./images/screenshot.png)",
+			name:           "index file should not rewrite paths",
+			fileName:       "index",
+			content:        "![alt](./images/screenshot.png)",
 			expectedOutput: "![alt](./images/screenshot.png)",
 		},
 		{
-			name:     "README file should not rewrite paths",
-			fileName: "README",
-			content:  "![alt](./images/screenshot.png)",
+			name:           "README file should not rewrite paths",
+			fileName:       "README",
+			content:        "![alt](./images/screenshot.png)",
 			expectedOutput: "![alt](./images/screenshot.png)",
 		},
 		{
-			name:     "already relative path with ../ stays as is",
-			fileName: "guide",
-			content:  "![alt](../images/screenshot.png)",
+			name:           "already relative path with ../ stays as is",
+			fileName:       "guide",
+			content:        "![alt](../images/screenshot.png)",
 			expectedOutput: "![alt](../images/screenshot.png)",
 		},
 		{
-			name:     "markdown link should not be changed",
-			fileName: "guide",
-			content:  "[link text](./other-page.md)",
+			name:           "markdown link should not be changed",
+			fileName:       "guide",
+			content:        "[link text](./other-page.md)",
 			expectedOutput: "[link text](./other-page.md)",
 		},
 		{
@@ -78,21 +78,21 @@ Some text
 ![svg](../img/test.svg)`,
 		},
 		{
-			name:     "image with complex alt text",
-			fileName: "guide",
-			content:  "![Picture showing where to find Code and Branches in the left side menu.](./images/1_1_selecting_branches.png)",
+			name:           "image with complex alt text",
+			fileName:       "guide",
+			content:        "![Picture showing where to find Code and Branches in the left side menu.](./images/1_1_selecting_branches.png)",
 			expectedOutput: "![Picture showing where to find Code and Branches in the left side menu.](../images/1_1_selecting_branches.png)",
 		},
 		{
-			name:     "no images to rewrite",
-			fileName: "guide",
-			content:  "Just some plain text without any images",
+			name:           "no images to rewrite",
+			fileName:       "guide",
+			content:        "Just some plain text without any images",
 			expectedOutput: "Just some plain text without any images",
 		},
 		{
-			name:     "mixed case filename should be lowercased",
-			fileName: "guide",
-			content:  "![alt text](./images/5_2_MR_ready.png)",
+			name:           "mixed case filename should be lowercased",
+			fileName:       "guide",
+			content:        "![alt text](./images/5_2_MR_ready.png)",
 			expectedOutput: "![alt text](../images/5_2_mr_ready.png)",
 		},
 		{

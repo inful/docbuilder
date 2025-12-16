@@ -28,6 +28,11 @@ func (d *HeuristicDetector) Detect(ctx DetectionContext) DetectionResult {
 		return DetectionResult{Found: false}
 	}
 
+	// Skip local file paths (relative or absolute) - they have no web edit URL
+	if d.isLocalPath(cloneURL) {
+		return DetectionResult{Found: false}
+	}
+
 	// Try different heuristic patterns
 	forgeType := d.detectForgeTypeFromHost(cloneURL)
 	if forgeType == "" {
@@ -126,4 +131,22 @@ func (d *HeuristicDetector) determineBaseURL(cloneURL string, forgeType config.F
 	default:
 		return ""
 	}
+}
+
+// isLocalPath checks if a URL is a local file path (not a remote git URL).
+// Returns true for relative paths (./, ../, bare paths) and absolute paths (/, C:\, /home/...).
+func (d *HeuristicDetector) isLocalPath(urlStr string) bool {
+	// Check for URL schemes that indicate remote repositories
+	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") {
+		return false
+	}
+	if strings.HasPrefix(urlStr, "git@") || strings.HasPrefix(urlStr, "ssh://") {
+		return false
+	}
+	if strings.HasPrefix(urlStr, "git://") {
+		return false
+	}
+
+	// If it doesn't have a remote scheme, it's a local path
+	return true
 }

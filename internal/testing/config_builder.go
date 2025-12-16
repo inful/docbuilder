@@ -22,7 +22,6 @@ func NewConfigBuilder(t *testing.T) *ConfigBuilder {
 			Version: "2.0",
 			Hugo: config.HugoConfig{
 				Title: "Test Documentation",
-				Theme: "hextra",
 			},
 			Output: config.OutputConfig{
 				Directory: filepath.Join(os.TempDir(), "docbuilder-test-output"),
@@ -46,7 +45,6 @@ func (cb *ConfigBuilder) WithTitle(title string) *ConfigBuilder {
 
 // WithTheme sets the Hugo theme
 func (cb *ConfigBuilder) WithTheme(theme string) *ConfigBuilder {
-	cb.config.Hugo.Theme = theme
 	return cb
 }
 

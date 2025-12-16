@@ -74,9 +74,9 @@ func (t rewriteImagePathsTransform) rewriteImagePaths(content, fileName string) 
 			return match
 		}
 
-		prefix := parts[1]  // ![alt](
-		path := parts[2]    // ./images/file.png or ../images/file.png
-		suffix := parts[3]  // )
+		prefix := parts[1] // ![alt](
+		path := parts[2]   // ./images/file.png or ../images/file.png
+		suffix := parts[3] // )
 
 		// Adjust relative paths
 		// ./images/file.png -> ../images/file.png (go up one level from page bundle)

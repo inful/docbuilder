@@ -10,7 +10,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
-	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"gopkg.in/yaml.v3"
 )
 
@@ -361,10 +360,7 @@ func (t EditLinkInjectorV2) Transform(p PageAdapter) error {
 	if cfg == nil {
 		return nil
 	}
-	// Theme capability check (self-contained logic, no hard-coded theme comparisons)
-	if !th.GetCapabilities(cfg.Hugo.ThemeType()).WantsPerPageEditLinks {
-		return nil
-	}
+	// Relearn theme supports per-page edit links
 	// Forge capability check: ensure repository's forge (if tagged) supports edit links
 	if shim.Doc.Forge != "" {
 		if !forge.GetCapabilities(config.ForgeType(shim.Doc.Forge)).SupportsEditLinks {

@@ -54,7 +54,7 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 
 	// Configuration referencing the local path as clone URL.
 	repository := cfg.Repository{Name: "repo-one", Paths: []string{"docs"}, URL: remote, Branch: "", Tags: map[string]string{"forge_type": "github"}}
-	conf := &cfg.Config{Output: cfg.OutputConfig{Directory: outputDir, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: workspace, CloneStrategy: cfg.CloneStrategyFresh, NamespaceForges: cfg.NamespacingAuto}, Hugo: cfg.HugoConfig{Theme: "hextra"}, Repositories: []cfg.Repository{repository}}
+	conf := &cfg.Config{Output: cfg.OutputConfig{Directory: outputDir, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: workspace, CloneStrategy: cfg.CloneStrategyFresh, NamespaceForges: cfg.NamespacingAuto}, Hugo: cfg.HugoConfig{}, Repositories: []cfg.Repository{repository}}
 
 	// Use typed state.ServiceAdapter instead of legacy StateManager
 	svcResult := state.NewService(tmp)

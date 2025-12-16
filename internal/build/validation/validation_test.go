@@ -63,7 +63,7 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 }
 
 func makeBaseConfig(out string) *cfg.Config {
-	return &cfg.Config{Output: cfg.OutputConfig{Directory: out}, Hugo: cfg.HugoConfig{Theme: "hextra"}}
+	return &cfg.Config{Output: cfg.OutputConfig{Directory: out}, Hugo: cfg.HugoConfig{}}
 }
 
 func setupValidTestEnvironment(t *testing.T, out string) {

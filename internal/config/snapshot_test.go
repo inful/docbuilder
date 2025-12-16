@@ -4,7 +4,7 @@ import "testing"
 
 // helper to build minimal config
 func baseCfg() *Config {
-	return &Config{Version: "2.0", Hugo: HugoConfig{Theme: "hextra", BaseURL: "https://example", Title: "Docs"}}
+	return &Config{Version: "2.0", Hugo: HugoConfig{ BaseURL: "https://example", Title: "Docs"}}
 }
 
 func TestSnapshotStableAcrossNormalizationVariants(t *testing.T) {

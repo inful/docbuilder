@@ -46,8 +46,7 @@ func TestTransformFiltering_EnableDisable(t *testing.T) {
 	tr.Register(marker)
 
 	// Build config disabling marker
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Filtering", Theme: "hextra", Transforms: &config.HugoTransforms{Disable: []string{"_marker"}}}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"org"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
-	g := NewGenerator(cfg, t.TempDir())
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/", Transforms: &config.HugoTransforms{Disable: []string{"_marker"}}}}, t.TempDir())
 	df := docs.DocFile{Name: "page", Repository: "repo1", RelativePath: "docs/page.md", Content: []byte("# Title\n")}
 	if err := g.copyContentFiles(context.Background(), []docs.DocFile{df}); err != nil {
 		t.Fatalf("copyContentFiles: %v", err)
@@ -63,7 +62,7 @@ func TestTransformFiltering_EnableDisable(t *testing.T) {
 	}
 
 	// Now enable only marker (restrict others) – expect marker appears and basic serialization still happens.
-	cfg2 := &config.Config{Hugo: config.HugoConfig{Title: "Filtering", Theme: "hextra", Transforms: &config.HugoTransforms{Enable: []string{"_marker", "front_matter_parser", "front_matter_builder_v2", "front_matter_merge", "front_matter_serialize"}}}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"org"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
+	cfg2 := &config.Config{Hugo: config.HugoConfig{Title: "Filtering", Transforms: &config.HugoTransforms{Enable: []string{"_marker", "front_matter_parser", "front_matter_builder_v2", "front_matter_merge", "front_matter_serialize"}}}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"org"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
 	g2 := NewGenerator(cfg2, t.TempDir())
 	if err := g2.copyContentFiles(context.Background(), []docs.DocFile{df}); err != nil {
 		t.Fatalf("copyContentFiles(2): %v", err)

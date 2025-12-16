@@ -53,17 +53,14 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 				Directory: "./site",
 			},
 			Hugo: config.HugoConfig{
-				BaseURL: "https://docs.company.com",
-				Theme:   "hextra",
-				Title:   "Company Documentation",
-			},
-		}
+				BaseURL: "https://docs.company.com",			Title:   "Company Documentation",
+		},
+	}
 
-		// Simulate CLI discovery operation
-		manager := NewForgeManager()
-		manager.AddForge(githubConfig, github)
-		manager.AddForge(gitlabConfig, gitlab)
-
+	// Simulate CLI discovery operation
+	manager := NewForgeManager()
+	manager.AddForge(githubConfig, github)
+	manager.AddForge(gitlabConfig, gitlab)
 		discovery := NewDiscoveryService(manager, cliConfig.Filtering)
 		ctx := context.Background()
 
@@ -304,15 +301,14 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 			},
 			Hugo: config.HugoConfig{
 				BaseURL: "https://docs.company.internal",
-				Theme:   "docsy",
-				Title:   "Company Documentation Hub",
-			},
-		}
+			Title:   "Company Documentation Hub",
+		},
+	}
 
-		// Test multi-platform discovery
-		manager := NewForgeManager()
-		manager.AddForge(githubConfig, github)
-		manager.AddForge(gitlabConfig, gitlab)
+	// Test multi-platform discovery
+	manager := NewForgeManager()
+	manager.AddForge(githubConfig, github)
+	manager.AddForge(gitlabConfig, gitlab)
 		manager.AddForge(forgejoConfig, forgejo)
 
 		discovery := NewDiscoveryService(manager, cliConfig.Filtering)
@@ -368,8 +364,8 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		if cliConfig.Hugo.BaseURL == "" {
 			t.Error("Hugo configuration missing base URL")
 		}
-		if cliConfig.Hugo.Theme == "" {
-			t.Error("Hugo configuration missing theme")
+		if cliConfig.Hugo.Title == "" {
+			t.Error("Hugo configuration missing title")
 		}
 
 		t.Logf("✓ CLI multi-platform integration complete - %d platforms, %d repos",

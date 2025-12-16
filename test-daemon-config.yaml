@@ -1,0 +1,46 @@
+version: "2.0"
+
+daemon:
+  http:
+    docs_port: 9080
+    admin_port: 9081
+    webhook_port: 9082
+  sync:
+    interval_minutes: 30
+    queue_size: 100
+    concurrent_builds: 2
+  storage:
+    repo_cache_dir: ./test-repositories
+
+forges:
+  - name: local-test
+    type: github
+    api_url: https://api.github.com
+    base_url: https://github.com
+    organizations: ["octocat"]
+    auth:
+      type: token
+      token: "fake-token"
+
+versioning:
+  strategy: branches_and_tags
+  default_branch_only: true
+  max_versions_per_repo: 5
+
+hugo:
+  title: "Test Documentation Site"
+  description: "DocBuilder V2 Test Site"
+  theme: "hextra"
+  base_url: "http://localhost:8080"
+
+monitoring:
+  health:
+    enabled: true
+    path: "/health"
+  metrics:
+    enabled: true
+    path: "/metrics"
+
+output:
+  directory: "./test-site"
+  clean: true

@@ -279,7 +279,6 @@ func createCLITestConfiguration(github, gitlab, forgejo *EnhancedMockForgeClient
 			WorkspaceDir:     "/tmp/docbuilder-test-output",
 		},
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Enterprise Documentation Hub",
 		},
 	}

@@ -63,7 +63,6 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 	cfg.Hugo.Title = g.Title
 	cfg.Hugo.Description = "Generated documentation"
 	cfg.Hugo.BaseURL = g.BaseURL
-	cfg.Hugo.Theme = g.Theme
 
 	if g.Render {
 		cfg.Build.RenderMode = config.RenderModeAlways

@@ -51,7 +51,7 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	// Use absolute path as clone URL (supported by go-git for local clone).
 	// Leave Branch empty to allow cloning default branch created by PlainInit (typically 'master').
 	repo := cfg.Repository{Name: "repoA", Paths: []string{"docs"}, URL: repoDir, Branch: ""}
-	config := &cfg.Config{Output: cfg.OutputConfig{Directory: out, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: ws, CloneStrategy: cfg.CloneStrategyFresh}, Hugo: cfg.HugoConfig{Theme: "hextra"}, Repositories: []cfg.Repository{repo}}
+	config := &cfg.Config{Output: cfg.OutputConfig{Directory: out, Clean: true}, Build: cfg.BuildConfig{WorkspaceDir: ws, CloneStrategy: cfg.CloneStrategyFresh}, Hugo: cfg.HugoConfig{}, Repositories: []cfg.Repository{repo}}
 
 	// Use typed state.ServiceAdapter instead of legacy StateManager
 	svcResult := state.NewService(out)

@@ -27,7 +27,6 @@ func TestGenerateSite_Smoke(t *testing.T) {
 
 	testRepo := repositories[0]
 	cfg := &config.Config{
-		Hugo:         config.HugoConfig{Title: "TestForge Integration Site", Theme: "hextra"},
 		Repositories: []config.Repository{testRepo},
 	}
 
@@ -109,7 +108,6 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
 			Title:   "TestForge Multi-Repository Documentation",
-			Theme:   "hextra",
 			BaseURL: "https://testforge-docs.example.com",
 		},
 		Repositories: repositories,

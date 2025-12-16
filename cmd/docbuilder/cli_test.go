@@ -102,12 +102,7 @@ func (env *MockCLIEnvironment) WithTestConfiguration() *MockCLIEnvironment {
 		},
 		Hugo: config.HugoConfig{
 			BaseURL: "https://docs.company.internal",
-			Theme:   "hextra",
-			Title:   "Company Documentation Hub",
-			Params: map[string]interface{}{
-				"author": "DocBuilder CLI Test",
-				"logo":   "/images/logo.png",
-			},
+
 		},
 	}
 

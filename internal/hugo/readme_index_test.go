@@ -15,9 +15,8 @@ func TestReadmeAsRepositoryIndex(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test Site"
-	cfg.Hugo.Theme = "hextra"
 
-	gen := hugo.NewGenerator(cfg, tmpDir)
+	gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 	// Create a test README file
 	readmeContent := "# My Repository\n\nThis is my custom README content."
@@ -65,9 +64,8 @@ func TestIndexMdAsRepositoryIndex(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test Site"
-	cfg.Hugo.Theme = "hextra"
 
-	gen := hugo.NewGenerator(cfg, tmpDir)
+	gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 	// Create a test index.md file (not README)
 	indexContent := "# Custom Repository Index\n\nThis is my custom index.md at repository level."
@@ -117,8 +115,7 @@ func TestRepositoryIndexPrecedence(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfg := &config.Config{}
 		cfg.Hugo.Title = "Test Site"
-		cfg.Hugo.Theme = "hextra"
-		gen := hugo.NewGenerator(cfg, tmpDir)
+		gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 		files := []docs.DocFile{
 			{
@@ -161,8 +158,7 @@ func TestRepositoryIndexPrecedence(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfg := &config.Config{}
 		cfg.Hugo.Title = "Test Site"
-		cfg.Hugo.Theme = "hextra"
-		gen := hugo.NewGenerator(cfg, tmpDir)
+		gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 		files := []docs.DocFile{
 			{
@@ -197,8 +193,7 @@ func TestRepositoryIndexPrecedence(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfg := &config.Config{}
 		cfg.Hugo.Title = "Test Site"
-		cfg.Hugo.Theme = "hextra"
-		gen := hugo.NewGenerator(cfg, tmpDir)
+		gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 		files := []docs.DocFile{
 			{
@@ -242,8 +237,7 @@ func TestRepositoryIndexPrecedence(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfg := &config.Config{}
 		cfg.Hugo.Title = "Test Site"
-		cfg.Hugo.Theme = "hextra"
-		gen := hugo.NewGenerator(cfg, tmpDir)
+		gen := hugo.NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmpDir)
 
 		files := []docs.DocFile{
 			{

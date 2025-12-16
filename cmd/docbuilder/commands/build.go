@@ -19,7 +19,6 @@ type BuildCmd struct {
 	Incremental   bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
 	RenderMode    string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
 	DocsDir       string `name:"docs-dir" short:"d" help:"Path to local docs directory (used when no config file provided)" default:"./docs"`
-	Theme         string `name:"theme" help:"Hugo theme to use when no config provided (hextra, docsy, or relearn)" default:"relearn"`
 	Title         string `name:"title" help:"Site title when no config provided" default:"Documentation"`
 	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
@@ -36,8 +35,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 		useLocalMode = true
 		slog.Info("No config file found, using local docs directory mode",
 			"docs_dir", b.DocsDir,
-			"output", b.Output,
-			"theme", b.Theme)
+			"output", b.Output)
 	} else {
 		cfg, err = config.Load(root.Config)
 		if err != nil {
@@ -217,8 +215,7 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 
 	slog.Info("Building from local directory",
 		"docs_dir", docsPath,
-		"output", outputDir,
-		"theme", cfg.Hugo.Theme)
+		"output", outputDir)
 
 	// Prepare discovery
 	repos := []config.Repository{{
@@ -276,8 +273,6 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 	cfg.Hugo.Title = b.Title
 	cfg.Hugo.Description = "Documentation built with DocBuilder"
 	cfg.Hugo.BaseURL = "/"
-	cfg.Hugo.Theme = b.Theme
-	cfg.Hugo.EnableTransitions = true
 	
 	cfg.Build.RenderMode = config.RenderModeAlways
 	

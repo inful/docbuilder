@@ -40,7 +40,7 @@ func testDocFile() docs.DocFile {
 }
 
 func TestEditLinkInjectorV2_HextraAdds(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
+	cfg := &config.Config{Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	SetGeneratorProvider(func() any { return dummyGenerator{cfg: cfg, resolver: stubResolver{}} })
 	doc := testDocFile()
 	shim := &PageShim{Doc: doc}
@@ -76,7 +76,7 @@ func TestEditLinkInjectorV2_HextraAdds(t *testing.T) {
 }
 
 func TestEditLinkInjectorV2_RespectsExisting(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
+	cfg := &config.Config{Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	SetGeneratorProvider(func() any { return dummyGenerator{cfg: cfg, resolver: stubResolver{}} })
 	doc := testDocFile()
 	shim := &PageShim{Doc: doc, OriginalFrontMatter: map[string]any{"editURL": "https://custom/edit"}, HadFrontMatter: true}
@@ -94,7 +94,7 @@ func TestEditLinkInjectorV2_RespectsExisting(t *testing.T) {
 }
 
 func TestEditLinkInjectorV2_DocsyAlsoGeneratesEditLinks(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "docsy"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
+	cfg := &config.Config{Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	SetGeneratorProvider(func() any { return dummyGenerator{cfg: cfg, resolver: stubResolver{}} })
 	doc := testDocFile()
 	shim := &PageShim{Doc: doc}

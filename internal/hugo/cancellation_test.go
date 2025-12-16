@@ -10,8 +10,7 @@ import (
 
 // TestGenerationCancelledEarly ensures that a canceled context aborts before running stages.
 func TestGenerationCancelledEarly(t *testing.T) {
-	cfg := &config.Config{}
-	gen := NewGenerator(cfg, t.TempDir())
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately

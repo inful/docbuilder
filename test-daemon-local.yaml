@@ -1,0 +1,27 @@
+version: "2.0"
+
+# Test daemon with local repository (no auth needed)
+repositories:
+  - url: "/workspaces/docbuilder"
+    name: "docbuilder"
+    branch: "main"
+    description: "DocBuilder documentation"
+    paths: ["docs"]
+
+build:
+  clone_strategy: auto
+  render_mode: always
+
+hugo:
+  title: "Test Documentation"
+  description: "Test daemon documentation site"
+  base_url: "http://localhost:8080/"
+  theme: hextra
+
+output:
+  directory: "/tmp/test-daemon-site"
+  clean: true
+
+daemon:
+  storage:
+    repo_cache_dir: /tmp/test-daemon-var/lib/docbuilder

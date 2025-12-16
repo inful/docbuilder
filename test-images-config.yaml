@@ -1,0 +1,37 @@
+version: "2.0"
+
+# Test config with local repo containing images
+repositories:
+  - url: "/tmp/test-docs-with-images"
+    name: "test-docs"
+    branch: "master"
+    paths: ["docs"]
+    auth:
+      type: none
+
+# Dummy forge to satisfy validation
+forges:
+  - name: "dummy"
+    type: "gitlab"
+    api_url: "https://gitlab.com/api/v4"
+    base_url: "https://gitlab.com"
+    organizations: ["dummy"]
+    auto_discover: false
+    auth:
+      type: none
+
+build:
+  clone_strategy: auto
+  clone_concurrency: 1
+  shallow_depth: 10
+  prune_non_doc_paths: false
+
+hugo:
+  title: "Test Docs with Images"
+  description: "Testing asset discovery and copying"
+  base_url: "http://localhost:8080/"
+  theme: hextra
+
+output:
+  directory: "./test-site"
+  clean: true

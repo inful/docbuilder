@@ -14,8 +14,7 @@ import (
 // TestReportPersistence_Success ensures report files are written on success.
 func TestReportPersistence_Success(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	cfg.Build.RenderMode = "always"                             // Enable rendering so StaticRendered is set
+	cfg := &config.Config{Build: config.BuildConfig{RenderMode: "always"}}
 	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	files := []docs.DocFile{{Repository: "r", Name: "p", RelativePath: "p.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Hello\n")}}
 	if err := gen.GenerateSite(files); err != nil {
@@ -41,8 +40,7 @@ func TestReportPersistence_Success(t *testing.T) {
 // TestReportPersistence_FailureDoesNotOverwrite verifies that a failed build leaves existing report intact.
 func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	cfg.Build.RenderMode = "always"                             // Enable rendering so StaticRendered is set
+	cfg := &config.Config{Build: config.BuildConfig{RenderMode: "always"}}
 	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	baseFiles := []docs.DocFile{{Repository: "r", Name: "base", RelativePath: "base.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Base\n")}}
 	if err := gen.GenerateSite(baseFiles); err != nil {
@@ -57,7 +55,7 @@ func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	// Now attempt a canceled build
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	gen2 := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	if _, err := gen2.GenerateSiteWithReportContext(ctx, []docs.DocFile{{Repository: "r", Name: "fail", RelativePath: "fail.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Fail\n")}}); err == nil {
 		t.Fatalf("expected cancellation error")
 	}

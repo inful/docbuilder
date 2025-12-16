@@ -129,38 +129,11 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		github.AddOrganization(CreateMockGitHubOrg("enterprise"))
 		github.AddRepository(CreateMockGitHubRepo("enterprise", "docs-site", true, false, false, false))
 
-		// Configure Hugo generator settings
-		hugoConfig := config.HugoConfig{
-			BaseURL: "https://docs.example.com",
-			Theme:   "hextra",
-			Title:   "Enterprise Documentation Hub",
-			Params: map[string]interface{}{
-				"author":      "DocBuilder Integration Test",
-				"description": "Comprehensive documentation from multiple forges",
-				"repo":        "https://github.com/enterprise/docs",
-				"edit_page":   true,
-				"search": map[string]interface{}{
-					"enabled": true,
-					"type":    "flexsearch",
-				},
-			},
-		}
-
 		// Test Hugo configuration generation with forge integration
 		ctx := context.Background()
 		repos, err := github.ListRepositories(ctx, []string{})
 		if err != nil {
 			t.Fatalf("Failed to get repositories for Hugo integration: %v", err)
-		}
-
-		// Test theme-specific configuration
-		if hugoConfig.Theme == "hextra" {
-			// Verify Hextra-specific parameters
-			if search, ok := hugoConfig.Params["search"].(map[string]interface{}); ok {
-				if enabled, ok := search["enabled"].(bool); ok && enabled {
-					t.Log("✓ Hextra search configuration validated")
-				}
-			}
 		}
 
 		// Test forge integration with Hugo parameters
@@ -236,7 +209,6 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		if len(docsRepos) > 0 {
 			// Simulate Hugo site generation with integrated content
 			hugoConfig := config.HugoConfig{
-				Theme: "hextra",
 				Title: "Integrated Documentation Site",
 				Params: map[string]interface{}{
 					"source_repos": len(docsRepos),
@@ -377,7 +349,6 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 				ExcludePatterns: []string{"*legacy*"},
 			},
 			Hugo: config.HugoConfig{
-				Theme: "hextra",
 				Title: "Multi-Forge Documentation Hub",
 				Params: map[string]interface{}{
 					"multi_forge": true,
@@ -389,10 +360,6 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		// Validate configuration integration
 		if len(integrationConfig.Forges) != 3 {
 			t.Errorf("Expected 3 forge configurations, got %d", len(integrationConfig.Forges))
-		}
-
-		if integrationConfig.Hugo.Theme != "hextra" {
-			t.Errorf("Expected Hextra theme, got %s", integrationConfig.Hugo.Theme)
 		}
 
 		if integrationConfig.Build.CloneConcurrency != 3 {

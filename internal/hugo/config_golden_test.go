@@ -34,67 +34,11 @@ func normalizeConfig(t *testing.T, path string) []byte {
 	return out
 }
 
-func TestHugoConfigGolden_Hextra(t *testing.T) {
-	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
-	g := NewGenerator(cfg, out)
-	if err := g.generateHugoConfig(); err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
-	golden := filepath.Join("testdata", "hugo_config", "hextra.yaml")
-	// #nosec G304 - test file
-	want, err := os.ReadFile(golden)
-	if err != nil {
-		t.Fatalf("read golden: %v", err)
-	}
-	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(actual)) {
-		// write diff friendly output
-		writeMismatch(t, want, actual)
-		// update mode via env var
-		if os.Getenv("UPDATE_GOLDEN") == "1" {
-			if err := os.WriteFile(golden, actual, 0o600); err != nil {
-				t.Fatalf("update golden: %v", err)
-			}
-			return
-		}
-		// fail after optional update attempt
-		t.Fatalf("hextra hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_Hextra to accept")
-	}
-}
-
-func TestHugoConfigGolden_Docsy(t *testing.T) {
-	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
-	g := NewGenerator(cfg, out)
-	if err := g.generateHugoConfig(); err != nil {
-		t.Fatalf("generate: %v", err)
-	}
-	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
-	golden := filepath.Join("testdata", "hugo_config", "docsy.yaml")
-	// #nosec G304 - test file
-	want, err := os.ReadFile(golden)
-	if err != nil {
-		t.Fatalf("read golden: %v", err)
-	}
-	if !bytes.Equal(bytes.TrimSpace(want), bytes.TrimSpace(actual)) {
-		writeMismatch(t, want, actual)
-		if os.Getenv("UPDATE_GOLDEN") == "1" {
-			if err := os.WriteFile(golden, actual, 0o600); err != nil {
-				t.Fatalf("update golden: %v", err)
-			}
-			return
-		}
-		t.Fatalf("docsy hugo.yaml mismatch; run UPDATE_GOLDEN=1 go test ./internal/hugo -run TestHugoConfigGolden_Docsy to accept")
-	}
-}
-
 func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
 			Title: "Relearn Site",
-			Theme: "relearn",
 		},
 		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
 	}
@@ -126,7 +70,6 @@ func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
 			Title: "Relearn Site with Custom Taxonomies",
-			Theme: "relearn",
 			Taxonomies: map[string]string{
 				"category":    "categories",
 				"tag":         "tags",

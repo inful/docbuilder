@@ -9,79 +9,79 @@ import (
 
 func TestExtractIndexTitle(t *testing.T) {
 	tests := []struct {
-		name               string
-		fileName           string
-		section            string
-		content            string
+		name                string
+		fileName            string
+		section             string
+		content             string
 		existingFrontMatter map[string]any
-		expectedTitle      string
-		shouldAddPatch     bool
+		expectedTitle       string
+		shouldAddPatch      bool
 	}{
 		{
-			name:               "index.md with H1",
-			fileName:           "index",
-			content:            "# Custom Index Title\n\nSome content here.",
+			name:                "index.md with H1",
+			fileName:            "index",
+			content:             "# Custom Index Title\n\nSome content here.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "Custom Index Title",
-			shouldAddPatch:     true,
+			expectedTitle:       "Custom Index Title",
+			shouldAddPatch:      true,
 		},
 		{
-			name:               "README.md with H1",
-			fileName:           "README",
-			content:            "# Repository Overview\n\nWelcome text.",
+			name:                "README.md with H1",
+			fileName:            "README",
+			content:             "# Repository Overview\n\nWelcome text.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "Repository Overview",
-			shouldAddPatch:     true,
+			expectedTitle:       "Repository Overview",
+			shouldAddPatch:      true,
 		},
 		{
-			name:               "index.md with existing title should not override",
-			fileName:           "index",
-			content:            "# Content Heading\n\nSome content.",
+			name:                "index.md with existing title should not override",
+			fileName:            "index",
+			content:             "# Content Heading\n\nSome content.",
 			existingFrontMatter: map[string]any{"title": "Explicit Title"},
-			expectedTitle:      "",
-			shouldAddPatch:     false,
+			expectedTitle:       "",
+			shouldAddPatch:      false,
 		},
 		{
-			name:               "regular file should not be processed",
-			fileName:           "guide",
-			content:            "# Getting Started\n\nFollow these steps.",
+			name:                "regular file should not be processed",
+			fileName:            "guide",
+			content:             "# Getting Started\n\nFollow these steps.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "",
-			shouldAddPatch:     false,
+			expectedTitle:       "",
+			shouldAddPatch:      false,
 		},
 		{
-			name:               "index.md without H1",
-			fileName:           "index",
-			content:            "Just plain content without heading.",
+			name:                "index.md without H1",
+			fileName:            "index",
+			content:             "Just plain content without heading.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "",
-			shouldAddPatch:     false,
+			expectedTitle:       "",
+			shouldAddPatch:      false,
 		},
 		{
-			name:               "index.md with H1 having extra whitespace",
-			fileName:           "index",
-			content:            "  #   Trimmed Title   \n\nContent.",
+			name:                "index.md with H1 having extra whitespace",
+			fileName:            "index",
+			content:             "  #   Trimmed Title   \n\nContent.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "Trimmed Title",
-			shouldAddPatch:     true,
+			expectedTitle:       "Trimmed Title",
+			shouldAddPatch:      true,
 		},
 		{
-			name:               "index.md with section uses section name as title",
-			fileName:           "index",
-			content:            "# Docs\n\nSome content.",
+			name:                "index.md with section uses section name as title",
+			fileName:            "index",
+			content:             "# Docs\n\nSome content.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "Vcfretriever",
-			shouldAddPatch:     true,
-			section:            "vcfretriever",
+			expectedTitle:       "Vcfretriever",
+			shouldAddPatch:      true,
+			section:             "vcfretriever",
 		},
 		{
-			name:               "README.md with section uses section name as title",
-			fileName:           "README",
-			content:            "# Old Title\n\nWelcome text.",
+			name:                "README.md with section uses section name as title",
+			fileName:            "README",
+			content:             "# Old Title\n\nWelcome text.",
 			existingFrontMatter: map[string]any{},
-			expectedTitle:      "My Project",
-			shouldAddPatch:     true,
-			section:            "my-project",
+			expectedTitle:       "My Project",
+			shouldAddPatch:      true,
+			section:             "my-project",
 		},
 	}
 

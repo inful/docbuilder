@@ -23,7 +23,7 @@ func TestGenerateSiteWithReport(t *testing.T) {
 	testRepo := repositories[0]
 
 	cfg := &config.Config{
-		Hugo:         config.HugoConfig{Title: "TestForge Report", Theme: "hextra"},
+		Hugo:         config.HugoConfig{Title: "TestForge Report"},
 		Repositories: []config.Repository{testRepo},
 	}
 
@@ -86,7 +86,6 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 			cfg := &config.Config{
 				Hugo: config.HugoConfig{
 					Title: platform.name + " Documentation",
-					Theme: platform.theme,
 				},
 				Repositories: repositories,
 			}
@@ -141,7 +140,7 @@ func TestTestForgeFailureScenarios(t *testing.T) {
 	}
 
 	cfg := &config.Config{
-		Hugo:         config.HugoConfig{Title: "Failure Test", Theme: "hextra"},
+		Hugo:         config.HugoConfig{Title: "Failure Test"},
 		Repositories: repositories,
 	}
 

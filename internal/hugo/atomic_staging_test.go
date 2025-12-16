@@ -26,8 +26,7 @@ func mustRead(t *testing.T, path string) string {
 // and leaves no staging directories behind.
 func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	outDir := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
 
 	// First build v1
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version1\n")}}
@@ -41,7 +40,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	}
 
 	// Second build v2
-	gen2 := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version2\n")}}
 	if err := gen2.GenerateSite(filesV2); err != nil {
 		t.Fatalf("second build failed: %v", err)
@@ -72,8 +71,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 // and that the staging directory is cleaned up.
 func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	outDir := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
 
 	// Initial successful build
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Stable\n")}}
@@ -87,7 +85,7 @@ func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	}
 
 	// Start second build with immediate cancellation
-	gen2 := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Broken\n")}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately

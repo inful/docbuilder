@@ -12,8 +12,7 @@ import (
 
 // TestPipeline_Idempotency ensures that running the pipeline twice does not duplicate front matter.
 func TestPipeline_Idempotency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
-	gen := NewGenerator(cfg, t.TempDir())
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	original := "---\ncustom: keep\n---\n# Heading\n\nLink to [Doc](doc.md)."
 	file := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", Content: []byte(original)}
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
@@ -44,8 +43,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 
 // TestPipeline_Order verifies that front matter parsing happens before building.
 func TestPipeline_Order(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
-	gen := NewGenerator(cfg, t.TempDir())
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	existing := "---\ncustom: val\n---\nBody"
 	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Content: []byte(existing)}
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
@@ -64,8 +62,7 @@ func TestPipeline_Order(t *testing.T) {
 
 // TestMalformedFrontMatter ensures invalid YAML front matter does not break build.
 func TestMalformedFrontMatter(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
-	gen := NewGenerator(cfg, t.TempDir())
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	malformed := "---\n:bad yaml\n---\n# T\n"
 	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Content: []byte(malformed)}
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
@@ -79,8 +76,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 
 // TestDateConsistency ensures BuildFrontMatter uses Now injection indirectly through builder.
 func TestDateConsistency(t *testing.T) {
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}, Forges: []*config.ForgeConfig{{Name: "f", Type: "github", Auth: &config.AuthConfig{Type: "token", Token: "x"}, Organizations: []string{"o"}}}, Output: config.OutputConfig{Directory: t.TempDir()}}
-	gen := NewGenerator(cfg, t.TempDir())
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Content: []byte("Body")}
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)

@@ -8,7 +8,7 @@ func TestNormalizeFiltering_DedupeTrimSort(t *testing.T) {
 		IgnoreFiles:     []string{" .docignore ", ".docignore", "README.md"},
 		IncludePatterns: []string{"  lib-*  ", "api-*", "lib-*", "core"},
 		ExcludePatterns: []string{"temp", " temp", "scratch", "scratch"},
-	}, Hugo: HugoConfig{Theme: "hextra"}}
+	}, Hugo: HugoConfig{}}
 	res, err := NormalizeConfig(c)
 	if err != nil {
 		t.Fatalf("normalize: %v", err)
@@ -35,7 +35,7 @@ func TestNormalizeFiltering_DedupeTrimSort(t *testing.T) {
 }
 
 func TestSnapshot_IncludesFiltering(t *testing.T) {
-	c := &Config{Version: "2.0", Filtering: &FilteringConfig{IncludePatterns: []string{"b", "a"}}, Hugo: HugoConfig{Theme: "hextra"}}
+	c := &Config{Version: "2.0", Filtering: &FilteringConfig{IncludePatterns: []string{"b", "a"}}, Hugo: HugoConfig{}}
 	if _, err := NormalizeConfig(c); err != nil {
 		t.Fatalf("normalize: %v", err)
 	}

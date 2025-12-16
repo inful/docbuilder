@@ -18,11 +18,10 @@ func TestNoopRenderer(t *testing.T) {
 
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test"
-	cfg.Hugo.Theme = "hextra" // any registered theme
 	cfg.Hugo.BaseURL = "https://example.test"
 	cfg.Build.RenderMode = "always"
 
-	g := NewGenerator(cfg, dir).WithRenderer(&NoopRenderer{})
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, dir).WithRenderer(&NoopRenderer{})
 
 	// Minimal doc file to drive pipeline through content stages.
 	doc := docs.DocFile{Repository: "repo1", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Intro\n")}

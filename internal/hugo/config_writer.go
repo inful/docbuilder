@@ -5,23 +5,19 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"gopkg.in/yaml.v3"
 )
 
-// generateHugoConfig creates the Hugo configuration file
+// generateHugoConfig creates the Hugo configuration file with Relearn theme
 func (g *Generator) generateHugoConfig() error {
 	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
-	// Apply theme via centralized engine (params injection + root customization)
-	// Capture returned features and cache for downstream usage.
-
-	// Phase 1: core defaults (typed root)
+	
+	// Phase 1: core defaults
 	params := map[string]any{}
 	root := &models.RootConfig{
 		Title:         g.config.Hugo.Title,
@@ -32,53 +28,23 @@ func (g *Generator) generateHugoConfig() error {
 		Params:        params,
 		Taxonomies:    g.config.Hugo.Taxonomies,
 	}
-	// Apply default markup settings via helpers (same YAML shape)
+	
+	// Apply default markup settings
 	root.EnsureGoldmarkRendererUnsafe()
 	root.EnsureHighlightDefaults()
 
-	// Phase 2: theme param injection via engine.
-	// Note: Engine expects root as map[string]any; pass a temporary view during phase application.
-	tmpRoot := map[string]any{
-		"title":         root.Title,
-		"description":   root.Description,
-		"baseURL":       root.BaseURL,
-		"enableGitInfo": root.EnableGitInfo,
-		"markup":        root.Markup,
-		"params":        root.Params,
-		"taxonomies":    root.Taxonomies,
-	}
-	feats := th.Engine{}.ApplyPhases(g, g.config, tmpRoot, params)
-	// Sync any changes back to typed root (only known fields handled here)
-	if v, ok := tmpRoot["markup"].(map[string]any); ok {
-		root.Markup = v
-	}
-	if v, ok := tmpRoot["taxonomies"].(map[string]string); ok && v != nil {
-		root.Taxonomies = v
-	}
-	// Sync language configuration added by themes
-	if v, ok := tmpRoot["defaultContentLanguage"].(string); ok {
-		root.DefaultContentLanguage = v
-	}
-	if v, ok := tmpRoot["languages"].(map[string]any); ok {
-		root.Languages = v
-	}
-	g.cachedThemeFeatures = &feats
-
-	// Phase 3: user overrides (deep merge)
+	// Phase 2: Apply Relearn theme defaults
+	g.applyRelearnThemeDefaults(params)
+	
+	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
 		mergeParams(params, g.config.Hugo.Params)
 	}
 
-	// Phase 4: dynamic fields
+	// Phase 4: Dynamic fields
 	params["build_date"] = time.Now().Format("2006-01-02 15:04:05")
 
-	// View Transitions API params
-	if g.config.Hugo.EnableTransitions {
-		params["enable_transitions"] = true
-		slog.Debug("View Transitions enabled in Hugo config")
-	}
-
-	// Phase 4.5: version metadata collection (for version switchers in themes)
+	// Phase 4.5: Version metadata collection
 	if g.config.Versioning != nil && !g.config.Versioning.DefaultBranchOnly {
 		versionInfo := g.collectVersionMetadata()
 		if len(versionInfo) > 0 {
@@ -87,32 +53,25 @@ func (g *Generator) generateHugoConfig() error {
 		}
 	}
 
-	// Phase 5: module/theme block
-	if g.config.Hugo.Theme != "" {
-		if feats.UsesModules && feats.ModulePath != "" {
-			root.Module = &models.ModuleConfig{Imports: []models.ModuleImport{{Path: feats.ModulePath}}}
-		} else {
-			root.Theme = g.config.Hugo.Theme
-		}
+	// Phase 5: Configure Relearn theme via Hugo Modules
+	root.Module = &models.ModuleConfig{
+		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn"}},
 	}
 
-	// Math passthrough
-	if feats.EnableMathPassthrough {
-		root.EnableMathPassthrough()
-	}
+	// Enable math passthrough for Relearn
+	root.EnableMathPassthrough()
 
-	// In preview/live-reload mode, disable GitInfo (staging isn't a git repo)
+	// In preview/live-reload mode, disable GitInfo
 	if g.config.Build.LiveReload {
 		root.EnableGitInfo = false
 	}
 
-	// Enable search JSON only when not in live preview to avoid missing layouts
-	if feats.EnableOfflineSearchJSON && !g.config.Build.LiveReload {
+	// Enable search JSON (Relearn uses Lunr search)
+	if !g.config.Build.LiveReload {
 		root.SetHomeOutputsHTMLRSSJSON()
 	}
 
-	// Phase 5.5: taxonomies configuration
-	// Set default taxonomies if not configured by user
+	// Phase 5.5: Taxonomies configuration
 	if len(g.config.Hugo.Taxonomies) > 0 {
 		root.Taxonomies = g.config.Hugo.Taxonomies
 	} else {
@@ -123,34 +82,17 @@ func (g *Generator) generateHugoConfig() error {
 		}
 	}
 
-	// Phase 6: menu
-	if feats.AutoMainMenu {
-		if g.config.Hugo.Menu == nil {
-			mainMenu := []map[string]any{{"name": "Search", "weight": 4, "params": map[string]any{"type": "search"}}, {"name": "Theme", "weight": 98, "params": map[string]any{"type": "theme-toggle", "label": false}}}
-			for _, repo := range g.config.Repositories {
-				if strings.Contains(repo.URL, "github.com") {
-					mainMenu = append(mainMenu, map[string]any{"name": "GitHub", "weight": 99, "url": repo.URL, "params": map[string]any{"icon": "github"}})
-					break
-				}
-			}
-			root.Menu = map[string]any{"main": mainMenu}
-		} else {
-			// Convert typed menu map to loose map for YAML
-			converted := map[string]any{}
-			for k, items := range g.config.Hugo.Menu {
-				list := make([]map[string]any, 0, len(items))
-				for _, it := range items {
-					m := map[string]any{"name": it.Name, "url": it.URL}
-					if it.Weight != 0 {
-						m["weight"] = it.Weight
-					}
-					list = append(list, m)
-				}
-				converted[k] = list
-			}
-			root.Menu = converted
-		}
-	} else if g.config.Hugo.Menu != nil {
+	// Phase 6: Language configuration (required by Relearn)
+	root.DefaultContentLanguage = "en"
+	root.Languages = map[string]any{
+		"en": map[string]any{
+			"languageName": "English",
+			"weight":       1,
+		},
+	}
+	
+	// Phase 7: Menu configuration (if provided)
+	if g.config.Hugo.Menu != nil {
 		converted := map[string]any{}
 		for k, items := range g.config.Hugo.Menu {
 			list := make([]map[string]any, 0, len(items))
@@ -166,8 +108,6 @@ func (g *Generator) generateHugoConfig() error {
 		root.Menu = converted
 	}
 
-	// Phase 7 handled by engine above
-
 	data, err := yaml.Marshal(root)
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
@@ -178,17 +118,100 @@ func (g *Generator) generateHugoConfig() error {
 		return fmt.Errorf("failed to write hugo config: %w", err)
 	}
 
-	if feats.UsesModules {
-		if err := g.ensureGoModForModules(); err != nil {
-			slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
-		}
+	// Ensure go.mod for Hugo Modules (Relearn requires this)
+	if err := g.ensureGoModForModules(); err != nil {
+		slog.Warn("Failed to ensure go.mod for Hugo Modules", "error", err)
 	}
-	slog.Info("Generated Hugo configuration", logfields.Path(configPath))
-
-	// Output full config content in debug/verbose mode
+	
+	slog.Info("Generated Hugo configuration with Relearn theme", logfields.Path(configPath))
 	slog.Debug("Hugo configuration content:\n" + string(data))
 
 	return nil
+}
+
+// applyRelearnThemeDefaults applies Relearn-specific parameter defaults
+func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
+	// Theme variant/color scheme - auto mode with zen-light/zen-dark
+	if params["themeVariant"] == nil {
+		params["themeVariant"] = []any{"auto", "zen-light", "zen-dark"}
+	}
+
+	// Configure auto mode fallbacks
+	if params["themeVariantAuto"] == nil {
+		hasAuto := false
+		if variants, ok := params["themeVariant"].([]any); ok {
+			for _, v := range variants {
+				if str, ok := v.(string); ok && str == "auto" {
+					hasAuto = true
+					break
+				}
+			}
+		} else if str, ok := params["themeVariant"].(string); ok && str == "auto" {
+			hasAuto = true
+		}
+		if hasAuto {
+			params["themeVariantAuto"] = []string{"zen-light", "zen-dark"}
+		}
+	}
+
+	// Disable generator notice in footer
+	if params["disableGeneratorVersion"] == nil {
+		params["disableGeneratorVersion"] = false
+	}
+
+	// Breadcrumb navigation
+	if params["disableBreadcrumb"] == nil {
+		params["disableBreadcrumb"] = false
+	}
+
+	// Show visited checkmarks
+	if params["showVisitedLinks"] == nil {
+		params["showVisitedLinks"] = true
+	}
+
+	// Collapse menu sections
+	if params["collapsibleMenu"] == nil {
+		params["collapsibleMenu"] = true
+	}
+
+	// Always open menu on start
+	if params["alwaysopen"] == nil {
+		params["alwaysopen"] = false
+	}
+
+	// Disable landing page button
+	if params["disableLandingPageButton"] == nil {
+		params["disableLandingPageButton"] = true
+	}
+
+	// Disable shortcuts menu in sidebar
+	if params["disableShortcutsTitle"] == nil {
+		params["disableShortcutsTitle"] = false
+	}
+
+	// Disable language switching button
+	if params["disableLanguageSwitchingButton"] == nil {
+		params["disableLanguageSwitchingButton"] = true
+	}
+
+	// Disable tag hidden pages
+	if params["disableTagHiddenPages"] == nil {
+		params["disableTagHiddenPages"] = false
+	}
+
+	// Mermaid diagrams support
+	if _, ok := params["mermaid"]; !ok {
+		params["mermaid"] = map[string]any{
+			"enable": true,
+		}
+	}
+
+	// Math support (using MathJax by default in Relearn)
+	if _, ok := params["math"]; !ok {
+		params["math"] = map[string]any{
+			"enable": true,
+		}
+	}
 }
 
 // collectVersionMetadata collects version information from versioned repositories
