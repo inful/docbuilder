@@ -15,12 +15,13 @@ import (
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
-	Output      string `short:"o" help:"Output directory for generated site" default:"./site"`
-	Incremental bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
-	RenderMode  string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
-	DocsDir     string `name:"docs-dir" short:"d" help:"Path to local docs directory (used when no config file provided)" default:"./docs"`
-	Theme       string `name:"theme" help:"Hugo theme to use when no config provided (hextra, docsy, or relearn)" default:"relearn"`
-	Title       string `name:"title" help:"Site title when no config provided" default:"Documentation"`
+	Output        string `short:"o" help:"Output directory for generated site" default:"./site"`
+	Incremental   bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
+	RenderMode    string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
+	DocsDir       string `name:"docs-dir" short:"d" help:"Path to local docs directory (used when no config file provided)" default:"./docs"`
+	Theme         string `name:"theme" help:"Hugo theme to use when no config provided (hextra, docsy, or relearn)" default:"relearn"`
+	Title         string `name:"title" help:"Site title when no config provided" default:"Documentation"`
+	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
 
 func (b *BuildCmd) Run(_ *Global, root *CLI) error {
@@ -59,16 +60,16 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	
 	// Use different build paths for local vs remote
 	if useLocalMode {
-		return b.runLocalBuild(cfg, outputDir, root.Verbose)
+		return b.runLocalBuild(cfg, outputDir, root.Verbose, b.KeepWorkspace)
 	}
 	
 	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
 		return err
 	}
-	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose)
+	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose, b.KeepWorkspace)
 }
 
-func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose bool) error {
+func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, keepWorkspace bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
 
@@ -79,14 +80,20 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 	slog.Info("Starting documentation build",
 		"output", outputDir,
 		"repositories", len(cfg.Repositories),
-		"incremental", incrementalMode)
+		"incremental", incrementalMode,
+		"keep_workspace", keepWorkspace)
 
 	// Create workspace manager
 	wsManager, err := CreateWorkspace(cfg)
 	if err != nil {
 		return err
 	}
-	defer CleanupWorkspace(wsManager)
+	if !keepWorkspace {
+		defer CleanupWorkspace(wsManager)
+	} else {
+		slog.Info("Workspace will be preserved for debugging", "path", wsManager.GetPath())
+		fmt.Printf("Workspace preserved at: %s\n", wsManager.GetPath())
+	}
 
 	// Create Git client with build config for auth support
 	gitClient, err := CreateGitClient(wsManager, cfg)
@@ -167,10 +174,15 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 
 	// Generate Hugo site
 	slog.Info("Generating Hugo site", "output", outputDir, "files", len(docFiles))
-	generator := hugo.NewGenerator(cfg, outputDir)
+	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
 
 	if err := generator.GenerateSite(docFiles); err != nil {
 		slog.Error("Failed to generate Hugo site", "error", err)
+		// Show workspace location on error for debugging
+		if keepWorkspace {
+			fmt.Printf("\nError occurred. Workspace preserved at: %s\n", wsManager.GetPath())
+			fmt.Printf("Hugo staging directory: %s\n", outputDir+"_stage")
+		}
 		return err
 	}
 
@@ -181,12 +193,16 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose boo
 }
 
 // runLocalBuild builds from a local docs directory without git cloning
-func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose bool) error {
+func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, keepWorkspace bool) error {
 	fmt.Println("Starting DocBuilder local build")
 
 	// Set logging level
 	level := parseLogLevel(verbose)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+
+	if keepWorkspace {
+		slog.Info("Workspace preservation enabled for debugging", "keep_workspace", true)
+	}
 
 	// Resolve absolute path to docs directory
 	docsPath, err := filepath.Abs(b.DocsDir)
@@ -230,13 +246,21 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose b
 
 	// Generate Hugo site
 	slog.Info("Generating Hugo site", "output", outputDir)
-	generator := hugo.NewGenerator(cfg, outputDir)
+	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
 	
 	if err := generator.GenerateSite(docFiles); err != nil {
+		// Show staging location on error for debugging
+		if keepWorkspace {
+			fmt.Printf("\nError occurred. Hugo staging directory: %s\n", outputDir+"_stage")
+		}
 		return fmt.Errorf("site generation failed: %w", err)
 	}
 
 	slog.Info("Hugo site generated successfully", "output", outputDir)
+	if keepWorkspace {
+		fmt.Printf("Build output directory: %s\n", outputDir)
+		fmt.Printf("(Staging directory was promoted to output on success)\n")
+	}
 	fmt.Println("Build completed successfully")
 	return nil
 }

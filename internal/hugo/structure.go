@@ -193,6 +193,14 @@ func (g *Generator) abortStaging() {
 	if g.stageDir == "" {
 		return
 	}
+	// Preserve staging directory for debugging if requested
+	if g.keepStaging {
+		slog.Info("Build failed - staging directory preserved for debugging",
+			slog.String("staging", g.stageDir),
+			slog.String("output", g.outputDir))
+		fmt.Printf("\nStaging directory preserved for debugging: %s\n", g.stageDir)
+		return
+	}
 	slog.Warn("Aborting build - cleaning up staging directory",
 		slog.String("staging", g.stageDir),
 		slog.String("output", g.outputDir))
