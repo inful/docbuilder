@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313
 description: Testing repository with only README.md (should be ignored)
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

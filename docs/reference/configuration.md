@@ -1,3 +1,14 @@
+---
+title: "Configuration Reference"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - configuration
+  - yaml
+  - settings
+---
+
 # Configuration Reference
 
 This page enumerates the primary configuration sections and fields currently supported by DocBuilder's direct build mode.
@@ -89,7 +100,7 @@ With versioning enabled, DocBuilder:
 | title | string | Site title. |
 | description | string | Site description. |
 | base_url | string | Hugo BaseURL. |
-| theme | enum | Supported optimized themes (`hextra`, `docsy`). |
+| theme | enum | Supported optimized themes (`hextra`, `docsy`, `relearn`). |
 | taxonomies | map[string]string | Custom taxonomy definitions (optional). |
 
 ### Taxonomies

@@ -10,8 +10,8 @@ type HugoConfig struct {
 	Description       string            `yaml:"description,omitempty"`
 	Params            map[string]any    `yaml:"params,omitempty"`
 	Menu              map[string][]Menu `yaml:"menu,omitempty"`
-	Taxonomies        map[string]string `yaml:"taxonomies,omitempty"`        // custom taxonomy definitions (e.g., "tag": "tags", "category": "categories")
-	Transforms        *HugoTransforms   `yaml:"transforms,omitempty"`        // optional transform filtering
+	Taxonomies        map[string]string `yaml:"taxonomies,omitempty"`              // custom taxonomies (e.g., "category": "categories", "tag": "tags")
+	Transforms        *HugoTransforms   `yaml:"transforms,omitempty"`              // optional transform filtering
 	EnableTransitions bool              `yaml:"enable_page_transitions,omitempty"` // enables View Transitions API for smooth page transitions
 }
 
@@ -27,8 +27,9 @@ type Theme string
 
 // Theme constants to avoid magic strings across generator logic.
 const (
-	ThemeHextra Theme = "hextra"
-	ThemeDocsy  Theme = "docsy"
+	ThemeHextra  Theme = "hextra"
+	ThemeDocsy   Theme = "docsy"
+	ThemeRelearn Theme = "relearn"
 )
 
 // ThemeType returns the normalized typed theme value (lowercasing the raw string). Unknown themes return "".
@@ -39,6 +40,8 @@ func (h HugoConfig) ThemeType() Theme {
 		return ThemeHextra
 	case string(ThemeDocsy):
 		return ThemeDocsy
+	case string(ThemeRelearn):
+		return ThemeRelearn
 	default:
 		return ""
 	}

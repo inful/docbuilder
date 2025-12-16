@@ -1,3 +1,14 @@
+---
+title: "Comprehensive Architecture"
+date: 2025-12-15
+categories:
+  - explanation
+tags:
+  - architecture
+  - design
+  - deep-dive
+---
+
 # Comprehensive Architecture Documentation
 
 ## Table of Contents
@@ -24,7 +35,7 @@ DocBuilder is a Go CLI tool and daemon that aggregates documentation from multip
 - **Observable**: Unified error system, structured logging, metrics, and tracing
 - **Incremental**: Change detection and partial rebuilds for performance
 - **Multi-Tenant**: Supports forge namespacing and per-repository configuration
-- **Theme-Aware**: Hugo theme integration via modules (Hextra, Docsy)
+- **Theme-Aware**: Hugo theme integration via modules (Hextra, Docsy, Relearn)
 
 ---
 

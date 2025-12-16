@@ -1,3 +1,13 @@
+---
+title: "DocBuilder Documentation"
+date: 2025-12-15
+categories:
+  - documentation
+tags:
+  - overview
+  - getting-started
+---
+
 # DocBuilder Documentation
 
 Welcome to the DocBuilder documentation! This documentation follows the [Diátaxis](https://diataxis.fr/) framework, organizing content by user needs.

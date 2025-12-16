@@ -1,3 +1,14 @@
+---
+title: "CLI Reference"
+date: 2025-12-15
+categories:
+  - reference
+tags:
+  - cli
+  - commands
+  - usage
+---
+
 # CLI Reference
 
 Primary commands (Kong-based CLI):

@@ -1,7 +1,6 @@
 baseURL: http://localhost
 description: Testing search index generation with Hextra
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

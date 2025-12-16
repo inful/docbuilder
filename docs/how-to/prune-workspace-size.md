@@ -1,3 +1,14 @@
+---
+title: "How To: Prune Workspace Size"
+date: 2025-12-15
+categories:
+  - how-to
+tags:
+  - optimization
+  - workspace
+  - performance
+---
+
 # How To: Prune Workspace Size
 
 Reduce disk usage by enabling top-level pruning of non‑documentation directories inside cloned repositories.

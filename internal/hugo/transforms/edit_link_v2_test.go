@@ -93,7 +93,7 @@ func TestEditLinkInjectorV2_RespectsExisting(t *testing.T) {
 	}
 }
 
-func TestEditLinkInjectorV2_NonHextraNoOp(t *testing.T) {
+func TestEditLinkInjectorV2_DocsyAlsoGeneratesEditLinks(t *testing.T) {
 	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "docsy"}, Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/example/repo1.git", Branch: "main", Paths: []string{"docs"}}}}
 	SetGeneratorProvider(func() any { return dummyGenerator{cfg: cfg, resolver: stubResolver{}} })
 	doc := testDocFile()
@@ -104,9 +104,15 @@ func TestEditLinkInjectorV2_NonHextraNoOp(t *testing.T) {
 	if err := (EditLinkInjectorV2{}).Transform(shim); err != nil {
 		t.Fatalf("edit link v2 error: %v", err)
 	}
+	// Verify edit link is generated for docsy theme too
+	found := false
 	for _, p := range shim.Patches {
 		if p.Source == "edit_link_v2" {
-			t.Fatalf("did not expect edit_link_v2 patch for non-hextra theme; patches=%+v", shim.Patches)
+			found = true
+			break
 		}
+	}
+	if !found {
+		t.Fatalf("expected edit_link_v2 patch for docsy theme; patches=%+v", shim.Patches)
 	}
 }

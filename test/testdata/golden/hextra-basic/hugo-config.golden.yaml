@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313/
 description: Test documentation site for Hextra theme integration
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:
