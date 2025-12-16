@@ -25,7 +25,7 @@
         "section": "advanced",
         "title": "Advanced"
       },
-      "contentHash": "sha256:cdbf3d19ea892942"
+      "contentHash": "sha256:c9593027cb5d8473"
     },
     "content/section-docs/advanced/plugins.md": {
       "frontmatter": {
@@ -51,7 +51,7 @@
         "section": "getting-started",
         "title": "Getting-started"
       },
-      "contentHash": "sha256:f1b22268f30d024b"
+      "contentHash": "sha256:6e4cceb5ba12e42d"
     },
     "content/section-docs/getting-started/configuration.md": {
       "frontmatter": {

@@ -25,7 +25,7 @@
         "section": "en",
         "title": "En"
       },
-      "contentHash": "sha256:0b89f6fdc434fdcd"
+      "contentHash": "sha256:098307824cf2d8b2"
     },
     "content/multilang-docs/en/configuration.md": {
       "frontmatter": {
@@ -51,7 +51,7 @@
         "section": "es",
         "title": "Es"
       },
-      "contentHash": "sha256:0b89f6fdc434fdcd"
+      "contentHash": "sha256:098307824cf2d8b2"
     },
     "content/multilang-docs/es/configuration.md": {
       "frontmatter": {

@@ -25,7 +25,7 @@
         "section": "level1",
         "title": "Level1"
       },
-      "contentHash": "sha256:0a871a44e3e7e048"
+      "contentHash": "sha256:0b42ce229a1a07f5"
     },
     "content/deep-nesting/level1/doc.md": {
       "frontmatter": {
@@ -42,7 +42,7 @@
         "section": "level1/level2",
         "title": "Level2"
       },
-      "contentHash": "sha256:c7dc8a28786336ca"
+      "contentHash": "sha256:e2597675bcf15f38"
     },
     "content/deep-nesting/level1/level2/doc.md": {
       "frontmatter": {
@@ -59,7 +59,7 @@
         "section": "level1/level2/level3",
         "title": "Level3"
       },
-      "contentHash": "sha256:cb475e15a8e9c036"
+      "contentHash": "sha256:3af00a0779fea2c4"
     },
     "content/deep-nesting/level1/level2/level3/doc.md": {
       "frontmatter": {
@@ -76,7 +76,7 @@
         "section": "level1/level2/level3/level4",
         "title": "Level4"
       },
-      "contentHash": "sha256:c38c193b7560a47f"
+      "contentHash": "sha256:f52e6f3365de4905"
     },
     "content/deep-nesting/level1/level2/level3/level4/deep-doc.md": {
       "frontmatter": {
