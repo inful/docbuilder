@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"strings"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -70,21 +72,8 @@ func NewDocumentFromDocFile(file docs.DocFile) *Document {
 
 // isIndexFileName checks if a file name represents an index file.
 func isIndexFileName(name string) bool {
-	lowerName := toLower(name)
+	lowerName := strings.ToLower(name)
 	return lowerName == "index" || lowerName == "readme" || lowerName == "_index"
-}
-
-// toLower is a simple ASCII lowercase helper (avoids importing strings just for this)
-func toLower(s string) string {
-	result := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			c += 'a' - 'A'
-		}
-		result[i] = c
-	}
-	return string(result)
 }
 
 // FileTransform modifies a document in the pipeline.
