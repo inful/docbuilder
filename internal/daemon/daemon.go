@@ -695,6 +695,39 @@ func (d *Daemon) TriggerBuild() string {
 	return jobID
 }
 
+// triggerScheduledBuildForExplicitRepos triggers a scheduled build for explicitly configured repositories
+func (d *Daemon) triggerScheduledBuildForExplicitRepos() {
+	if d.GetStatus() != StatusRunning {
+		return
+	}
+
+	jobID := fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
+
+	slog.Info("Triggering scheduled build for explicit repositories", 
+		logfields.JobID(jobID), 
+		slog.Int("repositories", len(d.config.Repositories)))
+
+	job := &BuildJob{
+		ID:        jobID,
+		Type:      BuildTypeScheduled,
+		Priority:  PriorityNormal,
+		CreatedAt: time.Now(),
+		TypedMeta: &BuildJobMetadata{
+			V2Config:      d.config,
+			Repositories:  d.config.Repositories,
+			StateManager:  d.stateManager,
+			LiveReloadHub: d.liveReload,
+		},
+	}
+
+	if err := d.buildQueue.Enqueue(job); err != nil {
+		slog.Error("Failed to enqueue scheduled build", logfields.JobID(jobID), logfields.Error(err))
+		return
+	}
+
+	atomic.AddInt32(&d.queueLength, 1)
+}
+
 // mainLoop runs the main daemon processing loop
 func (d *Daemon) mainLoop(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second) // Status update interval
@@ -754,8 +787,15 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-initialDiscoveryTimer.C:
 			go d.discoveryRunner.SafeRun(d.GetStatus)
 		case <-discoveryTicker.C:
-			slog.Info("Scheduled discovery tick", slog.Duration("interval", discoveryInterval))
-			go d.discoveryRunner.SafeRun(d.GetStatus)
+			slog.Info("Scheduled tick", slog.Duration("interval", discoveryInterval))
+			// For forge-based discovery, run discovery
+			if len(d.config.Forges) > 0 {
+				go d.discoveryRunner.SafeRun(d.GetStatus)
+			}
+			// For explicit repositories, trigger a build to check for updates
+			if len(d.config.Repositories) > 0 {
+				go d.triggerScheduledBuildForExplicitRepos()
+			}
 		}
 	}
 }
