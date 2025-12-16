@@ -811,3 +811,73 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 			len(repositories), len(docFiles))
 	})
 }
+
+// TestPathCollisionDetection verifies that case-insensitive path collisions are detected.
+func TestPathCollisionDetection(t *testing.T) {
+	// Create temporary directory structure for testing
+	tempDir, err := os.MkdirTemp("", "docbuilder-collision-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Create test repository with files that will collide when lowercased
+	repoDir := filepath.Join(tempDir, "collision-repo")
+	docsDir := filepath.Join(repoDir, "docs")
+
+	if err := os.MkdirAll(docsDir, 0o750); err != nil {
+		t.Fatalf("mkdir docs: %v", err)
+	}
+
+	// Create files with different casing that will collide
+	testFiles := map[string]string{
+		"docs/Minutes.md": "# Meeting Minutes\n\nMonthly meeting notes.",
+		"docs/minutes.md": "# Time Units\n\nTime measurement in minutes.",
+		"docs/Guide.md":   "# User Guide\n\nHow to use this system.",
+		"docs/guide.md":   "# Different Guide\n\nAnother guide.",
+	}
+
+	for path, content := range testFiles {
+		fullPath := filepath.Join(repoDir, path)
+		err := os.WriteFile(fullPath, []byte(content), 0o600)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Create repository configuration
+	repos := []config.Repository{
+		{
+			Name:  "collision-repo",
+			Paths: []string{"docs"},
+			Tags:  map[string]string{},
+		},
+	}
+
+	// Create discovery instance
+	discovery := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingNever})
+
+	// Test discovery - should fail with collision error
+	repoPaths := map[string]string{
+		"collision-repo": repoDir,
+	}
+
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+
+	// We expect an error due to path collisions
+	if err == nil {
+		t.Fatal("Expected error due to path collisions, but got nil")
+	}
+
+	// Verify the error message mentions collisions
+	if !strings.Contains(err.Error(), "path collision") {
+		t.Errorf("Error message should mention 'path collision', got: %v", err)
+	}
+
+	// Verify we still got the files discovered (error happens after discovery)
+	if len(docFiles) != 4 {
+		t.Errorf("Expected 4 files to be discovered before collision check, got %d", len(docFiles))
+	}
+
+	t.Logf("✓ Path collision detection working: %v", err)
+}

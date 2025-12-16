@@ -23,4 +23,7 @@ var (
 
 	// ErrInvalidRelativePath indicates calculating relative path from docs base failed.
 	ErrInvalidRelativePath = errors.New("invalid relative path calculation")
+
+	// ErrPathCollision indicates multiple source files map to the same Hugo path due to case normalization.
+	ErrPathCollision = errors.New("path collision detected")
 )
