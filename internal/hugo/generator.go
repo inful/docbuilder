@@ -42,6 +42,8 @@ type Generator struct {
 	indexTemplateUsage map[string]IndexTemplateInfo
 	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
 	stateManager state.RepositoryMetadataWriter
+	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
+	keepStaging bool
 }
 
 // deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
@@ -113,6 +115,16 @@ func (g *Generator) EditLinkResolver() interface{ Resolve(docs.DocFile) string }
 // Accepts any type implementing state.RepositoryMetadataWriter (e.g., state.ServiceAdapter).
 func (g *Generator) WithStateManager(sm state.RepositoryMetadataWriter) *Generator {
 	g.stateManager = sm
+	return g
+}
+
+// WithKeepStaging enables preservation of staging directory on failure for debugging.
+// When enabled, staging directory will not be cleaned up if Hugo build fails.
+func (g *Generator) WithKeepStaging(keep bool) *Generator {
+	g.keepStaging = keep
+	if keep {
+		slog.Debug("Staging directory preservation enabled for debugging")
+	}
 	return g
 }
 
