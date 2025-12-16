@@ -158,7 +158,11 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.buildQueue.ConfigureRetry(cfg.Build)
 
 	// Initialize scheduler (after build queue)
-	daemon.scheduler = NewScheduler(daemon.buildQueue)
+	scheduler, err := NewScheduler()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create scheduler: %w", err)
+	}
+	daemon.scheduler = scheduler
 	// Provide back-reference so scheduler can inject metadata (live reload hub, config, state)
 	daemon.scheduler.SetDaemon(daemon)
 
@@ -348,7 +352,9 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 	// Stop components in reverse order
 	if d.scheduler != nil {
-		d.scheduler.Stop(ctx)
+		if err := d.scheduler.Stop(ctx); err != nil {
+			slog.Error("Failed to stop scheduler", logfields.Error(err))
+		}
 	}
 
 	if d.buildQueue != nil {
