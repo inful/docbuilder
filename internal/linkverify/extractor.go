@@ -53,7 +53,7 @@ func ExtractLinksFromReader(r io.Reader, baseURL string) ([]*Link, error) {
 	extract = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			lineNum++
-			
+
 			// Extract links based on element type
 			switch n.Data {
 			case "a":
@@ -232,5 +232,44 @@ func ShouldVerifyLink(link *Link) bool {
 		return false
 	}
 
+	// Skip Hugo-generated files that are optional features
+	if isOptionalHugoFeature(link.URL) {
+		return false
+	}
+
 	return true
+}
+
+// isOptionalHugoFeature checks if a URL points to an optional Hugo-generated file.
+// These files are only generated when specific features are enabled.
+func isOptionalHugoFeature(linkURL string) bool {
+	// Parse URL to get clean path
+	u, err := url.Parse(linkURL)
+	if err != nil {
+		return false
+	}
+
+	path := u.Path
+
+	// RSS/Atom feeds (.xml files) - only generated if RSS is enabled
+	if strings.HasSuffix(path, ".xml") || strings.HasSuffix(path, "/index.xml") {
+		return true
+	}
+
+	// Search index (.json files) - only generated if search is enabled
+	if strings.HasSuffix(path, ".json") || strings.HasSuffix(path, "/index.json") {
+		return true
+	}
+
+	// Sitemap - only if sitemap generation is enabled
+	if strings.Contains(path, "sitemap") {
+		return true
+	}
+
+	// robots.txt - optional
+	if strings.HasSuffix(path, "robots.txt") {
+		return true
+	}
+
+	return false
 }
