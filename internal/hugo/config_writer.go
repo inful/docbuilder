@@ -27,7 +27,6 @@ func (g *Generator) generateHugoConfig() error {
 		Title:         g.config.Hugo.Title,
 		Description:   g.config.Hugo.Description,
 		BaseURL:       g.config.Hugo.BaseURL,
-		LanguageCode:  "en",
 		EnableGitInfo: false, // Disabled by default; output dir isn't a git repo
 		Markup:        map[string]any{},
 		Params:        params,
@@ -43,18 +42,25 @@ func (g *Generator) generateHugoConfig() error {
 		"title":         root.Title,
 		"description":   root.Description,
 		"baseURL":       root.BaseURL,
-		"languageCode":  root.LanguageCode,
 		"enableGitInfo": root.EnableGitInfo,
 		"markup":        root.Markup,
 		"params":        root.Params,
+		"taxonomies":    root.Taxonomies,
 	}
 	feats := th.Engine{}.ApplyPhases(g, g.config, tmpRoot, params)
 	// Sync any changes back to typed root (only known fields handled here)
 	if v, ok := tmpRoot["markup"].(map[string]any); ok {
 		root.Markup = v
 	}
+	if v, ok := tmpRoot["taxonomies"].(map[string]string); ok && v != nil {
+		root.Taxonomies = v
+	}
+	// Sync language configuration added by themes
 	if v, ok := tmpRoot["defaultContentLanguage"].(string); ok {
 		root.DefaultContentLanguage = v
+	}
+	if v, ok := tmpRoot["languages"].(map[string]any); ok {
+		root.Languages = v
 	}
 	g.cachedThemeFeatures = &feats
 
@@ -154,6 +160,7 @@ func (g *Generator) generateHugoConfig() error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
 	}
+
 	// #nosec G306 -- hugo.yaml is a public configuration file
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write hugo config: %w", err)
@@ -165,6 +172,10 @@ func (g *Generator) generateHugoConfig() error {
 		}
 	}
 	slog.Info("Generated Hugo configuration", logfields.Path(configPath))
+
+	// Output full config content in debug/verbose mode
+	slog.Debug("Hugo configuration content:\n" + string(data))
+
 	return nil
 }
 

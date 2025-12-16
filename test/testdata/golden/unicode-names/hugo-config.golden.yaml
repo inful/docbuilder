@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313
 description: Testing files with non-ASCII characters in names
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

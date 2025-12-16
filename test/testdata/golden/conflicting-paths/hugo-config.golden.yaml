@@ -1,7 +1,6 @@
 baseURL: http://localhost
 description: Testing handling of same-named files from different repos
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

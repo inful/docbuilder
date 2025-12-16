@@ -119,6 +119,16 @@ func (Theme) ApplyParams(_ th.ParamContext, params map[string]any) {
 }
 
 func (Theme) CustomizeRoot(_ th.ParamContext, root map[string]any) {
+	// Relearn theme REQUIRES language configuration for i18n support
+	// The T function (translation) is used in theme templates and will fail without this
+	root["defaultContentLanguage"] = "en"
+	root["languages"] = map[string]any{
+		"en": map[string]any{
+			"languageName": "English",
+			"weight":       1,
+		},
+	}
+	
 	// Set default taxonomies if not already configured
 	// Relearn requires explicit taxonomy definitions to use Hugo's default taxonomies
 	if _, exists := root["taxonomies"]; !exists {

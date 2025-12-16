@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313
 description: Testing paths with spaces and special characters
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

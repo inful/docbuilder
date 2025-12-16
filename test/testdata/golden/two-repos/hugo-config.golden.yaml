@@ -1,7 +1,6 @@
 baseURL: http://localhost
 description: Testing multi-repository aggregation
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

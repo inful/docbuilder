@@ -5,12 +5,14 @@ package models
 // to preserve existing YAML shape while providing compile-time fields for
 // common keys.
 type RootConfig struct {
-	Title                  string `yaml:"title"`
-	Description            string `yaml:"description"`
-	BaseURL                string `yaml:"baseURL"`
-	LanguageCode           string `yaml:"languageCode"`
-	DefaultContentLanguage string `yaml:"defaultContentLanguage,omitempty"`
-	EnableGitInfo          bool   `yaml:"enableGitInfo"`
+	Title         string `yaml:"title"`
+	Description   string `yaml:"description"`
+	BaseURL       string `yaml:"baseURL"`
+	EnableGitInfo bool   `yaml:"enableGitInfo"`
+
+	// Language configuration (required by some themes like Relearn for i18n)
+	DefaultContentLanguage string         `yaml:"defaultContentLanguage,omitempty"`
+	Languages              map[string]any `yaml:"languages,omitempty"`
 
 	// Flexible sections predominantly driven by theme features and user overrides
 	Markup     map[string]any      `yaml:"markup,omitempty"`

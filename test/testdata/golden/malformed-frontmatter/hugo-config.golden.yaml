@@ -1,7 +1,6 @@
 baseURL: http://localhost:1313
 description: Testing graceful handling of invalid YAML in front matter
 enableGitInfo: false
-languageCode: en
 markup:
     goldmark:
         extensions:

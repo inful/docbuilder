@@ -1,7 +1,11 @@
 baseURL: ""
+defaultContentLanguage: en
 description: ""
 enableGitInfo: false
-languageCode: en
+languages:
+    en:
+        languageName: English
+        weight: 1
 markup:
     goldmark:
         extensions:
