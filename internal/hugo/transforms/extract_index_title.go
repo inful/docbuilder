@@ -7,10 +7,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/fmcore"
 )
 
-// extractIndexTitleTransform extracts the H1 heading from index.md and README.md files
-// and adds it as the title in front matter. This is necessary because themes like Relearn
-// require a title in the front matter for section indexes, but we preserve the H1 heading
-// in the content (unlike regular pages where we strip it).
+// extractIndexTitleTransform sets the title for index.md and README.md files.
+// For index files within a section (folder), it uses the section/folder name as the title.
+// For root-level indexes, it extracts the H1 heading from the content.
+// This ensures consistent navigation titles based on folder structure while supporting
+// themes like Relearn that require titles in front matter.
 type extractIndexTitleTransform struct{}
 
 func (t extractIndexTitleTransform) Name() string { return "extract_index_title" }
@@ -54,28 +55,51 @@ func (t extractIndexTitleTransform) Transform(p PageAdapter) error {
 		}
 	}
 
-	// Extract H1 heading from content
-	// Pattern matches: optional whitespace, single #, space, heading text
-	pattern := regexp.MustCompile(`(?m)^\s*#\s+([^\n]+)`)
-	matches := pattern.FindStringSubmatch(pg.Content)
+	var title string
 
-	if len(matches) > 1 {
-		title := strings.TrimSpace(matches[1])
-		if title != "" {
-			// Add title as a front matter patch
-			patch := fmcore.FrontMatterPatch{
-				Source:   "extract_index_title",
-				Mode:     fmcore.MergeDeep,
-				Priority: 55, // After builder_v2 (50) but before merge
-				Data: map[string]any{
-					"title": title,
-				},
-			}
-			pg.AddPatch(patch)
+	// For index files with a section, use the section name as the title
+	// This ensures folder names become navigation titles (e.g., "vcfretriever" folder → "Vcfretriever" title)
+	if pg.Doc.Section != "" {
+		title = titleCase(pg.Doc.Section)
+	} else {
+		// For root-level indexes, extract H1 heading from content
+		// Pattern matches: optional whitespace, single #, space, heading text
+		pattern := regexp.MustCompile(`(?m)^\s*#\s+([^\n]+)`)
+		matches := pattern.FindStringSubmatch(pg.Content)
+
+		if len(matches) > 1 {
+			title = strings.TrimSpace(matches[1])
 		}
 	}
 
+	if title != "" {
+		// Add title as a front matter patch
+		patch := fmcore.FrontMatterPatch{
+			Source:   "extract_index_title",
+			Mode:     fmcore.MergeDeep,
+			Priority: 55, // After builder_v2 (50) but before merge
+			Data: map[string]any{
+				"title": title,
+			},
+		}
+		pg.AddPatch(patch)
+	}
+
 	return nil
+}
+
+// titleCase converts a string to title case by replacing dashes and underscores with spaces
+// and capitalizing the first letter of each word.
+func titleCase(s string) string {
+	s = strings.ReplaceAll(s, "_", " ")
+	s = strings.ReplaceAll(s, "-", " ")
+	parts := strings.Fields(s)
+	for i, part := range parts {
+		if len(part) > 0 {
+			parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 func init() {
