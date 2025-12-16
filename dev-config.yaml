@@ -11,9 +11,12 @@ repositories:
     tags:
       team: "someteams"
       type: "internal"
+      forge_type: "forgejo"
     auth:
       type: "token"
       token: "${GIT_ACCESS_TOKEN}"
+
+
 
 build:
   clone_strategy: auto
@@ -37,6 +40,8 @@ output:
   directory: "/tmp/dev-site"
   clean: true
 daemon:
+  link_verification:
+    enabled: true
   sync:
     schedule: "*/1 * * * *"  # Every minute for dev
   storage:
