@@ -57,4 +57,7 @@ params:
     themeVariantAuto:
         - zen-light
         - zen-dark
+taxonomies:
+    category: categories
+    tag: tags
 title: Relearn Site
