@@ -53,9 +53,9 @@ type Daemon struct {
 	metrics      *MetricsCollector
 	httpServer   *HTTPServer
 	scheduler    *Scheduler
-	buildQueue    *BuildQueue
-	stateManager  state.DaemonStateManager
-	liveReload    *LiveReloadHub
+	buildQueue   *BuildQueue
+	stateManager state.DaemonStateManager
+	liveReload   *LiveReloadHub
 
 	// Event sourcing components (Phase B)
 	eventStore      eventstore.Store
@@ -709,8 +709,8 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos() {
 
 	jobID := fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
 
-	slog.Info("Triggering scheduled build for explicit repositories", 
-		logfields.JobID(jobID), 
+	slog.Info("Triggering scheduled build for explicit repositories",
+		logfields.JobID(jobID),
 		slog.Int("repositories", len(d.config.Repositories)))
 
 	job := &BuildJob{
@@ -883,5 +883,3 @@ func (d *Daemon) GetConfig() *config.Config {
 	defer d.mu.RUnlock()
 	return d.config
 }
-
-

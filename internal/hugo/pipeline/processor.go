@@ -43,6 +43,7 @@ func (p *Processor) ProcessContent(discovered []*Document, repoMetadata map[stri
 			if repoInfo, ok := repoMetadata[doc.Repository]; ok {
 				doc.SourceURL = repoInfo.URL
 				doc.SourceCommit = repoInfo.Commit
+				doc.SourceBranch = repoInfo.Branch
 			}
 		}
 	}
