@@ -1,0 +1,18 @@
+version: "2.0"
+
+repositories:
+  - name: relearn-test
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Relearn Theme Test"
+  description: "Testing Relearn theme with language configuration"
+  base_url: "http://localhost:1313/"
+  theme: "relearn"
+
+output:
+  directory: PLACEHOLDER
+  clean: true

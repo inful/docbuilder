@@ -35,7 +35,7 @@ func (g *Generator) generateBasicLayouts() error {
 
 // HTML Templates
 const baseofTemplate = `<!DOCTYPE html>
-<html lang="{{ .Site.LanguageCode | default "en" }}">
+<html">
 <head>
   {{ partial "head.html" . }}
 </head>
