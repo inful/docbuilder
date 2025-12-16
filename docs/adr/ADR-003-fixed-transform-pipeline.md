@@ -17,34 +17,33 @@ Date: 2025-12-16
 
 ## Status
 
-**Accepted** - Implemented December 16, 2025
+**Implemented** - December 16, 2025 (Now Default)
 
 ## Implementation Summary
 
-The fixed transform pipeline has been successfully implemented and is available behind a feature flag.
+The fixed transform pipeline is fully implemented and is now the **default and only** content processing system in DocBuilder.
 
 **Deliverables:**
 - ✅ New pipeline package (`internal/hugo/pipeline/`)
 - ✅ Document type replacing Page/PageShim  
 - ✅ Generator and Transform function types
 - ✅ 3 generators (main/repo/section indexes)
-- ✅ 10 transforms (parse FM, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)
-- ✅ Comprehensive unit tests (all passing)
-- ✅ Integration adapter with feature flag
+- ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)
+- ✅ Comprehensive unit tests (71 passing in internal/hugo)
+- ✅ **Old system removed** - Transform registry, patch system, and all legacy code deleted
 
-**Access:**
-Set environment variable `DOCBUILDER_NEW_PIPELINE=1` to enable the new pipeline. The old registry system remains functional for backward compatibility during migration.
+**Migration Complete (December 16, 2025):**
+- Removed `internal/hugo/transforms/` directory (24 files, registry-based system)
+- Removed `internal/hugo/fmcore/` directory (3 files, patch merge system)
+- Removed visualize command and Page/PageShim abstractions
+- Simplified integration code (content_copy.go: 216→13 lines)
+- Net code reduction: -6,233 lines (-88%)
 
 **Test Status:**
 - Pipeline unit tests: PASS (6 test functions, 12 sub-tests)
-- Short test suite: PASS (42 packages)
+- Hugo package tests: PASS (71 tests)
+- Full short test suite: PASS (all packages)
 - golangci-lint: 0 issues
-
-**Next Steps:**
-1. Run production testing with feature flag enabled
-2. Remove old registry/patch system (separate PR)
-3. Update documentation and examples
-4. Make new pipeline the default
 
 ## Context
 
