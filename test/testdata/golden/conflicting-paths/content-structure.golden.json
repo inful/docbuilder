@@ -2,62 +2,62 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing handling of same-named files from different repos",
         "title": "Conflicting Paths Test",
         "type": "docs"
       },
-      "contentHash": "sha256:84cce28b245de492"
+      "contentHash": "sha256:a07fe978eecb93e8"
     },
     "content/repo-a/_index.md": {
       "frontmatter": {
         "repository": "repo-a",
-        "title": "Repo-a",
+        "title": "Repo A",
         "type": "docs"
       },
-      "contentHash": "sha256:8e139d7375f5319d"
+      "contentHash": "sha256:02587cc451a710ce"
     },
     "content/repo-a/api.md": {
       "frontmatter": {
         "repository": "repo-a",
         "title": "API Documentation (Repository A)",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:c17e1663bf1fe7e1"
+      "contentHash": "sha256:6253e425707570b0"
     },
     "content/repo-a/setup.md": {
       "frontmatter": {
         "repository": "repo-a",
         "title": "Setup Guide (Repository A)",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:4d5856d7346c7309"
+      "contentHash": "sha256:65c44bf222d36126"
     },
     "content/repo-b/_index.md": {
       "frontmatter": {
         "repository": "repo-b",
-        "title": "Repo-b",
+        "title": "Repo B",
         "type": "docs"
       },
-      "contentHash": "sha256:d36bf1a09400bdbc"
+      "contentHash": "sha256:b47c2fa65c1f75ca"
     },
     "content/repo-b/setup.md": {
       "frontmatter": {
         "repository": "repo-b",
         "title": "Setup Guide (Repository B)",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:be6db5928081baac"
+      "contentHash": "sha256:90d6008f32b0dcd9"
     },
     "content/repo-b/tutorial.md": {
       "frontmatter": {
         "repository": "repo-b",
         "title": "Tutorial (Repository B)",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:384c2740d9850cca"
+      "contentHash": "sha256:af520494f3553f38"
     }
   },
   "structure": {

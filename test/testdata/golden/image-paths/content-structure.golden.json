@@ -2,30 +2,27 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing asset path handling and transformations",
         "title": "Image Path Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:0e1987ff1eaa397b"
+      "contentHash": "sha256:29d11f3aaa0aed96"
     },
     "content/image-docs/_index.md": {
       "frontmatter": {
         "repository": "image-docs",
-        "title": "Image-docs",
+        "title": "Image Docs",
         "type": "docs"
       },
-      "contentHash": "sha256:307522079e87a46f"
+      "contentHash": "sha256:937d489072d703f1"
     },
     "content/image-docs/images-guide.md": {
       "frontmatter": {
         "repository": "image-docs",
         "title": "Image Examples",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:934f5b88ca1e0327"
+      "contentHash": "sha256:10b5943dd0059ee6"
     }
   },
   "structure": {

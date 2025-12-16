@@ -2,39 +2,37 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Test automatic front matter injection (editURL, repository metadata)",
         "title": "Frontmatter Injection Test",
         "type": "docs"
       },
-      "contentHash": "sha256:0e07b56d9fb888f2"
+      "contentHash": "sha256:53a4d6fa8fea7382"
     },
     "content/test-repo/_index.md": {
       "frontmatter": {
         "repository": "test-repo",
-        "title": "Test-repo",
+        "title": "Test Repo",
         "type": "docs"
       },
-      "contentHash": "sha256:d089d14552117e27"
+      "contentHash": "sha256:cb241663da63e518"
     },
     "content/test-repo/metadata.md": {
       "frontmatter": {
         "description": "Testing repository metadata injection",
         "repository": "test-repo",
         "title": "Page With Repository Metadata",
+        "type": "docs",
         "weight": 10
       },
-      "contentHash": "sha256:e69c7ce522210145"
+      "contentHash": "sha256:e561a33441acbc04"
     },
     "content/test-repo/no-editurl.md": {
       "frontmatter": {
         "description": "This page has no editURL in source front matter",
         "repository": "test-repo",
-        "title": "Page Without EditURL"
+        "title": "Page Without EditURL",
+        "type": "docs"
       },
-      "contentHash": "sha256:e2921f8196b4f2db"
+      "contentHash": "sha256:72158f1585b32ed0"
     }
   },
   "structure": {

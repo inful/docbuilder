@@ -1,11 +1,9 @@
 {
   "css": {
-    "exists": true,
-    "size": 941,
-    "contentHash": "sha256:0d82f88a1bebdc1c",
-    "markers": [
-      "@view-transition"
-    ]
+    "exists": false,
+    "size": 0,
+    "contentHash": "",
+    "markers": []
   },
   "js": {
     "exists": false,
@@ -14,11 +12,8 @@
     "markers": []
   },
   "partial": {
-    "exists": true,
+    "exists": false,
     "path": "layouts/_partials/custom/head-end.html",
-    "markers": [
-      ".Site.Params.enable_transitions",
-      "/view-transitions.css"
-    ]
+    "markers": []
   }
 }

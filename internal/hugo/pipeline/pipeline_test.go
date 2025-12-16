@@ -244,8 +244,8 @@ func TestGenerateMainIndex(t *testing.T) {
 		t.Error("Expected document to be marked as IsIndex")
 	}
 
-	if doc.Path != "_index.md" {
-		t.Errorf("Expected path='_index.md', got %q", doc.Path)
+	if doc.Path != "content/_index.md" {
+		t.Errorf("Expected path='content/_index.md', got %q", doc.Path)
 	}
 
 	if title, ok := doc.FrontMatter["title"].(string); !ok || title != "My Documentation" {

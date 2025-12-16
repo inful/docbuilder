@@ -157,3 +157,36 @@ func (g *Generator) buildRepositoryMetadata() map[string]pipeline.RepositoryInfo
 
 	return metadata
 }
+
+// copyAssetFile copies an asset file (image, etc.) to Hugo content directory without processing.
+func (g *Generator) copyAssetFile(file docs.DocFile) error {
+	// Read the asset file
+	content, err := os.ReadFile(file.Path)
+	if err != nil {
+		return fmt.Errorf("%w: failed to read asset %s: %w",
+			herrors.ErrContentWriteFailed, file.Path, err)
+	}
+
+	// Calculate output path - assets go in same location as markdown files
+	outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
+
+	// Create directory if needed
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+		return fmt.Errorf("%w: failed to create directory for %s: %w",
+			herrors.ErrContentWriteFailed, outputPath, err)
+	}
+
+	// Copy asset file as-is
+	// #nosec G306 -- asset files are public documentation resources
+	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+		return fmt.Errorf("%w: failed to write asset %s: %w",
+			herrors.ErrContentWriteFailed, outputPath, err)
+	}
+
+	slog.Debug("Copied asset file",
+		slog.String("source", file.RelativePath),
+		slog.String("destination", file.GetHugoPath()),
+		slog.String("type", file.Extension))
+
+	return nil
+}

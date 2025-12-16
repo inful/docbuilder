@@ -2,62 +2,62 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "cascade": {
-          "type": "docs"
-        },
-        "description": "Testing multi-repository aggregation",
         "title": "Multi-Repo Documentation",
         "type": "docs"
       },
-      "contentHash": "sha256:0718973f0c534d46"
+      "contentHash": "sha256:e2df1313e3c14197"
     },
     "content/repository-one/_index.md": {
       "frontmatter": {
         "repository": "repository-one",
-        "title": "Repository-one",
+        "title": "Repository One",
         "type": "docs"
       },
-      "contentHash": "sha256:64be6a9a964d736d"
+      "contentHash": "sha256:e3c7b4c3d6117eb5"
     },
     "content/repository-one/api.md": {
       "frontmatter": {
         "repository": "repository-one",
         "title": "API Reference",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:d528cf5721094f6d"
+      "contentHash": "sha256:b02cfb5de2aa3844"
     },
     "content/repository-one/guide.md": {
       "frontmatter": {
         "repository": "repository-one",
         "title": "Getting Started Guide",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:00ac02a783a9867d"
+      "contentHash": "sha256:9e4aa8dc4341a6b6"
     },
     "content/repository-two/_index.md": {
       "frontmatter": {
         "repository": "repository-two",
-        "title": "Repository-two",
+        "title": "Repository Two",
         "type": "docs"
       },
-      "contentHash": "sha256:6ebefe9eae5911de"
+      "contentHash": "sha256:6f6c26ea4cad46a1"
     },
     "content/repository-two/deployment.md": {
       "frontmatter": {
         "repository": "repository-two",
         "title": "Deployment Guide",
+        "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:64d3cc36ef297867"
+      "contentHash": "sha256:ca63506b0187714f"
     },
     "content/repository-two/tutorial.md": {
       "frontmatter": {
         "repository": "repository-two",
         "title": "Advanced Tutorial",
+        "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:ed05a3972a7e0d5f"
+      "contentHash": "sha256:e48f4ad71f330057"
     }
   },
   "structure": {
