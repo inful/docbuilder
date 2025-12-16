@@ -62,22 +62,33 @@ func (t extractIndexTitleTransform) Transform(p PageAdapter) error {
 	if pg.Doc.Section != "" {
 		title = titleCase(pg.Doc.Section)
 	} else {
-		// For root-level indexes, extract H1 heading from content
+		// For root-level indexes, check if content starts with H1 or has text before it
 		// Pattern matches: optional whitespace, single #, space, heading text
 		pattern := regexp.MustCompile(`(?m)^\s*#\s+([^\n]+)`)
-		matches := pattern.FindStringSubmatch(pg.Content)
-
-		if len(matches) > 1 {
-			title = strings.TrimSpace(matches[1])
+		loc := pattern.FindStringIndex(pg.Content)
+		
+		if loc != nil {
+			// Found H1 - check if there's any non-whitespace text before it
+			textBeforeH1 := strings.TrimSpace(pg.Content[:loc[0]])
+			
+			if textBeforeH1 == "" {
+				// No text before H1 - extract H1 as title
+				// (the H1 will be stripped by strip_first_heading)
+				matches := pattern.FindStringSubmatch(pg.Content)
+				if len(matches) > 1 {
+					title = strings.TrimSpace(matches[1])
+				}
+			}
+			// else: text before H1 exists - don't extract title (use default from filename)
 		}
 	}
 
 	if title != "" {
-		// Add title as a front matter patch
+		// Add title as a front matter patch using MergeReplace to override protected key
 		patch := fmcore.FrontMatterPatch{
 			Source:   "extract_index_title",
-			Mode:     fmcore.MergeDeep,
-			Priority: 55, // After builder_v2 (50) but before merge
+			Mode:     fmcore.MergeReplace, // Use Replace mode to override the protected "title" key
+			Priority: 55,                  // After builder_v2 (50) but before merge
 			Data: map[string]any{
 				"title": title,
 			},

@@ -132,8 +132,8 @@ func TestExtractIndexTitle(t *testing.T) {
 				if patch.Source != "extract_index_title" {
 					t.Errorf("Expected patch source 'extract_index_title', got %q", patch.Source)
 				}
-				if patch.Mode != fmcore.MergeDeep {
-					t.Errorf("Expected patch mode MergeDeep, got %v", patch.Mode)
+				if patch.Mode != fmcore.MergeReplace {
+					t.Errorf("Expected patch mode MergeReplace, got %v", patch.Mode)
 				}
 			}
 		})

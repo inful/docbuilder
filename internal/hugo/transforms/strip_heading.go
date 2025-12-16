@@ -40,11 +40,28 @@ func (t stripFirstHeadingTransform) Transform(p PageAdapter) error {
 		return fmt.Errorf("strip_first_heading: unexpected page adapter type")
 	}
 
-	// Skip stripping for index.md and README.md files - they become Hugo section indexes
-	// (_index.md) and themes like Relearn require the H1 heading as the section title
 	fileName := strings.ToLower(pg.Doc.Name)
+	
+	// For index.md and README.md files, only strip H1 if content starts with H1
+	// (no text before the first heading). This avoids duplication when H1 is used as title.
 	if fileName == "index" || fileName == "readme" {
-		return nil
+		// Pattern matches H1: optional whitespace, single #, space, heading text
+		pattern := regexp.MustCompile(`(?m)^\s*#\s+[^\n]+`)
+		loc := pattern.FindStringIndex(pg.Content)
+		
+		if loc != nil {
+			// Check if there's any non-whitespace text before the H1
+			textBeforeH1 := strings.TrimSpace(pg.Content[:loc[0]])
+			
+			if textBeforeH1 != "" {
+				// Text exists before H1 - don't strip the heading
+				return nil
+			}
+			// No text before H1 - fall through to strip it
+		} else {
+			// No H1 found - nothing to strip
+			return nil
+		}
 	}
 
 	// Pattern matches:
