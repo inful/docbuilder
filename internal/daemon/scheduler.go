@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/go-co-op/gocron/v2"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"github.com/go-co-op/gocron/v2"
 )
 
 // Scheduler wraps gocron scheduler for managing periodic tasks
@@ -66,7 +66,7 @@ func (s *Scheduler) executeBuild(jobType BuildType, repos []interface{}) {
 	}
 
 	jobID := fmt.Sprintf("%s-%d", jobType, time.Now().Unix())
-	slog.Info("Executing scheduled build", 
+	slog.Info("Executing scheduled build",
 		logfields.JobID(jobID),
 		slog.String("type", string(jobType)))
 
@@ -83,8 +83,8 @@ func (s *Scheduler) executeBuild(jobType BuildType, repos []interface{}) {
 	}
 
 	if err := s.daemon.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue scheduled build", 
-			logfields.JobID(jobID), 
+		slog.Error("Failed to enqueue scheduled build",
+			logfields.JobID(jobID),
 			logfields.Error(err))
 	}
 }

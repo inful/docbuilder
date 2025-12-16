@@ -31,13 +31,15 @@ type Document struct {
 	Section      string // Documentation section
 	SourceCommit string // Git commit SHA
 	SourceURL    string // Repository URL for edit links
+	SourceBranch string // Git branch name
 	Generated    bool   // True if this was generated (not discovered)
 
 	// Internal fields (used by pipeline, not by transforms)
-	FilePath  string // Absolute path to source file (for discovered docs)
-	Extension string // File extension
-	DocsBase  string // Configured docs base path
-	Name      string // File name without extension
+	FilePath     string // Absolute path to source file (for discovered docs)
+	RelativePath string // Path relative to repository root (for edit links)
+	Extension    string // File extension
+	DocsBase     string // Configured docs base path
+	Name         string // File name without extension
 
 	// Raw is the serialized output (front matter + content)
 	// Set by Serialize transform at the end of pipeline
@@ -61,8 +63,10 @@ func NewDocumentFromDocFile(file docs.DocFile) *Document {
 		Section:             file.Section,
 		SourceCommit:        "", // Will be set by repository metadata injector
 		SourceURL:           "", // Will be set by repository metadata injector
+		SourceBranch:        "", // Will be set by repository metadata injector
 		Generated:           false,
 		FilePath:            file.Path,
+		RelativePath:        file.RelativePath,
 		Extension:           file.Extension,
 		DocsBase:            file.DocsBase,
 		Name:                file.Name,

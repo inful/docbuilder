@@ -37,5 +37,7 @@ output:
   directory: "/tmp/dev-site"
   clean: true
 daemon:
+  sync:
+    schedule: "*/1 * * * *"  # Every minute for dev
   storage:
     repo_cache_dir: /tmp/dev-var/lib/docbuilder
