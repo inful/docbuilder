@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -214,7 +212,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 
 	if verifyErr != nil {
 		cacheEntry.Error = verifyErr.Error()
-		
+
 		// Update failure tracking
 		if cached != nil {
 			cacheEntry.FailureCount = cached.FailureCount + 1
@@ -244,61 +242,30 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 
 // checkLink performs the actual link verification.
 func (s *VerificationService) checkLink(ctx context.Context, linkURL string, isInternal bool, page *PageMetadata) (int, error) {
+	// Convert internal paths to full URLs for HTTP verification
+	// The daemon's HTTP server serves the static site
+	testURL := linkURL
 	if isInternal {
-		// For internal links, check if file exists
-		return s.checkInternalLink(linkURL, page)
-	}
-
-	// For external links, make HTTP request
-	return s.checkExternalLink(ctx, linkURL)
-}
-
-// checkInternalLink verifies an internal link points to an existing file.
-func (s *VerificationService) checkInternalLink(linkURL string, page *PageMetadata) (int, error) {
-	// Parse URL
-	u, err := url.Parse(linkURL)
-	if err != nil {
-		return 0, fmt.Errorf("invalid URL: %w", err)
-	}
-
-	// Extract path (remove query and fragment)
-	pathStr := u.Path
-	if pathStr == "" || pathStr == "/" {
-		return 200, nil // Root path is valid
-	}
-
-	// Convert URL path to file system path
-	// Determine the output directory from page path
-	outputDir := filepath.Dir(filepath.Dir(page.HTMLPath)) // Go up from public/path to site root
-
-	// Clean and join path
-	filePath := filepath.Join(outputDir, "public", filepath.Clean(pathStr))
-
-	// Check if file exists
-	info, err := os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// Check for index.html in directory
-			if !strings.HasSuffix(filePath, ".html") {
-				indexPath := filepath.Join(filePath, "index.html")
-				if _, err := os.Stat(indexPath); err == nil {
-					return 200, nil
-				}
-			}
-			return 404, fmt.Errorf("file not found: %s", pathStr)
+		// Parse the base URL
+		base, err := url.Parse(page.BaseURL)
+		if err != nil {
+			return 0, fmt.Errorf("invalid base URL: %w", err)
 		}
-		return 0, fmt.Errorf("stat error: %w", err)
-	}
 
-	// If it's a directory, check for index.html
-	if info.IsDir() {
-		indexPath := filepath.Join(filePath, "index.html")
-		if _, err := os.Stat(indexPath); err != nil {
-			return 404, fmt.Errorf("directory without index.html: %s", pathStr)
+		// Resolve the link relative to base
+		linkParsed, err := url.Parse(linkURL)
+		if err != nil {
+			return 0, fmt.Errorf("invalid link URL: %w", err)
 		}
+
+		testURL = base.ResolveReference(linkParsed).String()
+		slog.Debug("Converted internal link to full URL",
+			"original", linkURL,
+			"full_url", testURL,
+			"base_url", page.BaseURL)
 	}
 
-	return 200, nil
+	return s.checkExternalLink(ctx, testURL)
 }
 
 // checkExternalLink verifies an external link via HTTP request.

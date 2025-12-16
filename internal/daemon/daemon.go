@@ -187,6 +187,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.eventStore = eventStore
 	daemon.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
 	daemon.eventEmitter = NewEventEmitter(eventStore, daemon.buildProjection)
+	daemon.eventEmitter.daemon = daemon // Wire back reference for hooks
 
 	// Rebuild projection from existing events
 	if err := daemon.buildProjection.Rebuild(context.Background()); err != nil {
@@ -463,15 +464,9 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 	return d.eventEmitter.EmitBuildFailed(ctx, buildID, stage, errorMsg)
 }
 
-// EmitBuildReport implements BuildEventEmitter for the daemon.
-func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
-	// Emit the event first
-	if d.eventEmitter != nil {
-		if err := d.eventEmitter.EmitBuildReport(ctx, buildID, report); err != nil {
-			return err
-		}
-	}
-
+// onBuildReportEmitted is called after a build report is emitted to the event store.
+// This is where we trigger post-build hooks like link verification and state updates.
+func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *hugo.BuildReport) error {
 	// Update state manager after successful builds
 	// This is critical for skip evaluation to work correctly on subsequent builds
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.stateManager != nil && d.config != nil {
@@ -479,11 +474,31 @@ func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hu
 	}
 
 	// Trigger link verification after successful builds (low priority background task)
+	slog.Debug("onBuildReportEmitted called",
+		"build_id", buildID,
+		"report_nil", report == nil,
+		"outcome", func() string {
+			if report != nil {
+				return string(report.Outcome)
+			}
+			return "N/A"
+		}(),
+		"verifier_nil", d.linkVerifier == nil)
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.linkVerifier != nil {
 		go d.verifyLinksAfterBuild(buildID, report)
 	}
 
 	return nil
+}
+
+// EmitBuildReport implements BuildEventEmitter for the daemon (legacy/compatibility).
+// This is now handled by EventEmitter calling onBuildReportEmitted.
+func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+	// Delegate to event emitter which will call back to onBuildReportEmitted
+	if d.eventEmitter == nil {
+		return nil
+	}
+	return d.eventEmitter.EmitBuildReport(ctx, buildID, report)
 }
 
 // updateStateAfterBuild updates the state manager with build metadata for skip evaluation.
@@ -656,12 +671,39 @@ func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) (
 
 // extractRepoFromPath attempts to extract repository name from rendered path.
 // Rendered paths typically follow pattern: repo-name/section/file.html
+// Hugo-generated pages (categories, tags, etc.) are marked with "_hugo" prefix
 func extractRepoFromPath(path string) string {
 	parts := strings.Split(filepath.ToSlash(path), "/")
-	if len(parts) > 0 {
-		return parts[0]
+	if len(parts) == 0 {
+		return "unknown"
 	}
-	return "unknown"
+
+	firstSegment := parts[0]
+
+	// Recognize Hugo-generated taxonomy and special pages
+	if isHugoGeneratedPath(firstSegment) {
+		return "_hugo_" + firstSegment
+	}
+
+	// For root-level files (index.html, 404.html, sitemap.xml, etc.)
+	if len(parts) == 1 {
+		return "_hugo_root"
+	}
+
+	return firstSegment
+}
+
+// isHugoGeneratedPath checks if a path segment is a Hugo-generated taxonomy or special page.
+func isHugoGeneratedPath(segment string) bool {
+	HugoGeneratedPaths := map[string]bool{
+		"categories":  true,
+		"tags":        true,
+		"authors":     true,
+		"series":      true,
+		"search":      true,
+		"sitemap.xml": true,
+	}
+	return HugoGeneratedPaths[segment]
 }
 
 // Compile-time check that Daemon implements BuildEventEmitter
