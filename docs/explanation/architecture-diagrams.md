@@ -11,7 +11,9 @@ tags:
 
 # Architecture Diagrams
 
-> **⚠️ DEPRECATION NOTICE**: This document is partially outdated and requires significant updates to reflect the current transform-based architecture. Many package references (`cli/`, `pipeline/`, `services/`) no longer exist. The layer view diagram has been updated, but other sections still reference old architecture. See [architecture.md](architecture.md) and [functional-specification.md](../reference/functional-specification.md) for current information.
+This document provides visual representations of DocBuilder's architecture using ASCII diagrams and Mermaid notation.
+
+**Last Updated:** December 16, 2025 - Reflects ADR-003 fixed transform pipeline implementation.
 
 This document provides visual representations of DocBuilder's architecture using ASCII diagrams and Mermaid notation.
 
@@ -61,22 +63,32 @@ This document provides visual representations of DocBuilder's architecture using
                                 │
 ┌───────────────────────────────▼─────────────────────────────────────┐
 │                        PROCESSING LAYER                             │
-│  (internal/hugo, internal/docs, internal/hugo/transforms)           │
+│  (internal/hugo, internal/docs, internal/hugo/pipeline)             │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐   │
 │  │                   Hugo Generator                             │   │
 │  │                                                              │   │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐     │   │
-│  │  │  Transform  │ │   Theme     │ │   Report Builder    │     │   │
-│  │  │  Registry   │ │   System    │ │                     │     │   │
+│  │  │  Pipeline   │ │   Theme     │ │   Report Builder    │     │   │
+│  │  │  Processor  │ │   System    │ │                     │     │   │
 │  │  └──────┬──────┘ └──────┬──────┘ └──────────┬──────────┘     │   │
 │  └─────────┼───────────────┼───────────────────┼────────────────┘   │
 │            │               │                   │                    │
 │  ┌─────────▼───────────────▼───────────────────▼──────────────┐     │
-│  │                  Transform Pipeline                       │     │
+│  │              Fixed Transform Pipeline                     │     │
+│  │         (internal/hugo/pipeline/)                         │     │
 │  │                                                          │     │
-│  │  Parse → Build → Enrich → Merge → Transform →            │     │
-│  │  Finalize → Serialize                                    │     │
+│  │  1. parseFrontMatter    - Extract YAML                   │     │
+│  │  2. normalizeIndexFiles - README → _index                │     │
+│  │  3. buildBaseFrontMatter - Add defaults                  │     │
+│  │  4. extractIndexTitle   - H1 extraction                  │     │
+│  │  5. stripHeading        - Remove H1                      │     │
+│  │  6. rewriteRelativeLinks - Fix .md links                 │     │
+│  │  7. rewriteImageLinks   - Fix image paths                │     │
+│  │  8. generateFromKeywords - Create from @keywords         │     │
+│  │  9. addRepositoryMetadata - Inject repo info             │     │
+│  │  10. addEditLink        - Generate editURL               │     │
+│  │  11. serializeDocument  - Output YAML + content          │     │
 │  └──────────────────────────────────────────────────────────┘     │
 └─────────────────────────────────┬───────────────────────────────────┘
                                   │
@@ -198,34 +210,51 @@ CopyContent Stage
     │
     ├─ For each DocFile:
     │   │
-    │   ├─ 1. Parse Front Matter
-    │   │   ├─ Extract YAML header
-    │   │   └─ Parse content
+    │   ├─ Fixed Transform Pipeline (11 sequential transforms)
+    │   │   │
+    │   │   ├─ 1. Parse Front Matter
+    │   │   │   ├─ Extract YAML header
+    │   │   │   └─ Parse markdown content
+    │   │   │
+    │   │   ├─ 2. Normalize Index Files
+    │   │   │   └─ README.md → _index.md
+    │   │   │
+    │   │   ├─ 3. Build Base Front Matter
+    │   │   │   ├─ Add repository metadata
+    │   │   │   ├─ Add section/path info
+    │   │   │   ├─ Add forge info
+    │   │   │   └─ Add date/timestamp
+    │   │   │
+    │   │   ├─ 4. Extract Index Title
+    │   │   │   ├─ Find first H1 heading
+    │   │   │   └─ Set as page title
+    │   │   │
+    │   │   ├─ 5. Strip Heading
+    │   │   │   └─ Remove first H1 from content
+    │   │   │
+    │   │   ├─ 6. Rewrite Relative Links
+    │   │   │   ├─ Fix .md → / conversions
+    │   │   │   └─ Resolve relative paths
+    │   │   │
+    │   │   ├─ 7. Rewrite Image Links
+    │   │   │   └─ Fix image path references
+    │   │   │
+    │   │   ├─ 8. Generate from Keywords
+    │   │   │   └─ Process @keywords directives
+    │   │   │
+    │   │   ├─ 9. Add Repository Metadata
+    │   │   │   └─ Inject repo context
+    │   │   │
+    │   │   ├─ 10. Add Edit Link
+    │   │   │   ├─ Check forge capabilities
+    │   │   │   ├─ Build edit URL
+    │   │   │   └─ Add to front matter
+    │   │   │
+    │   │   └─ 11. Serialize Document
+    │   │       ├─ Generate YAML
+    │   │       └─ Combine with content
     │   │
-    │   ├─ 2. Build Front Matter
-    │   │   ├─ Add repository
-    │   │   ├─ Add section
-    │   │   ├─ Add forge
-    │   │   └─ Add date
-    │   │
-    │   ├─ 3. Inject Edit Link
-    │   │   ├─ Check forge capabilities
-    │   │   ├─ Build edit URL
-    │   │   └─ Add to front matter
-    │   │
-    │   ├─ 4. Merge Front Matter
-    │   │   ├─ Combine parsed + built
-    │   │   └─ User values override
-    │   │
-    │   ├─ 5. Apply Transforms
-    │   │   ├─ Custom transformers
-    │   │   └─ Replace patterns
-    │   │
-    │   ├─ 6. Serialize Front Matter
-    │   │   ├─ Generate YAML
-    │   │   └─ Combine with content
-    │   │
-    │   └─ 7. Write to content/
+    │   └─ Write to content/
     │       └─ Create target file
     │
     └─ Update DocsState
@@ -238,27 +267,20 @@ CopyContent Stage
 ### Dependency Graph
 
 ```
-┌──────────┐
-│   cmd/   │─────────────────────┐
-└────┬─────┘                     │
-     │                           ▼
-     │                    ┌──────────┐
-     │                    │   cli/   │
-     │                    └────┬─────┘
-     │                         │
-     ▼                         ▼
-┌─────────────┐        ┌──────────────┐
-│  services/  │◄───────│   server/    │
-└──────┬──────┘        └──────────────┘
-       │
-       ▼
-┌──────────────┐
-│  pipeline/   │
-└──────┬───────┘
-       │
-       ├────────────────────────────────┐
-       │                                │
-       ▼                                ▼
+┌──────────────────┐
+│ cmd/docbuilder/  │
+│   commands/      │
+└────────┬─────────┘
+         │
+         ▼
+┌───────────────────┐
+│ internal/build/   │
+│ internal/daemon/  │
+└────────┬──────────┘
+         │
+         ├────────────────────────────────┐
+         │                                │
+         ▼                                ▼
 ┌──────────────┐                 ┌──────────────┐
 │    config/   │                 │    state/    │
 └──────┬───────┘                 └──────┬───────┘
@@ -266,23 +288,28 @@ CopyContent Stage
        ├────────────────────────────────┤
        │                                │
        ▼                                ▼
-┌────────────────────────────────────────────┐
-│              Domain Layer                  │
-│  ┌─────────┐  ┌─────────┐  ┌────────────┐  │
-│  │  docs/  │  │  hugo/  │  │    forge/  │  │
-│  └────┬────┘  └────┬────┘  └─────┬──────┘  │
-└───────┼────────────┼─────────────┼─────────┘
-        │            │             │
-        └────────────┴─────────────┘
-                     │
-        ┌────────────┴─────────────┐
-        │                          │
-        ▼                          ▼
-┌──────────────┐          ┌──────────────┐
-│     git/     │          │  workspace/  │
-└──────┬───────┘          └──────┬───────┘
-       │                         │
-       └─────────────┬───────────┘
+┌────────────────────────────────────────────────┐
+│              Domain Layer                      │
+│  ┌─────────┐  ┌──────────────┐  ┌───────────┐  │
+│  │  docs/  │  │    hugo/     │  │   forge/  │  │
+│  └────┬────┘  └──────┬───────┘  └─────┬─────┘  │
+│       │              │                │        │
+│       │         ┌────▼─────────┐      │        │
+│       │         │  pipeline/   │      │        │
+│       │         │  (transforms)│      │        │
+│       │         └──────────────┘      │        │
+└───────┼────────────────┼──────────────┼────────┘
+        │                │              │
+        └────────────────┴──────────────┘
+                         │
+        ┌────────────────┴─────────────┐
+        │                              │
+        ▼                              ▼
+┌──────────────┐            ┌──────────────┐
+│     git/     │            │  workspace/  │
+└──────┬───────┘            └──────┬───────┘
+       │                           │
+       └─────────────┬─────────────┘
                      │
                      ▼
              ┌──────────────┐
@@ -295,20 +322,21 @@ CopyContent Stage
 
 **Layer Dependencies (must respect):**
 ```
-presentation  →  application  →  domain  →  infrastructure
-     ✓               ✓             ✓            ✓
-     ✗               ✗             ✗            ✓
+commands  →  services  →  domain  →  infrastructure
+   ✓            ✓          ✓            ✓
+   ✗            ✗          ✗            ✓
 ```
 
 **Package Rules:**
-- ✅ `cli/` can import `services/`
-- ✅ `services/` can import `pipeline/`
-- ✅ `pipeline/` can import `config/`, `state/`, `docs/`, `hugo/`, `git/`
-- ✅ `docs/` can import `config/`
-- ✅ All packages can import `foundation/`
-- ❌ `config/` cannot import `pipeline/`
-- ❌ `git/` cannot import `services/`
-- ❌ `foundation/` cannot import application packages
+- ✅ `cmd/docbuilder/commands/` can import `internal/build/`, `internal/daemon/`
+- ✅ `internal/build/` can import `internal/hugo/`, `internal/docs/`, `internal/git/`
+- ✅ `internal/hugo/` can import `internal/hugo/pipeline/`
+- ✅ `internal/hugo/pipeline/` contains transform implementations
+- ✅ `internal/docs/` can import `internal/config/`
+- ✅ All packages can import `internal/foundation/`
+- ❌ `internal/config/` cannot import `internal/build/`
+- ❌ `internal/git/` cannot import `internal/build/`
+- ❌ `internal/foundation/` cannot import application packages
 
 ---
 
