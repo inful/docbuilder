@@ -445,46 +445,29 @@ sequenceDiagram
 
 ## Component Interactions
 
-### Theme System
+### Relearn Theme Configuration
 
 ```
 ┌────────────────────────────────────────────────────┐
-│              Theme Registry                        │
+│          Relearn Theme Configuration               │
+│          (hardcoded in config_writer.go)           │
 │                                                    │
-│  themes = map[string]Theme{                        │
-│    "hextra": &HextraTheme{},                       │
-│    "docsy":  &DocsyTheme{},                        │
-│  }                                                 │
-└─────────────────┬──────────────────────────────────┘
-                  │
-                  │ GetTheme(name)
-                  ▼
-         ┌───────────────────┐
-         │  Theme Instance   │ 
-         │                   │
-         │ - Name()          │
-         │ - Features()      │
-         │ - ApplyParams()   │
-         │ - CustomizeRoot() │
-         └────────┬──────────┘
-                  │
-    ┌─────────────┼─────────────┐
-    │             │             │
-    ▼             ▼             ▼
-┌────────┐  ┌─────────┐  ┌──────────┐
-│Hextra  │  │ Docsy   │  │ Custom   │
-│Theme   │  │ Theme   │  │ Theme    │
-└────────┘  └─────────┘  └──────────┘
+│  applyRelearnThemeDefaults(params)                 │
+│                                                    │
+│  - themeVariant: "relearn-light"                   │
+│  - disableSearch: false                            │
+│  - disableLandingPageButton: true                  │
+│  - collapsibleMenu: true                           │
+│  - showVisitedLinks: true                          │
+└────────────────────────────────────────────────────┘
 
 Generation Flow:
-1. Load config.hugo.theme → "hextra"
-2. GetTheme("hextra") → HextraTheme
-3. HextraTheme.Features() → {UsesModules: true, ...}
-4. Core defaults → {title, baseURL, markup}
-5. HextraTheme.ApplyParams(ctx, params)
-6. User params deep merge
-7. HextraTheme.CustomizeRoot(ctx, root)
-8. Write hugo.yaml
+1. Load config → title, baseURL, etc.
+2. Apply Relearn defaults
+3. User params deep merge (override defaults)
+4. Add dynamic fields (build_date)
+5. Add hardcoded module: github.com/McShelby/hugo-theme-relearn
+6. Write hugo.yaml
 ```
 
 ### Forge Integration
@@ -654,31 +637,26 @@ stateDiagram-v2
     Failed --> [*]
 ```
 
-### Theme Loading
+### Theme Configuration Loading
 
 ```mermaid
 stateDiagram-v2
     [*] --> Loading
-    Loading --> Resolving: Config loaded
-    Resolving --> Found: Theme registered
-    Resolving --> NotFound: Unknown theme
-    NotFound --> Failed: Error
-    Found --> CheckingFeatures: Theme instance
-    CheckingFeatures --> ApplyingDefaults: Features loaded
-    ApplyingDefaults --> MergingParams: Defaults applied
-    MergingParams --> Customizing: User params merged
-    Customizing --> Ready: Root customized
+    Loading --> ApplyingDefaults: Config loaded
+    ApplyingDefaults --> MergingParams: Relearn defaults applied
+    MergingParams --> AddingModule: User params merged
+    AddingModule --> Ready: Module path added
     Ready --> [*]
-    Failed --> [*]
     
-    note right of Found
-        Lookup in theme registry
-        e.g., "hextra" → HextraTheme
+    note right of ApplyingDefaults
+        Hardcoded Relearn defaults:
+        themeVariant, disableSearch,
+        collapsibleMenu, etc.
     end note
     
-    note right of CheckingFeatures
-        UsesModules, AutoMainMenu,
-        SearchJSON, etc.
+    note right of AddingModule
+        Fixed module:
+        github.com/McShelby/hugo-theme-relearn
     end note
 ```
 

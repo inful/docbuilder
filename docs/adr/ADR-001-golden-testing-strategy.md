@@ -33,10 +33,10 @@ DocBuilder's core value is transforming documentation from Git repositories into
 ### Problems
 
 1. **No end-to-end validation**: Can't verify the complete pipeline produces correct output
-2. **Refactoring fear**: Large-scale changes (like theme system refactor) lack safety net
+2. **Refactoring fear**: Large-scale changes (like pipeline refactor) lack safety net
 3. **Bug reproduction**: No standard way to create minimal reproducible test cases
 4. **Feature documentation**: Supported transformations not demonstrated in tests
-5. **Theme compatibility**: Can't systematically verify Hextra/Docsy differences
+5. **Configuration validation**: Can't systematically verify Relearn theme configuration
 
 ## Decision
 
@@ -54,15 +54,6 @@ Implement a **golden testing framework** that:
 test/
   testdata/
     repos/                           # Source repository structures
-      themes/
-        hextra-basic/                # Basic Hextra theme features
-          docs/
-            index.md
-            guide.md
-        hextra-math/                 # Math rendering with KaTeX
-          docs/
-            equations.md
-        docsy-basic/                 # Basic Docsy theme features
       transforms/
         frontmatter-injection/       # editURL and metadata injection
         cross-repo-links/            # Link transformation
@@ -74,16 +65,16 @@ test/
         issue-XXX/                   # Specific bug reproductions
     
     configs/                         # Test configurations
-      hextra-basic.yaml
-      docsy-basic.yaml
+      basic-build.yaml
       multi-repo.yaml
+      custom-params.yaml
     
     golden/                          # Verified output snapshots
-      hextra-basic/
+      basic-build/
         hugo-config.golden.yaml      # Generated Hugo configuration
         content-structure.golden.json # File structure with front matter
         rendered-samples.golden.json  # Selected HTML pages (optional)
-      docsy-basic/
+      multi-repo/
         hugo-config.golden.yaml
         content-structure.golden.json
   
@@ -106,17 +97,32 @@ theme: hextra
 
 **Content Structure** (`content-structure.golden.json`):
 ```json
+## Hugo Configuration
+
+baseURL: "http://localhost:1313/"
+title: "Test Documentation"
+theme: "relearn"  # Always Relearn
+module:
+  imports:
+    - path: "github.com/McShelby/hugo-theme-relearn"
+
+params:
+  themeVariant: "relearn-light"
+  disableSearch: false
+  # ... other Relearn params
+```
+
+**Content Structure** (`content-structure.golden.json`):
+```json
 {
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "title": "Home",
-        "type": "docs",
-        "cascade": { "type": "docs" }
+        "title": "Home"
       },
       "contentHash": "sha256:abc123..."
     },
-    "content/hextra-basic/guide.md": {
+    "content/test-docs/guide.md": {
       "frontmatter": {
         "title": "Guide",
         "editURL": "https://github.com/org/repo/blob/main/docs/guide.md"
@@ -127,7 +133,7 @@ theme: hextra
   "structure": {
     "content/": {
       "_index.md": {},
-      "hextra-basic/": {
+      "test-docs/": {
         "_index.md": {},
         "guide.md": {}
       }
@@ -139,18 +145,11 @@ theme: hextra
 **Rendered Samples** (`rendered-samples.golden.json` - optional):
 ```json
 {
-  "public/hextra-basic/guide/index.html": {
+  "public/test-docs/guide/index.html": {
     "selectors": {
       "h1": "Guide",
-      ".edit-link": "https://github.com/org/repo/blob/main/docs/guide.md",
-      "article.math": true
-    },
-    "snippets": [
-      {
-        "selector": ".katex",
-        "content": "<span class=\"katex\">..."
-      }
-    ]
+      ".edit-link": "https://github.com/org/repo/blob/main/docs/guide.md"
+    }
   }
 }
 ```
@@ -158,17 +157,17 @@ theme: hextra
 ### Test Implementation Pattern
 
 ```go
-func TestGolden_HextraBasic(t *testing.T) {
+func TestGolden_BasicBuild(t *testing.T) {
     if testing.Short() {
         t.Skip("Skipping golden test in short mode")
     }
     
     // Create temp git repo from testdata structure
-    repoPath := setupTestRepo(t, "testdata/repos/themes/hextra-basic")
+    repoPath := setupTestRepo(t, "testdata/repos/basic-build")
     defer cleanupTestRepo(t, repoPath)
     
     // Load and configure test
-    cfg := loadGoldenConfig(t, "testdata/configs/hextra-basic.yaml")
+    cfg := loadGoldenConfig(t, "testdata/configs/basic-build.yaml")
     cfg.Repositories[0].URL = repoPath // Point to temp repo
     
     // Execute full build
@@ -178,7 +177,7 @@ func TestGolden_HextraBasic(t *testing.T) {
     require.NoError(t, err)
     
     // Verify outputs
-    goldenDir := "testdata/golden/hextra-basic"
+    goldenDir := "testdata/golden/basic-build"
     verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml")
     verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json")
     
@@ -188,6 +187,7 @@ func TestGolden_HextraBasic(t *testing.T) {
     }
 }
 ```
+```
 
 ### Update Workflow
 
@@ -196,7 +196,7 @@ func TestGolden_HextraBasic(t *testing.T) {
 go test ./test/integration -update-golden
 
 # Update specific test
-go test ./test/integration -run TestGolden_HextraBasic -update-golden
+go test ./test/integration -run TestGolden_BasicBuild -update-golden
 
 # Run without rendering (faster)
 go test ./test/integration -skip-render
@@ -215,7 +215,7 @@ go test ./test/integration -skip-render
 ### Why Not Full HTML Snapshots?
 
 1. **Size**: Complete Hugo sites are large (MBs per test)
-2. **Brittleness**: Theme updates change HTML constantly
+2. **Brittleness**: Relearn theme updates change HTML constantly
 3. **Diffability**: Binary archives are hard to review in Git
 4. **Focus**: We care about *our* transformations, not theme rendering
 
@@ -236,7 +236,7 @@ go test ./test/integration -skip-render
 
 ### Positive
 
-1. **Refactoring confidence**: Theme system, pipeline changes are safe
+1. **Refactoring confidence**: Pipeline changes, configuration updates are safe
 2. **Bug prevention**: Regressions caught before merge
 3. **Feature documentation**: Tests show what's supported
 4. **Developer productivity**: Fast feedback on changes
@@ -255,9 +255,15 @@ go test ./test/integration -skip-render
 2. **Naming convention**: `TestGolden_*` prefix for golden tests
 3. **Flag dependencies**: Requires `-update-golden` flag support
 
-## Implementation Plan
+## Status
 
-See: `docs/plan/golden-testing-implementation.md`
+**Implemented** - Golden testing framework is in place and actively used.
+
+## Notes
+
+- Single Relearn theme simplifies testing (no theme variation needed)
+- Focus on transform pipeline and configuration generation
+- Integration tests cover full build workflow
 
 ## Alternatives Considered
 

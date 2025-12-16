@@ -35,7 +35,7 @@ DocBuilder is a Go CLI tool and daemon that aggregates documentation from multip
 - **Observable**: Unified error system, structured logging, metrics, and tracing
 - **Incremental**: Change detection and partial rebuilds for performance
 - **Multi-Tenant**: Supports forge namespacing and per-repository configuration
-- **Theme-Aware**: Hugo theme integration via modules (Hextra, Docsy, Relearn)
+- **Theme-Aware**: Hugo theme integration via modules (Relearn only)
 
 ---
 
@@ -308,13 +308,13 @@ hugo/
 ├── content_copy.go    # Content processing
 ├── index.go           # Index page generation
 ├── runner.go          # Hugo binary execution
-├── models/            # Transform pipeline
+├── models/            # Data models
 │   ├── frontmatter.go
 │   ├── editlink.go
-│   └── transformers.go
-└── themes/            # Theme implementations
-    ├── hextra/
-    └── docsy/
+│   └── config.go
+└── pipeline/          # Fixed transform pipeline (ADR-003)
+    ├── transforms.go  # All 11 transforms
+    └── generators.go  # Document generators
 ```
 
 **Content Pipeline:**
@@ -613,41 +613,35 @@ Event Handlers (async)
 
 ## Key Subsystems
 
-### 1. Theme System
+### 1. Relearn Theme Configuration
 
-Themes implement a lightweight interface:
+DocBuilder is now hardcoded to use the Relearn theme exclusively. Theme configuration is applied directly in the Hugo generator without a plugin system or theme registry.
+
+**Configuration Location:** `internal/hugo/config_writer.go`
 
 ```go
-type Theme interface {
-    Name() config.Theme
-    Features() ThemeFeatures
-    ApplyParams(ctx ParamContext, params map[string]any)
-    CustomizeRoot(ctx ParamContext, root map[string]any)
+func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
+    // Set Relearn-specific defaults
+    // - themeVariant
+    // - disableSearch
+    // - disableLandingPageButton
+    // etc.
 }
 ```
 
-**Registration:**
-```go
-func init() {
-    theme.RegisterTheme(&HextraTheme{})
-}
-```
-
-**Generation Phases:**
+**Hugo Config Generation:**
 1. Core defaults (title, baseURL, markup)
-2. `ApplyParams()` - Theme fills/normalizes params
-3. User param deep-merge
+2. Relearn-specific defaults (via `applyRelearnThemeDefaults`)
+3. User param deep-merge (user values override)
 4. Dynamic fields (build_date)
-5. Module import (if `Features().UsesModules`)
-6. Automatic menu generation
-7. `CustomizeRoot()` - Final adjustments
+5. Hardcoded module import: `github.com/McShelby/hugo-theme-relearn`
+6. Language configuration for i18n
 
-**Adding New Theme:**
-1. Create `internal/hugo/themes/<name>/theme_<name>.go`
-2. Implement `Theme` interface
-3. Register in `init()`
-4. Populate `ThemeFeatures`
-5. Add golden test for `hugo.yaml`
+**No Theme Abstraction:**
+- Previous multi-theme system removed
+- No theme registry or plugin system
+- Relearn configuration is hardcoded
+- Simplifies codebase and maintenance
 
 ### 2. Forge Integration
 

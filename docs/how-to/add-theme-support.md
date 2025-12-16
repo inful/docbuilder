@@ -1,45 +1,54 @@
 ---
-title: "How To: Add Theme Support"
-date: 2025-12-15
+title: "How To: Relearn Theme Configuration"
+date: 2025-12-16
 categories:
   - how-to
 tags:
   - themes
   - hugo
-  - customization
+  - relearn
 ---
 
-# How To: Add or Use Theme Support
+# How To: Configure the Relearn Theme
 
-DocBuilder currently provides optimized configuration for the `hextra`, `docsy`, and `relearn` Hugo themes via Hugo Modules.
+DocBuilder is hardcoded to use the [Relearn theme](https://github.com/McShelby/hugo-theme-relearn) exclusively. The theme is automatically configured via Hugo Modules with sensible defaults.
 
-## Selecting a Theme
+## Theme Configuration
+
+No theme selection is needed. DocBuilder automatically:
+1. Applies Relearn-specific default parameters
+2. Imports the theme module: `github.com/McShelby/hugo-theme-relearn`
+3. Generates a `go.mod` in the output directory with the theme dependency
+
+## Default Relearn Parameters
+
+DocBuilder applies these defaults (can be overridden via config):
+
+```yaml
+params:
+  themeVariant: "relearn-light"
+  disableSearch: false
+  disableLandingPageButton: true
+  collapsibleMenu: true
+  showVisitedLinks: true
+```
+
+## Customizing Parameters
+
+Override Relearn parameters via configuration:
 
 ```yaml
 hugo:
-  theme: hextra   # or docsy, or relearn
+  title: "My Documentation"
+  description: "Documentation site"
+  base_url: "https://docs.example.com/"
+  params:
+    themeVariant: "relearn-dark"  # Override default
+    customCSS:
+      - "css/custom.css"
 ```
 
-A `go.mod` is auto-created in the output directory with required module imports.
-
-## Theme Features
-
-### Hextra
-
-- FlexSearch configuration for fast client-side search.
-- Math support enabled in Goldmark.
-- Edit link logic integrated per page when repository metadata allows.
-- Default navbar with search & theme toggle.
-
-### Docsy
-
-- JSON output enabled for offline search index generation.
-- Repository links and UI defaults auto-configured.
-- Module import based resolution (no legacy `themes/` copy).
-
-## Customizing Params
-
-Edit the generated `hugo.yaml` after a build, or better: provide overrides via configuration fields (planned future expansion) and re-run the build.
+User-provided parameters take precedence over defaults via deep merge.
 
 ## Overriding Index Templates
 
@@ -65,12 +74,22 @@ If none match, an embedded default is used.
 
 If a template body starts with a YAML front matter fence (`---`), DocBuilder will NOT inject its own. Otherwise it prepends computed front matter (title, repository, section, forge, dates, edit link, etc.).
 
-## Adding Support for a New Theme (Contributor Flow)
+## Theme-Specific Features
 
-1. Extend theme dispatch in the Hugo generator (look for existing `hextra` / `docsy` param injection).
-2. Add module import stanza.
-3. Add theme-specific params (search, UI, etc.).
-4. Add tests ensuring config merges safely.
+### Search
+- FlexSearch enabled by default (`disableSearch: false`)
+- Automatic search index generation
+- Client-side full-text search
+
+### Navigation
+- Collapsible sidebar menu (`collapsibleMenu: true`)
+- Visited link tracking (`showVisitedLinks: true`)
+- Automatic breadcrumbs
+
+### Customization
+- Multiple theme variants available
+- Custom CSS support
+- Configurable landing page
 
 ## Troubleshooting
 
@@ -78,4 +97,11 @@ If a template body starts with a YAML front matter fence (`---`), DocBuilder wil
 |---------|-------|-----|
 | Theme assets missing | Hugo not run | Run `hugo` manually or rerun DocBuilder with `--render-mode always`. |
 | Edit links absent | Repo metadata incomplete | Ensure repo URL + branch were configured. |
+| Theme variant not applied | Typo in parameter | Check `params.themeVariant` spelling in config. |
+
+## See Also
+
+- [Use Relearn Theme Guide](use-relearn-theme.md) - Comprehensive Relearn feature guide
+- [Configuration Reference](../reference/configuration.md) - All configuration options
+- [Relearn Theme Documentation](https://mcshelby.github.io/hugo-theme-relearn/) - Official theme docs
 | Wrong base URL | `hugo.base_url` mismatch | Update config and rebuild. |
