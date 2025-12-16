@@ -2,6 +2,8 @@ package linkverify
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -114,6 +116,14 @@ func (c *NATSClient) connect() error {
 		return fmt.Errorf("failed to initialize KV bucket: %w", err)
 	}
 
+	// Initialize stream for broken link events
+	if err := c.initStream(); err != nil {
+		// Non-fatal: stream is optional for caching to work
+		slog.Warn("Failed to initialize NATS stream for broken link events",
+			"error", err,
+			"subject", c.subject)
+	}
+
 	slog.Info("NATS client connected",
 		"url", c.cfg.NATSURL,
 		"subject", c.subject,
@@ -159,8 +169,8 @@ func (c *NATSClient) initKVBucket() error {
 		Bucket:      c.kvBucket,
 		Description: "Link verification cache for DocBuilder",
 		MaxBytes:    100 * 1024 * 1024, // 100MB max
-		History:     1,                   // Keep only latest value
-		TTL:         0,                   // Per-key TTL
+		History:     1,                 // Keep only latest value
+		TTL:         0,                 // Per-key TTL
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create KV bucket: %w", err)
@@ -168,6 +178,41 @@ func (c *NATSClient) initKVBucket() error {
 
 	c.kv = kv
 	slog.Info("Created KV bucket for link cache", "bucket", c.kvBucket)
+	return nil
+}
+
+// initStream creates or gets the JetStream stream for broken link events.
+func (c *NATSClient) initStream() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	streamName := "DOCBUILDER_LINKS"
+
+	// Try to get existing stream
+	_, err := c.js.Stream(ctx, streamName)
+	if err == nil {
+		return nil // Stream already exists
+	}
+
+	// Create new stream if it doesn't exist
+	_, err = c.js.CreateStream(ctx, jetstream.StreamConfig{
+		Name:        streamName,
+		Description: "Broken link events from DocBuilder link verification",
+		Subjects:    []string{c.subject},
+		Retention:   jetstream.LimitsPolicy,
+		MaxMsgs:     10000,              // Keep last 10k broken link events
+		MaxBytes:    50 * 1024 * 1024,   // 50MB max
+		MaxAge:      7 * 24 * time.Hour, // Keep events for 7 days
+		Storage:     jetstream.FileStorage,
+		Discard:     jetstream.DiscardOld,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create stream: %w", err)
+	}
+
+	slog.Info("Created NATS stream for broken link events",
+		"stream", streamName,
+		"subject", c.subject)
 	return nil
 }
 
@@ -211,14 +256,14 @@ func (c *NATSClient) PublishBrokenLink(event *BrokenLinkEvent) error {
 
 // CacheEntry represents a cached link verification result.
 type CacheEntry struct {
-	URL            string    `json:"url"`
-	Status         int       `json:"status"`
-	IsValid        bool      `json:"is_valid"`
-	Error          string    `json:"error,omitempty"`
-	LastChecked    time.Time `json:"last_checked"`
-	FailureCount   int       `json:"failure_count"`
-	FirstFailedAt  time.Time `json:"first_failed_at,omitempty"`
-	ConsecutiveFail bool     `json:"consecutive_fail"`
+	URL             string    `json:"url"`
+	Status          int       `json:"status"`
+	IsValid         bool      `json:"is_valid"`
+	Error           string    `json:"error,omitempty"`
+	LastChecked     time.Time `json:"last_checked"`
+	FailureCount    int       `json:"failure_count"`
+	FirstFailedAt   time.Time `json:"first_failed_at,omitempty"`
+	ConsecutiveFail bool      `json:"consecutive_fail"`
 }
 
 // GetCachedResult retrieves a cached link verification result.
@@ -240,7 +285,10 @@ func (c *NATSClient) GetCachedResult(url string) (*CacheEntry, error) {
 		return nil, nil // Cache not available
 	}
 
-	entry, err := kv.Get(ctx, url)
+	// Use MD5 hash as KV key
+	key := sanitizeKVKey(url)
+
+	entry, err := kv.Get(ctx, key)
 	if err != nil {
 		if err == jetstream.ErrKeyNotFound {
 			return nil, nil // Not cached
@@ -285,13 +333,23 @@ func (c *NATSClient) SetCachedResult(entry *CacheEntry) error {
 		return nil // Cache not available - non-fatal
 	}
 
+	// Sanitize URL for use as KV key (NATS keys can't contain /, ?, #, etc.)
+	key := sanitizeKVKey(entry.URL)
+
 	// Put entry in KV store
-	_, err = kv.Put(ctx, entry.URL, data)
+	_, err = kv.Put(ctx, key, data)
 	if err != nil {
 		return fmt.Errorf("failed to put cache entry: %w", err)
 	}
 
 	return nil
+}
+
+// sanitizeKVKey converts a URL into a valid NATS KV key using MD5 hash.
+// NATS KV keys must match [a-zA-Z0-9_-]+ (no slashes, query params, etc.)
+func sanitizeKVKey(url string) string {
+	hash := md5.Sum([]byte(url))
+	return hex.EncodeToString(hash[:])
 }
 
 // IsCacheValid checks if a cache entry is still valid based on TTL.

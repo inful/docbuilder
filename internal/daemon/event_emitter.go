@@ -14,6 +14,7 @@ import (
 type EventEmitter struct {
 	store      eventstore.Store
 	projection *eventstore.BuildHistoryProjection
+	daemon     *Daemon // Reference back to daemon for hooks like link verification
 }
 
 // NewEventEmitter creates a new EventEmitter with the given store and projection.
@@ -83,7 +84,16 @@ func (e *EventEmitter) EmitBuildReport(ctx context.Context, buildID string, repo
 	if err != nil {
 		return err
 	}
-	return e.EmitEvent(ctx, event)
+	if err := e.EmitEvent(ctx, event); err != nil {
+		return err
+	}
+
+	// Trigger daemon hooks (like link verification) after event is persisted
+	if e.daemon != nil {
+		return e.daemon.onBuildReportEmitted(ctx, buildID, report)
+	}
+
+	return nil
 }
 
 // convertBuildReportToEventData converts a hugo.BuildReport to eventstore.BuildReportData.
