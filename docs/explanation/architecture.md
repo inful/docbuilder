@@ -18,9 +18,9 @@ DocBuilder implements a staged pipeline to turn multiple Git repositories into a
 Config → Clone → Discover → Generate Hugo Config → Transform Content → Index Pages → (Optional) Run Hugo
 ```
 
-**Transform Content Stage** executes the transform pipeline:
+**Transform Content Stage** executes the fixed transform pipeline:
 ```
-Parse → Build → Enrich → Merge → Transform → Finalize → Serialize
+Parse → Normalize → Build → Extract Title → Strip Heading → Rewrite Links → Rewrite Images → Keywords → Metadata → Edit Link → Serialize
 ```
 
 Each stage records duration, outcome, and issues for observability.
@@ -34,8 +34,7 @@ Each stage records duration, outcome, and issues for observability.
 | Git Client | Clone/update repositories with auth strategies (token, ssh, basic). | `internal/git/` |
 | Discovery | Walk configured doc paths, filter markdown, build `DocFile` list. | `internal/docs/` |
 | Hugo Generator | Emit `hugo.yaml`, content tree, index pages, theme params. | `internal/hugo/` |
-| Transform Registry | Dependency-ordered content processing pipeline. | `internal/hugo/transforms/` |
-| Front Matter Core | Patch-based front matter merging with conflict tracking. | `internal/hugo/fmcore/` |
+| Transform Pipeline | Fixed-order content processing pipeline with direct mutation. | `internal/hugo/pipeline/` |
 | Theme System | Theme-specific parameter injection and configuration. | `internal/hugo/theme/` |
 | Forge Integration | GitHub/GitLab/Forgejo API clients. | `internal/forge/` |
 | Error Foundation | Classified error system with retry strategies. | `internal/foundation/errors/` |
@@ -75,23 +74,27 @@ Transient classification guides retry policy (clone/update network issues; certa
 
 ## Content Generation Details
 
-**Transform Pipeline** (`internal/hugo/transforms/`):
+**Transform Pipeline** (`internal/hugo/pipeline/`):
 
-Each markdown file passes through a dependency-ordered transform pipeline:
+Each markdown file passes through a fixed-order transform pipeline:
 
-1. **Parse** - Extract YAML front matter from markdown
-2. **Build** - Generate default front matter fields (title from filename, date, etc.)
-3. **Enrich** - Add repository/forge/section metadata
-4. **Merge** - Apply front matter patches with conflict tracking
-5. **Transform** - Content modifications (link rewriting, etc.)
-6. **Finalize** - Post-processing (heading stripping, shortcode escaping)
-7. **Serialize** - Output final YAML + markdown
+1. **parseFrontMatter** - Extract YAML front matter from markdown
+2. **normalizeIndexFiles** - Rename README.md → _index.md for Hugo
+3. **buildBaseFrontMatter** - Generate default fields (title, type, date)
+4. **extractIndexTitle** - Extract H1 as title for index pages
+5. **stripHeading** - Remove H1 from content when appropriate
+6. **rewriteRelativeLinks** - Fix markdown links (.md → /, directory-style)
+7. **rewriteImageLinks** - Fix image paths to content root
+8. **generateFromKeywords** - Create new documents from keywords (@glossary, etc.)
+9. **addRepositoryMetadata** - Inject repository/forge/commit metadata
+10. **addEditLink** - Generate editURL for source links
+11. **serializeDocument** - Output final YAML + markdown
 
-**Transform Features:**
-- Registry-based with topological dependency sorting
-- Configurable enable/disable filtering
-- PageShim facade for uniform access
-- Patch-based front matter with merge modes (Deep, Replace, SetIfMissing)
+**Pipeline Features:**
+- Fixed execution order (explicit, no dependency resolution needed)
+- Direct document mutation (no patch merge complexity)
+- Document type with all fields accessible
+- Generators create missing index files before transforms run
 
 **Theme Integration:**
 - Supported themes use Hugo Modules (no local theme directory needed)
@@ -115,11 +118,11 @@ Optional top-level pruning removes non-doc directories to shrink workspace footp
 
 ## Extensibility Points
 
-- **Add new transform**: Register in `internal/hugo/transforms/` with stage and dependencies
+- **Add new transform**: Create function in `internal/hugo/pipeline/transforms.go` and add to `defaultTransforms()` list
+- **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list  
 - **Add new theme**: Implement `Theme` interface in `internal/hugo/theme/themes/`
 - **Additional issue codes**: Augment taxonomy without breaking consumers
 - **Future caching**: Leverage `doc_files_hash` for selective downstream regeneration
-- **Custom merge modes**: Extend `FrontMatterPatch` merge strategies in `fmcore/`
 
 ## Non-Goals
 

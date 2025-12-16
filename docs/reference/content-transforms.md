@@ -1,16 +1,28 @@
 ---
-title: "Content Transforms Reference"
+title: "Content Transforms Reference (DEPRECATED)"
 date: 2025-12-15
 categories:
   - reference
 tags:
   - transforms
   - content-processing
+  - deprecated
 ---
 
-# Content Transform Pipeline
+# Content Transform Pipeline (DEPRECATED)
 
-This document explains DocBuilder's markdown content transform architecture: how the registry works, built‑in transforms, how to add new ones, and the merge semantics for front matter.
+> **⚠️ DEPRECATED:** This document describes the old registry-based transform system that was removed on December 16, 2025.
+> 
+> For current pipeline documentation, see:
+> - [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md)
+> - [Architecture Overview](../explanation/architecture.md)
+> - Implementation: `internal/hugo/pipeline/`
+
+---
+
+## Historical Documentation
+
+This document explains DocBuilder's **old** markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.
 
 ## Goals
 

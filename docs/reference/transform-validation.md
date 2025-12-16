@@ -1,5 +1,5 @@
 ---
-title: "Transform Validation Reference"
+title: "Transform Validation Reference (DEPRECATED)"
 date: 2025-12-15
 categories:
   - reference
@@ -7,13 +7,19 @@ tags:
   - validation
   - transforms
   - testing
+  - deprecated
 ---
 
-# Transform Pipeline Validation
+# Transform Pipeline Validation (DEPRECATED)
 
-## Overview
+> **⚠️ DEPRECATED:** This document describes validation for the old registry-based transform system that was removed on December 16, 2025.
+> 
+> The new fixed transform pipeline uses explicit ordering and does not require dependency validation.
+> See [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md) for current architecture.
 
-The transform pipeline includes comprehensive validation to detect configuration issues before execution. Validation runs automatically during the build process but can also be invoked programmatically.
+---
+
+## Historical Documentation
 
 ## Validation Features
 
