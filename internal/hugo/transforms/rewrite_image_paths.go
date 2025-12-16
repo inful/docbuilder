@@ -96,6 +96,17 @@ func (t rewriteImagePathsTransform) rewriteImagePaths(content, fileName string) 
 			return match
 		}
 
+		// Lowercase the filename portion to match GetHugoPath() behavior in discovery.go
+		// which lowercases all filenames (line 241: filename := strings.ToLower(df.Name))
+		dir := filepath.Dir(path)
+		base := filepath.Base(path)
+		base = strings.ToLower(base)
+		if dir == "." {
+			path = base
+		} else {
+			path = filepath.Join(dir, base)
+		}
+
 		return prefix + path + suffix
 	})
 }
