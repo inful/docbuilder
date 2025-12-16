@@ -21,7 +21,6 @@ func TestReadmeIndexPreservesTransforms(t *testing.T) {
 	// Create config
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}
@@ -94,7 +93,6 @@ func TestReadmeIndexWithoutFrontMatter(t *testing.T) {
 
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}
@@ -153,7 +151,6 @@ func TestReadmeIndexWithComplexFrontMatter(t *testing.T) {
 
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}
@@ -215,7 +212,6 @@ func TestReadmeTransformedBytesNotPopulated(t *testing.T) {
 
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}
@@ -250,7 +246,6 @@ func TestMultipleRepositoriesWithREADMEs(t *testing.T) {
 
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}
@@ -314,7 +309,6 @@ func TestTransformPipelineOrderInvariance(t *testing.T) {
 
 		cfg := &config.Config{
 			Hugo: config.HugoConfig{
-				Theme: "hextra",
 				Title: "Test Site",
 			},
 		}
@@ -371,7 +365,6 @@ func TestReadmeWithForgeNamespace(t *testing.T) {
 
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Theme: "hextra",
 			Title: "Test Site",
 		},
 	}

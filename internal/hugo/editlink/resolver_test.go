@@ -247,7 +247,6 @@ func TestResolver(t *testing.T) {
 
 		cfg := &config.Config{
 			Hugo: config.HugoConfig{
-				Theme: "hextra",
 			},
 			Repositories: []config.Repository{
 				{
@@ -281,7 +280,6 @@ func TestResolver(t *testing.T) {
 
 		cfg := &config.Config{
 			Hugo: config.HugoConfig{
-				Theme: "docsy",
 			},
 		}
 
@@ -299,7 +297,6 @@ func TestResolver(t *testing.T) {
 
 		cfg := &config.Config{
 			Hugo: config.HugoConfig{
-				Theme: "hextra",
 				Params: map[string]any{
 					"editURL": map[string]any{
 						"base": "custom-base", // Non-empty base suppresses per-page links

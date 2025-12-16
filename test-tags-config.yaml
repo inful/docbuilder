@@ -1,0 +1,28 @@
+version: "2.0"
+
+repositories:
+  - name: "ci"
+    url: "https://gitlab.mgmlab.net/tools/ci.git"
+    branch: "main"
+    paths: ["docs"]
+    auth:
+      type: "token"
+      token: "${GITLAB_TOKEN}"
+
+versioning:
+  enabled: true
+  strategy: "branches_and_tags"
+  default_version: "main"
+  tag_filter:
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+
+hugo:
+  title: "CI Tools Documentation"
+  description: "Testing tag cloning with versioning"
+  base_url: "http://localhost:1313"
+  theme: "hextra"
+  language_code: "en"
+
+output:
+  directory: "./test-site"
+  clean: true

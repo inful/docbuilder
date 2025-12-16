@@ -14,8 +14,7 @@ import (
 func newTestGenerator(t *testing.T) *Generator {
 	t.Helper()
 	tmp := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Test Site", Description: "Desc", Theme: "hextra"}}
-	return NewGenerator(cfg, tmp)
+	return NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, tmp)
 }
 
 func TestIndexTemplates_FallbackEmbedded(t *testing.T) {
@@ -35,7 +34,7 @@ func TestIndexTemplates_FallbackEmbedded(t *testing.T) {
 	}
 	got := string(b)
 	// Check for title in frontmatter and repository list (H1 # Test Site gets stripped by transform)
-	if !strings.Contains(got, "title: Test Site") || !strings.Contains(got, "## Repositories") {
+	if !strings.Contains(got, "title: Test") || !strings.Contains(got, "## Repositories") {
 		t.Fatalf("expected embedded template with title in frontmatter and repositories section, got:\n%s", got)
 	}
 }

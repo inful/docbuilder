@@ -20,11 +20,9 @@ func TestConfigReload_TriggersBuild(t *testing.T) {
 	cfg := &config.Config{
 		Version: "2.0",
 		Hugo: config.HugoConfig{
-			Title:             "Test Site",
-			Description:       "Test",
-			BaseURL:           "http://localhost:1313",
-			Theme:             "hextra",
-			EnableTransitions: false,
+			Title:       "Test Site",
+			Description: "Test",
+			BaseURL:     "http://localhost:1313",
 		},
 		Output: config.OutputConfig{
 			Directory: tmpDir,
@@ -55,15 +53,13 @@ func TestConfigReload_TriggersBuild(t *testing.T) {
 	require.NoError(t, err, "failed to create daemon")
 	require.NotNil(t, daemon)
 
-	// Create new config with transitions enabled
+	// Create new config with updated title
 	newCfg := &config.Config{
 		Version: "2.0",
 		Hugo: config.HugoConfig{
-			Title:             "Test Site Updated",
-			Description:       "Test",
-			BaseURL:           "http://localhost:1313",
-			Theme:             "hextra",
-			EnableTransitions: true, // Now enabled
+			Title:       "Test Site Updated",
+			Description: "Test",
+			BaseURL:     "http://localhost:1313",
 		},
 		Output: config.OutputConfig{
 			Directory: tmpDir,
@@ -86,6 +82,5 @@ func TestConfigReload_TriggersBuild(t *testing.T) {
 	// Verify the config was updated
 	updatedCfg := daemon.GetConfig()
 	require.NotNil(t, updatedCfg)
-	require.True(t, updatedCfg.Hugo.EnableTransitions, "config should be updated with transitions enabled")
 	require.Equal(t, "Test Site Updated", updatedCfg.Hugo.Title)
 }

@@ -70,20 +70,10 @@ func (g *Generator) ensureGoModForModules() error {
 	return g.ensureThemeVersionRequires(goModPath)
 }
 
-// ensureThemeVersionRequires appends require directives for known themes to pin versions
+// ensureThemeVersionRequires is no longer needed since we hardcode Relearn module
+// Hugo will fetch the latest compatible version automatically
 func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
-	// #nosec G304 - goModPath is internal, controlled by application
-	b, err := os.ReadFile(goModPath)
-	if err != nil {
-		return err
-	}
-	s := string(b)
-	features := g.deriveThemeFeatures()
-	if features.UsesModules && features.ModulePath != "" && features.ModuleVersion != "" {
-		if !strings.Contains(s, features.ModulePath) { // naive containment sufficient for pin presence
-			s += fmt.Sprintf("\nrequire %s %s\n", features.ModulePath, features.ModuleVersion)
-		}
-	}
-	// #nosec G306 -- go.mod is a module configuration file
-	return os.WriteFile(goModPath, []byte(s), 0o644)
+	// No-op: Hugo Modules will automatically resolve and download Relearn
+	// The module path in hugo.yaml is sufficient
+	return nil
 }

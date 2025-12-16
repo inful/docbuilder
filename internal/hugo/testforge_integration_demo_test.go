@@ -42,7 +42,6 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		// Create Hugo configuration with realistic repositories
 		cfg := &config.Config{
-			Hugo:         config.HugoConfig{Title: "Test Docs", Theme: "hextra"},
 			Repositories: configRepos,
 		}
 
@@ -111,7 +110,6 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		cfg := &config.Config{
-			Hugo:         config.HugoConfig{Title: "Multi-Platform Docs", Theme: "docsy"},
 			Repositories: allRepos,
 		}
 
@@ -159,7 +157,6 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		configRepos := testForge.ToConfigRepositories()
 
 		cfg := &config.Config{
-			Hugo:         config.HugoConfig{Title: "Resilient Docs", Theme: "hextra"},
 			Repositories: configRepos,
 		}
 

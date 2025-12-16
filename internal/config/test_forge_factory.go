@@ -140,7 +140,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *Config {
 	return &Config{
 		Version: "2.0",
-		Hugo:    HugoConfig{Title: "TestForge Documentation", Theme: string(ThemeHextra)},
+		Hugo:    HugoConfig{Title: "TestForge Documentation"},
 		Output:  OutputConfig{Directory: "./test-output", Clean: true},
 		Build: BuildConfig{
 			CloneConcurrency:  2,

@@ -275,7 +275,6 @@ func Init(configPath string, force bool) error {
 			Title:       "Company Documentation Portal",
 			Description: "Aggregated documentation from all engineering projects",
 			BaseURL:     "https://docs.company.com",
-			Theme:       "hextra",
 		},
 		Monitoring: &MonitoringConfig{
 			Metrics: MonitoringMetrics{

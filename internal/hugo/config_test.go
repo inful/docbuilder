@@ -22,82 +22,48 @@ func readYaml(t *testing.T, path string) map[string]any {
 	return m
 }
 
-func TestGenerateHugoConfig_Docsy(t *testing.T) {
+func TestGenerateHugoConfig_RelearnModuleImport(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Docsy Site", Theme: "docsy"}}
-	gen := NewGenerator(cfg, out)
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 	if err := gen.generateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)
 	}
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))
 	mod, ok := conf["module"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected module imports for docsy")
+		t.Fatalf("expected module imports for relearn")
 	}
 	imports := mod["imports"].([]any)
 	found := false
 	for _, im := range imports {
-		if m, ok := im.(map[string]any); ok && m["path"] == "github.com/google/docsy" {
+		if m, ok := im.(map[string]any); ok && m["path"] == "github.com/McShelby/hugo-theme-relearn" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("docsy module import missing: %v", imports)
-	}
-	outs := conf["outputs"].(map[string]any)
-	home := outs["home"].([]any)
-	hasJSON := false
-	for _, v := range home {
-		if v == "JSON" {
-			hasJSON = true
-		}
-	}
-	if !hasJSON {
-		t.Fatalf("docsy home outputs missing JSON: %v", home)
+		t.Fatalf("relearn module import missing: %v", imports)
 	}
 }
 
-func TestGenerateHugoConfig_Hextra(t *testing.T) {
+func TestGenerateHugoConfig_RelearnParams(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Title: "Hextra Site", Theme: "hextra"}}
-	gen := NewGenerator(cfg, out)
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 	if err := gen.generateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)
 	}
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))
-	mod, ok := conf["module"].(map[string]any)
+	params, ok := conf["params"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected module imports for hextra")
+		t.Fatalf("expected params for relearn")
 	}
-	imports := mod["imports"].([]any)
-	found := false
-	for _, im := range imports {
-		if m, ok := im.(map[string]any); ok && m["path"] == "github.com/imfing/hextra" {
-			found = true
-		}
+	// Verify Relearn-specific params are set
+	if _, ok := params["themeVariant"]; !ok {
+		t.Errorf("expected themeVariant param")
 	}
-	if !found {
-		t.Fatalf("hextra module import missing: %v", imports)
+	if _, ok := params["collapsibleMenu"]; !ok {
+		t.Errorf("expected collapsibleMenu param")
 	}
-	// Hextra now enables JSON output for offline search
-	if outputs, ok := conf["outputs"].(map[string]any); ok {
-		if home, ok := outputs["home"].([]any); ok {
-			hasJSON := false
-			for _, v := range home {
-				if v == "JSON" {
-					hasJSON = true
-					break
-				}
-			}
-			if !hasJSON {
-				t.Fatalf("hextra should configure JSON output for offline search")
-			}
-		}
-	}
-	markup := conf["markup"].(map[string]any)
-	gold := markup["goldmark"].(map[string]any)
-	ext := gold["extensions"].(map[string]any)
-	if _, ok := ext["passthrough"]; !ok {
-		t.Fatalf("expected math passthrough extension for hextra")
+	if _, ok := params["showVisitedLinks"]; !ok {
+		t.Errorf("expected showVisitedLinks param")
 	}
 }

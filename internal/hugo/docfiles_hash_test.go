@@ -13,8 +13,7 @@ import (
 // TestDocFilesHashChanges ensures BuildReport.DocFilesHash changes when the discovered doc file set changes.
 func TestDocFilesHashChanges(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 
 	filesA := []docs.DocFile{{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")}}
 	if err := gen.GenerateSite(filesA); err != nil {
@@ -26,7 +25,7 @@ func TestDocFilesHashChanges(t *testing.T) {
 	}
 
 	// Second build with same files -> hash should remain identical
-	gen2 := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 	if err := gen2.GenerateSite(filesA); err != nil {
 		t.Fatalf("second build failed: %v", err)
 	}
@@ -37,7 +36,7 @@ func TestDocFilesHashChanges(t *testing.T) {
 
 	// Third build with additional file -> hash must change
 	filesB := append(filesA, docs.DocFile{Repository: "r", Name: "b", RelativePath: "b.md", DocsBase: "docs", Extension: ".md", Content: []byte("# B\n")})
-	gen3 := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{})
+	gen3 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 	if err := gen3.GenerateSite(filesB); err != nil {
 		t.Fatalf("third build failed: %v", err)
 	}

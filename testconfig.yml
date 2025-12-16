@@ -1,0 +1,42 @@
+version: "2.0"
+forges:
+  - name: "gitlab"
+    type: "gitlab"
+    api_url: "https://gitlab.mgmlab.net/api/v4"
+    base_url: "https://gitlab.mgmlab.net"
+    auth:
+      type: token
+      token: "${GITLAB_TOKEN}"
+    organizations: []  # auto-discover all accessible groups
+    auto_discover: true
+
+filtering:
+  required_paths: ["docs"]
+
+build:
+  clone_strategy: auto
+  clone_concurrency: 4
+  shallow_depth: 10
+  prune_non_doc_paths: true
+  prune_allow:
+    - LICENSE*
+    - README.*
+
+hugo:
+  title: "Documentation Hub"
+  description: "Aggregated documentation from GitLab repositories"
+  base_url: "http://localhost:8080/"
+  theme: hextra
+
+output:
+  directory: "/tmp/site"
+  clean: true
+
+daemon:
+  storage:
+    repo_cache_dir: /tmp/var/lib/docbuilder
+
+monitoring:
+  metrics:
+    enabled: true
+    path: /metrics

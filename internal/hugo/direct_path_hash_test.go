@@ -14,8 +14,7 @@ import (
 // (bypassing discovery/clone) still computes BuildReport.DocFilesHash.
 func TestGenerateSiteWithReportContextSetsDocFilesHash(t *testing.T) {
 	out := t.TempDir()
-	cfg := &config.Config{Hugo: config.HugoConfig{Theme: "hextra"}}
-	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 	files := []docs.DocFile{{Repository: "r1", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Hi\n")}}
 	report, err := gen.GenerateSiteWithReportContext(t.Context(), files)
 	if err != nil {

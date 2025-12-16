@@ -20,7 +20,6 @@ func (c *Config) Snapshot() string {
 	h := sha256.New()
 	w := func(parts ...string) { h.Write([]byte(strings.Join(parts, "="))); h.Write([]byte{0}) }
 	// Hugo essentials
-	w("hugo.theme", c.Hugo.Theme)
 	w("hugo.base_url", c.Hugo.BaseURL)
 	w("hugo.title", c.Hugo.Title)
 	// Build flags

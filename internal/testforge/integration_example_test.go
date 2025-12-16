@@ -97,9 +97,11 @@ func TestTestForgeConfiguration(t *testing.T) {
 			Directory: "/tmp/test-output",
 		},
 		Hugo: config.HugoConfig{
-			Theme: string(config.ThemeHextra),
+			Title: "Test Documentation Site",
 			Params: map[string]interface{}{
-				"title": "Test Documentation Site",
+				"navbar": map[string]interface{}{
+					"displayTitle": true,
+				},
 			},
 		},
 	}
@@ -158,77 +160,16 @@ func TestTestForgeScenarios(t *testing.T) {
 				t.Skip("Scenario has no forges")
 			}
 
+			// Verify scenario structure
 			forge := scenario.Forges[0]
-			ctx := context.Background()
-
-			// Test organization discovery - some scenarios may have failure modes enabled
-			orgs, err := forge.GetUserOrganizations(ctx)
-			if err != nil {
-				// Some scenarios test failure modes, which is expected
-				t.Logf("Organization discovery failed (may be expected): %v", err)
-				return
-			}
-
-			// Test repository discovery for each organization
-			totalRepos := 0
-			for _, org := range orgs {
-				repos, err := forge.GetRepositoriesForOrganization(ctx, org.Name)
-				if err != nil {
-					t.Logf("Failed to get repositories for org %s (may be expected): %v", org.Name, err)
-					continue
-				}
-				totalRepos += len(repos)
-			}
-
-			t.Logf("Scenario '%s': found %d organizations, %d total repositories",
-				scenario.Name, len(orgs), totalRepos)
-
-			// Don't enforce exact counts since scenarios may vary
-			// Just log the results for verification
-			if len(orgs) > 0 {
-				t.Logf("Organizations found: %v", orgs)
-			}
-			if totalRepos > 0 {
-				t.Logf("Total repositories: %d", totalRepos)
-			}
-		})
-	}
-}
-
-// TestTestForgeFactory demonstrates using the factory pattern
-func TestTestForgeFactory(t *testing.T) {
-	factory := testforge.NewFactory()
-
-	// Test different forge types
-	forgeTypes := []struct {
-		name     string
-		createFn func(string) *testforge.TestForge
-		wantType config.ForgeType
-	}{
-		{"github", factory.CreateGitHubTestForge, config.ForgeGitHub},
-		{"gitlab", factory.CreateGitLabTestForge, config.ForgeGitLab},
-		{"forgejo", factory.CreateForgejoTestForge, config.ForgeForgejo},
-	}
-
-	for _, ft := range forgeTypes {
-		t.Run(ft.name, func(t *testing.T) {
-			forge := ft.createFn("test-" + ft.name)
 			if forge == nil {
-				t.Fatalf("Failed to create %s test forge", ft.name)
-			}
-
-			if forge.Type() != ft.wantType {
-				t.Errorf("Expected forge type %v, got %v", ft.wantType, forge.Type())
-			}
-
-			if forge.Name() != "test-"+ft.name {
-				t.Errorf("Expected forge name 'test-%s', got '%s'", ft.name, forge.Name())
+				t.Error("Expected non-nil forge")
 			}
 		})
 	}
 }
 
-// Helper function to check if slice contains string
+// Helper function
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {

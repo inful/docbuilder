@@ -1,0 +1,24 @@
+version: "2.0"
+
+# Test config WITHOUT render_mode to verify DaemonDefaultApplier
+repositories:
+  - url: "/workspaces/docbuilder"
+    name: "docbuilder"
+    branch: "main"
+    paths: ["docs"]
+
+build:
+  clone_strategy: auto
+  # Note: render_mode NOT set - should be set to 'always' by DaemonDefaultApplier
+
+hugo:
+  title: "Test Documentation"
+  theme: hextra
+
+output:
+  directory: "/tmp/test-daemon-defaults"
+  clean: true
+
+daemon:
+  storage:
+    repo_cache_dir: /tmp/test-daemon-defaults-var

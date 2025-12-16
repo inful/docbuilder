@@ -530,7 +530,7 @@ func buildIndexTemplateContext(g *Generator, docFiles []docs.DocFile, repoGroups
 		"Title":       g.config.Hugo.Title,
 		"Description": g.config.Hugo.Description,
 		"BaseURL":     g.config.Hugo.BaseURL,
-		"Theme":       g.config.Hugo.ThemeType(),
+		"Theme": "relearn",
 	}
 	ctx["FrontMatter"] = frontMatter
 	ctx["Repositories"] = repoGroups

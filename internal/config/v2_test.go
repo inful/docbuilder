@@ -190,9 +190,7 @@ hugo:
 	}
 
 	// Verify defaults were applied
-	if config.Hugo.Theme != "relearn" {
-		t.Errorf("Default theme = %v, want relearn", config.Hugo.Theme)
-	}
+	// Theme is always Relearn (removed from config)
 
 	if config.Output.Directory != "./site" {
 		t.Errorf("Default output directory = %v, want ./site", config.Output.Directory)

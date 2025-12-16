@@ -13,18 +13,12 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	th "git.home.luguber.info/inful/docbuilder/internal/hugo/theme"
-
-	// Import theme packages for registration side effects
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/docsy"   //nolint:revive // theme registration
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/hextra"  //nolint:revive // theme registration
-	_ "git.home.luguber.info/inful/docbuilder/internal/hugo/themes/relearn" //nolint:revive // theme registration
 	tr "git.home.luguber.info/inful/docbuilder/internal/hugo/transforms"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
-// Generator handles Hugo site generation
+// Generator handles Hugo site generation with Relearn theme
 type Generator struct {
 	config    *config.Config
 	outputDir string // final output dir
@@ -34,8 +28,6 @@ type Generator struct {
 	recorder       metrics.Recorder
 	observer       BuildObserver // high-level observer (decouples metrics recorder)
 	renderer       Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
-	// cachedThemeFeatures stores the lazily-computed feature flags for the selected theme
-	cachedThemeFeatures *th.Features
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
 	// indexTemplateUsage captures which index template (main/repository/section) source was used
@@ -46,18 +38,6 @@ type Generator struct {
 	keepStaging bool
 }
 
-// deriveThemeFeatures obtains and caches theme features; unknown themes return minimal struct.
-func (g *Generator) deriveThemeFeatures() th.Features {
-	// Prefer cached features when available (set by Engine.ApplyPhases during config generation).
-	if g.cachedThemeFeatures != nil {
-		return *g.cachedThemeFeatures
-	}
-	// Fallback to direct theme Features when engine hasn’t run yet.
-	if tt := th.Get(g.config.Hugo.ThemeType()); tt != nil {
-		return tt.Features()
-	}
-	return th.Features{Name: g.config.Hugo.ThemeType()}
-}
 
 // NewGenerator creates a new Hugo site generator
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
@@ -74,9 +54,7 @@ func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	tr.SetGeneratorProvider(func() any { return g })
 
 	// Log Hugo configuration including transitions
-	slog.Debug("Hugo generator created",
-		"theme", cfg.Hugo.ThemeType(),
-		"enable_transitions", cfg.Hugo.EnableTransitions,
+	slog.Debug("Hugo generator created with Relearn theme",
 		"output_dir", outputDir)
 
 	return g

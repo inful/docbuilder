@@ -78,7 +78,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 				ExcludePatterns: []string{"*deprecated*", "*legacy*", "*archive*"},
 			},
 			Hugo: config.HugoConfig{
-				Theme:   "hextra",
+
 				Title:   "Enterprise Documentation Hub",
 				BaseURL: "https://docs.enterprise.com",
 				Params: map[string]interface{}{
