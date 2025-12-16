@@ -323,7 +323,7 @@ func addEditLink(cfg *config.Config) FileTransform {
 func generateEditURL(doc *Document) string {
 	// Get base URL by stripping .git suffix if present
 	baseURL := strings.TrimSuffix(doc.SourceURL, ".git")
-	
+
 	// Determine branch (fallback to "main" if not set)
 	branch := doc.SourceBranch
 	if branch == "" {
