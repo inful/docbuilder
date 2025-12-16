@@ -1,0 +1,35 @@
+{{ define "main" }}
+<div class="hx:mt-1.5 hx:flex hx:items-center hx:gap-1 hx:overflow-hidden hx:text-sm hx:text-gray-500 hx:dark:text-gray-400">
+  <a href="{{ .Parent.RelPermalink }}" class="hx:transition-colors hover:hx:text-gray-900 hx:dark:hover:text-gray-100">{{ .Parent.Title }}</a>
+  <svg class="hx:h-3.5 hx:w-3.5 hx:shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="hx:font-medium hx:text-gray-700 hx:dark:text-gray-100">{{ .Title }}</span>
+</div>
+
+<h1 class="hx:mt-2 hx:text-4xl hx:font-bold hx:tracking-tight hx:text-slate-900 hx:dark:text-slate-100">{{ .Title }}</h1>
+
+{{ if .Pages }}
+<p class="hx:mt-4 hx:text-gray-600 hx:dark:text-gray-400">{{ len .Pages }} page{{ if ne (len .Pages) 1 }}s{{ end }} with this {{ .Parent.Title | lower | singularize }}</p>
+
+<div class="hx:mt-6 hx:space-y-4">
+  {{ range .Pages.ByDate.Reverse }}
+  <article class="hx:p-4 hx:rounded-lg hx:border hx:border-gray-200 hx:dark:border-gray-800 hover:hx:border-primary-500 hx:dark:hover:border-primary-500 hx:transition-colors">
+    <a href="{{ .RelPermalink }}" class="hx:no-underline">
+      <h3 class="hx:text-lg hx:font-semibold hx:text-slate-900 hx:dark:text-slate-100 hx:m-0 hover:hx:text-primary-600 hx:dark:hover:text-primary-400">{{ .Title }}</h3>
+    </a>
+    {{ if .Description }}
+    <p class="hx:mt-2 hx:text-sm hx:text-gray-600 hx:dark:text-gray-400 hx:m-0">{{ .Description }}</p>
+    {{ else if .Summary }}
+    <p class="hx:mt-2 hx:text-sm hx:text-gray-600 hx:dark:text-gray-400 hx:m-0">{{ .Summary }}</p>
+    {{ end }}
+    {{ if .Date }}
+    <div class="hx:mt-2 hx:text-xs hx:text-gray-500 hx:dark:text-gray-500">
+      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
+    </div>
+    {{ end }}
+  </article>
+  {{ end }}
+</div>
+{{ else }}
+<p class="hx:mt-4 hx:text-gray-600 hx:dark:text-gray-400">No pages with this {{ .Parent.Title | lower | singularize }} yet.</p>
+{{ end }}
+{{ end }}
