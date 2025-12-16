@@ -27,10 +27,10 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	doc := &Document{
-		Path:        "content/_index.md",
-		IsIndex:     true,
-		Generated:   true,
-		Content:     fmt.Sprintf("# %s\n\n%s\n", title, description),
+		Path:      "content/_index.md",
+		IsIndex:   true,
+		Generated: true,
+		Content:   fmt.Sprintf("# %s\n\n%s\n", title, description),
 		FrontMatter: map[string]any{
 			"title":       title,
 			"description": description,
@@ -78,13 +78,13 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			}
 
 			doc := &Document{
-				Path:        filepath.Join("content", repoPath, "_index.md"),
-				IsIndex:     true,
-				Generated:   true,
-				Repository:  repo,
-				Forge:       repoMeta.Forge,
-				Section:     "",
-				Content:     fmt.Sprintf("# %s\n\n%s\n", title, description),
+				Path:       filepath.Join("content", repoPath, "_index.md"),
+				IsIndex:    true,
+				Generated:  true,
+				Repository: repo,
+				Forge:      repoMeta.Forge,
+				Section:    "",
+				Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
 				FrontMatter: map[string]any{
 					"title":       title,
 					"description": description,
@@ -144,13 +144,13 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			}
 
 			doc := &Document{
-				Path:        filepath.Join("content", sectionPath, "_index.md"),
-				IsIndex:     true,
-				Generated:   true,
-				Repository:  repo,
-				Forge:       repoMeta.Forge,
-				Section:     sectionName,
-				Content:     fmt.Sprintf("# %s\n\n%s\n", title, description),
+				Path:       filepath.Join("content", sectionPath, "_index.md"),
+				IsIndex:    true,
+				Generated:  true,
+				Repository: repo,
+				Forge:      repoMeta.Forge,
+				Section:    sectionName,
+				Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
 				FrontMatter: map[string]any{
 					"title":       title,
 					"description": description,

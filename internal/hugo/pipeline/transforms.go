@@ -38,7 +38,7 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 	// Find end of front matter (search for closing ---\n or ---\r\n)
 	endMarker := lineEnd + "---" + lineEnd
 	endIdx := strings.Index(content[startLen:], endMarker)
-	
+
 	if endIdx == -1 {
 		// Try to find just "---" followed by line ending (for content like "---\n---\n...")
 		altMarker := "---" + lineEnd
@@ -98,18 +98,18 @@ func normalizeIndexFiles(doc *Document) ([]*Document, error) {
 		// Rename to _index for Hugo
 		// Update both Name and Path
 		doc.Name = "_index"
-		
+
 		// Update Path: replace README.md with _index.md at end
 		if strings.HasSuffix(doc.Path, "/README.md") || strings.HasSuffix(doc.Path, "/readme.md") {
 			doc.Path = doc.Path[:len(doc.Path)-len("README.md")] + "_index.md"
 		} else if strings.HasSuffix(doc.Path, "README.md") {
 			doc.Path = strings.TrimSuffix(doc.Path, "README.md") + "_index.md"
 		}
-		
+
 		// Mark as index file
 		doc.IsIndex = true
 	}
-	
+
 	return nil, nil
 }
 

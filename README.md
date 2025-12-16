@@ -43,7 +43,7 @@ A Go utility for creating documentation sites from multiple Git repositories usi
 - Environment variable support with `.env` files
 - Incremental builds for faster updates
 - Auto-discover repositories (v2 config) across all organizations accessible to the token (Forgejo)
-- Theme-aware configuration (Hextra & Docsy) using Hugo Modules
+- Relearn theme with sensible defaults and Hugo Modules
 
 ## Architecture
 
@@ -56,8 +56,8 @@ The build process consists of sequential stages, each with a specific responsibi
 1. **PrepareOutput** - Initialize output directories and clean previous builds
 2. **CloneRepos** - Clone/update Git repositories with authentication
 3. **DiscoverDocs** - Find markdown files in configured documentation paths
-4. **GenerateConfig** - Create Hugo configuration with theme-specific settings
-5. **Layouts** - Copy theme layouts and templates
+4. **GenerateConfig** - Create Hugo configuration with Relearn theme defaults
+5. **Layouts** - Copy layout templates
 6. **CopyContent** - Process and copy markdown files with transforms
 7. **Indexes** - Generate repository and section index pages
 8. **RunHugo** - Execute Hugo to render the final static site
@@ -83,7 +83,7 @@ Documentation files undergo a transform pipeline:
 
 ### Extension Points
 
-- **Themes**: Register new Hugo themes with capability declarations
+- **Configuration**: Modify Relearn theme parameters via config
 - **Forges**: Support new Git hosting platforms with authentication methods
 
 ## Installation
@@ -174,7 +174,6 @@ hugo:
   title: "My Documentation"
   description: "Documentation site"
   base_url: "https://docs.example.com"
-  theme: hextra
   # Optional: customize taxonomies (defaults to tags and categories)
   # taxonomies:
   #   tag: tags
@@ -207,7 +206,6 @@ hugo:
   title: "My Documentation"
   description: "Auto-discovered repositories"
   base_url: "https://docs.example.com"
-  theme: hextra
 
 output:
   directory: "./site"
@@ -306,18 +304,16 @@ docbuilder build -c config.yaml --render-mode never
 3. Else -> scaffold only.
 Hugo must be installed and on `PATH`. If the build fails, the scaffolded site remains available (warning is logged) so you can run `hugo` manually inside the output directory.
 
-### Theme Support (Hextra & Docsy)
+### Relearn Theme
 
-When `hugo.theme` is set to `hextra` or `docsy`, DocBuilder configures Hugo Modules automatically:
+DocBuilder uses the [Relearn theme](https://github.com/McShelby/hugo-theme-relearn) exclusively with automatic configuration:
 
-- Creates / maintains a minimal `go.mod` (sanitizes module name from `base_url` host; ports are stripped).
-- Adds theme-specific params (search, edit links, UI defaults, offline search for the Docsy theme, FlexSearch config for Hextra).
-- Avoids using the legacy `theme` filesystem lookup; relies on modules for reproducible builds.
+- Creates/maintains a minimal `go.mod` (module name sanitized from `base_url` host)
+- Imports `github.com/McShelby/hugo-theme-relearn` as Hugo Module
+- Applies sensible Relearn defaults (themeVariant, search, navigation, etc.)
+- User parameters in `hugo.params` override defaults via deep merge
 
-Pinning:
-
-- Hextra is pinned to a stable version in `go.mod` automatically.
-- The Docsy theme currently floats (you can pin manually by editing `go.mod`).
+See [Use Relearn Theme](docs/how-to/use-relearn-theme.md) for customization options.
 
 ### Index Page Templates (Main / Repository / Section)
 

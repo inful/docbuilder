@@ -54,11 +54,11 @@ func TestProcessor_New(t *testing.T) {
 
 func TestParseFrontMatter(t *testing.T) {
 	tests := []struct {
-		name           string
-		content        string
-		expectFM       bool
-		expectTitle    string
-		expectContent  string
+		name          string
+		content       string
+		expectFM      bool
+		expectTitle   string
+		expectContent string
 	}{
 		{
 			name: "valid front matter",
