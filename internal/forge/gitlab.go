@@ -119,7 +119,10 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 		for _, gGroup := range gitlabGroups {
 			org := &Organization{
 				ID:          strconv.Itoa(gGroup.ID),
-				Name:        gGroup.FullPath, // Use full path instead of just path for GitLab API compatibility
+				// CRITICAL: GitLab API only accepts numeric IDs for group parameters.
+				// Do NOT use gGroup.Path, gGroup.FullPath, or gGroup.Name here.
+				// Using names/paths will cause API errors when ListRepositories calls getGroupProjects.
+				Name:        strconv.Itoa(gGroup.ID),
 				DisplayName: gGroup.Name,
 				Description: gGroup.Description,
 				Type:        gGroup.Kind,
@@ -157,19 +160,20 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 	return allRepos, nil
 }
 
-// getGroupProjects gets all projects for a group
-// The group parameter should be the numeric group ID (e.g., "123") or URL-encoded full path.
-// GitLab API prefers numeric IDs but also accepts URL-encoded paths.
+// getGroupProjects gets all projects for a group.
+// CRITICAL: The group parameter MUST be a numeric group ID (e.g., "123").
+// GitLab API does NOT accept group names, paths, or full paths - only numeric IDs work.
+// This has been verified through testing - using names/paths causes 404 errors.
 func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*Repository, error) {
 	var allRepos []*Repository
 	page := 1
 	perPage := 100
 
 	for {
-		// Use group ID directly if it's numeric, otherwise URL-encode the path
-		// GitLab API: /groups/:id/projects where :id can be numeric ID or URL-encoded path
+		// GitLab API: /groups/:id/projects where :id MUST be a numeric group ID.
+		// URL-encoding is applied defensively but group parameter must already be numeric.
 		endpoint := fmt.Sprintf("/groups/%s/projects?per_page=%d&page=%d&order_by=last_activity_at&include_subgroups=true",
-			group, perPage, page)
+			url.PathEscape(group), perPage, page)
 		req, err := c.NewRequest(ctx, "GET", endpoint, nil)
 		if err != nil {
 			return nil, err
