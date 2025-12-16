@@ -100,8 +100,25 @@ With versioning enabled, DocBuilder:
 | title | string | Site title. |
 | description | string | Site description. |
 | base_url | string | Hugo BaseURL. |
-| theme | enum | Supported optimized themes (`hextra`, `docsy`, `relearn`). |
+| params | map[string]any | Relearn theme parameters (optional). |
 | taxonomies | map[string]string | Custom taxonomy definitions (optional). |
+
+**Note:** Theme selection has been removed. DocBuilder uses the Relearn theme exclusively.
+
+### Relearn Theme Parameters
+
+Customize Relearn theme behavior via `hugo.params`:
+
+```yaml
+hugo:
+  params:
+    themeVariant: "relearn-dark"
+    disableSearch: false
+    collapsibleMenu: true
+    showVisitedLinks: true
+```
+
+See [Use Relearn Theme](../how-to/use-relearn-theme.md) for complete parameter reference.
 
 ### Taxonomies
 

@@ -339,22 +339,19 @@ repositories:
 - [Relearn Theme Documentation](https://mcshelby.github.io/hugo-theme-relearn/)
 - [Relearn GitHub Repository](https://github.com/McShelby/hugo-theme-relearn)
 - [Hugo Modules Documentation](https://gohugo.io/hugo-modules/)
-- [DocBuilder Theme Guide](../how-to/add-theme-support.md)
+- [DocBuilder Configuration Reference](../reference/configuration.md)
 
-## Comparison with Other Themes
+## Why Relearn?
 
-| Feature | Relearn | Hextra | Docsy |
-|---------|---------|--------|-------|
-| Search | Lunr.js | FlexSearch | Algolia/Local |
-| Math | MathJax | KaTeX | Limited |
-| Mermaid | Built-in | Built-in | Plugin |
-| Multilingual | 20+ languages | Basic | Full i18n |
-| Mobile | Excellent | Excellent | Good |
-| Customization | High | Medium | High |
-| Learning Curve | Low | Low | Medium |
+DocBuilder uses Relearn exclusively because it provides:
 
-Choose Relearn if you need:
-- Rich documentation features out-of-the-box
-- Strong multilingual support
-- Extensive built-in shortcodes
-- Math and diagram support
+- **Rich Documentation Features**: Built-in search, navigation, breadcrumbs, and shortcuts
+- **Strong Multilingual Support**: 20+ languages with full i18n capabilities  
+- **Extensive Shortcodes**: Notice boxes, tabs, buttons, diagrams, math - no plugins needed
+- **Math & Diagrams**: MathJax and Mermaid built-in
+- **Excellent Mobile Support**: Responsive design that works on all devices
+- **High Customizability**: Theme variants, custom CSS, configurable layouts
+- **Low Learning Curve**: Intuitive structure and clear documentation
+- **Active Maintenance**: Regular updates and responsive community
+
+Relearn strikes the optimal balance between features, ease of use, and maintenance burden for technical documentation.

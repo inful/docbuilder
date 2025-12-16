@@ -65,9 +65,9 @@ type RetryStrategy string  // Type-safe enum
 
 ```go
 // Validation error with context
-return errors.ValidationError("invalid theme").
-    WithContext("input", theme).
-    WithContext("valid_values", []string{"hextra", "docsy"}).
+return errors.ValidationError("invalid parameter").
+    WithContext("input", value).
+    WithContext("valid_values", []string{"option1", "option2"}).
     Build()
 
 // Wrap existing error with category
@@ -320,34 +320,31 @@ hugo/
 │   ├── frontmatter.go
 │   ├── frontmatter_builder.go
 │   ├── editlink.go
-│   ├── transformers.go
-│   └── typed_transformers.go
-└── themes/                # Theme implementations
-    ├── theme.go           # Interface
-    ├── registry.go        # Registration
-    ├── hextra/
-    │   └── theme_hextra.go
-    └── docsy/
-        └── theme_docsy.go
+│   └── config_writer.go      # Relearn theme configuration
+└── pipeline/                  # Fixed transform pipeline (ADR-003)
+    ├── transforms.go          # All 11 transforms
+    ├── generators.go          # Document generators
+    └── pipeline_test.go       # Pipeline tests
 ```
 
-**Key Interfaces:**
+**Key Components:**
 
 ```go
-type Theme interface {
-    Name() config.Theme
-    Features() ThemeFeatures
-    ApplyParams(ctx ParamContext, params map[string]any)
-    CustomizeRoot(ctx ParamContext, root map[string]any)
+// Relearn theme configuration in config_writer.go
+func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
+    // Apply Relearn-specific defaults
 }
 
-type ThemeFeatures struct {
-    UsesModules     bool
-    ModulePath      string
-    AutoMainMenu    bool
-    SearchJSON      bool
-    EditLinkSupport bool
+// Fixed transform pipeline in pipeline/transforms.go
+func CreatePipeline() []Transform {
+    return []Transform{
+        parseFrontMatter,
+        normalizeIndexFiles,
+        buildBaseFrontMatter,
+        // ... 8 more transforms
+    }
 }
+```
 
 type Transformer interface {
     Transform(ctx context.Context, doc *DocFile) error

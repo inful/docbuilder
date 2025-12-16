@@ -35,7 +35,7 @@ Each stage records duration, outcome, and issues for observability.
 | Discovery | Walk configured doc paths, filter markdown, build `DocFile` list. | `internal/docs/` |
 | Hugo Generator | Emit `hugo.yaml`, content tree, index pages, theme params. | `internal/hugo/` |
 | Transform Pipeline | Fixed-order content processing pipeline with direct mutation. | `internal/hugo/pipeline/` |
-| Theme System | Theme-specific parameter injection and configuration. | `internal/hugo/theme/` |
+| Relearn Theme | Theme configuration hardcoded for Relearn theme. | `internal/hugo/` (config_writer.go) |
 | Forge Integration | GitHub/GitLab/Forgejo API clients. | `internal/forge/` |
 | Error Foundation | Classified error system with retry strategies. | `internal/foundation/errors/` |
 | Report | Aggregate metrics & fingerprints for external tooling. | `internal/hugo/` |
@@ -98,7 +98,7 @@ Each markdown file passes through a fixed-order transform pipeline:
 
 **Theme Integration:**
 - Supported themes use Hugo Modules (no local theme directory needed)
-- Theme-specific transforms (e.g., `hextra_type_enforcer` sets `type: docs`)
+- Theme-specific configuration for Relearn
 - Index template override search order ensures safe customization
 - Front matter includes forge, repository, section, editURL for theme logic
 

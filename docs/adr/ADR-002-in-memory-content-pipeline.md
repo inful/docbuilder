@@ -249,7 +249,7 @@ By **not** doing a full refactor, we avoid:
 
 - [ ] Run existing `TestPipelineReadmeLinks` - should now pass
 - [ ] Add test for front matter preservation in README → _index.md
-- [ ] Test with multiple themes (Hextra, Docsy)
+- [ ] Test with Relearn theme configuration
 - [ ] Test edge cases:
   - README without front matter
   - README in subdirectories

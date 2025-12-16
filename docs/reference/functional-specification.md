@@ -11,12 +11,22 @@ tags:
 
 # DocBuilder Functional Specification
 
+> **⚠️ PARTIALLY OUTDATED**: This document contains references to the old multi-theme system (Hextra, Docsy) and transform registry that have been removed. DocBuilder now uses:
+> - **Single Theme**: Relearn only (no theme selection)
+> - **Fixed Pipeline**: 11 sequential transforms (see ADR-003)
+> - **Simplified Configuration**: No theme parameter needed
+>
+> For current architecture, see:
+> - [Architecture Overview](../explanation/architecture.md)
+> - [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md)
+> - [Use Relearn Theme](../how-to/use-relearn-theme.md)
+
 **Version:** 2.0  
 **Status:** Production (December 2025)  
-**Last Updated:** December 14, 2025
+**Last Updated:** December 16, 2025  
 **Document Purpose:** Complete specification enabling reimplementation of DocBuilder from scratch
 
-**Architecture Note:** This specification describes the current transform-based architecture using dependency-ordered content processing pipeline.
+**Architecture Note:** This specification describes the content processing pipeline architecture. Some sections reference deprecated features.
 
 ---
 
@@ -64,7 +74,7 @@ DocBuilder is a documentation aggregation tool that:
 | Multi-Repository Aggregation | Combine docs from unlimited Git repositories |
 | Authentication | SSH keys, personal access tokens, basic auth |
 | Forge Integration | GitHub, GitLab, Forgejo/Gitea support |
-| Theme Support | Hextra, Docsy, and Relearn themes via Hugo Modules |
+| Relearn Theme | Hardcoded Relearn theme with sensible defaults |
 | Incremental Builds | Skip unchanged repositories |
 | Change Detection | SHA-256 fingerprinting of documentation sets |
 | Forge Namespacing | Prevent URL collisions across forges |
