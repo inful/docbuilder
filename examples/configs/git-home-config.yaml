@@ -39,8 +39,7 @@ hugo:
   title: "Test Documentation Site"
   description: "Testing DocBuilder daemon mode"
   base_url: "http://localhost:8080"
-  # theme: "relearn"  # Default theme for all commands
-  # language_code: "en"
+  theme: "relearn"  # Default theme for all commands
   # params:
   #   version: "2.0.0"
   #   editPage: true
