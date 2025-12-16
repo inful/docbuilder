@@ -10,9 +10,9 @@ import (
 // Processor runs the complete content processing pipeline.
 // It coordinates generators (create missing files) and transforms (modify content).
 type Processor struct {
-	config              *config.Config
-	generators          []FileGenerator
-	transforms          []FileTransform
+	config                *config.Config
+	generators            []FileGenerator
+	transforms            []FileTransform
 	staticAssetGenerators []StaticAssetGenerator
 }
 
