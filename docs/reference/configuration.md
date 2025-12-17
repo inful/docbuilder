@@ -78,6 +78,7 @@ Automated link validation using NATS for caching and event publishing. Requires 
 | request_timeout | duration | 10s | HTTP timeout for link verification requests. |
 | rate_limit_delay | duration | 100ms | Delay between link verification requests. |
 | verify_external_only | bool | false | Verify only external links (skip internal links). |
+| skip_edit_links | bool | true | Skip edit links that require authentication. |
 | follow_redirects | bool | true | Follow HTTP redirects during verification. |
 | max_redirects | int | 3 | Maximum number of redirects to follow. |
 
@@ -133,6 +134,16 @@ daemon:
     max_concurrent: 20            # Increase parallelism
     request_timeout: "15s"        # Longer timeout for slow sites
     verify_external_only: true    # Skip internal link checks
+    skip_edit_links: true         # Skip edit links (default, requires auth)
+```
+
+**Include Edit Links in Verification:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    skip_edit_links: false        # Verify edit links (will likely fail without auth)
 ```
 
 **Disable Link Verification:**

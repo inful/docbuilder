@@ -226,6 +226,10 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		lv.RateLimitDelay = "100ms"
 	}
 	// VerifyExternalOnly defaults to false (verify both internal and external)
+	// SkipEditLinks defaults to true (edit links require authentication)
+	if !lv.SkipEditLinks {
+		lv.SkipEditLinks = true // Default enabled
+	}
 	if !lv.FollowRedirects {
 		lv.FollowRedirects = true // Default enabled
 	}
