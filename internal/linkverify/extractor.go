@@ -212,7 +212,8 @@ func FilterLinks(links []*Link, includeInternal, includeExternal bool) []*Link {
 	return filtered
 }
 
-// ShouldVerifyLink determines if a link should be verified.
+// ShouldVerifyLink determines if a link should be verified based on global rules.
+// Note: Configuration-based skipping (skipEditLinks) is handled separately in verifyPage.
 func ShouldVerifyLink(link *Link) bool {
 	// Skip anchors
 	if strings.HasPrefix(link.URL, "#") {
@@ -238,6 +239,30 @@ func ShouldVerifyLink(link *Link) bool {
 	}
 
 	return true
+}
+
+// isEditLink checks if a URL is an edit link that requires authentication.
+// Edit links are generated for "Edit this page" functionality and point to
+// forge-specific edit interfaces (GitHub, GitLab, Forgejo).
+func isEditLink(linkURL string) bool {
+	// Parse URL to check path components
+	u, err := url.Parse(linkURL)
+	if err != nil {
+		return false
+	}
+
+	path := u.Path
+
+	// GitHub edit links: /owner/repo/edit/branch/path
+	// GitLab edit links: /owner/repo/-/edit/branch/path
+	// Forgejo edit links: /owner/repo/_edit/branch/path
+	if strings.Contains(path, "/edit/") ||
+		strings.Contains(path, "/-/edit/") ||
+		strings.Contains(path, "/_edit/") {
+		return true
+	}
+
+	return false
 }
 
 // isOptionalHugoFeature checks if a URL points to an optional Hugo-generated file.

@@ -134,6 +134,7 @@ type LinkVerificationConfig struct {
 	RequestTimeout     string `yaml:"request_timeout"`      // HTTP request timeout
 	RateLimitDelay     string `yaml:"rate_limit_delay"`     // Delay between requests
 	VerifyExternalOnly bool   `yaml:"verify_external_only"` // Only verify external links
+	SkipEditLinks      bool   `yaml:"skip_edit_links"`      // Skip edit links (require auth, default: true)
 	FollowRedirects    bool   `yaml:"follow_redirects"`     // Follow HTTP redirects
 	MaxRedirects       int    `yaml:"max_redirects"`        // Maximum redirects to follow
 }
@@ -238,6 +239,7 @@ func Init(configPath string, force bool) error {
 				RequestTimeout:     "10s",
 				RateLimitDelay:     "100ms",
 				VerifyExternalOnly: false,
+				SkipEditLinks:      true,
 				FollowRedirects:    true,
 				MaxRedirects:       3,
 			},
