@@ -38,6 +38,7 @@ daemon:
     request_timeout: "10s"             # HTTP timeout
     rate_limit_delay: "100ms"          # Delay between requests
     verify_external_only: false        # Check both internal/external
+    skip_edit_links: true              # Skip edit links (require auth, default: true)
     follow_redirects: true             # Follow HTTP redirects
     max_redirects: 3                   # Max redirect depth
 ```
