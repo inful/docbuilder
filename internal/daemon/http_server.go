@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	handlers "git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
@@ -93,7 +94,25 @@ func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
 	s.monitoringHandlers = handlers.NewMonitoringHandlers(adapter)
 	s.apiHandlers = handlers.NewAPIHandlers(cfg, adapter)
 	s.buildHandlers = handlers.NewBuildHandlers(adapter)
-	s.webhookHandlers = handlers.NewWebhookHandlers()
+
+	// Extract webhook configs and forge clients for webhook handlers
+	webhookConfigs := make(map[string]*config.WebhookConfig)
+	forgeClients := make(map[string]forge.Client)
+	if daemon != nil && daemon.forgeManager != nil {
+		for forgeName := range daemon.forgeManager.GetAllForges() {
+			client := daemon.forgeManager.GetForge(forgeName)
+			if client != nil {
+				forgeClients[forgeName] = client
+			}
+		}
+	}
+	for _, forge := range cfg.Forges {
+		if forge.Webhook != nil {
+			webhookConfigs[forge.Name] = forge.Webhook
+		}
+	}
+
+	s.webhookHandlers = handlers.NewWebhookHandlers(adapter, forgeClients, webhookConfigs)
 
 	// Initialize middleware chain
 	s.mchain = smw.Chain(slog.Default(), s.errorAdapter)
@@ -169,6 +188,10 @@ func (a *daemonAdapter) TriggerDiscovery() string {
 
 func (a *daemonAdapter) TriggerBuild() string {
 	return a.daemon.TriggerBuild()
+}
+
+func (a *daemonAdapter) TriggerWebhookBuild(repoFullName, branch string) string {
+	return a.daemon.TriggerWebhookBuild(repoFullName, branch)
 }
 
 func (a *daemonAdapter) GetQueueLength() int {
