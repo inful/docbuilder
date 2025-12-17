@@ -58,9 +58,14 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 		timeout = 10 * time.Second
 	}
 
-	// Create HTTP client with timeout
+	// Create HTTP transport with proxy support
+	// This respects HTTP_PROXY, HTTPS_PROXY, and NO_PROXY environment variables
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+
+	// Create HTTP client with timeout and proxy support
 	httpClient := &http.Client{
-		Timeout: timeout,
+		Timeout:   timeout,
+		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if !cfg.FollowRedirects {
 				return http.ErrUseLastResponse
@@ -241,31 +246,14 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 }
 
 // checkLink performs the actual link verification.
+// The linkURL should already be an absolute URL, resolved by verifyLink.
 func (s *VerificationService) checkLink(ctx context.Context, linkURL string, isInternal bool, page *PageMetadata) (int, error) {
-	// Convert internal paths to full URLs for HTTP verification
-	// The daemon's HTTP server serves the static site
-	testURL := linkURL
-	if isInternal {
-		// Parse the base URL
-		base, err := url.Parse(page.BaseURL)
-		if err != nil {
-			return 0, fmt.Errorf("invalid base URL: %w", err)
-		}
+	slog.Debug("Checking link",
+		"url", linkURL,
+		"is_internal", isInternal,
+		"base_url", page.BaseURL)
 
-		// Resolve the link relative to base
-		linkParsed, err := url.Parse(linkURL)
-		if err != nil {
-			return 0, fmt.Errorf("invalid link URL: %w", err)
-		}
-
-		testURL = base.ResolveReference(linkParsed).String()
-		slog.Debug("Converted internal link to full URL",
-			"original", linkURL,
-			"full_url", testURL,
-			"base_url", page.BaseURL)
-	}
-
-	return s.checkExternalLink(ctx, testURL)
+	return s.checkExternalLink(ctx, linkURL)
 }
 
 // checkExternalLink verifies an external link via HTTP request.
