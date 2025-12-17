@@ -381,3 +381,65 @@ func (c *NATSClient) Close() error {
 	}
 	return nil
 }
+
+// GetPageHash retrieves the cached MD5 hash for a page path.
+func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
+	// Ensure we're connected
+	if err := c.ensureConnected(); err != nil {
+		return "", err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	c.mu.RLock()
+	kv := c.kv
+	c.mu.RUnlock()
+
+	if kv == nil {
+		return "", fmt.Errorf("KV bucket not available")
+	}
+
+	// Use page: prefix to distinguish from link cache entries
+	key := "page:" + sanitizeKVKey(pagePath)
+
+	entry, err := kv.Get(ctx, key)
+	if err != nil {
+		if err == jetstream.ErrKeyNotFound {
+			return "", fmt.Errorf("page hash not cached")
+		}
+		return "", fmt.Errorf("failed to get page hash: %w", err)
+	}
+
+	return string(entry.Value()), nil
+}
+
+// SetPageHash stores the MD5 hash for a page path in the cache.
+func (c *NATSClient) SetPageHash(pagePath, hash string) error {
+	// Ensure we're connected
+	if err := c.ensureConnected(); err != nil {
+		slog.Debug("NATS not connected, skipping page hash update", "error", err)
+		return nil // Non-fatal
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	c.mu.RLock()
+	kv := c.kv
+	c.mu.RUnlock()
+
+	if kv == nil {
+		return nil // Cache not available - non-fatal
+	}
+
+	// Use page: prefix to distinguish from link cache entries
+	key := "page:" + sanitizeKVKey(pagePath)
+
+	_, err := kv.Put(ctx, key, []byte(hash))
+	if err != nil {
+		return fmt.Errorf("failed to put page hash: %w", err)
+	}
+
+	return nil
+}
