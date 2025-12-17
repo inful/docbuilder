@@ -26,6 +26,19 @@ When configured, DocBuilder:
 
 ## Configuration
 
+### 0. Understanding Port Isolation
+
+**Important**: DocBuilder runs webhooks on a **separate HTTP server** and port from your documentation. This means:
+- **Documentation** is served on `docs_port` (default: 8080)
+- **Webhooks** are received on `webhook_port` (default: 8081)
+- **No collision is possible** - they're completely isolated servers
+
+Example URLs:
+- Documentation: `http://your-server:8080/docs/guide/`
+- Webhooks: `http://your-server:8081/webhooks/github`
+
+See [Webhook and Documentation Isolation](../explanation/webhook-documentation-isolation.md) for detailed architecture information.
+
 ### 1. Add Webhook Configuration to Your Forge
 
 In your `config.yaml`, add webhook configuration to each forge:
@@ -76,15 +89,27 @@ forges:
 
 ### 2. Configure Daemon HTTP Ports
 
-Ensure your daemon HTTP configuration includes the webhook port:
+DocBuilder runs **four separate HTTP servers** on different ports:
 
 ```yaml
 daemon:
   http:
-    docs_port: 8080       # Documentation server
-    webhook_port: 8081    # Webhook receiver (default)
-    admin_port: 8082      # Admin API
+    docs_port: 8080       # Documentation server (public)
+    webhook_port: 8081    # Webhook receiver (forge access only)
+    admin_port: 8082      # Admin API (internal only)
+    livereload_port: 8083 # Live reload SSE (optional)
 ```
+
+**Port Separation Benefits:**
+- ✅ Webhooks cannot interfere with documentation serving
+- ✅ Different firewall rules for each service
+- ✅ Separate access controls (public docs, restricted webhooks)
+- ✅ Independent scaling and monitoring
+
+**Port Configuration Rules:**
+- All ports must be unique (daemon fails to start if duplicates detected)
+- Use sequential ports for clarity (8080, 8081, 8082, 8083)
+- Ports can be customized but must remain distinct
 
 ### 3. Set Environment Variables
 
@@ -253,11 +278,33 @@ WARN No matching repositories found for webhook repo_full_name=owner/repo branch
 
 ## Security Considerations
 
+### Port Isolation (Primary Security)
+
+Webhooks run on a **separate HTTP server** (port 8081 by default), completely isolated from documentation (port 8080). This provides:
+- **Zero collision risk** between webhooks and documentation
+- **Independent access control** per service
+- **Network-level separation** via firewall rules
+
+### Access Control Best Practices
+
 1. **Always use webhook secrets** for signature validation
 2. **Use HTTPS in production** to encrypt webhook payloads
-3. **Restrict webhook port access** using firewall rules
+3. **Restrict webhook port access** using firewall rules:
+   ```bash
+   # Allow docs publicly
+   iptables -A INPUT -p tcp --dport 8080 -j ACCEPT
+   
+   # Allow webhooks only from forge IPs
+   iptables -A INPUT -p tcp --dport 8081 -s <github-ip-range> -j ACCEPT
+   iptables -A INPUT -p tcp --dport 8081 -j DROP  # Block others
+   
+   # Allow admin only from internal network
+   iptables -A INPUT -p tcp --dport 8082 -s 10.0.0.0/8 -j ACCEPT
+   iptables -A INPUT -p tcp --dport 8082 -j DROP
+   ```
 4. **Rotate webhook secrets** periodically
 5. **Monitor webhook logs** for unusual activity
+6. **Use reverse proxy** for additional isolation (subdomains recommended)
 
 ## Advanced Configuration
 
@@ -287,6 +334,7 @@ webhook:
 
 ## Related Documentation
 
+- [Webhook and Documentation Isolation](../explanation/webhook-documentation-isolation.md) - Architecture and collision prevention
 - [Daemon Mode](../tutorials/daemon-mode.md) - Running DocBuilder as a service
 - [Build Queue](../explanation/build-queue.md) - Understanding the build system
 - [Security](../reference/security.md) - Security best practices
