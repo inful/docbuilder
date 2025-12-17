@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"math"
@@ -642,6 +644,14 @@ func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) (
 		}
 		renderedURL += strings.TrimPrefix(relPath, "/")
 
+		// Compute MD5 hash of HTML content for change detection
+		var contentHash string
+		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil {
+			hash := md5.New()
+			hash.Write(htmlBytes)
+			contentHash = hex.EncodeToString(hash.Sum(nil))
+		}
+
 		page := &linkverify.PageMetadata{
 			DocFile:      docFile,
 			HTMLPath:     path,
@@ -652,6 +662,7 @@ func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) (
 			BaseURL:      d.config.Hugo.BaseURL,
 			BuildID:      buildID,
 			BuildTime:    time.Now(),
+			ContentHash:  contentHash,
 		}
 
 		pages = append(pages, page)
