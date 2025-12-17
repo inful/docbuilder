@@ -194,7 +194,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 		// Use cached result
 		if !cached.IsValid {
 			// Still broken, update failure count and possibly publish
-			s.handleBrokenLink(link, page, cached.Status, cached.Error, cached)
+			s.handleBrokenLink(absoluteURL, link, page, cached.Status, cached.Error, cached)
 		}
 		return
 	}
@@ -227,7 +227,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 		cacheEntry.ConsecutiveFail = true
 
 		// Handle broken link
-		s.handleBrokenLink(link, page, status, verifyErr.Error(), cacheEntry)
+		s.handleBrokenLink(absoluteURL, link, page, status, verifyErr.Error(), cacheEntry)
 	} else {
 		// Link is valid, reset failure count
 		cacheEntry.FailureCount = 0
@@ -297,9 +297,9 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 }
 
 // handleBrokenLink creates and publishes a broken link event.
-func (s *VerificationService) handleBrokenLink(link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
+func (s *VerificationService) handleBrokenLink(absoluteURL string, link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
 	event := &BrokenLinkEvent{
-		URL:        link.URL,
+		URL:        absoluteURL,
 		Status:     status,
 		Error:      errorMsg,
 		IsInternal: link.IsInternal,
@@ -352,12 +352,12 @@ func (s *VerificationService) handleBrokenLink(link *Link, page *PageMetadata, s
 	// Publish event
 	if err := s.nats.PublishBrokenLink(event); err != nil {
 		slog.Error("Failed to publish broken link event",
-			"url", link.URL,
+			"url", absoluteURL,
 			"source", page.RenderedPath,
 			"error", err)
 	} else {
 		slog.Warn("Broken link detected",
-			"url", link.URL,
+			"url", absoluteURL,
 			"source", page.RenderedPath,
 			"repository", page.DocFile.Repository,
 			"status", status,
