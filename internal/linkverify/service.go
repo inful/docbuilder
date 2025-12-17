@@ -167,6 +167,11 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 			continue
 		}
 
+		// Skip edit links if configured
+		if s.cfg.SkipEditLinks && isEditLink(link.URL) {
+			continue
+		}
+
 		// Acquire semaphore
 		s.semaphore <- struct{}{}
 		s.wg.Add(1)
