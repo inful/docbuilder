@@ -454,7 +454,28 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool) string {
 		path = strings.TrimSuffix(path, "/readme")
 	}
 
-	// Prepend repository path if relative
+	// Handle relative paths that navigate up directories (../)
+	// For paths starting with ../, we know they're relative to the current document's location
+	// Since all documents are flattened into /{forge}/{repo}/ structure,
+	// any ../ navigation stays within the repository namespace
+	if strings.HasPrefix(path, "../") {
+		// Strip all leading ../ sequences - the path is relative to repository root
+		for strings.HasPrefix(path, "../") {
+			path = strings.TrimPrefix(path, "../")
+		}
+		
+		// Now prepend repository path
+		if repository != "" {
+			if forge != "" {
+				path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+			} else {
+				path = fmt.Sprintf("/%s/%s", repository, path)
+			}
+		}
+		return path
+	}
+
+	// Prepend repository path if relative (not starting with /)
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		if forge != "" {
 			path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
