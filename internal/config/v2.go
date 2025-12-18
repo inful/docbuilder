@@ -52,9 +52,9 @@ type WebhookConfig struct {
 
 // DaemonConfig represents daemon-specific configuration, including HTTP, sync, and storage settings.
 type DaemonConfig struct {
-	HTTP             HTTPConfig             `yaml:"http"`
-	Sync             SyncConfig             `yaml:"sync"`
-	Storage          StorageConfig          `yaml:"storage"`
+	HTTP             HTTPConfig              `yaml:"http"`
+	Sync             SyncConfig              `yaml:"sync"`
+	Storage          StorageConfig           `yaml:"storage"`
 	LinkVerification *LinkVerificationConfig `yaml:"link_verification,omitempty"`
 }
 
