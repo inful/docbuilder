@@ -11,13 +11,14 @@ tags:
 
 # Configuration Reference
 
-This page enumerates the primary configuration sections and fields currently supported by DocBuilder's direct build mode.
+This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.
 
 ## Top-Level Structure
 
 ```yaml
 repositories: []    # List of repositories to aggregate
 build: {}           # Performance & workspace tuning
+daemon: {}          # Daemon mode settings (link verification, sync, storage)
 versioning: {}      # Multi-version documentation (optional)
 hugo: {}            # Hugo site metadata & theme
 output: {}          # Output directory behavior
@@ -56,6 +57,145 @@ output: {}          # Output directory behavior
 | workspace_dir | string | derived | Explicit workspace override path. |
 | namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
 | skip_if_unchanged | bool | daemon:true, CLI:false | Skip builds when nothing changed (daemon only). |
+
+## Daemon Section
+
+Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.
+
+### Link Verification
+
+Automated link validation using NATS for caching and event publishing. Requires NATS server with JetStream enabled.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| enabled | bool | true | Enable automatic link verification after builds. |
+| nats_url | string | nats://localhost:4222 | NATS server connection URL (supports clustering). |
+| subject | string | docbuilder.links.broken | NATS subject for publishing broken link events. |
+| kv_bucket | string | docbuilder-link-cache | KV bucket name for caching link verification results. |
+| cache_ttl | duration | 24h | TTL for successful link checks in cache. |
+| cache_ttl_failures | duration | 1h | TTL for failed link checks in cache. |
+| max_concurrent | int | 10 | Maximum concurrent link verification requests. |
+| request_timeout | duration | 10s | HTTP timeout for link verification requests. |
+| rate_limit_delay | duration | 100ms | Delay between link verification requests. |
+| verify_external_only | bool | false | Verify only external links (skip internal links). |
+| skip_edit_links | bool | true | Skip edit links that require authentication. |
+| follow_redirects | bool | true | Follow HTTP redirects during verification. |
+| max_redirects | int | 3 | Maximum number of redirects to follow. |
+
+### Link Verification Examples
+
+**Basic Configuration:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "nats://localhost:4222"
+```
+
+**Remote NATS with Authentication:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "nats://username:password@nats.example.com:4222"
+    subject: "docbuilder.links.broken"
+    kv_bucket: "prod-link-cache"
+```
+
+**NATS Cluster Configuration:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "nats://server1:4222,nats://server2:4222,nats://server3:4222"
+```
+
+**TLS/Secure Connection:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "tls://nats.example.com:4222"
+```
+
+**Custom Verification Settings:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "nats://localhost:4222"
+    cache_ttl: "48h"              # Cache successful checks for 2 days
+    cache_ttl_failures: "30m"     # Recheck failures after 30 minutes
+    max_concurrent: 20            # Increase parallelism
+    request_timeout: "15s"        # Longer timeout for slow sites
+    verify_external_only: true    # Skip internal link checks
+    skip_edit_links: true         # Skip edit links (default, requires auth)
+```
+
+**Include Edit Links in Verification:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    skip_edit_links: false        # Verify edit links (will likely fail without auth)
+```
+
+**Disable Link Verification:**
+
+```yaml
+daemon:
+  link_verification:
+    enabled: false
+```
+
+### NATS Requirements
+
+Link verification requires **NATS with JetStream** enabled:
+
+```bash
+# Start NATS with JetStream
+nats-server -js
+
+# Or configure in nats-server.conf:
+jetstream {
+    store_dir: /var/lib/nats
+    max_memory_store: 1GB
+    max_file_store: 10GB
+}
+```
+
+### Sync Configuration
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| schedule | string | */5 * * * * | Cron expression for periodic repository sync. |
+
+### Storage Configuration
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| output_dir | string | ./site | Output directory (must match `output.directory`). |
+| repo_cache_dir | string | - | Persistent repository cache directory. |
+
+### Daemon Configuration Example
+
+```yaml
+daemon:
+  link_verification:
+    enabled: true
+    nats_url: "nats://localhost:4222"
+    cache_ttl: "24h"
+  sync:
+    schedule: "*/10 * * * *"  # Sync every 10 minutes
+  storage:
+    repo_cache_dir: "./daemon-data/repos"
+```
 
 ## Versioning Section
 
