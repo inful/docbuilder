@@ -27,6 +27,7 @@ type PageMetadata struct {
 	BaseURL      string                 // Site base URL
 	BuildID      string                 // Build identifier
 	BuildTime    time.Time              // Build timestamp
+	ContentHash  string                 // MD5 hash of page content for change detection
 }
 
 // VerificationService manages link verification operations.
@@ -137,6 +138,16 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata) {
 	defer s.wg.Done()
 
+	// Check if page content has changed using MD5 hash
+	if page.ContentHash != "" {
+		if cachedHash, err := s.nats.GetPageHash(page.RenderedPath); err == nil && cachedHash == page.ContentHash {
+			slog.Debug("Skipping link verification for unchanged page",
+				"path", page.RenderedPath,
+				"hash", page.ContentHash[:8])
+			return
+		}
+	}
+
 	// Extract links from HTML
 	links, err := ExtractLinks(page.HTMLPath, page.BaseURL)
 	if err != nil {
@@ -167,10 +178,22 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 			continue
 		}
 
+		// Skip edit links if configured
+		if s.cfg.SkipEditLinks && isEditLink(link.URL) {
+			continue
+		}
+
 		// Acquire semaphore
 		s.semaphore <- struct{}{}
 		s.wg.Add(1)
 		go s.verifyLink(ctx, link, page)
+	}
+
+	// All links verified for this page - update page hash in cache
+	if page.ContentHash != "" {
+		if err := s.nats.SetPageHash(page.RenderedPath, page.ContentHash); err != nil {
+			slog.Debug("Failed to cache page hash", "path", page.RenderedPath, "error", err)
+		}
 	}
 }
 

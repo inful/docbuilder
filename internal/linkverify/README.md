@@ -11,14 +11,28 @@ The `linkverify` package provides background link verification that runs after e
 ### Components
 
 1. **VerificationService** - Main orchestrator for link checking
-2. **NATSClient** - NATS connection and KV cache management
+2. **NATSClient** - NATS connection and KV cache management (link results + page hashes)
 3. **Link Extractor** - HTML parsing to extract all links
 4. **BrokenLinkEvent** - Rich event structure for NATS publishing
+
+### Caching Strategy
+
+The system uses a two-level caching approach in NATS KV:
+
+1. **Link-level cache**: Stores verification results per URL (MD5 hash of URL as key)
+   - Successful checks cached for `cache_ttl` (default: 24h)
+   - Failed checks cached for `cache_ttl_failures` (default: 1h)
+   - Tracks failure counts and consecutive failures
+
+2. **Page-level cache**: Stores MD5 hash of page HTML content (key: `page:{path_hash}`)
+   - Skips link verification entirely if page content hasn't changed
+   - Dramatically reduces verification load for unchanged pages
+   - Cache keys prefixed with `page:` to distinguish from link cache
 
 ### Flow
 
 ```
-Build Completes → Collect Pages → Extract Links → Verify (with cache) → Publish Events
+Build Completes → Collect Pages → Hash Pages → Skip Unchanged → Extract Links → Verify (with cache) → Publish Events → Update Page Hashes
 ```
 
 ## Configuration
@@ -38,6 +52,7 @@ daemon:
     request_timeout: "10s"             # HTTP timeout
     rate_limit_delay: "100ms"          # Delay between requests
     verify_external_only: false        # Check both internal/external
+    skip_edit_links: true              # Skip edit links (require auth, default: true)
     follow_redirects: true             # Follow HTTP redirects
     max_redirects: 3                   # Max redirect depth
 ```
