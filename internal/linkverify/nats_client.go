@@ -400,8 +400,9 @@ func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
 		return "", fmt.Errorf("KV bucket not available")
 	}
 
-	// Use page: prefix to distinguish from link cache entries
-	key := "page:" + sanitizeKVKey(pagePath)
+	// Use page_ prefix to distinguish from link cache entries
+	// NATS KV keys must match ^[a-zA-Z0-9_-]+$ (no colons allowed)
+	key := "page_" + sanitizeKVKey(pagePath)
 
 	entry, err := kv.Get(ctx, key)
 	if err != nil {
@@ -433,8 +434,9 @@ func (c *NATSClient) SetPageHash(pagePath, hash string) error {
 		return nil // Cache not available - non-fatal
 	}
 
-	// Use page: prefix to distinguish from link cache entries
-	key := "page:" + sanitizeKVKey(pagePath)
+	// Use page_ prefix to distinguish from link cache entries
+	// NATS KV keys must match ^[a-zA-Z0-9_-]+$ (no colons allowed)
+	key := "page_" + sanitizeKVKey(pagePath)
 
 	_, err := kv.Put(ctx, key, []byte(hash))
 	if err != nil {
