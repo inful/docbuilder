@@ -827,13 +827,13 @@ func matchesRepoURL(repoURL, fullName string) bool {
 	// - git@github.com:owner/repo.git
 	// - https://github.com/owner/repo
 	// - git@github.com:owner/repo
-	
+
 	// Remove trailing .git if present
 	url := repoURL
 	if len(url) > 4 && url[len(url)-4:] == ".git" {
 		url = url[:len(url)-4]
 	}
-	
+
 	// Check if URL ends with the full name
 	if len(url) > len(fullName) {
 		// Check for /owner/repo or :owner/repo
@@ -843,7 +843,7 @@ func matchesRepoURL(repoURL, fullName string) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 

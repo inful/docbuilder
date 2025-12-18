@@ -22,7 +22,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:469d7d15144fae3a"
+      "contentHash": "sha256:92297db13c438a0c"
     },
     "content/backend/auth.md": {
       "frontmatter": {
@@ -31,7 +31,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:365980300aef14c5"
+      "contentHash": "sha256:2b6fe322c18d56e9"
     },
     "content/frontend/_index.md": {
       "frontmatter": {
@@ -48,7 +48,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:89ad853799ec8308"
+      "contentHash": "sha256:8cef5dbe5166dcc8"
     },
     "content/frontend/setup.md": {
       "frontmatter": {
@@ -57,7 +57,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:e6774a0218066f1a"
+      "contentHash": "sha256:87d09efddd7cef64"
     }
   },
   "structure": {

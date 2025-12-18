@@ -463,7 +463,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool) string {
 		for strings.HasPrefix(path, "../") {
 			path = strings.TrimPrefix(path, "../")
 		}
-		
+
 		// Now prepend repository path
 		if repository != "" {
 			if forge != "" {
