@@ -215,7 +215,7 @@ func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 			}
 
 			// Rewrite relative link to Hugo-compatible path
-			newPath := rewriteLinkPath(path, doc.Repository, doc.Forge, doc.IsIndex)
+			newPath := rewriteLinkPath(path, doc.Repository, doc.Forge, doc.IsIndex, doc.Path)
 			return fmt.Sprintf("[%s](%s)", text, newPath)
 		})
 
@@ -443,7 +443,7 @@ func deepCopyValue(v any) any {
 	}
 }
 
-func rewriteLinkPath(path, repository, forge string, isIndex bool) string {
+func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath string) string {
 	// Remove .md extension
 	path = strings.TrimSuffix(path, ".md")
 	path = strings.TrimSuffix(path, ".markdown")
@@ -452,6 +452,20 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool) string {
 	if strings.HasSuffix(path, "/README") || strings.HasSuffix(path, "/readme") {
 		path = strings.TrimSuffix(path, "/README")
 		path = strings.TrimSuffix(path, "/readme")
+	}
+
+	// For index files in subdirectories, relative links need to preserve directory context
+	// Example: docs/how-to/index.md linking to configure-env-exposure.md
+	// Should resolve to /repo/how-to/configure-env-exposure, not /repo/configure-env-exposure
+	if isIndex && !strings.HasPrefix(path, "../") && !strings.HasPrefix(path, "/") {
+		// Extract directory from document path
+		// docPath is like "servejs/how-to/_index.md" 
+		// We want to preserve "how-to/" in the link
+		dirPath := extractDirectory(docPath)
+		if dirPath != "" && dirPath != repository && dirPath != repository+"/" {
+			// Link is relative to current directory, prepend the directory
+			path = dirPath + "/" + path
+		}
 	}
 
 	// Handle relative paths that navigate up directories (../)
@@ -485,6 +499,52 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool) string {
 	}
 
 	return path
+}
+
+// extractDirectory returns the directory portion of a Hugo path, relative to repository.
+// Example: "servejs/how-to/_index.md" returns "how-to"
+//          "servejs/api/_index.md" returns "api"  
+//          "servejs/_index.md" returns ""
+//          "docs/guide/advanced/_index.md" returns "guide/advanced"
+//          "gitlab/docs/how-to/_index.md" returns "how-to" (handles forge namespace)
+func extractDirectory(hugoPath string) string {
+	// Remove file name (_index.md or other.md)
+	dir := hugoPath
+	if lastSlash := strings.LastIndex(dir, "/"); lastSlash >= 0 {
+		dir = dir[:lastSlash]
+	}
+
+	// Split into segments
+	segments := strings.Split(dir, "/")
+	
+	// Path patterns:
+	// - repo (no subdirs): segments = [repo] -> return ""
+	// - repo/section: segments = [repo, section] -> return "section"
+	// - repo/section/subsection: segments = [repo, section, subsection] -> return "section/subsection"
+	// - forge/repo/section: segments = [forge, repo, section] -> return "section"
+	
+	if len(segments) <= 1 {
+		// Just repository, no subdirectory
+		return ""
+	}
+	
+	// Heuristic: if there are 3+ segments and first segment length is relatively short (common forge names),
+	// assume it's a forge namespace. Otherwise, treat first segment as repository.
+	// Common forge names: gitlab, github, forgejo, gitea (all <= 8 chars)
+	hasForge := len(segments) >= 3 && len(segments[0]) <= 8
+	
+	if hasForge {
+		// forge/repo/section... format
+		// Return everything after repo (index 1)
+		if len(segments) > 2 {
+			return strings.Join(segments[2:], "/")
+		}
+		return ""
+	}
+	
+	// repo/section... format
+	// Return everything after repo (index 0)
+	return strings.Join(segments[1:], "/")
 }
 
 func rewriteImagePath(path, repository, forge string) string {
