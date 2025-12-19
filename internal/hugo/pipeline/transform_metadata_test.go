@@ -44,8 +44,8 @@ func TestAddRepositoryMetadata_Idempotent(t *testing.T) {
 			name: "existing frontmatter",
 			doc: &Document{
 				FrontMatter: map[string]any{
-					"title":       "Test Title",
-					"repository":  "old-repo",
+					"title":        "Test Title",
+					"repository":   "old-repo",
 					"custom_field": "custom_value",
 				},
 				Repository:   "new-repo",
