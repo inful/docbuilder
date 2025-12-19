@@ -18,7 +18,7 @@
     "content/deep-nesting/level1/_index.md": {
       "frontmatter": {
         "repository": "deep-nesting",
-        "title": "Level1",
+        "title": "level1",
         "type": "docs"
       },
       "contentHash": "sha256:d93f9f143c25cd50"
@@ -35,7 +35,7 @@
     "content/deep-nesting/level1/level2/_index.md": {
       "frontmatter": {
         "repository": "deep-nesting",
-        "title": "Level2",
+        "title": "level2",
         "type": "docs"
       },
       "contentHash": "sha256:224a4c43bd2decf4"
@@ -52,7 +52,7 @@
     "content/deep-nesting/level1/level2/level3/_index.md": {
       "frontmatter": {
         "repository": "deep-nesting",
-        "title": "Level3",
+        "title": "level3",
         "type": "docs"
       },
       "contentHash": "sha256:bce434dbd869b116"
@@ -69,7 +69,7 @@
     "content/deep-nesting/level1/level2/level3/level4/_index.md": {
       "frontmatter": {
         "repository": "deep-nesting",
-        "title": "Level4",
+        "title": "level4",
         "type": "docs"
       },
       "contentHash": "sha256:55a1da60e6c2baef"

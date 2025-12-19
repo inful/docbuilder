@@ -27,7 +27,7 @@
     "content/special-chars/special-chars (test)/_index.md": {
       "frontmatter": {
         "repository": "special-chars",
-        "title": "Special Chars (test)",
+        "title": "special-chars (test)",
         "type": "docs"
       },
       "contentHash": "sha256:8573a9f7674903c7"
