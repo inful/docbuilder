@@ -36,7 +36,7 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	// Pattern to match H1 heading
 	h1Pattern := regexp.MustCompile(`(?m)^# (.+)$`)
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
-	
+
 	if matches != nil {
 		// Check for text before H1
 		textBeforeH1 := strings.TrimSpace(doc.Content[:matches[0]])
