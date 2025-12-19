@@ -135,7 +135,8 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 
 			// Generate section index
 			// If section is a configured docs path, use repository name as title
-			title := titleCase(filepath.Base(sectionName))
+			// Otherwise, use the base directory name as-is (without titleCase transformation)
+			title := filepath.Base(sectionName)
 			if isConfiguredDocsPath(sectionName, repoMeta.DocsPaths) {
 				title = repoMeta.Name // Use actual repository name from config
 			}
@@ -193,7 +194,7 @@ func titleCase(s string) string {
 func isConfiguredDocsPath(sectionName string, docsPaths []string) bool {
 	// Get the last segment of the section path
 	lastSegment := filepath.Base(sectionName)
-	
+
 	for _, path := range docsPaths {
 		// Exact match (e.g., section "docs" matches path "docs")
 		if sectionName == path {
