@@ -8,7 +8,13 @@ import (
 
 // parseFrontMatter extracts YAML front matter from content.
 // Sets OriginalFrontMatter and removes front matter from Content.
+// Idempotent: if already parsed (OriginalFrontMatter is set), does nothing.
 func parseFrontMatter(doc *Document) ([]*Document, error) {
+	// Idempotence check: if we've already parsed front matter, don't re-parse
+	if doc.OriginalFrontMatter != nil {
+		return nil, nil
+	}
+
 	content := doc.Content
 
 	// Check for YAML front matter (--- ... ---)
@@ -117,7 +123,13 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 }
 
 // serializeDocument converts the Document back to markdown with front matter.
+// Idempotent: if already serialized (Raw is set), does nothing.
 func serializeDocument(doc *Document) ([]*Document, error) {
+	// Idempotence check: if already serialized, don't re-serialize
+	if len(doc.Raw) > 0 {
+		return nil, nil
+	}
+
 	var result strings.Builder
 
 	// Write front matter if present
