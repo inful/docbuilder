@@ -175,11 +175,12 @@ func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.
 
 	for _, repo := range g.config.Repositories {
 		info := pipeline.RepositoryInfo{
-			Name:     repo.Name,
-			URL:      repo.URL,
-			Branch:   repo.Branch,
-			Tags:     repo.Tags,
-			DocsBase: "docs", // Default
+			Name:      repo.Name,
+			URL:       repo.URL,
+			Branch:    repo.Branch,
+			Tags:      repo.Tags,
+			DocsBase:  "docs", // Default
+			DocsPaths: []string{"docs"},
 		}
 
 		// Get forge type from tags
@@ -190,6 +191,7 @@ func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.
 		// Get docs base from paths (use first path if multiple)
 		if len(repo.Paths) > 0 {
 			info.DocsBase = repo.Paths[0]
+			info.DocsPaths = repo.Paths
 		}
 
 		// Get commit SHA and date from BuildState if available

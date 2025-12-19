@@ -127,5 +127,6 @@ type RepositoryInfo struct {
 	Forge      string
 	Tags       map[string]string
 	DocsBase   string
-	Namespace  string // For namespaced repos
+	DocsPaths  []string // All configured documentation paths
+	Namespace  string   // For namespaced repos
 }

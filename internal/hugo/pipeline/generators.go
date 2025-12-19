@@ -134,10 +134,10 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			repoMeta := ctx.RepositoryMetadata[repo]
 
 			// Generate section index
-			// If section is a docs base directory (e.g., "docs"), use repository name as title
+			// If section is a configured docs path, use repository name as title
 			title := titleCase(filepath.Base(sectionName))
-			if isDocsBaseSection(sectionName, docs) {
-				title = titleCase(repo)
+			if isConfiguredDocsPath(sectionName, repoMeta.DocsPaths) {
+				title = repoMeta.Name // Use actual repository name from config
 			}
 			description := fmt.Sprintf("Documentation for %s", sectionName)
 
@@ -186,20 +186,15 @@ func titleCase(s string) string {
 	return strings.Join(words, " ")
 }
 
-// isDocsBaseSection checks if a section is a docs base directory.
-// If all documents in the section have the same DocsBase matching the section name,
-// this is likely a repository-level docs directory and should use repo name as title.
-func isDocsBaseSection(sectionName string, docs []*Document) bool {
-	if len(docs) == 0 {
-		return false
-	}
-
-	// Check if all documents have DocsBase matching the section
-	for _, doc := range docs {
-		if doc.DocsBase != sectionName {
-			return false
+// isConfiguredDocsPath checks if a section matches a configured documentation path.
+// This identifies top-level documentation directories that should use the repository name
+// as their title instead of the directory name (e.g., "docs" → "Repository Name").
+func isConfiguredDocsPath(sectionName string, docsPaths []string) bool {
+	for _, path := range docsPaths {
+		// Exact match or section is the docs path itself
+		if sectionName == path {
+			return true
 		}
 	}
-
-	return true
+	return false
 }
