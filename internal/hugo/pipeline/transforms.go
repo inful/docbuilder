@@ -196,12 +196,12 @@ func stripHeading(doc *Document) ([]*Document, error) {
 func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 	// Pattern to match code blocks (both ``` and indented)
 	// We need to find {{< shortcode >}} and {{< /shortcode >}} patterns within code blocks
-	
+
 	var result strings.Builder
 	lines := strings.Split(doc.Content, "\n")
 	inFencedCodeBlock := false
 	var fenceMarker string
-	
+
 	for _, line := range lines {
 		// Check for fenced code block markers (```  or ~~~)
 		trimmedLine := strings.TrimSpace(line)
@@ -222,26 +222,37 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 			result.WriteString("\n")
 			continue
 		}
-		
-		// If we're in a code block, escape shortcodes
+
+		// If we're in a code block, escape shortcodes (but skip already-escaped ones)
 		if inFencedCodeBlock {
-			// Replace {{< with {{</* and >}} with */>}}
-			escapedLine := strings.ReplaceAll(line, "{{<", "{{</*")
-			escapedLine = strings.ReplaceAll(escapedLine, ">}}", "*/>}}")
-			result.WriteString(escapedLine)
+			// Check if shortcodes are already escaped (contains {{</* or */>}})
+			if strings.Contains(line, "{{</*") || strings.Contains(line, "*/>}}") {
+				// Already escaped, leave as-is
+				result.WriteString(line)
+			} else if strings.Contains(line, "{{<") {
+				// Only escape if line contains shortcode opening {{<
+				// Escape both opening {{< and closing >}}
+				escapedLine := strings.ReplaceAll(line, "{{<", "{{</*")
+				escapedLine = strings.ReplaceAll(escapedLine, ">}}", "*/>}}")
+				result.WriteString(escapedLine)
+			} else {
+				// No shortcodes to escape
+				result.WriteString(line)
+			}
 		} else {
 			result.WriteString(line)
 		}
 		result.WriteString("\n")
 	}
-	
+
 	// Remove trailing newline if original didn't have one
 	content := result.String()
 	if !strings.HasSuffix(doc.Content, "\n") && strings.HasSuffix(content, "\n") {
 		content = strings.TrimSuffix(content, "\n")
 	}
-	
+
 	doc.Content = content
+	// This transform only modifies content, doesn't generate new documents
 	return nil, nil
 }
 
@@ -514,7 +525,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	// Should resolve to /repo/how-to/configure-env-exposure, not /repo/configure-env-exposure
 	if isIndex && !strings.HasPrefix(path, "../") && !strings.HasPrefix(path, "/") {
 		// Extract directory from document path
-		// docPath is like "servejs/how-to/_index.md" 
+		// docPath is like "servejs/how-to/_index.md"
 		// We want to preserve "how-to/" in the link
 		dirPath := extractDirectory(docPath)
 		if dirPath != "" && dirPath != repository && dirPath != repository+"/" {
@@ -558,10 +569,11 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 
 // extractDirectory returns the directory portion of a Hugo path, relative to repository.
 // Example: "servejs/how-to/_index.md" returns "how-to"
-//          "servejs/api/_index.md" returns "api"  
-//          "servejs/_index.md" returns ""
-//          "docs/guide/advanced/_index.md" returns "guide/advanced"
-//          "gitlab/docs/how-to/_index.md" returns "how-to" (handles forge namespace)
+//
+//	"servejs/api/_index.md" returns "api"
+//	"servejs/_index.md" returns ""
+//	"docs/guide/advanced/_index.md" returns "guide/advanced"
+//	"gitlab/docs/how-to/_index.md" returns "how-to" (handles forge namespace)
 func extractDirectory(hugoPath string) string {
 	// Remove file name (_index.md or other.md)
 	dir := hugoPath
@@ -571,23 +583,23 @@ func extractDirectory(hugoPath string) string {
 
 	// Split into segments
 	segments := strings.Split(dir, "/")
-	
+
 	// Path patterns:
 	// - repo (no subdirs): segments = [repo] -> return ""
 	// - repo/section: segments = [repo, section] -> return "section"
 	// - repo/section/subsection: segments = [repo, section, subsection] -> return "section/subsection"
 	// - forge/repo/section: segments = [forge, repo, section] -> return "section"
-	
+
 	if len(segments) <= 1 {
 		// Just repository, no subdirectory
 		return ""
 	}
-	
+
 	// Heuristic: if there are 3+ segments and first segment length is relatively short (common forge names),
 	// assume it's a forge namespace. Otherwise, treat first segment as repository.
 	// Common forge names: gitlab, github, forgejo, gitea (all <= 8 chars)
 	hasForge := len(segments) >= 3 && len(segments[0]) <= 8
-	
+
 	if hasForge {
 		// forge/repo/section... format
 		// Return everything after repo (index 1)
@@ -596,7 +608,7 @@ func extractDirectory(hugoPath string) string {
 		}
 		return ""
 	}
-	
+
 	// repo/section... format
 	// Return everything after repo (index 0)
 	return strings.Join(segments[1:], "/")
