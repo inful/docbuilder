@@ -13,9 +13,12 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 		return nil, nil // Only process index files
 	}
 
-	// Skip if title already exists
-	if _, hasTitle := doc.FrontMatter["title"]; hasTitle {
-		return nil, nil
+	// Skip if title already exists and is not a fallback
+	// Allow extraction if title is "Untitled", "_index", or the doc name (fallback values)
+	if existingTitle, hasTitle := doc.FrontMatter["title"].(string); hasTitle {
+		if existingTitle != "Untitled" && existingTitle != "_index" && existingTitle != doc.Name {
+			return nil, nil // Skip - real title already exists
+		}
 	}
 
 	// Pattern to match H1 heading
