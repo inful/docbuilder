@@ -27,8 +27,10 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 		textBeforeH1 := strings.TrimSpace(doc.Content[:matches[0]])
 		if textBeforeH1 == "" {
 			// Extract title from H1
-			title := doc.Content[matches[2]:matches[3]]
-			doc.FrontMatter["title"] = title
+			title := strings.TrimSpace(doc.Content[matches[2]:matches[3]])
+			if title != "" {
+				doc.FrontMatter["title"] = title
+			}
 			return nil, nil
 		}
 	}
@@ -36,8 +38,11 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	// No H1 found or text before H1 - check if this is a docs base section
 	// If section matches DocsBase, this is a repository-level docs directory
 	// Use repository name as title instead of section name
-	if doc.Section != "" && doc.DocsBase == doc.Section {
-		doc.FrontMatter["title"] = titleCase(doc.Repository)
+	if doc.Section != "" && doc.DocsBase == doc.Section && doc.Repository != "" {
+		repoTitle := titleCase(doc.Repository)
+		if repoTitle != "" {
+			doc.FrontMatter["title"] = repoTitle
+		}
 		return nil, nil
 	}
 

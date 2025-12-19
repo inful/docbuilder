@@ -101,7 +101,21 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 	// Always set title if not present
 	if _, hasTitle := doc.FrontMatter["title"]; !hasTitle {
 		// Use the filename (without extension) as title
-		doc.FrontMatter["title"] = doc.Name
+		if doc.Name != "" {
+			doc.FrontMatter["title"] = doc.Name
+		} else {
+			// Fallback to "Untitled" if name is empty
+			doc.FrontMatter["title"] = "Untitled"
+		}
+	}
+
+	// Ensure title is never empty (safety check)
+	if title, ok := doc.FrontMatter["title"].(string); ok && strings.TrimSpace(title) == "" {
+		if doc.Name != "" {
+			doc.FrontMatter["title"] = doc.Name
+		} else {
+			doc.FrontMatter["title"] = "Untitled"
+		}
 	}
 
 	// Set type=docs for Hextra theme
