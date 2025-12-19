@@ -342,3 +342,5 @@ internal/hugo/content/repo/page.md
 test/testdata/configs/ignored/
 internal/hugo/content/myrepo/readme.md
 .docbuilder-cache/objects
+staging.yaml
+public/
