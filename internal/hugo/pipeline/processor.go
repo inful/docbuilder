@@ -190,17 +190,18 @@ func defaultGenerators() []FileGenerator {
 // Order matters: this is the explicit, fixed pipeline execution order.
 func defaultTransforms(cfg *config.Config) []FileTransform {
 	return []FileTransform{
-		parseFrontMatter,           // 1. Parse YAML front matter from content
-		normalizeIndexFiles,        // 2. Rename README to _index
-		buildBaseFrontMatter,       // 3. Build base front matter structure
-		extractIndexTitle,          // 4. Extract H1 title from index files
-		stripHeading,               // 5. Strip H1 if appropriate
-		rewriteRelativeLinks(cfg),  // 6. Fix markdown links
-		rewriteImageLinks,          // 7. Fix image paths
-		generateFromKeywords,       // 8. Create new files based on keywords (e.g., @glossary)
-		addRepositoryMetadata(cfg), // 9. Add repo/commit/source metadata
-		addEditLink(cfg),           // 10. Generate edit URL
-		serializeDocument,          // 11. Serialize to final bytes (FM + content)
+		parseFrontMatter,              // 1. Parse YAML front matter from content
+		normalizeIndexFiles,           // 2. Rename README to _index
+		buildBaseFrontMatter,          // 3. Build base front matter structure
+		extractIndexTitle,             // 4. Extract H1 title from index files
+		stripHeading,                  // 5. Strip H1 if appropriate
+		escapeShortcodesInCodeBlocks,  // 6. Escape Hugo shortcodes in code blocks
+		rewriteRelativeLinks(cfg),     // 7. Fix markdown links
+		rewriteImageLinks,             // 8. Fix image paths
+		generateFromKeywords,          // 9. Create new files based on keywords (e.g., @glossary)
+		addRepositoryMetadata(cfg),    // 10. Add repo/commit/source metadata
+		addEditLink(cfg),              // 11. Generate edit URL
+		serializeDocument,             // 12. Serialize to final bytes (FM + content)
 	}
 }
 

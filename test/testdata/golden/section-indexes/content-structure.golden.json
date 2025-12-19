@@ -5,7 +5,7 @@
         "title": "Section Index Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:78f8334fc8b352ff"
+      "contentHash": "sha256:1990848bd13b3d56"
     },
     "content/section-docs/_index.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "title": "Section Docs",
         "type": "docs"
       },
-      "contentHash": "sha256:7f4fa5cdb1934dbf"
+      "contentHash": "sha256:ef64bfb9894ae603"
     },
     "content/section-docs/advanced/_index.md": {
       "frontmatter": {
@@ -21,7 +21,7 @@
         "title": "Advanced",
         "type": "docs"
       },
-      "contentHash": "sha256:49dd3596eb8580ef"
+      "contentHash": "sha256:5092f9dabda898c1"
     },
     "content/section-docs/advanced/plugins.md": {
       "frontmatter": {
@@ -30,7 +30,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:ba689b6a332af132"
+      "contentHash": "sha256:e2084f73028fdcf0"
     },
     "content/section-docs/advanced/themes.md": {
       "frontmatter": {
@@ -39,7 +39,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:ed1f8f74b47acaab"
+      "contentHash": "sha256:e278346a5d790faa"
     },
     "content/section-docs/getting-started/_index.md": {
       "frontmatter": {
@@ -47,7 +47,7 @@
         "title": "Getting Started",
         "type": "docs"
       },
-      "contentHash": "sha256:7c14799147b5ea4d"
+      "contentHash": "sha256:4b71e029b87cf014"
     },
     "content/section-docs/getting-started/configuration.md": {
       "frontmatter": {
@@ -56,7 +56,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:afc0a822baa8caa8"
+      "contentHash": "sha256:f94b078e68d540a4"
     },
     "content/section-docs/getting-started/installation.md": {
       "frontmatter": {
@@ -65,7 +65,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:bb3eea1dc9e23363"
+      "contentHash": "sha256:a5a9a6de89e0e05a"
     }
   },
   "structure": {

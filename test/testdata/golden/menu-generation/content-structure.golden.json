@@ -5,7 +5,7 @@
         "title": "Menu Generation Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:50a2c550f5e80d04"
+      "contentHash": "sha256:bf21a427179077e9"
     },
     "content/menu-docs/_index.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "title": "Menu Docs",
         "type": "docs"
       },
-      "contentHash": "sha256:95d7d64a84e37e30"
+      "contentHash": "sha256:75b39bab57bd3341"
     },
     "content/menu-docs/api.md": {
       "frontmatter": {
@@ -28,7 +28,7 @@
         "type": "docs",
         "weight": 3
       },
-      "contentHash": "sha256:74499ebb6f168724"
+      "contentHash": "sha256:5871f0d7945b380a"
     },
     "content/menu-docs/guide.md": {
       "frontmatter": {
@@ -43,7 +43,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:678e8198408c3726"
+      "contentHash": "sha256:dd7370d536f1ce66"
     },
     "content/menu-docs/intro.md": {
       "frontmatter": {
@@ -57,7 +57,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:b008dec7b7fb6112"
+      "contentHash": "sha256:c10d4b901f7adf2e"
     }
   },
   "structure": {

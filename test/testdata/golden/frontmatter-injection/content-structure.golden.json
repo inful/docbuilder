@@ -5,7 +5,7 @@
         "title": "Frontmatter Injection Test",
         "type": "docs"
       },
-      "contentHash": "sha256:53a4d6fa8fea7382"
+      "contentHash": "sha256:c929e1ef4ddd3faf"
     },
     "content/test-repo/_index.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "title": "Test Repo",
         "type": "docs"
       },
-      "contentHash": "sha256:cb241663da63e518"
+      "contentHash": "sha256:014c1ca979f93fb5"
     },
     "content/test-repo/metadata.md": {
       "frontmatter": {
@@ -23,7 +23,7 @@
         "type": "docs",
         "weight": 10
       },
-      "contentHash": "sha256:e561a33441acbc04"
+      "contentHash": "sha256:c5ff8a3cd81efe39"
     },
     "content/test-repo/no-editurl.md": {
       "frontmatter": {
@@ -32,7 +32,7 @@
         "title": "Page Without EditURL",
         "type": "docs"
       },
-      "contentHash": "sha256:72158f1585b32ed0"
+      "contentHash": "sha256:52f5f06e661990cf"
     }
   },
   "structure": {
