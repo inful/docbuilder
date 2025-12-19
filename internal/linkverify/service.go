@@ -300,11 +300,29 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 	// Discard body
 	_, _ = io.Copy(io.Discard, resp.Body)
 
+	// Treat authentication/authorization errors as valid links
+	// These indicate the URL exists but requires credentials
+	if isAuthError(resp.StatusCode) {
+		return resp.StatusCode, nil
+	}
+
 	if resp.StatusCode >= 400 {
 		return resp.StatusCode, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 	}
 
 	return resp.StatusCode, nil
+}
+
+// isAuthError returns true for HTTP status codes that indicate
+// authentication or authorization issues rather than broken links.
+func isAuthError(statusCode int) bool {
+	switch statusCode {
+	case 401: // Unauthorized - missing or invalid authentication
+	case 403: // Forbidden - authenticated but not authorized
+	case 405: // Method Not Allowed - often due to missing authentication
+		return true
+	}
+	return false
 }
 
 // handleBrokenLink creates and publishes a broken link event.
