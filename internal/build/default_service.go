@@ -141,9 +141,18 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 				s.recorder.ObserveBuildDuration(result.Duration)
 				return result, nil
 			}
+		} else {
+			observability.WarnContext(ctx, "Skip evaluator factory returned nil - skipping evaluation disabled")
 		}
 		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
+	} else {
+		if !req.Options.SkipIfUnchanged {
+			observability.DebugContext(ctx, "Skip evaluation disabled - SkipIfUnchanged=false")
+		}
+		if s.skipEvaluatorFactory == nil {
+			observability.WarnContext(ctx, "Skip evaluator factory not configured - cannot evaluate skip conditions")
+		}
 	}
 
 	// Stage 1: Create workspace
