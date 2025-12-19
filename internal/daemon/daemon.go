@@ -144,6 +144,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			// Create skip evaluator with state manager access
 			// Will be populated after state manager is initialized
 			if daemon.stateManager == nil {
+				slog.Warn("Skip evaluator factory called before state manager initialized - skipping evaluation")
 				return nil
 			}
 			gen := hugo.NewGenerator(daemon.config, outputDir)
