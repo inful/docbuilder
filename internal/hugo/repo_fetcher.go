@@ -5,19 +5,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	ggit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 // RepoFetchResult captures the outcome path and (optional) pre/post head commits for change detection.
 type RepoFetchResult struct {
-	Name     string
-	Path     string
-	PreHead  string // empty if unknown
-	PostHead string // empty if clone/update failed to resolve
-	Err      error
-	Updated  bool // true if repository contents potentially changed (clone, new commits, or forced reset)
+	Name       string
+	Path       string
+	PreHead    string    // empty if unknown
+	PostHead   string    // empty if clone/update failed to resolve
+	CommitDate time.Time // commit date of PostHead
+	Err        error
+	Updated    bool // true if repository contents potentially changed (clone, new commits, or forced reset)
 }
 
 // RepoFetcher defines cloning/updating behavior abstracted from stage logic so future
@@ -65,20 +69,37 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	}
 	var path string
 	var err error
+	var commitDate time.Time
 	if attemptUpdate {
 		path, err = client.UpdateRepo(repo)
+		// For updates, try to get commit date by reading HEAD
+		if err == nil {
+			if h, herr := readRepoHead(path); herr == nil {
+				commitDate = getCommitDate(path, h)
+			}
+		}
 	} else {
-		path, err = client.CloneRepo(repo)
+		// For fresh clones, use the new CloneRepoWithMetadata method
+		result, cloneErr := client.CloneRepoWithMetadata(repo)
+		err = cloneErr
+		if err == nil {
+			path = result.Path
+			commitDate = result.CommitDate
+			res.PostHead = result.CommitSHA
+		}
 	}
 	res.Path = path
+	res.CommitDate = commitDate
 	res.PreHead = preHead
 	if err != nil {
 		res.Err = err
 		return res
 	}
-	// Determine post head
-	if h, herr := readRepoHead(path); herr == nil {
-		res.PostHead = h
+	// Determine post head (for update path or if clone didn't set it)
+	if res.PostHead == "" {
+		if h, herr := readRepoHead(path); herr == nil {
+			res.PostHead = h
+		}
 	}
 	// Updated determination: if cloning (preHead empty) or heads differ
 	res.Updated = preHead == "" || (preHead != "" && res.PostHead != "" && preHead != res.PostHead)
@@ -95,4 +116,19 @@ func gitStatRepo(path string) (bool, error) {
 		return false, fmt.Errorf("no git dir: %w", err)
 	}
 	return true, nil
+}
+
+// getCommitDate retrieves the commit date for a given commit hash in a repository.
+// Returns zero time if the commit date cannot be determined.
+func getCommitDate(repoPath, commitSHA string) time.Time {
+	repo, err := ggit.PlainOpen(repoPath)
+	if err != nil {
+		return time.Time{}
+	}
+	hash := plumbing.NewHash(commitSHA)
+	commit, err := repo.CommitObject(hash)
+	if err != nil {
+		return time.Time{}
+	}
+	return commit.Author.When
 }

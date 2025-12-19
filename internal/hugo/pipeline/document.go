@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"strings"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -24,15 +25,16 @@ type Document struct {
 	HadFrontMatter bool
 
 	// Metadata for transforms to use (read-only during transform phase)
-	Path         string // Hugo content path (e.g., "repo-name/section/file.md")
-	IsIndex      bool   // True if this is _index.md or README.md
-	Repository   string // Source repository name
-	Forge        string // Optional forge namespace
-	Section      string // Documentation section
-	SourceCommit string // Git commit SHA
-	SourceURL    string // Repository URL for edit links
-	SourceBranch string // Git branch name
-	Generated    bool   // True if this was generated (not discovered)
+	Path         string    // Hugo content path (e.g., "repo-name/section/file.md")
+	IsIndex      bool      // True if this is _index.md or README.md
+	Repository   string    // Source repository name
+	Forge        string    // Optional forge namespace
+	Section      string    // Documentation section
+	SourceCommit string    // Git commit SHA
+	CommitDate   time.Time // Git commit date
+	SourceURL    string    // Repository URL for edit links
+	SourceBranch string    // Git branch name
+	Generated    bool      // True if this was generated (not discovered)
 
 	// Internal fields (used by pipeline, not by transforms)
 	FilePath     string // Absolute path to source file (for discovered docs)
@@ -117,12 +119,13 @@ type GenerationContext struct {
 
 // RepositoryInfo contains metadata about a repository for use in generation.
 type RepositoryInfo struct {
-	Name      string
-	URL       string
-	Commit    string
-	Branch    string
-	Forge     string
-	Tags      map[string]string
-	DocsBase  string
-	Namespace string // For namespaced repos
+	Name       string
+	URL        string
+	Commit     string
+	CommitDate time.Time
+	Branch     string
+	Forge      string
+	Tags       map[string]string
+	DocsBase   string
+	Namespace  string // For namespaced repos
 }

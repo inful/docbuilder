@@ -125,8 +125,15 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 	}
 
 	// Add date if not present (required by Hugo for proper sorting/display)
+	// Use git commit date if available, otherwise fall back to current time
 	if _, hasDate := doc.FrontMatter["date"]; !hasDate {
-		doc.FrontMatter["date"] = time.Now().Format("2006-01-02T15:04:05-07:00")
+		var dateStr string
+		if !doc.CommitDate.IsZero() {
+			dateStr = doc.CommitDate.Format("2006-01-02T15:04:05-07:00")
+		} else {
+			dateStr = time.Now().Format("2006-01-02T15:04:05-07:00")
+		}
+		doc.FrontMatter["date"] = dateStr
 	}
 
 	// Add edit link for non-index files
