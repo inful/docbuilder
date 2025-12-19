@@ -14,7 +14,7 @@ import (
 
 // copyContentFilesPipeline copies documentation files using the new fixed transform pipeline.
 // This is the new implementation that replaces the registry-based transform system.
-func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile) error {
+func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error {
 	slog.Info("Using new fixed transform pipeline for content processing")
 
 	// Separate markdown files from assets
@@ -61,7 +61,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		slog.Int("assets", len(assetFiles)))
 
 	// Build repository metadata for generators
-	repoMetadata := g.buildRepositoryMetadata()
+	repoMetadata := g.buildRepositoryMetadata(bs)
 
 	// Create and run pipeline processor
 	processor := pipeline.NewProcessor(g.config)
@@ -165,7 +165,8 @@ func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
 }
 
 // buildRepositoryMetadata extracts repository metadata for pipeline generators.
-func (g *Generator) buildRepositoryMetadata() map[string]pipeline.RepositoryInfo {
+// If bs is provided, uses commit dates from BuildState.
+func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.RepositoryInfo {
 	metadata := make(map[string]pipeline.RepositoryInfo)
 
 	if g.config == nil || g.config.Repositories == nil {
@@ -191,8 +192,15 @@ func (g *Generator) buildRepositoryMetadata() map[string]pipeline.RepositoryInfo
 			info.DocsBase = repo.Paths[0]
 		}
 
-		// TODO: Get commit SHA from git client
-		// For now, leave empty - will be populated by metadata injector
+		// Get commit SHA and date from BuildState if available
+		if bs != nil {
+			if commitSHA, ok := bs.Git.postHeads[repo.Name]; ok {
+				info.Commit = commitSHA
+			}
+			if commitDate, ok := bs.Git.GetCommitDate(repo.Name); ok {
+				info.CommitDate = commitDate
+			}
+		}
 
 		metadata[repo.Name] = info
 	}

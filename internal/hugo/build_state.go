@@ -9,12 +9,13 @@ import (
 
 // GitState manages git repository operations and state tracking
 type GitState struct {
-	Repositories      []config.Repository // configured repositories (post-filter)
-	RepoPaths         map[string]string   // name -> local filesystem path
-	WorkspaceDir      string              // root workspace for git operations
-	preHeads          map[string]string   // repo -> head before update (for existing repos)
-	postHeads         map[string]string   // repo -> head after clone/update
-	AllReposUnchanged bool                // computed lazily: true if every repo head unchanged (and no fresh clones)
+	Repositories      []config.Repository  // configured repositories (post-filter)
+	RepoPaths         map[string]string    // name -> local filesystem path
+	WorkspaceDir      string               // root workspace for git operations
+	preHeads          map[string]string    // repo -> head before update (for existing repos)
+	postHeads         map[string]string    // repo -> head after clone/update
+	commitDates       map[string]time.Time // repo -> commit date of postHead
+	AllReposUnchanged bool                 // computed lazily: true if every repo head unchanged (and no fresh clones)
 }
 
 // AllReposUnchangedComputed computes whether all repositories had no HEAD changes
@@ -38,6 +39,17 @@ func (gs *GitState) SetPreHead(repo, head string) {
 // SetPostHead records the HEAD commit after clone/update operations
 func (gs *GitState) SetPostHead(repo, head string) {
 	gs.postHeads[repo] = head
+}
+
+// SetCommitDate records the commit date for a repository's HEAD commit
+func (gs *GitState) SetCommitDate(repo string, date time.Time) {
+	gs.commitDates[repo] = date
+}
+
+// GetCommitDate retrieves the commit date for a repository
+func (gs *GitState) GetCommitDate(repo string) (time.Time, bool) {
+	date, ok := gs.commitDates[repo]
+	return date, ok
 }
 
 // DocsState manages documentation discovery and processing state
@@ -104,8 +116,9 @@ func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *
 			StartTime: startTime,
 		},
 		Git: GitState{
-			preHeads:  make(map[string]string),
-			postHeads: make(map[string]string),
+			preHeads:    make(map[string]string),
+			postHeads:   make(map[string]string),
+			commitDates: make(map[string]time.Time),
 		},
 	}
 

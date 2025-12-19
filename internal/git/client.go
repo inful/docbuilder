@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -21,6 +22,13 @@ type Client struct {
 	buildCfg        *appcfg.BuildConfig // optional build config for strategy flags
 	inRetry         bool                // internal guard to avoid nested retry wrapping
 	remoteHeadCache *RemoteHeadCache    // cache for remote HEAD refs to skip unnecessary fetches
+}
+
+// CloneResult contains the result of a clone or update operation
+type CloneResult struct {
+	Path       string    // local filesystem path
+	CommitSHA  string    // HEAD commit SHA
+	CommitDate time.Time // HEAD commit date
 }
 
 // NewClient creates a new Git client with the specified workspace directory.
@@ -37,11 +45,25 @@ func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
 
 // CloneRepo clones a repository to the workspace directory.
 // If retry is enabled, it wraps the operation with retry logic.
+// Returns the local filesystem path and any error.
+// Deprecated: Use CloneRepoWithMetadata for commit metadata.
 func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
-	if c.inRetry {
-		return c.cloneOnce(repo)
+	result, err := c.CloneRepoWithMetadata(repo)
+	if err != nil {
+		return "", err
 	}
-	return c.withRetry("clone", repo.Name, func() (string, error) { return c.cloneOnce(repo) })
+	return result.Path, nil
+}
+
+// CloneRepoWithMetadata clones a repository and returns metadata including commit date.
+// If retry is enabled, it wraps the operation with retry logic.
+func (c *Client) CloneRepoWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+	if c.inRetry {
+		return c.cloneOnceWithMetadata(repo)
+	}
+	return c.withRetryMetadata("clone", repo.Name, func() (CloneResult, error) {
+		return c.cloneOnceWithMetadata(repo)
+	})
 }
 
 func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
@@ -89,7 +111,72 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	return repoPath, nil
 }
 
-// classifyCloneError attempts to wrap underlying go-git errors into typed permanent failures for downstream classification.
+func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+	repoPath := filepath.Join(c.workspaceDir, repo.Name)
+	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
+	if err := os.RemoveAll(repoPath); err != nil {
+		return CloneResult{}, fmt.Errorf("failed to remove existing directory: %w", err)
+	}
+
+	cloneOptions := &git.CloneOptions{URL: repo.URL}
+	if repo.Branch != "" {
+		if repo.IsTag {
+			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
+			slog.Debug("Cloning tag reference", logfields.Name(repo.Name), slog.String("tag", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
+		} else {
+			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
+			slog.Debug("Cloning branch reference", logfields.Name(repo.Name), slog.String("branch", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
+		}
+		cloneOptions.SingleBranch = true
+	}
+	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
+		cloneOptions.Depth = c.buildCfg.ShallowDepth
+	}
+	if repo.Auth != nil {
+		auth, err := c.getAuth(repo.Auth)
+		if err != nil {
+			return CloneResult{}, fmt.Errorf("failed to setup authentication: %w", err)
+		}
+		cloneOptions.Auth = auth
+	}
+	repository, err := git.PlainClone(repoPath, false, cloneOptions)
+	if err != nil {
+		return CloneResult{}, classifyCloneError(repo.URL, err)
+	}
+
+	// Get commit metadata
+	result := CloneResult{Path: repoPath}
+	if ref, herr := repository.Head(); herr == nil {
+		result.CommitSHA = ref.Hash().String()
+
+		// Get commit object to extract date
+		if commit, cerr := repository.CommitObject(ref.Hash()); cerr == nil {
+			result.CommitDate = commit.Author.When
+			slog.Info("Repository cloned successfully",
+				logfields.Name(repo.Name),
+				logfields.URL(repo.URL),
+				slog.String("commit", result.CommitSHA[:8]),
+				slog.Time("commit_date", result.CommitDate),
+				logfields.Path(repoPath))
+		} else {
+			slog.Info("Repository cloned successfully (commit metadata unavailable)",
+				logfields.Name(repo.Name),
+				logfields.URL(repo.URL),
+				slog.String("commit", result.CommitSHA[:8]),
+				logfields.Path(repoPath))
+		}
+	} else {
+		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), logfields.Path(repoPath))
+	}
+
+	if c.buildCfg != nil && c.buildCfg.PruneNonDocPaths {
+		if err := c.pruneNonDocTopLevel(repoPath, repo); err != nil {
+			slog.Warn("prune non-doc paths failed", logfields.Name(repo.Name), slog.String("error", err.Error()))
+		}
+	}
+	return result, nil
+}
+
 func classifyCloneError(url string, err error) error {
 	l := strings.ToLower(err.Error())
 	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.

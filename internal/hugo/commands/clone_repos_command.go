@@ -110,6 +110,9 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 				if res.PreHead != "" {
 					bs.Git.SetPreHead(task.repo.Name, res.PreHead)
 				}
+				if !res.CommitDate.IsZero() {
+					bs.Git.SetCommitDate(task.repo.Name, res.CommitDate)
+				}
 			} else {
 				bs.Report.FailedRepositories++
 				if bs.Report != nil {
