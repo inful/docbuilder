@@ -1,0 +1,142 @@
+package pipeline
+
+import (
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
+// parseFrontMatter extracts YAML front matter from content.
+// Sets OriginalFrontMatter and removes front matter from Content.
+func parseFrontMatter(doc *Document) ([]*Document, error) {
+	content := doc.Content
+
+	// Check for YAML front matter (--- ... ---)
+	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
+		// No front matter
+		doc.HadFrontMatter = false
+		doc.OriginalFrontMatter = make(map[string]any)
+		doc.FrontMatter = make(map[string]any)
+		return nil, nil
+	}
+
+	// Determine line ending
+	var lineEnd string
+	var startLen int
+	if strings.HasPrefix(content, "---\r\n") {
+		lineEnd = "\r\n"
+		startLen = 5
+	} else {
+		lineEnd = "\n"
+		startLen = 4
+	}
+
+	// Find end of front matter (search for closing ---\n or ---\r\n)
+	endMarker := lineEnd + "---" + lineEnd
+	endIdx := strings.Index(content[startLen:], endMarker)
+
+	if endIdx == -1 {
+		// Try to find just "---" followed by line ending (for content like "---\n---\n...")
+		altMarker := "---" + lineEnd
+		endIdx = strings.Index(content[startLen:], altMarker)
+		if endIdx != -1 {
+			// Adjust for the different marker length
+			endMarker = altMarker
+		}
+	}
+
+	if endIdx == -1 {
+		// Malformed front matter - no closing delimiter
+		doc.HadFrontMatter = false
+		doc.OriginalFrontMatter = make(map[string]any)
+		doc.FrontMatter = make(map[string]any)
+		return nil, nil
+	}
+
+	// Extract front matter YAML
+	fmYAML := content[startLen : startLen+endIdx]
+	bodyStart := startLen + endIdx + len(endMarker)
+
+	// Always remove front matter delimiters from content, even if empty
+	doc.Content = content[bodyStart:]
+
+	// Parse YAML (handle empty front matter)
+	if strings.TrimSpace(fmYAML) == "" {
+		// Empty front matter - no fields but delimiters were present
+		doc.HadFrontMatter = false
+		doc.OriginalFrontMatter = make(map[string]any)
+		doc.FrontMatter = make(map[string]any)
+		return nil, nil
+	}
+
+	var fm map[string]any
+	if err := yaml.Unmarshal([]byte(fmYAML), &fm); err != nil {
+		// Invalid YAML - treat as no front matter but content already stripped
+		doc.HadFrontMatter = false
+		doc.OriginalFrontMatter = make(map[string]any)
+		doc.FrontMatter = make(map[string]any)
+		return nil, nil
+	}
+
+	doc.HadFrontMatter = true
+	doc.OriginalFrontMatter = fm
+	// Deep copy to FrontMatter (transforms will modify this)
+	doc.FrontMatter = deepCopyMap(fm)
+
+	return nil, nil
+}
+
+// buildBaseFrontMatter initializes FrontMatter with Hugo-compatible base fields.
+func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
+	if doc.FrontMatter == nil {
+		doc.FrontMatter = make(map[string]any)
+	}
+
+	// Always set title if not present
+	if _, hasTitle := doc.FrontMatter["title"]; !hasTitle {
+		// Use the filename (without extension) as title
+		doc.FrontMatter["title"] = doc.Name
+	}
+
+	// Set type=docs for Hextra theme
+	if _, hasType := doc.FrontMatter["type"]; !hasType {
+		doc.FrontMatter["type"] = "docs"
+	}
+
+	// Add edit link for non-index files
+	if doc.SourceURL != "" && doc.SourceBranch != "" && doc.RelativePath != "" {
+		if _, hasEditURL := doc.FrontMatter["editURL"]; !hasEditURL {
+			editURL := generateEditURL(doc)
+			if editURL != "" {
+				doc.FrontMatter["editURL"] = editURL
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+// serializeDocument converts the Document back to markdown with front matter.
+func serializeDocument(doc *Document) ([]*Document, error) {
+	var result strings.Builder
+
+	// Write front matter if present
+	if len(doc.FrontMatter) > 0 {
+		result.WriteString("---\n")
+		yamlData, err := yaml.Marshal(doc.FrontMatter)
+		if err != nil {
+			return nil, err
+		}
+		result.Write(yamlData)
+		result.WriteString("---\n")
+	}
+
+	// Write content
+	result.WriteString(doc.Content)
+
+	// Update both Content and Raw
+	doc.Content = result.String()
+	doc.Raw = []byte(doc.Content)
+
+	return nil, nil
+}
