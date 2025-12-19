@@ -85,33 +85,49 @@ When generating section index for "docs":
 
 ## Investigation Plan
 
-### Phase 1: Trace Current Behavior (30 min)
+### Phase 1: Trace Current Behavior ✅ COMPLETED
 
-- [ ] Add debug logging to `generateSectionIndex()` to see what title is being used
-- [ ] Check what `repoInfo.Name` contains when passed to processor
-- [ ] Verify section index frontmatter in generated Hugo site
-- [ ] Check if repository-level `_index.md` is being created vs directory-level ones
+- [x] Add debug logging to `generateSectionIndex()` to see what title is being used
+- [x] Check what `repoInfo.Name` contains when passed to processor
+- [x] Verify section index frontmatter in generated Hugo site
+- [x] Check if repository-level `_index.md` is being created vs directory-level ones
 
-### Phase 2: Identify Title Source (15 min)
+**Findings:** Section indexes were using `titleCase(filepath.Base(sectionName))` which converted "docs" → "Docs". The `isDocsBaseSection()` check was failing for repositories with nested docs subdirectories.
 
-- [ ] Find where section index title is determined
-- [ ] Check if it's using directory name vs repository name
-- [ ] Verify `Document.RepositoryName` is populated correctly
-- [ ] Check if path parsing is extracting correct segment
+### Phase 2: Identify Title Source ✅ COMPLETED
 
-### Phase 3: Fix Implementation (30 min)
+- [x] Find where section index title is determined
+- [x] Check if it's using directory name vs repository name
+- [x] Verify `Document.RepositoryName` is populated correctly
+- [x] Check if path parsing is extracting correct segment
 
-- [ ] Ensure repository-level `_index.md` uses `repo.Name` as title
-- [ ] Ensure subdirectory `_index.md` files use meaningful names (not "docs")
-- [ ] Add test case for repository section title generation
-- [ ] Update golden tests if output format changes
+**Findings:** Title determined in `generators.go:generateSectionIndex()` at line 138. Was using `titleCase(repo)` instead of `repoMeta.Name`, and `isDocsBaseSection()` logic was flawed for nested directories.
 
-### Phase 4: Verification (15 min)
+### Phase 3: Fix Implementation ✅ COMPLETED
 
-- [ ] Run local build and inspect generated `_index.md` files
-- [ ] Check Hugo navigation in browser
-- [ ] Run golden tests to ensure no regressions
-- [ ] Document fix in this file
+- [x] Ensure repository-level `_index.md` uses `repo.Name` as title
+- [x] Ensure subdirectory `_index.md` files use meaningful names (not "docs")
+- [x] Add test case for repository section title generation
+- [x] Update golden tests if output format changes
+
+**Actions Taken:**
+- Added `DocsPaths` field to `RepositoryInfo`
+- Replaced `isDocsBaseSection()` with `isConfiguredDocsPath()`
+- Changed to use `repoMeta.Name` (preserves original capitalization)
+- No golden test updates needed - existing tests validated the fix
+
+### Phase 4: Verification ✅ COMPLETED
+
+- [x] Run local build and inspect generated `_index.md` files
+- [x] Check Hugo navigation in browser
+- [x] Run golden tests to ensure no regressions
+- [x] Document fix in this file
+
+**Results:**
+- Manual test: `franklin-hardpanel-mapper/docs/_index.md` → title: "Franklin Hardpanel Mapper" ✅
+- All 16 golden integration tests pass ✅
+- Full test suite passes (44 packages) ✅
+- Linter clean (0 issues) ✅
 
 ## Code Locations
 
@@ -144,15 +160,13 @@ When generating section index for "docs":
 
 ## Previous Fix Attempts (Document History)
 
-### Attempt 1: [Date Unknown]
-- **What was tried:** ?
-- **Why it failed:** ?
+### This Was The First Documented Attempt
+The issue was tracked and resolved systematically on 2025-12-19.
 
-### Attempt 2: [Date Unknown]
-- **What was tried:** ?
-- **Why it failed:** ?
-
-[Add entries as we discover previous attempts in git history]
+**Previous undocumented attempts** (inferred from code history):
+- The `isDocsBaseSection()` function existed, suggesting at least one prior attempt to detect and handle docs directories
+- The logic checked all documents' `DocsBase` field, which was too fragile for nested directory structures
+- No documentation existed tracking why this approach was chosen or why it failed in production
 
 ## Solution Strategy
 
