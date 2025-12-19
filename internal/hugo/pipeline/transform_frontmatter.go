@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -121,6 +122,11 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 	// Set type=docs for Hextra theme
 	if _, hasType := doc.FrontMatter["type"]; !hasType {
 		doc.FrontMatter["type"] = "docs"
+	}
+
+	// Add date if not present (required by Hugo for proper sorting/display)
+	if _, hasDate := doc.FrontMatter["date"]; !hasDate {
+		doc.FrontMatter["date"] = time.Now().Format("2006-01-02T15:04:05-07:00")
 	}
 
 	// Add edit link for non-index files
