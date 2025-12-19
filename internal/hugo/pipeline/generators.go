@@ -134,7 +134,11 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			repoMeta := ctx.RepositoryMetadata[repo]
 
 			// Generate section index
+			// If section is a docs base directory (e.g., "docs"), use repository name as title
 			title := titleCase(filepath.Base(sectionName))
+			if isDocsBaseSection(sectionName, docs) {
+				title = titleCase(repo)
+			}
 			description := fmt.Sprintf("Documentation for %s", sectionName)
 
 			// Build section path (handle forge namespacing)
@@ -180,4 +184,22 @@ func titleCase(s string) string {
 	}
 
 	return strings.Join(words, " ")
+}
+
+// isDocsBaseSection checks if a section is a docs base directory.
+// If all documents in the section have the same DocsBase matching the section name,
+// this is likely a repository-level docs directory and should use repo name as title.
+func isDocsBaseSection(sectionName string, docs []*Document) bool {
+	if len(docs) == 0 {
+		return false
+	}
+
+	// Check if all documents have DocsBase matching the section
+	for _, doc := range docs {
+		if doc.DocsBase != sectionName {
+			return false
+		}
+	}
+
+	return true
 }
