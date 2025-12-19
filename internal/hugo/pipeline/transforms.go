@@ -190,6 +190,61 @@ func stripHeading(doc *Document) ([]*Document, error) {
 	return nil, nil
 }
 
+// escapeShortcodesInCodeBlocks escapes Hugo shortcodes within markdown code blocks
+// to prevent Hugo from trying to process them as actual shortcodes.
+// This is essential for documentation that explains or demonstrates shortcode usage.
+func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
+	// Pattern to match code blocks (both ``` and indented)
+	// We need to find {{< shortcode >}} and {{< /shortcode >}} patterns within code blocks
+	
+	var result strings.Builder
+	lines := strings.Split(doc.Content, "\n")
+	inFencedCodeBlock := false
+	var fenceMarker string
+	
+	for _, line := range lines {
+		// Check for fenced code block markers (```  or ~~~)
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~") {
+			if !inFencedCodeBlock {
+				// Starting a code block
+				inFencedCodeBlock = true
+				if strings.HasPrefix(trimmedLine, "```") {
+					fenceMarker = "```"
+				} else {
+					fenceMarker = "~~~"
+				}
+			} else if strings.HasPrefix(trimmedLine, fenceMarker) {
+				// Ending a code block
+				inFencedCodeBlock = false
+			}
+			result.WriteString(line)
+			result.WriteString("\n")
+			continue
+		}
+		
+		// If we're in a code block, escape shortcodes
+		if inFencedCodeBlock {
+			// Replace {{< with {{</* and >}} with */>}}
+			escapedLine := strings.ReplaceAll(line, "{{<", "{{</*")
+			escapedLine = strings.ReplaceAll(escapedLine, ">}}", "*/>}}")
+			result.WriteString(escapedLine)
+		} else {
+			result.WriteString(line)
+		}
+		result.WriteString("\n")
+	}
+	
+	// Remove trailing newline if original didn't have one
+	content := result.String()
+	if !strings.HasSuffix(doc.Content, "\n") && strings.HasSuffix(content, "\n") {
+		content = strings.TrimSuffix(content, "\n")
+	}
+	
+	doc.Content = content
+	return nil, nil
+}
+
 // rewriteRelativeLinks rewrites relative markdown links to work with Hugo.
 func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {

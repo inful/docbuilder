@@ -5,7 +5,7 @@
         "title": "Malformed Front Matter Test",
         "type": "docs"
       },
-      "contentHash": "sha256:8278e1df8eda22d1"
+      "contentHash": "sha256:2cab0b95e957f0cc"
     },
     "content/malformed-frontmatter/_index.md": {
       "frontmatter": {
@@ -13,7 +13,7 @@
         "title": "Malformed Frontmatter",
         "type": "docs"
       },
-      "contentHash": "sha256:033eaec21af264f5"
+      "contentHash": "sha256:883cc69c7b6f5722"
     },
     "content/malformed-frontmatter/invalid-yaml.md": {
       "frontmatter": {
@@ -21,7 +21,7 @@
         "title": "Invalid Yaml",
         "type": "docs"
       },
-      "contentHash": "sha256:257aee5651e8d928"
+      "contentHash": "sha256:b3e5693672701cf9"
     },
     "content/malformed-frontmatter/valid.md": {
       "frontmatter": {
@@ -30,7 +30,7 @@
         "type": "docs",
         "weight": 10
       },
-      "contentHash": "sha256:ff1e193a343733fb"
+      "contentHash": "sha256:03cfc3473939a8cb"
     }
   },
   "structure": {

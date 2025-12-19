@@ -120,3 +120,87 @@ func TestExtractDirectory(t *testing.T) {
 		})
 	}
 }
+
+func TestEscapeShortcodesInCodeBlocks(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected string
+	}{
+		{
+			name: "Escape shortcodes in fenced code block",
+			content: `Some text before.
+
+` + "```markdown" + `
+This is a {{< shortcode >}} example.
+And closing: {{< /shortcode >}}
+` + "```" + `
+
+Some text after.`,
+			expected: `Some text before.
+
+` + "```markdown" + `
+This is a {{</* shortcode */>}} example.
+And closing: {{</* /shortcode */>}}
+` + "```" + `
+
+Some text after.`,
+		},
+		{
+			name: "No shortcodes in code block",
+			content: `Some text.
+
+` + "```go" + `
+func main() {
+    fmt.Println("hello")
+}
+` + "```" + ``,
+			expected: `Some text.
+
+` + "```go" + `
+func main() {
+    fmt.Println("hello")
+}
+` + "```" + ``,
+		},
+		{
+			name: "Shortcodes outside code block not escaped",
+			content: `Here's a {{< shortcode >}} in text.
+
+` + "```markdown" + `
+And one {{< inside >}} code.
+` + "```" + `
+
+Another {{< outside >}} here.`,
+			expected: `Here's a {{< shortcode >}} in text.
+
+` + "```markdown" + `
+And one {{</* inside */>}} code.
+` + "```" + `
+
+Another {{< outside >}} here.`,
+		},
+		{
+			name: "Multiple code blocks",
+			content: "```\n{{< first >}}\n```\n\nText\n\n```\n{{< second >}}\n```",
+			expected: "```\n{{</* first */>}}\n```\n\nText\n\n```\n{{</* second */>}}\n```",
+		},
+		{
+			name: "Tilde code blocks",
+			content: "~~~markdown\n{{< shortcode >}}\n~~~",
+			expected: "~~~markdown\n{{</* shortcode */>}}\n~~~",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := &Document{
+				Content: tt.content,
+			}
+			
+			_, err := escapeShortcodesInCodeBlocks(doc)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, doc.Content)
+		})
+	}
+}
