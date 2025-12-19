@@ -10,10 +10,10 @@
     "content/only-readme/_index.md": {
       "frontmatter": {
         "repository": "only-readme",
-        "title": "Project README",
+        "title": "Only Readme",
         "type": "docs"
       },
-      "contentHash": "sha256:c4513ffb5d9a18a0"
+      "contentHash": "sha256:050f0dee1d7b2e1c"
     }
   },
   "structure": {
