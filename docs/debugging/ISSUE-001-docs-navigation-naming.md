@@ -5,6 +5,7 @@
 **Created:** 2025-12-19  
 **Last Updated:** 2025-12-19  
 **Resolved:** 2025-12-19
+**Additional Fix:** 2025-12-19 (nested docs directories)
 
 ## Problem Statement
 
@@ -248,7 +249,7 @@ NOT:
 
 **Date:** 2025-12-19
 
-### Implementation
+### Implementation (Initial Fix)
 
 Modified 3 files:
 
@@ -265,12 +266,47 @@ Modified 3 files:
    - New function checks if section exactly matches a configured docs path
    - When match found, uses `repoMeta.Name` (repository name) instead of `titleCase(repo)` or directory name
 
+### Additional Fix (Nested Docs Directories)
+
+**Problem Discovered:** Repositories with nested directories matching the docs path name (e.g., `docs/docs/docs/`) still showed "Docs" in navigation.
+
+**Root Cause:** The initial `isConfiguredDocsPath()` only checked for exact section match (e.g., "docs"), but didn't handle cases where the section was "docs/docs" or "docs/docs/docs".
+
+**Solution:** Extended `isConfiguredDocsPath()` to also check if the **last segment** of the section path matches a configured docs path name.
+
+```go
+func isConfiguredDocsPath(sectionName string, docsPaths []string) bool {
+    lastSegment := filepath.Base(sectionName)
+    
+    for _, path := range docsPaths {
+        // Exact match (e.g., section "docs" matches path "docs")
+        if sectionName == path {
+            return true
+        }
+        // Last segment matches (e.g., section "docs/docs" has last segment "docs")
+        if lastSegment == filepath.Base(path) {
+            return true
+        }
+    }
+    return false
+}
+```
+
+**Result:** Any section ending with a docs path name uses the repository name as title.
+
+Examples:
+- Section `docs` → title: "Repository Name" ✅
+- Section `docs/docs` → title: "Repository Name" ✅
+- Section `docs/docs/docs` → title: "Repository Name" ✅
+- Section `docs/api` → title: "API" ✅
+
 ### Test Results
 
 - ✅ All 16 golden tests pass
 - ✅ Full test suite passes (44 packages)
 - ✅ Linter clean (0 issues)
 - ✅ Manual verification: `franklin-hardpanel-mapper/docs/` → title "Franklin Hardpanel Mapper"
+- ✅ Nested docs test: `docs/docs/docs/architecture.md` → all intermediate indexes use repository name
 
 ### Before vs After
 
