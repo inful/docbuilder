@@ -1,0 +1,128 @@
+package pipeline
+
+import (
+	"fmt"
+	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+)
+
+// addRepositoryMetadata adds repository metadata to front matter.
+func addRepositoryMetadata(cfg *config.Config) FileTransform {
+	return func(doc *Document) ([]*Document, error) {
+		// Add repository name
+		if doc.Repository != "" {
+			doc.FrontMatter["repository"] = doc.Repository
+		}
+
+		// Add forge namespace if present
+		if doc.Forge != "" {
+			doc.FrontMatter["forge"] = doc.Forge
+		}
+
+		// Add source commit if present
+		if doc.SourceCommit != "" {
+			doc.FrontMatter["source_commit"] = doc.SourceCommit
+		}
+
+		return nil, nil
+	}
+}
+
+// addEditLink generates edit URL for the document using forge-specific patterns.
+func addEditLink(cfg *config.Config) FileTransform {
+	return func(doc *Document) ([]*Document, error) {
+		// Skip if edit URL already exists
+		if _, exists := doc.FrontMatter["editURL"]; exists {
+			return nil, nil
+		}
+
+		// Skip generated documents
+		if doc.Generated {
+			return nil, nil
+		}
+
+		// Generate edit URL if we have repository URL and relative path
+		if doc.SourceURL != "" && doc.RelativePath != "" {
+			editURL := generateEditURL(doc)
+			if editURL != "" {
+				doc.FrontMatter["editURL"] = editURL
+			}
+		}
+
+		return nil, nil
+	}
+}
+
+// generateEditURL creates a forge-appropriate edit URL for a document.
+func generateEditURL(doc *Document) string {
+	// Get base URL by stripping .git suffix if present
+	baseURL := strings.TrimSuffix(doc.SourceURL, ".git")
+
+	// Determine branch (fallback to "main" if not set)
+	branch := doc.SourceBranch
+	if branch == "" {
+		branch = "main"
+	}
+
+	// Build path relative to repository root
+	// RelativePath is already relative to docs base, need to prepend DocsBase if it's not already there
+	filePath := doc.RelativePath
+	if doc.DocsBase != "" && !strings.HasPrefix(filePath, doc.DocsBase+"/") {
+		filePath = doc.DocsBase + "/" + filePath
+	}
+
+	// Determine forge type from the Forge field or URL patterns
+	forgeType := detectForgeType(doc.Forge, baseURL)
+
+	// Generate URL based on forge type
+	switch forgeType {
+	case config.ForgeGitHub:
+		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)
+	case config.ForgeGitLab:
+		return fmt.Sprintf("%s/-/edit/%s/%s", baseURL, branch, filePath)
+	case config.ForgeForgejo:
+		// Forgejo and Gitea both use /_edit/ pattern
+		return fmt.Sprintf("%s/_edit/%s/%s", baseURL, branch, filePath)
+	default:
+		// Fallback to GitHub-style for unknown forges
+		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)
+	}
+}
+
+// detectForgeType determines the forge type from metadata or URL patterns.
+func detectForgeType(forgeField, baseURL string) config.ForgeType {
+	// First check if we have explicit forge metadata
+	if forgeField != "" {
+		switch strings.ToLower(forgeField) {
+		case "github":
+			return config.ForgeGitHub
+		case "gitlab":
+			return config.ForgeGitLab
+		case "forgejo", "gitea":
+			return config.ForgeForgejo
+		}
+	}
+
+	// Fallback to URL pattern detection
+	lowerURL := strings.ToLower(baseURL)
+	if strings.Contains(lowerURL, "github.com") {
+		return config.ForgeGitHub
+	}
+	if strings.Contains(lowerURL, "gitlab.com") || strings.Contains(lowerURL, "gitlab") {
+		return config.ForgeGitLab
+	}
+	// Forgejo and Gitea use similar patterns - check for common hostnames
+	if strings.Contains(lowerURL, "forgejo") || strings.Contains(lowerURL, "gitea") {
+		return config.ForgeForgejo
+	}
+
+	// For self-hosted instances that aren't GitHub/GitLab, default to Forgejo/Gitea pattern
+	// as it's becoming the most common self-hosted option
+	if !strings.Contains(lowerURL, "github.com") && !strings.Contains(lowerURL, "gitlab.com") {
+		return config.ForgeForgejo
+	}
+
+	// Final fallback to GitHub
+	return config.ForgeGitHub
+}

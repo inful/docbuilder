@@ -18,7 +18,7 @@
     "content/malformed-frontmatter/invalid-yaml.md": {
       "frontmatter": {
         "repository": "malformed-frontmatter",
-        "title": "Invalid Yaml",
+        "title": "invalid-yaml",
         "type": "docs"
       },
       "contentHash": "sha256:b3e5693672701cf9"
