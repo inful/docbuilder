@@ -99,71 +99,85 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 }
 
 // generateSectionIndex creates _index.md for sections that don't have one.
+// Ensures all intermediate directories in deep hierarchies get index files.
 func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
-	// Group documents by section
-	sections := make(map[string][]*Document)
+	// Collect all unique section paths (including intermediate directories)
+	allSections := make(map[string]bool)
+	
 	for _, doc := range ctx.Discovered {
 		if doc.Section != "" {
 			section := filepath.Join(doc.Repository, doc.Section)
-			sections[section] = append(sections[section], doc)
+			
+			// Add this section and all parent sections
+			allSections[section] = true
+			
+			// Add all intermediate parent directories
+			parts := strings.Split(section, string(filepath.Separator))
+			for i := 2; i < len(parts); i++ {
+				parentSection := filepath.Join(parts[:i]...)
+				allSections[parentSection] = true
+			}
+		}
+	}
+
+	// Check which sections already have indexes
+	existingIndexes := make(map[string]bool)
+	for _, doc := range ctx.Discovered {
+		if doc.IsIndex && doc.Section != "" {
+			section := filepath.Join(doc.Repository, doc.Section)
+			existingIndexes[section] = true
 		}
 	}
 
 	var generated []*Document
 
-	for section, docs := range sections {
-		// Check if section index already exists
-		hasIndex := false
-		for _, doc := range docs {
-			if doc.IsIndex {
-				hasIndex = true
-				break
-			}
+	for section := range allSections {
+		// Skip if index already exists
+		if existingIndexes[section] {
+			continue
 		}
 
-		if !hasIndex {
-			// Extract repository and section name
-			parts := strings.SplitN(section, string(filepath.Separator), 2)
-			if len(parts) != 2 {
-				continue // Skip malformed sections
-			}
-			repo := parts[0]
-			sectionName := parts[1]
-
-			// Get repository metadata
-			repoMeta := ctx.RepositoryMetadata[repo]
-
-			// Generate section index
-			// If section is a configured docs path, use repository name as title
-			// Otherwise, use the base directory name as-is (without titleCase transformation)
-			title := filepath.Base(sectionName)
-			if isConfiguredDocsPath(sectionName, repoMeta.DocsPaths) {
-				title = repoMeta.Name // Use actual repository name from config
-			}
-			description := fmt.Sprintf("Documentation for %s", sectionName)
-
-			// Build section path (handle forge namespacing)
-			sectionPath := filepath.Join(repo, sectionName)
-			if repoMeta.Namespace != "" {
-				sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
-			}
-
-			doc := &Document{
-				Path:       filepath.Join("content", sectionPath, "_index.md"),
-				IsIndex:    true,
-				Generated:  true,
-				Repository: repo,
-				Forge:      repoMeta.Forge,
-				Section:    sectionName,
-				Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
-				FrontMatter: map[string]any{
-					"title":       title,
-					"description": description,
-					"type":        "docs",
-				},
-			}
-			generated = append(generated, doc)
+		// Extract repository and section name
+		parts := strings.SplitN(section, string(filepath.Separator), 2)
+		if len(parts) != 2 {
+			continue // Skip malformed sections
 		}
+		repo := parts[0]
+		sectionName := parts[1]
+
+		// Get repository metadata
+		repoMeta := ctx.RepositoryMetadata[repo]
+
+		// Generate section index
+		// If section is a configured docs path, use repository name as title
+		// Otherwise, use the base directory name as-is (without titleCase transformation)
+		title := filepath.Base(sectionName)
+		if isConfiguredDocsPath(sectionName, repoMeta.DocsPaths) {
+			title = repoMeta.Name // Use actual repository name from config
+		}
+		description := fmt.Sprintf("Documentation for %s", sectionName)
+
+		// Build section path (handle forge namespacing)
+		sectionPath := filepath.Join(repo, sectionName)
+		if repoMeta.Namespace != "" {
+			sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
+		}
+
+		doc := &Document{
+			Path:       filepath.Join("content", sectionPath, "_index.md"),
+			IsIndex:    true,
+			Generated:  true,
+			Repository: repo,
+			Forge:      repoMeta.Forge,
+			Section:    sectionName,
+			Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
+			FrontMatter: map[string]any{
+				"title":       title,
+				"description": description,
+				"type":        "docs",
+			},
+		}
+		generated = append(generated, doc)
 	}
 
 	return generated, nil
