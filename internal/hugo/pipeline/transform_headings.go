@@ -7,7 +7,7 @@ import (
 
 // extractIndexTitle extracts H1 heading from index files to use as title.
 // Only processes index files and only if H1 is at the start of content.
-// If no H1 is found and this is a docs base section, uses repository name as title.
+// For docs base sections, always uses repository name instead of H1.
 func extractIndexTitle(doc *Document) ([]*Document, error) {
 	if !doc.IsIndex {
 		return nil, nil // Only process index files
@@ -21,6 +21,18 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 		}
 	}
 
+	// PRIORITY 1: Docs base sections always use repository name
+	// If section matches DocsBase, this is a repository-level docs directory
+	// Use repository name as title instead of H1 or section name
+	if doc.Section != "" && doc.DocsBase == doc.Section && doc.Repository != "" {
+		repoTitle := titleCase(doc.Repository)
+		if repoTitle != "" {
+			doc.FrontMatter["title"] = repoTitle
+		}
+		return nil, nil
+	}
+
+	// PRIORITY 2: Extract H1 title for non-docs-base index files
 	// Pattern to match H1 heading
 	h1Pattern := regexp.MustCompile(`(?m)^# (.+)$`)
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
@@ -36,17 +48,6 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 			}
 			return nil, nil
 		}
-	}
-
-	// No H1 found or text before H1 - check if this is a docs base section
-	// If section matches DocsBase, this is a repository-level docs directory
-	// Use repository name as title instead of section name
-	if doc.Section != "" && doc.DocsBase == doc.Section && doc.Repository != "" {
-		repoTitle := titleCase(doc.Repository)
-		if repoTitle != "" {
-			doc.FrontMatter["title"] = repoTitle
-		}
-		return nil, nil
 	}
 
 	return nil, nil
