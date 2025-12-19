@@ -189,10 +189,19 @@ func titleCase(s string) string {
 // isConfiguredDocsPath checks if a section matches a configured documentation path.
 // This identifies top-level documentation directories that should use the repository name
 // as their title instead of the directory name (e.g., "docs" → "Repository Name").
+// Also handles nested docs directories (e.g., "docs/docs" → "Repository Name").
 func isConfiguredDocsPath(sectionName string, docsPaths []string) bool {
+	// Get the last segment of the section path
+	lastSegment := filepath.Base(sectionName)
+	
 	for _, path := range docsPaths {
-		// Exact match or section is the docs path itself
+		// Exact match (e.g., section "docs" matches path "docs")
 		if sectionName == path {
+			return true
+		}
+		// Last segment matches a docs path (e.g., section "docs/docs" has last segment "docs")
+		// This handles nested directories with the same name as the docs path
+		if lastSegment == filepath.Base(path) {
 			return true
 		}
 	}
