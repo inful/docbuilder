@@ -62,9 +62,34 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 			return match
 		}
 
-		// Rewrite relative image path
-		newPath := rewriteImagePath(path, doc.Repository, doc.Forge)
+		// Rewrite relative image path accounting for document's section
+		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section)
 		return fmt.Sprintf("![%s](%s)", alt, newPath)
+	})
+
+	// Also handle HTML img tags: <img src="path" ...>
+	htmlImgPattern := regexp.MustCompile(`<img\s+([^>]*\s+)?src="([^"]+)"([^>]*)>`)
+
+	doc.Content = htmlImgPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
+		submatches := htmlImgPattern.FindStringSubmatch(match)
+		if len(submatches) < 4 {
+			return match
+		}
+
+		beforeSrc := submatches[1]
+		path := submatches[2]
+		afterSrc := submatches[3]
+
+		// Skip absolute URLs
+		if strings.HasPrefix(path, "http://") ||
+			strings.HasPrefix(path, "https://") ||
+			strings.HasPrefix(path, "/") {
+			return match
+		}
+
+		// Rewrite relative image path
+		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section)
+		return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 	})
 
 	return nil, nil
@@ -178,14 +203,26 @@ func extractDirectory(hugoPath string) string {
 }
 
 // rewriteImagePath rewrites an image path based on the document's context.
-func rewriteImagePath(path, repository, forge string) string {
-	// Prepend repository path if relative
+// The path is relative to the document's location (section).
+func rewriteImagePath(path, repository, forge, section string) string {
+	// Prepend repository and section path if relative
 	if !strings.HasPrefix(path, "/") && repository != "" {
+		// Build the full path including the document's section
+		var fullPath string
 		if forge != "" {
-			path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+			if section != "" {
+				fullPath = fmt.Sprintf("/%s/%s/%s/%s", forge, repository, section, path)
+			} else {
+				fullPath = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+			}
 		} else {
-			path = fmt.Sprintf("/%s/%s", repository, path)
+			if section != "" {
+				fullPath = fmt.Sprintf("/%s/%s/%s", repository, section, path)
+			} else {
+				fullPath = fmt.Sprintf("/%s/%s", repository, path)
+			}
 		}
+		return fullPath
 	}
 
 	return path
