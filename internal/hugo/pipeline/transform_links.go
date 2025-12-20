@@ -12,9 +12,16 @@ import (
 func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
 		// Pattern to match markdown links: [text](path)
-		linkPattern := regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
+		// Negative lookbehind would be ideal but Go doesn't support it,
+		// so we use ReplaceAllStringFunc and check for the ! prefix manually
+		linkPattern := regexp.MustCompile(`!?\[([^\]]+)\]\(([^)]+)\)`)
 
 		doc.Content = linkPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
+			// Skip image links (those starting with !)
+			if strings.HasPrefix(match, "!") {
+				return match
+			}
+
 			submatches := linkPattern.FindStringSubmatch(match)
 			if len(submatches) < 3 {
 				return match
