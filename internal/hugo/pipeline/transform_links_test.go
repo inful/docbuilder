@@ -70,6 +70,24 @@ func TestRewriteLinkPath(t *testing.T) {
 			docPath:    "docs/_index.md",
 			want:       "/docs/guide/setup",
 		},
+		{
+			name:       "Index file with content/ prefix - relative link (servejs case)",
+			path:       "tutorials/index.md",
+			repository: "servejs",
+			forge:      "",
+			isIndex:    true,
+			docPath:    "content/servejs/_index.md",
+			want:       "/servejs/tutorials/",
+		},
+		{
+			name:       "Index file with content/ prefix in subdirectory",
+			path:       "configure.md",
+			repository: "servejs",
+			forge:      "",
+			isIndex:    true,
+			docPath:    "content/servejs/how-to/_index.md",
+			want:       "/servejs/how-to/configure",
+		},
 	}
 
 	for _, tt := range tests {

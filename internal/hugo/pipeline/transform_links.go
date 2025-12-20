@@ -108,10 +108,15 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	path = strings.TrimSuffix(path, ".md")
 	path = strings.TrimSuffix(path, ".markdown")
 
-	// Handle README/index special case
+	// Handle README/index special case - these become section URLs with trailing slash
 	if strings.HasSuffix(path, "/README") || strings.HasSuffix(path, "/readme") {
 		path = strings.TrimSuffix(path, "/README")
 		path = strings.TrimSuffix(path, "/readme")
+		path += "/"
+	}
+	if strings.HasSuffix(path, "/index") {
+		path = strings.TrimSuffix(path, "/index")
+		path += "/"
 	}
 
 	// Handle anchor links
@@ -180,6 +185,9 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 func extractDirectory(hugoPath string) string {
 	// Remove leading slash if present
 	hugoPath = strings.TrimPrefix(hugoPath, "/")
+	
+	// Strip content/ prefix if present (Hugo content directory)
+	hugoPath = strings.TrimPrefix(hugoPath, "content/")
 
 	// Split by /
 	segments := strings.Split(hugoPath, "/")
@@ -206,7 +214,10 @@ func extractDirectory(hugoPath string) string {
 
 	// repo/section... format
 	// Return everything after repo (index 0)
-	return strings.Join(segments[1:], "/")
+	if len(segments) > 1 {
+		return strings.Join(segments[1:], "/")
+	}
+	return ""
 }
 
 // rewriteImagePath rewrites an image path based on the document's context.
