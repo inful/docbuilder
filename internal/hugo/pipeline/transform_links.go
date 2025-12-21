@@ -169,10 +169,23 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 
 	// For regular files or absolute paths from index root, prepend repository path
 	if !strings.HasPrefix(path, "/") && repository != "" {
-		if forge != "" {
-			path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+		// Extract directory from document path for relative link context
+		docDir := extractDirectory(docPath)
+		
+		if docDir != "" {
+			// Regular file in subdirectory - relative link is relative to that directory
+			if forge != "" {
+				path = fmt.Sprintf("/%s/%s/%s/%s", forge, repository, docDir, path)
+			} else {
+				path = fmt.Sprintf("/%s/%s/%s", repository, docDir, path)
+			}
 		} else {
-			path = fmt.Sprintf("/%s/%s", repository, path)
+			// Regular file at repository root
+			if forge != "" {
+				path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+			} else {
+				path = fmt.Sprintf("/%s/%s", repository, path)
+			}
 		}
 	}
 
