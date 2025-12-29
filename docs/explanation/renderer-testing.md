@@ -257,5 +257,5 @@ func TestExampleFeature(t *testing.T) {
 ## Related Documentation
 
 - [Renderer Architecture](../explanation/architecture.md#renderer-system)
-- [CI/CD Setup](./ci-cd-setup.md)
-- [Testing Guidelines](../CONTRIBUTING.md#testing)
+- [CI/CD Setup](../ci-cd-setup.md)
+- [Testing Guidelines](../testing/golden-test-implementation.md)

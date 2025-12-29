@@ -406,4 +406,4 @@ docbuilder visualize >> docs/pipeline.md
 
 - [Transform Validation](./transform-validation.md) - Validate pipeline before running
 - [Add Content Transforms](../how-to/add-content-transforms.md) - Create custom transforms
-- [CONTENT_TRANSFORMS.md](../../CONTENT_TRANSFORMS.md) - Technical architecture
+- [Content Transforms Reference](./content-transforms.md) - Technical architecture

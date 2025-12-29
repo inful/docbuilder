@@ -969,5 +969,4 @@ The architecture has undergone significant evolution. See `ARCHITECTURE_MIGRATIO
 - [CLI Reference](../reference/cli.md)
 - [Configuration Reference](../reference/configuration.md)
 - [Build Report Reference](../reference/report.md)
-- [Theme Development](../how-to/add-theme-support.md)
 - [Forge Integration](../how-to/configure-forge-namespacing.md)

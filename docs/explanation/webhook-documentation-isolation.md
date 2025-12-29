@@ -405,5 +405,4 @@ DocBuilder prevents webhook/documentation collisions through:
 ## Related Documentation
 
 - [Configure Webhooks](../how-to/configure-webhooks.md) - Webhook setup guide
-- [Daemon Mode](../tutorials/daemon-mode.md) - Running DocBuilder as a service
-- [HTTP Server Architecture](./http-server-architecture.md) - Multi-server design
+- [Getting Started](../tutorials/getting-started.md) - Introduction to DocBuilder

@@ -306,8 +306,7 @@ If issues discovered:
 - [Transform pipeline implementation](../../internal/hugo/content_copy.go)
 - [Index generation](../../internal/hugo/indexes.go)
 - [DocFile struct](../../internal/docs/discovery.go)
-- [Transform pipeline design](../../CONTENT_TRANSFORMS.md)
-- [Page struct with in-memory processing](../../internal/hugo/transform.go)
+- [Transform pipeline design](../reference/content-transforms.md)
 - [BuildState architecture](../../internal/hugo/build_state.go)
 
 ## Related Issues
