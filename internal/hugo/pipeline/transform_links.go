@@ -236,6 +236,12 @@ func extractDirectory(hugoPath string) string {
 // rewriteImagePath rewrites an image path based on the document's context.
 // The path is relative to the document's location (section).
 func rewriteImagePath(path, repository, forge, section string) string {
+	// Normalize the path first (remove ./ prefix, collapse ../, lowercase)
+	path = strings.TrimPrefix(path, "./")
+	
+	// Lowercase the entire path including filename and extension for URL compatibility
+	path = strings.ToLower(path)
+	
 	// Prepend repository and section path if relative
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		// Build the full path including the document's section
