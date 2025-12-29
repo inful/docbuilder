@@ -1342,10 +1342,10 @@ Lefthook > pre-commit > lint-docs:
   - [x] Backup creation (.docbuilder-backup-{timestamp}/)
 
 ### Phase 4: Git Hooks Integration
-- [ ] Traditional pre-commit hook script (`scripts/install-hooks.sh`)
-- [ ] Hook installer command: `docbuilder lint install-hook`
-- [ ] Lefthook configuration example (`lefthook.yml`)
-- [ ] Test with staged files workflow
+- [x] Traditional pre-commit hook script (`scripts/install-hooks.sh`)
+- [x] Hook installer command: `docbuilder lint install-hook`
+- [x] Lefthook configuration example (`lefthook.yml`)
+- [x] Test with staged files workflow
 
 ### Phase 5: CI/CD Integration
 - [ ] GitHub Actions workflow example (`.github/workflows/lint-docs.yml`)
