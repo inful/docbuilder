@@ -66,7 +66,7 @@ func TestRewriteImageLinks_WithForge(t *testing.T) {
 		Repository: "test-repo",
 		Forge:      "gitlab",
 		Section:    "api/v1",
-		Content: `![Diagram](images/architecture.svg)`,
+		Content:    `![Diagram](images/architecture.svg)`,
 	}
 
 	_, err := rewriteImageLinks(doc)
@@ -81,7 +81,7 @@ func TestRewriteImageLinks_DeepSubdirectory(t *testing.T) {
 		Repository: "docs-repo",
 		Forge:      "",
 		Section:    "guides/advanced/security",
-		Content: `![Security Model](diagrams/model.png)`,
+		Content:    `![Security Model](diagrams/model.png)`,
 	}
 
 	_, err := rewriteImageLinks(doc)
