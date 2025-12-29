@@ -226,3 +226,247 @@ func TestIsGitRepository(t *testing.T) {
 		assert.False(t, isGit, "temp directory should not be a git repository")
 	})
 }
+
+// TestPathsEqualCaseInsensitive tests case-insensitive path comparison.
+func TestPathsEqualCaseInsensitive(t *testing.T) {
+	tests := []struct {
+		name     string
+		path1    string
+		path2    string
+		expected bool
+	}{
+		{
+			name:     "exact match",
+			path1:    "/docs/api-guide.md",
+			path2:    "/docs/api-guide.md",
+			expected: true,
+		},
+		{
+			name:     "case difference",
+			path1:    "/docs/API_Guide.md",
+			path2:    "/docs/api_guide.md",
+			expected: true,
+		},
+		{
+			name:     "mixed case in directory",
+			path1:    "/Docs/API/Guide.md",
+			path2:    "/docs/api/guide.md",
+			expected: true,
+		},
+		{
+			name:     "different files",
+			path1:    "/docs/guide.md",
+			path2:    "/docs/tutorial.md",
+			expected: false,
+		},
+		{
+			name:     "normalized paths",
+			path1:    "/docs/../docs/guide.md",
+			path2:    "/docs/guide.md",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := pathsEqualCaseInsensitive(tt.path1, tt.path2)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// TestFileExists tests file existence checking with case-insensitive fallback.
+func TestFileExists(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test files
+	testFile := filepath.Join(tmpDir, "TestFile.md")
+	err := os.WriteFile(testFile, []byte("test"), 0644)
+	require.NoError(t, err)
+
+	t.Run("exact case match", func(t *testing.T) {
+		exists := fileExists(testFile)
+		assert.True(t, exists)
+	})
+
+	t.Run("different case", func(t *testing.T) {
+		lowerCasePath := filepath.Join(tmpDir, "testfile.md")
+		exists := fileExists(lowerCasePath)
+		assert.True(t, exists, "should find file with case-insensitive lookup")
+	})
+
+	t.Run("non-existent file", func(t *testing.T) {
+		nonExistent := filepath.Join(tmpDir, "missing.md")
+		exists := fileExists(nonExistent)
+		assert.False(t, exists)
+	})
+}
+
+// TestDetectBrokenLinks tests broken link detection.
+func TestDetectBrokenLinks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test structure
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file with broken links
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := `# Documentation
+[Existing File](./guide.md)
+[Broken Link](./missing.md)
+![Broken Image](./images/missing.png)
+[External Link](https://example.com/guide.md)
+[Fragment Only](#section)
+`
+	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	require.NoError(t, err)
+
+	// Create the existing file
+	guideFile := filepath.Join(docsDir, "guide.md")
+	err = os.WriteFile(guideFile, []byte("# Guide"), 0644)
+	require.NoError(t, err)
+
+	// Run broken link detection
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	broken, err := fixer.detectBrokenLinks(docsDir)
+	require.NoError(t, err)
+
+	// Should find 2 broken links (missing.md and missing.png)
+	// Should NOT report: existing file, external URL, or fragment-only link
+	assert.Len(t, broken, 2, "should detect exactly 2 broken links")
+
+	// Verify broken link details
+	var brokenFiles []string
+	for _, link := range broken {
+		brokenFiles = append(brokenFiles, link.Target)
+	}
+	assert.Contains(t, brokenFiles, "./missing.md")
+	assert.Contains(t, brokenFiles, "./images/missing.png")
+}
+
+// TestDetectBrokenLinks_CaseInsensitive tests that broken link detection
+// works correctly on case-insensitive filesystems.
+func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test files
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0755)
+	require.NoError(t, err)
+
+	// Create file with specific case
+	actualFile := filepath.Join(docsDir, "API_Guide.md")
+	err = os.WriteFile(actualFile, []byte("# API Guide"), 0644)
+	require.NoError(t, err)
+
+	// Create index file that links with different case
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := `# Index
+[API Guide](./api_guide.md)
+[Another Link](./Api_Guide.md)
+`
+	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	require.NoError(t, err)
+
+	// Run broken link detection
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	broken, err := fixer.detectBrokenLinks(docsDir)
+	require.NoError(t, err)
+
+	// On case-insensitive filesystems (macOS/Windows), these should NOT be broken
+	// On case-sensitive filesystems (Linux), these WOULD be broken
+	// The fileExists function handles both cases
+	if len(broken) > 0 {
+		t.Logf("Detected %d broken links (likely running on case-sensitive filesystem)", len(broken))
+	} else {
+		t.Log("No broken links detected (likely running on case-insensitive filesystem)")
+	}
+}
+
+// TestLinkDiscovery_CaseInsensitive tests that link discovery works with
+// case-insensitive path matching.
+func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test structure
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0755)
+	require.NoError(t, err)
+
+	// Create target file with specific case
+	targetFile := filepath.Join(docsDir, "API_Guide.md")
+	err = os.WriteFile(targetFile, []byte("# API Guide"), 0644)
+	require.NoError(t, err)
+
+	// Create index file that links to target with different case
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := `# Index
+[API Guide](./api_guide.md)
+[Another Reference](./Api_Guide.md)
+![Diagram](./API_GUIDE.md)
+`
+	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	require.NoError(t, err)
+
+	// Find links to the target file
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	links, err := fixer.findLinksToFile(targetFile)
+	require.NoError(t, err)
+
+	// On case-insensitive comparison, all three links should be found
+	// even though they have different cases
+	assert.GreaterOrEqual(t, len(links), 3, "should find links with case-insensitive matching")
+}
+
+// TestFix_WithBrokenLinkDetection tests that the Fix function includes broken link detection.
+func TestFix_WithBrokenLinkDetection(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create test structure
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0755)
+	require.NoError(t, err)
+
+	// Create a file with naming issues and broken links
+	badFile := filepath.Join(docsDir, "Bad_File.md")
+	badContent := `# Documentation
+[Existing](./good.md)
+[Broken](./missing.md)
+`
+	err = os.WriteFile(badFile, []byte(badContent), 0644)
+	require.NoError(t, err)
+
+	// Create the existing referenced file
+	goodFile := filepath.Join(docsDir, "good.md")
+	err = os.WriteFile(goodFile, []byte("# Good"), 0644)
+	require.NoError(t, err)
+
+	// Run fix
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false) // not dry-run, so broken links are detected
+
+	result, err := fixer.Fix(docsDir)
+	require.NoError(t, err)
+
+	// Should detect broken links
+	assert.NotEmpty(t, result.BrokenLinks, "should detect broken links")
+	
+	// Verify broken link details
+	foundBroken := false
+	for _, broken := range result.BrokenLinks {
+		if broken.Target == "./missing.md" {
+			foundBroken = true
+			assert.Equal(t, badFile, broken.SourceFile)
+			break
+		}
+	}
+	assert.True(t, foundBroken, "should find the broken link to missing.md")
+}

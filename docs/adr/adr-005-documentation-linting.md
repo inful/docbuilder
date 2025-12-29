@@ -1333,8 +1333,8 @@ Lefthook > pre-commit > lint-docs:
 - [ ] Phase 3d: Edge case handling
   - [x] Skip external URLs (protocol detection) - already implemented in Phase 3b
   - [x] Ignore links in code blocks (markdown parser) - already implemented in Phase 3b
-  - [ ] Case-insensitive filesystem support
-  - [ ] Broken link detection and reporting
+  - [x] Case-insensitive filesystem support
+  - [x] Broken link detection and reporting
 - [ ] Phase 3e: Reporting and interactive confirmation
   - [ ] Detailed fix report with statistics
   - [ ] Interactive confirmation showing files + links affected

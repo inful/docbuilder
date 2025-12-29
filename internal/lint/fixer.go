@@ -26,10 +26,19 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 	}
 }
 
+// BrokenLink represents a link to a non-existent file.
+type BrokenLink struct {
+	SourceFile string // File containing the broken link
+	LineNumber int    // Line number of the link
+	Target     string // Link target that doesn't exist
+	LinkType   LinkType
+}
+
 // FixResult contains the results of a fix operation.
 type FixResult struct {
 	FilesRenamed  []RenameOperation
 	LinksUpdated  []LinkUpdate
+	BrokenLinks   []BrokenLink // Links to non-existent files
 	ErrorsFixed   int
 	WarningsFixed int
 	Errors        []error
@@ -81,7 +90,20 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 	fixResult := &FixResult{
 		FilesRenamed: make([]RenameOperation, 0),
 		LinksUpdated: make([]LinkUpdate, 0),
+		BrokenLinks:  make([]BrokenLink, 0),
 		Errors:       make([]error, 0),
+	}
+
+	// Detect broken links before applying fixes
+	if !f.dryRun {
+		brokenLinks, err := f.detectBrokenLinks(path)
+		if err != nil {
+			// Non-fatal: log but continue with fixes
+			fixResult.Errors = append(fixResult.Errors,
+				fmt.Errorf("failed to detect broken links: %w", err))
+		} else {
+			fixResult.BrokenLinks = brokenLinks
+		}
 	}
 
 	// Group issues by file
@@ -303,6 +325,282 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 	return links, nil
 }
 
+// detectBrokenLinks scans all markdown files in a path for links to non-existent files.
+func (f *Fixer) detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
+	var brokenLinks []BrokenLink
+
+	// Determine if rootPath is a file or directory
+	info, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path: %w", err)
+	}
+
+	var filesToScan []string
+	if info.IsDir() {
+		// Walk directory to find all markdown files
+		err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && IsDocFile(path) {
+				filesToScan = append(filesToScan, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to walk directory: %w", err)
+		}
+	} else if IsDocFile(rootPath) {
+		filesToScan = []string{rootPath}
+	}
+
+	// Scan each file for broken links
+	for _, file := range filesToScan {
+		broken, err := f.detectBrokenLinksInFile(file)
+		if err != nil {
+			// Continue with other files even if one fails
+			continue
+		}
+		brokenLinks = append(brokenLinks, broken...)
+	}
+
+	return brokenLinks, nil
+}
+
+// detectBrokenLinksInFile scans a single markdown file for broken links.
+func (f *Fixer) detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
+	content, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var brokenLinks []BrokenLink
+	lines := strings.Split(string(content), "\n")
+
+	for lineNum, line := range lines {
+		// Skip code blocks
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+			continue
+		}
+
+		// Check inline links
+		broken := checkInlineLinksBroken(line, lineNum+1, sourceFile)
+		brokenLinks = append(brokenLinks, broken...)
+
+		// Check reference-style links
+		brokenRef := checkReferenceLinksBroken(line, lineNum+1, sourceFile)
+		brokenLinks = append(brokenLinks, brokenRef...)
+
+		// Check image links
+		brokenImg := checkImageLinksBroken(line, lineNum+1, sourceFile)
+		brokenLinks = append(brokenLinks, brokenImg...)
+	}
+
+	return brokenLinks, nil
+}
+
+// checkInlineLinksBroken checks for broken inline links in a line.
+func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
+	var broken []BrokenLink
+
+	for i := 0; i < len(line); i++ {
+		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
+			start := -1
+			for j := i - 1; j >= 0; j-- {
+				if line[j] == '[' {
+					if j > 0 && line[j-1] == '!' {
+						break
+					}
+					start = j
+					break
+				}
+			}
+			if start == -1 {
+				continue
+			}
+
+			end := strings.Index(line[i+2:], ")")
+			if end == -1 {
+				continue
+			}
+			end += i + 2
+
+			linkTarget := line[i+2 : end]
+
+			// Skip external URLs
+			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+				continue
+			}
+
+			// Remove fragment for file existence check
+			targetPath := strings.Split(linkTarget, "#")[0]
+			if targetPath == "" {
+				continue // Fragment-only link (same page)
+			}
+
+			// Resolve and check if file exists
+			resolved, err := resolveRelativePath(sourceFile, targetPath)
+			if err != nil {
+				continue
+			}
+
+			if !fileExists(resolved) {
+				broken = append(broken, BrokenLink{
+					SourceFile: sourceFile,
+					LineNumber: lineNum,
+					Target:     linkTarget,
+					LinkType:   LinkTypeInline,
+				})
+			}
+		}
+	}
+
+	return broken
+}
+
+// checkReferenceLinksBroken checks for broken reference-style links in a line.
+func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
+	var broken []BrokenLink
+
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "[") {
+		return broken
+	}
+
+	endBracket := strings.Index(trimmed, "]:")
+	if endBracket == -1 {
+		return broken
+	}
+
+	rest := strings.TrimSpace(trimmed[endBracket+2:])
+	if rest == "" {
+		return broken
+	}
+
+	linkTarget := rest
+	if idx := strings.Index(rest, " \""); idx != -1 {
+		linkTarget = rest[:idx]
+	} else if idx := strings.Index(rest, " '"); idx != -1 {
+		linkTarget = rest[:idx]
+	}
+	linkTarget = strings.TrimSpace(linkTarget)
+
+	// Skip external URLs
+	if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+		return broken
+	}
+
+	// Remove fragment for file existence check
+	targetPath := strings.Split(linkTarget, "#")[0]
+	if targetPath == "" {
+		return broken
+	}
+
+	// Resolve and check if file exists
+	resolved, err := resolveRelativePath(sourceFile, targetPath)
+	if err != nil {
+		return broken
+	}
+
+	if !fileExists(resolved) {
+		broken = append(broken, BrokenLink{
+			SourceFile: sourceFile,
+			LineNumber: lineNum,
+			Target:     linkTarget,
+			LinkType:   LinkTypeReference,
+		})
+	}
+
+	return broken
+}
+
+// checkImageLinksBroken checks for broken image links in a line.
+func checkImageLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
+	var broken []BrokenLink
+
+	for i := 0; i < len(line); i++ {
+		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
+			closeBracket := strings.Index(line[i+2:], "]")
+			if closeBracket == -1 {
+				continue
+			}
+			closeBracket += i + 2
+
+			if closeBracket+1 >= len(line) || line[closeBracket+1] != '(' {
+				continue
+			}
+
+			end := strings.Index(line[closeBracket+2:], ")")
+			if end == -1 {
+				continue
+			}
+			end += closeBracket + 2
+
+			linkTarget := line[closeBracket+2 : end]
+
+			// Skip external URLs
+			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+				continue
+			}
+
+			// Resolve and check if file exists
+			resolved, err := resolveRelativePath(sourceFile, linkTarget)
+			if err != nil {
+				continue
+			}
+
+			if !fileExists(resolved) {
+				broken = append(broken, BrokenLink{
+					SourceFile: sourceFile,
+					LineNumber: lineNum,
+					Target:     linkTarget,
+					LinkType:   LinkTypeImage,
+				})
+			}
+		}
+	}
+
+	return broken
+}
+
+// fileExists checks if a file exists (case-insensitive on applicable filesystems).
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	
+	// On case-insensitive filesystems, try case-insensitive lookup
+	// by checking the directory listing
+	dir := filepath.Dir(path)
+	base := filepath.Base(path)
+	
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	
+	for _, entry := range entries {
+		if strings.EqualFold(entry.Name(), base) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// pathsEqualCaseInsensitive compares two paths case-insensitively.
+// This is important for filesystems like macOS (HFS+/APFS) and Windows (NTFS)
+// that are case-insensitive but case-preserving.
+func pathsEqualCaseInsensitive(path1, path2 string) bool {
+	// Normalize paths to forward slashes for consistent comparison
+	path1 = filepath.ToSlash(filepath.Clean(path1))
+	path2 = filepath.ToSlash(filepath.Clean(path2))
+	
+	// Case-insensitive comparison
+	return strings.EqualFold(path1, path2)
+}
+
 // resolveRelativePath resolves a relative link path from a source file to an absolute path.
 func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	// Remove any URL fragments (#section)
@@ -371,8 +669,8 @@ func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []
 				continue
 			}
 
-			// Check if this link points to our target
-			if resolved == targetPath {
+			// Check if this link points to our target (case-insensitive for filesystem compatibility)
+			if pathsEqualCaseInsensitive(resolved, targetPath) {
 				// Extract fragment if present
 				fragment := ""
 				if idx := strings.Index(linkTarget, "#"); idx != -1 {
@@ -438,8 +736,8 @@ func findReferenceLinks(line string, lineNum int, sourceFile, targetPath string)
 		return links
 	}
 
-	// Check if this link points to our target
-	if resolved == targetPath {
+	// Check if this link points to our target (case-insensitive for filesystem compatibility)
+	if pathsEqualCaseInsensitive(resolved, targetPath) {
 		// Extract fragment if present
 		fragment := ""
 		if idx := strings.Index(linkTarget, "#"); idx != -1 {
@@ -500,8 +798,8 @@ func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []L
 				continue
 			}
 
-			// Check if this link points to our target
-			if resolved == targetPath {
+			// Check if this link points to our target (case-insensitive for filesystem compatibility)
+			if pathsEqualCaseInsensitive(resolved, targetPath) {
 				links = append(links, LinkReference{
 					SourceFile: sourceFile,
 					LineNumber: lineNum,
@@ -667,6 +965,22 @@ func (fr *FixResult) Summary() string {
 	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
 	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
 	b.WriteString(fmt.Sprintf("Links updated: %d\n", len(fr.LinksUpdated)))
+
+	if len(fr.BrokenLinks) > 0 {
+		b.WriteString(fmt.Sprintf("\nBroken links detected: %d\n", len(fr.BrokenLinks)))
+		b.WriteString("These links reference non-existent files:\n")
+		for _, broken := range fr.BrokenLinks {
+			linkTypeStr := "link"
+			switch broken.LinkType {
+			case LinkTypeImage:
+				linkTypeStr = "image"
+			case LinkTypeReference:
+				linkTypeStr = "reference"
+			}
+			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s (broken %s)\n",
+				broken.SourceFile, broken.LineNumber, linkTypeStr, broken.Target, linkTypeStr))
+		}
+	}
 
 	if len(fr.LinksUpdated) > 0 {
 		b.WriteString("\nLink Updates:\n")
