@@ -64,6 +64,12 @@
       "line_number": 14,
       "old_target": "./User Manual.md#advanced-features",
       "new_target": "./user-manual.md#advanced-features"
+    },
+    {
+      "source_file": "index.md",
+      "line_number": 16,
+      "old_target": "./images/Diagram.png",
+      "new_target": "./images/diagram.png"
     }
   ],
   "errors_fixed": 4,

@@ -94,6 +94,12 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 		Errors:       make([]error, 0),
 	}
 
+	// Get absolute path for the root directory (for searching links)
+	rootPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
 	// Detect broken links before applying fixes
 	if !f.dryRun {
 		brokenLinks, err := f.detectBrokenLinks(path)
@@ -126,7 +132,7 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 
 				// Find and update all links to the renamed file
 				if !f.dryRun {
-					links, err := f.findLinksToFile(filePath)
+					links, err := f.findLinksToFile(filePath, rootPath)
 					if err != nil {
 						fixResult.Errors = append(fixResult.Errors,
 							fmt.Errorf("failed to find links to %s: %w", filePath, err))
@@ -249,7 +255,9 @@ func (fr *FixResult) HasErrors() bool {
 }
 
 // findLinksToFile finds all markdown links that reference the given target file.
-func (f *Fixer) findLinksToFile(targetPath string) ([]LinkReference, error) {
+// It searches from rootPath (typically the documentation root directory) to find
+// all markdown files that might contain links to the target.
+func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, error) {
 	var links []LinkReference
 
 	// Get absolute path of target for comparison
@@ -258,13 +266,18 @@ func (f *Fixer) findLinksToFile(targetPath string) ([]LinkReference, error) {
 		return nil, fmt.Errorf("failed to get absolute path for target: %w", err)
 	}
 
-	// Walk the directory containing the target file
-	rootDir := filepath.Dir(targetPath)
-	if info, err := os.Stat(targetPath); err == nil && info.IsDir() {
-		rootDir = targetPath
+	// Ensure rootPath is a directory
+	rootInfo, err := os.Stat(rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat root path: %w", err)
 	}
 
-	err = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	searchRoot := rootPath
+	if !rootInfo.IsDir() {
+		searchRoot = filepath.Dir(rootPath)
+	}
+
+	err = filepath.Walk(searchRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -569,23 +582,23 @@ func fileExists(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
 	}
-	
+
 	// On case-insensitive filesystems, try case-insensitive lookup
 	// by checking the directory listing
 	dir := filepath.Dir(path)
 	base := filepath.Base(path)
-	
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return false
 	}
-	
+
 	for _, entry := range entries {
 		if strings.EqualFold(entry.Name(), base) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -596,7 +609,7 @@ func pathsEqualCaseInsensitive(path1, path2 string) bool {
 	// Normalize paths to forward slashes for consistent comparison
 	path1 = filepath.ToSlash(filepath.Clean(path1))
 	path2 = filepath.ToSlash(filepath.Clean(path2))
-	
+
 	// Case-insensitive comparison
 	return strings.EqualFold(path1, path2)
 }

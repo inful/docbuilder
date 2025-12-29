@@ -418,7 +418,7 @@ func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
 
-	links, err := fixer.findLinksToFile(targetFile)
+	links, err := fixer.findLinksToFile(targetFile, tmpDir)
 	require.NoError(t, err)
 
 	// On case-insensitive comparison, all three links should be found
@@ -458,7 +458,7 @@ func TestFix_WithBrokenLinkDetection(t *testing.T) {
 
 	// Should detect broken links
 	assert.NotEmpty(t, result.BrokenLinks, "should detect broken links")
-	
+
 	// Verify broken link details
 	foundBroken := false
 	for _, broken := range result.BrokenLinks {
