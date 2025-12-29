@@ -1012,13 +1012,14 @@ Lefthook > pre-commit > lint-docs:
 
 ## Implementation Checklist
 
-- [ ] Create `internal/lint` package
-- [ ] Implement filename rules with tests
+- [x] Create `internal/lint` package
+- [x] Implement filename rules with tests
 - [ ] Add `docbuilder lint` CLI command
-- [ ] Intelligent default path detection (`docs/`, `documentation/`, fallback)
-- [ ] Human-readable formatter
-- [ ] Exit code handling
-- [ ] Golden tests for each rule
+- [x] Intelligent default path detection (`docs/`, `documentation/`, fallback)
+- [x] Human-readable formatter
+- [x] Exit code handling
+- [x] Unit tests for each rule (11 test cases)
+- [ ] Integration tests with golden files
 - [ ] `--fix` flag implementation
 - [ ] Git integration for safe renames
 - [ ] Traditional pre-commit hook script
