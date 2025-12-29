@@ -13,7 +13,7 @@ Check out the [authentication section](./api_guide.md#authentication) for API se
 
 See the [advanced features](./user-manual.md#advanced-features) in the user manual.
 
-![Architecture Diagram](./images/Diagram.png)
+![Architecture Diagram](./images/diagram.png)
 
 ## External Resources
 

@@ -354,8 +354,8 @@ Also see [authentication](../API_Guide.md#auth).
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
 
-	// Find all links to target file
-	links, err := fixer.findLinksToFile(absTarget)
+	// Find all links to target file (search from docs root)
+	links, err := fixer.findLinksToFile(absTarget, docsDir)
 	require.NoError(t, err)
 
 	// Should find 3 links:
