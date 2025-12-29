@@ -266,7 +266,7 @@ result, err := svc.Run(context.Background(), build.BuildRequest{
 - [Test Architecture](../explanation/renderer-testing.md)
 - [CI/CD Setup](../ci-cd-setup.md)
 - [Configuration Reference](../reference/configuration.md)
-- [Style Guide](../STYLE_GUIDE.md)
+- [Style Guide](../style_guide.md)
 
 ## Maintenance Notes
 

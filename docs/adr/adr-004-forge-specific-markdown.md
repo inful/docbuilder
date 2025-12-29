@@ -544,8 +544,8 @@ Public discussion: [myorg/public-docs#50](https://github.com/myorg/public-docs/i
 - [GitLab Flavored Markdown](https://docs.gitlab.com/ee/user/markdown.html)
 - [GitHub Flavored Markdown](https://github.github.com/gfm/)
 - [Forgejo Markdown](https://forgejo.org/docs/latest/user/markdown/)
-- [ADR-002: In-Memory Content Pipeline](ADR-002-in-memory-content-pipeline.md)
-- [ADR-003: Fixed Transform Pipeline](ADR-003-fixed-transform-pipeline.md)
+- [ADR-002: In-Memory Content Pipeline](adr-002-in-memory-content-pipeline.md)
+- [ADR-003: Fixed Transform Pipeline](adr-003-fixed-transform-pipeline.md)
 
 ## Decision Log
 
