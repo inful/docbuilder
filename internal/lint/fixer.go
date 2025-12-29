@@ -845,12 +845,42 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	// Remove any URL fragments (#section)
 	targetPath := strings.Split(linkTarget, "#")[0]
 
-	// Get directory of source file
-	sourceDir := filepath.Dir(sourceFile)
-
-	// Join and clean the path
-	resolvedPath := filepath.Join(sourceDir, targetPath)
+	var resolvedPath string
+	
+	// Handle absolute paths (e.g., /local/docs/api-guide)
+	// These are Hugo site-absolute paths that need to be resolved relative to content root
+	if strings.HasPrefix(targetPath, "/") {
+		// Find the content root by walking up from source file
+		contentRoot := findContentRoot(sourceFile)
+		if contentRoot != "" {
+			// Strip leading slash and join with content root
+			targetPath = strings.TrimPrefix(targetPath, "/")
+			resolvedPath = filepath.Join(contentRoot, targetPath)
+		} else {
+			// Fallback: treat as filesystem absolute path
+			resolvedPath = targetPath
+		}
+	} else {
+		// Relative path - resolve relative to source file directory
+		sourceDir := filepath.Dir(sourceFile)
+		resolvedPath = filepath.Join(sourceDir, targetPath)
+	}
+	
 	cleanPath := filepath.Clean(resolvedPath)
+
+	// Try with .md extension if file doesn't exist as-is
+	if !fileExists(cleanPath) {
+		// Try adding .md extension (Hugo strips .md from URLs)
+		withMd := cleanPath + ".md"
+		if fileExists(withMd) {
+			return withMd, nil
+		}
+		// Try adding .markdown extension
+		withMarkdown := cleanPath + ".markdown"
+		if fileExists(withMarkdown) {
+			return withMarkdown, nil
+		}
+	}
 
 	// Get absolute path
 	absPath, err := filepath.Abs(cleanPath)
@@ -859,6 +889,23 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	}
 
 	return absPath, nil
+}
+
+// findContentRoot finds the content directory by walking up from the source file.
+// It looks for a directory named "content" in the path hierarchy.
+func findContentRoot(sourceFile string) string {
+	dir := filepath.Dir(sourceFile)
+	for {
+		if filepath.Base(dir) == "content" {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root without finding content directory
+			return ""
+		}
+		dir = parent
+	}
 }
 
 // findInlineLinks finds inline-style markdown links: [text](path)
