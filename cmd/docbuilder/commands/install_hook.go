@@ -33,12 +33,12 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	if _, err := os.Stat(hookPath); err == nil && !cmd.Force {
 		backupPath := fmt.Sprintf("%s.backup-%s", hookPath, time.Now().Format("20060102-150405"))
 		fmt.Printf("📦 Backing up existing hook to: %s\n", backupPath)
-		
+
 		content, err := os.ReadFile(hookPath)
 		if err != nil {
 			return fmt.Errorf("failed to read existing hook: %w", err)
 		}
-		
+
 		if err := os.WriteFile(backupPath, content, 0755); err != nil {
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
@@ -135,7 +135,7 @@ func findGitDir() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		
+
 		// Parse gitdir from .git file
 		line := string(content)
 		if len(line) > 8 && line[:8] == "gitdir: " {

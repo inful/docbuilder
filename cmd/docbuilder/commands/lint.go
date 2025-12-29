@@ -15,8 +15,8 @@ type LintCmd struct {
 	DryRun bool   `help:"Show what would be fixed without applying changes (requires --fix)"`
 	Yes    bool   `short:"y" help:"Auto-confirm fixes without prompting (for CI/CD)"`
 
-	Path        *LintPathCmd     `cmd:"" default:"withargs" help:"Lint a path (file or directory)"`
-	InstallHook *InstallHookCmd  `cmd:"" help:"Install pre-commit hook for automatic linting"`
+	Path        *LintPathCmd    `cmd:"" default:"withargs" help:"Lint a path (file or directory)"`
+	InstallHook *InstallHookCmd `cmd:"" help:"Install pre-commit hook for automatic linting"`
 }
 
 // LintPathCmd handles linting a specific path.
