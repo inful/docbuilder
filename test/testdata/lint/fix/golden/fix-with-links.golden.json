@@ -1,0 +1,72 @@
+{
+  "files_renamed": [
+    {
+      "old_filename": "API_Guide.md",
+      "new_filename": "api_guide.md",
+      "success": true
+    },
+    {
+      "old_filename": "Diagram.png",
+      "new_filename": "diagram.png",
+      "success": true
+    },
+    {
+      "old_filename": "User Manual.md",
+      "new_filename": "user-manual.md",
+      "success": true
+    }
+  ],
+  "links_updated": [
+    {
+      "source_file": "getting-started.md",
+      "line_number": 7,
+      "old_target": "./User Manual.md",
+      "new_target": "./user-manual.md"
+    },
+    {
+      "source_file": "getting-started.md",
+      "line_number": 11,
+      "old_target": "./API_Guide.md",
+      "new_target": "./api_guide.md"
+    },
+    {
+      "source_file": "getting-started.md",
+      "line_number": 13,
+      "old_target": "./API_Guide.md#authentication",
+      "new_target": "./api_guide.md#authentication"
+    },
+    {
+      "source_file": "getting-started.md",
+      "line_number": 19,
+      "old_target": "./User Manual.md#getting-started",
+      "new_target": "./user-manual.md#getting-started"
+    },
+    {
+      "source_file": "index.md",
+      "line_number": 7,
+      "old_target": "./API_Guide.md",
+      "new_target": "./api_guide.md"
+    },
+    {
+      "source_file": "index.md",
+      "line_number": 8,
+      "old_target": "./User Manual.md",
+      "new_target": "./user-manual.md"
+    },
+    {
+      "source_file": "index.md",
+      "line_number": 12,
+      "old_target": "./API_Guide.md#authentication",
+      "new_target": "./api_guide.md#authentication"
+    },
+    {
+      "source_file": "index.md",
+      "line_number": 14,
+      "old_target": "./User Manual.md#advanced-features",
+      "new_target": "./user-manual.md#advanced-features"
+    }
+  ],
+  "errors_fixed": 4,
+  "warnings_fixed": 0,
+  "error_count": 0
+}

@@ -1360,10 +1360,13 @@ Lefthook > pre-commit > lint-docs:
   - [x] Golden file generation with `-update-golden` flag
   - [x] Normalized path comparison for system-independence
   - [x] 6 comprehensive test cases covering all current rules
-- [ ] Integration tests for auto-fix functionality (Phase 3)
-  - [ ] Before/after directory structures
-  - [ ] Link resolution test cases
-  - [ ] Edge case validation (external URLs, code blocks)
+- [x] Integration golden tests for auto-fix functionality (Phase 3)
+  - [x] Before/after directory structures with realistic test data
+  - [x] TestGoldenAutoFix_FileRenameWithLinkUpdates: Complete fix workflow
+  - [x] TestGoldenAutoFix_DryRun: Dry-run mode output verification
+  - [x] TestGoldenAutoFix_BrokenLinkDetection: Broken link reporting
+  - [x] Sorted results for consistent comparison across runs
+  - [x] Normalized paths (filenames only) for portability
 - [ ] Integration tests for lint-DocBuilder sync
 - [ ] CI workflow to detect rule drift
 
