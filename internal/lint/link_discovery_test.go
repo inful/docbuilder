@@ -57,7 +57,7 @@ func TestResolveRelativePath(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			
+
 			// Normalize paths for comparison (handle different OS separators)
 			gotClean := filepath.Clean(got)
 			wantClean := filepath.Clean(tt.want)
