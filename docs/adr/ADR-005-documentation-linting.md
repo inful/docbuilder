@@ -1324,13 +1324,15 @@ Lefthook > pre-commit > lint-docs:
   - [x] Code block detection and exclusion
   - [x] Anchor fragment preservation
   - [x] Comprehensive test coverage (13 tests, 379 lines)
-- [ ] Phase 3c: Link updates with atomic operations
-  - [ ] Generate replacement text preserving style
-  - [ ] Atomic file updates with rollback
-  - [ ] Preserve anchor fragments (#section)
+- [x] Phase 3c: Link updates with atomic operations
+  - [x] Generate replacement text preserving style
+  - [x] Atomic file updates with rollback on failure
+  - [x] Preserve anchor fragments (#section) in updated links
+  - [x] Test coverage for anchor fragment preservation
+  - [x] Test coverage for rollback mechanism
 - [ ] Phase 3d: Edge case handling
-  - [ ] Skip external URLs (protocol detection)
-  - [ ] Ignore links in code blocks (markdown parser)
+  - [x] Skip external URLs (protocol detection) - already implemented in Phase 3b
+  - [x] Ignore links in code blocks (markdown parser) - already implemented in Phase 3b
   - [ ] Case-insensitive filesystem support
   - [ ] Broken link detection and reporting
 - [ ] Phase 3e: Reporting and interactive confirmation
