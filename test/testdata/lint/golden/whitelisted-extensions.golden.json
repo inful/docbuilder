@@ -1,0 +1,23 @@
+{
+  "issues": [
+    {
+      "file": "valid/whitelisted-extensions/architecture.drawio.png",
+      "severity": "INFO",
+      "rule": "filename-conventions",
+      "message": "Whitelisted double extension",
+      "explanation": "File uses whitelisted double extension for embedded diagrams (.drawio.png or .drawio.svg)"
+    },
+    {
+      "file": "valid/whitelisted-extensions/diagram.drawio.svg",
+      "severity": "INFO",
+      "rule": "filename-conventions",
+      "message": "Whitelisted double extension",
+      "explanation": "File uses whitelisted double extension for embedded diagrams (.drawio.png or .drawio.svg)"
+    }
+  ],
+  "file_count": 3,
+  "error_count": 0,
+  "warn_count": 0,
+  "info_count": 2,
+  "has_errors": false
+}

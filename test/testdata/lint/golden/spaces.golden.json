@@ -1,0 +1,41 @@
+{
+  "issues": [
+    {
+      "file": "invalid/spaces/Login Screen.png",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains uppercase letters",
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  Login Screen.png\nSuggested: login screen.png\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "fix": "Rename to lowercase: login screen.png"
+    },
+    {
+      "file": "invalid/spaces/Login Screen.png",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains spaces",
+      "explanation": "Spaces in filenames create problematic URLs with %20 encoding \nand break cross-references.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
+      "fix": "Rename using hyphens: login-screen.png"
+    },
+    {
+      "file": "invalid/spaces/User Manual.md",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains uppercase letters",
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  User Manual.md\nSuggested: user manual.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "fix": "Rename to lowercase: user manual.md"
+    },
+    {
+      "file": "invalid/spaces/User Manual.md",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains spaces",
+      "explanation": "Spaces in filenames create problematic URLs with %20 encoding \nand break cross-references.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
+      "fix": "Rename using hyphens: user-manual.md"
+    }
+  ],
+  "file_count": 2,
+  "error_count": 4,
+  "warn_count": 0,
+  "info_count": 0,
+  "has_errors": true
+}

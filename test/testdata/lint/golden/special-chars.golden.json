@@ -1,0 +1,25 @@
+{
+  "issues": [
+    {
+      "file": "invalid/special-chars/config@v2.md",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains special characters: @",
+      "explanation": "Special characters are unsupported by Hugo slugify and may cause \nshell escaping issues.\n\nCurrent:  config@v2.md\nSuggested: configv2.md\n\nAllowed characters: [a-z0-9-_.]\nInvalid characters found: @",
+      "fix": "Rename to remove special characters: configv2.md"
+    },
+    {
+      "file": "invalid/special-chars/tutorial#1.md",
+      "severity": "ERROR",
+      "rule": "filename-conventions",
+      "message": "Filename contains special characters: #",
+      "explanation": "Special characters are unsupported by Hugo slugify and may cause \nshell escaping issues.\n\nCurrent:  tutorial#1.md\nSuggested: tutorial1.md\n\nAllowed characters: [a-z0-9-_.]\nInvalid characters found: #",
+      "fix": "Rename to remove special characters: tutorial1.md"
+    }
+  ],
+  "file_count": 2,
+  "error_count": 2,
+  "warn_count": 0,
+  "info_count": 0,
+  "has_errors": true
+}
