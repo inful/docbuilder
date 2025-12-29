@@ -51,6 +51,25 @@ type LinkUpdate struct {
 	NewTarget  string
 }
 
+// LinkType represents the type of markdown link.
+type LinkType int
+
+const (
+	LinkTypeInline LinkType = iota
+	LinkTypeReference
+	LinkTypeImage
+)
+
+// LinkReference represents a link found in a markdown file.
+type LinkReference struct {
+	SourceFile string   // File containing the link
+	LineNumber int      // Line number of link
+	LinkType   LinkType // Inline, Reference, or Image
+	Target     string   // Link target (path)
+	Fragment   string   // Anchor fragment (#section)
+	FullMatch  string   // Complete original text for replacement
+}
+
 // Fix attempts to automatically fix issues found in the given path.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
 	// First, run linter to find issues
@@ -79,7 +98,7 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 		if f.canFixFilename(issues) {
 			op := f.renameFile(filePath, issues)
 			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
-			
+
 			if op.Success {
 				fixResult.ErrorsFixed += len(issues)
 			} else if op.Error != nil {
@@ -189,19 +208,310 @@ func (fr *FixResult) HasErrors() bool {
 	return len(fr.Errors) > 0
 }
 
+// findLinksToFile finds all markdown links that reference the given target file.
+func (f *Fixer) findLinksToFile(targetPath string) ([]LinkReference, error) {
+	var links []LinkReference
+
+	// Get absolute path of target for comparison
+	absTarget, err := filepath.Abs(targetPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path for target: %w", err)
+	}
+
+	// Walk the directory containing the target file
+	rootDir := filepath.Dir(targetPath)
+	if info, err := os.Stat(targetPath); err == nil && info.IsDir() {
+		rootDir = targetPath
+	}
+
+	err = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Only process markdown files
+		if info.IsDir() || !IsDocFile(path) {
+			return nil
+		}
+
+		// Don't search the target file itself
+		if path == targetPath {
+			return nil
+		}
+
+		// Find links in this file
+		fileLinks, err := f.findLinksInFile(path, absTarget)
+		if err != nil {
+			return fmt.Errorf("failed to scan %s: %w", path, err)
+		}
+
+		links = append(links, fileLinks...)
+		return nil
+	})
+
+	return links, err
+}
+
+// findLinksInFile scans a single markdown file for links to the target.
+func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference, error) {
+	content, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var links []LinkReference
+	lines := strings.Split(string(content), "\n")
+
+	for lineNum, line := range lines {
+		// Skip code blocks (simple heuristic: lines starting with spaces/tabs or in fenced blocks)
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+			continue
+		}
+
+		// Find inline links: [text](path)
+		inlineLinks := findInlineLinks(line, lineNum+1, sourceFile, targetPath)
+		links = append(links, inlineLinks...)
+
+		// Find reference-style links: [id]: path
+		refLinks := findReferenceLinks(line, lineNum+1, sourceFile, targetPath)
+		links = append(links, refLinks...)
+
+		// Find image links: ![alt](path)
+		imageLinks := findImageLinks(line, lineNum+1, sourceFile, targetPath)
+		links = append(links, imageLinks...)
+	}
+
+	return links, nil
+}
+
+// resolveRelativePath resolves a relative link path from a source file to an absolute path.
+func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
+	// Remove any URL fragments (#section)
+	targetPath := strings.Split(linkTarget, "#")[0]
+
+	// Get directory of source file
+	sourceDir := filepath.Dir(sourceFile)
+
+	// Join and clean the path
+	resolvedPath := filepath.Join(sourceDir, targetPath)
+	cleanPath := filepath.Clean(resolvedPath)
+
+	// Get absolute path
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve absolute path: %w", err)
+	}
+
+	return absPath, nil
+}
+
+// findInlineLinks finds inline-style markdown links: [text](path)
+func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
+	// Pattern: [text](path) or [text](path#fragment)
+	// We'll use a simple string search for now, can be improved with regex
+	var links []LinkReference
+
+	// Look for ]( pattern
+	for i := 0; i < len(line); i++ {
+		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
+			// Find the opening [
+			start := -1
+			for j := i - 1; j >= 0; j-- {
+				if line[j] == '[' {
+					// Make sure it's not an image link (preceded by !)
+					if j > 0 && line[j-1] == '!' {
+						break
+					}
+					start = j
+					break
+				}
+			}
+
+			if start == -1 {
+				continue
+			}
+
+			// Find the closing )
+			end := strings.Index(line[i+2:], ")")
+			if end == -1 {
+				continue
+			}
+			end += i + 2
+
+			// Extract the link target
+			linkTarget := line[i+2 : end]
+
+			// Skip external URLs
+			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+				continue
+			}
+
+			// Resolve the path
+			resolved, err := resolveRelativePath(sourceFile, linkTarget)
+			if err != nil {
+				continue
+			}
+
+			// Check if this link points to our target
+			if resolved == targetPath {
+				// Extract fragment if present
+				fragment := ""
+				if idx := strings.Index(linkTarget, "#"); idx != -1 {
+					fragment = linkTarget[idx:]
+					linkTarget = linkTarget[:idx]
+				}
+
+				links = append(links, LinkReference{
+					SourceFile: sourceFile,
+					LineNumber: lineNum,
+					LinkType:   LinkTypeInline,
+					Target:     linkTarget,
+					Fragment:   fragment,
+					FullMatch:  line[start : end+1],
+				})
+			}
+		}
+	}
+
+	return links
+}
+
+// findReferenceLinks finds reference-style markdown links: [id]: path
+func findReferenceLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
+	var links []LinkReference
+
+	// Pattern: [id]: path or [id]: path "title"
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "[") {
+		return links
+	}
+
+	// Find closing ]
+	endBracket := strings.Index(trimmed, "]:")
+	if endBracket == -1 {
+		return links
+	}
+
+	// Extract the path part (after ]:)
+	rest := strings.TrimSpace(trimmed[endBracket+2:])
+	if rest == "" {
+		return links
+	}
+
+	// Remove optional title in quotes
+	linkTarget := rest
+	if idx := strings.Index(rest, " \""); idx != -1 {
+		linkTarget = rest[:idx]
+	} else if idx := strings.Index(rest, " '"); idx != -1 {
+		linkTarget = rest[:idx]
+	}
+
+	linkTarget = strings.TrimSpace(linkTarget)
+
+	// Skip external URLs
+	if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+		return links
+	}
+
+	// Resolve the path
+	resolved, err := resolveRelativePath(sourceFile, linkTarget)
+	if err != nil {
+		return links
+	}
+
+	// Check if this link points to our target
+	if resolved == targetPath {
+		// Extract fragment if present
+		fragment := ""
+		if idx := strings.Index(linkTarget, "#"); idx != -1 {
+			fragment = linkTarget[idx:]
+			linkTarget = linkTarget[:idx]
+		}
+
+		links = append(links, LinkReference{
+			SourceFile: sourceFile,
+			LineNumber: lineNum,
+			LinkType:   LinkTypeReference,
+			Target:     linkTarget,
+			Fragment:   fragment,
+			FullMatch:  line,
+		})
+	}
+
+	return links
+}
+
+// findImageLinks finds image markdown links: ![alt](path)
+func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
+	var links []LinkReference
+
+	// Look for ![]( pattern
+	for i := 0; i < len(line); i++ {
+		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
+			// Find the closing ]
+			closeBracket := strings.Index(line[i+2:], "]")
+			if closeBracket == -1 {
+				continue
+			}
+			closeBracket += i + 2
+
+			// Check for opening (
+			if closeBracket+1 >= len(line) || line[closeBracket+1] != '(' {
+				continue
+			}
+
+			// Find the closing )
+			end := strings.Index(line[closeBracket+2:], ")")
+			if end == -1 {
+				continue
+			}
+			end += closeBracket + 2
+
+			// Extract the link target
+			linkTarget := line[closeBracket+2 : end]
+
+			// Skip external URLs
+			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
+				continue
+			}
+
+			// Resolve the path
+			resolved, err := resolveRelativePath(sourceFile, linkTarget)
+			if err != nil {
+				continue
+			}
+
+			// Check if this link points to our target
+			if resolved == targetPath {
+				links = append(links, LinkReference{
+					SourceFile: sourceFile,
+					LineNumber: lineNum,
+					LinkType:   LinkTypeImage,
+					Target:     linkTarget,
+					Fragment:   "",
+					FullMatch:  line[i : end+1],
+				})
+			}
+		}
+	}
+
+	return links
+}
+
 // Summary returns a human-readable summary of the fix operation.
 func (fr *FixResult) Summary() string {
 	var b strings.Builder
-	
+
 	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
 	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
-	
+
 	if len(fr.Errors) > 0 {
 		b.WriteString(fmt.Sprintf("\nErrors encountered: %d\n", len(fr.Errors)))
 		for _, err := range fr.Errors {
 			b.WriteString(fmt.Sprintf("  • %v\n", err))
 		}
 	}
-	
+
 	return b.String()
 }
