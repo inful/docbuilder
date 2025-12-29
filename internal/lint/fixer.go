@@ -564,10 +564,10 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 
 			// Generate new link target
 			newTarget := f.updateLinkTarget(link, oldPath, newPath)
-			
+
 			// For comparison, combine target with fragment for old link
 			oldLinkText := link.Target + link.Fragment
-			
+
 			if newTarget == oldLinkText {
 				continue // No change needed
 			}
@@ -634,10 +634,10 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 
 	// Preserve relative path structure
 	oldFilename := filepath.Base(oldPath)
-	
+
 	// Replace only the filename portion, keeping the directory path
 	newTarget := strings.Replace(link.Target, oldFilename, newFilename, 1)
-	
+
 	// Preserve anchor fragment if present
 	if link.Fragment != "" {
 		newTarget = newTarget + link.Fragment
@@ -652,7 +652,7 @@ func (f *Fixer) rollbackLinkUpdates(files []string, backupPaths []string) {
 	for _, backupPath := range backupPaths {
 		// Extract original file path by removing .backup suffix
 		originalFile := strings.TrimSuffix(backupPath, ".backup")
-		
+
 		if content, err := os.ReadFile(backupPath); err == nil {
 			_ = os.WriteFile(originalFile, content, 0644) // Best effort restore
 		}

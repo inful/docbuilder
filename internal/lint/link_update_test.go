@@ -530,22 +530,22 @@ Reference to [Errors](../api-guide.md#errors).
 	// Verify all updates were recorded with fragments preserved
 	// Updates may come in any order due to internal sorting, so check by content
 	assert.Len(t, updates, 3)
-	
+
 	// Create a map of line numbers to updates for order-independent verification
 	updatesByLine := make(map[int]LinkUpdate)
 	for _, update := range updates {
 		updatesByLine[update.LineNumber] = update
 	}
-	
+
 	// Verify each expected update exists at the correct line
 	assert.Contains(t, updatesByLine, 3)
 	assert.Equal(t, "./api-guide.md#authentication", updatesByLine[3].OldTarget)
 	assert.Equal(t, "./api_guide.md#authentication", updatesByLine[3].NewTarget)
-	
+
 	assert.Contains(t, updatesByLine, 5)
 	assert.Equal(t, "./api-guide.md#overview", updatesByLine[5].OldTarget)
 	assert.Equal(t, "./api_guide.md#overview", updatesByLine[5].NewTarget)
-	
+
 	assert.Contains(t, updatesByLine, 7)
 	assert.Equal(t, "../api-guide.md#errors", updatesByLine[7].OldTarget)
 	assert.Equal(t, "../api_guide.md#errors", updatesByLine[7].NewTarget)

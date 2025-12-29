@@ -60,6 +60,55 @@ func (l *LintCmd) Run(_ *Global, root *CLI) error {
 	// Create linter
 	linter := lint.NewLinter(cfg)
 
+	// If fix mode is enabled, run fixer instead
+	if l.Fix {
+		fixer := lint.NewFixer(linter, l.DryRun, false) // force=false for safety
+		fixResult, err := fixer.Fix(path)
+		if err != nil {
+			return fmt.Errorf("fixing failed: %w", err)
+		}
+
+		// Display what was fixed
+		if l.DryRun {
+			fmt.Println("DRY RUN: No changes will be applied")
+			fmt.Println()
+		}
+
+		if len(fixResult.FilesRenamed) > 0 {
+			fmt.Println("Files to be renamed:" )
+			for _, op := range fixResult.FilesRenamed {
+				if op.Success {
+					fmt.Printf("  %s → %s\n", op.OldPath, op.NewPath)
+				} else if op.Error != nil {
+					fmt.Printf("  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
+				}
+			}
+			fmt.Println()
+		}
+
+		if len(fixResult.LinksUpdated) > 0 {
+			fmt.Printf("Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
+			fileLinks := groupLinksByFile(fixResult.LinksUpdated)
+			for file, links := range fileLinks {
+				fmt.Printf("  %s (%d links)\n", file, len(links))
+			}
+			fmt.Println()
+		}
+
+		// Display fix summary
+		fmt.Println(fixResult.Summary())
+
+		// Exit with error if fixes failed
+		if fixResult.HasErrors() {
+			os.Exit(2)
+		}
+
+		if !l.DryRun {
+			fmt.Printf("\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+		}
+		return nil
+	}
+
 	// Run linting
 	result, err := linter.LintPath(path)
 	if err != nil {
@@ -104,4 +153,22 @@ func isColorSupported() bool {
 	}
 
 	return true
+}
+
+// countUniqueFiles counts the number of unique files in link updates.
+func countUniqueFiles(links []lint.LinkUpdate) int {
+	files := make(map[string]bool)
+	for _, link := range links {
+		files[link.SourceFile] = true
+	}
+	return len(files)
+}
+
+// groupLinksByFile groups link updates by source file.
+func groupLinksByFile(links []lint.LinkUpdate) map[string][]lint.LinkUpdate {
+	result := make(map[string][]lint.LinkUpdate)
+	for _, link := range links {
+		result[link.SourceFile] = append(result[link.SourceFile], link)
+	}
+	return result
 }
