@@ -1,0 +1,23 @@
+version: "2.0"
+
+repositories:
+  - name: lint-sync-test
+    url: PLACEHOLDER  # Replaced by setupTestRepo()
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Lint Sync Test Documentation"
+  description: "Testing linter-DocBuilder synchronization"
+  base_url: "http://localhost:1313/"
+  theme: "hextra"
+  params:
+    navbar:
+      displayTitle: true
+    footer:
+      displayPoweredBy: false
+
+output:
+  directory: PLACEHOLDER  # Replaced by t.TempDir()
+  clean: true
