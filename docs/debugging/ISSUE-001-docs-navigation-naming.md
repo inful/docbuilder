@@ -349,6 +349,41 @@ The new `isConfiguredDocsPath()` function:
 - [x] Golden tests pass
 - [x] Manual browser testing confirms navigation
 
+## Existing Test Coverage
+
+**TestGolden_SectionIndexes** provides coverage for this issue:
+
+- **Test File:** `test/integration/golden_test.go` (lines 170-219)
+- **Config:** `test/testdata/configs/section-indexes.yaml`
+- **Repository:** `test/testdata/repos/transforms/section-indexes/`
+- **Verification:** `test/testdata/golden/section-indexes/content-structure.golden.json`
+
+**What It Tests:**
+- Repository named `section-docs` with `paths: ["docs"]`
+- Files located in `docs/getting-started/` and `docs/advanced/`
+- Generated `content/section-docs/_index.md` has `title: "Section Docs"` (repository name)
+- NOT `title: "Docs"` (directory name) ✅
+
+**Golden File Verification:**
+```json
+"content/section-docs/_index.md": {
+  "frontmatter": {
+    "repository": "section-docs",
+    "title": "Section Docs",  // ← Repository name, not "Docs"
+    "type": "docs"
+  }
+}
+```
+
+This test verifies the fix is working correctly. The repository name is used as the title for the docs section, not the directory name.
+
+## Additional Test Coverage
+
+**TestGolden_TwoRepos** also indirectly tests this:
+- Multi-repository build with separate navigation sections
+- Each repository should show its own name, not "Docs"
+- Verifies repository isolation and distinct naming
+
 ## Success Criteria
 
 - [x] Navigation shows repository names at top level
@@ -362,7 +397,8 @@ The new `isConfiguredDocsPath()` function:
 - This issue affects user experience significantly
 - Navigation is critical for multi-repo documentation sites
 - Solution must be robust and tested thoroughly
-- Consider adding specific test case just for this navigation scenario
+- ✅ **Test coverage provided by `TestGolden_SectionIndexes`** - verifies repository name used instead of "Docs"
+- The golden file `section-indexes/content-structure.golden.json` ensures regression prevention
 
 ## Related Files
 

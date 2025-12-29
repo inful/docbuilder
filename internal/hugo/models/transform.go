@@ -29,10 +29,7 @@ type GeneratorProvider interface {
 	// Resolver access
 	GetEditLinkResolver() EditLinkResolver
 
-	// Theme information
-	GetThemeCapabilities() ThemeCapabilities
-
-	// Forge information
+	// Forge information (theme capabilities removed - Relearn always wants per-page edit links)
 	GetForgeCapabilities(forgeType string) ForgeCapabilities
 }
 
@@ -68,13 +65,6 @@ type TransformConfig struct {
 type EditLinkResolver interface {
 	Resolve(file docs.DocFile) string
 	SupportsFile(file docs.DocFile) bool
-}
-
-// ThemeCapabilities represents theme-specific capabilities.
-type ThemeCapabilities struct {
-	WantsPerPageEditLinks  bool
-	SupportsMenuGeneration bool
-	RequiresFrontMatter    []string
 }
 
 // ForgeCapabilities represents forge-specific capabilities.

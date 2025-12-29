@@ -343,12 +343,6 @@ func (m *mockGeneratorProvider) GetEditLinkResolver() EditLinkResolver {
 	return &mockEditLinkResolver{}
 }
 
-func (m *mockGeneratorProvider) GetThemeCapabilities() ThemeCapabilities {
-	return ThemeCapabilities{
-		WantsPerPageEditLinks: true,
-	}
-}
-
 func (m *mockGeneratorProvider) GetForgeCapabilities(_ string) ForgeCapabilities {
 	return ForgeCapabilities{
 		SupportsEditLinks: true,
@@ -358,7 +352,7 @@ func (m *mockGeneratorProvider) GetForgeCapabilities(_ string) ForgeCapabilities
 type mockConfigProvider struct{}
 
 func (m *mockConfigProvider) GetHugoConfig() HugoConfig {
-	return HugoConfig{ThemeType: "hextra"}
+	return HugoConfig{ThemeType: "relearn"}
 }
 
 func (m *mockConfigProvider) GetForgeConfig() ForgeConfig {

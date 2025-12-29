@@ -45,7 +45,7 @@ func TestEventSerialization(t *testing.T) {
 		{
 			name: "HugoConfigGenerated",
 			createFn: func() (Event, error) {
-				return NewHugoConfigGenerated(buildID, "hash123", map[string]interface{}{"theme": "hextra"})
+				return NewHugoConfigGenerated(buildID, "hash123", map[string]interface{}{"theme": "relearn"})
 			},
 			eventType: "HugoConfigGenerated",
 		},

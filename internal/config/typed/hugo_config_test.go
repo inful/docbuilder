@@ -8,71 +8,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHugoThemeType(t *testing.T) {
+func TestNormalizeHugoTheme(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected HugoThemeType
-		valid    bool
+		expected string
 	}{
-		{"hextra", "hextra", HugoThemeHextra, true},
-		{"docsy", "docsy", HugoThemeDocsy, true},
-		{"book", "book", HugoThemeBook, true},
-		{"custom", "custom", HugoThemeCustom, true},
-		{"invalid", "invalid", HugoThemeHextra, false}, // normalized to default
+		{"relearn", "relearn", RelearnTheme},
+		{"hextra normalized", "hextra", RelearnTheme},   // Always normalize to relearn
+		{"docsy normalized", "docsy", RelearnTheme},     // Always normalize to relearn
+		{"invalid normalized", "invalid", RelearnTheme}, // Always normalize to relearn
+		{"empty normalized", "", RelearnTheme},          // Always normalize to relearn
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ParseHugoThemeType(tt.input)
-
-			if tt.valid && tt.input != "invalid" {
-				assert.True(t, result.IsOk())
-				assert.Equal(t, tt.expected, result.Unwrap())
-				assert.True(t, result.Unwrap().Valid())
-			} else if tt.input == "invalid" {
-				assert.True(t, result.IsErr())
-			}
-
-			// Test normalization path as well
-			normalized := NormalizeHugoThemeType(tt.input)
-			assert.Equal(t, tt.expected, normalized)
+			result := NormalizeHugoTheme(tt.input)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestHugoThemeType_Features(t *testing.T) {
-	tests := []struct {
-		theme           HugoThemeType
-		supportsModules bool
-		modulePath      string
-	}{
-		{HugoThemeHextra, true, "github.com/imfing/hextra"},
-		{HugoThemeDocsy, true, "github.com/google/docsy"},
-		{HugoThemeBook, false, ""},
-		{HugoThemeCustom, false, ""},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.theme.String(), func(t *testing.T) {
-			assert.Equal(t, tt.supportsModules, tt.theme.SupportsModules())
-
-			modulePath := tt.theme.GetModulePath()
-			if tt.modulePath != "" {
-				assert.True(t, modulePath.IsSome())
-				assert.Equal(t, tt.modulePath, modulePath.Unwrap())
-			} else {
-				assert.True(t, modulePath.IsNone())
-			}
-		})
-	}
+func TestRelearnThemeConstants(t *testing.T) {
+	assert.Equal(t, "relearn", RelearnTheme)
+	assert.Equal(t, "github.com/McShelby/hugo-theme-relearn", RelearnModulePath)
 }
 
 func TestTypedHugoConfig_Validation(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		config := HugoConfig{
 			Title:      "Test Site",
-			Theme:      HugoThemeHextra,
 			BaseURL:    foundation.Some("https://example.com"),
 			ContentDir: "content",
 			PublishDir: "public",
@@ -96,7 +61,6 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	t.Run("empty title", func(t *testing.T) {
 		config := HugoConfig{
 			Title: "",
-			Theme: HugoThemeHextra,
 		}
 
 		result := config.Validate()
@@ -108,7 +72,6 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	t.Run("invalid baseURL", func(t *testing.T) {
 		config := HugoConfig{
 			Title:   "Test Site",
-			Theme:   HugoThemeHextra,
 			BaseURL: foundation.Some("://not-a-valid-url"), // More clearly invalid URL
 		}
 
@@ -127,7 +90,6 @@ func TestTypedHugoConfig_Validation(t *testing.T) {
 	t.Run("invalid content directory", func(t *testing.T) {
 		config := HugoConfig{
 			Title:      "Test Site",
-			Theme:      HugoThemeHextra,
 			ContentDir: "../../../etc/passwd", // directory traversal
 		}
 

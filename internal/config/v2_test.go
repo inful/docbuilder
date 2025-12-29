@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 		"  title: Test Documentation\n" +
 		"  description: Test description\n" +
 		"  base_url: https://test.example.com\n" +
-		"  theme: hextra\n" +
+		"  theme: relearn\n" +
 		"monitoring:\n" +
 		"  metrics:\n" +
 		"    enabled: true\n" +
@@ -531,7 +531,7 @@ forges:
         - repository
 hugo:
   title: Test Documentation
-  theme: hextra`,
+  theme: relearn`,
 			githubForge.Name,
 			githubForge.Type,
 			githubForge.APIURL,
@@ -603,7 +603,7 @@ forges:
         - repository
 hugo:
   title: Test Documentation
-  theme: hextra`,
+  theme: relearn`,
 			gitlabForge.Name,
 			gitlabForge.Type,
 			gitlabForge.APIURL,
