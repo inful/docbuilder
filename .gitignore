@@ -344,3 +344,5 @@ internal/hugo/content/myrepo/readme.md
 .docbuilder-cache/objects
 staging.yaml
 public/
+
+testdocs/*
