@@ -1,0 +1,20 @@
+[
+  {
+    "source_file": "index.md",
+    "line_number": 4,
+    "target": "./missing.md",
+    "link_type": "inline"
+  },
+  {
+    "source_file": "index.md",
+    "line_number": 5,
+    "target": "./also-missing.md",
+    "link_type": "inline"
+  },
+  {
+    "source_file": "index.md",
+    "line_number": 6,
+    "target": "./images/missing.png",
+    "link_type": "image"
+  }
+]
