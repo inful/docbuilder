@@ -104,6 +104,9 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 
 // rewriteLinkPath rewrites a link path based on the document's context.
 func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath string) string {
+	// Strip leading ./ from relative paths (e.g., ./api-guide.md -> api-guide.md)
+	path = strings.TrimPrefix(path, "./")
+
 	// Remove .md extension
 	path = strings.TrimSuffix(path, ".md")
 	path = strings.TrimSuffix(path, ".markdown")
