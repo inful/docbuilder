@@ -335,6 +335,5 @@ webhook:
 ## Related Documentation
 
 - [Webhook and Documentation Isolation](../explanation/webhook-documentation-isolation.md) - Architecture and collision prevention
-- [Daemon Mode](../tutorials/daemon-mode.md) - Running DocBuilder as a service
-- [Build Queue](../explanation/build-queue.md) - Understanding the build system
-- [Security](../reference/security.md) - Security best practices
+- [Getting Started](../tutorials/getting-started.md) - Introduction to DocBuilder
+- [Configuration Reference](../reference/configuration.md) - Complete configuration guide

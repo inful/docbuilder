@@ -169,5 +169,5 @@ For more information, see:
 
 ## See Also
 
-- [Hextra Theme Configuration](add-theme-support.md)
 - [Hugo Configuration Reference](../reference/configuration.md)
+- [Enable Hugo Render](./enable-hugo-render.md)
