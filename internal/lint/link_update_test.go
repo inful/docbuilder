@@ -37,7 +37,7 @@ See [API Guide](./api-guide.md) for details.
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 	require.NoError(t, err)
 
@@ -110,7 +110,7 @@ Reference: [api-guide][1]
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 	require.NoError(t, err)
 
@@ -121,12 +121,12 @@ Reference: [api-guide][1]
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
-	
+
 	assert.Contains(t, content, "[API Guide](./api_guide.md)")
 	assert.Contains(t, content, "[API Reference](../api_guide.md)")
 	assert.Contains(t, content, "![Screenshot](./images/api_guide.md.png)")
 	assert.Contains(t, content, "[1]: ./api_guide.md")
-	
+
 	// Verify old links are gone
 	assert.NotContains(t, content, "./api-guide.md")
 	assert.NotContains(t, content, "../api-guide.md")
@@ -162,7 +162,7 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 	require.NoError(t, err)
 
@@ -227,17 +227,17 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 	require.NoError(t, err)
 
 	// Verify all updates preserve relative path structure
 	assert.Len(t, updates, 4)
-	
+
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
-	
+
 	assert.Contains(t, content, "(./api_guide.md)")
 	assert.Contains(t, content, "(../api_guide.md)")
 	assert.Contains(t, content, "(./sub/api_guide.md)")
@@ -276,7 +276,7 @@ See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 	require.NoError(t, err)
 
@@ -284,11 +284,11 @@ See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 	assert.Len(t, updates, 2)
 	assert.Equal(t, "./api_guide.md#overview", updates[0].NewTarget)
 	assert.Equal(t, "./api_guide.md#methods", updates[1].NewTarget)
-	
+
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
-	
+
 	assert.Contains(t, content, "[Overview](./api_guide.md#overview)")
 	assert.Contains(t, content, "[Methods](./api_guide.md#methods)")
 }
@@ -327,7 +327,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 	fixer := &Fixer{}
 	oldPath := filepath.Join(tmpDir, "api-guide.md")
 	newPath := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
 
 	// Verify error was returned
@@ -361,11 +361,11 @@ func TestUpdateLinkTarget(t *testing.T) {
 	fixer := &Fixer{}
 
 	tests := []struct {
-		name      string
-		oldPath   string
-		newPath   string
+		name       string
+		oldPath    string
+		newPath    string
 		linkTarget string
-		expected  string
+		expected   string
 	}{
 		{
 			name:       "same directory",
@@ -476,4 +476,143 @@ Check [API](../API_Guide.md).
 	assert.Contains(t, summary, "Links updated:")
 	assert.Contains(t, summary, "index.md")
 	assert.Contains(t, summary, "README.md")
+}
+
+// TestApplyLinkUpdates_PreservesAnchorFragments tests that anchor fragments (#section) are preserved.
+func TestApplyLinkUpdates_PreservesAnchorFragments(t *testing.T) {
+	tmpDir := t.TempDir()
+	sourceFile := filepath.Join(tmpDir, "source.md")
+
+	// Create source file with links that have anchor fragments
+	sourceContent := `# Documentation
+
+See [Authentication](./api-guide.md#authentication) for auth details.
+
+Also check [Overview](./api-guide.md#overview) section.
+
+Reference to [Errors](../api-guide.md#errors).
+`
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
+
+	// Create link references with anchor fragments
+	links := []LinkReference{
+		{
+			SourceFile: sourceFile,
+			LineNumber: 3,
+			Target:     "./api-guide.md",
+			Fragment:   "#authentication",
+			LinkType:   LinkTypeInline,
+		},
+		{
+			SourceFile: sourceFile,
+			LineNumber: 5,
+			Target:     "./api-guide.md",
+			Fragment:   "#overview",
+			LinkType:   LinkTypeInline,
+		},
+		{
+			SourceFile: sourceFile,
+			LineNumber: 7,
+			Target:     "../api-guide.md",
+			Fragment:   "#errors",
+			LinkType:   LinkTypeInline,
+		},
+	}
+
+	// Apply updates
+	fixer := &Fixer{}
+	oldPath := filepath.Join(tmpDir, "api-guide.md")
+	newPath := filepath.Join(tmpDir, "api_guide.md")
+
+	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
+	require.NoError(t, err)
+
+	// Verify all updates were recorded with fragments preserved
+	// Updates may come in any order due to internal sorting, so check by content
+	assert.Len(t, updates, 3)
+	
+	// Create a map of line numbers to updates for order-independent verification
+	updatesByLine := make(map[int]LinkUpdate)
+	for _, update := range updates {
+		updatesByLine[update.LineNumber] = update
+	}
+	
+	// Verify each expected update exists at the correct line
+	assert.Contains(t, updatesByLine, 3)
+	assert.Equal(t, "./api-guide.md#authentication", updatesByLine[3].OldTarget)
+	assert.Equal(t, "./api_guide.md#authentication", updatesByLine[3].NewTarget)
+	
+	assert.Contains(t, updatesByLine, 5)
+	assert.Equal(t, "./api-guide.md#overview", updatesByLine[5].OldTarget)
+	assert.Equal(t, "./api_guide.md#overview", updatesByLine[5].NewTarget)
+	
+	assert.Contains(t, updatesByLine, 7)
+	assert.Equal(t, "../api-guide.md#errors", updatesByLine[7].OldTarget)
+	assert.Equal(t, "../api_guide.md#errors", updatesByLine[7].NewTarget)
+
+	// Verify file was updated correctly with fragments preserved
+	updatedContent, err := os.ReadFile(sourceFile)
+	require.NoError(t, err)
+	content := string(updatedContent)
+
+	assert.Contains(t, content, "[Authentication](./api_guide.md#authentication)")
+	assert.Contains(t, content, "[Overview](./api_guide.md#overview)")
+	assert.Contains(t, content, "[Errors](../api_guide.md#errors)")
+
+	// Verify old links are gone
+	assert.NotContains(t, content, "./api-guide.md")
+	assert.NotContains(t, content, "../api-guide.md")
+}
+
+// TestApplyLinkUpdates_RollbackOnFailure tests that changes are rolled back on failure.
+func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	source1 := filepath.Join(tmpDir, "source1.md")
+	source2 := filepath.Join(tmpDir, "source2.md")
+
+	// Create first source file
+	originalContent1 := "[API](./api-guide.md)"
+	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0644))
+
+	// Create second source file as read-only to trigger failure
+	originalContent2 := "[API](./api-guide.md)"
+	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0644))
+	require.NoError(t, os.Chmod(source2, 0444)) // Make it read-only
+	defer func() {
+		_ = os.Chmod(source2, 0644) // Clean up (ignore error)
+	}()
+
+	// Create link references - source1 will succeed, source2 will fail
+	links := []LinkReference{
+		{
+			SourceFile: source1,
+			LineNumber: 1,
+			Target:     "./api-guide.md",
+			LinkType:   LinkTypeInline,
+		},
+		{
+			SourceFile: source2,
+			LineNumber: 1,
+			Target:     "./api-guide.md",
+			LinkType:   LinkTypeInline,
+		},
+	}
+
+	// Apply updates - should fail and rollback
+	fixer := &Fixer{}
+	oldPath := filepath.Join(tmpDir, "api-guide.md")
+	newPath := filepath.Join(tmpDir, "api_guide.md")
+
+	_, err := fixer.applyLinkUpdates(links, oldPath, newPath)
+	require.Error(t, err, "should fail when writing to read-only file")
+
+	// Verify source1 was rolled back to original content
+	content1, err := os.ReadFile(source1)
+	require.NoError(t, err)
+	assert.Equal(t, originalContent1, string(content1), "source1 should be rolled back")
+
+	// Verify backup was cleaned up
+	backup1 := source1 + ".backup"
+	_, err = os.Stat(backup1)
+	assert.True(t, os.IsNotExist(err), "backup should be removed after rollback")
 }
