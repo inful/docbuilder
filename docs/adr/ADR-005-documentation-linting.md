@@ -1344,7 +1344,13 @@ Lefthook > pre-commit > lint-docs:
 - [ ] PR comment integration examples
 
 ### Testing
-- [ ] Integration tests with golden files for auto-fix
+- [x] Integration tests with golden files for core lint functionality
+  - [x] Valid scenarios: correct filenames, whitelisted extensions
+  - [x] Invalid scenarios: mixed-case, spaces, special chars, double extensions
+  - [x] Golden file generation with `-update-golden` flag
+  - [x] Normalized path comparison for system-independence
+  - [x] 6 comprehensive test cases covering all current rules
+- [ ] Integration tests for auto-fix functionality (Phase 3)
   - [ ] Before/after directory structures
   - [ ] Link resolution test cases
   - [ ] Edge case validation (external URLs, code blocks)
