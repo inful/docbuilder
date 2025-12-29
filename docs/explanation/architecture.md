@@ -35,7 +35,8 @@ Each stage records duration, outcome, and issues for observability.
 | Discovery | Walk configured doc paths, filter markdown, build `DocFile` list. | `internal/docs/` |
 | Hugo Generator | Emit `hugo.yaml`, content tree, index pages, theme params. | `internal/hugo/` |
 | Transform Pipeline | Fixed-order content processing pipeline with direct mutation. | `internal/hugo/pipeline/` |
-| Relearn Theme | Theme configuration hardcoded for Relearn theme. | `internal/hugo/` (config_writer.go) |
+| Relearn Theme | Single hardcoded theme with specific parameter defaults (not extensible). | `internal/hugo/` (config_writer.go) |
+| Daemon Service | Long-running HTTP service for incremental builds and monitoring. | `internal/daemon/` |
 | Forge Integration | GitHub/GitLab/Forgejo API clients. | `internal/forge/` |
 | Error Foundation | Classified error system with retry strategies. | `internal/foundation/errors/` |
 | Report | Aggregate metrics & fingerprints for external tooling. | `internal/hugo/` |
@@ -47,8 +48,14 @@ Forge namespacing (conditional `content/<forge>/<repo>/...`) prevents collisions
 ## Idempotence & Change Detection
 
 - Repository update strategy (`clone_strategy`) avoids unnecessary reclones.
+- **Delta Detection**: QuickHash comparison tracks repository changes between builds
+  - `quick_hash_diff`: Git commit hash changed (most common)
+  - `assumed_changed`: Unable to verify, assumes changed for safety
+  - `unknown`: Change detection failed or unavailable
 - Combined check: unchanged repo heads + identical doc file set ⇒ logged and optionally triggers early exit (when output already valid).
-- `doc_files_hash` offers external determinism for CI/CD.
+- **Skip Evaluation**: Daemon mode intelligently decides between `full_rebuild`, `incremental`, or `skip`
+- `doc_files_hash` (SHA-256 of sorted content paths) offers external determinism for CI/CD.
+- `config_hash` enables detection of configuration changes requiring full rebuilds.
 
 ## Error & Retry Model
 
@@ -106,6 +113,34 @@ Each markdown file passes through a fixed-order transform pipeline:
 
 Optional top-level pruning removes non-doc directories to shrink workspace footprint—controlled with allow/deny precedence rules to avoid accidental removal of required assets.
 
+## Daemon Mode
+
+DocBuilder can run as a long-running HTTP service for incremental builds and continuous deployment:
+
+**Core Features:**
+- **Incremental Builds**: Detects repository changes and rebuilds only affected content
+- **HTTP API**: Endpoints for triggering builds, health checks, metrics
+- **Live Reload**: Automatic browser refresh during development
+- **Build Queue**: Manages concurrent build requests with retry logic
+- **State Persistence**: Tracks repository state across restarts (`daemon-state.json`)
+- **Event Stream**: Real-time build progress notifications
+
+**Delta Detection Strategy** (`internal/daemon/delta_manager.go`):
+1. Compare current repository commit hashes with last known state
+2. Classify changes: `quick_hash_diff`, `assumed_changed`, `unknown`
+3. Decide build strategy: `full_rebuild`, `incremental`, or `skip`
+4. Update state file after successful build
+
+**Scheduler** (`internal/daemon/scheduler.go`):
+- Periodic rebuild scheduling (cron-like intervals)
+- Debouncing to prevent excessive builds
+- Graceful shutdown with build completion
+
+**Observability:**
+- Prometheus metrics (build duration, success rate, queue depth)
+- Health endpoints (liveness, readiness)
+- Structured logging with build metadata
+
 ## Design Rationale Highlights
 
 | Concern | Approach |
@@ -120,9 +155,10 @@ Optional top-level pruning removes non-doc directories to shrink workspace footp
 
 - **Add new transform**: Create function in `internal/hugo/pipeline/transforms.go` and add to `defaultTransforms()` list
 - **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list  
-- **Add new theme**: Implement `Theme` interface in `internal/hugo/theme/themes/`
+- **Theme customization**: Relearn is hardcoded; customize via `params` in config or override templates in `layouts/` (see [use-relearn-theme.md](../how-to/use-relearn-theme.md))
 - **Additional issue codes**: Augment taxonomy without breaking consumers
 - **Future caching**: Leverage `doc_files_hash` for selective downstream regeneration
+- **Daemon endpoints**: Add new HTTP handlers in `internal/daemon/` for custom workflows
 
 ## Non-Goals
 
