@@ -306,6 +306,55 @@ Relearn includes many built-in shortcodes for rich content:
 
 See [Relearn Shortcodes Documentation](https://mcshelby.github.io/hugo-theme-relearn/shortcodes/notice) for full list.
 
+## Advanced Customization
+
+### Template Overriding
+
+DocBuilder allows you to override the default index page templates. Place your custom templates in the output directory before running the build:
+
+```text
+outputDir/
+  templates/
+    index/
+      main.md.tmpl        # Override main index
+      repository.md.tmpl  # Override repository index
+      section.md.tmpl     # Override section index
+```
+
+**Template Search Order** (first match wins):
+1. `templates/index/<kind>.md.tmpl`
+2. `templates/index/<kind>.tmpl`
+3. `templates/<kind>_index.tmpl`
+
+If no custom template matches, DocBuilder uses its embedded default template.
+
+### Front Matter Control
+
+DocBuilder automatically injects front matter into generated index pages with computed metadata (title, repository, section, forge, dates, edit links, etc.).
+
+**Automatic Injection:**
+```markdown
+# My Content
+
+This gets front matter injected automatically.
+```
+
+**Disable Injection:**
+If your template already includes YAML front matter (starts with `---`), DocBuilder will not inject its own:
+
+```markdown
+---
+title: "Custom Title"
+weight: 10
+---
+
+# My Content
+
+DocBuilder won't inject front matter because it's already present.
+```
+
+This gives you complete control over front matter when needed while providing sensible defaults for most cases.
+
 ## Troubleshooting
 
 ### Theme Not Loading
@@ -333,6 +382,14 @@ repositories:
   - url: https://github.com/example/docs.git  # Must be a valid forge URL
     branch: main
 ```
+
+### Theme Assets Missing
+
+If theme CSS/JS don't load, ensure Hugo has been run to build the site. You can also configure `render_mode: always` to force Hugo execution on every build.
+
+### Theme Variant Not Applied
+
+Check for typos in your `params.themeVariant` configuration. Valid values include: `relearn-light`, `relearn-dark`, `zen-light`, `zen-dark`, `neon`, `learn`, `blue`, `green`, `red`, or `auto`.
 
 ## Resources
 
