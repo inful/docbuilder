@@ -60,8 +60,12 @@ Common problematic patterns:
 		return issues, nil
 	}
 
+	// Track if we've already reported uppercase to avoid duplicate "special chars" errors
+	hasUppercaseIssue := false
+
 	// Check for uppercase letters
 	if hasUppercase(filename) {
+		hasUppercaseIssue = true
 		suggested := strings.ToLower(filename)
 		issues = append(issues, Issue{
 			FilePath: filePath,
@@ -105,7 +109,8 @@ Why this matters:
 	}
 
 	// Check for special characters (except allowed ones)
-	if hasSpecialChars(filename) {
+	// Skip this check if we already reported uppercase (avoid duplicate errors)
+	if !hasUppercaseIssue && hasSpecialChars(filename) {
 		suggested := suggestFilename(filename)
 		invalidChars := findSpecialChars(filename)
 		issues = append(issues, Issue{
