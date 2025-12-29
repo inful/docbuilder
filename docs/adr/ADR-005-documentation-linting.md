@@ -1316,10 +1316,14 @@ Lefthook > pre-commit > lint-docs:
   - [x] Comprehensive test coverage (8 tests)
   - [ ] Interactive confirmation prompts (deferred to Phase 3e)
   - [ ] Detailed preview of changes (deferred to Phase 3e)
-- [ ] Phase 3b: Link discovery and path resolution
-  - [ ] Regex patterns for inline, reference, image links
-  - [ ] Relative path resolution to absolute workspace paths
-  - [ ] Link reference tracking (source file, line number, type)
+- [x] Phase 3b: Link discovery and path resolution
+  - [x] Regex patterns for inline, reference, image links
+  - [x] Relative path resolution to absolute workspace paths
+  - [x] Link reference tracking (source file, line number, type)
+  - [x] External URL detection and exclusion
+  - [x] Code block detection and exclusion
+  - [x] Anchor fragment preservation
+  - [x] Comprehensive test coverage (13 tests, 379 lines)
 - [ ] Phase 3c: Link updates with atomic operations
   - [ ] Generate replacement text preserving style
   - [ ] Atomic file updates with rollback
