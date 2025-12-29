@@ -584,10 +584,17 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	var brokenLinks []BrokenLink
 	lines := strings.Split(string(content), "\n")
 
+	inCodeBlock := false
 	for lineNum, line := range lines {
-		// Skip code blocks
+		// Track code block boundaries
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+
+		// Skip lines inside code blocks or indented code blocks
+		if inCodeBlock || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
 			continue
 		}
 
@@ -607,12 +614,28 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	return brokenLinks, nil
 }
 
+// isInsideInlineCode checks if a position in a line is inside inline code (backticks).
+func isInsideInlineCode(line string, pos int) bool {
+	backtickCount := 0
+	for i := 0; i < pos && i < len(line); i++ {
+		if line[i] == '`' {
+			backtickCount++
+		}
+	}
+	// If odd number of backticks before position, we're inside inline code
+	return backtickCount%2 == 1
+}
+
 // checkInlineLinksBroken checks for broken inline links in a line.
 func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
 	var broken []BrokenLink
 
 	for i := 0; i < len(line); i++ {
 		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
+			// Skip if this link is inside inline code
+			if isInsideInlineCode(line, i) {
+				continue
+			}
 			start := -1
 			for j := i - 1; j >= 0; j-- {
 				if line[j] == '[' {
@@ -675,6 +698,11 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 		return broken
 	}
 
+	// Skip if the entire line is inside inline code
+	if isInsideInlineCode(line, 0) {
+		return broken
+	}
+
 	endBracket := strings.Index(trimmed, "]:")
 	if endBracket == -1 {
 		return broken
@@ -728,6 +756,10 @@ func checkImageLinksBroken(line string, lineNum int, sourceFile string) []Broken
 
 	for i := 0; i < len(line); i++ {
 		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
+			// Skip if this image link is inside inline code
+			if isInsideInlineCode(line, i) {
+				continue
+			}
 			closeBracket := strings.Index(line[i+2:], "]")
 			if closeBracket == -1 {
 				continue
