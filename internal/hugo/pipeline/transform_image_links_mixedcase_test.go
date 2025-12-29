@@ -29,7 +29,7 @@ func TestRewriteImageLinks_MixedCaseFilename(t *testing.T) {
 	// Link should be: /test-repo/guides/images/6_3_approve_mr.png
 	expectedPath := "/test-repo/guides/images/6_3_approve_MR.png"
 	actualLowercasePath := "/test-repo/guides/images/6_3_approve_mr.png"
-	
+
 	// Currently the link rewriter does NOT lowercase, causing a mismatch
 	if strings.Contains(doc.Content, expectedPath) {
 		t.Logf("Link rewriter preserved case: %s", expectedPath)
@@ -40,7 +40,7 @@ func TestRewriteImageLinks_MixedCaseFilename(t *testing.T) {
 	} else {
 		t.Errorf("Link rewriter produced unexpected output:\n%s", doc.Content)
 	}
-	
+
 	// The correct behavior is to lowercase the entire path including filename
 	assert.Contains(t, doc.Content, actualLowercasePath,
 		"Image link should be fully lowercase to match the written file path")
@@ -59,15 +59,15 @@ func TestRewriteImageLinks_MixedCaseWithForge(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("Rewritten content: %s", doc.Content)
-	
+
 	// The path ../images from guides/advanced goes to guides/images
 	// Should be lowercased: /github/test-repo/guides/images/save_button.png
 	expectedLowercase := "/github/test-repo/guides/images/save_button.png"
-	
+
 	// Check if it's lowercase (even if ../  is still there, at least filename should be lowercase)
 	assert.Contains(t, doc.Content, "save_button.png",
 		"Image filename should be lowercase")
-	
+
 	// Ideally should clean up ../ but that's a separate issue
 	if strings.Contains(doc.Content, expectedLowercase) {
 		t.Logf("SUCCESS: Fully normalized path: %s", expectedLowercase)

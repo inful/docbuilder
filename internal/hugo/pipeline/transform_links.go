@@ -171,7 +171,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		// Extract directory from document path for relative link context
 		docDir := extractDirectory(docPath)
-		
+
 		if docDir != "" {
 			// Regular file in subdirectory - relative link is relative to that directory
 			if forge != "" {
@@ -198,7 +198,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 func extractDirectory(hugoPath string) string {
 	// Remove leading slash if present
 	hugoPath = strings.TrimPrefix(hugoPath, "/")
-	
+
 	// Strip content/ prefix if present (Hugo content directory)
 	hugoPath = strings.TrimPrefix(hugoPath, "content/")
 
@@ -238,10 +238,10 @@ func extractDirectory(hugoPath string) string {
 func rewriteImagePath(path, repository, forge, section string) string {
 	// Normalize the path first (remove ./ prefix, collapse ../, lowercase)
 	path = strings.TrimPrefix(path, "./")
-	
+
 	// Lowercase the entire path including filename and extension for URL compatibility
 	path = strings.ToLower(path)
-	
+
 	// Prepend repository and section path if relative
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		// Build the full path including the document's section
