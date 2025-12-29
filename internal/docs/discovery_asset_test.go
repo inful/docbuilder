@@ -141,3 +141,63 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 	assert.Equal(t, filepath.Join("content", "test-repo", "images", "logo.png"), imageFile.GetHugoPath(),
 		"Image should preserve images/ subdirectory")
 }
+
+func TestAssetMixedCaseFilename(t *testing.T) {
+	// Test case: Image files with mixed case like 6_3_approve_MR.png
+	// Should be normalized to lowercase for URL compatibility
+	tmpDir := t.TempDir()
+	repoPath := filepath.Join(tmpDir, "test-repo")
+	docsPath := filepath.Join(repoPath, "docs")
+	imagesPath := filepath.Join(docsPath, "images")
+	
+	require.NoError(t, os.MkdirAll(imagesPath, 0o755))
+	
+	// Create markdown referencing mixed-case image
+	mdContent := []byte("# Guide\n\n![Approve button](./images/6_3_approve_MR.png)")
+	require.NoError(t, os.WriteFile(filepath.Join(docsPath, "tutorial.md"), mdContent, 0o644))
+	
+	// Create image with mixed-case filename
+	imageContent := []byte("fake png content")
+	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "6_3_approve_MR.png"), imageContent, 0o644))
+	
+	cfg := &config.Config{
+		Repositories: []config.Repository{
+			{
+				Name:  "test-repo",
+				Paths: []string{"docs"},
+				Tags:  map[string]string{},
+			},
+		},
+	}
+	
+	disc := NewDiscovery(cfg.Repositories, &config.BuildConfig{})
+	files, err := disc.DiscoverDocs(map[string]string{
+		"test-repo": repoPath,
+	})
+	require.NoError(t, err)
+	
+	// Find the image file
+	var imageFile *DocFile
+	for i := range files {
+		if files[i].Extension == ".png" {
+			imageFile = &files[i]
+			break
+		}
+	}
+	
+	require.NotNil(t, imageFile)
+	
+	// Image filename should be normalized to lowercase
+	hugoPath := imageFile.GetHugoPath()
+	expectedPath := filepath.Join("content", "test-repo", "images", "6_3_approve_mr.png")
+	
+	t.Logf("Image Hugo Path: %s", hugoPath)
+	t.Logf("Expected Path: %s", expectedPath)
+	t.Logf("Image Name: %s", imageFile.Name)
+	t.Logf("Image Extension: %s", imageFile.Extension)
+	
+	assert.Equal(t, expectedPath, hugoPath,
+		"Image filename should be fully lowercase for URL compatibility, including extension")
+	assert.Equal(t, "6_3_approve_MR", imageFile.Name, "Original name preserved in struct")
+	assert.Equal(t, ".png", imageFile.Extension, "Original extension preserved in struct")
+}
