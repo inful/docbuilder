@@ -1,28 +1,33 @@
 package lint
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Fixer performs automatic fixes for linting issues.
 type Fixer struct {
-	linter   *Linter
-	dryRun   bool
-	force    bool
-	gitAware bool
+	linter      *Linter
+	dryRun      bool
+	force       bool
+	gitAware    bool
+	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
 }
 
 // NewFixer creates a new fixer with the given linter and options.
 func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 	return &Fixer{
-		linter:   linter,
-		dryRun:   dryRun,
-		force:    force,
-		gitAware: isGitRepository("."),
+		linter:      linter,
+		dryRun:      dryRun,
+		force:       force,
+		gitAware:    isGitRepository("."),
+		autoConfirm: false,
 	}
 }
 
@@ -80,7 +85,66 @@ type LinkReference struct {
 }
 
 // Fix attempts to automatically fix issues found in the given path.
+// For interactive use with confirmation prompts, use FixWithConfirmation instead.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
+	return f.fix(path, false)
+}
+
+// FixWithConfirmation fixes issues with interactive confirmation prompts.
+// Shows a preview of changes and prompts the user before applying.
+// Creates a backup of modified files before making changes.
+func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
+	// If in dry-run mode, no need for confirmation or backup
+	if f.dryRun {
+		return f.fix(path, false)
+	}
+
+	// Phase 1: Preview changes (dry-run mode internally)
+	originalDryRun := f.dryRun
+	f.dryRun = true
+	previewResult, err := f.fix(path, false)
+	f.dryRun = originalDryRun
+
+	if err != nil {
+		return nil, err
+	}
+
+	// If no changes to make, return early
+	if !previewResult.HasChanges() {
+		return previewResult, nil
+	}
+
+	// Phase 2: Show preview and get confirmation (unless auto-confirm)
+	confirmed, err := f.ConfirmChanges(previewResult)
+	if err != nil {
+		return nil, fmt.Errorf("confirmation failed: %w", err)
+	}
+
+	if !confirmed {
+		return previewResult, fmt.Errorf("user cancelled operation")
+	}
+
+	// Phase 3: Create backup (always, even with auto-confirm)
+	rootPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	backupDir, err := f.CreateBackup(previewResult, rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create backup: %w", err)
+	}
+
+	if backupDir != "" {
+		fmt.Printf("Created backup: %s\n", backupDir)
+	}
+
+	// Phase 4: Apply fixes
+	return f.fix(path, true)
+}
+
+// fix is the internal implementation that actually performs the fixes.
+func (f *Fixer) fix(path string, skipPrompts bool) (*FixResult, error) {
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {
@@ -164,6 +228,120 @@ func (f *Fixer) canFixFilename(issues []Issue) bool {
 		}
 	}
 	return false
+}
+
+// WithAutoConfirm sets the auto-confirm flag for non-interactive mode.
+// When true, skips confirmation prompts (useful for CI/automated workflows).
+func (f *Fixer) WithAutoConfirm(autoConfirm bool) *Fixer {
+	f.autoConfirm = autoConfirm
+	return f
+}
+
+// ConfirmChanges prompts the user to confirm the proposed changes.
+// Returns true if user confirms, false if they decline or if there's an error.
+// Automatically returns true if autoConfirm is enabled or in dry-run mode.
+func (f *Fixer) ConfirmChanges(result *FixResult) (bool, error) {
+	// Auto-confirm in dry-run mode or if autoConfirm flag is set
+	if f.dryRun || f.autoConfirm {
+		return true, nil
+	}
+
+	// Nothing to confirm if no changes
+	if !result.HasChanges() {
+		return true, nil
+	}
+
+	// Show preview
+	fmt.Println(result.PreviewChanges())
+
+	// Prompt for confirmation
+	fmt.Printf("Proceed with these changes? [y/N]: ")
+	reader := bufio.NewReader(os.Stdin)
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		return false, fmt.Errorf("failed to read user input: %w", err)
+	}
+
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "y" || response == "yes", nil
+}
+
+// CreateBackup creates a backup of files that will be modified.
+// Returns the backup directory path and any error encountered.
+func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error) {
+	// Skip backup in dry-run mode
+	if f.dryRun {
+		return "", nil
+	}
+
+	// Create backup directory with timestamp
+	timestamp := time.Now().Format("20060102-150405")
+	backupDir := filepath.Join(rootPath, fmt.Sprintf(".docbuilder-backup-%s", timestamp))
+
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create backup directory: %w", err)
+	}
+
+	// Backup files that will be renamed
+	for _, rename := range result.FilesRenamed {
+		if err := f.backupFile(rename.OldPath, backupDir, rootPath); err != nil {
+			return "", fmt.Errorf("failed to backup %s: %w", rename.OldPath, err)
+		}
+	}
+
+	// Backup files that will have links updated
+	backedUp := make(map[string]bool)
+	for _, update := range result.LinksUpdated {
+		// Avoid backing up the same file multiple times
+		if backedUp[update.SourceFile] {
+			continue
+		}
+		if err := f.backupFile(update.SourceFile, backupDir, rootPath); err != nil {
+			return "", fmt.Errorf("failed to backup %s: %w", update.SourceFile, err)
+		}
+		backedUp[update.SourceFile] = true
+	}
+
+	return backupDir, nil
+}
+
+// backupFile copies a file to the backup directory, preserving directory structure.
+func (f *Fixer) backupFile(filePath, backupDir, rootPath string) error {
+	// Get relative path from root
+	relPath, err := filepath.Rel(rootPath, filePath)
+	if err != nil {
+		// If relative path fails, use just the filename
+		relPath = filepath.Base(filePath)
+	}
+
+	// Create destination path in backup directory
+	backupPath := filepath.Join(backupDir, relPath)
+
+	// Create parent directories
+	if err := os.MkdirAll(filepath.Dir(backupPath), 0755); err != nil {
+		return err
+	}
+
+	// Copy file
+	return f.copyFile(filePath, backupPath)
+}
+
+// copyFile copies a file from src to dst.
+func (f *Fixer) copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = sourceFile.Close() }()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = destFile.Close() }()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }
 
 // renameFile renames a file to fix filename issues.
@@ -1011,4 +1189,122 @@ func (fr *FixResult) Summary() string {
 	}
 
 	return b.String()
+}
+
+// PreviewChanges returns a detailed preview of what will be changed.
+// This is shown to users before applying fixes for confirmation.
+func (fr *FixResult) PreviewChanges() string {
+	var b strings.Builder
+
+	b.WriteString("The following changes will be made:\n\n")
+
+	// File renames section
+	if len(fr.FilesRenamed) > 0 {
+		b.WriteString("FILE RENAMES:\n")
+		for _, rename := range fr.FilesRenamed {
+			oldName := filepath.Base(rename.OldPath)
+			newName := filepath.Base(rename.NewPath)
+			b.WriteString(fmt.Sprintf("  %s → %s\n", oldName, newName))
+		}
+		b.WriteString("\n")
+	}
+
+	// Links to update section
+	if len(fr.LinksUpdated) > 0 {
+		// Group by source file
+		fileUpdates := make(map[string][]LinkUpdate)
+		for _, update := range fr.LinksUpdated {
+			filename := filepath.Base(update.SourceFile)
+			fileUpdates[filename] = append(fileUpdates[filename], update)
+		}
+
+		b.WriteString("LINKS TO UPDATE:\n")
+		for filename, updates := range fileUpdates {
+			b.WriteString(fmt.Sprintf("  • %s (%d link%s)\n", filename, len(updates), pluralize(len(updates))))
+		}
+		b.WriteString("\n")
+	}
+
+	// Statistics
+	b.WriteString("SUMMARY:\n")
+	b.WriteString(fmt.Sprintf("  • %d file%s will be renamed\n", len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed))))
+	b.WriteString(fmt.Sprintf("  • %d link%s will be updated\n", len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated))))
+	if len(fr.BrokenLinks) > 0 {
+		b.WriteString(fmt.Sprintf("  • %d broken link%s detected\n", len(fr.BrokenLinks), pluralize(len(fr.BrokenLinks))))
+	}
+
+	return b.String()
+}
+
+// DetailedPreview returns a line-by-line preview of what will change.
+// This is shown in dry-run mode to see exact before/after states.
+func (fr *FixResult) DetailedPreview() string {
+	var b strings.Builder
+
+	b.WriteString("DETAILED CHANGES PREVIEW\n")
+	b.WriteString(strings.Repeat("=", 60) + "\n\n")
+
+	// File renames with full paths
+	if len(fr.FilesRenamed) > 0 {
+		b.WriteString("[File Renames]\n")
+		for i, rename := range fr.FilesRenamed {
+			b.WriteString(fmt.Sprintf("%d. %s\n", i+1, rename.OldPath))
+			b.WriteString(fmt.Sprintf("   → %s\n\n", rename.NewPath))
+		}
+	}
+
+	// Link updates with before/after
+	if len(fr.LinksUpdated) > 0 {
+		b.WriteString("[Link Updates]\n")
+		for i, update := range fr.LinksUpdated {
+			b.WriteString(fmt.Sprintf("%d. %s:%d\n", i+1, update.SourceFile, update.LineNumber))
+			b.WriteString(fmt.Sprintf("   Before: %s\n", update.OldTarget))
+			b.WriteString(fmt.Sprintf("   After:  %s\n\n", update.NewTarget))
+		}
+	}
+
+	// Broken links section
+	if len(fr.BrokenLinks) > 0 {
+		b.WriteString("[Broken Links Detected]\n")
+		for i, broken := range fr.BrokenLinks {
+			linkTypeStr := "link"
+			switch broken.LinkType {
+			case LinkTypeImage:
+				linkTypeStr = "image"
+			case LinkTypeReference:
+				linkTypeStr = "reference"
+			}
+			b.WriteString(fmt.Sprintf("%d. %s:%d (%s)\n", i+1, broken.SourceFile, broken.LineNumber, linkTypeStr))
+			b.WriteString(fmt.Sprintf("   Target: %s (file not found)\n\n", broken.Target))
+		}
+	}
+
+	b.WriteString(strings.Repeat("=", 60) + "\n")
+	b.WriteString(fmt.Sprintf("Total: %d file%s, %d link%s\n",
+		len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed)),
+		len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated))))
+
+	return b.String()
+}
+
+// HasChanges returns true if there are any fixes to apply.
+func (fr *FixResult) HasChanges() bool {
+	return len(fr.FilesRenamed) > 0 || len(fr.LinksUpdated) > 0
+}
+
+// CountAffectedFiles returns the number of unique files that will be modified.
+func (fr *FixResult) CountAffectedFiles() int {
+	affected := make(map[string]bool)
+
+	// Files being renamed
+	for _, rename := range fr.FilesRenamed {
+		affected[rename.OldPath] = true
+	}
+
+	// Files with link updates
+	for _, update := range fr.LinksUpdated {
+		affected[update.SourceFile] = true
+	}
+
+	return len(affected)
 }
