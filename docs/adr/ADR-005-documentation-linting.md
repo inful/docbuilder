@@ -1308,10 +1308,14 @@ Lefthook > pre-commit > lint-docs:
 
 ### Phase 3: Auto-Fix Capability (Link Resolution)
 - [x] Comprehensive link resolution strategy documented in ADR
-- [ ] Phase 3a: Basic file renaming with git mv support
-  - [ ] File rename implementation
-  - [ ] Confirmation prompts
-  - [ ] Dry-run mode (`--fix --dry-run`)
+- [x] Phase 3a: Basic file renaming with git mv support
+  - [x] File rename implementation
+  - [x] Git mv integration for history preservation
+  - [x] Dry-run mode (`--fix --dry-run`)
+  - [x] Force flag for overwriting existing files
+  - [x] Comprehensive test coverage (8 tests)
+  - [ ] Interactive confirmation prompts (deferred to Phase 3e)
+  - [ ] Detailed preview of changes (deferred to Phase 3e)
 - [ ] Phase 3b: Link discovery and path resolution
   - [ ] Regex patterns for inline, reference, image links
   - [ ] Relative path resolution to absolute workspace paths
