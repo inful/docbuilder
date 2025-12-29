@@ -66,7 +66,7 @@ Common problematic patterns:
 	// Check for uppercase letters
 	if hasUppercase(filename) {
 		hasUppercaseIssue = true
-		suggested := strings.ToLower(filename)
+		suggested := SuggestFilename(filename)
 		issues = append(issues, Issue{
 			FilePath: filePath,
 			Severity: SeverityError,
@@ -88,7 +88,7 @@ Why this matters:
 
 	// Check for spaces
 	if strings.Contains(filename, " ") {
-		suggested := suggestFilename(filename)
+		suggested := SuggestFilename(filename)
 		issues = append(issues, Issue{
 			FilePath: filePath,
 			Severity: SeverityError,
@@ -111,7 +111,7 @@ Why this matters:
 	// Check for special characters (except allowed ones)
 	// Skip this check if we already reported uppercase (avoid duplicate errors)
 	if !hasUppercaseIssue && hasSpecialChars(filename) {
-		suggested := suggestFilename(filename)
+		suggested := SuggestFilename(filename)
 		invalidChars := findSpecialChars(filename)
 		issues = append(issues, Issue{
 			FilePath: filePath,
@@ -134,7 +134,7 @@ Invalid characters found: ` + strings.Join(invalidChars, ", "),
 	nameWithoutExt := strings.TrimSuffix(filename, filepath.Ext(filename))
 	if strings.HasPrefix(nameWithoutExt, "-") || strings.HasPrefix(nameWithoutExt, "_") ||
 		strings.HasSuffix(nameWithoutExt, "-") || strings.HasSuffix(nameWithoutExt, "_") {
-		suggested := suggestFilename(filename)
+		suggested := SuggestFilename(filename)
 		issues = append(issues, Issue{
 			FilePath: filePath,
 			Severity: SeverityError,
@@ -225,8 +225,8 @@ func findSpecialChars(filename string) []string {
 	return chars
 }
 
-// suggestFilename returns a suggested filename following conventions.
-func suggestFilename(filename string) string {
+// SuggestFilename returns a suggested filename following conventions.
+func SuggestFilename(filename string) string {
 	// Separate extension
 	ext := filepath.Ext(filename)
 	name := strings.TrimSuffix(filename, ext)
