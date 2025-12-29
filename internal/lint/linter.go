@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Linter performs linting operations on documentation files.
@@ -68,6 +69,11 @@ func (l *Linter) lintDirectory(dirPath string, result *Result) error {
 			return nil
 		}
 
+		// Skip standard ignored files (case-insensitive)
+		if isIgnoredFile(d.Name()) {
+			return nil
+		}
+
 		// Only process documentation and asset files
 		if !IsDocFile(path) && !IsAssetFile(path) {
 			return nil
@@ -111,6 +117,11 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	for _, file := range files {
+		// Skip standard ignored files
+		if isIgnoredFile(filepath.Base(file)) {
+			continue
+		}
+
 		// Only process documentation and asset files
 		if !IsDocFile(file) && !IsAssetFile(file) {
 			continue
@@ -128,4 +139,26 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+// isIgnoredFile returns true if the file should be ignored during linting.
+// These are standard repository files that don't follow documentation naming conventions.
+func isIgnoredFile(filename string) bool {
+	// Convert to uppercase for case-insensitive comparison
+	upper := strings.ToUpper(filename)
+	ignoredFiles := []string{
+		"README.MD",
+		"CONTRIBUTING.MD",
+		"CHANGELOG.MD",
+		"LICENSE.MD",
+		"CODE_OF_CONDUCT.MD",
+		"SECURITY.MD",
+	}
+
+	for _, ignored := range ignoredFiles {
+		if upper == ignored {
+			return true
+		}
+	}
+	return false
 }

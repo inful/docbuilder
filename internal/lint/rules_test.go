@@ -26,7 +26,7 @@ func TestFilenameRule_ValidFiles(t *testing.T) {
 		t.Run(file, func(t *testing.T) {
 			issues, err := rule.Check(file)
 			require.NoError(t, err)
-			
+
 			// Should have no errors or warnings
 			hasProblems := false
 			for _, issue := range issues {
@@ -323,7 +323,7 @@ func TestDetectDefaultPath(t *testing.T) {
 	// Note: This test depends on the actual filesystem.
 	// In the DocBuilder project, we should have a docs/ directory.
 	path, found := DetectDefaultPath()
-	
+
 	// Should detect "docs" if it exists
 	if found {
 		assert.Equal(t, "docs", path, "Should detect docs directory")
