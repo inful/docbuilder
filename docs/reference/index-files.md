@@ -12,6 +12,22 @@ DocBuilder generates Hugo `_index.md` files at three levels:
 
 Users can provide their own index content to replace auto-generated indexes.
 
+## Transform Pipeline Processing
+
+All index files are processed through DocBuilder's fixed transform pipeline, which applies transformations in a specific order:
+
+1. **normalizeIndexFiles** - Automatically converts `README.md` → `_index.md` for Hugo compatibility
+2. **buildBaseFrontMatter** - Adds default metadata (title, type, date, repository)
+3. **extractIndexTitle** - Extracts H1 heading as title for index pages
+4. **rewriteRelativeLinks** - Fixes markdown links to work in Hugo (`.md` → `/`, directory-style)
+5. **rewriteImageLinks** - Corrects image paths relative to content root
+6. **addRepositoryMetadata** - Injects repository/forge/commit information
+7. **addEditLink** - Generates edit URLs for source links
+
+This ensures all index files (whether user-provided or auto-generated) receive consistent processing and link rewriting.
+
+For more details on the transform pipeline, see [Content Transform Pipeline](content-transforms.md) and [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md).
+
 ## Repository-Level Indexes
 
 At the repository level (directly under the configured `paths`), DocBuilder supports three scenarios:
@@ -23,13 +39,13 @@ When a repository contains only a `README.md` file at the root of the docs path:
 ```
 your-repo/
   docs/
-    README.md          ← Used as repository _index.md
+    README.md          ← Automatically converted to _index.md by pipeline
     guide.md
     api/
       reference.md
 ```
 
-**Behavior**: `README.md` is used as the repository's main index page.
+**Behavior**: `README.md` is automatically normalized to `_index.md` by the `normalizeIndexFiles` transform. The transform pipeline then processes it like any other document (link rewriting, metadata injection, etc.).
 
 ### Case 2: No User-Provided Index
 
@@ -52,13 +68,13 @@ When a repository contains an `index.md` file:
 ```
 your-repo/
   docs/
-    index.md           ← Used as repository _index.md
+    index.md           ← Automatically converted to _index.md by pipeline
     guide.md
     api/
       reference.md
 ```
 
-**Behavior**: `index.md` is used as the repository's main index page.
+**Behavior**: `index.md` is automatically normalized to `_index.md` by the `normalizeIndexFiles` transform, just like README.md files.
 
 ### Case 4: Both index.md and README.md
 
@@ -67,33 +83,40 @@ When both files exist at the repository root:
 ```
 your-repo/
   docs/
-    README.md          ← Copied as regular document (readme.md)
-    index.md           ← Used as repository _index.md
+    README.md          ← Processed as regular document, accessible at /repo/readme/
+    index.md           ← Normalized to _index.md (takes precedence)
     guide.md
 ```
 
 **Behavior**: 
-- `index.md` takes precedence and becomes the repository's `_index.md`
-- `README.md` is copied as a regular document and accessible at `/repo/readme/`
+- Both files are discovered and processed through the transform pipeline
+- `index.md` is normalized to `_index.md` first (takes precedence for the repository index)
+- `README.md` is **also** normalized to `_index.md` but is renamed to prevent collision
+- The original `README.md` position in the pipeline ensures it's accessible at `/repo/readme/`
 
 **Precedence Order**: `index.md` > `README.md` > auto-generated
 
+**Implementation Note**: This precedence is handled during the generation phase, before transforms run. The pipeline only receives files that should exist in the final site.
+
 ## Section-Level Indexes
 
-Within sections (subdirectories), only `index.md` files are recognized as section indexes:
+Within sections (subdirectories), `README.md` or `index.md` files are recognized as section indexes:
 
 ```
 your-repo/
   docs/
     api/
-      index.md         ← Used as section _index.md
+      index.md         ← Normalized to _index.md by pipeline
       endpoint-a.md
       endpoint-b.md
+    guides/
+      README.md        ← Also normalized to _index.md
+      tutorial.md
 ```
 
-**Behavior**: `index.md` in a section directory becomes that section's `_index.md`.
+**Behavior**: Both `README.md` and `index.md` in a section directory are normalized to `_index.md` by the transform pipeline. If both exist in the same section, `index.md` takes precedence (same as repository-level).
 
-If no `index.md` exists, DocBuilder generates a section index listing all documents in that section.
+If no user-provided index exists, the generation phase creates a section index listing all documents in that section. Generated indexes are then processed through the same transform pipeline.
 
 ## File Naming Conventions
 
@@ -101,7 +124,8 @@ Important notes about file naming:
 
 1. **Case-Insensitive**: `README.md`, `readme.md`, `Readme.md` are all treated the same
 2. **Lowercase URLs**: Files are converted to lowercase for URLs (`README.md` → `/repo/readme/`)
-3. **index.md Conversion**: Files named `index.md` are automatically converted to `_index.md` in Hugo's content directory
+3. **Automatic Normalization**: Both `README.md` and `index.md` are automatically converted to `_index.md` by the `normalizeIndexFiles` transform early in the pipeline
+4. **Hugo Compatibility**: The `_index.md` naming is required by Hugo for section/repository index pages
 
 ## Configuration Impact
 
@@ -155,36 +179,46 @@ weight: 10
 Custom content here...
 ```
 
-If no front matter is present, DocBuilder adds minimal front matter automatically:
+If no front matter is present, the `buildBaseFrontMatter` transform adds it automatically:
 
 ```yaml
-title: Repository Name
-repository: repository-name
-type: docs
-date: 2025-12-12T15:30:00Z
+title: Repository Name        # Extracted from filename or H1
+repository: repository-name   # Source repository
+type: docs                    # Hugo content type
+date: 2025-12-12T15:30:00Z   # Commit date or fixed epoch
 ```
+
+Additional metadata is injected by later transforms:
+- `editURL` - Added by `addEditLink` transform if repository forge is configured
+- Repository/commit info - Added by `addRepositoryMetadata` transform
+
+User-provided front matter takes precedence and is merged with auto-generated fields.
 
 ## Ignored Files
 
-The following files are ignored at the repository root level (but can exist in subdirectories):
+The following files are **filtered during discovery** and never enter the processing pipeline:
 
 - `CONTRIBUTING.md`
-- `CHANGELOG.md`
+- `CHANGELOG.md`  
 - `LICENSE.md`
+- `CODE_OF_CONDUCT.md`
+- `.github/` directory contents
 
-These are typically repository-level documentation not relevant to the generated docs site.
+These files are typically repository-level documentation not relevant to the generated docs site and are excluded at discovery time regardless of location (root or subdirectories).
 
-Exception: As shown above, `README.md` is **not** ignored and can be used as the repository index or a regular document depending on whether `index.md` exists.
+**Important**: `README.md` is **not** ignored. It can be used as a repository/section index (automatically normalized to `_index.md`) or as a regular document depending on the presence of `index.md` files.
 
 ## Best Practices
 
 1. **Use index.md for Docs Sites**: If you're building a dedicated documentation site, use `index.md` for repository and section indexes. Reserve `README.md` for GitHub/GitLab repository overview.
 
-2. **Keep README.md for Dual Purpose**: If your repository README is also suitable as docs landing page, use `README.md` and skip `index.md`.
+2. **Keep README.md for Dual Purpose**: If your repository README is also suitable as docs landing page, use `README.md` and skip `index.md`. Both are normalized to `_index.md` by the pipeline.
 
-3. **Section Organization**: Always provide `index.md` files in section directories to give users context about what's in that section.
+3. **Section Organization**: Provide `README.md` or `index.md` files in section directories to give users context about what's in that section. Missing indexes are auto-generated but lack custom content.
 
-4. **Front Matter**: Add proper front matter to control titles, descriptions, and ordering in navigation.
+4. **Front Matter**: Add proper front matter to control titles, descriptions, and ordering in navigation. The pipeline merges user front matter with auto-generated fields.
+
+5. **Relative Links Work**: Both user-provided and auto-generated indexes receive link rewriting, so you can use relative markdown links (`[Guide](./guide.md)`) and they'll be converted to Hugo-compatible URLs automatically.
 
 ## Examples
 
@@ -245,13 +279,21 @@ Result:
 
 A: Ensure:
 1. File is at the root of your configured `paths` directory
-2. File is named exactly `index.md` (case-insensitive)
-3. File has `.md` extension
+2. File is named exactly `index.md` or `README.md` (case-insensitive)
+3. File has `.md` or `.markdown` extension
 4. Repository has been rebuilt (daemon mode requires rebuild trigger)
+5. Check verbose logs for "normalizeIndexFiles" transform output
+
+**Q: Links in my index files aren't working**
+
+A: Index files go through the same link rewriting transforms as regular documents. Use standard markdown links:
+- Relative links: `[Guide](./guide.md)` → `/repo/guide/`
+- Section links: `[API](./api/overview.md)` → `/repo/api/overview/`
+- The `rewriteRelativeLinks` transform handles conversion automatically
 
 **Q: README.md is missing from my site when I have both README.md and index.md**
 
-A: This is expected behavior. When `index.md` exists, it takes precedence for the repository index, and `README.md` becomes a regular document accessible at `/repository/readme/` (lowercase).
+A: This is expected behavior. When `index.md` exists at the same level, it takes precedence during the generation phase. `README.md` may still be accessible as a regular document at `/repository/readme/` depending on how the precedence was resolved.
 
 **Q: My section index.md isn't showing up**
 
@@ -259,3 +301,12 @@ A: Check that:
 1. File is in a subdirectory (section), not at repository root
 2. Section is not empty (contains other .md files)
 3. File is being discovered (check verbose logs for "Discovered file")
+4. Transform pipeline logs show normalization: "normalizeIndexFiles: README → _index"
+
+**Q: Front matter from my index file is being overwritten**
+
+A: User-provided front matter is merged with auto-generated fields, not replaced. If you see unexpected values:
+1. Check that your front matter is valid YAML
+2. Ensure the front matter fence starts at line 1 (no content before `---`)
+3. User values take precedence over pipeline defaults
+4. Some fields (like `editURL`) are added by transforms after user front matter is parsed
