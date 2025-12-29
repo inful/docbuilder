@@ -1,0 +1,197 @@
+# GitLab CI/CD Configuration for DocBuilder Linting
+# Add this to your .gitlab-ci.yml
+
+# Define stages
+stages:
+  - lint
+  - deploy
+
+# Global variables
+variables:
+  DOCBUILDER_VERSION: "latest"
+  DOCS_PATH: "docs"
+
+# Lint documentation files
+lint:docs:
+  stage: lint
+  image: golang:1.21-alpine
+  
+  before_script:
+    # Install DocBuilder
+    - apk add --no-cache git curl jq
+    - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@${DOCBUILDER_VERSION}
+  
+  script:
+    # Run linter with JSON output
+    - docbuilder lint ${DOCS_PATH} --format=json | tee lint-report.json || EXIT_CODE=$?
+    
+    # Parse results
+    - |
+      if [ -f lint-report.json ]; then
+        ERRORS=$(jq -r '.summary.errors' lint-report.json)
+        WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
+        TOTAL=$(jq -r '.summary.total_files' lint-report.json)
+        
+        echo "📊 Documentation Lint Summary"
+        echo "Files scanned: ${TOTAL}"
+        echo "Errors: ${ERRORS}"
+        echo "Warnings: ${WARNINGS}"
+        
+        # Fail pipeline if errors found
+        if [ "${ERRORS}" != "0" ]; then
+          echo "❌ Documentation linting failed"
+          exit 1
+        fi
+        
+        if [ "${WARNINGS}" != "0" ]; then
+          echo "⚠️ Documentation has warnings"
+        else
+          echo "✅ All documentation passes linting!"
+        fi
+      fi
+  
+  artifacts:
+    name: "lint-report-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - lint-report.json
+    reports:
+      # GitLab can parse JUnit XML for test reports
+      # Future: Add JUnit XML output format to docbuilder
+      codequality: lint-report.json
+    expire_in: 30 days
+    when: always
+  
+  # Only run on merge requests and main branch
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "**/*.md"
+        - "**/*.markdown"
+        - "docs/**/*"
+        - "documentation/**/*"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - "**/*.md"
+        - "**/*.markdown"
+        - "docs/**/*"
+        - "documentation/**/*"
+
+# Optional: Auto-fix documentation (manual trigger only)
+lint:docs:fix:
+  stage: lint
+  image: golang:1.21-alpine
+  
+  before_script:
+    - apk add --no-cache git
+    - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@${DOCBUILDER_VERSION}
+  
+  script:
+    # Auto-fix issues
+    - docbuilder lint ${DOCS_PATH} --fix --yes
+    
+    # Check if files were modified
+    - |
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "✨ Documentation was automatically fixed"
+        echo "Modified files:"
+        git status --short
+        
+        # Configure git
+        git config user.name "DocBuilder Bot"
+        git config user.email "docbuilder@ci.example.com"
+        
+        # Commit and push changes
+        git add .
+        git commit -m "docs: auto-fix linting issues [skip ci]"
+        git push "https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
+      else
+        echo "✅ No fixes needed"
+      fi
+  
+  # Only run manually
+  when: manual
+  
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Optional: Post MR comment with lint results
+lint:docs:comment:
+  stage: lint
+  image: alpine:latest
+  needs:
+    - job: lint:docs
+      artifacts: true
+  
+  before_script:
+    - apk add --no-cache curl jq
+  
+  script:
+    - |
+      if [ -f lint-report.json ]; then
+        # Build comment body
+        ERRORS=$(jq -r '.summary.errors' lint-report.json)
+        WARNINGS=$(jq -r '.summary.warnings' lint-report.json)
+        TOTAL=$(jq -r '.summary.total_files' lint-report.json)
+        
+        # Create markdown comment
+        COMMENT="## 📝 Documentation Lint Report\n\n"
+        
+        if [ "${ERRORS}" != "0" ]; then
+          COMMENT="${COMMENT}❌ **${ERRORS} error(s) found** (blocks merge)\n"
+        fi
+        
+        if [ "${WARNINGS}" != "0" ]; then
+          COMMENT="${COMMENT}⚠️ **${WARNINGS} warning(s) found** (should fix)\n"
+        fi
+        
+        COMMENT="${COMMENT}\n📊 **Summary**: ${TOTAL} files scanned\n\n"
+        
+        # Add top issues
+        ISSUES=$(jq -r '.issues[:5] | .[] | "- **\(.rule)** (\(.file):\(.line)): \(.message)"' lint-report.json)
+        if [ -n "${ISSUES}" ]; then
+          COMMENT="${COMMENT}### Top Issues\n\n${ISSUES}\n\n"
+        fi
+        
+        COMMENT="${COMMENT}---\n**How to fix:**\n\`\`\`bash\ndocbuilder lint --fix\n\`\`\`\n"
+        
+        # Post comment to MR (requires API token with appropriate permissions)
+        if [ -n "${CI_MERGE_REQUEST_IID}" ] && [ -n "${GITLAB_API_TOKEN}" ]; then
+          curl --request POST \
+            --header "PRIVATE-TOKEN: ${GITLAB_API_TOKEN}" \
+            --header "Content-Type: application/json" \
+            --data "{\"body\": \"${COMMENT}\"}" \
+            "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes"
+        fi
+      fi
+  
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  
+  # Don't fail pipeline if commenting fails
+  allow_failure: true
+
+# Example: Integrate with documentation deployment
+deploy:docs:
+  stage: deploy
+  image: golang:1.21-alpine
+  
+  needs:
+    - job: lint:docs
+  
+  before_script:
+    - apk add --no-cache git
+    - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@${DOCBUILDER_VERSION}
+  
+  script:
+    # Build documentation site
+    - docbuilder build -o ./site
+    
+    # Deploy to GitLab Pages, S3, etc.
+    - echo "Deploy documentation site..."
+  
+  artifacts:
+    paths:
+      - site/
+  
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

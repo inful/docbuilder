@@ -1348,10 +1348,10 @@ Lefthook > pre-commit > lint-docs:
 - [x] Test with staged files workflow
 
 ### Phase 5: CI/CD Integration
-- [ ] GitHub Actions workflow example (`.github/workflows/lint-docs.yml`)
-- [ ] GitLab CI template (`.gitlab-ci.yml`)
-- [ ] JSON output schema documentation
-- [ ] PR comment integration examples
+- [x] GitHub Actions workflow example (`.github/workflows/lint-docs.yml`)
+- [x] GitLab CI template (`.gitlab-ci.yml`)
+- [x] JSON output schema documentation
+- [x] PR comment integration examples
 
 ### Testing
 - [x] Integration tests with golden files for core lint functionality
