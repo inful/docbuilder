@@ -55,7 +55,6 @@ jobs:
             title: "Rule Drift Test"
             description: "Testing for linter-DocBuilder drift"
             base_url: "http://localhost:1313/"
-            theme: "hextra"
           
           output:
             directory: ./drift-test-output
@@ -159,69 +158,3 @@ jobs:
               issue_number: context.issue.number,
               body: comment
             });
-  
-  # Additional job: Test with multiple themes to detect theme-specific drift
-  detect-theme-drift:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        theme: [hextra, docsy]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-      
-      - name: Install DocBuilder
-        run: go install ./cmd/docbuilder
-      
-      - name: Create test configuration for ${{ matrix.theme }}
-        run: |
-          cat > theme-drift-config.yaml <<EOF
-          version: "2.0"
-          
-          repositories:
-            - name: test-docs
-              url: ./test/testdata/repos/lint-sync-test
-              branch: main
-              paths:
-                - docs
-          
-          hugo:
-            title: "Theme Drift Test - ${{ matrix.theme }}"
-            description: "Testing for theme-specific drift"
-            base_url: "http://localhost:1313/"
-            theme: "${{ matrix.theme }}"
-          
-          output:
-            directory: ./theme-drift-output-${{ matrix.theme }}
-            clean: true
-          EOF
-      
-      - name: Build with ${{ matrix.theme }} theme
-        run: docbuilder build -c theme-drift-config.yaml -v
-      
-      - name: Lint ${{ matrix.theme }} output
-        run: |
-          docbuilder lint theme-drift-output-${{ matrix.theme }}/content --format=json > theme-drift-${{ matrix.theme }}.json || true
-          
-          EXIT_CODE=$(jq -r '.exit_code' theme-drift-${{ matrix.theme }}.json)
-          
-          if [ "${EXIT_CODE}" = "2" ]; then
-            echo "❌ Rule drift detected with ${{ matrix.theme }} theme"
-            exit 1
-          else
-            echo "✅ No drift with ${{ matrix.theme }} theme"
-          fi
-      
-      - name: Upload theme drift report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: theme-drift-report-${{ matrix.theme }}
-          path: theme-drift-${{ matrix.theme }}.json
-          retention-days: 30
