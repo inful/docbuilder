@@ -165,15 +165,13 @@ func (f *Fixer) fix(path string, skipPrompts bool) (*FixResult, error) {
 	}
 
 	// Detect broken links before applying fixes
-	if !f.dryRun {
-		brokenLinks, err := f.detectBrokenLinks(path)
-		if err != nil {
-			// Non-fatal: log but continue with fixes
-			fixResult.Errors = append(fixResult.Errors,
-				fmt.Errorf("failed to detect broken links: %w", err))
-		} else {
-			fixResult.BrokenLinks = brokenLinks
-		}
+	brokenLinks, err := detectBrokenLinks(path)
+	if err != nil {
+		// Non-fatal: log but continue with fixes
+		fixResult.Errors = append(fixResult.Errors,
+			fmt.Errorf("failed to detect broken links: %w", err))
+	} else {
+		fixResult.BrokenLinks = brokenLinks
 	}
 
 	// Group issues by file
@@ -429,7 +427,7 @@ func isGitRepository(dir string) bool {
 
 // HasErrors returns true if any errors occurred during fixing.
 func (fr *FixResult) HasErrors() bool {
-	return len(fr.Errors) > 0
+	return len(fr.Errors) > 0 || len(fr.BrokenLinks) > 0
 }
 
 // findLinksToFile finds all markdown links that reference the given target file.
@@ -517,7 +515,7 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 }
 
 // detectBrokenLinks scans all markdown files in a path for links to non-existent files.
-func (f *Fixer) detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
+func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 	var brokenLinks []BrokenLink
 
 	// Determine if rootPath is a file or directory
@@ -533,7 +531,25 @@ func (f *Fixer) detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && IsDocFile(path) {
+
+			// Skip hidden directories and files
+			if info.Name() != "." && strings.HasPrefix(info.Name(), ".") {
+				if info.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
+			if info.IsDir() {
+				return nil
+			}
+
+			// Skip standard ignored files (case-insensitive)
+			if isIgnoredFile(info.Name()) {
+				return nil
+			}
+
+			if IsDocFile(path) {
 				filesToScan = append(filesToScan, path)
 			}
 			return nil
@@ -547,7 +563,7 @@ func (f *Fixer) detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 
 	// Scan each file for broken links
 	for _, file := range filesToScan {
-		broken, err := f.detectBrokenLinksInFile(file)
+		broken, err := detectBrokenLinksInFile(file)
 		if err != nil {
 			// Continue with other files even if one fails
 			continue
@@ -559,7 +575,7 @@ func (f *Fixer) detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 }
 
 // detectBrokenLinksInFile scans a single markdown file for broken links.
-func (f *Fixer) detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
+func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	content, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)

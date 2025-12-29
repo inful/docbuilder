@@ -66,7 +66,7 @@ func TestGoldenAutoFix_FileRenameWithLinkUpdates(t *testing.T) {
 
 	// Verify files were renamed
 	assert.Greater(t, len(result.FilesRenamed), 0, "should rename files")
-	
+
 	// Verify links were updated
 	assert.Greater(t, len(result.LinksUpdated), 0, "should update links")
 
@@ -124,7 +124,7 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	// Compare summary output with golden file
 	summary := result.Summary()
 	goldenPath := filepath.Join(testdataDir, "..", "golden", "fix-dry-run.golden.txt")
-	
+
 	if *updateGolden {
 		err := os.WriteFile(goldenPath, []byte(summary), 0644)
 		require.NoError(t, err)
