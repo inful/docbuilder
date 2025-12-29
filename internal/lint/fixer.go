@@ -101,6 +101,24 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 
 			if op.Success {
 				fixResult.ErrorsFixed += len(issues)
+
+				// Find and update all links to the renamed file
+				if !f.dryRun {
+					links, err := f.findLinksToFile(filePath)
+					if err != nil {
+						fixResult.Errors = append(fixResult.Errors, 
+							fmt.Errorf("failed to find links to %s: %w", filePath, err))
+					} else if len(links) > 0 {
+						// Apply link updates
+						updates, err := f.applyLinkUpdates(links, filePath, op.NewPath)
+						if err != nil {
+							fixResult.Errors = append(fixResult.Errors, 
+								fmt.Errorf("failed to update links: %w", err))
+						} else {
+							fixResult.LinksUpdated = append(fixResult.LinksUpdated, updates...)
+						}
+					}
+				}
 			} else if op.Error != nil {
 				fixResult.Errors = append(fixResult.Errors, op.Error)
 			}
@@ -499,12 +517,145 @@ func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []L
 	return links
 }
 
+// applyLinkUpdates applies link updates to markdown files atomically.
+func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string) ([]LinkUpdate, error) {
+	// Group links by source file
+	fileLinks := make(map[string][]LinkReference)
+	for _, link := range links {
+		fileLinks[link.SourceFile] = append(fileLinks[link.SourceFile], link)
+	}
+
+	var updates []LinkUpdate
+	var updatedFiles []string
+
+	// Process each file
+	for sourceFile, linkRefs := range fileLinks {
+		// Read file content
+		content, err := os.ReadFile(sourceFile)
+		if err != nil {
+			// Rollback any previous changes
+			f.rollbackLinkUpdates(updatedFiles)
+			return nil, fmt.Errorf("failed to read %s: %w", sourceFile, err)
+		}
+
+		lines := strings.Split(string(content), "\n")
+		modified := false
+
+		// Sort links by line number in reverse order to maintain line offsets
+		// (updating from bottom to top preserves line numbers)
+		sortedLinks := make([]LinkReference, len(linkRefs))
+		copy(sortedLinks, linkRefs)
+		for i := 0; i < len(sortedLinks); i++ {
+			for j := i + 1; j < len(sortedLinks); j++ {
+				if sortedLinks[i].LineNumber < sortedLinks[j].LineNumber {
+					sortedLinks[i], sortedLinks[j] = sortedLinks[j], sortedLinks[i]
+				}
+			}
+		}
+
+		// Apply updates to each link
+		for _, link := range sortedLinks {
+			lineIdx := link.LineNumber - 1
+			if lineIdx < 0 || lineIdx >= len(lines) {
+				continue
+			}
+
+			// Generate new link target
+			newTarget := f.updateLinkTarget(link, oldPath, newPath)
+			if newTarget == link.Target {
+				continue // No change needed
+			}
+
+			// Replace the old target with the new target in the line
+			oldLine := lines[lineIdx]
+			newLine := strings.Replace(oldLine, link.Target, newTarget, 1)
+
+			if newLine != oldLine {
+				lines[lineIdx] = newLine
+				modified = true
+
+				updates = append(updates, LinkUpdate{
+					SourceFile: sourceFile,
+					LineNumber: link.LineNumber,
+					OldTarget:  link.Target,
+					NewTarget:  newTarget,
+				})
+			}
+		}
+
+		// Write updated content if modified
+		if modified {
+			newContent := strings.Join(lines, "\n")
+			
+			// Create backup before writing
+			backupPath := sourceFile + ".backup"
+			err := os.WriteFile(backupPath, content, 0644)
+			if err != nil {
+				// Rollback previous changes
+				f.rollbackLinkUpdates(updatedFiles)
+				return nil, fmt.Errorf("failed to create backup for %s: %w", sourceFile, err)
+			}
+
+			// Write updated content
+			err = os.WriteFile(sourceFile, []byte(newContent), 0644)
+			if err != nil {
+				// Rollback previous changes
+				f.rollbackLinkUpdates(updatedFiles)
+				_ = os.Remove(backupPath) // Clean up this backup too (ignore error)
+				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
+			}
+
+			updatedFiles = append(updatedFiles, sourceFile)
+			// Note: backup files are kept until end of operation
+		}
+	}
+
+	// All updates succeeded - clean up backup files
+	for _, file := range updatedFiles {
+		_ = os.Remove(file + ".backup") // Ignore cleanup errors
+	}
+
+	return updates, nil
+}
+
+// updateLinkTarget generates a new link target for a renamed file.
+func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) string {
+	// Get the new filename
+	newFilename := filepath.Base(newPath)
+
+	// Preserve relative path structure
+	oldFilename := filepath.Base(oldPath)
+	newTarget := strings.Replace(link.Target, oldFilename, newFilename, 1)
+
+	return newTarget
+}
+
+// rollbackLinkUpdates restores files from their backups.
+func (f *Fixer) rollbackLinkUpdates(files []string) {
+	for _, file := range files {
+		backupPath := file + ".backup"
+		if content, err := os.ReadFile(backupPath); err == nil {
+			_ = os.WriteFile(file, content, 0644) // Best effort restore
+			_ = os.Remove(backupPath)             // Best effort cleanup
+		}
+	}
+}
+
 // Summary returns a human-readable summary of the fix operation.
 func (fr *FixResult) Summary() string {
 	var b strings.Builder
 
 	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
 	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
+	b.WriteString(fmt.Sprintf("Links updated: %d\n", len(fr.LinksUpdated)))
+
+	if len(fr.LinksUpdated) > 0 {
+		b.WriteString("\nLink Updates:\n")
+		for _, update := range fr.LinksUpdated {
+			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s\n",
+				update.SourceFile, update.LineNumber, update.OldTarget, update.NewTarget))
+		}
+	}
 
 	if len(fr.Errors) > 0 {
 		b.WriteString(fmt.Sprintf("\nErrors encountered: %d\n", len(fr.Errors)))

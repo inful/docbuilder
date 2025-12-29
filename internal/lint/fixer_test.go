@@ -44,14 +44,14 @@ func TestFixer_DryRun(t *testing.T) {
 	// Create a temporary directory with a test file
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "API_Guide.md")
-	
+
 	err := os.WriteFile(testFile, []byte("# API Guide"), 0644)
 	require.NoError(t, err)
 
 	// Run fixer in dry-run mode
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, true, false) // dry-run enabled
-	
+
 	result, err := fixer.Fix(tmpDir)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -71,14 +71,14 @@ func TestFixer_RenameFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	oldFile := filepath.Join(tmpDir, "API_Guide.md")
 	expectedNewFile := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	err := os.WriteFile(oldFile, []byte("# API Guide"), 0644)
 	require.NoError(t, err)
 
 	// Run fixer (not dry-run)
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
-	
+
 	result, err := fixer.Fix(tmpDir)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -101,7 +101,7 @@ func TestFixer_RenameFile(t *testing.T) {
 func TestFixer_RenameMultipleFiles(t *testing.T) {
 	// Create a temporary directory with multiple test files
 	tmpDir := t.TempDir()
-	
+
 	files := []struct {
 		old      string
 		expected string
@@ -110,7 +110,7 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 		{"User Manual.md", "user-manual.md"},
 		{"Config@v2.md", "configv2.md"},
 	}
-	
+
 	for _, f := range files {
 		oldPath := filepath.Join(tmpDir, f.old)
 		err := os.WriteFile(oldPath, []byte("# Test"), 0644)
@@ -120,7 +120,7 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 	// Run fixer
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
-	
+
 	result, err := fixer.Fix(tmpDir)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -139,10 +139,10 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 	for _, f := range files {
 		oldPath := filepath.Join(tmpDir, f.old)
 		newPath := filepath.Join(tmpDir, f.expected)
-		
+
 		_, err = os.Stat(oldPath)
 		assert.Error(t, err, "old file %s should not exist", f.old)
-		
+
 		_, err = os.Stat(newPath)
 		assert.NoError(t, err, "new file %s should exist", f.expected)
 	}
@@ -151,21 +151,21 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	// Create a temporary directory
 	tmpDir := t.TempDir()
-	
+
 	// Create both old and new files
 	oldFile := filepath.Join(tmpDir, "API_Guide.md")
 	newFile := filepath.Join(tmpDir, "api_guide.md")
-	
+
 	err := os.WriteFile(oldFile, []byte("# API Guide"), 0644)
 	require.NoError(t, err)
-	
+
 	err = os.WriteFile(newFile, []byte("# Existing"), 0644)
 	require.NoError(t, err)
 
 	// Run fixer without force flag
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
-	
+
 	result, err := fixer.Fix(tmpDir)
 	require.NoError(t, err)
 	require.NotNil(t, result)
@@ -175,11 +175,11 @@ func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	assert.False(t, result.FilesRenamed[0].Success)
 	assert.NotNil(t, result.FilesRenamed[0].Error)
 	assert.Contains(t, result.FilesRenamed[0].Error.Error(), "already exists")
-	
+
 	// Verify original files unchanged
 	_, err = os.Stat(oldFile)
 	assert.NoError(t, err, "old file should still exist")
-	
+
 	_, err = os.Stat(newFile)
 	assert.NoError(t, err, "existing file should still exist")
 }
