@@ -1289,26 +1289,79 @@ Lefthook > pre-commit > lint-docs:
 
 ## Implementation Checklist
 
-- [x] Create `internal/lint` package
-- [x] Implement filename rules with tests
-- [ ] Add `docbuilder lint` CLI command
-- [x] Intelligent default path detection (`docs/`, `documentation/`, fallback)
-- [x] Human-readable formatter
-- [x] Exit code handling
-- [x] Unit tests for each rule (11 test cases)
-- [ ] Integration tests with golden files
-- [ ] `--fix` flag implementation
-- [ ] Git integration for safe renames
-- [ ] Traditional pre-commit hook script
-- [ ] Lefthook configuration example
-- [ ] CI/CD workflow examples
-- [ ] Documentation: `docs/how-to/setup-linting.md`
-- [ ] Documentation: `docs/reference/lint-rules.md`
-- [ ] Documentation: `docs/reference/lint-rules-changelog.md`
+### Phase 1: Core Linting Engine ✅
+- [x] Create `internal/lint` package (5 files: types, rules, linter, formatter, tests)
+- [x] Implement filename rules with whitelisted extensions (.drawio.png, .drawio.svg)
+- [x] Human-readable text formatter with colorization and NO_COLOR support
+- [x] JSON formatter for CI/CD integration
+- [x] Unit tests for each rule (11 comprehensive test cases)
+- [x] Standard file filtering (README, CONTRIBUTING, CHANGELOG, etc.)
+- [x] Intelligent default path detection (`docs/`, `documentation/`, fallback to `.`)
+
+### Phase 2: CLI Implementation ✅
+- [x] Add `docbuilder lint` CLI command with Kong integration
+- [x] Exit code handling (0=clean, 1=warnings, 2=errors, 3=execution error)
+- [x] Output format flags: `--format=text|json`
+- [x] Verbosity control: `--quiet`, `--verbose`
+- [x] Color detection with NO_COLOR environment variable
+- [x] Duplicate error prevention (consolidated uppercase/special char reporting)
+
+### Phase 3: Auto-Fix Capability (Link Resolution)
+- [x] Comprehensive link resolution strategy documented in ADR
+- [ ] Phase 3a: Basic file renaming with git mv support
+  - [ ] File rename implementation
+  - [ ] Confirmation prompts
+  - [ ] Dry-run mode (`--fix --dry-run`)
+- [ ] Phase 3b: Link discovery and path resolution
+  - [ ] Regex patterns for inline, reference, image links
+  - [ ] Relative path resolution to absolute workspace paths
+  - [ ] Link reference tracking (source file, line number, type)
+- [ ] Phase 3c: Link updates with atomic operations
+  - [ ] Generate replacement text preserving style
+  - [ ] Atomic file updates with rollback
+  - [ ] Preserve anchor fragments (#section)
+- [ ] Phase 3d: Edge case handling
+  - [ ] Skip external URLs (protocol detection)
+  - [ ] Ignore links in code blocks (markdown parser)
+  - [ ] Case-insensitive filesystem support
+  - [ ] Broken link detection and reporting
+- [ ] Phase 3e: Reporting and interactive confirmation
+  - [ ] Detailed fix report with statistics
+  - [ ] Interactive confirmation showing files + links affected
+  - [ ] Dry-run preview with before/after comparison
+  - [ ] Backup creation
+
+### Phase 4: Git Hooks Integration
+- [ ] Traditional pre-commit hook script (`scripts/install-hooks.sh`)
+- [ ] Hook installer command: `docbuilder lint install-hook`
+- [ ] Lefthook configuration example (`lefthook.yml`)
+- [ ] Test with staged files workflow
+
+### Phase 5: CI/CD Integration
+- [ ] GitHub Actions workflow example (`.github/workflows/lint-docs.yml`)
+- [ ] GitLab CI template (`.gitlab-ci.yml`)
+- [ ] JSON output schema documentation
+- [ ] PR comment integration examples
+
+### Testing
+- [ ] Integration tests with golden files for auto-fix
+  - [ ] Before/after directory structures
+  - [ ] Link resolution test cases
+  - [ ] Edge case validation (external URLs, code blocks)
 - [ ] Integration tests for lint-DocBuilder sync
 - [ ] CI workflow to detect rule drift
-- [ ] Migration guide for existing repos
-- [ ] VS Code extension (future)
+
+### Documentation
+- [ ] `docs/how-to/setup-linting.md` - Setup and usage guide
+- [ ] `docs/reference/lint-rules.md` - Complete rule reference
+- [ ] `docs/reference/lint-rules-changelog.md` - Rule version history
+- [ ] Migration guide for existing repositories
+- [ ] CI/CD integration examples
+
+### Future Enhancements
+- [ ] VS Code extension for real-time linting
+- [ ] Content linting rules (spell checking, style consistency)
+- [ ] Advanced asset handling (accessibility checks)
 
 ## Success Metrics
 
