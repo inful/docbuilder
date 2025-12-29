@@ -1,6 +1,6 @@
 ---
 title: "Golden Test Implementation"
-date: 2025-12-15
+date: 2025-12-29
 categories:
   - testing
 tags:
@@ -13,119 +13,98 @@ tags:
 
 ## Overview
 
-This document tracks the implementation of a comprehensive golden test framework for DocBuilder's integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and HTML rendering.
+This document describes the comprehensive golden test framework for DocBuilder's integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.
 
 ## Implementation Status
 
-### ✅ Phase 1: Foundation (Complete)
+### ✅ Foundation (Complete)
 - **Infrastructure**: Test helpers, golden config loading, build execution
-- **Files Created**:
-  - `test/integration/helpers.go` (~609 lines) - Core test utilities
-  - `test/integration/golden_test.go` (~1,107 lines) - Test implementations
-  - `test/testdata/golden/` - Golden file storage
+- **Files**:
+  - `test/integration/helpers.go` (437 lines) - Core test utilities
+  - `test/integration/golden_test.go` (813 lines) - Test implementations
+  - `test/testdata/golden/` (12 directories) - Golden file storage
+  - `test/testdata/configs/` (14 files) - Test configurations
 - **Key Functions**:
   - `loadGoldenConfig()` - Load and validate test configs
-  - `runBuild()` - Execute build with BuildService
-  - `verifyDirectoryStructure()` - Check output file tree
-  - `verifyFileContent()` - Compare files against golden snapshots
-  - `updateGoldenFiles()` - Regenerate golden snapshots
+  - `setupTestRepo()` - Create temporary git repositories for testing
+  - `verifyHugoConfig()` - Compare Hugo YAML configuration
+  - `verifyContentStructure()` - Check content files and front matter
+  - `parseFrontMatter()` - Extract and validate YAML front matter
 
-### ✅ Phase 2: Core Test Coverage (Complete - 13 tests)
+### ✅ Core Test Coverage (Complete - 16 tests)
 
-#### Theme Tests
-1. **TestGolden_HextraBasic** - Basic Hextra theme generation
-2. **TestGolden_HextraMath** - Math rendering support
-3. **TestGolden_DocsyBasic** - Basic Docsy theme generation
-4. **TestGolden_HextraSearch** - Search index generation
-5. **TestGolden_DocsyAPI** - Docsy API documentation style
-
-#### Content Tests
-6. **TestGolden_FrontmatterInjection** - Front matter generation
-7. **TestGolden_ImagePaths** - Image path transformation
-8. **TestGolden_SectionIndexes** - Section index page generation
-9. **TestGolden_MenuGeneration** - Automatic menu generation
-10. **TestGolden_HextraMultilang** - Multi-language support
+#### Content Transformation Tests
+1. **TestGolden_FrontmatterInjection** - Front matter generation with editURL
+2. **TestGolden_ImagePaths** - Image path transformation
+3. **TestGolden_SectionIndexes** - Section index page generation
+4. **TestGolden_MenuGeneration** - Automatic menu generation
 
 #### Repository Tests
-11. **TestGolden_TwoRepos** - Multi-repository aggregation
-12. **TestGolden_ConflictingPaths** - Path conflict resolution
-13. **TestGolden_CrossRepoLinks** - Cross-repository linking
-
-### ✅ Phase 3: Edge Cases & Enhanced Verification (Complete - 9 tests)
+5. **TestGolden_TwoRepos** - Multi-repository aggregation
+6. **TestGolden_ConflictingPaths** - Path conflict resolution
+7. **TestGolden_CrossRepoLinks** - Cross-repository linking
 
 #### Edge Case Tests
-14. **TestGolden_EmptyDocs** - Repository with no markdown files
-15. **TestGolden_OnlyReadme** - Only README.md (should be skipped)
-16. **TestGolden_MalformedFrontmatter** - Invalid YAML front matter
-17. **TestGolden_DeepNesting** - Deep directory nesting (10+ levels)
-18. **TestGolden_UnicodeNames** - Unicode filenames and paths
-19. **TestGolden_SpecialChars** - Special characters in filenames
-
-#### HTML Verification
-- **Framework**: DOM parsing with `golang.org/x/net/html`
-- **Capabilities**:
-  - CSS selector matching (tag, .class, #id)
-  - Element counting
-  - Text content verification
-  - Attribute checking
-- **Implementation**:
-  - `verifyRenderedSamples()` - Parse and verify HTML structure
-  - `findElements()` - Recursive DOM tree traversal
-  - `parseSimpleSelector()` - CSS selector parsing
-  - `renderHugoSite()` - Execute Hugo build
-- **Golden Files**: `rendered-samples.golden.json` - HTML verification samples
+8. **TestGolden_EmptyDocs** - Repository with no markdown files
+9. **TestGolden_OnlyReadme** - Only README.md (should be skipped)
+10. **TestGolden_MalformedFrontmatter** - Invalid YAML front matter
+11. **TestGolden_DeepNesting** - Deep directory nesting (10+ levels)
+12. **TestGolden_UnicodeNames** - Unicode filenames and paths
+13. **TestGolden_SpecialChars** - Special characters in filenames
 
 #### Error Handling Tests
-20. **TestGolden_Error_InvalidRepository** - Invalid repository URL handling
-21. **TestGolden_Error_InvalidConfig** - Empty/minimal configuration
-22. **TestGolden_Warning_NoGitCommit** - Repository without commits
+14. **TestGolden_Error_InvalidRepository** - Invalid repository URL handling
+15. **TestGolden_Error_InvalidConfig** - Empty/minimal configuration
+16. **TestGolden_Warning_NoGitCommit** - Repository without commits
+
+> **Note**: All tests use the Relearn theme. Error tests use `relearn-basic.yaml` as a base configuration.
 
 ## Test Results
 
 ```
-Total Tests: 22
+Total Tests: 16
 Status: All Passing ✅
 
-Test Execution Time: ~0.6s
-HTML Rendering Tests: 1 test with 3 subtests
-Error Case Tests: 3 tests
+Test Execution Time: ~1.1s (without Hugo rendering)
+Error Case Tests: 3 tests with graceful degradation verification
+Theme Support: Relearn only
 ```
 
 ## Golden File Structure
 
+Each golden directory contains verification artifacts:
+
 ```
-test/testdata/golden/
-├── hextra-basic/
-│   ├── config.yaml                    # Test configuration
-│   ├── structure.golden.json          # Expected directory structure
-│   ├── content.golden.json            # File content snapshots
-│   └── rendered-samples.golden.json   # HTML verification samples
-├── hextra-math/
-├── frontmatter-injection/
-├── two-repos/
-├── docsy-basic/
-├── hextra-search/
-├── image-paths/
-├── section-indexes/
-├── conflicting-paths/
-├── menu-generation/
-├── docsy-api/
-├── hextra-multilang/
-├── cross-repo-links/
-├── empty-docs/
-├── only-readme/
-├── malformed-frontmatter/
-├── deep-nesting/
-├── unicode-names/
-└── special-chars/
+test/testdata/golden/<test-name>/
+├── hugo-config.golden.yaml           # Expected Hugo configuration
+├── content-structure.golden.json     # Content files and front matter
+└── rendered-samples.golden.json      # HTML verification samples (optional)
 ```
+
+### Available Golden Directories
+
+All golden directories are actively used for Relearn theme testing:
+
+- `conflicting-paths/` - Path conflict scenarios
+- `cross-repo-links/` - Inter-repository linking
+- `deep-nesting/` - Deep directory hierarchies
+- `empty-docs/` - Empty repository handling
+- `frontmatter-injection/` - Front matter generation
+- `image-paths/` - Image path transformation
+- `malformed-frontmatter/` - Invalid YAML handling
+- `menu-generation/` - Automatic menu creation
+- `only-readme/` - README-only repositories
+- `section-indexes/` - Section index pages
+- `special-chars/` - Special character filenames
+- `two-repos/` - Multi-repository builds
+- `unicode-names/` - Unicode filename support
 
 ## Key Technical Decisions
 
-### 1. HTML Verification Approach
-- **Choice**: Parse HTML DOM with `golang.org/x/net/html`
-- **Rationale**: More reliable than string matching, verifies actual rendered structure
-- **Trade-off**: Requires Hugo execution during tests (slower but more accurate)
+### 1. Build Service Integration
+- **Choice**: Use `build.BuildService` for test execution
+- **Rationale**: Tests verify the actual production pipeline, not mocked components
+- **Implementation**: Each test creates a BuildService with real HugoGenerator
 
 ### 2. Error Handling Philosophy
 - **Choice**: Verify graceful degradation, not hard failures
@@ -133,15 +112,15 @@ test/testdata/golden/
 - **Implementation**: Check `RepositoriesSkipped` counter rather than expecting errors
 
 ### 3. Golden File Format
-- **Structure Files**: JSON array of file paths
-- **Content Files**: JSON map of path→content
-- **HTML Samples**: JSON array of selector-based verifications
-- **Rationale**: JSON is structured, diffable, and language-agnostic
+- **Hugo Config**: YAML files with normalized timestamps
+- **Content Structure**: JSON with file paths, front matter, and content hashes
+- **Rationale**: Structured formats allow precise, diffable comparisons
 
 ### 4. Test Organization
-- **Pattern**: One test per scenario, subtests for verification steps
+- **Pattern**: One test per scenario with descriptive names
 - **Naming**: `TestGolden_{Feature}` for discoverability
 - **Isolation**: Each test uses `t.TempDir()` for complete isolation
+- **No HTML Rendering**: Tests verify Hugo config/content, not rendered HTML (too slow)
 
 ## Usage
 
@@ -152,45 +131,175 @@ test/testdata/golden/
 go test ./test/integration -run=TestGolden -v
 
 # Run specific test
-go test ./test/integration -run=TestGolden_HextraBasic -v
+go test ./test/integration -run=TestGolden_FrontmatterInjection -v
 
 # Update golden files (when changes are expected)
-go test ./test/integration -run=TestGolden_HextraBasic -update-golden
+go test ./test/integration -run=TestGolden_FrontmatterInjection -update-golden
+
+# Run in short mode (skips golden tests)
+go test ./test/integration -short
 ```
 
 ### Adding New Tests
 
-1. Create test configuration in `test/testdata/configs/{name}.yaml`
-2. Create golden directory in `test/testdata/golden/{name}/`
-3. Add test function to `test/integration/golden_test.go`
-4. Run with `-update-golden` to generate initial snapshots
-5. Review and commit golden files
+1. **Create test repository structure** in `test/testdata/repos/<category>/<test-name>/`
+   - Add markdown files, images, and other assets
+   - Structure should reflect a real documentation repository
+
+2. **Create test configuration** in `test/testdata/configs/<test-name>.yaml`
+   - Define repository URLs (will be replaced by `setupTestRepo`)
+   - Configure Hugo with Relearn theme and parameters
+   - Set output directory (will be replaced by `t.TempDir()`)
+
+3. **Add test function** to `test/integration/golden_test.go`
+   ```go
+   func TestGolden_YourFeature(t *testing.T) {
+       if testing.Short() {
+           t.Skip("Skipping golden test in short mode")
+       }
+       
+       // Setup test repo
+       repoPath := setupTestRepo(t, "../../test/testdata/repos/<path>")
+       
+       // Load and configure
+       cfg := loadGoldenConfig(t, "../../test/testdata/configs/your-feature.yaml")
+       cfg.Repositories[0].URL = repoPath
+       outputDir := t.TempDir()
+       cfg.Output.Directory = outputDir
+       
+       // Run build
+       svc := build.NewBuildService().
+           WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+               return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+           })
+       result, err := svc.Run(context.Background(), build.BuildRequest{
+           Config:    cfg,
+           OutputDir: outputDir,
+       })
+       require.NoError(t, err)
+       require.Equal(t, build.BuildStatusSuccess, result.Status)
+       
+       // Verify outputs
+       goldenDir := "../../test/testdata/golden/your-feature"
+       verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
+       verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
+   }
+   ```
+
+4. **Generate golden files** with `-update-golden` flag
+   ```bash
+   go test ./test/integration -run=TestGolden_YourFeature -update-golden
+   ```
+
+5. **Review golden files** - Don't blindly accept generated output
+   - Check `hugo-config.golden.yaml` for correct configuration
+   - Verify `content-structure.golden.json` has expected files and front matter
+   - Commit golden files with your test
+
+6. **Verify test passes** without `-update-golden`
+   ```bash
+   go test ./test/integration -run=TestGolden_YourFeature -v
+   ```
 
 ## Future Enhancements
 
 ### Potential Additions
-- **Performance Benchmarks**: Track build time trends
-- **Incremental Build Testing**: Verify cache behavior
-- **Theme Variations**: Test theme-specific features
-- **Plugin System Testing**: Verify transform plugins
-- **Build Report Validation**: Parse and verify build-report.json
+- **Relearn Theme Features**: Tests for Relearn-specific features (tabs, attachments, shortcodes)
+- **Performance Benchmarks**: Track build time trends with `testing.B`
+- **Incremental Build Testing**: Verify cache behavior and rebuild optimization
+- **Plugin System Testing**: Verify transform plugins work correctly
+- **Build Report Validation**: Parse and verify `build-report.json` accuracy
+- **HTML Rendering Tests**: Add optional Hugo build + HTML verification (currently skipped for speed)
 
 ### CI Integration
-- Run golden tests on every PR
-- Flag golden file changes for review
+- Golden tests run on every PR
+- Flag golden file changes for manual review
 - Generate test coverage reports
-- Performance regression detection
+- Detect regressions in test execution time
+
+## Helper Functions Reference
+
+### Test Repository Setup
+- **`setupTestRepo(t, path)`** - Creates temporary git repository from testdata
+  - Copies files from source path
+  - Initializes git repository
+  - Creates initial commit
+  - Returns temporary directory path
+
+### Configuration Loading
+- **`loadGoldenConfig(t, path)`** - Loads YAML test configuration
+  - Validates required fields
+  - Returns `*config.Config`
+
+### Verification Functions
+- **`verifyHugoConfig(t, outputDir, goldenPath, update)`** - Compares Hugo YAML
+  - Normalizes dynamic fields (build_date, timestamps)
+  - Updates golden file if `update=true`
+  - Asserts YAML equality
+
+- **`verifyContentStructure(t, outputDir, goldenPath, update)`** - Verifies content files
+  - Walks content directory
+  - Extracts front matter from each file
+  - Computes content hashes
+  - Compares structure and metadata
+
+- **`parseFrontMatter(data)`** - Extracts YAML front matter
+  - Returns front matter map and remaining content
+  - Handles files without front matter
+
+### Build Execution
+Tests use `build.BuildService` directly:
+```go
+svc := build.NewBuildService().
+    WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+        return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+    })
+
+result, err := svc.Run(context.Background(), build.BuildRequest{
+    Config:    cfg,
+    OutputDir: outputDir,
+})
+```
 
 ## Related Documentation
 
 - [Test Architecture](../explanation/renderer-testing.md)
 - [CI/CD Setup](../ci-cd-setup.md)
 - [Configuration Reference](../reference/configuration.md)
-- [How to Add Theme Support](../how-to/add-theme-support.md)
+- [Style Guide](../STYLE_GUIDE.md)
 
 ## Maintenance Notes
 
-- Golden files should be reviewed when updated (not blindly regenerated)
-- HTML verification samples should check structure, not exact content
-- Error tests should verify logging and graceful handling, not hard failures
-- Test execution should remain fast (< 1s for full suite without Hugo)
+### Golden File Review
+- **Never blindly regenerate** golden files - always review changes
+- Golden files represent expected behavior, not actual output
+- Changes to golden files should be justified in PR descriptions
+- Hugo config changes should be theme-compatible
+
+### Test Design Guidelines
+- Keep tests fast (target < 2s for full suite)
+- Don't run Hugo build in tests (too slow, config is sufficient)
+- Use `t.TempDir()` for complete test isolation
+- Test one scenario per test function
+- Error tests should verify graceful degradation, not hard failures
+
+### File Organization
+```
+test/
+├── integration/
+│   ├── golden_test.go          # Test implementations (813 lines)
+│   ├── helpers.go              # Test utilities (437 lines)
+│   └── README.md               # Integration test overview
+├── testdata/
+│   ├── configs/                # YAML test configurations (14 files)
+│   ├── golden/                 # Expected outputs (12 directories)
+│   └── repos/                  # Test repository structures
+│       ├── multi-repo/         # Multi-repository scenarios
+│       └── transforms/         # Content transformation tests
+```
+
+### Common Pitfalls
+1. **Dynamic timestamps**: Use `verifyHugoConfig` which normalizes `build_date`
+2. **Absolute paths**: Golden files should not contain temp directory paths
+3. **Git state**: Use `setupTestRepo` to ensure consistent git history
+4. **Configuration placeholders**: Test configs use `PLACEHOLDER` for dynamic values
