@@ -1,0 +1,227 @@
+name: Detect Lint Rule Drift
+
+# This workflow detects when linting rules have drifted from DocBuilder's
+# actual output. It runs DocBuilder to generate a site, then lints the
+# generated content to ensure it passes all rules.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'internal/lint/**'
+      - 'internal/hugo/**'
+      - 'internal/docs/**'
+  pull_request:
+    paths:
+      - 'internal/lint/**'
+      - 'internal/hugo/**'
+      - 'internal/docs/**'
+  schedule:
+    # Run weekly to catch drift over time
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  detect-rule-drift:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Install DocBuilder
+        run: |
+          go install ./cmd/docbuilder
+      
+      - name: Create test configuration
+        run: |
+          cat > drift-test-config.yaml <<EOF
+          version: "2.0"
+          
+          repositories:
+            - name: test-docs
+              url: ./test/testdata/repos/lint-sync-test
+              branch: main
+              paths:
+                - docs
+          
+          hugo:
+            title: "Rule Drift Test"
+            description: "Testing for linter-DocBuilder drift"
+            base_url: "http://localhost:1313/"
+            theme: "hextra"
+          
+          output:
+            directory: ./drift-test-output
+            clean: true
+          EOF
+      
+      - name: Build documentation with DocBuilder
+        run: |
+          docbuilder build -c drift-test-config.yaml -v
+      
+      - name: Lint generated content
+        id: lint
+        run: |
+          # Lint the generated Hugo content
+          docbuilder lint drift-test-output/content --format=json > drift-report.json || EXIT_CODE=$?
+          
+          echo "exit_code=${EXIT_CODE:-0}" >> $GITHUB_OUTPUT
+          
+          # Display results
+          cat drift-report.json | jq '.'
+      
+      - name: Check for drift
+        run: |
+          EXIT_CODE="${{ steps.lint.outputs.exit_code }}"
+          
+          if [ "${EXIT_CODE}" = "2" ]; then
+            echo "❌ RULE DRIFT DETECTED!"
+            echo ""
+            echo "DocBuilder-generated content does not pass linting rules."
+            echo "This indicates that linting rules have drifted from DocBuilder's output."
+            echo ""
+            echo "Possible causes:"
+            echo "  1. Linting rules changed without updating DocBuilder"
+            echo "  2. DocBuilder output changed without updating lint rules"
+            echo "  3. New rules added that DocBuilder doesn't comply with"
+            echo ""
+            
+            # Show details
+            cat drift-report.json | jq -r '.issues[] | "- \(.file):\(.line) - \(.rule): \(.message)"'
+            
+            exit 1
+          elif [ "${EXIT_CODE}" = "1" ]; then
+            echo "⚠️ Warnings detected in generated content"
+            echo "Generated content has warnings but no errors"
+            
+            cat drift-report.json | jq -r '.issues[] | select(.severity=="warning") | "- \(.file) - \(.rule): \(.message)"'
+            
+            # Don't fail on warnings, just report
+            exit 0
+          else
+            echo "✅ No rule drift detected"
+            echo "DocBuilder-generated content passes all linting rules"
+          fi
+      
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rule-drift-report
+          path: drift-report.json
+          retention-days: 90
+      
+      - name: Comment PR on drift detection
+        if: github.event_name == 'pull_request' && steps.lint.outputs.exit_code == '2'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('drift-report.json', 'utf8'));
+            
+            let comment = '## ⚠️ Lint Rule Drift Detected\n\n';
+            comment += '**DocBuilder-generated content does not pass linting rules.**\n\n';
+            comment += 'This PR may have introduced drift between linting rules and DocBuilder output.\n\n';
+            
+            comment += `### Summary\n\n`;
+            comment += `- **Errors**: ${report.summary.errors}\n`;
+            comment += `- **Warnings**: ${report.summary.warnings}\n`;
+            comment += `- **Files affected**: ${report.summary.total_files}\n\n`;
+            
+            if (report.issues && report.issues.length > 0) {
+              comment += '### Issues\n\n';
+              const issues = report.issues.slice(0, 10);
+              for (const issue of issues) {
+                comment += `- \`${issue.file}\` (L${issue.line}): **${issue.rule}** - ${issue.message}\n`;
+              }
+              if (report.issues.length > 10) {
+                comment += `\n... and ${report.issues.length - 10} more issue(s)\n`;
+              }
+            }
+            
+            comment += '\n### What to do\n\n';
+            comment += 'Choose one of the following:\n\n';
+            comment += '1. **Update linting rules** if they are too strict\n';
+            comment += '2. **Update DocBuilder** to generate compliant content\n';
+            comment += '3. **Update tests** if the drift is intentional\n\n';
+            comment += '**Important:** Ensure linting rules and DocBuilder output remain synchronized.\n';
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+  
+  # Additional job: Test with multiple themes to detect theme-specific drift
+  detect-theme-drift:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        theme: [hextra, docsy]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Install DocBuilder
+        run: go install ./cmd/docbuilder
+      
+      - name: Create test configuration for ${{ matrix.theme }}
+        run: |
+          cat > theme-drift-config.yaml <<EOF
+          version: "2.0"
+          
+          repositories:
+            - name: test-docs
+              url: ./test/testdata/repos/lint-sync-test
+              branch: main
+              paths:
+                - docs
+          
+          hugo:
+            title: "Theme Drift Test - ${{ matrix.theme }}"
+            description: "Testing for theme-specific drift"
+            base_url: "http://localhost:1313/"
+            theme: "${{ matrix.theme }}"
+          
+          output:
+            directory: ./theme-drift-output-${{ matrix.theme }}
+            clean: true
+          EOF
+      
+      - name: Build with ${{ matrix.theme }} theme
+        run: docbuilder build -c theme-drift-config.yaml -v
+      
+      - name: Lint ${{ matrix.theme }} output
+        run: |
+          docbuilder lint theme-drift-output-${{ matrix.theme }}/content --format=json > theme-drift-${{ matrix.theme }}.json || true
+          
+          EXIT_CODE=$(jq -r '.exit_code' theme-drift-${{ matrix.theme }}.json)
+          
+          if [ "${EXIT_CODE}" = "2" ]; then
+            echo "❌ Rule drift detected with ${{ matrix.theme }} theme"
+            exit 1
+          else
+            echo "✅ No drift with ${{ matrix.theme }} theme"
+          fi
+      
+      - name: Upload theme drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: theme-drift-report-${{ matrix.theme }}
+          path: theme-drift-${{ matrix.theme }}.json
+          retention-days: 30

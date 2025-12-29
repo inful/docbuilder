@@ -26,6 +26,12 @@ func (r *FilenameRule) Check(filePath string) ([]Issue, error) {
 	filename := filepath.Base(filePath)
 	var issues []Issue
 
+	// Whitelist special Hugo files with underscores
+	if filename == "_index.md" || filename == "_index.markdown" {
+		// This is a special Hugo file, explicitly allowed
+		return issues, nil
+	}
+
 	// Check for whitelisted double extensions first
 	if isWhitelistedDoubleExtension(filename) {
 		// This is explicitly allowed, return info message
@@ -262,6 +268,51 @@ func SuggestFilename(filename string) string {
 	name = strings.Trim(name, "-_")
 
 	return name + ext
+}
+
+// HasFilenameIssue checks if a filename violates naming conventions.
+// Returns true if the filename has any issues (uppercase, spaces, special chars, etc.).
+func HasFilenameIssue(filename string) bool {
+	// Hugo-specific files with underscores are whitelisted
+	if filename == "_index.md" || filename == "_index.markdown" {
+		return false
+	}
+
+	// Check for whitelisted double extensions (.drawio.png, .drawio.svg)
+	if isWhitelistedDoubleExtension(filename) {
+		return false
+	}
+
+	// Check for invalid double extensions
+	if hasInvalidDoubleExtension(filename) {
+		return true
+	}
+
+	// Check for uppercase letters
+	for _, r := range filename {
+		if unicode.IsUpper(r) {
+			return true
+		}
+	}
+
+	// Check for spaces
+	if strings.Contains(filename, " ") {
+		return true
+	}
+
+	// Check for special characters
+	if hasSpecialChars(filename) {
+		return true
+	}
+
+	// Check for leading/trailing hyphens or underscores
+	nameWithoutExt := strings.TrimSuffix(filename, filepath.Ext(filename))
+	if strings.HasPrefix(nameWithoutExt, "-") || strings.HasPrefix(nameWithoutExt, "_") ||
+		strings.HasSuffix(nameWithoutExt, "-") || strings.HasSuffix(nameWithoutExt, "_") {
+		return true
+	}
+
+	return false
 }
 
 // DetectDefaultPath detects the documentation directory using intelligent defaults.
