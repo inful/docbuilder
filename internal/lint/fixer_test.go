@@ -329,10 +329,7 @@ func TestDetectBrokenLinks(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run broken link detection
-	linter := NewLinter(&Config{Format: "text"})
-	fixer := NewFixer(linter, false, false)
-
-	broken, err := fixer.detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir)
 	require.NoError(t, err)
 
 	// Should find 2 broken links (missing.md and missing.png)
@@ -373,10 +370,7 @@ func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run broken link detection
-	linter := NewLinter(&Config{Format: "text"})
-	fixer := NewFixer(linter, false, false)
-
-	broken, err := fixer.detectBrokenLinks(docsDir)
+	broken, err := detectBrokenLinks(docsDir)
 	require.NoError(t, err)
 
 	// On case-insensitive filesystems (macOS/Windows), these should NOT be broken

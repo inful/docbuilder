@@ -316,11 +316,11 @@ func TestFixer_FixWithConfirmation_Integration(t *testing.T) {
 // TestPreviewPluraliz	ation tests the pluralize function output in messages.
 func TestPreviewPluralization(t *testing.T) {
 	tests := []struct {
-		name          string
-		filesRenamed  int
-		linksUpdated  int
-		expectFiles   string
-		expectLinks   string
+		name         string
+		filesRenamed int
+		linksUpdated int
+		expectFiles  string
+		expectLinks  string
 	}{
 		{
 			name:         "singular",
@@ -371,7 +371,7 @@ func TestBackupPreservesDirectoryStructure(t *testing.T) {
 	// Create files in different directories
 	rootFile := filepath.Join(docsDir, "index.md")
 	apiFile := filepath.Join(apiDir, "guide.md")
-	
+
 	err = os.WriteFile(rootFile, []byte("root content"), 0644)
 	require.NoError(t, err)
 	err = os.WriteFile(apiFile, []byte("api content"), 0644)

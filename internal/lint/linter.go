@@ -46,6 +46,29 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 		result.FilesTotal = 1
 	}
 
+	// Broken link detection is a lint-time check (not only a fixer feature).
+	// This ensures `docbuilder lint` fails the same way `docbuilder lint --fix` reports.
+	brokenLinks, blErr := detectBrokenLinks(path)
+	if blErr != nil {
+		return nil, blErr
+	}
+	for _, bl := range brokenLinks {
+		result.Issues = append(result.Issues, Issue{
+			FilePath: bl.SourceFile,
+			Severity: SeverityError,
+			Rule:     "broken-links",
+			Message:  "broken link target does not exist",
+			Explanation: strings.TrimSpace(strings.Join([]string{
+				"The documentation contains a link to a file that does not exist.",
+				"This will break navigation and may cause build/link-check failures.",
+				"",
+				"Target: " + bl.Target,
+			}, "\n")),
+			Fix:  "Update the link target or add the missing file.",
+			Line: bl.LineNumber,
+		})
+	}
+
 	return result, err
 }
 
