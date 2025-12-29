@@ -11,7 +11,6 @@ hugo:
   title: "Lint Sync Test Documentation"
   description: "Testing linter-DocBuilder synchronization"
   base_url: "http://localhost:1313/"
-  theme: "hextra"
   params:
     navbar:
       displayTitle: true
