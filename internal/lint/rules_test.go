@@ -313,7 +313,7 @@ func TestSuggestFilename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			got := suggestFilename(tt.input)
+			got := SuggestFilename(tt.input)
 			assert.Equal(t, tt.want, got)
 		})
 	}

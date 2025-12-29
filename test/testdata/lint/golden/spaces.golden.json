@@ -5,8 +5,8 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
-      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  Login Screen.png\nSuggested: login screen.png\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
-      "fix": "Rename to lowercase: login screen.png"
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "fix": "Rename to lowercase: login-screen.png"
     },
     {
       "file": "invalid/spaces/Login Screen.png",
@@ -21,8 +21,8 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
-      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  User Manual.md\nSuggested: user manual.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
-      "fix": "Rename to lowercase: user manual.md"
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "fix": "Rename to lowercase: user-manual.md"
     },
     {
       "file": "invalid/spaces/User Manual.md",
