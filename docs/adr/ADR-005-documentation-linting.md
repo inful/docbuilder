@@ -197,12 +197,19 @@ WARNING: Missing section index file
 - Colorized terminal output (red errors, yellow warnings)
 
 **Phase 3: Auto-Fix Capability (Week 2)**
-- Implement safe transformations:
+- Implement safe file renaming with link resolution:
   - Rename files: `My Doc.md` → `my-doc.md`
-  - Update internal references in content
+  - Scan all markdown files for links to renamed files
+  - Update internal references preserving link style (relative/absolute)
+  - Handle image links, inline links, reference-style links
+  - Preserve anchor fragments (#section) in links
   - Preserve Git history (using `git mv`)
-- Require `--fix` flag and confirmation prompt
-- Dry-run mode: `--fix --dry-run` shows changes without applying
+- Require `--fix` flag and confirmation prompt showing:
+  - Files to be renamed
+  - Markdown files that will be updated
+  - Total number of links to be modified
+- Dry-run mode: `--fix --dry-run` shows all changes without applying
+- Generate detailed fix report with before/after comparison
 
 **Phase 4: Integration Hooks (Week 3)**
 - Traditional pre-commit hook script (`scripts/install-hooks.sh`)
@@ -461,6 +468,240 @@ lint-docs:
   allow_failure: false
 ```
 
+## Auto-Fix Implementation: Link Resolution
+
+When the `--fix` flag is used, renaming files requires updating all internal markdown links that reference those files. This is critical to prevent broken documentation after auto-fixing filename issues.
+
+### Link Resolution Strategy
+
+#### Supported Link Types
+
+The fixer must handle all common markdown link patterns:
+
+```markdown
+<!-- 1. Inline links (most common) -->
+[API Guide](API_Guide.md)
+[API Guide](./API_Guide.md)
+[API Guide](../docs/API_Guide.md)
+
+<!-- 2. Absolute repository paths -->
+[API Guide](/docs/API_Guide.md)
+
+<!-- 3. Reference-style links -->
+[API Guide][api-ref]
+[api-ref]: API_Guide.md "API Documentation"
+
+<!-- 4. Image links -->
+![Architecture](Architecture_Diagram.png)
+![Logo](./assets/Company_Logo.svg)
+
+<!-- 5. Links with anchors (preserve fragment) -->
+[Authentication](API_Guide.md#authentication)
+[Overview](./API_Guide.md#overview)
+
+<!-- 6. Links in code blocks (ignore) -->
+```bash
+# See API_Guide.md for details
+```
+```
+
+#### Resolution Algorithm
+
+**Phase 1: Discover Links**
+```go
+type LinkReference struct {
+    SourceFile  string   // File containing the link
+    LineNumber  int      // Line number of link
+    LinkType    LinkType // Inline, Reference, Image
+    Target      string   // Link target (path)
+    Fragment    string   // Anchor fragment (#section)
+    FullMatch   string   // Complete original text for replacement
+}
+
+func (f *Fixer) findLinksToFile(targetPath string) ([]LinkReference, error) {
+    // 1. Walk all .md files in documentation directory
+    // 2. For each file, scan for links using regex patterns:
+    //    - Inline: \[([^\]]+)\]\(([^)]+)\)
+    //    - Reference: ^\[([^\]]+)\]:\s*(.+?)(?:\s+"([^"]*)")?$
+    //    - Image: !\[([^\]]*)\]\(([^)]+)\)
+    // 3. Parse link target to extract path and fragment
+    // 4. Resolve relative paths to absolute workspace paths
+    // 5. Compare resolved path with target file
+    // 6. Collect all matches as LinkReference structs
+}
+```
+
+**Phase 2: Path Resolution**
+```go
+func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
+    // Given: sourceFile = "docs/guides/tutorial.md"
+    //        linkTarget = "../api/API_Guide.md"
+    // 
+    // 1. Get directory of source file: "docs/guides/"
+    // 2. Join with link target: "docs/guides/../api/API_Guide.md"
+    // 3. Clean path: "docs/api/API_Guide.md"
+    // 4. Resolve to absolute workspace path
+    // 5. Return canonical path for comparison
+}
+```
+
+**Phase 3: Generate Replacement**
+```go
+func (f *Fixer) updateLink(ref LinkReference, oldPath, newPath string) string {
+    // Preserve link style (relative vs absolute)
+    // Update filename while keeping directory structure
+    // Preserve anchor fragments
+    // Preserve reference link titles
+    
+    // Example:
+    // Original: [API](../api/API_Guide.md#auth)
+    // Old path: docs/api/API_Guide.md
+    // New path: docs/api/api-guide.md
+    // Result:   [API](../api/api-guide.md#auth)
+}
+```
+
+**Phase 4: Apply Updates**
+```go
+func (f *Fixer) applyLinkUpdates(updates []LinkUpdate) error {
+    // 1. Group updates by source file
+    // 2. For each file, apply all updates atomically:
+    //    - Read file content
+    //    - Apply replacements (in reverse line order to preserve offsets)
+    //    - Write updated content
+    // 3. If any update fails, rollback all changes
+    // 4. Generate fix report showing what was updated
+}
+```
+
+### Edge Cases and Safety
+
+**Case 1: External URLs**
+```markdown
+[GitHub Docs](https://github.com/docs/API_Guide.md)
+```
+**Resolution:** Skip. Only update links to local files. Detect by checking for protocol scheme (`http://`, `https://`).
+
+**Case 2: Broken Links**
+```markdown
+[Old Guide](Deleted_File.md)
+```
+**Resolution:** If link target doesn't exist and matches old filename pattern, report separately as "potential broken link" but don't update.
+
+**Case 3: Multiple Files Same Name**
+```markdown
+docs/api/README.md
+docs/guides/README.md
+```
+**Resolution:** Use full path matching. Only update links that resolve to the specific file being renamed.
+
+**Case 4: Circular References**
+```markdown
+<!-- File A.md -->
+[See B](B.md)
+
+<!-- File B.md -->
+[See A](A.md)
+```
+**Resolution:** No special handling needed. Each file rename updates its own references independently.
+
+**Case 5: Links in Code Blocks**
+````markdown
+```bash
+# Download API_Guide.md from repository
+curl https://example.com/API_Guide.md
+```
+````
+**Resolution:** Don't update links inside code blocks. Use markdown parser to identify fenced code blocks and skip them.
+
+**Case 6: Case-Insensitive Filesystems**
+```markdown
+[Guide](api_guide.md)  # Links to API_Guide.md on macOS/Windows
+```
+**Resolution:** Perform case-insensitive path comparison when checking if link targets the file being renamed.
+
+### User Confirmation Flow
+
+When `--fix` flag is used without `--yes`, show interactive confirmation:
+
+```
+Found 3 files with naming issues:
+
+Files to rename:
+  1. docs/API_Guide.md → docs/api-guide.md
+  2. docs/User Manual.md → docs/user-manual.md
+  3. images/Company_Logo.png → images/company-logo.png
+
+Links to update:
+  • docs/index.md (2 links)
+  • docs/guides/getting-started.md (1 link)
+  • docs/tutorials/quickstart.md (4 links)
+  
+Total: 7 links in 3 files will be updated
+
+This will:
+  ✓ Rename 3 files using git mv (preserves history)
+  ✓ Update 7 internal links in 3 markdown files
+  ✓ Create backup: .docbuilder-backup-20251229-143052/
+
+Proceed with fixes? [y/N]: _
+```
+
+### Dry-Run Output
+
+`docbuilder lint --fix --dry-run` shows what would change without applying:
+
+```
+DRY RUN: No changes will be applied
+
+[File Renames]
+  docs/API_Guide.md → docs/api-guide.md
+
+[Link Updates]
+  docs/index.md:12
+    Before: [API Guide](API_Guide.md)
+    After:  [API Guide](api-guide.md)
+  
+  docs/index.md:45
+    Before: ![Diagram](../images/Architecture_Diagram.png)
+    After:  ![Diagram](../images/architecture-diagram.png)
+  
+  docs/guides/getting-started.md:8
+    Before: See the [API Guide](../API_Guide.md#authentication) for details.
+    After:  See the [API Guide](../api-guide.md#authentication) for details.
+
+Summary:
+  3 files would be renamed
+  7 links would be updated across 3 files
+```
+
+### Implementation Phases
+
+**Phase 3a: Basic Renaming**
+- File rename with `git mv` support
+- Confirmation prompts
+- Dry-run mode
+
+**Phase 3b: Link Discovery**
+- Scan markdown files for links
+- Parse inline, reference, and image links
+- Resolve relative paths
+
+**Phase 3c: Link Updates**
+- Generate replacement text
+- Apply updates atomically
+- Rollback on failure
+
+**Phase 3d: Edge Cases**
+- Skip external URLs
+- Handle code blocks
+- Case-insensitive matching
+
+**Phase 3e: Reporting**
+- Detailed fix report
+- Dry-run preview
+- Interactive confirmation
+
 ## Testing Strategy
 
 Follow ADR-001 golden testing approach:
@@ -483,19 +724,55 @@ test/
         broken-links/           # Links to non-existent files
         invalid-double-ext/     # .md.backup, .markdown.old
       
+      fix/
+        links/
+          # Test files for link resolution
+          before/
+            docs/
+              API_Guide.md            # File to be renamed
+              index.md                # Contains link to API_Guide.md
+              guides/
+                tutorial.md           # Contains relative link ../API_Guide.md
+            images/
+              Diagram.png             # Image to be renamed
+          after/
+            # Expected state after --fix applied
+            docs/
+              api-guide.md            # Renamed file
+              index.md                # Link updated to api-guide.md
+              guides/
+                tutorial.md           # Link updated to ../api-guide.md
+            images/
+              diagram.png             # Renamed image
+      
     golden/
-      mixed-case.golden.json      # Expected error output
-      spaces.golden.json          # Expected error output
-      drawio-allowed.golden.json  # Verify .drawio.* passes
+      mixed-case.golden.json          # Expected error output
+      spaces.golden.json              # Expected error output
+      drawio-allowed.golden.json      # Verify .drawio.* passes
+      fix-with-links.golden.json      # Expected fix report with link updates
+      fix-dry-run.golden.txt          # Expected dry-run preview output
 ```
 
 **Test Coverage:**
 - Each rule has unit test with valid/invalid cases
 - Integration tests run linter on test directories
 - Golden files verify exact error messages
-- Auto-fix tests verify safe transformations
+- **Auto-fix tests verify safe transformations**
+  - Test file renaming with git mv
+  - Test link discovery and resolution
+  - Test link updates preserve style (relative/absolute)
+  - Test anchor fragments are preserved
+  - Test external URLs are not modified
+  - Test links in code blocks are ignored
+  - Test rollback on failure
 - Pre-commit hook tested via Git test repository
 - Default path detection tested (docs/, documentation/, fallback)
+- **Link resolution tests:**
+  - Unit tests for path resolution (relative → absolute)
+  - Unit tests for link regex patterns (inline, reference, image)
+  - Integration tests with before/after directory structures
+  - Edge case tests (external URLs, code blocks, broken links)
+  - Case-insensitive filesystem tests
 
 ## Keeping Linting Rules Synchronized with DocBuilder
 
