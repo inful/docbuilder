@@ -27,7 +27,7 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	// 2. Docs base sections where DocsBase == Section (nested docs paths like docs/documentation)
 	isRepositoryRoot := doc.Section == "" && doc.Repository != "" && doc.IsIndex
 	isDocsBase := doc.Section != "" && doc.DocsBase == doc.Section && doc.Repository != ""
-	
+
 	if isRepositoryRoot || isDocsBase {
 		repoTitle := titleCase(doc.Repository)
 		if repoTitle != "" {

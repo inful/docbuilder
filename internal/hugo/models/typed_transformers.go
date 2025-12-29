@@ -391,16 +391,12 @@ func (t *EditLinkInjectorV3) RequiredContext() []string {
 }
 
 // Transform injects edit URLs into front matter.
+// Relearn theme always wants per-page edit links, so no theme capability check needed.
 func (t *EditLinkInjectorV3) Transform(page *ContentPage, context *TransformContext) (*TransformationResult, error) {
 	startTime := time.Now()
 	result := NewTransformationResult()
 
-	// Get required services
-	themeCapabilities := context.Generator.GetThemeCapabilities()
-	if !themeCapabilities.WantsPerPageEditLinks {
-		return result.SetSuccess().SetDuration(time.Since(startTime)), nil
-	}
-
+	// Check if forge supports edit links
 	forgeCapabilities := context.Generator.GetForgeCapabilities(page.File.Forge)
 	if !forgeCapabilities.SupportsEditLinks {
 		return result.SetSuccess().SetDuration(time.Since(startTime)), nil

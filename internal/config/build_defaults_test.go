@@ -18,7 +18,7 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: hextra
+  theme: relearn
 `
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
@@ -45,7 +45,7 @@ forges:
 output:
   directory: ./site
 hugo:
-  theme: hextra
+  theme: relearn
 `
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {

@@ -1,7 +1,6 @@
 package typed
 
 import (
-"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -11,81 +10,17 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
-// HugoThemeType represents strongly-typed Hugo theme options
-type HugoThemeType struct {
-	value string
-}
-
-// Predefined Hugo theme types
-var (
-	HugoThemeHextra = HugoThemeType{"hextra"}
-	HugoThemeDocsy  = HugoThemeType{"docsy"}
-	HugoThemeBook   = HugoThemeType{"book"}
-	HugoThemeCustom = HugoThemeType{"custom"}
-
-	// Normalizer for theme types
-	hugoThemeNormalizer = foundation.NewNormalizer(map[string]HugoThemeType{
-		"hextra": HugoThemeHextra,
-		"docsy":  HugoThemeDocsy,
-		"book":   HugoThemeBook,
-		"custom": HugoThemeCustom,
-	}, HugoThemeHextra) // default to Hextra
-
-	// Validator for theme types
-	hugoThemeValidator = foundation.OneOf("theme_type", []HugoThemeType{
-		HugoThemeHextra, HugoThemeDocsy, HugoThemeBook, HugoThemeCustom,
-	})
+// Relearn theme constants - DocBuilder exclusively uses the Relearn theme
+const (
+	RelearnTheme      = "relearn"
+	RelearnModulePath = "github.com/McShelby/hugo-theme-relearn"
 )
 
-// String returns the string representation of the theme type
-func (ht HugoThemeType) String() string {
-	return ht.value
-}
-
-// Valid checks if the theme type is valid
-func (ht HugoThemeType) Valid() bool {
-	return hugoThemeValidator(ht).Valid
-}
-
-// SupportsModules indicates if this theme supports Hugo modules
-func (ht HugoThemeType) SupportsModules() bool {
-	switch ht {
-	case HugoThemeHextra, HugoThemeDocsy:
-		return true
-	default:
-		return false
-	}
-}
-
-// GetModulePath returns the Hugo module path for this theme
-func (ht HugoThemeType) GetModulePath() foundation.Option[string] {
-	switch ht {
-	case HugoThemeHextra:
-		return foundation.Some("github.com/imfing/hextra")
-	case HugoThemeDocsy:
-		return foundation.Some("github.com/google/docsy")
-	default:
-		return foundation.None[string]()
-	}
-}
-
-// ParseHugoThemeType parses a string into a HugoThemeType
-func ParseHugoThemeType(s string) foundation.Result[HugoThemeType, error] {
-	theme, err := hugoThemeNormalizer.NormalizeWithError(s)
-	if err != nil {
-		return foundation.Err[HugoThemeType, error](
-			errors.ValidationError(fmt.Sprintf("invalid theme type: %s", s)).
-WithContext("input", s).
-WithContext("valid_values", []string{"hextra", "docsy", "book", "custom"}).
-				Build(),
-		)
-	}
-	return foundation.Ok[HugoThemeType, error](theme)
-}
-
-// NormalizeHugoThemeType normalizes a string to a HugoThemeType
-func NormalizeHugoThemeType(s string) HugoThemeType {
-	return hugoThemeNormalizer.Normalize(s)
+// NormalizeHugoTheme always returns the Relearn theme constant
+// Kept for backward compatibility with existing code
+func NormalizeHugoTheme(s string) string {
+	// DocBuilder only supports Relearn - normalize any input to relearn
+	return RelearnTheme
 }
 
 // HugoMarkupType represents markup configuration types
@@ -107,7 +42,6 @@ type HugoConfig struct {
 	// Basic Hugo settings
 	Title   string                    `yaml:"title" json:"title"`
 	BaseURL foundation.Option[string] `yaml:"baseURL,omitempty" json:"baseURL,omitempty"`
-	Theme   HugoThemeType             `yaml:"theme" json:"theme"`
 
 	// Content settings
 	ContentDir string   `yaml:"contentDir,omitempty" json:"contentDir,omitempty"`
@@ -161,11 +95,7 @@ type HugoParams struct {
 	// Navigation configuration
 	Navigation NavigationConfig `yaml:"navigation" json:"navigation"`
 
-	// Theme-specific parameters (organized by theme)
-	Hextra foundation.Option[HextraParams] `yaml:"hextra,omitempty" json:"hextra,omitempty"`
-	Docsy  foundation.Option[DocsyParams]  `yaml:"docsy,omitempty" json:"docsy,omitempty"`
-
-	// Custom parameters for extensibility
+	// Custom parameters for extensibility (Relearn-specific params go here)
 	Custom map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
 }
 
@@ -234,78 +164,11 @@ type ModuleMount struct {
 	Target string `yaml:"target" json:"target"`
 }
 
-// Theme-specific parameter types
-
-// HextraParams represents Hextra theme specific parameters
-type HextraParams struct {
-	DisplayMode foundation.Option[string]       `yaml:"displayMode,omitempty" json:"displayMode,omitempty"`
-	Width       foundation.Option[string]       `yaml:"width,omitempty" json:"width,omitempty"`
-	Navbar      foundation.Option[HextraNavbar] `yaml:"navbar,omitempty" json:"navbar,omitempty"`
-	Footer      foundation.Option[HextraFooter] `yaml:"footer,omitempty" json:"footer,omitempty"`
-}
-
-// HextraNavbar represents Hextra navbar configuration
-type HextraNavbar struct {
-	DisplayTitle bool                      `yaml:"displayTitle" json:"displayTitle"`
-	DisplayLogo  bool                      `yaml:"displayLogo" json:"displayLogo"`
-	LogoPath     foundation.Option[string] `yaml:"logoPath,omitempty" json:"logoPath,omitempty"`
-}
-
-// HextraFooter represents Hextra footer configuration
-type HextraFooter struct {
-	Enable      bool                      `yaml:"enable" json:"enable"`
-	DisplayText foundation.Option[string] `yaml:"displayText,omitempty" json:"displayText,omitempty"`
-}
-
-// DocsyParams represents Docsy theme specific parameters
-type DocsyParams struct {
-	EditPage DocsyEditPage              `yaml:"edit_page" json:"edit_page"`
-	Search   DocsySearch                `yaml:"search" json:"search"`
-	Taxonomy DocsyTaxonomy              `yaml:"taxonomy" json:"taxonomy"`
-	UI       foundation.Option[DocsyUI] `yaml:"ui,omitempty" json:"ui,omitempty"`
-}
-
-// DocsyEditPage represents Docsy edit page configuration
-type DocsyEditPage struct {
-	ViewURL foundation.Option[string] `yaml:"view_url,omitempty" json:"view_url,omitempty"`
-	EditURL foundation.Option[string] `yaml:"edit_url,omitempty" json:"edit_url,omitempty"`
-}
-
-// DocsySearch represents Docsy search configuration
-type DocsySearch struct {
-	Algolia foundation.Option[DocsyAlgolia] `yaml:"algolia,omitempty" json:"algolia,omitempty"`
-}
-
-// DocsyAlgolia represents Docsy Algolia search configuration
-type DocsyAlgolia struct {
-	AppID     foundation.Option[string] `yaml:"appId,omitempty" json:"appId,omitempty"`
-	APIKey    foundation.Option[string] `yaml:"apiKey,omitempty" json:"apiKey,omitempty"`
-	IndexName foundation.Option[string] `yaml:"indexName,omitempty" json:"indexName,omitempty"`
-}
-
-// DocsyTaxonomy represents Docsy taxonomy configuration
-type DocsyTaxonomy struct {
-	TaxonomyCloud      []string `yaml:"taxonomyCloud,omitempty" json:"taxonomyCloud,omitempty"`
-	TaxonomyCloudTitle []string `yaml:"taxonomyCloudTitle,omitempty" json:"taxonomyCloudTitle,omitempty"`
-}
-
-// DocsyUI represents Docsy UI configuration
-type DocsyUI struct {
-	ShowVisitedLinks   bool `yaml:"showVisitedLinks" json:"showVisitedLinks"`
-	SidebarMenuCompact bool `yaml:"sidebar_menu_compact" json:"sidebar_menu_compact"`
-	BreadcrumbDisable  bool `yaml:"breadcrumb_disable" json:"breadcrumb_disable"`
-}
-
 // Validation methods for TypedHugoConfig
 
 // Validate performs comprehensive validation of the Hugo configuration
 func (hc *HugoConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
-		// Validate theme type
-		func(config HugoConfig) foundation.ValidationResult {
-			return hugoThemeValidator(config.Theme)
-		},
-
 		// Validate title is not empty
 		func(config HugoConfig) foundation.ValidationResult {
 			if strings.TrimSpace(config.Title) == "" {
@@ -353,80 +216,9 @@ func (hc *HugoConfig) Validate() foundation.ValidationResult {
 			}
 			return foundation.Valid()
 		},
-
-		// Validate theme-specific configuration
-		func(config HugoConfig) foundation.ValidationResult {
-			return config.validateThemeSpecificConfig()
-		},
 	)
 
 	return chain.Validate(*hc)
-}
-
-// validateThemeSpecificConfig validates theme-specific parameters
-func (hc *HugoConfig) validateThemeSpecificConfig() foundation.ValidationResult {
-	switch hc.Theme {
-	case HugoThemeHextra:
-		if hc.Params.Hextra.IsSome() {
-			hextraParams := hc.Params.Hextra.Unwrap()
-			return hextraParams.Validate()
-		}
-	case HugoThemeDocsy:
-		if hc.Params.Docsy.IsSome() {
-			docsyParams := hc.Params.Docsy.Unwrap()
-			return docsyParams.Validate()
-		}
-	}
-	return foundation.Valid()
-}
-
-// Validate methods for theme-specific parameters
-
-// Validate validates Hextra theme parameters
-func (hp *HextraParams) Validate() foundation.ValidationResult {
-	// Validate display mode if specified
-	if hp.DisplayMode.IsSome() {
-		mode := hp.DisplayMode.Unwrap()
-		validModes := []string{"light", "dark", "auto"}
-		isValid := false
-		for _, valid := range validModes {
-			if mode == valid {
-				isValid = true
-				break
-			}
-		}
-		if !isValid {
-			return foundation.Invalid(
-				foundation.NewValidationError("displayMode", "valid_option",
-					fmt.Sprintf("displayMode must be one of: %v", validModes)),
-			)
-		}
-	}
-	return foundation.Valid()
-}
-
-// Validate validates Docsy theme parameters
-func (dp *DocsyParams) Validate() foundation.ValidationResult {
-	// For now, just validate that URLs are properly formatted if provided
-	if dp.EditPage.ViewURL.IsSome() {
-		if _, err := url.Parse(dp.EditPage.ViewURL.Unwrap()); err != nil {
-			return foundation.Invalid(
-				foundation.NewValidationError("edit_page.view_url", "valid_url",
-					fmt.Sprintf("view_url must be a valid URL: %v", err)),
-			)
-		}
-	}
-
-	if dp.EditPage.EditURL.IsSome() {
-		if _, err := url.Parse(dp.EditPage.EditURL.Unwrap()); err != nil {
-			return foundation.Invalid(
-				foundation.NewValidationError("edit_page.edit_url", "valid_url",
-					fmt.Sprintf("edit_url must be a valid URL: %v", err)),
-			)
-		}
-	}
-
-	return foundation.Valid()
 }
 
 // Helper functions

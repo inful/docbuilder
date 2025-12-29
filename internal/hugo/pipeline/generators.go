@@ -103,14 +103,14 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 	// Collect all unique section paths (including intermediate directories)
 	allSections := make(map[string]bool)
-	
+
 	for _, doc := range ctx.Discovered {
 		if doc.Section != "" {
 			section := filepath.Join(doc.Repository, doc.Section)
-			
+
 			// Add this section and all parent sections
 			allSections[section] = true
-			
+
 			// Add all intermediate parent directories
 			parts := strings.Split(section, string(filepath.Separator))
 			for i := 2; i < len(parts); i++ {
