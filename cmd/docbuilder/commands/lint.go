@@ -9,23 +9,30 @@ import (
 
 // LintCmd implements the 'lint' command.
 type LintCmd struct {
-	Path   string `arg:"" optional:"" help:"Path to lint (file or directory). Defaults to intelligent detection (docs/, documentation/, or .)"`
 	Format string `short:"f" enum:"text,json" default:"text" help:"Output format (text or json)"`
 	Quiet  bool   `short:"q" help:"Quiet mode: only show errors, suppress warnings"`
 	Fix    bool   `help:"Automatically fix issues where possible (requires confirmation)"`
 	DryRun bool   `help:"Show what would be fixed without applying changes (requires --fix)"`
 	Yes    bool   `short:"y" help:"Auto-confirm fixes without prompting (for CI/CD)"`
+
+	Path        *LintPathCmd     `cmd:"" default:"withargs" help:"Lint a path (file or directory)"`
+	InstallHook *InstallHookCmd  `cmd:"" help:"Install pre-commit hook for automatic linting"`
 }
 
-// Run executes the lint command.
-func (l *LintCmd) Run(_ *Global, root *CLI) error {
+// LintPathCmd handles linting a specific path.
+type LintPathCmd struct {
+	Path string `arg:"" optional:"" help:"Path to lint (file or directory). Defaults to intelligent detection (docs/, documentation/, or .)"`
+}
+
+// Run executes the lint path command.
+func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Validate flags
-	if l.DryRun && !l.Fix {
+	if parent.DryRun && !parent.Fix {
 		return fmt.Errorf("--dry-run requires --fix flag")
 	}
 
 	// Determine path to lint
-	path := l.Path
+	path := lp.Path
 	wasAutoDetected := false
 
 	if path == "" {
@@ -50,32 +57,32 @@ func (l *LintCmd) Run(_ *Global, root *CLI) error {
 
 	// Create linter configuration
 	cfg := &lint.Config{
-		Quiet:  l.Quiet,
-		Format: l.Format,
-		Fix:    l.Fix,
-		DryRun: l.DryRun,
-		Yes:    l.Yes,
+		Quiet:  parent.Quiet,
+		Format: parent.Format,
+		Fix:    parent.Fix,
+		DryRun: parent.DryRun,
+		Yes:    parent.Yes,
 	}
 
 	// Create linter
 	linter := lint.NewLinter(cfg)
 
 	// If fix mode is enabled, run fixer instead
-	if l.Fix {
-		fixer := lint.NewFixer(linter, l.DryRun, false) // force=false for safety
+	if parent.Fix {
+		fixer := lint.NewFixer(linter, parent.DryRun, false) // force=false for safety
 		fixResult, err := fixer.Fix(path)
 		if err != nil {
 			return fmt.Errorf("fixing failed: %w", err)
 		}
 
 		// Display what was fixed
-		if l.DryRun {
+		if parent.DryRun {
 			fmt.Println("DRY RUN: No changes will be applied")
 			fmt.Println()
 		}
 
 		if len(fixResult.FilesRenamed) > 0 {
-			fmt.Println("Files to be renamed:" )
+			fmt.Println("Files to be renamed:")
 			for _, op := range fixResult.FilesRenamed {
 				if op.Success {
 					fmt.Printf("  %s → %s\n", op.OldPath, op.NewPath)
@@ -103,7 +110,7 @@ func (l *LintCmd) Run(_ *Global, root *CLI) error {
 			os.Exit(2)
 		}
 
-		if !l.DryRun {
+		if !parent.DryRun {
 			fmt.Printf("\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
 		}
 		return nil
@@ -119,7 +126,7 @@ func (l *LintCmd) Run(_ *Global, root *CLI) error {
 	useColor := isColorSupported()
 
 	// Format and output results
-	formatter := lint.NewFormatter(l.Format, useColor)
+	formatter := lint.NewFormatter(parent.Format, useColor)
 	if err := formatter.Format(os.Stdout, result, path, wasAutoDetected); err != nil {
 		return fmt.Errorf("formatting output: %w", err)
 	}
@@ -127,7 +134,7 @@ func (l *LintCmd) Run(_ *Global, root *CLI) error {
 	// Determine exit code based on results
 	if result.HasErrors() {
 		os.Exit(2) // Errors found (blocks build)
-	} else if result.HasWarnings() && !l.Quiet {
+	} else if result.HasWarnings() && !parent.Quiet {
 		os.Exit(1) // Warnings present
 	}
 

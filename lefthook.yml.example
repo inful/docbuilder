@@ -1,0 +1,91 @@
+# Lefthook configuration for DocBuilder
+# https://github.com/evilmartians/lefthook
+#
+# Installation:
+#   1. Install lefthook: brew install lefthook (or go install github.com/evilmartians/lefthook@latest)
+#   2. Run: lefthook install
+#
+# Usage:
+#   Lefthook runs automatically on git commit
+#   To skip: LEFTHOOK=0 git commit
+
+pre-commit:
+  parallel: true
+  
+  commands:
+    # Lint staged documentation files
+    lint-docs:
+      glob: "*.{md,markdown,png,jpg,jpeg,gif,svg}"
+      run: |
+        echo "🔍 Linting staged documentation files..."
+        
+        # Determine how to run docbuilder
+        if command -v docbuilder &> /dev/null; then
+          DOCBUILDER_CMD="docbuilder"
+        elif [ -f "go.mod" ] && grep -q "docbuilder" go.mod; then
+          # In development mode - use go run
+          DOCBUILDER_CMD="go run ./cmd/docbuilder"
+        else
+          echo "⚠️  docbuilder not found in PATH"
+          echo "   Install: go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest"
+          echo "   Skipping documentation linting..."
+          exit 0
+        fi
+        
+        # Get staged documentation files
+        STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|markdown|png|jpg|jpeg|gif,svg)$' || true)
+        
+        if [ -z "$STAGED_FILES" ]; then
+          exit 0
+        fi
+        
+        # Create temp directory for staged versions
+        TEMP_DIR=$(mktemp -d)
+        trap "rm -rf ${TEMP_DIR}" EXIT
+        
+        # Copy staged files preserving structure
+        for file in $STAGED_FILES; do
+          mkdir -p "${TEMP_DIR}/$(dirname "$file")"
+          git show ":$file" > "${TEMP_DIR}/${file}"
+        done
+        
+        # Run linter
+        if $DOCBUILDER_CMD lint "${TEMP_DIR}" --quiet; then
+          echo "✅ Documentation linting passed"
+        else
+          echo ""
+          echo "❌ Documentation linting failed"
+          echo ""
+          echo "To fix: $DOCBUILDER_CMD lint --fix"
+          echo "To skip: LEFTHOOK=0 git commit"
+          exit 1
+        fi
+      
+      # Fail the commit if linting fails
+      fail_text: "Documentation linting failed. Run 'docbuilder lint --fix' to resolve issues."
+      
+      # Skip in CI environments (linting runs separately there)
+      skip:
+        - merge
+        - rebase
+        
+  # Optional: Run tests before commit
+  # Uncomment to enable
+  # scripts:
+  #   "test-docs":
+  #     runner: bash
+
+# Optional: Pre-push hooks
+# pre-push:
+#   commands:
+#     lint-all-docs:
+#       run: docbuilder lint
+
+# Optional: Post-checkout hook to remind about linting
+# post-checkout:
+#   commands:
+#     lint-reminder:
+#       run: |
+#         if [ -d "docs" ] || [ -d "documentation" ]; then
+#           echo "💡 Tip: Run 'docbuilder lint' to check documentation"
+#         fi
