@@ -113,7 +113,7 @@ func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organizatio
 		return nil, err
 	}
 
-	var orgs []*Organization
+	var orgs = make([]*Organization, 0, len(githubOrgs))
 	for _, gOrg := range githubOrgs {
 		org := &Organization{
 			ID:          strconv.Itoa(gOrg.ID),
@@ -348,7 +348,7 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 
 	// Convert commits
-	var commits []WebhookCommit
+	var commits = make([]WebhookCommit, 0, len(pushEvent.Commits))
 	for _, commit := range pushEvent.Commits {
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,

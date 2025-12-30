@@ -197,7 +197,7 @@ func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authCo
 		return nil, fmt.Errorf("failed to list remote references: %w", err)
 	}
 
-	var gitRefs []*GitReference
+	var gitRefs = make([]*GitReference, 0, len(refs))
 	for _, ref := range refs {
 		gitRef := &GitReference{
 			Name:      ref.Name,

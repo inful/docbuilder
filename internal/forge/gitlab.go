@@ -365,7 +365,7 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		return nil, errors.New("missing project in push event")
 	}
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
-	var commits []WebhookCommit
+	var commits = make([]WebhookCommit, 0, len(pushEvent.Commits))
 	for _, commit := range pushEvent.Commits {
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,

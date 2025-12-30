@@ -360,7 +360,7 @@ func toLowerCase(b byte) byte {
 
 // ConvertToConfigRepositories converts discovered repositories to config.Repository format.
 func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
-	var configRepos []config.Repository
+	var configRepos = make([]config.Repository, 0, len(repos))
 
 	for _, repo := range repos {
 		// Find the forge config for this repository
