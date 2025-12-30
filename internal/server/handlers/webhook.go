@@ -104,8 +104,8 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	}
 
 	// Validate webhook signature if configured
-	if err := h.validateWebhookSignature(forgeName, signatureHeader, body, r); err != nil {
-		h.errorAdapter.WriteErrorResponse(w, r, err)
+	if validationErr := h.validateWebhookSignature(forgeName, signatureHeader, body, r); validationErr != nil {
+		h.errorAdapter.WriteErrorResponse(w, r, validationErr)
 		return
 	}
 
