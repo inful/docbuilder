@@ -188,38 +188,63 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 
 	// Process each file with issues
 	for filePath, issues := range fileIssues {
-		// Check if this is a filename issue that can be fixed
-		if f.canFixFilename(issues) {
-			op := f.renameFile(filePath)
-			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
-
-			if op.Success {
-				fixResult.ErrorsFixed += len(issues)
-
-				// Find and update all links to the renamed file
-				if !f.dryRun {
-					links, err := f.findLinksToFile(filePath, rootPath)
-					if err != nil {
-						fixResult.Errors = append(fixResult.Errors,
-							fmt.Errorf("failed to find links to %s: %w", filePath, err))
-					} else if len(links) > 0 {
-						// Apply link updates
-						updates, err := f.applyLinkUpdates(links, filePath, op.NewPath)
-						if err != nil {
-							fixResult.Errors = append(fixResult.Errors,
-								fmt.Errorf("failed to update links: %w", err))
-						} else {
-							fixResult.LinksUpdated = append(fixResult.LinksUpdated, updates...)
-						}
-					}
-				}
-			} else if op.Error != nil {
-				fixResult.Errors = append(fixResult.Errors, op.Error)
-			}
-		}
+		f.processFileWithIssues(filePath, issues, rootPath, fixResult)
 	}
 
 	return fixResult, nil
+}
+
+// processFileWithIssues handles fixing issues for a single file.
+func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult) {
+	// Check if this is a filename issue that can be fixed
+	if !f.canFixFilename(issues) {
+		return
+	}
+
+	op := f.renameFile(filePath)
+	fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
+
+	if op.Success {
+		fixResult.ErrorsFixed += len(issues)
+		f.handleSuccessfulRename(filePath, op.NewPath, rootPath, fixResult)
+	} else if op.Error != nil {
+		fixResult.Errors = append(fixResult.Errors, op.Error)
+	}
+}
+
+// handleSuccessfulRename processes link updates after a successful file rename.
+func (f *Fixer) handleSuccessfulRename(oldPath, newPath, rootPath string, fixResult *FixResult) {
+	// Skip link updates in dry-run mode
+	if f.dryRun {
+		return
+	}
+
+	updates, err := f.findAndUpdateLinks(oldPath, newPath, rootPath)
+	if err != nil {
+		fixResult.Errors = append(fixResult.Errors, err)
+		return
+	}
+
+	fixResult.LinksUpdated = append(fixResult.LinksUpdated, updates...)
+}
+
+// findAndUpdateLinks finds all links to a file and updates them to the new path.
+func (f *Fixer) findAndUpdateLinks(oldPath, newPath, rootPath string) ([]LinkUpdate, error) {
+	links, err := f.findLinksToFile(oldPath, rootPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find links to %s: %w", oldPath, err)
+	}
+
+	if len(links) == 0 {
+		return nil, nil
+	}
+
+	updates, err := f.applyLinkUpdates(links, oldPath, newPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update links: %w", err)
+	}
+
+	return updates, nil
 }
 
 // canFixFilename checks if the issues for a file are filename-related and fixable.
