@@ -172,26 +172,21 @@ type StoreHealth struct {
 // Manager orchestrates state operations across multiple stores.
 // This is a much smaller, focused component compared to the original 620-line Manager.
 type Manager struct {
-	store        Store
-	autoSave     bool
-	saveInterval time.Duration
-	lastSaved    foundation.Option[time.Time]
+	store     Store
+	lastSaved foundation.Option[time.Time]
 }
 
 // NewManager creates a new state manager with the given store.
 func NewManager(store Store) *Manager {
 	return &Manager{
-		store:        store,
-		autoSave:     true,
-		saveInterval: 5 * time.Second,
-		lastSaved:    foundation.None[time.Time](),
+		store:     store,
+		lastSaved: foundation.None[time.Time](),
 	}
 }
 
 // WithAutoSave configures automatic saving.
 func (sm *Manager) WithAutoSave(enabled bool, interval time.Duration) *Manager {
-	sm.autoSave = enabled
-	sm.saveInterval = interval
+	// Auto-save configuration removed - no longer needed
 	return sm
 }
 

@@ -19,7 +19,6 @@ type SkipEvaluator struct {
 	outDir    string
 	state     SkipStateAccess
 	generator *hugo.Generator
-	rules     *RuleChain
 }
 
 // NewSkipEvaluator constructs a new evaluator with the standard validation rules.
@@ -30,7 +29,6 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 		outDir:    outDir,
 		state:     st,
 		generator: gen,
-		rules:     nil, // Rules created dynamically
 	}
 }
 

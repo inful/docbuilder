@@ -90,7 +90,6 @@ type BuildQueue struct {
 	wg          sync.WaitGroup
 	builder     Builder
 	// retry policy configuration (source) + derived policy
-	retryCfg    config.BuildConfig
 	retryPolicy retry.Policy
 	recorder    metrics.Recorder
 	// Event emitter for build lifecycle events (Phase B)
@@ -119,7 +118,6 @@ func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 		historySize: 50, // Keep last 50 completed jobs
 		stopChan:    make(chan struct{}),
 		builder:     builder,
-		retryCfg:    config.BuildConfig{},
 		retryPolicy: retry.DefaultPolicy(),
 		recorder:    metrics.NoopRecorder{},
 	}
@@ -127,7 +125,6 @@ func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 
 // ConfigureRetry updates the retry policy (should be called once at daemon init after config load).
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
-	bq.retryCfg = cfg
 	retryInitialDelay, _ := time.ParseDuration(cfg.RetryInitialDelay)
 	maxDelay, _ := time.ParseDuration(cfg.RetryMaxDelay)
 	bq.retryPolicy = retry.NewPolicy(cfg.RetryBackoff, retryInitialDelay, maxDelay, cfg.MaxRetries)

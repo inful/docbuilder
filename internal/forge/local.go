@@ -13,12 +13,11 @@ import (
 // environments where documentation is sourced from the current repo without
 // external forge API access.
 type LocalClient struct {
-	name   string
-	config *Config
+	name string
 }
 
 func NewLocalClient(config *Config) (Client, error) {
-	lc := &LocalClient{name: config.Name, config: config}
+	lc := &LocalClient{name: config.Name}
 	return lc, nil
 }
 

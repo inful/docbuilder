@@ -29,7 +29,6 @@ type EnhancedMockForgeClient struct {
 	webhookSecret string
 
 	// Error tracking
-	lastError      error
 	operationCount int
 	mu             sync.Mutex // protects operationCount
 }
@@ -167,7 +166,6 @@ func (m *EnhancedMockForgeClient) ClearFailures() {
 	m.rateLimit = nil
 	m.networkTimeout = 0
 	m.responseDelay = 0
-	m.lastError = nil
 	m.operationCount = 0
 }
 
