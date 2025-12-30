@@ -27,7 +27,6 @@ type TestEnvironment struct {
 	ConfigDir string
 	OutputDir string
 	Config    *config.Config
-	Context   context.Context
 	Cancel    context.CancelFunc
 	Resources map[string]interface{}
 }
@@ -58,14 +57,13 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 	return &TestEnvironment{
 		t:         t,
 		TempDir:   tempDir,
 		ConfigDir: configDir,
 		OutputDir: outputDir,
-		Context:   ctx,
 		Cancel:    cancel,
 		Resources: make(map[string]interface{}),
 	}
@@ -89,8 +87,11 @@ func (env *TestEnvironment) WithConfig(cfg *config.Config) *TestEnvironment {
 
 // WithTimeout sets a custom timeout for the environment.
 func (env *TestEnvironment) WithTimeout(timeout time.Duration) *TestEnvironment {
-	env.Cancel()
-	env.Context, env.Cancel = context.WithTimeout(context.Background(), timeout)
+	if env.Cancel != nil {
+		env.Cancel()
+	}
+	_, cancel := context.WithTimeout(context.Background(), timeout)
+	env.Cancel = cancel
 	return env
 }
 
