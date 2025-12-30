@@ -60,7 +60,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	if err != nil {
 		return fmt.Errorf("resolve docs dir: %w", err)
 	}
-	if st, err := os.Stat(absDocs); err != nil || !st.IsDir() {
+	if st, statErr := os.Stat(absDocs); statErr != nil || !st.IsDir() {
 		return fmt.Errorf("docs dir not found or not a directory: %s", absDocs)
 	}
 
@@ -68,7 +68,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	buildStat := &buildStatus{}
 
 	// Initial build
-	if _, err := buildFromLocal(cfg, absDocs); err != nil {
+	if _, err = buildFromLocal(cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
 		buildStat.setError(err)
 	} else {
@@ -86,7 +86,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	daemon.buildStatus = buildStat
 
 	httpServer := NewHTTPServer(cfg, daemon)
-	if err := httpServer.Start(ctx); err != nil {
+	if err = httpServer.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 

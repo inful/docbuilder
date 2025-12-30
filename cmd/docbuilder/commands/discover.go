@@ -62,7 +62,8 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	for _, repo := range reposToProcess {
 		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
 
-		repoPath, err := gitClient.CloneRepo(repo)
+		var repoPath string
+		repoPath, err = gitClient.CloneRepo(repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return err

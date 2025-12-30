@@ -104,7 +104,7 @@ func CopyDir(src, dst string) error {
 	}
 
 	// Create destination directory
-	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
 		return err
 	}
 
@@ -152,7 +152,7 @@ func copyFile(src, dst string) error {
 		_ = dstFile.Close()
 	}()
 
-	if _, err := io.Copy(dstFile, srcFile); err != nil {
+	if _, err = io.Copy(dstFile, srcFile); err != nil {
 		return err
 	}
 

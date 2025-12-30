@@ -338,9 +338,9 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if client wants JSON
 	if r.Header.Get("Accept") == "application/json" || r.URL.Query().Get("format") == "json" {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(statusData); err != nil {
-			slog.Error("failed to encode status json", logfields.Error(err))
-			internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode status json").Build()
+		if encodeErr := json.NewEncoder(w).Encode(statusData); encodeErr != nil {
+			slog.Error("failed to encode status json", logfields.Error(encodeErr))
+			internalErr := errors.WrapError(encodeErr, errors.CategoryInternal, "failed to encode status json").Build()
 			errorAdapter.WriteErrorResponse(w, internalErr)
 		}
 		return

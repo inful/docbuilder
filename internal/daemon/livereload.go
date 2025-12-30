@@ -95,22 +95,22 @@ func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.removeClient(client.id)
 			return
 		case <-hb.C:
-			if _, err := bw.WriteString(": ping\n\n"); err == nil {
-				if err := bw.Flush(); err != nil {
-					slog.Debug("livereload ping flush", "error", err)
+			if _, writeErr := bw.WriteString(": ping\n\n"); writeErr == nil {
+				if flushErr := bw.Flush(); flushErr != nil {
+					slog.Debug("livereload ping flush", "error", flushErr)
 				}
 				flusher.Flush()
 			} else {
-				slog.Debug("livereload ping write", "error", err)
+				slog.Debug("livereload ping write", "error", writeErr)
 			}
 		case hash := <-client.ch:
-			if _, err := bw.WriteString("data: {\"hash\":\"" + hash + "\"}\n\n"); err == nil {
-				if err := bw.Flush(); err != nil {
-					slog.Debug("livereload broadcast flush", "error", err)
+			if _, writeErr := bw.WriteString("data: {\"hash\":\"" + hash + "\"}\n\n"); writeErr == nil {
+				if flushErr := bw.Flush(); flushErr != nil {
+					slog.Debug("livereload broadcast flush", "error", flushErr)
 				}
 				flusher.Flush()
 			} else {
-				slog.Debug("livereload broadcast write", "error", err)
+				slog.Debug("livereload broadcast write", "error", writeErr)
 			}
 		}
 	}

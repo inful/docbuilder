@@ -163,7 +163,8 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	normalizeDynamicFields(actual)
 
 	if updateGolden {
-		data, err := yaml.Marshal(actual)
+		var data []byte
+		data, err = yaml.Marshal(actual)
 		require.NoError(t, err, "failed to marshal golden config")
 
 		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
@@ -281,7 +282,8 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 	actual.Structure = buildStructureTree(contentDir)
 
 	if updateGolden {
-		data, err := json.MarshalIndent(actual, "", "  ")
+		var data []byte
+		data, err = json.MarshalIndent(actual, "", "  ")
 		require.NoError(t, err, "failed to marshal content structure")
 
 		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
