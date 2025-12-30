@@ -2,6 +2,7 @@ package build
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -78,7 +79,6 @@ func TestDefaultBuildService_Run_NoRepositories(t *testing.T) {
 		Config:    &config.Config{},
 		OutputDir: "/tmp/test",
 	})
-
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
 	// Note: Might fail earlier during workspace creation
 	// depending on how quickly the cancellation propagates
 	if result.Status == BuildStatusCancelled {
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			t.Errorf("expected context.Canceled error, got %v", err)
 		}
 	}
@@ -204,7 +204,6 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 			OutputDir: "/tmp/test",
 			Options:   BuildOptions{SkipIfUnchanged: true},
 		})
-
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	ggit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 // RepoFetchResult captures the outcome path and (optional) pre/post head commits for change detection.

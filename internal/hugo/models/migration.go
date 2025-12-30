@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -145,7 +146,7 @@ func (m *MigrationHelper) CreateBasePatch(title, repository, forge, section stri
 // This provides the same functionality as the legacy patch application system.
 func (m *MigrationHelper) ApplyPatchSequence(base *FrontMatter, patches ...*FrontMatterPatch) (*FrontMatter, error) {
 	if base == nil {
-		return nil, fmt.Errorf("base front matter cannot be nil")
+		return nil, errors.New("base front matter cannot be nil")
 	}
 
 	result := base.Clone()

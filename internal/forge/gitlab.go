@@ -3,6 +3,7 @@ package forge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -361,7 +362,7 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		return nil, err
 	}
 	if pushEvent.Project.ID == 0 { // zero value detection via ID
-		return nil, fmt.Errorf("missing project in push event")
+		return nil, errors.New("missing project in push event")
 	}
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 	var commits []WebhookCommit
@@ -393,7 +394,7 @@ func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) 
 		return nil, err
 	}
 	if pushEvent.Project.ID == 0 {
-		return nil, fmt.Errorf("missing project in tag push event")
+		return nil, errors.New("missing project in tag push event")
 	}
 	// Extract tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
 	tag := strings.TrimPrefix(pushEvent.Ref, "refs/tags/")
@@ -422,7 +423,7 @@ func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("missing project in repository event")
+		return nil, errors.New("missing project in repository event")
 	}
 	return event, nil
 }

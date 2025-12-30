@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -153,12 +154,12 @@ func NewTypedTransformerRegistry() *TypedTransformerRegistry {
 // Register adds a transformer to the registry.
 func (r *TypedTransformerRegistry) Register(transformer TypedTransformer) error {
 	if transformer == nil {
-		return fmt.Errorf("transformer cannot be nil")
+		return errors.New("transformer cannot be nil")
 	}
 
 	name := transformer.Name()
 	if name == "" {
-		return fmt.Errorf("transformer name cannot be empty")
+		return errors.New("transformer name cannot be empty")
 	}
 
 	// Check for conflicts
@@ -195,7 +196,7 @@ func (r *TypedTransformerRegistry) ListByPriority() []TypedTransformer {
 	transformers := r.List()
 
 	// Sort by priority (lower runs first), then by name for stability
-	for i := 0; i < len(transformers)-1; i++ {
+	for i := range len(transformers) - 1 {
 		for j := i + 1; j < len(transformers); j++ {
 			iPriority := transformers[i].Priority()
 			jPriority := transformers[j].Priority()
@@ -349,7 +350,7 @@ func topologicalSortTyped(transformers []TypedTransformer) ([]TypedTransformer, 
 
 	// Check for cycles
 	if len(result) != len(transformers) {
-		return nil, fmt.Errorf("circular dependency detected in typed transformers")
+		return nil, errors.New("circular dependency detected in typed transformers")
 	}
 
 	return result, nil
@@ -357,7 +358,7 @@ func topologicalSortTyped(transformers []TypedTransformer) ([]TypedTransformer, 
 
 // sortStrings sorts a string slice in-place for deterministic ordering.
 func sortStrings(s []string) {
-	for i := 0; i < len(s)-1; i++ {
+	for i := range len(s) - 1 {
 		for j := i + 1; j < len(s); j++ {
 			if s[i] > s[j] {
 				s[i], s[j] = s[j], s[i]
@@ -570,7 +571,7 @@ func (p *ContentPage) Clone() *ContentPage {
 // Validate performs basic validation of the content page.
 func (p *ContentPage) Validate() error {
 	if p.File.Path == "" {
-		return fmt.Errorf("file path is required")
+		return errors.New("file path is required")
 	}
 
 	if p.FrontMatter != nil {

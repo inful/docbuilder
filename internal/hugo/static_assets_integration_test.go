@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 // TestViewTransitionsIntegration tests the end-to-end flow of View Transitions

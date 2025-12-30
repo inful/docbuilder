@@ -22,12 +22,12 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		forgejo := NewEnhancedForgejoMock("prod-forgejo")
 
 		// Simulate enterprise organizations with large repository sets
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			orgName := "enterprise-" + string(rune('a'+i))
 			github.AddOrganization(CreateMockGitHubOrg(orgName))
 
 			// Add diverse repository types per organization
-			for j := 0; j < 50; j++ {
+			for j := range 50 {
 				repoName := "service-" + string(rune('a'+j))
 				hasDoc := j%4 == 0      // 25% have docs
 				isPrivate := j%3 == 0   // 33% are private
@@ -38,11 +38,11 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		}
 
 		// Similar setup for GitLab (internal enterprise)
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			groupName := "internal-" + string(rune('a'+i))
 			gitlab.AddOrganization(CreateMockGitLabGroup(groupName))
 
-			for j := 0; j < 30; j++ {
+			for j := range 30 {
 				projectName := "project-" + string(rune('a'+j))
 				hasDoc := j%3 == 0    // Higher docs ratio for internal
 				isPrivate := j%2 == 0 // 50% private
@@ -52,7 +52,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 
 		// Forgejo for self-hosted infrastructure
 		forgejo.AddOrganization(CreateMockForgejoOrg("infrastructure"))
-		for j := 0; j < 20; j++ {
+		for j := range 20 {
 			repoName := "infra-" + string(rune('a'+j))
 			forgejo.AddRepository(CreateMockForgejoRepo("infrastructure", repoName, true, false, true, false))
 		}
@@ -78,7 +78,6 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 				ExcludePatterns: []string{"*deprecated*", "*legacy*", "*archive*"},
 			},
 			Hugo: config.HugoConfig{
-
 				Title:   "Enterprise Documentation Hub",
 				BaseURL: "https://docs.enterprise.com",
 				Params: map[string]interface{}{
@@ -158,7 +157,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		github.AddOrganization(CreateMockGitHubOrg("monitored-org"))
 
 		// Add repositories with various characteristics for monitoring
-		for i := 0; i < 20; i++ {
+		for i := range 20 {
 			repoName := "service-" + string(rune('a'+i))
 			hasDoc := i%2 == 0
 			github.AddRepository(CreateMockGitHubRepo("monitored-org", repoName, hasDoc, false, false, false))
@@ -342,16 +341,16 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		var totalRepos int
 
 		// Create multiple GitHub enterprise instances
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			client := NewEnhancedGitHubMock("enterprise-github-" + string(rune('a'+i)))
 
 			// Add multiple large organizations
-			for j := 0; j < 5; j++ {
+			for j := range 5 {
 				orgName := "enterprise-" + string(rune('a'+i)) + "-org-" + string(rune('a'+j))
 				client.AddOrganization(CreateMockGitHubOrg(orgName))
 
 				// Add many repositories per organization
-				for k := 0; k < 100; k++ {
+				for k := range 100 {
 					repoName := "service-" + string(rune('a'+k))
 					hasDoc := k%5 == 0    // 20% have docs
 					isPrivate := k%4 == 0 // 25% private
@@ -364,14 +363,14 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		}
 
 		// Create GitLab enterprise instances
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			client := NewEnhancedGitLabMock("enterprise-gitlab-" + string(rune('a'+i)))
 
-			for j := 0; j < 3; j++ {
+			for j := range 3 {
 				groupName := "gitlab-" + string(rune('a'+i)) + "-group-" + string(rune('a'+j))
 				client.AddOrganization(CreateMockGitLabGroup(groupName))
 
-				for k := 0; k < 80; k++ {
+				for k := range 80 {
 					projectName := "project-" + string(rune('a'+k))
 					hasDoc := k%4 == 0    // 25% have docs
 					isPrivate := k%3 == 0 // 33% private

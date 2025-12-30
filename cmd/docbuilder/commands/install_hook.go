@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,7 +26,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	hookPath := filepath.Join(hooksDir, "pre-commit")
 
 	// Create hooks directory if it doesn't exist
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
+	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
@@ -39,7 +40,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 			return fmt.Errorf("failed to read existing hook: %w", err)
 		}
 
-		if err := os.WriteFile(backupPath, content, 0755); err != nil {
+		if err := os.WriteFile(backupPath, content, 0o755); err != nil {
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
 	}
@@ -102,7 +103,7 @@ else
 fi
 `
 
-	if err := os.WriteFile(hookPath, []byte(hookContent), 0755); err != nil {
+	if err := os.WriteFile(hookPath, []byte(hookContent), 0o755); err != nil {
 		return fmt.Errorf("failed to write hook file: %w", err)
 	}
 
@@ -147,7 +148,7 @@ func findGitDir() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--git-dir")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("not in a git repository")
+		return "", errors.New("not in a git repository")
 	}
 
 	return string(output), nil

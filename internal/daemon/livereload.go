@@ -161,7 +161,7 @@ func (h *LiveReloadHub) Broadcast(hash string) {
 		h.metrics.IncrementCounter("livereload_broadcasts_total")
 	}
 	if dropped > 0 && h.metrics != nil {
-		for i := 0; i < dropped; i++ {
+		for range dropped {
 			h.metrics.IncrementCounter("livereload_dropped_clients_total")
 		}
 	}

@@ -1,12 +1,12 @@
 package state
 
 import (
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"sort"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // jsonRepositoryStore implements RepositoryStore for the JSON store.

@@ -1,7 +1,7 @@
 package retry
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -73,13 +73,13 @@ func (p Policy) Delay(retryCount int) time.Duration {
 // Validate ensures invariants; returns error if policy impossible to apply.
 func (p Policy) Validate() error {
 	if p.Initial <= 0 {
-		return fmt.Errorf("initial must be >0")
+		return errors.New("initial must be >0")
 	}
 	if p.Max <= 0 {
-		return fmt.Errorf("max must be >0")
+		return errors.New("max must be >0")
 	}
 	if p.MaxRetries < 0 {
-		return fmt.Errorf("max retries cannot be negative")
+		return errors.New("max retries cannot be negative")
 	}
 	return nil
 }

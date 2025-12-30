@@ -3,6 +3,7 @@ package forge
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -334,11 +335,11 @@ func TestEnhancedIntegrationSummary(t *testing.T) {
 			WithDelay(10 * time.Millisecond) // Small delay for testing
 
 		// Add many organizations and repositories
-		for i := 0; i < 10; i++ {
-			org := CreateMockOrganization(fmt.Sprintf("%d", i), fmt.Sprintf("org-%d", i), fmt.Sprintf("Organization %d", i), "Organization")
+		for i := range 10 {
+			org := CreateMockOrganization(strconv.Itoa(i), fmt.Sprintf("org-%d", i), fmt.Sprintf("Organization %d", i), "Organization")
 			client.AddOrganization(org)
 
-			for j := 0; j < 5; j++ {
+			for j := range 5 {
 				repo := CreateMockGitHubRepo(fmt.Sprintf("org-%d", i), fmt.Sprintf("repo-%d", j), true, false, false, false)
 				client.AddRepository(repo)
 			}

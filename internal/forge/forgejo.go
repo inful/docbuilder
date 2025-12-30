@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -230,7 +231,6 @@ func (c *ForgejoClient) fetchAndConvertRepos(ctx context.Context, endpoint strin
 			return repos, hasMore, nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +383,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 
 	if len(pushEvent.Repository) == 0 {
-		return nil, fmt.Errorf("missing repository in push event")
+		return nil, errors.New("missing repository in push event")
 	}
 
 	var repoMap map[string]interface{}

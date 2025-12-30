@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 func TestTransformContext(t *testing.T) {
@@ -394,6 +395,7 @@ func (m *mockTransformer) Dependencies() TransformerDependencies { return Transf
 func (m *mockTransformer) Configuration() TransformerConfiguration {
 	return TransformerConfiguration{Enabled: m.enabled}
 }
+
 func (m *mockTransformer) CanTransform(_ *ContentPage, _ *TransformContext) bool {
 	return m.enabled
 }

@@ -11,11 +11,12 @@ import (
 	"strings"
 	"text/template"
 
+	"gopkg.in/yaml.v3"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"gopkg.in/yaml.v3"
 )
 
 // sortDocFiles sorts a slice of DocFile by path for deterministic ordering.

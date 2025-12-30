@@ -70,9 +70,11 @@ func (c *LocalClient) CheckDocumentation(ctx context.Context, repo *Repository) 
 func (c *LocalClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
 	return true
 }
+
 func (c *LocalClient) ParseWebhookEvent(payload []byte, event string) (*WebhookEvent, error) {
 	return nil, nil
 }
+
 func (c *LocalClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	return nil
 }

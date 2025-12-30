@@ -147,7 +147,8 @@ func testFilenameRuleWithKeyword(t *testing.T, rule *FilenameRule, keyword, erro
 	name     string
 	filename string
 	wantFix  string
-}) {
+},
+) {
 	t.Helper()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

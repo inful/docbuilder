@@ -158,7 +158,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		repoCount := 100
 		docsRepoCount := 0
 
-		for i := 0; i < repoCount; i++ {
+		for i := range repoCount {
 			hasDoc := i%3 == 0 // About 1/3 have documentation
 			if hasDoc {
 				docsRepoCount++

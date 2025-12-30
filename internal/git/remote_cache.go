@@ -9,12 +9,13 @@ import (
 	"sync"
 	"time"
 
-	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-git/go-git/v5"
 	ggitcfg "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // RemoteHeadCache stores the last known remote HEAD for repositories
@@ -174,7 +175,7 @@ func (c *RemoteHeadCache) Save() error {
 	defer c.mu.RUnlock()
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(c.path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 
@@ -183,7 +184,7 @@ func (c *RemoteHeadCache) Save() error {
 		return fmt.Errorf("marshal cache: %w", err)
 	}
 
-	if err := os.WriteFile(c.path, data, 0644); err != nil {
+	if err := os.WriteFile(c.path, data, 0o644); err != nil {
 		return fmt.Errorf("write cache: %w", err)
 	}
 

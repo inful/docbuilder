@@ -5,9 +5,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	m "git.home.luguber.info/inful/docbuilder/internal/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 	promcollect "github.com/prometheus/client_golang/prometheus/collectors"
+
+	m "git.home.luguber.info/inful/docbuilder/internal/metrics"
 )
 
 var (
@@ -73,10 +74,12 @@ func updateDaemonPromMetrics(d *Daemon) {
 	}
 }
 
-var lastCompleted int64
-var lastFailed int64
-var lastRenderedPages int64
-var lastRepositories int64
+var (
+	lastCompleted     int64
+	lastFailed        int64
+	lastRenderedPages int64
+	lastRepositories  int64
+)
 
 func atomicLoadInt64(p *int64) int64     { return atomic.LoadInt64(p) }
 func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }

@@ -2,6 +2,7 @@ package linkverify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,9 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"gopkg.in/yaml.v3"
 )
 
 // PageMetadata contains metadata about a page for verification.
@@ -44,7 +46,7 @@ type VerificationService struct {
 // NewVerificationService creates a new link verification service.
 func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationService, error) {
 	if cfg == nil || !cfg.Enabled {
-		return nil, fmt.Errorf("link verification is disabled")
+		return nil, errors.New("link verification is disabled")
 	}
 
 	// Create NATS client
@@ -91,7 +93,7 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 	s.mu.Lock()
 	if s.running {
 		s.mu.Unlock()
-		return fmt.Errorf("verification already running")
+		return errors.New("verification already running")
 	}
 	s.running = true
 	s.mu.Unlock()
@@ -113,7 +115,7 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 	for _, page := range pages {
 		select {
 		case <-ctx.Done():
-			slog.Info("Link verification cancelled")
+			slog.Info("Link verification canceled")
 			s.wg.Wait()
 			return ctx.Err()
 		default:

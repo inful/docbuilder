@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5"
 	ggitcfg "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // TestWithRetryBehavior ensures retries happen for transient errors and stop for permanent ones.

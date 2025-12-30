@@ -5,9 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // SSHProvider handles SSH key authentication.

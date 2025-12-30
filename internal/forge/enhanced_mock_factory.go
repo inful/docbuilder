@@ -2,6 +2,7 @@ package forge
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -28,7 +29,7 @@ func CreateMockGitHubRepo(owner, name string, hasDocs, isPrivate, isArchived, is
 		Metadata: map[string]string{
 			"forge_type": "github",
 			"owner":      owner,
-			"fork":       fmt.Sprintf("%t", isFork),
+			"fork":       strconv.FormatBool(isFork),
 		},
 	}
 }
@@ -53,7 +54,7 @@ func CreateMockGitLabRepo(group, name string, hasDocs, isPrivate, isArchived, is
 		Metadata: map[string]string{
 			"forge_type": "gitlab",
 			"group":      group,
-			"fork":       fmt.Sprintf("%t", isFork),
+			"fork":       strconv.FormatBool(isFork),
 		},
 	}
 }
@@ -78,7 +79,7 @@ func CreateMockForgejoRepo(org, name string, hasDocs, isPrivate, isArchived, isF
 		Metadata: map[string]string{
 			"forge_type": "forgejo",
 			"org":        org,
-			"fork":       fmt.Sprintf("%t", isFork),
+			"fork":       strconv.FormatBool(isFork),
 		},
 	}
 }
@@ -136,7 +137,7 @@ func CreateMockForgejoOrg(name string) *Organization {
 func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repository {
 	repos := make([]*Repository, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		repoName := fmt.Sprintf("repo-%d", i)
 		hasDocs := i%2 == 0   // Half have docs
 		isPrivate := i%5 == 0 // Every 5th is private

@@ -10,10 +10,9 @@ import (
 	"sync"
 	"time"
 
-	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
-
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
@@ -43,7 +42,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	c.LogStageStart()
 
 	if bs.Git.WorkspaceDir == "" {
-		err := fmt.Errorf("workspace directory not set")
+		err := errors.New("workspace directory not set")
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}
@@ -131,7 +130,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	}
 
 	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go worker()
 	}
 

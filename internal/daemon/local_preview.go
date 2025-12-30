@@ -2,10 +2,12 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,7 +52,7 @@ func (bs *buildStatus) getStatus() (hasError bool, err error, hasGoodBuild bool)
 // If tempOutputDir is non-empty, it will be removed on shutdown.
 func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOutputDir string) error {
 	if len(cfg.Repositories) == 0 {
-		return fmt.Errorf("preview requires at least one repository entry pointing to the docs dir")
+		return errors.New("preview requires at least one repository entry pointing to the docs dir")
 	}
 	docsDir := cfg.Repositories[0].URL
 	if docsDir == "" {
@@ -143,7 +145,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 					// Notify connected browsers via LiveReload
 					if daemon.liveReload != nil {
 						// Broadcast hash to trigger browser refresh
-						daemon.liveReload.Broadcast(fmt.Sprintf("%d", time.Now().UnixNano()))
+						daemon.liveReload.Broadcast(strconv.FormatInt(time.Now().UnixNano(), 10))
 					}
 				}
 

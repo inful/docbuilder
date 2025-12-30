@@ -1,11 +1,12 @@
 package providers
 
 import (
-	"fmt"
+	"errors"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // BasicProvider handles basic username/password authentication.
@@ -24,7 +25,7 @@ func (p *BasicProvider) Type() config.AuthType {
 // CreateAuth creates basic authentication from the configuration.
 func (p *BasicProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
 	if authCfg.Username == "" || authCfg.Password == "" {
-		return nil, fmt.Errorf("basic authentication requires username and password")
+		return nil, errors.New("basic authentication requires username and password")
 	}
 
 	return &http.BasicAuth{
@@ -36,11 +37,11 @@ func (p *BasicProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMe
 // ValidateConfig validates the basic authentication configuration.
 func (p *BasicProvider) ValidateConfig(authCfg *config.AuthConfig) error {
 	if authCfg.Username == "" {
-		return fmt.Errorf("basic authentication requires a username")
+		return errors.New("basic authentication requires a username")
 	}
 
 	if authCfg.Password == "" {
-		return fmt.Errorf("basic authentication requires a password")
+		return errors.New("basic authentication requires a password")
 	}
 
 	return nil

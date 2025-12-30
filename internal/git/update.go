@@ -7,11 +7,12 @@ import (
 	"log/slog"
 	"strings"
 
-	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-git/go-git/v5"
 	ggitcfg "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (string, error) {
@@ -177,7 +178,7 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 		}
 		return nil
 	}
-	return fmt.Errorf("local branch diverged from remote (enable hard_reset_on_diverge to override)")
+	return errors.New("local branch diverged from remote (enable hard_reset_on_diverge to override)")
 }
 
 // postUpdateCleanup applies optional workspace hygiene, such as cleaning untracked files and pruning non-doc paths.
@@ -201,7 +202,7 @@ func resolveRemoteDefaultBranch(repo *git.Repository) (string, error) {
 	}
 	target := ref.Target()
 	if target == "" {
-		return "", fmt.Errorf("origin/HEAD target empty")
+		return "", errors.New("origin/HEAD target empty")
 	}
 	return target.Short(), nil
 }

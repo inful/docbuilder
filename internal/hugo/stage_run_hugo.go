@@ -40,7 +40,7 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 			slog.String("error", err.Error()),
 			slog.String("root", root))
 		// Return error regardless of mode - let caller decide how to handle
-		return newFatalStageError(StageRunHugo, fmt.Errorf("%w: %v", herrors.ErrHugoExecutionFailed, err))
+		return newFatalStageError(StageRunHugo, fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err))
 	}
 	bs.Report.StaticRendered = true
 	slog.Info("Hugo renderer completed successfully",

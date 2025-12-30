@@ -1,11 +1,12 @@
 package providers
 
 import (
-	"fmt"
+	"errors"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // TokenProvider handles token-based authentication.
@@ -24,7 +25,7 @@ func (p *TokenProvider) Type() config.AuthType {
 // CreateAuth creates token authentication from the configuration.
 func (p *TokenProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
 	if authCfg.Token == "" {
-		return nil, fmt.Errorf("token authentication requires a token")
+		return nil, errors.New("token authentication requires a token")
 	}
 
 	// Most Git hosting services use "token" as the username for token auth
@@ -37,7 +38,7 @@ func (p *TokenProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMe
 // ValidateConfig validates the token authentication configuration.
 func (p *TokenProvider) ValidateConfig(authCfg *config.AuthConfig) error {
 	if authCfg.Token == "" {
-		return fmt.Errorf("token authentication requires a token")
+		return errors.New("token authentication requires a token")
 	}
 
 	return nil

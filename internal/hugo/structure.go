@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -78,7 +79,7 @@ func (g *Generator) finalizeStaging() error {
 		slog.String("output", g.outputDir))
 
 	if g.stageDir == "" {
-		return fmt.Errorf("no staging directory initialized")
+		return errors.New("no staging directory initialized")
 	}
 
 	// Check if staging directory still exists
@@ -102,7 +103,7 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("path", prev),
 			slog.Time("modified", stat.ModTime()))
 		// Try multiple times to remove previous backup (may be locked/in-use)
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			if err := os.RemoveAll(prev); err == nil {
 				slog.Debug("Successfully removed old backup",
 					slog.String("path", prev),

@@ -239,12 +239,12 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 		github := NewEnhancedGitHubMock("perf-github")
 
 		// Create large dataset for performance testing
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			orgName := "perf-org-" + string(rune('a'+i))
 			github.AddOrganization(CreateMockGitHubOrg(orgName))
 
 			// Add multiple repositories per organization
-			for j := 0; j < 20; j++ {
+			for j := range 20 {
 				repoName := "repo-" + string(rune('a'+j))
 				hasDoc := j%3 == 0 // Every third repo has docs
 				github.AddRepository(CreateMockGitHubRepo(orgName, repoName, hasDoc, false, false, false))

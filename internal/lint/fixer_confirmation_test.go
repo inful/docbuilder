@@ -142,15 +142,15 @@ func TestFixer_CreateBackup(t *testing.T) {
 	// Create test directory structure
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create test files
 	file1 := filepath.Join(docsDir, "api.md")
 	file2 := filepath.Join(docsDir, "guide.md")
-	err = os.WriteFile(file1, []byte("API content"), 0644)
+	err = os.WriteFile(file1, []byte("API content"), 0o644)
 	require.NoError(t, err)
-	err = os.WriteFile(file2, []byte("Guide content"), 0644)
+	err = os.WriteFile(file2, []byte("Guide content"), 0o644)
 	require.NoError(t, err)
 
 	// Create result with changes
@@ -278,12 +278,12 @@ func TestFixer_FixWithConfirmation_Integration(t *testing.T) {
 	// Create test structure
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create test file with naming issue
 	badFile := filepath.Join(docsDir, "API Guide.md")
-	err = os.WriteFile(badFile, []byte("# API Guide\n"), 0644)
+	err = os.WriteFile(badFile, []byte("# API Guide\n"), 0o644)
 	require.NoError(t, err)
 
 	// Use auto-confirm to avoid interactive prompt in test
@@ -365,16 +365,16 @@ func TestBackupPreservesDirectoryStructure(t *testing.T) {
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
 	apiDir := filepath.Join(docsDir, "api")
-	err := os.MkdirAll(apiDir, 0755)
+	err := os.MkdirAll(apiDir, 0o755)
 	require.NoError(t, err)
 
 	// Create files in different directories
 	rootFile := filepath.Join(docsDir, "index.md")
 	apiFile := filepath.Join(apiDir, "guide.md")
 
-	err = os.WriteFile(rootFile, []byte("root content"), 0644)
+	err = os.WriteFile(rootFile, []byte("root content"), 0o644)
 	require.NoError(t, err)
-	err = os.WriteFile(apiFile, []byte("api content"), 0644)
+	err = os.WriteFile(apiFile, []byte("api content"), 0o644)
 	require.NoError(t, err)
 
 	// Create result

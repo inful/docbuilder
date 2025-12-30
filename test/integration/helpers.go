@@ -14,13 +14,14 @@ import (
 	"testing"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"git.home.luguber.info/inful/docbuilder/internal/build"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 // ContentStructure represents the structure of generated content for golden testing.
@@ -167,10 +168,10 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 		data, err = yaml.Marshal(actual)
 		require.NoError(t, err, "failed to marshal golden config")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0644)
+		err = os.WriteFile(goldenPath, data, 0o644)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
@@ -286,10 +287,10 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		data, err = json.MarshalIndent(actual, "", "  ")
 		require.NoError(t, err, "failed to marshal content structure")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0644)
+		err = os.WriteFile(goldenPath, data, 0o644)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
@@ -401,7 +402,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 
 		// Write to /tmp for debugging
 		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
-		_ = os.WriteFile(debugPath, body, 0644)
+		_ = os.WriteFile(debugPath, body, 0o644)
 		t.Logf("Wrote body to: %s", debugPath)
 	}
 }

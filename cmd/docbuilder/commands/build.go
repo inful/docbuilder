@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -145,7 +146,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	}
 
 	if len(repoPaths) == 0 {
-		return fmt.Errorf("no repositories could be cloned successfully")
+		return errors.New("no repositories could be cloned successfully")
 	}
 
 	slog.Info("All repositories processed", "successful", len(repoPaths), "skipped", repositoriesSkipped)

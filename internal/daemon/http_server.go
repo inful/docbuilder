@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	stdErrors "errors"
 	"fmt"
 	"log/slog"
@@ -201,7 +202,7 @@ func (a *daemonAdapter) GetQueueLength() int {
 // Start initializes and starts all HTTP servers.
 func (s *HTTPServer) Start(ctx context.Context) error {
 	if s.config.Daemon == nil {
-		return fmt.Errorf("daemon configuration required for HTTP servers")
+		return errors.New("daemon configuration required for HTTP servers")
 	}
 
 	// Pre-bind all required ports so we can fail fast and surface aggregate errors instead of

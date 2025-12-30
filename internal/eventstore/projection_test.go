@@ -179,7 +179,7 @@ func TestBuildHistoryProjection_HistoryLimit(t *testing.T) {
 	projection := NewBuildHistoryProjection(store, 3)
 
 	// Add 5 completed builds
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		buildID := "build-" + string(rune('a'+i))
 		startEvent, _ := NewBuildStarted(buildID, BuildStartedMeta{})
 		projection.Apply(startEvent)

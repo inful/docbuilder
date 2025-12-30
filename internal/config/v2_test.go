@@ -82,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 		"  clean: true"
 
 	// Write to temporary file
-	tmpFile, err := os.CreateTemp("", "test-v2-config-*.yaml")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-v2-config-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -173,7 +173,7 @@ forges:
 hugo:
   title: Minimal Config`
 
-	tmpFile, err := os.CreateTemp("", "test-v2-minimal-*.yaml")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-v2-minimal-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -320,7 +320,7 @@ versioning:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := os.CreateTemp("", "test-v2-validation-*.yaml")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-v2-validation-*.yaml")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
@@ -429,7 +429,7 @@ forges:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := os.CreateTemp("", "test-is-v2-*.yaml")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-is-v2-*.yaml")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
@@ -484,7 +484,7 @@ forges:
 hugo:
   title: Environment Test`
 
-	tmpFile, err := os.CreateTemp("", "test-env-expansion-*.yaml")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-env-expansion-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -542,7 +542,7 @@ hugo:
 			githubForge.Webhook.Secret,
 			githubForge.Webhook.Path)
 
-		tmpFile, err := os.CreateTemp("", "test-realistic-github-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-realistic-github-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
@@ -614,7 +614,7 @@ hugo:
 			gitlabForge.Webhook.Secret,
 			gitlabForge.Webhook.Path)
 
-		tmpFile, err := os.CreateTemp("", "test-realistic-gitlab-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-realistic-gitlab-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
@@ -685,7 +685,7 @@ hugo:
 			forgejoForge.Name, forgejoForge.Type, forgejoForge.APIURL, forgejoForge.Organizations[0],
 			forgejoForge.Auth.Type, forgejoForge.Auth.Token)
 
-		tmpFile, err := os.CreateTemp("", "test-multi-platform-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-multi-platform-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
@@ -748,7 +748,7 @@ hugo:
 			forge.Webhook.Secret, forge.Webhook.Path,
 			forge.Webhook.Events[0], forge.Webhook.Events[1])
 
-		tmpFile, err := os.CreateTemp("", "test-webhook-config-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-webhook-config-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
@@ -811,7 +811,7 @@ hugo:
 			autoDiscoverForge.Name, autoDiscoverForge.Type, autoDiscoverForge.APIURL,
 			autoDiscoverForge.Auth.Type, autoDiscoverForge.Auth.Token)
 
-		tmpFile, err := os.CreateTemp("", "test-auto-discover-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-auto-discover-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
@@ -865,7 +865,7 @@ monitoring:
 			forge.Name, forge.Type, forge.APIURL, forge.Organizations[0],
 			forge.Auth.Type, forge.Auth.Token)
 
-		tmpFile, err := os.CreateTemp("", "test-monitoring-*.yaml")
+		tmpFile, err := os.CreateTemp(t.TempDir(), "test-monitoring-*.yaml")
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}

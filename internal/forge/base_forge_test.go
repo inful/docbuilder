@@ -228,7 +228,6 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 
 	result := []map[string]interface{}{}
 	headers, err := bf.DoRequestWithHeaders(req, &result)
-
 	if err != nil {
 		t.Errorf("DoRequestWithHeaders() error = %v", err)
 		return

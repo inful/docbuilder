@@ -5,15 +5,17 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // NATSClient manages NATS connection and operations for link verification.
@@ -32,11 +34,11 @@ type NATSClient struct {
 // Connection failures are non-fatal; the client will attempt to reconnect automatically.
 func NewNATSClient(cfg *config.LinkVerificationConfig) (*NATSClient, error) {
 	if cfg == nil {
-		return nil, fmt.Errorf("link verification config is required")
+		return nil, errors.New("link verification config is required")
 	}
 
 	if !cfg.Enabled {
-		return nil, fmt.Errorf("link verification is disabled")
+		return nil, errors.New("link verification is disabled")
 	}
 
 	client := &NATSClient{
@@ -144,7 +146,7 @@ func (c *NATSClient) ensureConnected() error {
 
 	// Avoid multiple concurrent reconnection attempts
 	if c.reconnecting.Swap(true) {
-		return fmt.Errorf("reconnection already in progress")
+		return errors.New("reconnection already in progress")
 	}
 	defer c.reconnecting.Store(false)
 
@@ -238,7 +240,7 @@ func (c *NATSClient) PublishBrokenLink(event *BrokenLinkEvent) error {
 	c.mu.RUnlock()
 
 	if js == nil {
-		return fmt.Errorf("JetStream not available")
+		return errors.New("JetStream not available")
 	}
 
 	_, err = js.Publish(ctx, c.subject, data)
@@ -290,7 +292,7 @@ func (c *NATSClient) GetCachedResult(url string) (*CacheEntry, error) {
 
 	entry, err := kv.Get(ctx, key)
 	if err != nil {
-		if err == jetstream.ErrKeyNotFound {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return nil, nil // Not cached
 		}
 		return nil, fmt.Errorf("failed to get cache entry: %w", err)
@@ -397,7 +399,7 @@ func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
 	c.mu.RUnlock()
 
 	if kv == nil {
-		return "", fmt.Errorf("KV bucket not available")
+		return "", errors.New("KV bucket not available")
 	}
 
 	// Use page_ prefix to distinguish from link cache entries
@@ -406,8 +408,8 @@ func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
 
 	entry, err := kv.Get(ctx, key)
 	if err != nil {
-		if err == jetstream.ErrKeyNotFound {
-			return "", fmt.Errorf("page hash not cached")
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			return "", errors.New("page hash not cached")
 		}
 		return "", fmt.Errorf("failed to get page hash: %w", err)
 	}

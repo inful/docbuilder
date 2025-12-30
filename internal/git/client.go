@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // Client handles Git operations for DocBuilder, including clone, update, and authentication.

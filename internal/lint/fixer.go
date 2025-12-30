@@ -2,6 +2,7 @@ package lint
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -121,7 +122,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	if !confirmed {
-		return previewResult, fmt.Errorf("user cancelled operation")
+		return previewResult, errors.New("user canceled operation")
 	}
 
 	// Phase 3: Create backup (always, even with auto-confirm)
@@ -276,7 +277,7 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 	timestamp := time.Now().Format("20060102-150405")
 	backupDir := filepath.Join(rootPath, fmt.Sprintf(".docbuilder-backup-%s", timestamp))
 
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
@@ -316,7 +317,7 @@ func (f *Fixer) backupFile(filePath, backupDir, rootPath string) error {
 	backupPath := filepath.Join(backupDir, relPath)
 
 	// Create parent directories
-	if err := os.MkdirAll(filepath.Dir(backupPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(backupPath), 0o755); err != nil {
 		return err
 	}
 
@@ -354,7 +355,7 @@ func (f *Fixer) renameFile(oldPath string, issues []Issue) RenameOperation {
 	suggestedName := SuggestFilename(filename)
 
 	if suggestedName == "" || suggestedName == filename {
-		op.Error = fmt.Errorf("could not determine suggested filename or file is already correct")
+		op.Error = errors.New("could not determine suggested filename or file is already correct")
 		return op
 	}
 
@@ -630,7 +631,7 @@ func isInsideInlineCode(line string, pos int) bool {
 func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
 	var broken []BrokenLink
 
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
 			// Skip if this link is inside inline code
 			if isInsideInlineCode(line, i) {
@@ -754,7 +755,7 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 func checkImageLinksBroken(line string, lineNum int, sourceFile string) []BrokenLink {
 	var broken []BrokenLink
 
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
 			// Skip if this image link is inside inline code
 			if isInsideInlineCode(line, i) {
@@ -915,7 +916,7 @@ func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []
 	var links []LinkReference
 
 	// Look for ]( pattern
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
 			// Find the opening [
 			start := -1
@@ -1049,7 +1050,7 @@ func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []L
 	var links []LinkReference
 
 	// Look for ![]( pattern
-	for i := 0; i < len(line); i++ {
+	for i := range len(line) {
 		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
 			// Find the closing ]
 			closeBracket := strings.Index(line[i+2:], "]")
@@ -1179,7 +1180,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 
 			// Create backup before writing
 			backupPath := sourceFile + ".backup"
-			err := os.WriteFile(backupPath, content, 0644)
+			err := os.WriteFile(backupPath, content, 0o644)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(updatedFiles, backupPaths)
@@ -1188,7 +1189,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			backupPaths = append(backupPaths, backupPath)
 
 			// Write updated content
-			err = os.WriteFile(sourceFile, []byte(newContent), 0644)
+			err = os.WriteFile(sourceFile, []byte(newContent), 0o644)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(updatedFiles, backupPaths)
@@ -1238,7 +1239,7 @@ func (f *Fixer) rollbackLinkUpdates(files []string, backupPaths []string) {
 		originalFile := strings.TrimSuffix(backupPath, ".backup")
 
 		if content, err := os.ReadFile(backupPath); err == nil {
-			_ = os.WriteFile(originalFile, content, 0644) // Best effort restore
+			_ = os.WriteFile(originalFile, content, 0o644) // Best effort restore
 		}
 		_ = os.Remove(backupPath) // Best effort cleanup
 	}

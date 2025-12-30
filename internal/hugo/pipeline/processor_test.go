@@ -4,9 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 func TestProcessContent_EmptyInput(t *testing.T) {
@@ -151,7 +152,7 @@ func TestProcessTransforms_DynamicGeneration(t *testing.T) {
 		// Only generate from the original doc, not from generated ones
 		if doc.Path == "original.md" {
 			newDoc := &Document{
-				Content:     "# Generated\n\nGenerated content.",
+				Content:     "# Generated\n\ncontent.",
 				FrontMatter: make(map[string]any),
 				Path:        "generated.md",
 				Generated:   true,
@@ -165,7 +166,7 @@ func TestProcessTransforms_DynamicGeneration(t *testing.T) {
 
 	docs := []*Document{
 		{
-			Content:     "# Original\n\nOriginal content.",
+			Content:     "# Original\n\ncontent.",
 			FrontMatter: make(map[string]any),
 			Path:        "original.md",
 			Generated:   false,
@@ -297,7 +298,7 @@ func TestWithGenerators(t *testing.T) {
 	customGenerator := func(ctx *GenerationContext) ([]*Document, error) {
 		return []*Document{
 			{
-				Content:     "# Custom\n\nCustom generated content.",
+				Content:     "# Custom\n\ngenerated content.",
 				FrontMatter: make(map[string]any),
 				Path:        "custom.md",
 				Generated:   true,
@@ -420,7 +421,7 @@ func TestProcessTransforms_LargeDocumentSet(t *testing.T) {
 
 	// Create 150 documents to test progress logging (triggers every 100)
 	docs := make([]*Document, 150)
-	for i := 0; i < 150; i++ {
+	for i := range 150 {
 		docs[i] = &Document{
 			Content:     "test",
 			FrontMatter: make(map[string]any),

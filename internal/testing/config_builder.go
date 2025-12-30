@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"gopkg.in/yaml.v3"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // ConfigBuilder provides a fluent interface for creating test configurations.

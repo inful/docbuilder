@@ -2,6 +2,7 @@ package forge
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -350,7 +351,7 @@ func (m *EnhancedMockForgeClient) RegisterWebhook(_ context.Context, _ *Reposito
 
 	// Validate webhook URL format
 	if webhookURL == "" {
-		return fmt.Errorf("webhook URL cannot be empty")
+		return errors.New("webhook URL cannot be empty")
 	}
 
 	// Simple URL validation - must start with http:// or https://
@@ -442,11 +443,11 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 	if m.networkTimeout > 0 && m.networkTimeout < time.Millisecond*100 {
 		switch m.forgeType {
 		case TypeGitHub:
-			return fmt.Errorf("network timeout: connection to https://api.github.com timed out")
+			return errors.New("network timeout: connection to https://api.github.com timed out")
 		case TypeGitLab:
-			return fmt.Errorf("network timeout: connection to https://gitlab.com/api/v4 timed out")
+			return errors.New("network timeout: connection to https://gitlab.com/api/v4 timed out")
 		case TypeForgejo:
-			return fmt.Errorf("network timeout: connection to https://forgejo.org/api/v1 timed out")
+			return errors.New("network timeout: connection to https://forgejo.org/api/v1 timed out")
 		default:
 			return fmt.Errorf("network timeout after %v", m.networkTimeout)
 		}
@@ -454,7 +455,7 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 
 	// Simulate authentication failure
 	if m.authFailure {
-		return fmt.Errorf("authentication failed: invalid credentials")
+		return errors.New("authentication failed: invalid credentials")
 	}
 
 	// Simulate rate limiting

@@ -3,9 +3,10 @@ package pipeline
 import (
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // TestAddRepositoryMetadata_Idempotent verifies that applying the transform twice

@@ -3,8 +3,9 @@ package providers
 import (
 	"fmt"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // AuthProvider defines the interface for authentication providers.

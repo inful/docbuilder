@@ -3,8 +3,9 @@ package auth
 import (
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 func TestManager_CreateAuth(t *testing.T) {

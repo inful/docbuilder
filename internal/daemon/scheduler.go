@@ -6,8 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"github.com/go-co-op/gocron/v2"
+
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // Scheduler wraps gocron scheduler for managing periodic tasks.
