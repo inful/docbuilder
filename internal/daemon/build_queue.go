@@ -239,7 +239,25 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	job.cancel = cancel
 	defer cancel()
 
-	// Mark job as running (all state mutations under lock to avoid races with observers)
+	// Mark job as running and emit started event
+	bq.markJobRunning(job, workerID)
+	bq.emitBuildStartedEvent(jobCtx, job, workerID)
+
+	// Execute the build
+	err := bq.executeBuild(jobCtx, job)
+
+	// Mark job as completed
+	duration := bq.markJobCompleted(job, err)
+
+	// Emit completion events
+	bq.emitCompletionEvents(ctx, job, err, duration)
+
+	// Log final status
+	bq.logJobCompletion(job, err, duration)
+}
+
+// markJobRunning marks a job as running and activates it
+func (bq *BuildQueue) markJobRunning(job *BuildJob, workerID string) {
 	startTime := time.Now()
 	bq.mu.Lock()
 	job.StartedAt = &startTime
@@ -248,23 +266,26 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.mu.Unlock()
 
 	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.Worker(workerID))
+}
 
-	// Emit BuildStarted event (Phase B)
-	if bq.eventEmitter != nil {
-		meta := eventstore.BuildStartedMeta{
-			Type:     string(job.Type),
-			Priority: int(job.Priority),
-			WorkerID: workerID,
-		}
-		if err := bq.eventEmitter.EmitBuildStarted(jobCtx, job.ID, meta); err != nil {
-			slog.Warn("Failed to emit BuildStarted event", logfields.JobID(job.ID), logfields.Error(err))
-		}
+// emitBuildStartedEvent emits the build started event
+func (bq *BuildQueue) emitBuildStartedEvent(ctx context.Context, job *BuildJob, workerID string) {
+	if bq.eventEmitter == nil {
+		return
 	}
 
-	// Execute the build
-	err := bq.executeBuild(jobCtx, job)
+	meta := eventstore.BuildStartedMeta{
+		Type:     string(job.Type),
+		Priority: int(job.Priority),
+		WorkerID: workerID,
+	}
+	if err := bq.eventEmitter.EmitBuildStarted(ctx, job.ID, meta); err != nil {
+		slog.Warn("Failed to emit BuildStarted event", logfields.JobID(job.ID), logfields.Error(err))
+	}
+}
 
-	// Mark job as completed
+// markJobCompleted marks a job as completed or failed and returns the duration
+func (bq *BuildQueue) markJobCompleted(job *BuildJob, err error) time.Duration {
 	endTime := time.Now()
 	bq.mu.Lock()
 	job.CompletedAt = &endTime
@@ -287,43 +308,74 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 		"has_error", err != nil,
 		"event_emitter_nil", bq.eventEmitter == nil)
 
-	// Emit completion/failure events (Phase B)
-	if bq.eventEmitter != nil {
-		// Always emit build report if available (for both success and failure)
-		var report *hugo.BuildReport
-		if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
-			report = job.TypedMeta.BuildReport
-		}
-		slog.Debug("Build queue event emit check",
-			logfields.JobID(job.ID),
-			"emitter_nil", bq.eventEmitter == nil,
-			"typed_meta_nil", job.TypedMeta == nil,
-			"build_report_nil", report == nil)
-		if report != nil {
-			if emitErr := bq.eventEmitter.EmitBuildReport(ctx, job.ID, report); emitErr != nil {
-				slog.Warn("Failed to emit BuildReport event", logfields.JobID(job.ID), logfields.Error(emitErr))
-			}
-		} else {
-			slog.Debug("Skipping EmitBuildReport - report is nil", logfields.JobID(job.ID))
-		}
+	return duration
+}
 
-		if err != nil {
-			if emitErr := bq.eventEmitter.EmitBuildFailed(ctx, job.ID, "build", err.Error()); emitErr != nil {
-				slog.Warn("Failed to emit BuildFailed event", logfields.JobID(job.ID), logfields.Error(emitErr))
-			}
-		} else {
-			artifacts := make(map[string]string)
-			// Extract artifacts from build report if available
-			if report != nil {
-				artifacts["files"] = strconv.Itoa(report.Files)
-				artifacts["repositories"] = strconv.Itoa(report.Repositories)
-			}
-			if emitErr := bq.eventEmitter.EmitBuildCompleted(ctx, job.ID, duration, artifacts); emitErr != nil {
-				slog.Warn("Failed to emit BuildCompleted event", logfields.JobID(job.ID), logfields.Error(emitErr))
-			}
-		}
+// emitCompletionEvents emits build completion, failure, and report events
+func (bq *BuildQueue) emitCompletionEvents(ctx context.Context, job *BuildJob, err error, duration time.Duration) {
+	if bq.eventEmitter == nil {
+		return
 	}
 
+	// Always emit build report if available (for both success and failure)
+	report := bq.extractBuildReport(job)
+	bq.emitBuildReportEvent(ctx, job, report)
+
+	// Emit success or failure event
+	if err != nil {
+		bq.emitBuildFailedEvent(ctx, job, err)
+	} else {
+		bq.emitBuildCompletedEvent(ctx, job, duration, report)
+	}
+}
+
+// extractBuildReport extracts the build report from job metadata
+func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
+	if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
+		return job.TypedMeta.BuildReport
+	}
+	return nil
+}
+
+// emitBuildReportEvent emits the build report event if report is available
+func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, report *hugo.BuildReport) {
+	slog.Debug("Build queue event emit check",
+		logfields.JobID(job.ID),
+		"emitter_nil", bq.eventEmitter == nil,
+		"typed_meta_nil", job.TypedMeta == nil,
+		"build_report_nil", report == nil)
+
+	if report != nil {
+		if err := bq.eventEmitter.EmitBuildReport(ctx, job.ID, report); err != nil {
+			slog.Warn("Failed to emit BuildReport event", logfields.JobID(job.ID), logfields.Error(err))
+		}
+	} else {
+		slog.Debug("Skipping EmitBuildReport - report is nil", logfields.JobID(job.ID))
+	}
+}
+
+// emitBuildFailedEvent emits the build failed event
+func (bq *BuildQueue) emitBuildFailedEvent(ctx context.Context, job *BuildJob, err error) {
+	if emitErr := bq.eventEmitter.EmitBuildFailed(ctx, job.ID, "build", err.Error()); emitErr != nil {
+		slog.Warn("Failed to emit BuildFailed event", logfields.JobID(job.ID), logfields.Error(emitErr))
+	}
+}
+
+// emitBuildCompletedEvent emits the build completed event with artifacts
+func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob, duration time.Duration, report *hugo.BuildReport) {
+	artifacts := make(map[string]string)
+	// Extract artifacts from build report if available
+	if report != nil {
+		artifacts["files"] = strconv.Itoa(report.Files)
+		artifacts["repositories"] = strconv.Itoa(report.Repositories)
+	}
+	if err := bq.eventEmitter.EmitBuildCompleted(ctx, job.ID, duration, artifacts); err != nil {
+		slog.Warn("Failed to emit BuildCompleted event", logfields.JobID(job.ID), logfields.Error(err))
+	}
+}
+
+// logJobCompletion logs the final job completion status
+func (bq *BuildQueue) logJobCompletion(job *BuildJob, err error, duration time.Duration) {
 	if err != nil {
 		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), logfields.Error(err))
 	} else {
