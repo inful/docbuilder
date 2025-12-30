@@ -124,28 +124,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	}
 
 	// Trigger build for the repository if event was parsed successfully
-	var jobID string
-	if event != nil && event.Repository != nil && h.trigger != nil {
-		// Extract branch from event
-		branch := event.Branch
-		if branch == "" && len(event.Commits) > 0 {
-			// Try to extract from ref (e.g., "refs/heads/main" -> "main")
-			if ref, ok := event.Metadata["ref"]; ok {
-				if after, ok0 := strings.CutPrefix(ref, "refs/heads/"); ok0 {
-					branch = after
-				}
-			}
-		}
-
-		jobID = h.trigger.TriggerWebhookBuild(event.Repository.FullName, branch)
-		if jobID != "" {
-			slog.Info("Webhook triggered build",
-				"forge", forgeName,
-				"repo", event.Repository.FullName,
-				"branch", branch,
-				"job_id", jobID)
-		}
-	}
+	jobID := h.triggerBuildFromEvent(event, forgeName)
 
 	resp := map[string]any{
 		"status":    "received",
@@ -199,6 +178,36 @@ func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader st
 
 	slog.Debug("Webhook signature validated", "forge", forgeName)
 	return nil
+}
+
+// triggerBuildFromEvent triggers a build from a webhook event if valid.
+// Returns the job ID if a build was triggered, empty string otherwise.
+func (h *WebhookHandlers) triggerBuildFromEvent(event *forge.WebhookEvent, forgeName string) string {
+	if event == nil || event.Repository == nil || h.trigger == nil {
+		return ""
+	}
+
+	// Extract branch from event
+	branch := event.Branch
+	if branch == "" && len(event.Commits) > 0 {
+		// Try to extract from ref (e.g., "refs/heads/main" -> "main")
+		if ref, ok := event.Metadata["ref"]; ok {
+			if after, ok0 := strings.CutPrefix(ref, "refs/heads/"); ok0 {
+				branch = after
+			}
+		}
+	}
+
+	jobID := h.trigger.TriggerWebhookBuild(event.Repository.FullName, branch)
+	if jobID != "" {
+		slog.Info("Webhook triggered build",
+			"forge", forgeName,
+			"repo", event.Repository.FullName,
+			"branch", branch,
+			"job_id", jobID)
+	}
+
+	return jobID
 }
 
 // HandleGitHubWebhook handles GitHub webhooks.
