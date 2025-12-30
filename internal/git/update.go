@@ -42,30 +42,11 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 1. Fetch remote refs (only if needed)
 	if fetchNeeded {
-		if remoteSHA != "" {
-			slog.Info("Repository changed, fetching updates",
-				logfields.Name(repo.Name),
-				slog.String("branch", branch),
-				slog.String("remote_commit", remoteSHA[:8]))
-		} else {
-			slog.Info("Fetching repository updates",
-				logfields.Name(repo.Name),
-				slog.String("branch", branch))
-		}
-
-		if fetchErr := c.fetchOrigin(repository, repo); fetchErr != nil {
-			return "", classifyFetchError(repo.URL, fetchErr)
-		}
-
-		// Update cache with new remote HEAD
-		if c.remoteHeadCache != nil && remoteSHA != "" {
-			c.remoteHeadCache.Set(repo.URL, branch, remoteSHA)
+		if err := c.performFetch(repository, repo, branch, remoteSHA); err != nil {
+			return "", err
 		}
 	} else {
-		slog.Info("Repository unchanged, skipping fetch",
-			logfields.Name(repo.Name),
-			slog.String("branch", branch),
-			slog.String("commit", remoteSHA[:8]))
+		logSkippedFetch(repo.Name, branch, remoteSHA)
 	}
 
 	// 2. Checkout/create local branch & obtain refs
@@ -227,4 +208,42 @@ func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
 		queue = append(queue, commit.ParentHashes...)
 	}
 	return false, nil
+}
+
+// performFetch executes fetch operation and updates cache.
+func (c *Client) performFetch(repository *git.Repository, repo appcfg.Repository, branch, remoteSHA string) error {
+	logFetchOperation(repo.Name, branch, remoteSHA)
+
+	if fetchErr := c.fetchOrigin(repository, repo); fetchErr != nil {
+		return classifyFetchError(repo.URL, fetchErr)
+	}
+
+	// Update cache with new remote HEAD
+	if c.remoteHeadCache != nil && remoteSHA != "" {
+		c.remoteHeadCache.Set(repo.URL, branch, remoteSHA)
+	}
+
+	return nil
+}
+
+// logFetchOperation logs appropriate message based on whether remote SHA is known.
+func logFetchOperation(name, branch, remoteSHA string) {
+	if remoteSHA != "" {
+		slog.Info("Repository changed, fetching updates",
+			logfields.Name(name),
+			slog.String("branch", branch),
+			slog.String("remote_commit", remoteSHA[:8]))
+	} else {
+		slog.Info("Fetching repository updates",
+			logfields.Name(name),
+			slog.String("branch", branch))
+	}
+}
+
+// logSkippedFetch logs when fetch is skipped due to unchanged remote.
+func logSkippedFetch(name, branch, remoteSHA string) {
+	slog.Info("Repository unchanged, skipping fetch",
+		logfields.Name(name),
+		slog.String("branch", branch),
+		slog.String("commit", remoteSHA[:8]))
 }
