@@ -470,7 +470,7 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 
 // onBuildReportEmitted is called after a build report is emitted to the event store.
 // This is where we trigger post-build hooks like link verification and state updates.
-func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+func (d *Daemon) onBuildReportEmitted(buildID string, report *hugo.BuildReport) error {
 	// Update state manager after successful builds
 	// This is critical for skip evaluation to work correctly on subsequent builds
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.stateManager != nil && d.config != nil {
@@ -489,7 +489,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 		}(),
 		"verifier_nil", d.linkVerifier == nil)
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.linkVerifier != nil {
-		go d.verifyLinksAfterBuild(buildID, report)
+		go d.verifyLinksAfterBuild(buildID)
 	}
 
 	return nil
@@ -570,7 +570,7 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 
 // verifyLinksAfterBuild runs link verification in the background after a successful build.
 // This is a low-priority task that doesn't block the build pipeline.
-func (d *Daemon) verifyLinksAfterBuild(buildID string, report *hugo.BuildReport) {
+func (d *Daemon) verifyLinksAfterBuild(buildID string) {
 	// Create background context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
@@ -578,7 +578,7 @@ func (d *Daemon) verifyLinksAfterBuild(buildID string, report *hugo.BuildReport)
 	slog.Info("Starting link verification for build", "build_id", buildID)
 
 	// Collect page metadata from build report
-	pages, err := d.collectPageMetadata(buildID, report)
+	pages, err := d.collectPageMetadata(buildID)
 	if err != nil {
 		slog.Error("Failed to collect page metadata for link verification",
 			"build_id", buildID,
@@ -598,7 +598,7 @@ func (d *Daemon) verifyLinksAfterBuild(buildID string, report *hugo.BuildReport)
 }
 
 // collectPageMetadata collects metadata for all pages in the build.
-func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) ([]*linkverify.PageMetadata, error) {
+func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata, error) {
 	outputDir := d.config.Daemon.Storage.OutputDir
 	publicDir := filepath.Join(outputDir, "public")
 

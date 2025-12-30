@@ -43,10 +43,7 @@ func TestResolveTargetBranchExplicit(t *testing.T) {
 	addSimpleCommit(t, repo, tmp, "a.txt")
 	cfg := appcfg.Repository{Name: "r", URL: "https://example/repo.git", Branch: "feature-x"}
 	// explicit branch should always win
-	b, err := resolveTargetBranch(repo, cfg)
-	if err != nil {
-		t.Fatalf("resolve: %v", err)
-	}
+	b := resolveTargetBranch(repo, cfg)
 	if b != "feature-x" {
 		t.Fatalf("expected feature-x got %s", b)
 	}
@@ -60,10 +57,7 @@ func TestResolveTargetBranchFromHead(t *testing.T) {
 	}
 	addSimpleCommit(t, repo, tmp, "a.txt")
 	cfg := appcfg.Repository{Name: "r", URL: "https://example/repo.git"}
-	b, err := resolveTargetBranch(repo, cfg)
-	if err != nil {
-		t.Fatalf("resolve: %v", err)
-	}
+	b := resolveTargetBranch(repo, cfg)
 	// initial branch name depends on git implementation (master/main). Accept either.
 	if b != "master" && b != "main" {
 		t.Fatalf("expected master or main got %s", b)
