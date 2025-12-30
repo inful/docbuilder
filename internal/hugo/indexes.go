@@ -171,35 +171,16 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 
 		// Use index.md if present, otherwise fall back to README.md
 		if userIndexFile != nil {
-			// Check if already written by copyContentFiles as _index.md
-			if _, err := os.Stat(indexPath); err == nil {
-				slog.Debug("Using user-provided index.md as repository index (already processed)",
-					logfields.Repository(repoName),
-					logfields.Path(indexPath))
-				continue
-			}
-			if err := g.useReadmeAsIndex(userIndexFile, indexPath, repoName); err != nil {
+			if err := g.handleUserIndexFile(userIndexFile, indexPath, repoName); err != nil {
 				return err
 			}
-			slog.Debug("Using user-provided index.md as repository index",
-				logfields.Repository(repoName),
-				logfields.Path(indexPath))
 			continue
-		} else if readmeFile != nil {
-			// Check if README was already written as _index.md by copyContentFiles
-			if _, err := os.Stat(indexPath); err == nil {
-				slog.Debug("Using README.md as repository index (already processed)",
-					logfields.Repository(repoName),
-					logfields.Path(indexPath))
-				continue
-			}
-			// Use README.md as the repository index
-			if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
+		}
+		
+		if readmeFile != nil {
+			if err := g.handleReadmeFile(readmeFile, indexPath, repoName); err != nil {
 				return err
 			}
-			slog.Debug("Using README.md as repository index",
-				logfields.Repository(repoName),
-				logfields.Path(indexPath))
 			continue
 		}
 
@@ -258,6 +239,47 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 		slog.Debug("Generated repository index", logfields.Repository(repoName), logfields.Path(indexPath))
 	}
+	return nil
+}
+
+// handleUserIndexFile processes user-provided index.md file for repository index.
+func (g *Generator) handleUserIndexFile(userIndexFile *docs.DocFile, indexPath, repoName string) error {
+	// Check if already written by copyContentFiles as _index.md
+	if _, err := os.Stat(indexPath); err == nil {
+		slog.Debug("Using user-provided index.md as repository index (already processed)",
+			logfields.Repository(repoName),
+			logfields.Path(indexPath))
+		return nil
+	}
+	
+	if err := g.useReadmeAsIndex(userIndexFile, indexPath, repoName); err != nil {
+		return err
+	}
+	
+	slog.Debug("Using user-provided index.md as repository index",
+		logfields.Repository(repoName),
+		logfields.Path(indexPath))
+	return nil
+}
+
+// handleReadmeFile processes README.md file for repository index.
+func (g *Generator) handleReadmeFile(readmeFile *docs.DocFile, indexPath, repoName string) error {
+	// Check if README was already written as _index.md by copyContentFiles
+	if _, err := os.Stat(indexPath); err == nil {
+		slog.Debug("Using README.md as repository index (already processed)",
+			logfields.Repository(repoName),
+			logfields.Path(indexPath))
+		return nil
+	}
+	
+	// Use README.md as the repository index
+	if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
+		return err
+	}
+	
+	slog.Debug("Using README.md as repository index",
+		logfields.Repository(repoName),
+		logfields.Path(indexPath))
 	return nil
 }
 
