@@ -75,30 +75,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	}
 
 	if err != nil {
-		// Log the combined error output line by line for readability
-		output := errStr
-		if output == "" {
-			output = outStr
-		} else if outStr != "" {
-			output = outStr + "\n" + errStr
-		}
-
-		if output != "" {
-			slog.Error("hugo execution failed - output details:")
-			for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
-				if line == "" {
-					continue
-				}
-
-				// Parse Hugo ERROR lines to extract key information
-				if strings.HasPrefix(strings.TrimSpace(line), "ERROR render of") {
-					parseHugoRenderError(line)
-				} else {
-					slog.Error("  " + line)
-				}
-			}
-		}
-
+		logHugoExecutionError(outStr, errStr)
 		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
 	}
 
@@ -111,6 +88,35 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	}
 
 	return nil
+}
+
+// logHugoExecutionError logs Hugo execution error details line by line.
+func logHugoExecutionError(outStr, errStr string) {
+	// Log the combined error output line by line for readability
+	output := errStr
+	if output == "" {
+		output = outStr
+	} else if outStr != "" {
+		output = outStr + "\n" + errStr
+	}
+
+	if output == "" {
+		return
+	}
+
+	slog.Error("hugo execution failed - output details:")
+	for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
+		if line == "" {
+			continue
+		}
+
+		// Parse Hugo ERROR lines to extract key information
+		if strings.HasPrefix(strings.TrimSpace(line), "ERROR render of") {
+			parseHugoRenderError(line)
+		} else {
+			slog.Error("  " + line)
+		}
+	}
 }
 
 // parseHugoRenderError extracts key information from Hugo's verbose ERROR lines
