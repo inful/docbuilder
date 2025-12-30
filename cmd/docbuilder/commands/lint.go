@@ -131,33 +131,33 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 
 	// Display what was fixed
 	if dryRun {
-		fmt.Println("DRY RUN: No changes will be applied")
-		fmt.Println()
+		fmt.Fprintf(os.Stdout, "DRY RUN: No changes will be applied\n")
+		fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	if len(fixResult.FilesRenamed) > 0 {
-		fmt.Println("Files to be renamed:")
+		fmt.Fprintf(os.Stdout, "Files to be renamed:\n")
 		for _, op := range fixResult.FilesRenamed {
 			if op.Success {
-				fmt.Printf("  %s → %s\n", op.OldPath, op.NewPath)
+				fmt.Fprintf(os.Stdout, "  %s → %s\n", op.OldPath, op.NewPath)
 			} else if op.Error != nil {
-				fmt.Printf("  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
+				fmt.Fprintf(os.Stdout, "  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
 			}
 		}
-		fmt.Println()
+		fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	if len(fixResult.LinksUpdated) > 0 {
-		fmt.Printf("Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
+		fmt.Fprintf(os.Stdout, "Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
 		fileLinks := groupLinksByFile(fixResult.LinksUpdated)
 		for file, links := range fileLinks {
-			fmt.Printf("  %s (%d links)\n", file, len(links))
+			fmt.Fprintf(os.Stdout, "  %s (%d links)\n", file, len(links))
 		}
-		fmt.Println()
+		fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	// Display fix summary
-	fmt.Println(fixResult.Summary())
+	fmt.Fprintf(os.Stdout, "%s\n", fixResult.Summary())
 
 	// Exit with error if fixes failed
 	if fixResult.HasErrors() {
@@ -165,7 +165,7 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 	}
 
 	if !dryRun {
-		fmt.Printf("\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+		fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
 	}
 	return nil
 }
