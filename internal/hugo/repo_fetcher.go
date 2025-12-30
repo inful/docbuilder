@@ -72,22 +72,9 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	var err error
 	var commitDate time.Time
 	if attemptUpdate {
-		path, err = client.UpdateRepo(repo)
-		// For updates, try to get commit date by reading HEAD
-		if err == nil {
-			if h, herr := readRepoHead(path); herr == nil {
-				commitDate = getCommitDate(path, h)
-			}
-		}
+		path, err, commitDate = f.performUpdate(client, repo)
 	} else {
-		// For fresh clones, use the new CloneRepoWithMetadata method
-		result, cloneErr := client.CloneRepoWithMetadata(repo)
-		err = cloneErr
-		if err == nil {
-			path = result.Path
-			commitDate = result.CommitDate
-			res.PostHead = result.CommitSHA
-		}
+		path, err, commitDate = f.performClone(client, repo, &res)
 	}
 	res.Path = path
 	res.CommitDate = commitDate
@@ -105,6 +92,37 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	// Updated determination: if cloning (preHead empty) or heads differ
 	res.Updated = preHead == "" || (preHead != "" && res.PostHead != "" && preHead != res.PostHead)
 	return res
+}
+
+// performUpdate updates an existing repository and returns its path, error, and commit date.
+func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repository) (string, error, time.Time) {
+	path, err := client.UpdateRepo(repo)
+	var commitDate time.Time
+	
+	// For updates, try to get commit date by reading HEAD
+	if err == nil {
+		if h, herr := readRepoHead(path); herr == nil {
+			commitDate = getCommitDate(path, h)
+		}
+	}
+	
+	return path, err, commitDate
+}
+
+// performClone performs a fresh clone and returns its path, error, and commit date.
+// It also sets the PostHead field in res.
+func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Repository, res *RepoFetchResult) (string, error, time.Time) {
+	result, err := client.CloneRepoWithMetadata(repo)
+	var path string
+	var commitDate time.Time
+	
+	if err == nil {
+		path = result.Path
+		commitDate = result.CommitDate
+		res.PostHead = result.CommitSHA
+	}
+	
+	return path, err, commitDate
 }
 
 // gitStatRepo isolates os.Stat dependency (simple indirection aids test stubbing later).
