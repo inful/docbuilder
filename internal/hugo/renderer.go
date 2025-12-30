@@ -152,13 +152,14 @@ func parseHugoRenderError(line string) {
 		rootCause = snippet
 	}
 
-	if filePath != "" && rootCause != "" {
+	switch {
+	case filePath != "" && rootCause != "":
 		slog.Error("  Hugo render error",
 			"file", filePath,
 			"cause", rootCause)
-	} else if filePath != "" {
+	case filePath != "":
 		slog.Error("  Hugo render error", "file", filePath)
-	} else {
+	default:
 		// Fallback: truncate very long lines
 		if len(line) > 300 {
 			slog.Error("  " + line[:300] + "...")

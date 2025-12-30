@@ -40,14 +40,16 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	}
 
 	repoSet := map[string]struct{}{}
-	for _, f := range docFiles {
+	for i := range docFiles {
+		f := &docFiles[i]
 		repoSet[f.Repository] = struct{}{}
 	}
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
 	if bs.Generator != nil && bs.Generator.stateManager != nil {
 		repoPaths := make(map[string][]string)
-		for _, f := range docFiles {
+		for i := range docFiles {
+			f := &docFiles[i]
 			p := f.GetHugoPath()
 			repoPaths[f.Repository] = append(repoPaths[f.Repository], p)
 		}
@@ -60,7 +62,8 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 			}
 			hash := hex.EncodeToString(h.Sum(nil))
 			var repoURL string
-			for _, r := range bs.Git.Repositories {
+			for i := range bs.Git.Repositories {
+				r := &bs.Git.Repositories[i]
 				if r.Name == repoName {
 					repoURL = r.URL
 					break
@@ -78,7 +81,8 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	}
 	if bs.Report != nil {
 		paths := make([]string, 0, len(docFiles))
-		for _, f := range docFiles {
+		for i := range docFiles {
+			f := &docFiles[i]
 			paths = append(paths, f.GetHugoPath())
 		}
 		sort.Strings(paths)

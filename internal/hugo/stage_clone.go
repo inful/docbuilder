@@ -82,7 +82,8 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	for range concurrency {
 		go worker()
 	}
-	for _, r := range bs.Git.Repositories {
+	for i := range bs.Git.Repositories {
+		r := &bs.Git.Repositories[i]
 		select {
 		case <-ctx.Done():
 			close(tasks)
@@ -90,7 +91,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			return newCanceledStageError(StageCloneRepos, ctx.Err())
 		default:
 		}
-		tasks <- cloneTask{repo: r}
+		tasks <- cloneTask{repo: *r}
 	}
 	close(tasks)
 	wg.Wait()

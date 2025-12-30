@@ -177,13 +177,14 @@ func (d *Daemon) checkBuildQueueHealth() HealthCheck {
 
 	queueLength := d.buildQueue.Length()
 
-	if queueLength > 100 {
+	switch {
+	case queueLength > 100:
 		check.Status = HealthStatusDegraded
 		check.Message = "Build queue is getting full"
-	} else if queueLength > 50 {
+	case queueLength > 50:
 		check.Status = HealthStatusDegraded
 		check.Message = "Build queue has moderate load"
-	} else {
+	default:
 		check.Status = HealthStatusHealthy
 		check.Message = "Build queue is operating normally"
 	}
@@ -209,16 +210,17 @@ func (d *Daemon) checkForgeHealth() HealthCheck {
 
 	// Check if forge discovery has run successfully
 	result, err := d.discoveryCache.Get()
-	if err != nil {
+	switch {
+	case err != nil:
 		check.Status = HealthStatusDegraded
 		check.Message = fmt.Sprintf("Last forge discovery failed: %v", err)
-	} else if result == nil {
+	case result == nil:
 		check.Status = HealthStatusDegraded
 		check.Message = "No forge discovery has run yet"
-	} else if len(result.Errors) > 0 {
+	case len(result.Errors) > 0:
 		check.Status = HealthStatusDegraded
 		check.Message = fmt.Sprintf("Some forges have errors: %d/%d", len(result.Errors), len(result.Repositories)+len(result.Errors))
-	} else {
+	default:
 		check.Status = HealthStatusHealthy
 		check.Message = fmt.Sprintf("All forges healthy, %d repositories discovered", len(result.Repositories))
 	}

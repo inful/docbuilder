@@ -306,13 +306,14 @@ func (d *Daemon) Start(ctx context.Context) error {
 		strategy = config.CloneStrategyFresh
 	}
 	// Predict default workspace resolution (may differ per build if user overrides build.workspace_dir).
-	if d.config.Build.WorkspaceDir != "" {
+	switch {
+	case d.config.Build.WorkspaceDir != "":
 		wsPredict = d.config.Build.WorkspaceDir + " (configured)"
-	} else if strategy == config.CloneStrategyFresh {
+	case strategy == config.CloneStrategyFresh:
 		wsPredict = filepath.Join(outDir, "_workspace") + " (ephemeral)"
-	} else if repoCache != "" {
+	case repoCache != "":
 		wsPredict = filepath.Join(repoCache, "working") + " (persistent via repo_cache_dir)"
-	} else {
+	default:
 		wsPredict = filepath.Clean(outDir+"-workspace") + " (persistent sibling)"
 	}
 	slog.Info("Storage paths summary",
