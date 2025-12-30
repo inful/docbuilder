@@ -101,25 +101,9 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 
 			mu.Lock()
 			if success {
-				bs.Report.ClonedRepositories++
-				bs.Git.RepoPaths[task.repo.Name] = res.Path
-				if res.PostHead != "" {
-					bs.Git.SetPostHead(task.repo.Name, res.PostHead)
-				}
-				if res.PreHead != "" {
-					bs.Git.SetPreHead(task.repo.Name, res.PreHead)
-				}
-				if !res.CommitDate.IsZero() {
-					bs.Git.SetCommitDate(task.repo.Name, res.CommitDate)
-				}
+				c.recordSuccessfulClone(bs, task.repo, res)
 			} else {
-				bs.Report.FailedRepositories++
-				if bs.Report != nil {
-					code := c.classifyGitFailure(res.Err)
-					if code != "" {
-						bs.Report.AddIssue(code, hugo.StageCloneRepos, hugo.SeverityError, res.Err.Error(), false, res.Err)
-					}
-				}
+				c.recordFailedClone(bs, res)
 			}
 			mu.Unlock()
 
@@ -178,6 +162,32 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 
 	c.LogStageSuccess()
 	return hugo.ExecutionSuccess()
+}
+
+// recordSuccessfulClone updates build state after a successful repository clone.
+func (c *CloneReposCommand) recordSuccessfulClone(bs *hugo.BuildState, repo config.Repository, res hugo.RepoFetchResult) {
+	bs.Report.ClonedRepositories++
+	bs.Git.RepoPaths[repo.Name] = res.Path
+	if res.PostHead != "" {
+		bs.Git.SetPostHead(repo.Name, res.PostHead)
+	}
+	if res.PreHead != "" {
+		bs.Git.SetPreHead(repo.Name, res.PreHead)
+	}
+	if !res.CommitDate.IsZero() {
+		bs.Git.SetCommitDate(repo.Name, res.CommitDate)
+	}
+}
+
+// recordFailedClone updates build state after a failed repository clone.
+func (c *CloneReposCommand) recordFailedClone(bs *hugo.BuildState, res hugo.RepoFetchResult) {
+	bs.Report.FailedRepositories++
+	if bs.Report != nil {
+		code := c.classifyGitFailure(res.Err)
+		if code != "" {
+			bs.Report.AddIssue(code, hugo.StageCloneRepos, hugo.SeverityError, res.Err.Error(), false, res.Err)
+		}
+	}
 }
 
 // classifyGitFailure inspects an error string for permanent git failure signatures.
