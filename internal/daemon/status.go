@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
@@ -143,36 +144,14 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 
 			// Convert stage durations from milliseconds to human-readable strings
 			if len(rd.StageDurations) > 0 {
-				stages := make(map[string]string, len(rd.StageDurations))
-				for k, ms := range rd.StageDurations {
-					stages[k] = (time.Duration(ms) * time.Millisecond).Truncate(time.Millisecond).String()
-				}
-				status.BuildStatus.LastBuildStages = stages
+				status.BuildStatus.LastBuildStages = convertStageDurations(rd.StageDurations)
 			}
 
 			status.BuildStatus.LastBuildOutcome = rd.Outcome
 			status.BuildStatus.LastBuildSummary = rd.Summary
 
-			if rd.RenderedPages > 0 {
-				rp := rd.RenderedPages
-				status.BuildStatus.RenderedPages = &rp
-			}
-			if rd.ClonedRepositories > 0 {
-				cr := rd.ClonedRepositories
-				status.BuildStatus.ClonedRepositories = &cr
-			}
-			if rd.FailedRepositories > 0 {
-				fr := rd.FailedRepositories
-				status.BuildStatus.FailedRepositories = &fr
-			}
-			if rd.SkippedRepositories > 0 {
-				srk := rd.SkippedRepositories
-				status.BuildStatus.SkippedRepositories = &srk
-			}
-			if rd.StaticRendered {
-				sr := true
-				status.BuildStatus.StaticRendered = &sr
-			}
+			// Populate metrics conditionally
+			populateBuildMetricsFromReport(rd, &status.BuildStatus)
 
 			// Copy errors and warnings from report data
 			status.BuildStatus.LastBuildErrors = rd.Errors
@@ -461,5 +440,39 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 			Build()
 		errorAdapter.WriteErrorResponse(w, r, internalErr)
 		return
+	}
+}
+
+// convertStageDurations converts stage durations from milliseconds to human-readable strings.
+func convertStageDurations(stageDurations map[string]int64) map[string]string {
+	stages := make(map[string]string, len(stageDurations))
+	for k, ms := range stageDurations {
+		stages[k] = (time.Duration(ms) * time.Millisecond).Truncate(time.Millisecond).String()
+	}
+	return stages
+}
+
+// populateBuildMetricsFromReport populates build status metrics from report data.
+// This extracts metrics conditionally based on their values.
+func populateBuildMetricsFromReport(rd *eventstore.BuildReportData, buildStatus *BuildStatusInfo) {
+	if rd.RenderedPages > 0 {
+		rp := rd.RenderedPages
+		buildStatus.RenderedPages = &rp
+	}
+	if rd.ClonedRepositories > 0 {
+		cr := rd.ClonedRepositories
+		buildStatus.ClonedRepositories = &cr
+	}
+	if rd.FailedRepositories > 0 {
+		fr := rd.FailedRepositories
+		buildStatus.FailedRepositories = &fr
+	}
+	if rd.SkippedRepositories > 0 {
+		srk := rd.SkippedRepositories
+		buildStatus.SkippedRepositories = &srk
+	}
+	if rd.StaticRendered {
+		sr := true
+		buildStatus.StaticRendered = &sr
 	}
 }
