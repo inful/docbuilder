@@ -139,18 +139,7 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 
 	// Configure auto mode fallbacks
 	if params["themeVariantAuto"] == nil {
-		hasAuto := false
-		if variants, ok := params["themeVariant"].([]any); ok {
-			for _, v := range variants {
-				if str, ok := v.(string); ok && str == "auto" {
-					hasAuto = true
-					break
-				}
-			}
-		} else if str, ok := params["themeVariant"].(string); ok && str == "auto" {
-			hasAuto = true
-		}
-		if hasAuto {
+		if hasAutoVariant(params["themeVariant"]) {
 			params["themeVariantAuto"] = []string{"zen-light", "zen-dark"}
 		}
 	}
@@ -262,6 +251,24 @@ func (g *Generator) collectVersionMetadata() map[string]any {
 	}
 
 	return result
+}
+
+// hasAutoVariant checks if themeVariant contains "auto" value.
+func hasAutoVariant(themeVariant any) bool {
+	if variants, ok := themeVariant.([]any); ok {
+		for _, v := range variants {
+			if str, ok := v.(string); ok && str == "auto" {
+				return true
+			}
+		}
+		return false
+	}
+	
+	if str, ok := themeVariant.(string); ok {
+		return str == "auto"
+	}
+	
+	return false
 }
 
 // (legacy param helpers removed)
