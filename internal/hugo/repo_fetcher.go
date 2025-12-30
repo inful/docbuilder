@@ -98,14 +98,14 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repository) (string, time.Time, error) {
 	path, err := client.UpdateRepo(repo)
 	var commitDate time.Time
-	
+
 	// For updates, try to get commit date by reading HEAD
 	if err == nil {
 		if h, herr := readRepoHead(path); herr == nil {
 			commitDate = getCommitDate(path, h)
 		}
 	}
-	
+
 	return path, commitDate, err
 }
 
@@ -115,13 +115,13 @@ func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Reposi
 	result, err := client.CloneRepoWithMetadata(repo)
 	var path string
 	var commitDate time.Time
-	
+
 	if err == nil {
 		path = result.Path
 		commitDate = result.CommitDate
 		res.PostHead = result.CommitSHA
 	}
-	
+
 	return path, commitDate, err
 }
 

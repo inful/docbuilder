@@ -176,7 +176,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			}
 			continue
 		}
-		
+
 		if readmeFile != nil {
 			if err := g.handleReadmeFile(readmeFile, indexPath, repoName); err != nil {
 				return err
@@ -251,11 +251,11 @@ func (g *Generator) handleUserIndexFile(userIndexFile *docs.DocFile, indexPath, 
 			logfields.Path(indexPath))
 		return nil
 	}
-	
+
 	if err := g.useReadmeAsIndex(userIndexFile, indexPath, repoName); err != nil {
 		return err
 	}
-	
+
 	slog.Debug("Using user-provided index.md as repository index",
 		logfields.Repository(repoName),
 		logfields.Path(indexPath))
@@ -271,12 +271,12 @@ func (g *Generator) handleReadmeFile(readmeFile *docs.DocFile, indexPath, repoNa
 			logfields.Path(indexPath))
 		return nil
 	}
-	
+
 	// Use README.md as the repository index
 	if err := g.useReadmeAsIndex(readmeFile, indexPath, repoName); err != nil {
 		return err
 	}
-	
+
 	slog.Debug("Using README.md as repository index",
 		logfields.Repository(repoName),
 		logfields.Path(indexPath))

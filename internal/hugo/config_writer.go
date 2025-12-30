@@ -263,11 +263,11 @@ func hasAutoVariant(themeVariant any) bool {
 		}
 		return false
 	}
-	
+
 	if str, ok := themeVariant.(string); ok {
 		return str == "auto"
 	}
-	
+
 	return false
 }
 

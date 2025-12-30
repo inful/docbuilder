@@ -412,7 +412,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		}
 		// Determine if retry is allowed (look for transient StageError in report)
 		transient, transientStage := findTransientError(report)
-		
+
 		if shouldStopRetrying(transient, totalRetries, policy.MaxRetries) {
 			handleRetriesExhausted(job, report, transient, totalRetries, transientStage, bq.recorder)
 			return err
@@ -438,7 +438,7 @@ func findTransientError(report *hugo.BuildReport) (bool, string) {
 	if report == nil || len(report.Errors) == 0 {
 		return false, ""
 	}
-	
+
 	for _, e := range report.Errors {
 		var se *hugo.StageError
 		if errors.As(e, &se) && se.Transient() {
@@ -458,14 +458,14 @@ func handleRetriesExhausted(job *BuildJob, report *hugo.BuildReport, transient b
 	if !transient || totalRetries < 1 {
 		return
 	}
-	
+
 	slog.Warn("Transient error but retries exhausted", logfields.JobID(job.ID), slog.Int("total_retries", totalRetries))
-	
+
 	if report != nil {
 		report.Retries = totalRetries
 		report.RetriesExhausted = true
 	}
-	
+
 	rec := extractRecorder(report, recorder)
 	if rec != nil && transientStage != "" {
 		rec.IncBuildRetryExhausted(transientStage)
