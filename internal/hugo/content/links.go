@@ -47,44 +47,59 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 		}
 		lowerPath := strings.ToLower(link)
 		if strings.HasSuffix(lowerPath, ".md") || strings.HasSuffix(lowerPath, ".markdown") {
-			trimmed := link
-			if strings.HasSuffix(lowerPath, ".md") {
-				trimmed = link[:len(link)-3]
-			} else if strings.HasSuffix(lowerPath, ".markdown") {
-				trimmed = link[:len(link)-9]
-			}
-			if trimmed == "" {
-				return m
-			}
-			// Normalize ./ prefix for regular pages (non-index)
-			// For index pages (_index.md), preserve ./ to maintain section-relative context
-			// For regular pages, ./foo.md and foo.md are equivalent and both need ../
-			hasCurrentDirPrefix := strings.HasPrefix(trimmed, "./")
-			if hasCurrentDirPrefix && !isIndexPage {
-				trimmed = trimmed[2:] // Remove ./ for regular pages
-			}
-			// Add trailing slash for Hugo's pretty URLs
-			if !strings.HasSuffix(trimmed, "/") {
-				trimmed += "/"
-			}
-			// Adjust relative paths for Hugo's deeper URL structure
-			// Hugo URLs are one level deeper than source files because the page name becomes a directory
-			// For regular pages (not _index.md):
-			//   - Same-directory link:   architecture.md       → ../architecture/
-			//   - Same-directory explicit: ./ref.md            → ../ref/  (after ./ removal)
-			//   - Parent directory link: ../other.md           → ../../other/
-			//   - Child directory link:  guide/setup.md        → ../guide/setup/
-			// For index pages (_index.md): relative links stay as-is (already at section root)
-			//   - Same-directory link:   guide.md              → guide/
-			//   - Same-directory explicit: ./guide.md          → ./guide/ (preserve ./)
-			//   - Parent directory link: ../other.md           → ../other/
-			if !isIndexPage {
-				trimmed = "../" + trimmed
-			}
-			return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
+			rewritten := rewriteMarkdownLink(link, lowerPath, anchor, text, isIndexPage)
+			return rewritten
 		}
 		return m
 	})
+}
+
+// rewriteMarkdownLink handles rewriting of markdown file links for Hugo.
+func rewriteMarkdownLink(link, lowerPath, anchor, text string, isIndexPage bool) string {
+	trimmed := trimMarkdownExtension(link, lowerPath)
+	if trimmed == "" {
+		return fmt.Sprintf("[%s](%s)", text, link)
+	}
+
+	// Normalize ./ prefix for regular pages (non-index)
+	// For index pages (_index.md), preserve ./ to maintain section-relative context
+	// For regular pages, ./foo.md and foo.md are equivalent and both need ../
+	hasCurrentDirPrefix := strings.HasPrefix(trimmed, "./")
+	if hasCurrentDirPrefix && !isIndexPage {
+		trimmed = trimmed[2:] // Remove ./ for regular pages
+	}
+
+	// Add trailing slash for Hugo's pretty URLs
+	if !strings.HasSuffix(trimmed, "/") {
+		trimmed += "/"
+	}
+
+	// Adjust relative paths for Hugo's deeper URL structure
+	// Hugo URLs are one level deeper than source files because the page name becomes a directory
+	// For regular pages (not _index.md):
+	//   - Same-directory link:   architecture.md       → ../architecture/
+	//   - Same-directory explicit: ./ref.md            → ../ref/  (after ./ removal)
+	//   - Parent directory link: ../other.md           → ../../other/
+	//   - Child directory link:  guide/setup.md        → ../guide/setup/
+	// For index pages (_index.md): relative links stay as-is (already at section root)
+	//   - Same-directory link:   guide.md              → guide/
+	//   - Same-directory explicit: ./guide.md          → ./guide/ (preserve ./)
+	//   - Parent directory link: ../other.md           → ../other/
+	if !isIndexPage {
+		trimmed = "../" + trimmed
+	}
+	return fmt.Sprintf("[%s](%s%s)", text, trimmed, anchor)
+}
+
+// trimMarkdownExtension removes .md or .markdown extension from a link.
+func trimMarkdownExtension(link, lowerPath string) string {
+	if strings.HasSuffix(lowerPath, ".md") {
+		return link[:len(link)-3]
+	}
+	if strings.HasSuffix(lowerPath, ".markdown") {
+		return link[:len(link)-9]
+	}
+	return link
 }
 
 // rewriteAbsoluteLink rewrites repository-root-relative links (starting with /).
