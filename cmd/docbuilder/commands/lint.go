@@ -72,51 +72,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// If fix mode is enabled, run fixer instead
 	if parent.Fix {
-		fixer := lint.NewFixer(linter, parent.DryRun, false) // force=false for safety
-		fixResult, err := fixer.Fix(path)
-		if err != nil {
-			return fmt.Errorf("fixing failed: %w", err)
-		}
-
-		// Display what was fixed
-		if parent.DryRun {
-			fmt.Println("DRY RUN: No changes will be applied")
-			fmt.Println()
-		}
-
-		if len(fixResult.FilesRenamed) > 0 {
-			fmt.Println("Files to be renamed:")
-			for _, op := range fixResult.FilesRenamed {
-				if op.Success {
-					fmt.Printf("  %s → %s\n", op.OldPath, op.NewPath)
-				} else if op.Error != nil {
-					fmt.Printf("  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
-				}
-			}
-			fmt.Println()
-		}
-
-		if len(fixResult.LinksUpdated) > 0 {
-			fmt.Printf("Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
-			fileLinks := groupLinksByFile(fixResult.LinksUpdated)
-			for file, links := range fileLinks {
-				fmt.Printf("  %s (%d links)\n", file, len(links))
-			}
-			fmt.Println()
-		}
-
-		// Display fix summary
-		fmt.Println(fixResult.Summary())
-
-		// Exit with error if fixes failed
-		if fixResult.HasErrors() {
-			os.Exit(2)
-		}
-
-		if !parent.DryRun {
-			fmt.Printf("\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
-		}
-		return nil
+		return runFixer(linter, path, parent.DryRun)
 	}
 
 	// Run linting
@@ -163,6 +119,55 @@ func isColorSupported() bool {
 	}
 
 	return true
+}
+
+// runFixer executes the fixer and displays results.
+func runFixer(linter *lint.Linter, path string, dryRun bool) error {
+	fixer := lint.NewFixer(linter, dryRun, false) // force=false for safety
+	fixResult, err := fixer.Fix(path)
+	if err != nil {
+		return fmt.Errorf("fixing failed: %w", err)
+	}
+
+	// Display what was fixed
+	if dryRun {
+		fmt.Println("DRY RUN: No changes will be applied")
+		fmt.Println()
+	}
+
+	if len(fixResult.FilesRenamed) > 0 {
+		fmt.Println("Files to be renamed:")
+		for _, op := range fixResult.FilesRenamed {
+			if op.Success {
+				fmt.Printf("  %s → %s\n", op.OldPath, op.NewPath)
+			} else if op.Error != nil {
+				fmt.Printf("  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
+			}
+		}
+		fmt.Println()
+	}
+
+	if len(fixResult.LinksUpdated) > 0 {
+		fmt.Printf("Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
+		fileLinks := groupLinksByFile(fixResult.LinksUpdated)
+		for file, links := range fileLinks {
+			fmt.Printf("  %s (%d links)\n", file, len(links))
+		}
+		fmt.Println()
+	}
+
+	// Display fix summary
+	fmt.Println(fixResult.Summary())
+
+	// Exit with error if fixes failed
+	if fixResult.HasErrors() {
+		os.Exit(2)
+	}
+
+	if !dryRun {
+		fmt.Printf("\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+	}
+	return nil
 }
 
 // countUniqueFiles counts the number of unique files in link updates.
