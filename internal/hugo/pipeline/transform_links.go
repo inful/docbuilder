@@ -174,22 +174,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		// Extract directory from document path for relative link context
 		docDir := extractDirectory(docPath)
-
-		if docDir != "" {
-			// Regular file in subdirectory - relative link is relative to that directory
-			if forge != "" {
-				path = fmt.Sprintf("/%s/%s/%s/%s", forge, repository, docDir, path)
-			} else {
-				path = fmt.Sprintf("/%s/%s/%s", repository, docDir, path)
-			}
-		} else {
-			// Regular file at repository root
-			if forge != "" {
-				path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
-			} else {
-				path = fmt.Sprintf("/%s/%s", repository, path)
-			}
-		}
+		path = buildFullPath(forge, repository, docDir, path)
 	}
 
 	return path + anchor
@@ -247,23 +232,28 @@ func rewriteImagePath(path, repository, forge, section string) string {
 
 	// Prepend repository and section path if relative
 	if !strings.HasPrefix(path, "/") && repository != "" {
-		// Build the full path including the document's section
-		var fullPath string
-		if forge != "" {
-			if section != "" {
-				fullPath = fmt.Sprintf("/%s/%s/%s/%s", forge, repository, section, path)
-			} else {
-				fullPath = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
-			}
-		} else {
-			if section != "" {
-				fullPath = fmt.Sprintf("/%s/%s/%s", repository, section, path)
-			} else {
-				fullPath = fmt.Sprintf("/%s/%s", repository, path)
-			}
-		}
-		return fullPath
+		return buildFullPath(forge, repository, section, path)
 	}
 
 	return path
+}
+
+// buildFullPath constructs a full path with forge, repository, and section components.
+func buildFullPath(forge, repository, section, path string) string {
+	parts := make([]string, 0, 5)
+	parts = append(parts, "")
+
+	if forge != "" {
+		parts = append(parts, forge)
+	}
+
+	parts = append(parts, repository)
+
+	if section != "" {
+		parts = append(parts, section)
+	}
+
+	parts = append(parts, path)
+
+	return strings.Join(parts, "/")
 }
