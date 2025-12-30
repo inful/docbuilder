@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -644,12 +645,8 @@ func cloneDocument(doc *Document) *Document {
 	}
 
 	// Deep copy maps
-	for k, v := range doc.FrontMatter {
-		clone.FrontMatter[k] = v
-	}
-	for k, v := range doc.OriginalFrontMatter {
-		clone.OriginalFrontMatter[k] = v
-	}
+	maps.Copy(clone.FrontMatter, doc.FrontMatter)
+	maps.Copy(clone.OriginalFrontMatter, doc.OriginalFrontMatter)
 
 	return clone
 }
@@ -667,9 +664,7 @@ func captureDocumentState(doc *Document) documentState {
 	}
 
 	// Deep copy frontmatter
-	for k, v := range doc.FrontMatter {
-		state.FrontMatter[k] = v
-	}
+	maps.Copy(state.FrontMatter, doc.FrontMatter)
 
 	return state
 }
@@ -691,12 +686,8 @@ func captureDocumentStateWithFrontMatterParsed(doc *Document) documentStateWithP
 	}
 
 	// Deep copy frontmatter
-	for k, v := range doc.FrontMatter {
-		state.FrontMatter[k] = v
-	}
-	for k, v := range doc.OriginalFrontMatter {
-		state.OriginalFrontMatter[k] = v
-	}
+	maps.Copy(state.FrontMatter, doc.FrontMatter)
+	maps.Copy(state.OriginalFrontMatter, doc.OriginalFrontMatter)
 
 	return state
 }

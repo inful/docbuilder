@@ -65,8 +65,8 @@ type TransformationRecord struct {
 // FrontMatterConflict describes merge decisions for auditing.
 type FrontMatterConflict struct {
 	Key      string
-	Original interface{}
-	Attempt  interface{}
+	Original any
+	Attempt  any
 	Source   string
 	Action   string // kept_original | overwritten | set_if_missing
 }
@@ -134,7 +134,7 @@ type TransformerConfiguration struct {
 	ModifiesFrontMatter bool
 
 	// Custom configuration
-	Properties map[string]interface{}
+	Properties map[string]any
 }
 
 // TypedTransformerRegistry provides a strongly-typed transformer registry.
@@ -191,7 +191,7 @@ func (r *TypedTransformerRegistry) List() []TypedTransformer {
 }
 
 // ListByPriority returns transformers sorted by priority.
-// DEPRECATED: Use ListByDependencies() for dependency-based ordering.
+// Deprecated: Use ListByDependencies() for dependency-based ordering.
 func (r *TypedTransformerRegistry) ListByPriority() []TypedTransformer {
 	transformers := r.List()
 

@@ -35,7 +35,7 @@ func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *Versio
 }
 
 // DiscoverVersionsWithAuth discovers available versions for a repository with authentication.
-func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig interface{}) (*VersionDiscoveryResult, error) {
+func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig any) (*VersionDiscoveryResult, error) {
 	slog.Info("Discovering versions for repository", "repo_url", repoURL, "strategy", config.Strategy)
 
 	// Get existing versions for comparison
@@ -149,10 +149,9 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 		}
 
 		// Keep the most recent non-default versions
-		maxNonDefault := config.MaxVersions - 1 // Reserve one slot for default
-		if maxNonDefault < 0 {
-			maxNonDefault = 0
-		}
+		maxNonDefault := max(
+			// Reserve one slot for default
+			config.MaxVersions-1, 0)
 
 		if len(nonDefaultVersions) > maxNonDefault {
 			nonDefaultVersions = nonDefaultVersions[:maxNonDefault]
@@ -176,7 +175,7 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 	return nil
 }
 
-func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig interface{}) ([]*GitReference, error) {
+func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authConfig any) ([]*GitReference, error) {
 	var refs []*git.RemoteReference
 	var err error
 

@@ -63,10 +63,10 @@ func NormalizeForgeTyped(s string) ForgeTyped {
 // TypedForgeConfig demonstrates how to use strong typing instead of map[string]any.
 type TypedForgeConfig struct {
 	Type     ForgeTyped                `json:"type" yaml:"type"`
-	BaseURL  foundation.Option[string] `json:"base_url,omitempty" yaml:"base_url,omitempty"`
-	Token    foundation.Option[string] `json:"token,omitempty" yaml:"token,omitempty"`
-	Username foundation.Option[string] `json:"username,omitempty" yaml:"username,omitempty"`
-	Password foundation.Option[string] `json:"password,omitempty" yaml:"password,omitempty"`
+	BaseURL  foundation.Option[string] `json:"base_url,omitzero" yaml:"base_url,omitempty"`
+	Token    foundation.Option[string] `json:"token,omitzero" yaml:"token,omitempty"`
+	Username foundation.Option[string] `json:"username,omitzero" yaml:"username,omitempty"`
+	Password foundation.Option[string] `json:"password,omitzero" yaml:"password,omitempty"`
 	Settings map[string]any            `json:"settings,omitempty" yaml:"settings,omitempty"` // For truly dynamic fields
 }
 

@@ -48,10 +48,8 @@ func NewBuildService() *DefaultBuildService {
 		workspaceFactory: func() *workspace.Manager {
 			return workspace.NewManager("")
 		},
-		gitClientFactory: func(path string) *git.Client {
-			return git.NewClient(path)
-		},
-		recorder: metrics.NoopRecorder{},
+		gitClientFactory: git.NewClient,
+		recorder:         metrics.NoopRecorder{},
 		// hugoGeneratorFactory must be set via WithHugoGeneratorFactory to avoid import cycle
 	}
 }
@@ -124,8 +122,8 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		if evaluator != nil {
 			// Convert repositories to []any for the generic interface
 			repos := make([]any, len(req.Config.Repositories))
-			for i, repo := range req.Config.Repositories {
-				repos[i] = repo
+			for i := range req.Config.Repositories {
+				repos[i] = req.Config.Repositories[i]
 			}
 
 			if skipReport, canSkip := evaluator.Evaluate(ctx, repos); canSkip {
@@ -193,7 +191,8 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	}
 
 	repoPaths := make(map[string]string)
-	for _, repo := range req.Config.Repositories {
+	for i := range req.Config.Repositories {
+		repo := &req.Config.Repositories[i]
 		// Check for cancellation
 		select {
 		case <-ctx.Done():
@@ -215,9 +214,9 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		var err error
 
 		if req.Incremental {
-			repoPath, err = gitClient.UpdateRepo(repo)
+			repoPath, err = gitClient.UpdateRepo(*repo)
 		} else {
-			repoPath, err = gitClient.CloneRepo(repo)
+			repoPath, err = gitClient.CloneRepo(*repo)
 		}
 
 		if err != nil {

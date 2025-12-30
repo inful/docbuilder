@@ -153,9 +153,10 @@ func (cv *configurationValidator) validateForgeScopes(forge *ForgeConfig) error 
 
 // validateRepositories validates repository-specific configuration.
 func (cv *configurationValidator) validateRepositories() error {
-	for _, repo := range cv.config.Repositories {
+	for i := range cv.config.Repositories {
+		repo := &cv.config.Repositories[i]
 		if repo.Auth != nil {
-			if err := cv.validateRepoAuth(repo); err != nil {
+			if err := cv.validateRepoAuth(*repo); err != nil {
 				return err
 			}
 		}

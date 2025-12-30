@@ -150,8 +150,8 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 		if branch == "" && len(event.Commits) > 0 {
 			// Try to extract from ref (e.g., "refs/heads/main" -> "main")
 			if ref, ok := event.Metadata["ref"]; ok {
-				if strings.HasPrefix(ref, "refs/heads/") {
-					branch = strings.TrimPrefix(ref, "refs/heads/")
+				if after, ok0 := strings.CutPrefix(ref, "refs/heads/"); ok0 {
+					branch = after
 				}
 			}
 		}

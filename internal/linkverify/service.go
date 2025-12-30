@@ -20,16 +20,16 @@ import (
 
 // PageMetadata contains metadata about a page for verification.
 type PageMetadata struct {
-	DocFile      *docs.DocFile          // Original doc file reference
-	HTMLPath     string                 // Path to rendered HTML file
-	HugoPath     string                 // Hugo content path
-	RenderedPath string                 // Path in rendered site
-	RenderedURL  string                 // Full URL of rendered page
-	FrontMatter  map[string]interface{} // Parsed front matter
-	BaseURL      string                 // Site base URL
-	BuildID      string                 // Build identifier
-	BuildTime    time.Time              // Build timestamp
-	ContentHash  string                 // MD5 hash of page content for change detection
+	DocFile      *docs.DocFile  // Original doc file reference
+	HTMLPath     string         // Path to rendered HTML file
+	HugoPath     string         // Hugo content path
+	RenderedPath string         // Path in rendered site
+	RenderedURL  string         // Full URL of rendered page
+	FrontMatter  map[string]any // Parsed front matter
+	BaseURL      string         // Site base URL
+	BuildID      string         // Build identifier
+	BuildTime    time.Time      // Build timestamp
+	ContentHash  string         // MD5 hash of page content for change detection
 }
 
 // VerificationService manages link verification operations.
@@ -397,7 +397,7 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 }
 
 // ParseFrontMatter extracts front matter from transformed content.
-func ParseFrontMatter(content []byte) (map[string]interface{}, error) {
+func ParseFrontMatter(content []byte) (map[string]any, error) {
 	if !hasFrontMatter(content) {
 		return nil, nil
 	}
@@ -408,7 +408,7 @@ func ParseFrontMatter(content []byte) (map[string]interface{}, error) {
 		return nil, nil
 	}
 
-	var fm map[string]interface{}
+	var fm map[string]any
 	if err := yaml.Unmarshal([]byte(parts[1]), &fm); err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}

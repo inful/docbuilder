@@ -59,7 +59,7 @@ func TestFrontMatter_FromMap(t *testing.T) {
 				Tags:        []string{"tag1", "tag2"},
 				Categories:  []string{"cat1", "cat2"},
 				Keywords:    []string{"key1", "key2"},
-				Custom: map[string]interface{}{
+				Custom: map[string]any{
 					"custom_field": "custom_value",
 				},
 			},
@@ -74,7 +74,7 @@ func TestFrontMatter_FromMap(t *testing.T) {
 			expected: &FrontMatter{
 				Title:  "Test",
 				Date:   testTime,
-				Custom: map[string]interface{}{},
+				Custom: map[string]any{},
 			},
 			wantErr: false,
 		},
@@ -82,16 +82,16 @@ func TestFrontMatter_FromMap(t *testing.T) {
 			name: "interface arrays",
 			input: map[string]any{
 				"title":      "Test",
-				"tags":       []interface{}{"tag1", "tag2"},
-				"categories": []interface{}{"cat1", "cat2"},
-				"keywords":   []interface{}{"key1", "key2"},
+				"tags":       []any{"tag1", "tag2"},
+				"categories": []any{"cat1", "cat2"},
+				"keywords":   []any{"key1", "key2"},
 			},
 			expected: &FrontMatter{
 				Title:      "Test",
 				Tags:       []string{"tag1", "tag2"},
 				Categories: []string{"cat1", "cat2"},
 				Keywords:   []string{"key1", "key2"},
-				Custom:     map[string]interface{}{},
+				Custom:     map[string]any{},
 			},
 			wantErr: false,
 		},
@@ -99,7 +99,7 @@ func TestFrontMatter_FromMap(t *testing.T) {
 			name:  "empty map",
 			input: map[string]any{},
 			expected: &FrontMatter{
-				Custom: map[string]interface{}{},
+				Custom: map[string]any{},
 			},
 			wantErr: false,
 		},
@@ -155,7 +155,7 @@ func TestFrontMatter_ToMap(t *testing.T) {
 		Tags:        []string{"tag1", "tag2"},
 		Categories:  []string{"cat1", "cat2"},
 		Keywords:    []string{"key1", "key2"},
-		Custom: map[string]interface{}{
+		Custom: map[string]any{
 			"custom_field": "custom_value",
 		},
 	}
@@ -184,7 +184,7 @@ func TestFrontMatter_Clone(t *testing.T) {
 		Title:      "Original",
 		Tags:       []string{"tag1", "tag2"},
 		Categories: []string{"cat1"},
-		Custom: map[string]interface{}{
+		Custom: map[string]any{
 			"custom": "value",
 		},
 	}

@@ -80,9 +80,9 @@ func TestMigrationHelper_ConvertLegacyPatch(t *testing.T) {
 		{
 			name: "interface arrays",
 			input: map[string]any{
-				"tags":       []interface{}{"tag1", "tag2"},
-				"categories": []interface{}{"cat1", "cat2"},
-				"keywords":   []interface{}{"key1", "key2"},
+				"tags":       []any{"tag1", "tag2"},
+				"categories": []any{"cat1", "cat2"},
+				"keywords":   []any{"key1", "key2"},
 			},
 			validate: func(t *testing.T, patch *FrontMatterPatch) {
 				assert.Equal(t, []string{"tag1", "tag2"}, *patch.Tags)
@@ -182,7 +182,7 @@ func TestMigrationHelper_ValidateFrontMatterConfig(t *testing.T) {
 		{
 			name: "missing required fields",
 			fm: &FrontMatter{
-				Custom: map[string]interface{}{},
+				Custom: map[string]any{},
 			},
 			expectedWarnings: 3,
 			expectedMsgs:     []string{"title is empty", "date is not set", "repository is not set"},
@@ -193,14 +193,14 @@ func TestMigrationHelper_ValidateFrontMatterConfig(t *testing.T) {
 				Title:      "Test",
 				Date:       time.Now(),
 				Repository: "test-repo",
-				Custom: map[string]interface{}{
+				Custom: map[string]any{
 					"": "empty key",
-					"complex": map[string]interface{}{
+					"complex": map[string]any{
 						"nested1": 1, "nested2": 2, "nested3": 3, "nested4": 4, "nested5": 5,
 						"nested6": 6, "nested7": 7, "nested8": 8, "nested9": 9, "nested10": 10,
 						"nested11": 11, // This makes it >10 items
 					},
-					"large_array": make([]interface{}, 25), // >20 items
+					"large_array": make([]any, 25), // >20 items
 				},
 			},
 			expectedWarnings: 3,
@@ -232,7 +232,7 @@ func TestMigrationHelper_convertToStringArray(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		input    interface{}
+		input    any
 		expected []string
 	}{
 		{
@@ -247,7 +247,7 @@ func TestMigrationHelper_convertToStringArray(t *testing.T) {
 		},
 		{
 			name:     "interface array",
-			input:    []interface{}{"a", "b", 123},
+			input:    []any{"a", "b", 123},
 			expected: []string{"a", "b", "123"},
 		},
 		{

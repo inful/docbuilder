@@ -631,7 +631,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		}
 
 		// Try to find corresponding content file to extract front matter
-		var frontMatter map[string]interface{}
+		var frontMatter map[string]any
 		contentPath := filepath.Join(outputDir, "content", strings.TrimSuffix(relPath, ".html")+".md")
 		if contentBytes, err := os.ReadFile(filepath.Clean(contentPath)); err == nil {
 			if fm, err := linkverify.ParseFrontMatter(contentBytes); err == nil {
@@ -966,8 +966,8 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 //	If expression not recognized returns (0,false).
 func parseDiscoverySchedule(expr string) (time.Duration, bool) {
 	// @every form
-	if strings.HasPrefix(expr, "@every ") {
-		rem := strings.TrimSpace(strings.TrimPrefix(expr, "@every "))
+	if after, ok := strings.CutPrefix(expr, "@every "); ok {
+		rem := strings.TrimSpace(after)
 		if d, err := time.ParseDuration(rem); err == nil && d > 0 {
 			return d, true
 		}
@@ -990,8 +990,8 @@ func parseDiscoverySchedule(expr string) (time.Duration, bool) {
 		return 24 * time.Hour, true
 	default:
 		// Attempt to parse expressions like "*/10 * * * *"
-		if strings.HasPrefix(parts[0], "*/") {
-			val := strings.TrimPrefix(parts[0], "*/")
+		if after, ok := strings.CutPrefix(parts[0], "*/"); ok {
+			val := after
 			if n, err := strconv.Atoi(val); err == nil && n > 0 && n < 60 {
 				return time.Duration(n) * time.Minute, true
 			}

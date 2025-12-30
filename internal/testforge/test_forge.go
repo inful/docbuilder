@@ -223,7 +223,8 @@ func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName s
 	}
 
 	var repos []forge.Repository
-	for _, testRepo := range tf.repositories {
+	for i := range tf.repositories {
+		testRepo := &tf.repositories[i]
 		// Check if repository belongs to the organization
 		if strings.HasPrefix(testRepo.FullName, orgName+"/") {
 			repos = append(repos, forge.Repository{
@@ -357,7 +358,7 @@ func CreateTestForgeConfig(name string, forgeType config.ForgeType, organization
 		},
 		Organizations: organizations,
 		AutoDiscover:  false,
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"include_archived": false,
 			"include_private":  false,
 			"include_forks":    false,
@@ -444,7 +445,8 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 func (tf *TestForge) ToConfigRepositories() []config.Repository {
 	var configRepos = make([]config.Repository, 0, len(tf.repositories))
 
-	for _, repo := range tf.repositories {
+	for i := range tf.repositories {
+		repo := &tf.repositories[i]
 		configRepos = append(configRepos, config.Repository{
 			Name:   repo.Name,
 			URL:    repo.CloneURL,

@@ -3,6 +3,7 @@ package typed
 import (
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"time"
 
@@ -147,13 +148,13 @@ type DaemonConfig struct {
 	Build BuildConfig `json:"build" yaml:"build"`
 
 	// Monitoring configuration
-	Monitoring foundation.Option[MonitoringConfig] `json:"monitoring,omitempty" yaml:"monitoring,omitempty"`
+	Monitoring foundation.Option[MonitoringConfig] `json:"monitoring,omitzero" yaml:"monitoring,omitempty"`
 
 	// Webhook configuration (if webhook mode)
-	Webhook foundation.Option[WebhookConfig] `json:"webhook,omitempty" yaml:"webhook,omitempty"`
+	Webhook foundation.Option[WebhookConfig] `json:"webhook,omitzero" yaml:"webhook,omitempty"`
 
 	// Scheduling configuration (if scheduled mode)
-	Schedule foundation.Option[ScheduleConfig] `json:"schedule,omitempty" yaml:"schedule,omitempty"`
+	Schedule foundation.Option[ScheduleConfig] `json:"schedule,omitzero" yaml:"schedule,omitempty"`
 
 	// Security configuration
 	Security SecurityConfig `json:"security" yaml:"security"`
@@ -172,18 +173,18 @@ type DaemonConfig struct {
 type ServerConfig struct {
 	Host         string                           `json:"host" yaml:"host"`
 	Port         int                              `json:"port" yaml:"port"`
-	ReadTimeout  foundation.Option[time.Duration] `json:"read_timeout,omitempty" yaml:"read_timeout,omitempty"`
-	WriteTimeout foundation.Option[time.Duration] `json:"write_timeout,omitempty" yaml:"write_timeout,omitempty"`
-	IdleTimeout  foundation.Option[time.Duration] `json:"idle_timeout,omitempty" yaml:"idle_timeout,omitempty"`
-	TLS          foundation.Option[TLSConfig]     `json:"tls,omitempty" yaml:"tls,omitempty"`
-	CORS         foundation.Option[CORSConfig]    `json:"cors,omitempty" yaml:"cors,omitempty"`
+	ReadTimeout  foundation.Option[time.Duration] `json:"read_timeout,omitzero" yaml:"read_timeout,omitempty"`
+	WriteTimeout foundation.Option[time.Duration] `json:"write_timeout,omitzero" yaml:"write_timeout,omitempty"`
+	IdleTimeout  foundation.Option[time.Duration] `json:"idle_timeout,omitzero" yaml:"idle_timeout,omitempty"`
+	TLS          foundation.Option[TLSConfig]     `json:"tls,omitzero" yaml:"tls,omitempty"`
+	CORS         foundation.Option[CORSConfig]    `json:"cors,omitzero" yaml:"cors,omitempty"`
 }
 
 // TLSConfig represents TLS configuration.
 type TLSConfig struct {
 	Enabled  bool                      `json:"enabled" yaml:"enabled"`
-	CertFile foundation.Option[string] `json:"cert_file,omitempty" yaml:"cert_file,omitempty"`
-	KeyFile  foundation.Option[string] `json:"key_file,omitempty" yaml:"key_file,omitempty"`
+	CertFile foundation.Option[string] `json:"cert_file,omitzero" yaml:"cert_file,omitempty"`
+	KeyFile  foundation.Option[string] `json:"key_file,omitzero" yaml:"key_file,omitempty"`
 	Auto     bool                      `json:"auto" yaml:"auto"` // For automatic certificate generation
 }
 
@@ -198,73 +199,73 @@ type CORSConfig struct {
 // LoggingConfig represents logging configuration.
 type LoggingConfig struct {
 	Level      LogLevelType              `json:"level" yaml:"level"`
-	Format     foundation.Option[string] `json:"format,omitempty" yaml:"format,omitempty"`
-	File       foundation.Option[string] `json:"file,omitempty" yaml:"file,omitempty"`
-	MaxSize    foundation.Option[int]    `json:"max_size,omitempty" yaml:"max_size,omitempty"`
+	Format     foundation.Option[string] `json:"format,omitzero" yaml:"format,omitempty"`
+	File       foundation.Option[string] `json:"file,omitzero" yaml:"file,omitempty"`
+	MaxSize    foundation.Option[int]    `json:"max_size,omitzero" yaml:"max_size,omitempty"`
 	Structured bool                      `json:"structured" yaml:"structured"`
 }
 
 // BuildConfig represents build execution configuration.
 type BuildConfig struct {
-	Timeout       foundation.Option[time.Duration] `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	MaxConcurrent foundation.Option[int]           `json:"max_concurrent,omitempty" yaml:"max_concurrent,omitempty"`
-	RetryAttempts foundation.Option[int]           `json:"retry_attempts,omitempty" yaml:"retry_attempts,omitempty"`
-	RetryDelay    foundation.Option[time.Duration] `json:"retry_delay,omitempty" yaml:"retry_delay,omitempty"`
-	CleanupAfter  foundation.Option[time.Duration] `json:"cleanup_after,omitempty" yaml:"cleanup_after,omitempty"`
+	Timeout       foundation.Option[time.Duration] `json:"timeout,omitzero" yaml:"timeout,omitempty"`
+	MaxConcurrent foundation.Option[int]           `json:"max_concurrent,omitzero" yaml:"max_concurrent,omitempty"`
+	RetryAttempts foundation.Option[int]           `json:"retry_attempts,omitzero" yaml:"retry_attempts,omitempty"`
+	RetryDelay    foundation.Option[time.Duration] `json:"retry_delay,omitzero" yaml:"retry_delay,omitempty"`
+	CleanupAfter  foundation.Option[time.Duration] `json:"cleanup_after,omitzero" yaml:"cleanup_after,omitempty"`
 }
 
 // MonitoringConfig represents monitoring and health check configuration.
 type MonitoringConfig struct {
 	Enabled     bool                             `json:"enabled" yaml:"enabled"`
 	HealthCheck HealthCheckConfig                `json:"health_check" yaml:"health_check"`
-	Metrics     foundation.Option[MetricsConfig] `json:"metrics,omitempty" yaml:"metrics,omitempty"`
-	Tracing     foundation.Option[TracingConfig] `json:"tracing,omitempty" yaml:"tracing,omitempty"`
+	Metrics     foundation.Option[MetricsConfig] `json:"metrics,omitzero" yaml:"metrics,omitempty"`
+	Tracing     foundation.Option[TracingConfig] `json:"tracing,omitzero" yaml:"tracing,omitempty"`
 }
 
 // HealthCheckConfig represents health check configuration.
 type HealthCheckConfig struct {
 	Enabled  bool                             `json:"enabled" yaml:"enabled"`
-	Endpoint foundation.Option[string]        `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
-	Interval foundation.Option[time.Duration] `json:"interval,omitempty" yaml:"interval,omitempty"`
+	Endpoint foundation.Option[string]        `json:"endpoint,omitzero" yaml:"endpoint,omitempty"`
+	Interval foundation.Option[time.Duration] `json:"interval,omitzero" yaml:"interval,omitempty"`
 }
 
 // MetricsConfig represents metrics collection configuration.
 type MetricsConfig struct {
 	Enabled  bool                      `json:"enabled" yaml:"enabled"`
-	Endpoint foundation.Option[string] `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
-	Provider foundation.Option[string] `json:"provider,omitempty" yaml:"provider,omitempty"`
+	Endpoint foundation.Option[string] `json:"endpoint,omitzero" yaml:"endpoint,omitempty"`
+	Provider foundation.Option[string] `json:"provider,omitzero" yaml:"provider,omitempty"`
 }
 
 // TracingConfig represents distributed tracing configuration.
 type TracingConfig struct {
 	Enabled     bool                      `json:"enabled" yaml:"enabled"`
-	ServiceName foundation.Option[string] `json:"service_name,omitempty" yaml:"service_name,omitempty"`
-	Endpoint    foundation.Option[string] `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
+	ServiceName foundation.Option[string] `json:"service_name,omitzero" yaml:"service_name,omitempty"`
+	Endpoint    foundation.Option[string] `json:"endpoint,omitzero" yaml:"endpoint,omitempty"`
 }
 
 // WebhookConfig represents webhook processing configuration.
 type WebhookConfig struct {
 	Enabled        bool                             `json:"enabled" yaml:"enabled"`
-	Secret         foundation.Option[string]        `json:"secret,omitempty" yaml:"secret,omitempty"`
-	Path           foundation.Option[string]        `json:"path,omitempty" yaml:"path,omitempty"`
-	Timeout        foundation.Option[time.Duration] `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	MaxPayloadSize foundation.Option[int]           `json:"max_payload_size,omitempty" yaml:"max_payload_size,omitempty"`
+	Secret         foundation.Option[string]        `json:"secret,omitzero" yaml:"secret,omitempty"`
+	Path           foundation.Option[string]        `json:"path,omitzero" yaml:"path,omitempty"`
+	Timeout        foundation.Option[time.Duration] `json:"timeout,omitzero" yaml:"timeout,omitempty"`
+	MaxPayloadSize foundation.Option[int]           `json:"max_payload_size,omitzero" yaml:"max_payload_size,omitempty"`
 	AuthRequired   bool                             `json:"auth_required" yaml:"auth_required"`
 }
 
 // ScheduleConfig represents scheduled build configuration.
 type ScheduleConfig struct {
 	Enabled  bool                             `json:"enabled" yaml:"enabled"`
-	Cron     foundation.Option[string]        `json:"cron,omitempty" yaml:"cron,omitempty"`
-	Interval foundation.Option[time.Duration] `json:"interval,omitempty" yaml:"interval,omitempty"`
-	Timezone foundation.Option[string]        `json:"timezone,omitempty" yaml:"timezone,omitempty"`
+	Cron     foundation.Option[string]        `json:"cron,omitzero" yaml:"cron,omitempty"`
+	Interval foundation.Option[time.Duration] `json:"interval,omitzero" yaml:"interval,omitempty"`
+	Timezone foundation.Option[string]        `json:"timezone,omitzero" yaml:"timezone,omitempty"`
 }
 
 // SecurityConfig represents security configuration.
 type SecurityConfig struct {
-	APIKey         foundation.Option[string]          `json:"api_key,omitempty" yaml:"api_key,omitempty"`
-	JWTSecret      foundation.Option[string]          `json:"jwt_secret,omitempty" yaml:"jwt_secret,omitempty"`
-	RateLimit      foundation.Option[RateLimitConfig] `json:"rate_limit,omitempty" yaml:"rate_limit,omitempty"`
+	APIKey         foundation.Option[string]          `json:"api_key,omitzero" yaml:"api_key,omitempty"`
+	JWTSecret      foundation.Option[string]          `json:"jwt_secret,omitzero" yaml:"jwt_secret,omitempty"`
+	RateLimit      foundation.Option[RateLimitConfig] `json:"rate_limit,omitzero" yaml:"rate_limit,omitempty"`
 	AllowedHosts   []string                           `json:"allowed_hosts,omitempty" yaml:"allowed_hosts,omitempty"`
 	TrustedProxies []string                           `json:"trusted_proxies,omitempty" yaml:"trusted_proxies,omitempty"`
 }
@@ -272,27 +273,27 @@ type SecurityConfig struct {
 // RateLimitConfig represents rate limiting configuration.
 type RateLimitConfig struct {
 	Enabled           bool                             `json:"enabled" yaml:"enabled"`
-	RequestsPerMinute foundation.Option[int]           `json:"requests_per_minute,omitempty" yaml:"requests_per_minute,omitempty"`
-	BurstSize         foundation.Option[int]           `json:"burst_size,omitempty" yaml:"burst_size,omitempty"`
-	WindowSize        foundation.Option[time.Duration] `json:"window_size,omitempty" yaml:"window_size,omitempty"`
+	RequestsPerMinute foundation.Option[int]           `json:"requests_per_minute,omitzero" yaml:"requests_per_minute,omitempty"`
+	BurstSize         foundation.Option[int]           `json:"burst_size,omitzero" yaml:"burst_size,omitempty"`
+	WindowSize        foundation.Option[time.Duration] `json:"window_size,omitzero" yaml:"window_size,omitempty"`
 }
 
 // PerformanceConfig represents performance tuning configuration.
 type PerformanceConfig struct {
-	MaxWorkers     foundation.Option[int]           `json:"max_workers,omitempty" yaml:"max_workers,omitempty"`
-	QueueSize      foundation.Option[int]           `json:"queue_size,omitempty" yaml:"queue_size,omitempty"`
-	GCPercent      foundation.Option[int]           `json:"gc_percent,omitempty" yaml:"gc_percent,omitempty"`
-	MemoryLimit    foundation.Option[string]        `json:"memory_limit,omitempty" yaml:"memory_limit,omitempty"`
-	RequestTimeout foundation.Option[time.Duration] `json:"request_timeout,omitempty" yaml:"request_timeout,omitempty"`
+	MaxWorkers     foundation.Option[int]           `json:"max_workers,omitzero" yaml:"max_workers,omitempty"`
+	QueueSize      foundation.Option[int]           `json:"queue_size,omitzero" yaml:"queue_size,omitempty"`
+	GCPercent      foundation.Option[int]           `json:"gc_percent,omitzero" yaml:"gc_percent,omitempty"`
+	MemoryLimit    foundation.Option[string]        `json:"memory_limit,omitzero" yaml:"memory_limit,omitempty"`
+	RequestTimeout foundation.Option[time.Duration] `json:"request_timeout,omitzero" yaml:"request_timeout,omitempty"`
 }
 
 // StorageConfig represents storage configuration.
 type StorageConfig struct {
-	WorkspaceDir foundation.Option[string]        `json:"workspace_dir,omitempty" yaml:"workspace_dir,omitempty"`
-	StateFile    foundation.Option[string]        `json:"state_file,omitempty" yaml:"state_file,omitempty"`
-	TempDir      foundation.Option[string]        `json:"temp_dir,omitempty" yaml:"temp_dir,omitempty"`
-	CleanupAge   foundation.Option[time.Duration] `json:"cleanup_age,omitempty" yaml:"cleanup_age,omitempty"`
-	MaxSize      foundation.Option[string]        `json:"max_size,omitempty" yaml:"max_size,omitempty"`
+	WorkspaceDir foundation.Option[string]        `json:"workspace_dir,omitzero" yaml:"workspace_dir,omitempty"`
+	StateFile    foundation.Option[string]        `json:"state_file,omitzero" yaml:"state_file,omitempty"`
+	TempDir      foundation.Option[string]        `json:"temp_dir,omitzero" yaml:"temp_dir,omitempty"`
+	CleanupAge   foundation.Option[time.Duration] `json:"cleanup_age,omitzero" yaml:"cleanup_age,omitempty"`
+	MaxSize      foundation.Option[string]        `json:"max_size,omitzero" yaml:"max_size,omitempty"`
 }
 
 // Validation methods
@@ -453,13 +454,7 @@ func (lc *LoggingConfig) Validate() foundation.ValidationResult {
 	if lc.Format.IsSome() {
 		format := lc.Format.Unwrap()
 		validFormats := []string{"json", "text", "logfmt"}
-		isValid := false
-		for _, valid := range validFormats {
-			if format == valid {
-				isValid = true
-				break
-			}
-		}
+		isValid := slices.Contains(validFormats, format)
 		if !isValid {
 			return foundation.Invalid(
 				foundation.NewValidationError("format", "valid_format",
@@ -595,8 +590,8 @@ func isValidHostname(hostname string) bool {
 	}
 
 	// Check each label
-	labels := strings.Split(hostname, ".")
-	for _, label := range labels {
+	labels := strings.SplitSeq(hostname, ".")
+	for label := range labels {
 		if label == "" || len(label) > 63 {
 			return false
 		}

@@ -80,15 +80,15 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 			Hugo: config.HugoConfig{
 				Title:   "Enterprise Documentation Hub",
 				BaseURL: "https://docs.enterprise.com",
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"enterprise_deployment": true,
 					"multi_forge":           true,
 					"forge_count":           3,
-					"search": map[string]interface{}{
+					"search": map[string]any{
 						"enabled": true,
 						"type":    "flexsearch",
 					},
-					"auth": map[string]interface{}{
+					"auth": map[string]any{
 						"enabled":  true,
 						"provider": "oidc",
 					},
@@ -175,7 +175,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		discoveryDuration := time.Since(start)
 
 		// Collect metrics for monitoring
-		metrics := map[string]interface{}{
+		metrics := map[string]any{
 			"total_repositories":     len(repos),
 			"discovery_duration_ms":  discoveryDuration.Milliseconds(),
 			"repositories_with_docs": 0,
@@ -204,7 +204,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		}
 
 		// Simulate alerting thresholds
-		alertThresholds := map[string]interface{}{
+		alertThresholds := map[string]any{
 			"max_discovery_duration_ms":  1000,
 			"min_doc_repositories":       5,
 			"max_repositories_per_forge": 10000,
@@ -506,7 +506,7 @@ func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 		}
 
 		// Validate HA metrics
-		haMetrics := map[string]interface{}{
+		haMetrics := map[string]any{
 			"primary_available": primaryAvailable,
 			"backup_available":  backupAvailable,
 			"data_consistency":  len(primaryRepos) == len(backupRepos),

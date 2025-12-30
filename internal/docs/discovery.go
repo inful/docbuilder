@@ -3,8 +3,10 @@ package docs
 import (
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -267,12 +269,7 @@ func isAsset(filename string) bool {
 		// Other
 		".csv", ".json", ".yaml", ".yml", ".xml",
 	}
-	for _, assetExt := range assetExtensions {
-		if ext == assetExt {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(assetExtensions, ext)
 }
 
 // isIgnoredFile checks if a file should be ignored.
@@ -300,9 +297,7 @@ func copyMetadata(metadata map[string]string) map[string]string {
 	}
 
 	copyMap := make(map[string]string)
-	for k, v := range metadata {
-		copyMap[k] = v
-	}
+	maps.Copy(copyMap, metadata)
 
 	return copyMap
 }
@@ -315,12 +310,13 @@ func (d *Discovery) GetDocFiles() []DocFile {
 // GetDocFilesByRepository returns documentation files grouped by repository.
 func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 	result := make(map[string][]DocFile)
-	for _, file := range d.docFiles {
+	for i := range d.docFiles {
+		file := &d.docFiles[i]
 		key := file.Repository
 		if file.Forge != "" {
 			key = file.Forge + "/" + key
 		}
-		result[key] = append(result[key], file)
+		result[key] = append(result[key], *file)
 	}
 	return result
 }
@@ -328,13 +324,14 @@ func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 // GetDocFilesBySection returns documentation files grouped by section.
 func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 	result := make(map[string][]DocFile)
-	for _, file := range d.docFiles {
+	for i := range d.docFiles {
+		file := &d.docFiles[i]
 		repoKey := file.Repository
 		if file.Forge != "" {
 			repoKey = file.Forge + "/" + repoKey
 		}
 		key := repoKey + "/" + file.Section
-		result[key] = append(result[key], file)
+		result[key] = append(result[key], *file)
 	}
 	return result
 }
@@ -362,7 +359,8 @@ func (d *Discovery) detectPathCollisions() error {
 	// Track Hugo path -> source file paths
 	seen := make(map[string][]string)
 
-	for _, file := range d.docFiles {
+	for i := range d.docFiles {
+		file := &d.docFiles[i]
 		hugoPath := file.GetHugoPath()
 		sourcePath := filepath.Join(file.Repository, file.RelativePath)
 		seen[hugoPath] = append(seen[hugoPath], sourcePath)

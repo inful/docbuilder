@@ -183,8 +183,8 @@ func (c *GitHubClient) fetchAndConvertRepos(ctx context.Context, endpoint string
 
 	// Convert to common Repository format
 	allRepos := make([]*Repository, 0, len(githubRepos))
-	for _, gRepo := range githubRepos {
-		repo := c.convertGitHubRepo(&gRepo)
+	for i := range githubRepos {
+		repo := c.convertGitHubRepo(&githubRepos[i])
 		allRepos = append(allRepos, repo)
 	}
 
@@ -325,7 +325,7 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 
 	// Decode repository allowing id to be string or int
-	var repoMap map[string]interface{}
+	var repoMap map[string]any
 	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
 		return nil, err
 	}
@@ -349,7 +349,8 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 	// Convert commits
 	var commits = make([]WebhookCommit, 0, len(pushEvent.Commits))
-	for _, commit := range pushEvent.Commits {
+	for i := range pushEvent.Commits {
+		commit := &pushEvent.Commits[i]
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,
 			Message:   commit.Message,
@@ -398,7 +399,7 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 		return nil, errors.New("missing repository in repository event")
 	}
 
-	var repoMap map[string]interface{}
+	var repoMap map[string]any
 	if err := json.Unmarshal(repoEvent.Repository, &repoMap); err != nil {
 		return nil, err
 	}
@@ -444,7 +445,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	owner, repoName := c.splitFullName(repo.FullName)
 	endpoint := fmt.Sprintf("/repos/%s/%s/hooks", owner, repoName)
 
-	webhookConfig := map[string]interface{}{
+	webhookConfig := map[string]any{
 		"url":          webhookURL,
 		"content_type": "json",
 		"secret":       c.config.Webhook.Secret,
@@ -455,7 +456,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		events = []string{"push", "repository"}
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"config": webhookConfig,
 		"events": events,
 		"active": true,
@@ -466,7 +467,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		return err
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	return c.DoRequest(req, &result)
 }
 

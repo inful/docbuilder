@@ -117,8 +117,8 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 		path = strings.TrimSuffix(path, "/readme")
 		path += "/"
 	}
-	if strings.HasSuffix(path, "/index") {
-		path = strings.TrimSuffix(path, "/index")
+	if before, ok := strings.CutSuffix(path, "/index"); ok {
+		path = before
 		path += "/"
 	}
 
@@ -136,10 +136,10 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	}
 
 	// Handle relative paths that navigate up directories (../)
-	if strings.HasPrefix(path, "../") {
+	if after, ok := strings.CutPrefix(path, "../"); ok {
 		// Strip all leading ../ sequences
 		for strings.HasPrefix(path, "../") {
-			path = strings.TrimPrefix(path, "../")
+			path = after
 		}
 
 		// Prepend repository path

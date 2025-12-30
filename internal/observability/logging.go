@@ -55,28 +55,24 @@ func getLogAttrs(ctx context.Context) []slog.Attr {
 
 // InfoContext logs an info message with context information.
 func InfoContext(ctx context.Context, msg string, attrs ...slog.Attr) {
-	contextAttrs := getLogAttrs(ctx)
-	allAttrs := append(contextAttrs, attrs...)
-	slog.LogAttrs(ctx, slog.LevelInfo, msg, allAttrs...)
+	logAttrs(ctx, slog.LevelInfo, msg, attrs)
 }
 
 // WarnContext logs a warning message with context information.
 func WarnContext(ctx context.Context, msg string, attrs ...slog.Attr) {
-	contextAttrs := getLogAttrs(ctx)
-	allAttrs := append(contextAttrs, attrs...)
-	slog.LogAttrs(ctx, slog.LevelWarn, msg, allAttrs...)
+	logAttrs(ctx, slog.LevelWarn, msg, attrs)
 }
 
 // ErrorContext logs an error message with context information.
 func ErrorContext(ctx context.Context, msg string, attrs ...slog.Attr) {
-	contextAttrs := getLogAttrs(ctx)
-	allAttrs := append(contextAttrs, attrs...)
-	slog.LogAttrs(ctx, slog.LevelError, msg, allAttrs...)
+	logAttrs(ctx, slog.LevelError, msg, attrs)
 }
 
 // DebugContext logs a debug message with context information.
 func DebugContext(ctx context.Context, msg string, attrs ...slog.Attr) {
-	contextAttrs := getLogAttrs(ctx)
-	allAttrs := append(contextAttrs, attrs...)
-	slog.LogAttrs(ctx, slog.LevelDebug, msg, allAttrs...)
+	logAttrs(ctx, slog.LevelDebug, msg, attrs)
+}
+
+func logAttrs(ctx context.Context, level slog.Level, msg string, attrs []slog.Attr) {
+	slog.LogAttrs(ctx, level, msg, append(getLogAttrs(ctx), attrs...)...)
 }

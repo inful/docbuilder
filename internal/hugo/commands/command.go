@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"log/slog"
+	"maps"
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
@@ -125,9 +126,7 @@ func (r *CommandRegistry) List() []hugo.StageName {
 // GetAll returns all registered commands.
 func (r *CommandRegistry) GetAll() map[hugo.StageName]StageCommand {
 	result := make(map[hugo.StageName]StageCommand, len(r.commands))
-	for name, cmd := range r.commands {
-		result[name] = cmd
-	}
+	maps.Copy(result, r.commands)
 	return result
 }
 

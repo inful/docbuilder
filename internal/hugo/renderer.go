@@ -59,7 +59,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	errStr := stderr.String()
 	if outStr != "" {
 		// Log each line separately to avoid escaped newlines
-		for _, line := range strings.Split(strings.TrimSpace(outStr), "\n") {
+		for line := range strings.SplitSeq(strings.TrimSpace(outStr), "\n") {
 			if line != "" {
 				slog.Debug("hugo stdout", "line", line)
 			}
@@ -67,7 +67,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	}
 	if errStr != "" {
 		// Log each line separately to avoid escaped newlines
-		for _, line := range strings.Split(strings.TrimSpace(errStr), "\n") {
+		for line := range strings.SplitSeq(strings.TrimSpace(errStr), "\n") {
 			if line != "" {
 				slog.Warn("hugo stderr", "line", line)
 			}
@@ -85,7 +85,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 
 		if output != "" {
 			slog.Error("hugo execution failed - output details:")
-			for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
+			for line := range strings.SplitSeq(strings.TrimSpace(output), "\n") {
 				if line == "" {
 					continue
 				}

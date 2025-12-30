@@ -45,7 +45,7 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 		t.Log("→ Testing complete end-to-end transformation workflow")
 
 		// Simulate complete DocBuilder transformation journey
-		transformationMetrics := map[string]interface{}{
+		transformationMetrics := map[string]any{
 			"start_time":             time.Now(),
 			"phases_completed":       0,
 			"repositories_processed": 0,
@@ -187,7 +187,7 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 		t.Log("→ Validating future readiness and extensibility")
 
 		// Future readiness indicators
-		futureReadiness := map[string]interface{}{
+		futureReadiness := map[string]any{
 			"extensible_architecture":  true,
 			"modular_design":           true,
 			"scalable_testing":         true,
@@ -296,8 +296,8 @@ func validateCLIConfiguration(cfg *config.Config, t *testing.T) {
 	t.Log("✓ CLI configuration validated")
 }
 
-func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForgeClient) map[string]interface{} {
-	return map[string]interface{}{
+func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForgeClient) map[string]any {
+	return map[string]any{
 		"forges":           []Client{github, gitlab, forgejo},
 		"workflow_enabled": true,
 		"cross_forge_sync": true,
@@ -305,7 +305,7 @@ func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForg
 	}
 }
 
-func validateComponentIntegration(context map[string]interface{}, t *testing.T) {
+func validateComponentIntegration(context map[string]any, t *testing.T) {
 	forges := context["forges"].([]Client)
 	if len(forges) != 3 {
 		t.Errorf("Expected 3 forge clients, got %d", len(forges))
@@ -318,8 +318,8 @@ func validateComponentIntegration(context map[string]interface{}, t *testing.T) 
 	t.Log("✓ Component integration validated")
 }
 
-func createEnterpriseDeploymentContext(_, _, _ *EnhancedMockForgeClient) map[string]interface{} {
-	return map[string]interface{}{
+func createEnterpriseDeploymentContext(_, _, _ *EnhancedMockForgeClient) map[string]any {
+	return map[string]any{
 		"production_ready":   true,
 		"monitoring_enabled": true,
 		"ha_configured":      true,
@@ -328,7 +328,7 @@ func createEnterpriseDeploymentContext(_, _, _ *EnhancedMockForgeClient) map[str
 	}
 }
 
-func validateEnterpriseDeployment(context map[string]interface{}, t *testing.T) {
+func validateEnterpriseDeployment(context map[string]any, t *testing.T) {
 	requiredFeatures := []string{
 		"production_ready", "monitoring_enabled", "ha_configured",
 		"security_validated", "compliance_met",

@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"maps"
 	"strings"
 	"time"
 
@@ -20,9 +21,8 @@ type FrontMatterInput struct {
 // Behavior mirrors the inlined logic previously in processMarkdownFile to preserve output parity.
 func BuildFrontMatter(in FrontMatterInput) map[string]any {
 	fm := map[string]any{}
-	for k, v := range in.Existing { // shallow copy
-		fm[k] = v
-	}
+	// shallow copy
+	maps.Copy(fm, in.Existing)
 
 	// Title
 	if fm["title"] == nil && in.File.Name != "index" {

@@ -24,7 +24,7 @@ type BuildStarted struct {
 
 // NewBuildStarted creates a BuildStarted event with typed metadata.
 func NewBuildStarted(buildID string, meta BuildStartedMeta) (*BuildStarted, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"tenant_id": meta.TenantID,
 		"config":    meta,
 	})
@@ -55,7 +55,7 @@ type RepositoryCloned struct {
 
 // NewRepositoryCloned creates a RepositoryCloned event.
 func NewRepositoryCloned(buildID, repoName, commit, path string, duration time.Duration) (*RepositoryCloned, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"repo_name":   repoName,
 		"commit":      commit,
 		"path":        path,
@@ -89,7 +89,7 @@ type DocumentsDiscovered struct {
 
 // NewDocumentsDiscovered creates a DocumentsDiscovered event.
 func NewDocumentsDiscovered(buildID, repoName string, files []string) (*DocumentsDiscovered, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"repo_name":  repoName,
 		"file_count": len(files),
 		"files":      files,
@@ -121,7 +121,7 @@ type TransformApplied struct {
 
 // NewTransformApplied creates a TransformApplied event.
 func NewTransformApplied(buildID, transformName string, fileCount int, duration time.Duration) (*TransformApplied, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"transform_name": transformName,
 		"file_count":     fileCount,
 		"duration_ms":    duration.Milliseconds(),
@@ -146,13 +146,13 @@ func NewTransformApplied(buildID, transformName string, fileCount int, duration 
 // HugoConfigGenerated is emitted when Hugo configuration is generated.
 type HugoConfigGenerated struct {
 	BaseEvent
-	ConfigHash    string                 `json:"config_hash"`
-	ThemeFeatures map[string]interface{} `json:"theme_features"`
+	ConfigHash    string         `json:"config_hash"`
+	ThemeFeatures map[string]any `json:"theme_features"`
 }
 
 // NewHugoConfigGenerated creates a HugoConfigGenerated event.
-func NewHugoConfigGenerated(buildID, configHash string, themeFeatures map[string]interface{}) (*HugoConfigGenerated, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+func NewHugoConfigGenerated(buildID, configHash string, themeFeatures map[string]any) (*HugoConfigGenerated, error) {
+	payload, err := json.Marshal(map[string]any{
 		"config_hash":    configHash,
 		"theme_features": themeFeatures,
 	})
@@ -182,7 +182,7 @@ type SiteGenerated struct {
 
 // NewSiteGenerated creates a SiteGenerated event.
 func NewSiteGenerated(buildID, outputPath string, fileCount int, duration time.Duration) (*SiteGenerated, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"output_path": outputPath,
 		"file_count":  fileCount,
 		"duration_ms": duration.Milliseconds(),
@@ -214,7 +214,7 @@ type BuildCompleted struct {
 
 // NewBuildCompleted creates a BuildCompleted event.
 func NewBuildCompleted(buildID, status string, duration time.Duration, artifacts map[string]string) (*BuildCompleted, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"status":      status,
 		"duration_ms": duration.Milliseconds(),
 		"artifacts":   artifacts,
@@ -245,7 +245,7 @@ type BuildFailed struct {
 
 // NewBuildFailed creates a BuildFailed event.
 func NewBuildFailed(buildID, stage, errorMsg string) (*BuildFailed, error) {
-	payload, err := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]any{
 		"stage": stage,
 		"error": errorMsg,
 	})

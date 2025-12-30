@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"slices"
 	"testing"
 	"time"
 )
@@ -347,11 +348,8 @@ func TestWebhookEventFiltering(t *testing.T) {
 
 			shouldProcess := len(tt.allowedEvents) == 0
 			if !shouldProcess {
-				for _, allowed := range tt.allowedEvents {
-					if allowed == string(tt.eventType) {
-						shouldProcess = true
-						break
-					}
+				if slices.Contains(tt.allowedEvents, string(tt.eventType)) {
+					shouldProcess = true
 				}
 			}
 

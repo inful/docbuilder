@@ -40,16 +40,17 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 		// If we're in a code block, escape shortcodes (but skip already-escaped ones)
 		if inFencedCodeBlock {
 			// Check if shortcodes are already escaped (contains {{</* or */>}})
-			if strings.Contains(line, "{{</*") || strings.Contains(line, "*/>}}") {
+			switch {
+			case strings.Contains(line, "{{</*") || strings.Contains(line, "*/>}}"):
 				// Already escaped, leave as-is
 				result.WriteString(line)
-			} else if strings.Contains(line, "{{<") {
+			case strings.Contains(line, "{{<"):
 				// Only escape if line contains shortcode opening {{<
 				// Escape both opening {{< and closing >}}
 				escapedLine := strings.ReplaceAll(line, "{{<", "{{</*")
 				escapedLine = strings.ReplaceAll(escapedLine, ">}}", "*/>}}")
 				result.WriteString(escapedLine)
-			} else {
+			default:
 				// No shortcodes to escape
 				result.WriteString(line)
 			}

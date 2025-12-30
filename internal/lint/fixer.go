@@ -1136,7 +1136,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		// (updating from bottom to top preserves line numbers)
 		sortedLinks := make([]LinkReference, len(linkRefs))
 		copy(sortedLinks, linkRefs)
-		for i := 0; i < len(sortedLinks); i++ {
+		for i := range sortedLinks {
 			for j := i + 1; j < len(sortedLinks); j++ {
 				if sortedLinks[i].LineNumber < sortedLinks[j].LineNumber {
 					sortedLinks[i], sortedLinks[j] = sortedLinks[j], sortedLinks[i]
@@ -1227,7 +1227,7 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 
 	// Preserve anchor fragment if present
 	if link.Fragment != "" {
-		newTarget = newTarget + link.Fragment
+		newTarget += link.Fragment
 	}
 
 	return newTarget

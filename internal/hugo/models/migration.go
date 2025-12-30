@@ -191,11 +191,11 @@ func (m *MigrationHelper) ValidateFrontMatterConfig(fm *FrontMatter) []string {
 
 		// Warn about complex nested structures that might cause issues
 		switch v := value.(type) {
-		case map[string]interface{}:
+		case map[string]any:
 			if len(v) > 10 {
 				warnings = append(warnings, fmt.Sprintf("custom field '%s' has complex nested structure", key))
 			}
-		case []interface{}:
+		case []any:
 			if len(v) > 20 {
 				warnings = append(warnings, fmt.Sprintf("custom field '%s' has large array", key))
 			}
@@ -206,7 +206,7 @@ func (m *MigrationHelper) ValidateFrontMatterConfig(fm *FrontMatter) []string {
 }
 
 // convertToStringArray converts various array types to []string.
-func (m *MigrationHelper) convertToStringArray(value interface{}) []string {
+func (m *MigrationHelper) convertToStringArray(value any) []string {
 	if value == nil {
 		return nil
 	}
@@ -214,7 +214,7 @@ func (m *MigrationHelper) convertToStringArray(value interface{}) []string {
 	switch v := value.(type) {
 	case []string:
 		return v
-	case []interface{}:
+	case []any:
 		result := make([]string, len(v))
 		for i, item := range v {
 			if str, ok := item.(string); ok {

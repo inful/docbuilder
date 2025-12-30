@@ -1,6 +1,8 @@
 // Package errors provides foundational, type-safe error primitives used across DocBuilder.
 package errors
 
+import "maps"
+
 // ErrorCategory represents the broad category of an error for classification and routing.
 type ErrorCategory string
 
@@ -89,11 +91,7 @@ func (c ErrorContext) Merge(other ErrorContext) ErrorContext {
 		return c
 	}
 	result := make(ErrorContext)
-	for k, v := range c {
-		result[k] = v
-	}
-	for k, v := range other {
-		result[k] = v
-	}
+	maps.Copy(result, c)
+	maps.Copy(result, other)
 	return result
 }

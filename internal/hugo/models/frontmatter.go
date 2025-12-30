@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"maps"
+	"slices"
 	"time"
 )
 
@@ -10,7 +12,7 @@ import (
 type FrontMatter struct {
 	// Core Hugo fields
 	Title       string    `json:"title,omitempty" yaml:"title,omitempty"`
-	Date        time.Time `json:"date,omitempty" yaml:"date,omitempty"`
+	Date        time.Time `json:"date,omitzero" yaml:"date,omitempty"`
 	Draft       bool      `json:"draft,omitempty" yaml:"draft,omitempty"`
 	Description string    `json:"description,omitempty" yaml:"description,omitempty"`
 
@@ -34,14 +36,14 @@ type FrontMatter struct {
 
 	// Custom fields for extensibility
 	// These are type-safe containers for theme-specific or custom metadata
-	Custom map[string]interface{} `json:",inline" yaml:",inline"`
+	Custom map[string]any `json:",inline" yaml:",inline"`
 }
 
 // NewFrontMatter creates a new FrontMatter with sensible defaults.
 func NewFrontMatter() *FrontMatter {
 	return &FrontMatter{
 		Date:   time.Now(),
-		Custom: make(map[string]interface{}),
+		Custom: make(map[string]any),
 	}
 }
 
@@ -101,7 +103,7 @@ func FromMap(data map[string]any) (*FrontMatter, error) {
 	}
 
 	// Handle taxonomy fields
-	if tags, ok := data["tags"].([]interface{}); ok {
+	if tags, ok := data["tags"].([]any); ok {
 		fm.Tags = make([]string, len(tags))
 		for i, tag := range tags {
 			if tagStr, ok := tag.(string); ok {
@@ -112,7 +114,7 @@ func FromMap(data map[string]any) (*FrontMatter, error) {
 		fm.Tags = tags
 	}
 
-	if categories, ok := data["categories"].([]interface{}); ok {
+	if categories, ok := data["categories"].([]any); ok {
 		fm.Categories = make([]string, len(categories))
 		for i, cat := range categories {
 			if catStr, ok := cat.(string); ok {
@@ -123,7 +125,7 @@ func FromMap(data map[string]any) (*FrontMatter, error) {
 		fm.Categories = categories
 	}
 
-	if keywords, ok := data["keywords"].([]interface{}); ok {
+	if keywords, ok := data["keywords"].([]any); ok {
 		fm.Keywords = make([]string, len(keywords))
 		for i, kw := range keywords {
 			if kwStr, ok := kw.(string); ok {
@@ -211,9 +213,7 @@ func (fm *FrontMatter) ToMap() map[string]any {
 	}
 
 	// Add custom fields
-	for key, value := range fm.Custom {
-		result[key] = value
-	}
+	maps.Copy(result, fm.Custom)
 
 	return result
 }
@@ -232,7 +232,7 @@ func (fm *FrontMatter) Clone() *FrontMatter {
 		Weight:      fm.Weight,
 		Layout:      fm.Layout,
 		Type:        fm.Type,
-		Custom:      make(map[string]interface{}),
+		Custom:      make(map[string]any),
 	}
 
 	// Deep copy slices
@@ -252,23 +252,21 @@ func (fm *FrontMatter) Clone() *FrontMatter {
 	}
 
 	// Deep copy custom fields (shallow copy for now - could be improved)
-	for key, value := range fm.Custom {
-		clone.Custom[key] = value
-	}
+	maps.Copy(clone.Custom, fm.Custom)
 
 	return clone
 }
 
 // SetCustom safely sets a custom field.
-func (fm *FrontMatter) SetCustom(key string, value interface{}) {
+func (fm *FrontMatter) SetCustom(key string, value any) {
 	if fm.Custom == nil {
-		fm.Custom = make(map[string]interface{})
+		fm.Custom = make(map[string]any)
 	}
 	fm.Custom[key] = value
 }
 
 // GetCustom safely retrieves a custom field.
-func (fm *FrontMatter) GetCustom(key string) (interface{}, bool) {
+func (fm *FrontMatter) GetCustom(key string) (any, bool) {
 	if fm.Custom == nil {
 		return nil, false
 	}
@@ -302,30 +300,24 @@ func (fm *FrontMatter) GetCustomInt(key string) (int, bool) {
 
 // AddTag adds a tag if it doesn't already exist.
 func (fm *FrontMatter) AddTag(tag string) {
-	for _, existing := range fm.Tags {
-		if existing == tag {
-			return
-		}
+	if slices.Contains(fm.Tags, tag) {
+		return
 	}
 	fm.Tags = append(fm.Tags, tag)
 }
 
 // AddCategory adds a category if it doesn't already exist.
 func (fm *FrontMatter) AddCategory(category string) {
-	for _, existing := range fm.Categories {
-		if existing == category {
-			return
-		}
+	if slices.Contains(fm.Categories, category) {
+		return
 	}
 	fm.Categories = append(fm.Categories, category)
 }
 
 // AddKeyword adds a keyword if it doesn't already exist.
 func (fm *FrontMatter) AddKeyword(keyword string) {
-	for _, existing := range fm.Keywords {
-		if existing == keyword {
-			return
-		}
+	if slices.Contains(fm.Keywords, keyword) {
+		return
 	}
 	fm.Keywords = append(fm.Keywords, keyword)
 }

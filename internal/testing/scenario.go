@@ -28,7 +28,7 @@ type TestEnvironment struct {
 	OutputDir string
 	Config    *config.Config
 	Cancel    context.CancelFunc
-	Resources map[string]interface{}
+	Resources map[string]any
 }
 
 // TestResult captures test execution results.
@@ -39,7 +39,7 @@ type TestResult struct {
 	ErrorOutput  string
 	ExitCode     int
 	FilesCreated []string
-	Metrics      map[string]interface{}
+	Metrics      map[string]any
 }
 
 // NewTestEnvironment creates a new test environment with temporary directories.
@@ -65,7 +65,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		ConfigDir: configDir,
 		OutputDir: outputDir,
 		Cancel:    cancel,
-		Resources: make(map[string]interface{}),
+		Resources: make(map[string]any),
 	}
 }
 

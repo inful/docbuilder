@@ -269,7 +269,7 @@ type CacheEntry struct {
 	Error           string    `json:"error,omitempty"`
 	LastChecked     time.Time `json:"last_checked"`
 	FailureCount    int       `json:"failure_count"`
-	FirstFailedAt   time.Time `json:"first_failed_at,omitempty"`
+	FirstFailedAt   time.Time `json:"first_failed_at,omitzero"`
 	ConsecutiveFail bool      `json:"consecutive_fail"`
 }
 

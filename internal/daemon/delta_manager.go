@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -47,9 +48,7 @@ func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan 
 	if job.TypedMeta != nil && job.TypedMeta.DeltaRepoReasons != nil {
 		reasons = job.TypedMeta.DeltaRepoReasons
 	}
-	for k, v := range reasons {
-		report.DeltaRepoReasons[k] = v
-	}
+	maps.Copy(report.DeltaRepoReasons, reasons)
 }
 
 // pathGetter interface for reading repository document file paths

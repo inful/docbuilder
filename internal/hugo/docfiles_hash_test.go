@@ -15,34 +15,34 @@ func TestDocFilesHashChanges(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 
-	filesA := []docs.DocFile{{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")}}
-	if err := gen.GenerateSite(filesA); err != nil {
+	files := []docs.DocFile{{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")}}
+	if err := gen.GenerateSite(files); err != nil {
 		t.Fatalf("first build failed: %v", err)
 	}
-	hashA := readHash(t, filepath.Join(out, "build-report.json"))
-	if hashA == "" {
+	firstHash := readHash(t, filepath.Join(out, "build-report.json"))
+	if firstHash == "" {
 		t.Fatalf("expected non-empty hash for first build")
 	}
 
 	// Second build with same files -> hash should remain identical
 	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
-	if err := gen2.GenerateSite(filesA); err != nil {
+	if err := gen2.GenerateSite(files); err != nil {
 		t.Fatalf("second build failed: %v", err)
 	}
-	hashA2 := readHash(t, filepath.Join(out, "build-report.json"))
-	if hashA2 != hashA {
-		t.Fatalf("expected identical hash when file set unchanged: %s vs %s", hashA2, hashA)
+	secondHash := readHash(t, filepath.Join(out, "build-report.json"))
+	if secondHash != firstHash {
+		t.Fatalf("expected identical hash when file set unchanged: %s vs %s", secondHash, firstHash)
 	}
 
 	// Third build with additional file -> hash must change
-	filesB := append(filesA, docs.DocFile{Repository: "r", Name: "b", RelativePath: "b.md", DocsBase: "docs", Extension: ".md", Content: []byte("# B\n")})
+	files = append(files, docs.DocFile{Repository: "r", Name: "b", RelativePath: "b.md", DocsBase: "docs", Extension: ".md", Content: []byte("# B\n")})
 	gen3 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
-	if err := gen3.GenerateSite(filesB); err != nil {
+	if err := gen3.GenerateSite(files); err != nil {
 		t.Fatalf("third build failed: %v", err)
 	}
-	hashB := readHash(t, filepath.Join(out, "build-report.json"))
-	if hashB == hashA {
-		t.Fatalf("expected hash to change after adding file; still %s", hashB)
+	thirdHash := readHash(t, filepath.Join(out, "build-report.json"))
+	if thirdHash == firstHash {
+		t.Fatalf("expected hash to change after adding file; still %s", thirdHash)
 	}
 }
 

@@ -30,7 +30,7 @@ type BuildConfig struct {
 }
 
 // Custom unmarshal to detect if detect_deletions was explicitly set by user.
-func (b *BuildConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (b *BuildConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type raw BuildConfig
 	var aux raw
 	if err := unmarshal(&aux); err != nil {
@@ -40,7 +40,7 @@ func (b *BuildConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	*b = BuildConfig(aux)
 	// Heuristic: if the YAML explicitly mentioned the key, the unmarshaller will have set the bool (even if false).
 	// We can't directly know presence, so we re-unmarshal into a generic map to check.
-	var m map[string]interface{}
+	var m map[string]any
 	if err := unmarshal(&m); err == nil {
 		if _, ok := m["detect_deletions"]; ok {
 			b.detectDeletionsSpecified = true

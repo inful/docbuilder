@@ -3,6 +3,7 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"runtime"
 	"sync"
@@ -157,9 +158,7 @@ func (mc *MetricsCollector) GetSnapshot() *MetricSnapshot {
 	}
 
 	// Copy custom metrics
-	for name, value := range mc.customMetrics {
-		snapshot.Custom[name] = value
-	}
+	maps.Copy(snapshot.Custom, mc.customMetrics)
 
 	// Collect system metrics
 	snapshot.SystemMetrics = mc.getSystemMetrics()

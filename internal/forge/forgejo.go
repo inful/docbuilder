@@ -190,8 +190,8 @@ func (c *ForgejoClient) listUserRepositories(ctx context.Context) ([]*Repository
 		if len(forgejoRepos) == 0 {
 			break
 		}
-		for _, fRepo := range forgejoRepos {
-			all = append(all, c.convertForgejoRepo(&fRepo))
+		for i := range forgejoRepos {
+			all = append(all, c.convertForgejoRepo(&forgejoRepos[i]))
 		}
 		if len(forgejoRepos) < limit {
 			break
@@ -237,8 +237,8 @@ func (c *ForgejoClient) fetchAndConvertRepos(ctx context.Context, endpoint strin
 
 	// Convert to common Repository format
 	allRepos := make([]*Repository, 0, len(forgejoRepos))
-	for _, fRepo := range forgejoRepos {
-		repo := c.convertForgejoRepo(&fRepo)
+	for i := range forgejoRepos {
+		repo := c.convertForgejoRepo(&forgejoRepos[i])
 		allRepos = append(allRepos, repo)
 	}
 
@@ -386,7 +386,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 		return nil, errors.New("missing repository in push event")
 	}
 
-	var repoMap map[string]interface{}
+	var repoMap map[string]any
 	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
 		return nil, err
 	}
@@ -435,7 +435,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 // parseRepositoryEvent parses a Forgejo repository event.
 func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
-	var repoEvent map[string]interface{}
+	var repoEvent map[string]any
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
 		return nil, err
 	}
@@ -448,7 +448,7 @@ func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, err
 	}
 
 	// Extract repository information
-	if repository, ok := repoEvent["repository"].(map[string]interface{}); ok {
+	if repository, ok := repoEvent["repository"].(map[string]any); ok {
 		if repoData, err := json.Marshal(repository); err == nil {
 			var forgejoRepository forgejoRepo
 			if unmarshalErr := json.Unmarshal(repoData, &forgejoRepository); unmarshalErr == nil {
@@ -475,7 +475,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 	owner, repoName := c.splitFullName(repo.FullName)
 	endpoint := fmt.Sprintf("/repos/%s/%s/hooks", owner, repoName)
 
-	config := map[string]interface{}{
+	config := map[string]any{
 		"url":          webhookURL,
 		"content_type": "json",
 		"secret":       c.config.Webhook.Secret,
@@ -486,7 +486,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 		events = []string{"push", "repository"}
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"type":   "forgejo",
 		"config": config,
 		"events": events,
@@ -498,7 +498,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 		return err
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	return c.DoRequest(req, &result)
 }
 

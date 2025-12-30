@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 )
@@ -87,7 +88,7 @@ type FrontMatterPatch struct {
 	Type   *string `json:"type,omitempty" yaml:"type,omitempty"`
 
 	// Custom fields for extensibility
-	Custom map[string]interface{} `json:",inline" yaml:",inline"`
+	Custom map[string]any `json:",inline" yaml:",inline"`
 
 	// Merge configuration
 	MergeMode          MergeMode          `json:"merge_mode,omitempty" yaml:"merge_mode,omitempty"`
@@ -97,7 +98,7 @@ type FrontMatterPatch struct {
 // NewFrontMatterPatch creates a new empty patch.
 func NewFrontMatterPatch() *FrontMatterPatch {
 	return &FrontMatterPatch{
-		Custom:             make(map[string]interface{}),
+		Custom:             make(map[string]any),
 		MergeMode:          MergeModeDeep,
 		ArrayMergeStrategy: ArrayMergeStrategyUnion,
 	}
@@ -188,9 +189,9 @@ func (p *FrontMatterPatch) SetKeywords(keywords []string) *FrontMatterPatch {
 }
 
 // SetCustom sets a custom field in the patch.
-func (p *FrontMatterPatch) SetCustom(key string, value interface{}) *FrontMatterPatch {
+func (p *FrontMatterPatch) SetCustom(key string, value any) *FrontMatterPatch {
 	if p.Custom == nil {
-		p.Custom = make(map[string]interface{})
+		p.Custom = make(map[string]any)
 	}
 	p.Custom[key] = value
 	return p
@@ -476,9 +477,7 @@ func (p *FrontMatterPatch) ToMap() map[string]any {
 	}
 
 	// Add custom fields
-	for key, value := range p.Custom {
-		result[key] = value
-	}
+	maps.Copy(result, p.Custom)
 
 	return result
 }

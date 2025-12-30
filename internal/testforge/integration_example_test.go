@@ -2,6 +2,7 @@ package testforge_test
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -98,8 +99,8 @@ func TestTestForgeConfiguration(t *testing.T) {
 		},
 		Hugo: config.HugoConfig{
 			Title: "Test Documentation Site",
-			Params: map[string]interface{}{
-				"navbar": map[string]interface{}{
+			Params: map[string]any{
+				"navbar": map[string]any{
 					"displayTitle": true,
 				},
 			},
@@ -171,10 +172,5 @@ func TestTestForgeScenarios(t *testing.T) {
 
 // Helper function.
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }
