@@ -42,8 +42,8 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 
 	// 1. Fetch remote refs (only if needed)
 	if fetchNeeded {
-		if err := c.performFetch(repository, repo, branch, remoteSHA); err != nil {
-			return "", err
+		if fetchErr := c.performFetch(repository, repo, branch, remoteSHA); fetchErr != nil {
+			return "", fetchErr
 		}
 	} else {
 		logSkippedFetch(repo.Name, branch, remoteSHA)
