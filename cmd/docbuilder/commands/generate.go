@@ -128,33 +128,41 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 
 	// If rendering, move the public directory to the final output location
 	if g.Render {
-		publicDir := filepath.Join(hugoProjectDir, "public")
-
-		// Verify the public directory exists
-		if _, err := os.Stat(publicDir); os.IsNotExist(err) {
-			return errors.New("hugo did not generate public directory")
+		if err := g.renderAndCopyPublicDir(hugoProjectDir); err != nil {
+			return err
 		}
-
-		// Clean the output directory if it exists
-		if err := os.RemoveAll(g.Output); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to clean output directory: %w", err)
-		}
-
-		// Create parent directory if needed
-		if err := os.MkdirAll(filepath.Dir(g.Output), 0o755); err != nil {
-			return fmt.Errorf("failed to create output parent directory: %w", err)
-		}
-
-		// Copy public directory to final output using recursive copy
-		slog.Info("Copying rendered site to output", "from", publicDir, "to", g.Output)
-		if err := CopyDir(publicDir, g.Output); err != nil {
-			return fmt.Errorf("failed to copy public directory: %w", err)
-		}
-
 		fmt.Printf("Static site generated successfully at: %s\n", g.Output)
 	} else {
 		fmt.Printf("Hugo project generated at: %s\n", g.Output)
 		fmt.Println("Note: Run hugo in this directory to build the site")
+	}
+
+	return nil
+}
+
+// renderAndCopyPublicDir verifies public directory exists and copies it to output.
+func (g *GenerateCmd) renderAndCopyPublicDir(hugoProjectDir string) error {
+	publicDir := filepath.Join(hugoProjectDir, "public")
+
+	// Verify the public directory exists
+	if _, err := os.Stat(publicDir); os.IsNotExist(err) {
+		return errors.New("hugo did not generate public directory")
+	}
+
+	// Clean the output directory if it exists
+	if err := os.RemoveAll(g.Output); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to clean output directory: %w", err)
+	}
+
+	// Create parent directory if needed
+	if err := os.MkdirAll(filepath.Dir(g.Output), 0o755); err != nil {
+		return fmt.Errorf("failed to create output parent directory: %w", err)
+	}
+
+	// Copy public directory to final output using recursive copy
+	slog.Info("Copying rendered site to output", "from", publicDir, "to", g.Output)
+	if err := CopyDir(publicDir, g.Output); err != nil {
+		return fmt.Errorf("failed to copy public directory: %w", err)
 	}
 
 	return nil
