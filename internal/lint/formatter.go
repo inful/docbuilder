@@ -98,32 +98,40 @@ func (f *TextFormatter) Format(w io.Writer, result *Result, detectedPath string,
 	}
 
 	// Final message
-	if result.HasErrors() {
-		if _, err := fmt.Fprintln(w, "❌ Documentation has errors that will prevent Hugo build."); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintln(w, "   Run: docbuilder lint --fix"); err != nil {
-			return err
-		}
-	} else if result.HasWarnings() {
-		if _, err := fmt.Fprintln(w, "⚠️  Documentation has warnings. Consider fixing before commit."); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintln(w, "   To auto-fix: docbuilder lint --fix"); err != nil {
-			return err
-		}
-	} else if len(result.Issues) > 0 {
-		if _, err := fmt.Fprintln(w, "ℹ️  All issues are informational."); err != nil {
-			return err
-		}
-	} else {
-		if _, err := fmt.Fprintln(w, "✨ All documentation passes linting!"); err != nil {
-			return err
-		}
+	if err := f.printFinalMessage(w, result); err != nil {
+		return err
 	}
 
 	if _, err := fmt.Fprintln(w); err != nil {
 		return err
+	}
+	return nil
+}
+
+// printFinalMessage prints the appropriate final message based on the result.
+func (f *TextFormatter) printFinalMessage(w io.Writer, result *Result) error {
+	if result.HasErrors() {
+		return f.printMessages(w,
+			"❌ Documentation has errors that will prevent Hugo build.",
+			"   Run: docbuilder lint --fix")
+	}
+	if result.HasWarnings() {
+		return f.printMessages(w,
+			"⚠️  Documentation has warnings. Consider fixing before commit.",
+			"   To auto-fix: docbuilder lint --fix")
+	}
+	if len(result.Issues) > 0 {
+		return f.printMessages(w, "ℹ️  All issues are informational.")
+	}
+	return f.printMessages(w, "✨ All documentation passes linting!")
+}
+
+// printMessages prints multiple lines to the writer.
+func (f *TextFormatter) printMessages(w io.Writer, messages ...string) error {
+	for _, msg := range messages {
+		if _, err := fmt.Fprintln(w, msg); err != nil {
+			return err
+		}
 	}
 	return nil
 }
