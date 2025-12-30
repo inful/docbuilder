@@ -211,12 +211,12 @@ func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*
 		return nil, err
 	}
 
-	var gitlabProject gitlabProject
-	if err = c.DoRequest(req, &gitlabProject); err != nil {
+	var gitlabProj gitlabProject
+	if err = c.DoRequest(req, &gitlabProj); err != nil {
 		return nil, err
 	}
 
-	return c.convertGitLabProject(&gitlabProject), nil
+	return c.convertGitLabProject(&gitlabProj), nil
 }
 
 // CheckDocumentation checks if repository has docs folder and .docignore.

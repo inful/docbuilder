@@ -41,11 +41,11 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("worktree: %v", err)
 	}
-	if _, err := wt.Add("docs/page.md"); err != nil {
-		t.Fatalf("add: %v", err)
+	if _, addErr := wt.Add("docs/page.md"); addErr != nil {
+		t.Fatalf("add: %v", addErr)
 	}
-	if _, err := wt.Commit("initial", &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "tester@example.com", When: time.Now()}}); err != nil {
-		t.Fatalf("commit: %v", err)
+	if _, commitErr := wt.Commit("initial", &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "tester@example.com", When: time.Now()}}); commitErr != nil {
+		t.Fatalf("commit: %v", commitErr)
 	}
 
 	// Use absolute path as clone URL (supported by go-git for local clone).

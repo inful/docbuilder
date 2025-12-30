@@ -253,12 +253,12 @@ func (c *ForgejoClient) GetRepository(ctx context.Context, owner, repo string) (
 		return nil, err
 	}
 
-	var forgejoRepo forgejoRepo
-	if err = c.DoRequest(req, &forgejoRepo); err != nil {
+	var forgejoRepository forgejoRepo
+	if err = c.DoRequest(req, &forgejoRepository); err != nil {
 		return nil, err
 	}
 
-	return c.convertForgejoRepo(&forgejoRepo), nil
+	return c.convertForgejoRepo(&forgejoRepository), nil
 }
 
 // CheckDocumentation checks if repository has docs folder and .docignore.
@@ -447,9 +447,9 @@ func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, err
 	// Extract repository information
 	if repository, ok := repoEvent["repository"].(map[string]interface{}); ok {
 		if repoData, err := json.Marshal(repository); err == nil {
-			var forgejoRepo forgejoRepo
-			if unmarshalErr := json.Unmarshal(repoData, &forgejoRepo); unmarshalErr == nil {
-				event.Repository = c.convertForgejoRepo(&forgejoRepo)
+			var forgejoRepository forgejoRepo
+			if unmarshalErr := json.Unmarshal(repoData, &forgejoRepository); unmarshalErr == nil {
+				event.Repository = c.convertForgejoRepo(&forgejoRepository)
 			}
 		}
 	}

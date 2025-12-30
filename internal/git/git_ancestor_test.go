@@ -20,11 +20,11 @@ func addCommit(t *testing.T, repo *git.Repository, repoPath, filename, content, 
 		t.Fatalf("worktree: %v", err)
 	}
 	full := filepath.Join(repoPath, filename)
-	if err := os.WriteFile(full, []byte(content), 0o600); err != nil {
-		t.Fatalf("write file: %v", err)
+	if writeFileErr := os.WriteFile(full, []byte(content), 0o600); writeFileErr != nil {
+		t.Fatalf("write file: %v", writeFileErr)
 	}
-	if _, err := wt.Add(filename); err != nil {
-		t.Fatalf("add: %v", err)
+	if _, addErr := wt.Add(filename); addErr != nil {
+		t.Fatalf("add: %v", addErr)
 	}
 	hash, err := wt.Commit(msg, &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "t@example.com", When: time.Now()}})
 	if err != nil {

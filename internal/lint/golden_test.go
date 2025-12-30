@@ -116,8 +116,8 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	for _, rename := range result.FilesRenamed {
 		if rename.Success {
 			// In dry-run, original files should still exist
-			_, err := os.Stat(rename.OldPath)
-			assert.NoError(t, err, "original file should still exist in dry-run mode")
+			_, statErr := os.Stat(rename.OldPath)
+			assert.NoError(t, statErr, "original file should still exist in dry-run mode")
 		}
 	}
 
@@ -126,8 +126,8 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	goldenPath := filepath.Join(testdataDir, "..", "golden", "fix-dry-run.golden.txt")
 
 	if *updateGolden {
-		err := os.WriteFile(goldenPath, []byte(summary), 0644)
-		require.NoError(t, err)
+		writeErr := os.WriteFile(goldenPath, []byte(summary), 0644)
+		require.NoError(t, writeErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
@@ -336,10 +336,10 @@ func compareFixResultGolden(t *testing.T, result *FixResult, goldenPath string, 
 	require.NoError(t, err)
 
 	if update {
-		err := os.MkdirAll(filepath.Dir(goldenPath), 0755)
-		require.NoError(t, err)
-		err = os.WriteFile(goldenPath, actualJSON, 0644)
-		require.NoError(t, err)
+		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		require.NoError(t, updateErr)
+		updateErr = os.WriteFile(goldenPath, actualJSON, 0644)
+		require.NoError(t, updateErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
@@ -383,10 +383,10 @@ func compareBrokenLinksGolden(t *testing.T, brokenLinks []BrokenLink, goldenPath
 	require.NoError(t, err)
 
 	if update {
-		err := os.MkdirAll(filepath.Dir(goldenPath), 0755)
-		require.NoError(t, err)
-		err = os.WriteFile(goldenPath, actualJSON, 0644)
-		require.NoError(t, err)
+		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		require.NoError(t, updateErr)
+		updateErr = os.WriteFile(goldenPath, actualJSON, 0644)
+		require.NoError(t, updateErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}

@@ -19,8 +19,8 @@ func normalizeConfig(t *testing.T, path string) []byte {
 		t.Fatalf("read: %v", err)
 	}
 	var m map[string]any
-	if err := yaml.Unmarshal(b, &m); err != nil {
-		t.Fatalf("unmarshal: %v", err)
+	if unmarshalError := yaml.Unmarshal(b, &m); unmarshalError != nil {
+		t.Fatalf("unmarshal: %v", unmarshalError)
 	}
 	if params, ok := m["params"].(map[string]any); ok {
 		if _, exists := params["build_date"]; exists {

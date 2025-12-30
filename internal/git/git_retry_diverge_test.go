@@ -71,11 +71,11 @@ func addFileAndCommit(repo *git.Repository, repoPath, filename, content, msg str
 		return plumbing.Hash{}, err
 	}
 	full := filepath.Join(repoPath, filename)
-	if err := os.WriteFile(full, []byte(content), 0o600); err != nil {
-		return plumbing.Hash{}, err
+	if writeFileErr := os.WriteFile(full, []byte(content), 0o600); writeFileErr != nil {
+		return plumbing.Hash{}, writeFileErr
 	}
-	if _, err := wt.Add(filename); err != nil {
-		return plumbing.Hash{}, err
+	if _, addErr := wt.Add(filename); addErr != nil {
+		return plumbing.Hash{}, addErr
 	}
 	hash, err := wt.Commit(msg, &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "t@example.com", When: time.Now()}})
 	if err != nil {
@@ -99,25 +99,25 @@ func TestDivergenceHandling(t *testing.T) {
 		t.Fatalf("init work: %v", err)
 	}
 	// Add bare as origin
-	if _, err := workRepo.CreateRemote(&ggitcfg.RemoteConfig{Name: "origin", URLs: []string{barePath}}); err != nil {
-		t.Fatalf("create remote: %v", err)
+	if _, remoteErr := workRepo.CreateRemote(&ggitcfg.RemoteConfig{Name: "origin", URLs: []string{barePath}}); remoteErr != nil {
+		t.Fatalf("create remote: %v", remoteErr)
 	}
 
-	if _, err := addFileAndCommit(workRepo, workPath, "a.txt", "A", "A"); err != nil {
-		t.Fatalf("commit A: %v", err)
+	if _, commitErr := addFileAndCommit(workRepo, workPath, "a.txt", "A", "A"); commitErr != nil {
+		t.Fatalf("commit A: %v", commitErr)
 	}
-	if err := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); err != nil {
-		t.Fatalf("push A: %v", err)
+	if pushErr := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); pushErr != nil {
+		t.Fatalf("push A: %v", pushErr)
 	}
 
 	// Clone to local workspace repo (will become diverging later)
 	ws := filepath.Join(tmp, "ws")
-	if err := os.MkdirAll(ws, 0o750); err != nil {
-		t.Fatalf("mkdir ws: %v", err)
+	if mkdirErr := os.MkdirAll(ws, 0o750); mkdirErr != nil {
+		t.Fatalf("mkdir ws: %v", mkdirErr)
 	}
 	localPath := filepath.Join(ws, "repo")
-	if _, err := git.PlainClone(localPath, false, &git.CloneOptions{URL: barePath, ReferenceName: plumbing.NewBranchReferenceName("master"), SingleBranch: true}); err != nil {
-		t.Fatalf("clone local: %v", err)
+	if _, cloneErr := git.PlainClone(localPath, false, &git.CloneOptions{URL: barePath, ReferenceName: plumbing.NewBranchReferenceName("master"), SingleBranch: true}); cloneErr != nil {
+		t.Fatalf("clone local: %v", cloneErr)
 	}
 
 	// Create commit B locally (diverging)
@@ -125,24 +125,24 @@ func TestDivergenceHandling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open local: %v", err)
 	}
-	if _, err := addFileAndCommit(localRepo, localPath, "b.txt", "B", "B"); err != nil {
-		t.Fatalf("commit B: %v", err)
+	if _, commitErr := addFileAndCommit(localRepo, localPath, "b.txt", "B", "B"); commitErr != nil {
+		t.Fatalf("commit B: %v", commitErr)
 	}
 
 	// Create commit C in remote working repo (still pointing to parent A) and push
-	if _, err := addFileAndCommit(workRepo, workPath, "c.txt", "C", "C"); err != nil {
-		t.Fatalf("commit C: %v", err)
+	if _, commitErr := addFileAndCommit(workRepo, workPath, "c.txt", "C", "C"); commitErr != nil {
+		t.Fatalf("commit C: %v", commitErr)
 	}
-	if err := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); err != nil {
-		t.Fatalf("push C: %v", err)
+	if pushErr := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); pushErr != nil {
+		t.Fatalf("push C: %v", pushErr)
 	}
 
 	repoCfg := appcfg.Repository{Name: "repo", URL: barePath, Branch: "master"}
 
 	// Case 1: HardResetOnDiverge = false -> expect divergence error
 	client := NewClient(ws).WithBuildConfig(&appcfg.BuildConfig{HardResetOnDiverge: false})
-	if _, err := client.updateExistingRepo(localPath, repoCfg); err == nil || !strings.Contains(err.Error(), "diverged") {
-		t.Fatalf("expected divergence error, got %v", err)
+	if _, updateErr := client.updateExistingRepo(localPath, repoCfg); updateErr == nil || !strings.Contains(updateErr.Error(), "diverged") {
+		t.Fatalf("expected divergence error, got %v", updateErr)
 	}
 
 	// Capture remote hash via local remote tracking ref before applying hard reset
