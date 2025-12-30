@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
-// helper to build minimal generator with output dir
+// helper to build minimal generator with output dir.
 func newTestGenerator(t *testing.T) *Generator {
 	t.Helper()
 	tmp := t.TempDir()

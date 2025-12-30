@@ -1,6 +1,6 @@
 package config
 
-// Repository represents a Git repository to process (shared between config and generator logic)
+// Repository represents a Git repository to process (shared between config and generator logic).
 type Repository struct {
 	URL         string            `yaml:"url"`
 	Name        string            `yaml:"name"`

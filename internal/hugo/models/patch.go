@@ -10,11 +10,11 @@ import (
 type MergeMode int
 
 const (
-	// MergeModeDeep performs deep merging of nested structures
+	// MergeModeDeep performs deep merging of nested structures.
 	MergeModeDeep MergeMode = iota
-	// MergeModeReplace completely replaces existing values
+	// MergeModeReplace completely replaces existing values.
 	MergeModeReplace
-	// MergeModeSetIfMissing only sets values if they don't exist
+	// MergeModeSetIfMissing only sets values if they don't exist.
 	MergeModeSetIfMissing
 )
 
@@ -36,11 +36,11 @@ func (m MergeMode) String() string {
 type ArrayMergeStrategy int
 
 const (
-	// ArrayMergeStrategyAppend adds new items to the end
+	// ArrayMergeStrategyAppend adds new items to the end.
 	ArrayMergeStrategyAppend ArrayMergeStrategy = iota
-	// ArrayMergeStrategyUnion merges arrays removing duplicates
+	// ArrayMergeStrategyUnion merges arrays removing duplicates.
 	ArrayMergeStrategyUnion
-	// ArrayMergeStrategyReplace completely replaces the array
+	// ArrayMergeStrategyReplace completely replaces the array.
 	ArrayMergeStrategyReplace
 )
 

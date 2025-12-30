@@ -93,7 +93,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	t.Logf("✓ Content files generated in: content/%s/", testRepo.Name)
 }
 
-// TestGenerateSite_TestForgeRealisticWorkflow demonstrates end-to-end Hugo generation with TestForge
+// TestGenerateSite_TestForgeRealisticWorkflow demonstrates end-to-end Hugo generation with TestForge.
 func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 	outDir := t.TempDir()
 

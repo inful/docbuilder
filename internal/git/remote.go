@@ -12,7 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
-// RemoteReference represents a Git reference from a remote repository
+// RemoteReference represents a Git reference from a remote repository.
 type RemoteReference struct {
 	Name      string    // Short name (e.g., "main", "v1.0.0")
 	RefName   string    // Full reference name (e.g., "refs/heads/main", "refs/tags/v1.0.0")
@@ -20,7 +20,7 @@ type RemoteReference struct {
 	CreatedAt time.Time // Creation time (approximate)
 }
 
-// ListRemoteReferences lists all branches and tags from a remote repository
+// ListRemoteReferences lists all branches and tags from a remote repository.
 func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error) {
 	// Create remote with authentication if needed
 	remoteConfig := &config.RemoteConfig{
@@ -84,7 +84,7 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 	return remoteRefs, nil
 }
 
-// ListRemoteReferencesWithAuth lists remote references with explicit authentication
+// ListRemoteReferencesWithAuth lists remote references with explicit authentication.
 func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg.AuthConfig) ([]*RemoteReference, error) {
 	// Create remote with authentication
 	remoteConfig := &config.RemoteConfig{

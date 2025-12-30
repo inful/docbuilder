@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// createHugoStructure creates the basic Hugo directory structure
+// createHugoStructure creates the basic Hugo directory structure.
 func (g *Generator) createHugoStructure() error {
 	dirs := []string{
 		"content",

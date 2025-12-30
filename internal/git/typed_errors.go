@@ -44,7 +44,7 @@ func (e *RemoteDivergedError) Error() string {
 }
 func (e *RemoteDivergedError) Unwrap() error { return e.Err }
 
-// Transient typed errors
+// Transient typed errors.
 type RateLimitError struct {
 	Op, URL string
 	Err     error

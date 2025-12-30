@@ -120,7 +120,7 @@ func TestBuildFrontMatter_IncludesForge(t *testing.T) {
 	}
 }
 
-// TestTestForgeFrontmatterIntegration demonstrates TestForge integration for frontmatter generation
+// TestTestForgeFrontmatterIntegration demonstrates TestForge integration for frontmatter generation.
 func TestTestForgeFrontmatterIntegration(t *testing.T) {
 	// Test frontmatter generation with TestForge-generated repositories across platforms
 	platforms := []struct {
@@ -200,7 +200,7 @@ func TestTestForgeFrontmatterIntegration(t *testing.T) {
 	}
 }
 
-// TestTestForgeRepositoryMetadataInFrontmatter validates that TestForge repository metadata is accessible
+// TestTestForgeRepositoryMetadataInFrontmatter validates that TestForge repository metadata is accessible.
 func TestTestForgeRepositoryMetadataInFrontmatter(t *testing.T) {
 	forge := testforge.NewTestForge("metadata-test", config.ForgeGitHub)
 	repositories := forge.ToConfigRepositories()

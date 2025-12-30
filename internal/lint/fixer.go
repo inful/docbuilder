@@ -908,7 +908,7 @@ func findContentRoot(sourceFile string) string {
 	}
 }
 
-// findInlineLinks finds inline-style markdown links: [text](path)
+// findInlineLinks finds inline-style markdown links: [text](path).
 func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
 	// Pattern: [text](path) or [text](path#fragment)
 	// We'll use a simple string search for now, can be improved with regex
@@ -979,7 +979,7 @@ func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []
 	return links
 }
 
-// findReferenceLinks finds reference-style markdown links: [id]: path
+// findReferenceLinks finds reference-style markdown links: [id]: path.
 func findReferenceLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
 	var links []LinkReference
 
@@ -1044,7 +1044,7 @@ func findReferenceLinks(line string, lineNum int, sourceFile, targetPath string)
 	return links
 }
 
-// findImageLinks finds image markdown links: ![alt](path)
+// findImageLinks finds image markdown links: ![alt](path).
 func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
 	var links []LinkReference
 
@@ -1211,7 +1211,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 // It preserves:
 // - Relative path structure (./path, ../path, path)
 // - Anchor fragments (#section)
-// - Link style (relative vs absolute within repo)
+// - Link style (relative vs absolute within repo).
 func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) string {
 	// Get the new filename
 	newFilename := filepath.Base(newPath)

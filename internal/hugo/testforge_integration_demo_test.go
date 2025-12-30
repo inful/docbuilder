@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/testforge"
 )
 
-// TestHugoWithTestForgeIntegration demonstrates how TestForge can enhance Hugo package tests
+// TestHugoWithTestForgeIntegration demonstrates how TestForge can enhance Hugo package tests.
 func TestHugoWithTestForgeIntegration(t *testing.T) {
 	t.Log("=== Hugo TestForge Integration Demo ===")
 

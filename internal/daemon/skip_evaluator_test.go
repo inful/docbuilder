@@ -37,7 +37,7 @@ func (f *fakeSkipState) GetRepoDocFilesHash(u string) string { return f.repoDocH
 func (f *fakeSkipState) GetLastGlobalDocFilesHash() string   { return f.lastGlobalDocFiles }
 func (f *fakeSkipState) SetLastGlobalDocFilesHash(s string)  { f.lastGlobalDocFiles = s }
 
-// minimal generator wrapper for config hash computation only (embed real generator)
+// minimal generator wrapper for config hash computation only (embed real generator).
 func newTestGenerator(_ *testing.T, cfg *cfg.Config, outDir string) *hugo.Generator {
 	return hugo.NewGenerator(cfg, outDir)
 }

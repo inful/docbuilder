@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
-// HealthStatus represents the overall health of the daemon
+// HealthStatus represents the overall health of the daemon.
 type HealthStatus string
 
 const (
@@ -19,7 +19,7 @@ const (
 	HealthStatusUnhealthy HealthStatus = "unhealthy"
 )
 
-// HealthCheck represents a single health check
+// HealthCheck represents a single health check.
 type HealthCheck struct {
 	Name        string        `json:"name"`
 	Status      HealthStatus  `json:"status"`
@@ -28,7 +28,7 @@ type HealthCheck struct {
 	LastChecked time.Time     `json:"last_checked"`
 }
 
-// HealthResponse represents the complete health check response
+// HealthResponse represents the complete health check response.
 type HealthResponse struct {
 	Status    HealthStatus  `json:"status"`
 	Timestamp time.Time     `json:"timestamp"`
@@ -37,7 +37,7 @@ type HealthResponse struct {
 	Checks    []HealthCheck `json:"checks"`
 }
 
-// PerformHealthChecks executes all health checks and returns the overall status
+// PerformHealthChecks executes all health checks and returns the overall status.
 func (d *Daemon) PerformHealthChecks() *HealthResponse {
 	startTime := time.Now()
 
@@ -99,7 +99,7 @@ func (d *Daemon) PerformHealthChecks() *HealthResponse {
 	}
 }
 
-// checkDaemonHealth verifies the daemon is in a healthy state
+// checkDaemonHealth verifies the daemon is in a healthy state.
 func (d *Daemon) checkDaemonHealth() HealthCheck {
 	start := time.Now()
 
@@ -131,7 +131,7 @@ func (d *Daemon) checkDaemonHealth() HealthCheck {
 	return check
 }
 
-// checkHTTPHealth verifies HTTP servers are responsive
+// checkHTTPHealth verifies HTTP servers are responsive.
 func (d *Daemon) checkHTTPHealth() HealthCheck {
 	start := time.Now()
 
@@ -159,7 +159,7 @@ func (d *Daemon) checkHTTPHealth() HealthCheck {
 	return check
 }
 
-// checkBuildQueueHealth verifies the build queue is functional
+// checkBuildQueueHealth verifies the build queue is functional.
 func (d *Daemon) checkBuildQueueHealth() HealthCheck {
 	start := time.Now()
 
@@ -191,7 +191,7 @@ func (d *Daemon) checkBuildQueueHealth() HealthCheck {
 	return check
 }
 
-// checkForgeHealth verifies forge connectivity
+// checkForgeHealth verifies forge connectivity.
 func (d *Daemon) checkForgeHealth() HealthCheck {
 	start := time.Now()
 
@@ -226,7 +226,7 @@ func (d *Daemon) checkForgeHealth() HealthCheck {
 	return check
 }
 
-// checkStorageHealth verifies storage and state management
+// checkStorageHealth verifies storage and state management.
 func (d *Daemon) checkStorageHealth() HealthCheck {
 	start := time.Now()
 
@@ -259,7 +259,7 @@ func (d *Daemon) checkStorageHealth() HealthCheck {
 	return check
 }
 
-// EnhancedHealthHandler serves detailed health information
+// EnhancedHealthHandler serves detailed health information.
 func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, _ *http.Request) {
 	health := d.PerformHealthChecks()
 

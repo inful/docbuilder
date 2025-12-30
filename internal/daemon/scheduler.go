@@ -10,13 +10,13 @@ import (
 	"github.com/go-co-op/gocron/v2"
 )
 
-// Scheduler wraps gocron scheduler for managing periodic tasks
+// Scheduler wraps gocron scheduler for managing periodic tasks.
 type Scheduler struct {
 	scheduler gocron.Scheduler
 	daemon    *Daemon // back-reference for injecting metadata into jobs
 }
 
-// NewScheduler creates a new scheduler instance
+// NewScheduler creates a new scheduler instance.
 func NewScheduler() (*Scheduler, error) {
 	s, err := gocron.NewScheduler()
 	if err != nil {
@@ -31,20 +31,20 @@ func NewScheduler() (*Scheduler, error) {
 // SetDaemon injects a daemon reference post-construction to avoid an import cycle.
 func (s *Scheduler) SetDaemon(d *Daemon) { s.daemon = d }
 
-// Start begins the scheduler
+// Start begins the scheduler.
 func (s *Scheduler) Start(ctx context.Context) {
 	slog.Info("Starting scheduler")
 	s.scheduler.Start()
 }
 
-// Stop gracefully shuts down the scheduler
+// Stop gracefully shuts down the scheduler.
 func (s *Scheduler) Stop(ctx context.Context) error {
 	slog.Info("Stopping scheduler")
 	return s.scheduler.Shutdown()
 }
 
 // SchedulePeriodicBuild schedules a periodic build job
-// Returns the job ID for later management
+// Returns the job ID for later management.
 func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildType, repos []interface{}) (string, error) {
 	job, err := s.scheduler.NewJob(
 		gocron.DurationJob(interval),
@@ -58,7 +58,7 @@ func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildT
 	return job.ID().String(), nil
 }
 
-// executeBuild is called by gocron to execute a scheduled build
+// executeBuild is called by gocron to execute a scheduled build.
 func (s *Scheduler) executeBuild(jobType BuildType, repos []interface{}) {
 	if s.daemon == nil {
 		slog.Error("Daemon reference not set in scheduler")

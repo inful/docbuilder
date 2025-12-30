@@ -28,7 +28,7 @@ func NewLiveReloadHub(mc *MetricsCollector) *LiveReloadHub {
 	return &LiveReloadHub{clients: map[int]*lrClient{}, metrics: mc}
 }
 
-// ServeHTTP implements the SSE endpoint at /livereload
+// ServeHTTP implements the SSE endpoint at /livereload.
 func (h *LiveReloadHub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
 	closed := h.closed

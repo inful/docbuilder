@@ -9,7 +9,7 @@ import (
 	cfgpkg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// minimal build state helper
+// minimal build state helper.
 func newTestBuildState() *BuildState {
 	cfg := &cfgpkg.Config{Hugo: cfgpkg.HugoConfig{Title: "T"}}
 	g := NewGenerator(cfg, "")

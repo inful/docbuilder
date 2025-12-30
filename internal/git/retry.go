@@ -136,7 +136,7 @@ func isPermanentGitError(err error) bool {
 	return false
 }
 
-// expose IsPermanentGitError for tests within package
+// expose IsPermanentGitError for tests within package.
 var IsPermanentGitError = isPermanentGitError
 
 // classifyTransientType returns a short string key for known transient typed errors; empty if unknown.

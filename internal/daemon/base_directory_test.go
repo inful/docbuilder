@@ -7,7 +7,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestBuildServiceAdapter_BaseDirectory verifies that base_directory is properly combined with directory
+// TestBuildServiceAdapter_BaseDirectory verifies that base_directory is properly combined with directory.
 func TestBuildServiceAdapter_BaseDirectory(t *testing.T) {
 	tests := []struct {
 		name         string

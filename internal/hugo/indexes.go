@@ -18,7 +18,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// sortDocFiles sorts a slice of DocFile by path for deterministic ordering
+// sortDocFiles sorts a slice of DocFile by path for deterministic ordering.
 func sortDocFiles(files []docs.DocFile) {
 	sort.Slice(files, func(i, j int) bool {
 		// Sort by repository, then section, then name
@@ -32,7 +32,7 @@ func sortDocFiles(files []docs.DocFile) {
 	})
 }
 
-// sortedSectionMap creates a deterministically ordered slice of section entries
+// sortedSectionMap creates a deterministically ordered slice of section entries.
 type sectionEntry struct {
 	Name  string
 	Files []docs.DocFile
@@ -57,7 +57,7 @@ func makeSortedSections(sectionGroups map[string][]docs.DocFile) []sectionEntry 
 	return sections
 }
 
-// sortedTagMap creates a deterministically ordered slice of tag entries
+// sortedTagMap creates a deterministically ordered slice of tag entries.
 type tagEntry struct {
 	Key   string
 	Value string
@@ -77,7 +77,7 @@ func makeSortedTags(tags map[string]string) []tagEntry {
 	return entries
 }
 
-// generateIndexPages creates index pages for sections and the main site
+// generateIndexPages creates index pages for sections and the main site.
 func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
 	if err := g.generateMainIndex(docFiles); err != nil {
 		return err
@@ -346,7 +346,7 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	return nil
 }
 
-// findRepositoryConfig looks up the config.Repository by name
+// findRepositoryConfig looks up the config.Repository by name.
 func (g *Generator) findRepositoryConfig(name string) *config.Repository {
 	for i := range g.config.Repositories {
 		if g.config.Repositories[i].Name == name {
@@ -530,7 +530,7 @@ func buildIndexTemplateContext(g *Generator, docFiles []docs.DocFile, repoGroups
 		"Title":       g.config.Hugo.Title,
 		"Description": g.config.Hugo.Description,
 		"BaseURL":     g.config.Hugo.BaseURL,
-		"Theme": "relearn",
+		"Theme":       "relearn",
 	}
 	ctx["FrontMatter"] = frontMatter
 	ctx["Repositories"] = repoGroups

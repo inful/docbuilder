@@ -14,7 +14,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
-// TestForge implements a mock forge for testing purposes
+// TestForge implements a mock forge for testing purposes.
 type TestForge struct {
 	name          string
 	forgeType     config.ForgeType
@@ -24,7 +24,7 @@ type TestForge struct {
 	delay         time.Duration
 }
 
-// TestRepository represents a mock repository
+// TestRepository represents a mock repository.
 type TestRepository struct {
 	ID            string
 	Name          string
@@ -46,7 +46,7 @@ type TestRepository struct {
 	Metadata      map[string]string
 }
 
-// TestOrganization represents a mock organization
+// TestOrganization represents a mock organization.
 type TestOrganization struct {
 	ID          string
 	Name        string
@@ -55,7 +55,7 @@ type TestOrganization struct {
 	Type        string
 }
 
-// FailMode defines how the test forge should behave
+// FailMode defines how the test forge should behave.
 type FailMode int
 
 const (
@@ -66,7 +66,7 @@ const (
 	FailModeNotFound
 )
 
-// NewTestForge creates a new test forge with default repositories
+// NewTestForge creates a new test forge with default repositories.
 func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 	return &TestForge{
 		name:      name,
@@ -145,37 +145,37 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 	}
 }
 
-// SetFailMode configures how the test forge should fail
+// SetFailMode configures how the test forge should fail.
 func (tf *TestForge) SetFailMode(mode FailMode) {
 	tf.failMode = mode
 }
 
-// SetDelay adds artificial delay to simulate network latency
+// SetDelay adds artificial delay to simulate network latency.
 func (tf *TestForge) SetDelay(delay time.Duration) {
 	tf.delay = delay
 }
 
-// AddRepository adds a test repository
+// AddRepository adds a test repository.
 func (tf *TestForge) AddRepository(repo TestRepository) {
 	tf.repositories = append(tf.repositories, repo)
 }
 
-// AddOrganization adds a test organization
+// AddOrganization adds a test organization.
 func (tf *TestForge) AddOrganization(org string) {
 	tf.organizations = append(tf.organizations, org)
 }
 
-// ClearRepositories removes all repositories
+// ClearRepositories removes all repositories.
 func (tf *TestForge) ClearRepositories() {
 	tf.repositories = nil
 }
 
-// ClearOrganizations removes all organizations
+// ClearOrganizations removes all organizations.
 func (tf *TestForge) ClearOrganizations() {
 	tf.organizations = nil
 }
 
-// simulate adds delay and checks for failure modes
+// simulate adds delay and checks for failure modes.
 func (tf *TestForge) simulate() error {
 	if tf.delay > 0 {
 		time.Sleep(tf.delay)
@@ -195,7 +195,7 @@ func (tf *TestForge) simulate() error {
 	}
 }
 
-// GetUserOrganizations returns test organizations
+// GetUserOrganizations returns test organizations.
 func (tf *TestForge) GetUserOrganizations(_ context.Context) ([]forge.Organization, error) {
 	if err := tf.simulate(); err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (tf *TestForge) GetUserOrganizations(_ context.Context) ([]forge.Organizati
 	return orgs, nil
 }
 
-// GetRepositoriesForOrganization returns test repositories for an organization
+// GetRepositoriesForOrganization returns test repositories for an organization.
 func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName string) ([]forge.Repository, error) {
 	if err := tf.simulate(); err != nil {
 		return nil, err
@@ -250,30 +250,30 @@ func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName s
 	return repos, nil
 }
 
-// GetRepositoriesForGroup is an alias for GetRepositoriesForOrganization (GitLab terminology)
+// GetRepositoriesForGroup is an alias for GetRepositoriesForOrganization (GitLab terminology).
 func (tf *TestForge) GetRepositoriesForGroup(ctx context.Context, groupName string) ([]forge.Repository, error) {
 	return tf.GetRepositoriesForOrganization(ctx, groupName)
 }
 
-// Name returns the forge name
+// Name returns the forge name.
 func (tf *TestForge) Name() string {
 	return tf.name
 }
 
-// Type returns the forge type
+// Type returns the forge type.
 func (tf *TestForge) Type() config.ForgeType {
 	return tf.forgeType
 }
 
-// Factory creates test forges for different types
+// Factory creates test forges for different types.
 type Factory struct{}
 
-// NewFactory creates a new test forge factory
+// NewFactory creates a new test forge factory.
 func NewFactory() *Factory {
 	return &Factory{}
 }
 
-// CreateGitHubTestForge creates a GitHub-like test forge
+// CreateGitHubTestForge creates a GitHub-like test forge.
 func (tff *Factory) CreateGitHubTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeGitHub)
 
@@ -296,7 +296,7 @@ func (tff *Factory) CreateGitHubTestForge(name string) *TestForge {
 	return forge
 }
 
-// CreateGitLabTestForge creates a GitLab-like test forge
+// CreateGitLabTestForge creates a GitLab-like test forge.
 func (tff *Factory) CreateGitLabTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeGitLab)
 
@@ -319,7 +319,7 @@ func (tff *Factory) CreateGitLabTestForge(name string) *TestForge {
 	return forge
 }
 
-// CreateForgejoTestForge creates a Forgejo-like test forge
+// CreateForgejoTestForge creates a Forgejo-like test forge.
 func (tff *Factory) CreateForgejoTestForge(name string) *TestForge {
 	forge := NewTestForge(name, config.ForgeForgejo)
 
@@ -342,7 +342,7 @@ func (tff *Factory) CreateForgejoTestForge(name string) *TestForge {
 	return forge
 }
 
-// TestForgeConfig creates a test forge configuration
+// TestForgeConfig creates a test forge configuration.
 func CreateTestForgeConfig(name string, forgeType config.ForgeType, organizations []string) config.ForgeConfig {
 	return config.ForgeConfig{
 		Name:    name,
@@ -364,7 +364,7 @@ func CreateTestForgeConfig(name string, forgeType config.ForgeType, organization
 	}
 }
 
-// TestDiscoveryScenario provides predefined test scenarios
+// TestDiscoveryScenario provides predefined test scenarios.
 type TestDiscoveryScenario struct {
 	Name        string
 	Description string
@@ -372,7 +372,7 @@ type TestDiscoveryScenario struct {
 	Expected    ExpectedResults
 }
 
-// ExpectedResults defines what to expect from a test scenario
+// ExpectedResults defines what to expect from a test scenario.
 type ExpectedResults struct {
 	TotalRepositories    int
 	PublicRepositories   int
@@ -382,7 +382,7 @@ type ExpectedResults struct {
 	Topics               []string
 }
 
-// CreateTestScenarios returns predefined test scenarios
+// CreateTestScenarios returns predefined test scenarios.
 func CreateTestScenarios() []TestDiscoveryScenario {
 	factory := NewFactory()
 
@@ -438,7 +438,7 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 	}
 }
 
-// ToConfigRepositories converts TestForge repositories to config.Repository format
+// ToConfigRepositories converts TestForge repositories to config.Repository format.
 func (tf *TestForge) ToConfigRepositories() []config.Repository {
 	var configRepos []config.Repository
 
@@ -461,7 +461,7 @@ func (tf *TestForge) ToConfigRepositories() []config.Repository {
 	return configRepos
 }
 
-// ToForgeConfig converts TestForge to a forge configuration
+// ToForgeConfig converts TestForge to a forge configuration.
 func (tf *TestForge) ToForgeConfig() *config.ForgeConfig {
 	var apiURL, baseURL string
 

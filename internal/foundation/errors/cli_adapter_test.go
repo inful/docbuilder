@@ -99,7 +99,7 @@ func TestCLIErrorAdapter_FormatError(t *testing.T) {
 	}
 }
 
-// customError is a test helper for unclassified errors
+// customError is a test helper for unclassified errors.
 type customError struct {
 	msg string
 }

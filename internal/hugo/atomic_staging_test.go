@@ -12,7 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
-// helper to read file content quickly
+// helper to read file content quickly.
 func mustRead(t *testing.T, path string) string {
 	// #nosec G304 - test helper
 	b, err := os.ReadFile(path)

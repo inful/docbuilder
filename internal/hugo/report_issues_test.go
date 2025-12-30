@@ -66,7 +66,7 @@ func TestIssueTaxonomyHugoWarning(t *testing.T) {
 	t.Fatalf("expected IssueHugoExecution in issues list")
 }
 
-// Simple time guard to ensure sanitized copy preserves schema_version & issues
+// Simple time guard to ensure sanitized copy preserves schema_version & issues.
 func TestSanitizedCopyPreservesSchemaVersionAndIssues(t *testing.T) {
 	r := newBuildReport(1, 1)
 	r.Issues = append(r.Issues, ReportIssue{Code: IssueCloneFailure, Stage: StageCloneRepos, Severity: SeverityError, Message: "m", Transient: false})

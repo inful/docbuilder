@@ -7,7 +7,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestEnhancedForgeDiscoveryWorkflow demonstrates how enhanced mocks can be used for end-to-end testing
+// TestEnhancedForgeDiscoveryWorkflow demonstrates how enhanced mocks can be used for end-to-end testing.
 func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 	t.Log("=== Enhanced Forge Discovery Workflow Testing ===")
 
@@ -265,7 +265,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 	t.Log("→ Enhanced forge discovery workflow testing complete")
 }
 
-// Helper function to avoid conflicts
+// Helper function to avoid conflicts.
 func stringContains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) &&
 		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||

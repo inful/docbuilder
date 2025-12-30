@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestCacheControlHeaders verifies that appropriate Cache-Control headers are set for different asset types
+// TestCacheControlHeaders verifies that appropriate Cache-Control headers are set for different asset types.
 func TestCacheControlHeaders(t *testing.T) {
 	tests := []struct {
 		path          string
@@ -86,7 +86,7 @@ func TestCacheControlHeaders(t *testing.T) {
 	}
 }
 
-// TestCacheControlNoInterferenceWithLiveReload ensures cache headers don't interfere with other middleware
+// TestCacheControlNoInterferenceWithLiveReload ensures cache headers don't interfere with other middleware.
 func TestCacheControlNoInterferenceWithLiveReload(t *testing.T) {
 	cfg := &config.Config{
 		Daemon: &config.DaemonConfig{},

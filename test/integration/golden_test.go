@@ -23,7 +23,7 @@ var (
 // This test verifies:
 // - editURL automatically injected based on repository configuration
 // - repository metadata added to front matter
-// - Original front matter preserved and enhanced
+// - Original front matter preserved and enhanced.
 func TestGolden_FrontmatterInjection(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -41,7 +41,7 @@ func TestGolden_FrontmatterInjection(t *testing.T) {
 // - Multiple repositories cloned successfully
 // - Content from different repos organized under separate sections
 // - No conflicts between repositories
-// - Index pages generated for each repository
+// - Index pages generated for each repository.
 func TestGolden_TwoRepos(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -60,7 +60,7 @@ func TestGolden_TwoRepos(t *testing.T) {
 // - Image references preserved in markdown
 // - Relative paths maintained correctly
 // - Static assets copied to output
-// - Various image reference formats (markdown, HTML)
+// - Various image reference formats (markdown, HTML).
 func TestGolden_ImagePaths(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -78,7 +78,7 @@ func TestGolden_ImagePaths(t *testing.T) {
 // - _index.md files created for each directory/section
 // - Section metadata properly populated
 // - Nested sections handled correctly
-// - Section ordering and hierarchy
+// - Section ordering and hierarchy.
 func TestGolden_SectionIndexes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -96,7 +96,7 @@ func TestGolden_SectionIndexes(t *testing.T) {
 // - Files with same names from different repos don't conflict
 // - Content organized under separate repository sections
 // - Both files preserved with correct content
-// - No data loss or overwriting
+// - No data loss or overwriting.
 func TestGolden_ConflictingPaths(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -115,7 +115,7 @@ func TestGolden_ConflictingPaths(t *testing.T) {
 // - Menu configuration preserved from front matter
 // - Menu weights and ordering
 // - Menu parent-child relationships
-// - Custom menu names
+// - Custom menu names.
 func TestGolden_MenuGeneration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -133,7 +133,7 @@ func TestGolden_MenuGeneration(t *testing.T) {
 // - Cross-repository markdown links preserved
 // - Relative links maintained correctly
 // - Link paths updated for Hugo structure
-// - No broken links between repos
+// - No broken links between repos.
 func TestGolden_CrossRepoLinks(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -151,7 +151,7 @@ func TestGolden_CrossRepoLinks(t *testing.T) {
 // This test verifies:
 // - Build succeeds even with empty docs directory
 // - No Hugo site is generated (expected behavior)
-// - FilesProcessed is 0
+// - FilesProcessed is 0.
 func TestGolden_EmptyDocs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -198,7 +198,7 @@ func TestGolden_EmptyDocs(t *testing.T) {
 // This test verifies:
 // - README.md files are filtered out during discovery
 // - Build succeeds with no processable content
-// - Content structure shows no files
+// - Content structure shows no files.
 func TestGolden_OnlyReadme(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -215,7 +215,7 @@ func TestGolden_OnlyReadme(t *testing.T) {
 // This test verifies:
 // - Build continues even with malformed YAML
 // - Valid files are processed correctly
-// - Invalid files are copied as-is without breaking pipeline
+// - Invalid files are copied as-is without breaking pipeline.
 func TestGolden_MalformedFrontmatter(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -232,7 +232,7 @@ func TestGolden_MalformedFrontmatter(t *testing.T) {
 // This test verifies:
 // - Deep nesting (level1/level2/level3/level4) is preserved
 // - Section structure is maintained in Hugo content
-// - File paths are correctly transformed
+// - File paths are correctly transformed.
 func TestGolden_DeepNesting(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -249,7 +249,7 @@ func TestGolden_DeepNesting(t *testing.T) {
 // This test verifies:
 // - UTF-8 filenames (español.md, 中文.md, русский.md) are handled correctly
 // - Content with various Unicode characters is preserved
-// - File paths remain valid in Hugo
+// - File paths remain valid in Hugo.
 func TestGolden_UnicodeNames(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -266,7 +266,7 @@ func TestGolden_UnicodeNames(t *testing.T) {
 // This test verifies:
 // - Files with spaces in names are handled correctly
 // - Directories with parentheses and special chars work
-// - Brackets in filenames are preserved
+// - Brackets in filenames are preserved.
 func TestGolden_SpecialChars(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -282,7 +282,7 @@ func TestGolden_SpecialChars(t *testing.T) {
 // TestGolden_Error_InvalidRepository tests error handling for non-existent repository.
 // This test verifies:
 // - Build logs errors for invalid repository URL
-// - Error is logged but build may continue or fail depending on retry logic
+// - Error is logged but build may continue or fail depending on retry logic.
 func TestGolden_Error_InvalidRepository(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -335,7 +335,7 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 // TestGolden_Error_InvalidConfig tests error handling for invalid configuration.
 // This test verifies:
 // - Configuration validation catches errors
-// - Build fails or returns appropriate status with empty config
+// - Build fails or returns appropriate status with empty config.
 func TestGolden_Error_InvalidConfig(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -374,7 +374,7 @@ func TestGolden_Error_InvalidConfig(t *testing.T) {
 // This test verifies:
 // - Build continues even without git history
 // - Warning status is returned
-// - No fatal error occurs
+// - No fatal error occurs.
 func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")

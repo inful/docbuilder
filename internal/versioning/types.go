@@ -4,24 +4,24 @@ import (
 	"time"
 )
 
-// VersionStrategy defines the versioning approach for repositories
+// VersionStrategy defines the versioning approach for repositories.
 type VersionStrategy string
 
 const (
-	// StrategyDefaultOnly includes only the default branch
+	// StrategyDefaultOnly includes only the default branch.
 	StrategyDefaultOnly VersionStrategy = "default_only"
 
-	// StrategyBranches includes multiple branches
+	// StrategyBranches includes multiple branches.
 	StrategyBranches VersionStrategy = "branches"
 
-	// StrategyTags includes tagged versions
+	// StrategyTags includes tagged versions.
 	StrategyTags VersionStrategy = "tags"
 
-	// StrategyBranchesAndTags includes both branches and tags
+	// StrategyBranchesAndTags includes both branches and tags.
 	StrategyBranchesAndTags VersionStrategy = "branches_and_tags"
 )
 
-// VersionConfig represents versioning configuration
+// VersionConfig represents versioning configuration.
 type VersionConfig struct {
 	Strategy          VersionStrategy `json:"strategy" yaml:"strategy"`
 	DefaultBranchOnly bool            `json:"default_branch_only" yaml:"default_branch_only"`
@@ -30,7 +30,7 @@ type VersionConfig struct {
 	MaxVersions       int             `json:"max_versions_per_repo" yaml:"max_versions_per_repo"`
 }
 
-// VersionType identifies the type of version (branch or tag)
+// VersionType identifies the type of version (branch or tag).
 type VersionType string
 
 const (
@@ -38,7 +38,7 @@ const (
 	VersionTypeTag    VersionType = "tag"
 )
 
-// Version represents a single version of documentation
+// Version represents a single version of documentation.
 type Version struct {
 	Name         string      `json:"name"`          // Branch name or tag name
 	Type         VersionType `json:"type"`          // "branch" or "tag"
@@ -51,7 +51,7 @@ type Version struct {
 	DocsPath     string      `json:"docs_path"`     // Path to documentation in repo
 }
 
-// RepositoryVersions holds all versions for a single repository
+// RepositoryVersions holds all versions for a single repository.
 type RepositoryVersions struct {
 	RepositoryURL    string     `json:"repository_url"`
 	DefaultBranch    string     `json:"default_branch"`
@@ -60,7 +60,7 @@ type RepositoryVersions struct {
 	MaxVersionsLimit int        `json:"max_versions_limit"`
 }
 
-// VersionDiscoveryResult holds the result of version discovery for a repository
+// VersionDiscoveryResult holds the result of version discovery for a repository.
 type VersionDiscoveryResult struct {
 	Repository   *RepositoryVersions `json:"repository"`
 	NewCount     int                 `json:"new_count"`     // Number of new versions found
@@ -69,7 +69,7 @@ type VersionDiscoveryResult struct {
 	Errors       []string            `json:"errors,omitempty"`
 }
 
-// VersionManager interface defines version management operations
+// VersionManager interface defines version management operations.
 type VersionManager interface {
 	// DiscoverVersions discovers available versions for a repository
 	DiscoverVersions(repoURL string, config *VersionConfig) (*VersionDiscoveryResult, error)
@@ -81,7 +81,7 @@ type VersionManager interface {
 	CleanupOldVersions(repoURL string, config *VersionConfig) error
 }
 
-// GitReference represents a Git branch or tag reference
+// GitReference represents a Git branch or tag reference.
 type GitReference struct {
 	Name      string      `json:"name"`       // Reference name (branch/tag)
 	Type      VersionType `json:"type"`       // branch or tag (typed)

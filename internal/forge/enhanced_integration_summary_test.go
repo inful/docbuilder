@@ -9,7 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestEnhancedIntegrationSummary demonstrates the advanced capabilities of the enhanced mock system
+// TestEnhancedIntegrationSummary demonstrates the advanced capabilities of the enhanced mock system.
 func TestEnhancedIntegrationSummary(t *testing.T) {
 	t.Log("=== DocBuilder Enhanced Forge Integration Testing Summary ===")
 

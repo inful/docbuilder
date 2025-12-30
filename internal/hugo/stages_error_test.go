@@ -9,7 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// fake stage functions for testing classification
+// fake stage functions for testing classification.
 func failingFatalStage(_ context.Context, _ *BuildState) error {
 	return newFatalStageError(StageName("fatal_stage"), errors.New("boom"))
 }

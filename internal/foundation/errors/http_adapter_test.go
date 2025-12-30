@@ -153,7 +153,7 @@ func TestHTTPErrorAdapter_FormatErrorResponse(t *testing.T) {
 	}
 }
 
-// customHTTPError is a test helper for unclassified errors
+// customHTTPError is a test helper for unclassified errors.
 type customHTTPError struct {
 	msg string
 }

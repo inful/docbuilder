@@ -17,7 +17,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
-// buildStatus tracks the current build state for error display
+// buildStatus tracks the current build state for error display.
 type buildStatus struct {
 	mu            sync.RWMutex
 	lastError     error
@@ -242,7 +242,7 @@ func addDirsRecursive(w *fsnotify.Watcher, root string) error {
 	})
 }
 
-// shouldIgnoreEvent returns true for filesystem events that should not trigger rebuilds
+// shouldIgnoreEvent returns true for filesystem events that should not trigger rebuilds.
 func shouldIgnoreEvent(path string) bool {
 	base := filepath.Base(path)
 

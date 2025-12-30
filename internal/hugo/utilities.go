@@ -2,7 +2,7 @@ package hugo
 
 import "strings"
 
-// titleCase converts a string to title case (portable alternative to strings.Title)
+// titleCase converts a string to title case (portable alternative to strings.Title).
 func titleCase(s string) string {
 	if s == "" {
 		return s

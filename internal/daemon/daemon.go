@@ -29,7 +29,7 @@ import (
 	ggit "github.com/go-git/go-git/v5"
 )
 
-// Status represents the current state of the daemon
+// Status represents the current state of the daemon.
 type Status string
 
 const (
@@ -40,7 +40,7 @@ const (
 	StatusError    Status = "error"
 )
 
-// Daemon represents the main daemon service
+// Daemon represents the main daemon service.
 type Daemon struct {
 	config         *config.Config
 	configFilePath string
@@ -83,12 +83,12 @@ type Daemon struct {
 }
 
 // NewDaemon creates a new daemon instance
-// NewDaemon creates a new daemon instance
+// NewDaemon creates a new daemon instance.
 func NewDaemon(cfg *config.Config) (*Daemon, error) {
 	return NewDaemonWithConfigFile(cfg, "")
 }
 
-// NewDaemonWithConfigFile creates a new daemon instance with config file watching
+// NewDaemonWithConfigFile creates a new daemon instance with config file watching.
 func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("configuration is required")
@@ -241,7 +241,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 // into the Prometheus registry when the build tag is enabled.
 var defaultDaemonInstance *Daemon
 
-// Start starts the daemon and all its components
+// Start starts the daemon and all its components.
 func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Lock()
 	if d.GetStatus() != StatusStopped {
@@ -333,7 +333,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop gracefully shuts down the daemon
+// Stop gracefully shuts down the daemon.
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -404,7 +404,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	return nil
 }
 
-// GetStatus returns the current daemon status
+// GetStatus returns the current daemon status.
 func (d *Daemon) GetStatus() Status {
 	status, ok := d.status.Load().(Status)
 	if !ok {
@@ -413,17 +413,17 @@ func (d *Daemon) GetStatus() Status {
 	return status
 }
 
-// GetActiveJobs returns the number of active build jobs
+// GetActiveJobs returns the number of active build jobs.
 func (d *Daemon) GetActiveJobs() int {
 	return int(atomic.LoadInt32(&d.activeJobs))
 }
 
-// GetQueueLength returns the current build queue length
+// GetQueueLength returns the current build queue length.
 func (d *Daemon) GetQueueLength() int {
 	return int(atomic.LoadInt32(&d.queueLength))
 }
 
-// GetStartTime returns the daemon start time
+// GetStartTime returns the daemon start time.
 func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
@@ -683,7 +683,7 @@ func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) (
 
 // extractRepoFromPath attempts to extract repository name from rendered path.
 // Rendered paths typically follow pattern: repo-name/section/file.html
-// Hugo-generated pages (categories, tags, etc.) are marked with "_hugo" prefix
+// Hugo-generated pages (categories, tags, etc.) are marked with "_hugo" prefix.
 func extractRepoFromPath(path string) string {
 	parts := strings.Split(filepath.ToSlash(path), "/")
 	if len(parts) == 0 {
@@ -718,15 +718,15 @@ func isHugoGeneratedPath(segment string) bool {
 	return HugoGeneratedPaths[segment]
 }
 
-// Compile-time check that Daemon implements BuildEventEmitter
+// Compile-time check that Daemon implements BuildEventEmitter.
 var _ BuildEventEmitter = (*Daemon)(nil)
 
-// TriggerDiscovery manually triggers repository discovery
+// TriggerDiscovery manually triggers repository discovery.
 func (d *Daemon) TriggerDiscovery() string {
 	return d.discoveryRunner.TriggerManual(d.GetStatus, &d.activeJobs)
 }
 
-// TriggerBuild manually triggers a site build
+// TriggerBuild manually triggers a site build.
 func (d *Daemon) TriggerBuild() string {
 	if d.GetStatus() != StatusRunning {
 		return ""
@@ -848,7 +848,7 @@ func matchesRepoURL(repoURL, fullName string) bool {
 	return false
 }
 
-// triggerScheduledBuildForExplicitRepos triggers a scheduled build for explicitly configured repositories
+// triggerScheduledBuildForExplicitRepos triggers a scheduled build for explicitly configured repositories.
 func (d *Daemon) triggerScheduledBuildForExplicitRepos() {
 	if d.GetStatus() != StatusRunning {
 		return
@@ -881,7 +881,7 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos() {
 	atomic.AddInt32(&d.queueLength, 1)
 }
 
-// mainLoop runs the main daemon processing loop
+// mainLoop runs the main daemon processing loop.
 func (d *Daemon) mainLoop(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second) // Status update interval
 	defer ticker.Stop()
@@ -1000,7 +1000,7 @@ func parseDiscoverySchedule(expr string) (time.Duration, bool) {
 	return 0, false
 }
 
-// updateStatus updates runtime status and metrics
+// updateStatus updates runtime status and metrics.
 func (d *Daemon) updateStatus() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -1024,7 +1024,7 @@ func (d *Daemon) updateStatus() {
 	}
 }
 
-// GetConfig returns the current daemon configuration
+// GetConfig returns the current daemon configuration.
 func (d *Daemon) GetConfig() *config.Config {
 	d.mu.RLock()
 	defer d.mu.RUnlock()

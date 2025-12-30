@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
-// mockBuildService is a test double for build.BuildService
+// mockBuildService is a test double for build.BuildService.
 type mockBuildService struct {
 	runFunc func(ctx context.Context, req build.BuildRequest) (*build.BuildResult, error)
 }

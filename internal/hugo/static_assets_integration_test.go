@@ -65,7 +65,7 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	assert.Contains(t, string(hugoContent), "enable_transitions: true", "Hugo config should enable transitions param")
 }
 
-// TestViewTransitionsDisabled tests that assets are NOT generated when disabled
+// TestViewTransitionsDisabled tests that assets are NOT generated when disabled.
 func TestViewTransitionsDisabled(t *testing.T) {
 	outputDir := t.TempDir()
 
@@ -99,7 +99,7 @@ func TestViewTransitionsDisabled(t *testing.T) {
 	assert.NotContains(t, string(hugoContent), "enable_transitions:", "Hugo config should not have transitions param when disabled")
 }
 
-// TestViewTransitionsWithContent tests that transitions work with actual content
+// TestViewTransitionsWithContent tests that transitions work with actual content.
 func TestViewTransitionsWithContent(t *testing.T) {
 	outputDir := t.TempDir()
 

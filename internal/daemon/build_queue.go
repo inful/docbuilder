@@ -16,7 +16,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
 
-// BuildType represents the type of build job
+// BuildType represents the type of build job.
 type BuildType string
 
 const (
@@ -26,7 +26,7 @@ const (
 	BuildTypeDiscovery BuildType = "discovery" // Auto-build after discovery
 )
 
-// BuildPriority represents the priority of a build job
+// BuildPriority represents the priority of a build job.
 type BuildPriority int
 
 const (
@@ -36,7 +36,7 @@ const (
 	PriorityUrgent BuildPriority = 4
 )
 
-// BuildStatus represents the current status of a build job
+// BuildStatus represents the current status of a build job.
 type BuildStatus string
 
 const (
@@ -47,7 +47,7 @@ const (
 	BuildStatusCancelled BuildStatus = "cancelled"
 )
 
-// BuildJob represents a single build job in the queue
+// BuildJob represents a single build job in the queue.
 type BuildJob struct {
 	ID          string        `json:"id"`
 	Type        BuildType     `json:"type"`
@@ -76,7 +76,7 @@ type BuildEventEmitter interface {
 	EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error
 }
 
-// BuildQueue manages the queue of build jobs
+// BuildQueue manages the queue of build jobs.
 type BuildQueue struct {
 	jobs        chan *BuildJob
 	workers     int
@@ -124,7 +124,7 @@ func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 	}
 }
 
-// ConfigureRetry updates the retry policy (should be called once at daemon init after config load)
+// ConfigureRetry updates the retry policy (should be called once at daemon init after config load).
 func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
 	bq.retryCfg = cfg
 	retryInitialDelay, _ := time.ParseDuration(cfg.RetryInitialDelay)
@@ -145,7 +145,7 @@ func (bq *BuildQueue) SetEventEmitter(emitter BuildEventEmitter) {
 	bq.eventEmitter = emitter
 }
 
-// Start begins processing jobs with the configured number of workers
+// Start begins processing jobs with the configured number of workers.
 func (bq *BuildQueue) Start(ctx context.Context) {
 	slog.Info("Starting build queue", "workers", bq.workers, "max_size", bq.maxSize)
 
@@ -155,7 +155,7 @@ func (bq *BuildQueue) Start(ctx context.Context) {
 	}
 }
 
-// Stop gracefully shuts down the build queue
+// Stop gracefully shuts down the build queue.
 func (bq *BuildQueue) Stop(_ context.Context) {
 	slog.Info("Stopping build queue")
 
@@ -174,7 +174,7 @@ func (bq *BuildQueue) Stop(_ context.Context) {
 	slog.Info("Build queue stopped")
 }
 
-// Enqueue adds a new build job to the queue
+// Enqueue adds a new build job to the queue.
 func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	if job == nil {
 		return fmt.Errorf("job cannot be nil")
@@ -195,12 +195,12 @@ func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	}
 }
 
-// Length returns the current queue length
+// Length returns the current queue length.
 func (bq *BuildQueue) Length() int {
 	return len(bq.jobs)
 }
 
-// GetActiveJobs returns a copy of currently active jobs
+// GetActiveJobs returns a copy of currently active jobs.
 func (bq *BuildQueue) GetActiveJobs() []*BuildJob {
 	bq.mu.RLock()
 	defer bq.mu.RUnlock()
@@ -212,7 +212,7 @@ func (bq *BuildQueue) GetActiveJobs() []*BuildJob {
 	return active
 }
 
-// worker processes jobs from the queue
+// worker processes jobs from the queue.
 func (bq *BuildQueue) worker(ctx context.Context, workerID string) {
 	defer bq.wg.Done()
 
@@ -234,7 +234,7 @@ func (bq *BuildQueue) worker(ctx context.Context, workerID string) {
 	}
 }
 
-// processJob handles the execution of a single build job
+// processJob handles the execution of a single build job.
 func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID string) {
 	// Create job context with cancellation
 	jobCtx, cancel := context.WithCancel(ctx)
@@ -333,7 +333,7 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	}
 }
 
-// executeBuild performs the actual build process
+// executeBuild performs the actual build process.
 func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	// Route all build types through unified builder using retryPolicy.
 	attempts := 0
@@ -403,7 +403,7 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 	}
 }
 
-// extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort)
+// extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort).
 func extractRecorder(_ *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
 	// Currently we only have fallback; future: attempt to derive from report metadata if embedded.
 	return fallback
@@ -411,7 +411,7 @@ func extractRecorder(_ *hugo.BuildReport, fallback metrics.Recorder) metrics.Rec
 
 // (Legacy per-type build wrapper methods removed; Builder abstraction handles all types.)
 
-// addToHistory adds a completed job to the history, maintaining the size limit
+// addToHistory adds a completed job to the history, maintaining the size limit.
 func (bq *BuildQueue) addToHistory(job *BuildJob) {
 	bq.history = append(bq.history, job)
 

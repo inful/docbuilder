@@ -9,7 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestRealForgeIntegration tests DocBuilder functionality using mock forges
+// TestRealForgeIntegration tests DocBuilder functionality using mock forges.
 func TestRealForgeIntegration(t *testing.T) {
 	t.Log("=== Real DocBuilder Forge Integration Testing ===")
 

@@ -2,7 +2,7 @@ package hugo
 
 // mergeParams deep-merges src into dst (map[string]any).
 // - Maps: merged recursively
-// - Slices & scalars: replaced
+// - Slices & scalars: replaced.
 func mergeParams(dst, src map[string]any) {
 	if src == nil {
 		return

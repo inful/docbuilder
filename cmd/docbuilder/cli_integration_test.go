@@ -7,7 +7,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
-// TestPhase4ACLIFramework demonstrates comprehensive CLI testing patterns
+// TestPhase4ACLIFramework demonstrates comprehensive CLI testing patterns.
 func TestPhase4ACLIFramework(t *testing.T) {
 	t.Log("=== Phase 4A: CLI Testing Framework ===")
 
@@ -196,7 +196,7 @@ func TestPhase4ACLIFramework(t *testing.T) {
 	t.Log("→ Phase 4A: CLI testing framework implementation complete")
 }
 
-// TestCLIPerformanceTesting demonstrates performance testing patterns for CLI commands
+// TestCLIPerformanceTesting demonstrates performance testing patterns for CLI commands.
 func TestCLIPerformanceTesting(t *testing.T) {
 	t.Log("=== CLI Performance Testing ===")
 
@@ -290,7 +290,7 @@ func TestCLIPerformanceTesting(t *testing.T) {
 	t.Log("✓ CLI performance testing complete")
 }
 
-// TestCLIFailureScenarios demonstrates failure scenario testing for CLI commands
+// TestCLIFailureScenarios demonstrates failure scenario testing for CLI commands.
 func TestCLIFailureScenarios(t *testing.T) {
 	t.Log("=== CLI Failure Scenario Testing ===")
 
@@ -362,7 +362,7 @@ func TestCLIFailureScenarios(t *testing.T) {
 	t.Log("✓ CLI failure scenario testing complete")
 }
 
-// TestCLIIntegrationWithEnhancedMocks demonstrates integration with the enhanced mock system
+// TestCLIIntegrationWithEnhancedMocks demonstrates integration with the enhanced mock system.
 func TestCLIIntegrationWithEnhancedMocks(t *testing.T) {
 	t.Log("=== CLI Integration with Enhanced Mock System ===")
 

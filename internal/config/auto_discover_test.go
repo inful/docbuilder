@@ -34,7 +34,7 @@ func TestAutoDiscoverValidation(t *testing.T) {
 	}
 }
 
-// TestAutoDiscoverValidationWithTestForgeFactory demonstrates enhanced validation testing with realistic forge data
+// TestAutoDiscoverValidationWithTestForgeFactory demonstrates enhanced validation testing with realistic forge data.
 func TestAutoDiscoverValidationWithTestForgeFactory(t *testing.T) {
 	factory := NewTestForgeConfigFactory()
 

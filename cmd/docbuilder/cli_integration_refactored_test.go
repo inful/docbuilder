@@ -10,7 +10,7 @@ import (
 )
 
 // TestRefactoredCLIFramework demonstrates how to use the new testing framework
-// to reduce complexity in CLI integration tests
+// to reduce complexity in CLI integration tests.
 func TestRefactoredCLIFramework(t *testing.T) {
 	// Test Scenario 1: CLI Init Command
 	initScenario := &testutils.TestScenario{
@@ -150,7 +150,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 }
 
 // TestRefactoredConfigValidation demonstrates complex configuration validation
-// using the new testing framework patterns
+// using the new testing framework patterns.
 func TestRefactoredConfigValidation(t *testing.T) {
 	configFactory := testutils.NewConfigFactory(t)
 
@@ -239,7 +239,7 @@ func TestRefactoredConfigValidation(t *testing.T) {
 	}
 }
 
-// Helper function for string containment check
+// Helper function for string containment check.
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (len(substr) == 0 || stringContains(s, substr))
 }

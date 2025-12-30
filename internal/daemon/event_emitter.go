@@ -137,5 +137,5 @@ func convertBuildReportToEventData(report *hugo.BuildReport) eventstore.BuildRep
 	return reportData
 }
 
-// Compile-time check that EventEmitter implements BuildEventEmitter
+// Compile-time check that EventEmitter implements BuildEventEmitter.
 var _ BuildEventEmitter = (*EventEmitter)(nil)

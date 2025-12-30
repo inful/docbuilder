@@ -7,13 +7,13 @@ import (
 	"testing"
 )
 
-// FileAssertions provides utilities for asserting file system state in tests
+// FileAssertions provides utilities for asserting file system state in tests.
 type FileAssertions struct {
 	t       *testing.T
 	baseDir string
 }
 
-// NewFileAssertions creates a new file assertions helper
+// NewFileAssertions creates a new file assertions helper.
 func NewFileAssertions(t *testing.T, baseDir string) *FileAssertions {
 	return &FileAssertions{
 		t:       t,
@@ -21,7 +21,7 @@ func NewFileAssertions(t *testing.T, baseDir string) *FileAssertions {
 	}
 }
 
-// AssertFileExists validates that a file exists
+// AssertFileExists validates that a file exists.
 func (fa *FileAssertions) AssertFileExists(relativePath string) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
@@ -31,7 +31,7 @@ func (fa *FileAssertions) AssertFileExists(relativePath string) *FileAssertions 
 	return fa
 }
 
-// AssertDirExists validates that a directory exists
+// AssertDirExists validates that a directory exists.
 func (fa *FileAssertions) AssertDirExists(relativePath string) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
@@ -43,7 +43,7 @@ func (fa *FileAssertions) AssertDirExists(relativePath string) *FileAssertions {
 	return fa
 }
 
-// AssertFileContains validates that a file contains expected content
+// AssertFileContains validates that a file contains expected content.
 func (fa *FileAssertions) AssertFileContains(relativePath, expectedContent string) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)
@@ -62,7 +62,7 @@ func (fa *FileAssertions) AssertFileContains(relativePath, expectedContent strin
 	return fa
 }
 
-// AssertMinFileCount validates that a directory contains at least the expected number of files
+// AssertMinFileCount validates that a directory contains at least the expected number of files.
 func (fa *FileAssertions) AssertMinFileCount(relativePath string, minCount int) *FileAssertions {
 	fa.t.Helper()
 	fullPath := filepath.Join(fa.baseDir, relativePath)

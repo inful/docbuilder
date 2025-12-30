@@ -14,14 +14,14 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// GitLabClient implements ForgeClient for GitLab
+// GitLabClient implements ForgeClient for GitLab.
 type GitLabClient struct {
 	*BaseForge
 	config  *Config
 	baseURL string
 }
 
-// NewGitLabClient creates a new GitLab client
+// NewGitLabClient creates a new GitLab client.
 func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 	if fg.Type != cfg.ForgeGitLab {
 		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
@@ -47,15 +47,15 @@ func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 	}, nil
 }
 
-// GetType returns the forge type
+// GetType returns the forge type.
 func (c *GitLabClient) GetType() cfg.ForgeType { return cfg.ForgeGitLab }
 
-// GetName returns the configured name
+// GetName returns the configured name.
 func (c *GitLabClient) GetName() string {
 	return c.config.Name
 }
 
-// gitlabGroup represents a GitLab group
+// gitlabGroup represents a GitLab group.
 type gitlabGroup struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -66,7 +66,7 @@ type gitlabGroup struct {
 	Kind        string `json:"kind"`
 }
 
-// gitlabProject represents a GitLab project (repository)
+// gitlabProject represents a GitLab project (repository).
 type gitlabProject struct {
 	ID                int                `json:"id"`
 	Name              string             `json:"name"`
@@ -85,7 +85,7 @@ type gitlabProject struct {
 	Namespace         gitlabNamespace    `json:"namespace"`
 }
 
-// gitlabNamespace represents a GitLab namespace
+// gitlabNamespace represents a GitLab namespace.
 type gitlabNamespace struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
@@ -94,7 +94,7 @@ type gitlabNamespace struct {
 	FullPath string `json:"full_path"`
 }
 
-// ListOrganizations returns accessible groups
+// ListOrganizations returns accessible groups.
 func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
 	var orgs []*Organization
 	page := 1
@@ -118,7 +118,7 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 
 		for _, gGroup := range gitlabGroups {
 			org := &Organization{
-				ID:          strconv.Itoa(gGroup.ID),
+				ID: strconv.Itoa(gGroup.ID),
 				// CRITICAL: GitLab API only accepts numeric IDs for group parameters.
 				// Do NOT use gGroup.Path, gGroup.FullPath, or gGroup.Name here.
 				// Using names/paths will cause API errors when ListRepositories calls getGroupProjects.
@@ -145,7 +145,7 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 	return orgs, nil
 }
 
-// ListRepositories returns repositories for specified groups
+// ListRepositories returns repositories for specified groups.
 func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([]*Repository, error) {
 	var allRepos []*Repository
 
@@ -202,7 +202,7 @@ func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*R
 	return allRepos, nil
 }
 
-// GetRepository gets detailed information about a specific repository
+// GetRepository gets detailed information about a specific repository.
 func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	projectPath := fmt.Sprintf("%s/%s", owner, repo)
 	endpoint := fmt.Sprintf("/projects/%s", url.PathEscape(projectPath))
@@ -219,7 +219,7 @@ func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*
 	return c.convertGitLabProject(&gitlabProject), nil
 }
 
-// CheckDocumentation checks if repository has docs folder and .docignore
+// CheckDocumentation checks if repository has docs folder and .docignore.
 func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
 	// Use project ID instead of path for GitLab API
 	projectID := repo.ID
@@ -262,7 +262,7 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 }
 
 // checkPathExists checks if a path exists in the project
-// projectID should be the numeric project ID (not the path)
+// projectID should be the numeric project ID (not the path).
 func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath, branch string) (bool, error) {
 	// For directories (like "docs"), we need to use the tree API to check if the directory exists
 	// GitLab API: /projects/:id/repository/tree?path=:path&ref=:ref
@@ -299,13 +299,13 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath,
 	return true, nil
 }
 
-// ValidateWebhook validates GitLab webhook signature
+// ValidateWebhook validates GitLab webhook signature.
 func (c *GitLabClient) ValidateWebhook(_ []byte, signature string, secret string) bool {
 	// GitLab sends X-Gitlab-Token header with the secret
 	return signature == secret
 }
 
-// ParseWebhookEvent parses GitLab webhook payload
+// ParseWebhookEvent parses GitLab webhook payload.
 func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	switch eventType {
 	case "push", "Push Hook":
@@ -319,7 +319,7 @@ func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 	}
 }
 
-// gitlabPushEvent represents a GitLab push event
+// gitlabPushEvent represents a GitLab push event.
 type gitlabPushEvent struct {
 	Ref        string           `json:"ref"`
 	Project    gitlabProject    `json:"project"`
@@ -327,7 +327,7 @@ type gitlabPushEvent struct {
 	Repository gitlabRepository `json:"repository"`
 }
 
-// gitlabCommit represents a GitLab commit
+// gitlabCommit represents a GitLab commit.
 type gitlabCommit struct {
 	ID        string       `json:"id"`
 	Message   string       `json:"message"`
@@ -338,13 +338,13 @@ type gitlabCommit struct {
 	Removed   []string     `json:"removed"`
 }
 
-// gitlabAuthor represents a GitLab commit author
+// gitlabAuthor represents a GitLab commit author.
 type gitlabAuthor struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
 
-// gitlabRepository represents a GitLab repository in webhook
+// gitlabRepository represents a GitLab repository in webhook.
 type gitlabRepository struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
@@ -354,7 +354,7 @@ type gitlabRepository struct {
 	Visibility  string `json:"visibility_level"`
 }
 
-// parsePushEvent parses a GitLab push event
+// parsePushEvent parses a GitLab push event.
 func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent gitlabPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
@@ -386,7 +386,7 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}, nil
 }
 
-// parseTagPushEvent parses a GitLab tag push event
+// parseTagPushEvent parses a GitLab tag push event.
 func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent gitlabPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
@@ -406,7 +406,7 @@ func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) 
 	}, nil
 }
 
-// parseRepositoryEvent parses a GitLab repository event
+// parseRepositoryEvent parses a GitLab repository event.
 func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
 	var repoEvent map[string]interface{}
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
@@ -427,7 +427,7 @@ func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 	return event, nil
 }
 
-// RegisterWebhook registers a webhook for a project
+// RegisterWebhook registers a webhook for a project.
 func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
 		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
@@ -464,7 +464,7 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	return c.DoRequest(req, &result)
 }
 
-// GetEditURL returns the GitLab edit URL for a file
+// GetEditURL returns the GitLab edit URL for a file.
 func (c *GitLabClient) GetEditURL(repo *Repository, filePath string, branch string) string {
 	return GenerateEditURL(TypeGitLab, c.baseURL, repo.FullName, branch, filePath)
 }

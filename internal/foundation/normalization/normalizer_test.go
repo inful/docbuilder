@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// Test enums for testing
+// Test enums for testing.
 type TestEnum string
 
 const (

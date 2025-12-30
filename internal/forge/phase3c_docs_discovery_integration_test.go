@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestForgeDiscoveryIntegration tests real DocBuilder functionality using mock forges
+// TestForgeDiscoveryIntegration tests real DocBuilder functionality using mock forges.
 func TestForgeDiscoveryIntegration(t *testing.T) {
 	t.Log("=== Forge Discovery Integration Testing ===")
 

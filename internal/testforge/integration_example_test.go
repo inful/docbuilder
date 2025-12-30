@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/testforge"
 )
 
-// TestTestForgeBasicUsage demonstrates basic test forge usage
+// TestTestForgeBasicUsage demonstrates basic test forge usage.
 func TestTestForgeBasicUsage(t *testing.T) {
 	// Create a test forge with realistic data
 	forge := testforge.NewTestForge("integration-test", config.ForgeGitHub)
@@ -64,7 +64,7 @@ func TestTestForgeBasicUsage(t *testing.T) {
 	}
 }
 
-// TestTestForgeConfiguration demonstrates creating test configurations
+// TestTestForgeConfiguration demonstrates creating test configurations.
 func TestTestForgeConfiguration(t *testing.T) {
 	// Create test forge configuration
 	forgeConfig := testforge.CreateTestForgeConfig(
@@ -116,7 +116,7 @@ func TestTestForgeConfiguration(t *testing.T) {
 	}
 }
 
-// TestTestForgeFailureModes demonstrates testing error conditions
+// TestTestForgeFailureModes demonstrates testing error conditions.
 func TestTestForgeFailureModes(t *testing.T) {
 	forge := testforge.NewTestForge("failure-test", config.ForgeGitHub)
 	ctx := context.Background()
@@ -150,7 +150,7 @@ func TestTestForgeFailureModes(t *testing.T) {
 	}
 }
 
-// TestTestForgeScenarios demonstrates using predefined test scenarios
+// TestTestForgeScenarios demonstrates using predefined test scenarios.
 func TestTestForgeScenarios(t *testing.T) {
 	scenarios := testforge.CreateTestScenarios()
 
@@ -169,7 +169,7 @@ func TestTestForgeScenarios(t *testing.T) {
 	}
 }
 
-// Helper function
+// Helper function.
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {

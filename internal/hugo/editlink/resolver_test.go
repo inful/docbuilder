@@ -246,8 +246,7 @@ func TestResolver(t *testing.T) {
 		resolver := NewResolver()
 
 		cfg := &config.Config{
-			Hugo: config.HugoConfig{
-			},
+			Hugo: config.HugoConfig{},
 			Repositories: []config.Repository{
 				{
 					Name:   "test-repo",
@@ -279,8 +278,7 @@ func TestResolver(t *testing.T) {
 		resolver := NewResolver()
 
 		cfg := &config.Config{
-			Hugo: config.HugoConfig{
-			},
+			Hugo: config.HugoConfig{},
 		}
 
 		file := docs.DocFile{Repository: "test-repo"}
@@ -315,7 +313,7 @@ func TestResolver(t *testing.T) {
 	})
 }
 
-// Mock detector for testing
+// Mock detector for testing.
 type mockDetector struct {
 	name     string
 	onDetect func(DetectionContext) DetectionResult

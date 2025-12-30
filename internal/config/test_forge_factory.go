@@ -4,17 +4,17 @@ import (
 	"fmt"
 )
 
-// TestForgeConfigFactory provides realistic forge configurations for testing
+// TestForgeConfigFactory provides realistic forge configurations for testing.
 type TestForgeConfigFactory struct {
 	counter int
 }
 
-// NewTestForgeConfigFactory creates a factory for generating test forge configurations
+// NewTestForgeConfigFactory creates a factory for generating test forge configurations.
 func NewTestForgeConfigFactory() *TestForgeConfigFactory {
 	return &TestForgeConfigFactory{counter: 0}
 }
 
-// CreateGitHubForge creates a realistic GitHub forge configuration
+// CreateGitHubForge creates a realistic GitHub forge configuration.
 func (f *TestForgeConfigFactory) CreateGitHubForge(name string) *ForgeConfig {
 	f.counter++
 	return &ForgeConfig{
@@ -38,7 +38,7 @@ func (f *TestForgeConfigFactory) CreateGitHubForge(name string) *ForgeConfig {
 	}
 }
 
-// CreateGitLabForge creates a realistic GitLab forge configuration
+// CreateGitLabForge creates a realistic GitLab forge configuration.
 func (f *TestForgeConfigFactory) CreateGitLabForge(name string) *ForgeConfig {
 	f.counter++
 	return &ForgeConfig{
@@ -62,7 +62,7 @@ func (f *TestForgeConfigFactory) CreateGitLabForge(name string) *ForgeConfig {
 	}
 }
 
-// CreateForgejoForge creates a realistic Forgejo forge configuration
+// CreateForgejoForge creates a realistic Forgejo forge configuration.
 func (f *TestForgeConfigFactory) CreateForgejoForge(name string) *ForgeConfig {
 	f.counter++
 	return &ForgeConfig{
@@ -85,7 +85,7 @@ func (f *TestForgeConfigFactory) CreateForgejoForge(name string) *ForgeConfig {
 	}
 }
 
-// CreateForgeWithAutoDiscover creates a forge configuration with auto-discovery enabled
+// CreateForgeWithAutoDiscover creates a forge configuration with auto-discovery enabled.
 func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType, name string) *ForgeConfig {
 	var forge *ForgeConfig
 
@@ -108,7 +108,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType
 	return forge
 }
 
-// CreateForgeWithOptions creates a forge configuration with custom options
+// CreateForgeWithOptions creates a forge configuration with custom options.
 func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, name string, options map[string]any) *ForgeConfig {
 	var forge *ForgeConfig
 
@@ -136,7 +136,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 	return forge
 }
 
-// CreateConfigWithForges creates a complete Config with realistic forge configurations
+// CreateConfigWithForges creates a complete Config with realistic forge configurations.
 func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *Config {
 	return &Config{
 		Version: "2.0",
@@ -163,7 +163,7 @@ func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *
 // CreateMultiPlatformConfig creates a configuration with multiple realistic forge platforms
 // Note: Removed CreateMultiPlatformConfig as it was unused in active tests.
 
-// CreateFailureScenarioForges creates forge configurations for testing failure scenarios
+// CreateFailureScenarioForges creates forge configurations for testing failure scenarios.
 func (f *TestForgeConfigFactory) CreateFailureScenarioForges(baseName string) []*ForgeConfig {
 	return []*ForgeConfig{
 		// Valid forge

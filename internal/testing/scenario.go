@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestScenario provides a structured pattern for complex integration tests
+// TestScenario provides a structured pattern for complex integration tests.
 type TestScenario struct {
 	Name        string
 	Description string
@@ -20,7 +20,7 @@ type TestScenario struct {
 	Timeout     time.Duration
 }
 
-// TestEnvironment encapsulates test setup and resources
+// TestEnvironment encapsulates test setup and resources.
 type TestEnvironment struct {
 	t         *testing.T
 	TempDir   string
@@ -32,7 +32,7 @@ type TestEnvironment struct {
 	Resources map[string]interface{}
 }
 
-// TestResult captures test execution results
+// TestResult captures test execution results.
 type TestResult struct {
 	Success      bool
 	Duration     time.Duration
@@ -43,7 +43,7 @@ type TestResult struct {
 	Metrics      map[string]interface{}
 }
 
-// NewTestEnvironment creates a new test environment with temporary directories
+// NewTestEnvironment creates a new test environment with temporary directories.
 func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	tempDir, err := os.MkdirTemp("", "docbuilder-test-*")
 	if err != nil {
@@ -74,7 +74,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	}
 }
 
-// Cleanup removes temporary directories and cancels context
+// Cleanup removes temporary directories and cancels context.
 func (env *TestEnvironment) Cleanup() {
 	if env.Cancel != nil {
 		env.Cancel()
@@ -84,25 +84,25 @@ func (env *TestEnvironment) Cleanup() {
 	}
 }
 
-// WithConfig sets the configuration for the environment
+// WithConfig sets the configuration for the environment.
 func (env *TestEnvironment) WithConfig(cfg *config.Config) *TestEnvironment {
 	env.Config = cfg
 	return env
 }
 
-// WithTimeout sets a custom timeout for the environment
+// WithTimeout sets a custom timeout for the environment.
 func (env *TestEnvironment) WithTimeout(timeout time.Duration) *TestEnvironment {
 	env.Cancel()
 	env.Context, env.Cancel = context.WithTimeout(context.Background(), timeout)
 	return env
 }
 
-// ConfigPath returns the path to the configuration file
+// ConfigPath returns the path to the configuration file.
 func (env *TestEnvironment) ConfigPath() string {
 	return filepath.Join(env.ConfigDir, "docbuilder.yaml")
 }
 
-// Run executes a test scenario
+// Run executes a test scenario.
 func (scenario *TestScenario) Run(t *testing.T) {
 	t.Run(scenario.Name, func(t *testing.T) {
 		if scenario.Description != "" {
@@ -163,7 +163,7 @@ func (scenario *TestScenario) runInternal(t *testing.T) {
 	}
 }
 
-// AssertExitCode validates the exit code in test results
+// AssertExitCode validates the exit code in test results.
 func (result *TestResult) AssertExitCode(t *testing.T, expected int) {
 	t.Helper()
 	if result.ExitCode != expected {
@@ -171,7 +171,7 @@ func (result *TestResult) AssertExitCode(t *testing.T, expected int) {
 	}
 }
 
-// AssertOutputContains validates that output contains expected text
+// AssertOutputContains validates that output contains expected text.
 func (result *TestResult) AssertOutputContains(t *testing.T, expected string) {
 	t.Helper()
 	if result.Output == "" {

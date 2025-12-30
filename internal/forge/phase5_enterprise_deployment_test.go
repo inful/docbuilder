@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestPhase5EnterpriseDeploymentPatterns demonstrates comprehensive enterprise deployment testing
+// TestPhase5EnterpriseDeploymentPatterns demonstrates comprehensive enterprise deployment testing.
 func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 	t.Log("=== Phase 5: Enterprise Deployment Patterns ===")
 

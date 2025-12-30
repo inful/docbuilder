@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// MockCLIEnvironment provides a comprehensive testing environment for CLI commands
+// MockCLIEnvironment provides a comprehensive testing environment for CLI commands.
 type MockCLIEnvironment struct {
 	workspaceDir  string
 	configPath    string
@@ -27,7 +27,7 @@ type MockCLIEnvironment struct {
 	testConfig    *config.Config
 }
 
-// NewMockCLIEnvironment creates a new CLI testing environment
+// NewMockCLIEnvironment creates a new CLI testing environment.
 func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 	workspaceDir := t.TempDir()
 
@@ -42,7 +42,7 @@ func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 	}
 }
 
-// WithForgeClient adds a forge client to the testing environment
+// WithForgeClient adds a forge client to the testing environment.
 func (env *MockCLIEnvironment) WithForgeClient(name string, client forge.Client) *MockCLIEnvironment {
 	env.forgeClients[name] = client
 
@@ -56,7 +56,7 @@ func (env *MockCLIEnvironment) WithForgeClient(name string, client forge.Client)
 	return env
 }
 
-// WithRealisticForgeEcosystem sets up a realistic multi-platform forge ecosystem
+// WithRealisticForgeEcosystem sets up a realistic multi-platform forge ecosystem.
 func (env *MockCLIEnvironment) WithRealisticForgeEcosystem() *MockCLIEnvironment {
 	// GitHub with enterprise repositories
 	github := forge.CreateRealisticGitHubMock("enterprise-github")
@@ -102,14 +102,13 @@ func (env *MockCLIEnvironment) WithTestConfiguration() *MockCLIEnvironment {
 		},
 		Hugo: config.HugoConfig{
 			BaseURL: "https://docs.company.internal",
-
 		},
 	}
 
 	return env
 }
 
-// WriteConfigFile writes the test configuration to disk
+// WriteConfigFile writes the test configuration to disk.
 func (env *MockCLIEnvironment) WriteConfigFile() error {
 	if env.testConfig == nil {
 		env.WithTestConfiguration()
@@ -123,7 +122,7 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 	return os.WriteFile(env.configPath, configBytes, 0o600)
 }
 
-// CreateProjectStructure creates a realistic project structure for testing
+// CreateProjectStructure creates a realistic project structure for testing.
 func (env *MockCLIEnvironment) CreateProjectStructure() error {
 	// Create basic project directories
 	dirs := []string{
@@ -159,7 +158,7 @@ func (env *MockCLIEnvironment) CreateProjectStructure() error {
 	return nil
 }
 
-// CLIResult represents the result of a CLI command execution
+// CLIResult represents the result of a CLI command execution.
 type CLIResult struct {
 	ExitCode       int
 	Stdout         string
@@ -170,7 +169,7 @@ type CLIResult struct {
 	GeneratedFiles []string
 }
 
-// RunCommand simulates running a DocBuilder CLI command
+// RunCommand simulates running a DocBuilder CLI command.
 func (env *MockCLIEnvironment) RunCommand(args ...string) *CLIResult {
 	start := time.Now()
 
@@ -218,7 +217,7 @@ func (env *MockCLIEnvironment) RunCommand(args ...string) *CLIResult {
 	}
 }
 
-// simulateInitCommand simulates the 'docbuilder init' command
+// simulateInitCommand simulates the 'docbuilder init' command.
 func (env *MockCLIEnvironment) simulateInitCommand(args []string) (int, []string) {
 	env.outputCapture.WriteString("Initializing DocBuilder project...\n")
 
@@ -258,7 +257,7 @@ func (env *MockCLIEnvironment) simulateInitCommand(args []string) (int, []string
 	return 0, []string{configPath}
 }
 
-// simulateBuildCommand simulates the 'docbuilder build' command
+// simulateBuildCommand simulates the 'docbuilder build' command.
 func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []string) {
 	env.outputCapture.WriteString("Starting DocBuilder build...\n")
 
@@ -338,7 +337,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 	return 0, fullPaths
 }
 
-// simulateDiscoverCommand simulates the 'docbuilder discover' command
+// simulateDiscoverCommand simulates the 'docbuilder discover' command.
 func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("Discovering documentation repositories...\n")
 
@@ -377,7 +376,7 @@ func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) (int, []strin
 	return 0, nil
 }
 
-// simulateDaemonCommand simulates the 'docbuilder daemon' command
+// simulateDaemonCommand simulates the 'docbuilder daemon' command.
 func (env *MockCLIEnvironment) simulateDaemonCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("DocBuilder daemon mode\n")
 	env.outputCapture.WriteString("✓ Daemon configuration loaded\n")
@@ -388,7 +387,7 @@ func (env *MockCLIEnvironment) simulateDaemonCommand(_ []string) (int, []string)
 	return 0, nil
 }
 
-// simulateValidateCommand simulates the 'docbuilder validate' command
+// simulateValidateCommand simulates the 'docbuilder validate' command.
 func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) (int, []string) {
 	env.outputCapture.WriteString("Validating DocBuilder configuration...\n")
 
@@ -415,28 +414,28 @@ func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) (int, []strin
 	return 0, nil
 }
 
-// AssertExitCode checks that the command exited with the expected code
+// AssertExitCode checks that the command exited with the expected code.
 func (result *CLIResult) AssertExitCode(t *testing.T, expected int) {
 	if result.ExitCode != expected {
 		t.Errorf("Expected exit code %d, got %d. Stderr: %s", expected, result.ExitCode, result.Stderr)
 	}
 }
 
-// AssertOutputContains checks that the stdout contains the expected text
+// AssertOutputContains checks that the stdout contains the expected text.
 func (result *CLIResult) AssertOutputContains(t *testing.T, expected string) {
 	if !strings.Contains(result.Stdout, expected) {
 		t.Errorf("Expected output to contain %q, got: %s", expected, result.Stdout)
 	}
 }
 
-// AssertErrorContains checks that the stderr contains the expected text
+// AssertErrorContains checks that the stderr contains the expected text.
 func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) {
 	if !strings.Contains(result.Stderr, expected) {
 		t.Errorf("Expected error to contain %q, got: %s", expected, result.Stderr)
 	}
 }
 
-// AssertConfigGenerated checks that a configuration file was generated
+// AssertConfigGenerated checks that a configuration file was generated.
 func (result *CLIResult) AssertConfigGenerated(t *testing.T) {
 	if result.ConfigPath == "" {
 		t.Error("Expected configuration path to be set")
@@ -448,7 +447,7 @@ func (result *CLIResult) AssertConfigGenerated(t *testing.T) {
 	}
 }
 
-// AssertFilesGenerated checks that the expected files were generated
+// AssertFilesGenerated checks that the expected files were generated.
 func (result *CLIResult) AssertFilesGenerated(t *testing.T, minFiles int) {
 	if len(result.GeneratedFiles) < minFiles {
 		t.Errorf("Expected at least %d generated files, got %d", minFiles, len(result.GeneratedFiles))
@@ -461,14 +460,14 @@ func (result *CLIResult) AssertFilesGenerated(t *testing.T, minFiles int) {
 	}
 }
 
-// AssertPerformance checks that the command completed within the expected time
+// AssertPerformance checks that the command completed within the expected time.
 func (result *CLIResult) AssertPerformance(t *testing.T, maxDuration time.Duration) {
 	if result.Duration > maxDuration {
 		t.Errorf("Command took too long: %v (max: %v)", result.Duration, maxDuration)
 	}
 }
 
-// Cleanup removes temporary files and directories
+// Cleanup removes temporary files and directories.
 func (env *MockCLIEnvironment) Cleanup() {
 	for _, file := range env.tempFiles {
 		_ = os.Remove(file)

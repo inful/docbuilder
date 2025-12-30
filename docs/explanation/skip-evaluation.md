@@ -338,5 +338,4 @@ Potential improvements to the skip system:
 
 - [ADR-002: In-Memory Content Pipeline](../adr/ADR-002-in-memory-content-pipeline.md)
 - [Incremental Builds](../how-to/run-incremental-builds.md)
-- [State Persistence](../../plan/state_persistence_migration.md)
 - [Build Service Architecture](architecture.md)

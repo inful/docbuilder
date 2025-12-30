@@ -7,7 +7,7 @@ import (
 )
 
 // TestPhase3BIntegrationDemo demonstrates how the enhanced mock system integrates
-// with existing DocBuilder test patterns and provides backward compatibility
+// with existing DocBuilder test patterns and provides backward compatibility.
 func TestPhase3BIntegrationDemo(t *testing.T) {
 	t.Log("=== Phase 3B: Enhanced Mock Integration Demonstration ===")
 
@@ -266,7 +266,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 	t.Log("→ Phase 3B: Enhanced mock system ready for production integration")
 }
 
-// TestPhase3BMigrationPatterns demonstrates how to migrate existing tests
+// TestPhase3BMigrationPatterns demonstrates how to migrate existing tests.
 func TestPhase3BMigrationPatterns(t *testing.T) {
 	t.Log("=== Phase 3B: Test Migration Patterns ===")
 

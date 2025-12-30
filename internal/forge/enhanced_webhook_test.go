@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// TestEnhancedWebhookWorkflow demonstrates advanced webhook testing capabilities with enhanced mocks
+// TestEnhancedWebhookWorkflow demonstrates advanced webhook testing capabilities with enhanced mocks.
 func TestEnhancedWebhookWorkflow(t *testing.T) {
 	t.Log("=== Enhanced Webhook Testing with Advanced Mock System ===")
 

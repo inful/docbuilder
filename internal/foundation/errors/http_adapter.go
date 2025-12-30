@@ -116,7 +116,7 @@ func (a *HTTPErrorAdapter) FormatErrorResponse(err error) HTTPErrorResponse {
 	return HTTPErrorResponse{Error: err.Error()}
 }
 
-// Helper: map severities
+// Helper: map severities.
 func (a *HTTPErrorAdapter) slogLevelFromSeverity(s ErrorSeverity) slog.Level {
 	switch s {
 	case SeverityInfo:

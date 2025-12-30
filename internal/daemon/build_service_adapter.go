@@ -101,5 +101,5 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 	return report, nil
 }
 
-// ensure BuildServiceAdapter implements Builder
+// ensure BuildServiceAdapter implements Builder.
 var _ Builder = (*BuildServiceAdapter)(nil)

@@ -25,7 +25,7 @@ func newFakeRecorder() *fakeRecorder {
 	return &fakeRecorder{retries: map[string]int{}, exhausted: map[string]int{}}
 }
 
-// Implement metrics.Recorder (only retry-related methods record state; others noop)
+// Implement metrics.Recorder (only retry-related methods record state; others noop).
 func (f *fakeRecorder) ObserveStageDuration(string, time.Duration)           {}
 func (f *fakeRecorder) ObserveBuildDuration(time.Duration)                   {}
 func (f *fakeRecorder) IncStageResult(string, metrics.ResultLabel)           {}
@@ -85,7 +85,7 @@ func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*hugo.BuildReport, 
 	return cur.rep, cur.err
 }
 
-// helper to create a transient StageError in a report
+// helper to create a transient StageError in a report.
 func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	// Reference parameter to satisfy unparam
 	_ = stage
@@ -107,7 +107,7 @@ func transientReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	return r, se
 }
 
-// helper to create a fatal (non-transient) StageError report
+// helper to create a fatal (non-transient) StageError report.
 func fatalReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorFatal, Err: errors.New("fatal")}
 	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[hugo.StageName]hugo.StageErrorKind{}}
@@ -115,7 +115,7 @@ func fatalReport(stage hugo.StageName) (*hugo.BuildReport, error) {
 	return r, se
 }
 
-// newJob creates a minimal BuildJob
+// newJob creates a minimal BuildJob.
 func newJob(id string) *BuildJob {
 	return &BuildJob{ID: id, Type: BuildTypeManual, CreatedAt: time.Now()}
 }

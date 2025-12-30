@@ -17,7 +17,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
-// Generator handles Hugo site generation with Relearn theme
+// Generator handles Hugo site generation with Relearn theme.
 type Generator struct {
 	config    *config.Config
 	outputDir string // final output dir
@@ -37,7 +37,7 @@ type Generator struct {
 	keepStaging bool
 }
 
-// NewGenerator creates a new Hugo site generator
+// NewGenerator creates a new Hugo site generator.
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
 	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
 	// Renderer defaults to nil; stageRunHugo will use BinaryRenderer when needed.
@@ -138,7 +138,7 @@ func (g *Generator) WithObserver(o BuildObserver) *Generator {
 	return g
 }
 
-// GenerateSite creates a complete Hugo site from discovered documentation
+// GenerateSite creates a complete Hugo site from discovered documentation.
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 	_, err := g.GenerateSiteWithReport(docFiles)
 	return err

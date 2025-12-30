@@ -59,7 +59,7 @@ func TestGenerateSiteWithReport(t *testing.T) {
 	t.Logf("✓ Repository metadata: %v", testRepo.Tags)
 }
 
-// TestMultiPlatformHugoGeneration demonstrates TestForge integration across multiple forge platforms
+// TestMultiPlatformHugoGeneration demonstrates TestForge integration across multiple forge platforms.
 func TestMultiPlatformHugoGeneration(t *testing.T) {
 	platforms := []struct {
 		name      string
@@ -126,7 +126,7 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 	}
 }
 
-// TestTestForgeFailureScenarios demonstrates failure scenario testing with TestForge
+// TestTestForgeFailureScenarios demonstrates failure scenario testing with TestForge.
 func TestTestForgeFailureScenarios(t *testing.T) {
 	outDir := t.TempDir()
 

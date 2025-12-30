@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestEnhancedForgeCliIntegration demonstrates how enhanced mocks can be used for CLI workflow testing
+// TestEnhancedForgeCliIntegration demonstrates how enhanced mocks can be used for CLI workflow testing.
 func TestEnhancedForgeCliIntegration(t *testing.T) {
 	t.Log("=== Enhanced Forge CLI Integration Testing ===")
 
@@ -53,14 +53,14 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 				Directory: "./site",
 			},
 			Hugo: config.HugoConfig{
-				BaseURL: "https://docs.company.com",			Title:   "Company Documentation",
-		},
-	}
+				BaseURL: "https://docs.company.com", Title: "Company Documentation",
+			},
+		}
 
-	// Simulate CLI discovery operation
-	manager := NewForgeManager()
-	manager.AddForge(githubConfig, github)
-	manager.AddForge(gitlabConfig, gitlab)
+		// Simulate CLI discovery operation
+		manager := NewForgeManager()
+		manager.AddForge(githubConfig, github)
+		manager.AddForge(gitlabConfig, gitlab)
 		discovery := NewDiscoveryService(manager, cliConfig.Filtering)
 		ctx := context.Background()
 
@@ -301,14 +301,14 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 			},
 			Hugo: config.HugoConfig{
 				BaseURL: "https://docs.company.internal",
-			Title:   "Company Documentation Hub",
-		},
-	}
+				Title:   "Company Documentation Hub",
+			},
+		}
 
-	// Test multi-platform discovery
-	manager := NewForgeManager()
-	manager.AddForge(githubConfig, github)
-	manager.AddForge(gitlabConfig, gitlab)
+		// Test multi-platform discovery
+		manager := NewForgeManager()
+		manager.AddForge(githubConfig, github)
+		manager.AddForge(gitlabConfig, gitlab)
 		manager.AddForge(forgejoConfig, forgejo)
 
 		discovery := NewDiscoveryService(manager, cliConfig.Filtering)

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// TestPatternMatchingDebug tests the pattern matching logic directly
+// TestPatternMatchingDebug tests the pattern matching logic directly.
 func TestPatternMatchingDebug(t *testing.T) {
 	// Test cases that should match
 	testCases := []struct {
@@ -39,7 +39,7 @@ func TestPatternMatchingDebug(t *testing.T) {
 	}
 }
 
-// TestContainsFunction tests the contains helper function
+// TestContainsFunction tests the contains helper function.
 func TestContainsFunction(t *testing.T) {
 	testCases := []struct {
 		str    string
