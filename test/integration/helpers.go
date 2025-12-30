@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -304,7 +305,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 	expectedJSON, _ := json.MarshalIndent(expected, "", "  ")
 
 	// If content structures don't match, provide detailed diff of mismatched files
-	if string(expectedJSON) != string(actualJSON) {
+	if !bytes.Equal(expectedJSON, actualJSON) {
 		dumpContentDiff(t, outputDir, expected, *actual)
 	}
 
