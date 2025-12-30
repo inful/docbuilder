@@ -411,30 +411,10 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 			return nil
 		}
 		// Determine if retry is allowed (look for transient StageError in report)
-		transient := false
-		transientStage := ""
-		if report != nil && len(report.Errors) > 0 {
-			for _, e := range report.Errors {
-				var se *hugo.StageError
-				if errors.As(e, &se) && se.Transient() {
-					transient = true
-					transientStage = string(se.Stage)
-					break
-				}
-			}
-		}
-		if !transient || totalRetries >= policy.MaxRetries {
-			if transient && totalRetries >= policy.MaxRetries {
-				slog.Warn("Transient error but retries exhausted", logfields.JobID(job.ID), slog.Int("attempts", attempts))
-				if report != nil {
-					report.Retries = totalRetries
-					report.RetriesExhausted = true
-				}
-				rec := extractRecorder(report, bq.recorder)
-				if rec != nil && transientStage != "" {
-					rec.IncBuildRetryExhausted(transientStage)
-				}
-			}
+		transient, transientStage := findTransientError(report)
+		
+		if shouldStopRetrying(transient, totalRetries, policy.MaxRetries) {
+			handleRetriesExhausted(job, report, transient, totalRetries, transientStage, bq.recorder)
 			return err
 		}
 		// perform retry
@@ -450,6 +430,45 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		}
+	}
+}
+
+// findTransientError checks if report contains a transient error.
+func findTransientError(report *hugo.BuildReport) (bool, string) {
+	if report == nil || len(report.Errors) == 0 {
+		return false, ""
+	}
+	
+	for _, e := range report.Errors {
+		var se *hugo.StageError
+		if errors.As(e, &se) && se.Transient() {
+			return true, string(se.Stage)
+		}
+	}
+	return false, ""
+}
+
+// shouldStopRetrying determines if retrying should stop.
+func shouldStopRetrying(transient bool, totalRetries, maxRetries int) bool {
+	return !transient || totalRetries >= maxRetries
+}
+
+// handleRetriesExhausted logs and records exhausted retry attempts.
+func handleRetriesExhausted(job *BuildJob, report *hugo.BuildReport, transient bool, totalRetries int, transientStage string, recorder metrics.Recorder) {
+	if !transient || totalRetries < 1 {
+		return
+	}
+	
+	slog.Warn("Transient error but retries exhausted", logfields.JobID(job.ID), slog.Int("total_retries", totalRetries))
+	
+	if report != nil {
+		report.Retries = totalRetries
+		report.RetriesExhausted = true
+	}
+	
+	rec := extractRecorder(report, recorder)
+	if rec != nil && transientStage != "" {
+		rec.IncBuildRetryExhausted(transientStage)
 	}
 }
 
