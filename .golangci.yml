@@ -22,7 +22,7 @@ linters:
     - forbidigo
     - gochecknoinits
     # - goconst
-    # - gocritic
+    - gocritic
     # - gocyclo
     #- godoclint
     - godot

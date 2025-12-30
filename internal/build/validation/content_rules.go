@@ -98,7 +98,8 @@ func (r PerRepoDocHashRule) Validate(ctx context.Context, vctx Context) Result {
 	}
 
 	// Handle multiple repositories case
-	for _, repo := range vctx.Repos {
+	for i := range vctx.Repos {
+		repo := &vctx.Repos[i]
 		if vctx.State.GetRepoDocFilesHash(repo.URL) == "" {
 			return Failure("missing per-repo doc_files_hash for " + repo.URL)
 		}
@@ -113,7 +114,8 @@ type CommitMetadataRule struct{}
 func (r CommitMetadataRule) Name() string { return "commit_metadata" }
 
 func (r CommitMetadataRule) Validate(ctx context.Context, vctx Context) Result {
-	for _, repo := range vctx.Repos {
+	for i := range vctx.Repos {
+		repo := &vctx.Repos[i]
 		if vctx.State.GetRepoLastCommit(repo.URL) == "" {
 			return Failure("missing last commit metadata for " + repo.URL)
 		}

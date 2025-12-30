@@ -117,15 +117,16 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	// Clone/update all repositories
 	repoPaths := make(map[string]string)
 	repositoriesSkipped := 0
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		slog.Info("Processing repository", "name", repo.Name, "url", repo.URL)
 
 		var repoPath string
 
 		if incrementalMode {
-			repoPath, err = gitClient.UpdateRepo(repo)
+			repoPath, err = gitClient.UpdateRepo(*repo)
 		} else {
-			repoPath, err = gitClient.CloneRepo(repo)
+			repoPath, err = gitClient.CloneRepo(*repo)
 		}
 
 		if err != nil {

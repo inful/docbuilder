@@ -21,30 +21,33 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 	var markdownFiles []docs.DocFile
 	var assetFiles []docs.DocFile
 
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		if file.IsAsset {
-			assetFiles = append(assetFiles, file)
+			assetFiles = append(assetFiles, *file)
 		} else {
-			markdownFiles = append(markdownFiles, file)
+			markdownFiles = append(markdownFiles, *file)
 		}
 	}
 
 	// Process assets first (simple copy)
-	for _, file := range assetFiles {
+	for i := range assetFiles {
+		file := &assetFiles[i]
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
 
-		if err := g.copyAssetFile(file); err != nil {
+		if err := g.copyAssetFile(*file); err != nil {
 			return fmt.Errorf("failed to copy asset %s: %w", file.Path, err)
 		}
 	}
 
 	// Convert DocFiles to pipeline Documents
 	discovered := make([]*pipeline.Document, 0, len(markdownFiles))
-	for _, file := range markdownFiles {
+	for i := range markdownFiles {
+		file := &markdownFiles[i]
 		// Load content
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("%w: failed to load content for %s: %w",
@@ -52,7 +55,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		// Convert to pipeline Document
-		doc := pipeline.NewDocumentFromDocFile(file)
+		doc := pipeline.NewDocumentFromDocFile(*file)
 		discovered = append(discovered, doc)
 	}
 

@@ -44,9 +44,10 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	// Filter repositories if specific one requested
 	var reposToProcess []config.Repository
 	if specificRepo != "" {
-		for _, repo := range cfg.Repositories {
+		for i := range cfg.Repositories {
+			repo := &cfg.Repositories[i]
 			if repo.Name == specificRepo {
-				reposToProcess = []config.Repository{repo}
+				reposToProcess = []config.Repository{*repo}
 				break
 			}
 		}
@@ -59,11 +60,12 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 
 	// Clone repositories
 	repoPaths := make(map[string]string)
-	for _, repo := range reposToProcess {
+	for i := range reposToProcess {
+		repo := &reposToProcess[i]
 		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
 
 		var repoPath string
-		repoPath, err = gitClient.CloneRepo(repo)
+		repoPath, err = gitClient.CloneRepo(*repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return err
@@ -85,7 +87,8 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	filesByRepo := discovery.GetDocFilesByRepository()
 	for repoName, files := range filesByRepo {
 		slog.Info("Repository files", "repository", repoName, "count", len(files))
-		for _, file := range files {
+		for i := range files {
+			file := &files[i]
 			slog.Info("  File discovered",
 				"path", file.RelativePath,
 				"section", file.Section,
