@@ -470,8 +470,7 @@ forges:
 
 func TestEnvironmentVariableExpansion(t *testing.T) {
 	// Set test environment variable
-	_ = os.Setenv("TEST_TOKEN", "expanded-token-value")
-	defer func() { _ = os.Unsetenv("TEST_TOKEN") }()
+	t.Setenv("TEST_TOKEN", "expanded-token-value")
 
 	configContent := `version: "2.0"
 forges:

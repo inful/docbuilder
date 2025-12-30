@@ -45,10 +45,7 @@ type TestResult struct {
 
 // NewTestEnvironment creates a new test environment with temporary directories.
 func NewTestEnvironment(t *testing.T) *TestEnvironment {
-	tempDir, err := os.MkdirTemp("", "docbuilder-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
+	tempDir := t.TempDir()
 
 	configDir := filepath.Join(tempDir, "config")
 	outputDir := filepath.Join(tempDir, "output")
