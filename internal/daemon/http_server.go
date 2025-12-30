@@ -553,39 +553,45 @@ func (s *HTTPServer) addCacheControlHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
-		// Determine cache policy based on file extension
-		if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
-			// CSS and JavaScript - cache for 1 year (Hugo typically uses content hashing)
-			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		} else if strings.HasSuffix(path, ".woff") || strings.HasSuffix(path, ".woff2") ||
-			strings.HasSuffix(path, ".ttf") || strings.HasSuffix(path, ".eot") ||
-			strings.HasSuffix(path, ".otf") {
-			// Web fonts - cache for 1 year
-			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
-		} else if strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".jpg") ||
-			strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".gif") ||
-			strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp") ||
-			strings.HasSuffix(path, ".ico") {
-			// Images - cache for 1 week
-			w.Header().Set("Cache-Control", "public, max-age=604800")
-		} else if strings.HasSuffix(path, ".pdf") || strings.HasSuffix(path, ".zip") ||
-			strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".gz") {
-			// Downloadable files - cache for 1 day
-			w.Header().Set("Cache-Control", "public, max-age=86400")
-		} else if strings.HasSuffix(path, ".json") && !strings.Contains(path, "search") {
-			// JSON data files (except search indices) - cache for 5 minutes
-			w.Header().Set("Cache-Control", "public, max-age=300")
-		} else if strings.HasSuffix(path, ".xml") {
-			// XML files (RSS, sitemaps) - cache for 1 hour
-			w.Header().Set("Cache-Control", "public, max-age=3600")
-		} else if strings.HasSuffix(path, ".html") || path == "/" || !strings.Contains(path, ".") {
-			// HTML pages and directories - no cache to ensure content updates are visible
-			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
-		}
-		// For all other files, don't set Cache-Control (let browser use default behavior)
+		// Set cache control header based on asset type
+		setCacheControlForPath(w, path)
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// setCacheControlForPath sets appropriate Cache-Control header based on file type.
+func setCacheControlForPath(w http.ResponseWriter, path string) {
+	// Determine cache policy based on file extension
+	if strings.HasSuffix(path, ".css") || strings.HasSuffix(path, ".js") {
+		// CSS and JavaScript - cache for 1 year (Hugo typically uses content hashing)
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else if strings.HasSuffix(path, ".woff") || strings.HasSuffix(path, ".woff2") ||
+		strings.HasSuffix(path, ".ttf") || strings.HasSuffix(path, ".eot") ||
+		strings.HasSuffix(path, ".otf") {
+		// Web fonts - cache for 1 year
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else if strings.HasSuffix(path, ".png") || strings.HasSuffix(path, ".jpg") ||
+		strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".gif") ||
+		strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp") ||
+		strings.HasSuffix(path, ".ico") {
+		// Images - cache for 1 week
+		w.Header().Set("Cache-Control", "public, max-age=604800")
+	} else if strings.HasSuffix(path, ".pdf") || strings.HasSuffix(path, ".zip") ||
+		strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".gz") {
+		// Downloadable files - cache for 1 day
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+	} else if strings.HasSuffix(path, ".json") && !strings.Contains(path, "search") {
+		// JSON data files (except search indices) - cache for 5 minutes
+		w.Header().Set("Cache-Control", "public, max-age=300")
+	} else if strings.HasSuffix(path, ".xml") {
+		// XML files (RSS, sitemaps) - cache for 1 hour
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+	} else if strings.HasSuffix(path, ".html") || path == "/" || !strings.Contains(path, ".") {
+		// HTML pages and directories - no cache to ensure content updates are visible
+		w.Header().Set("Cache-Control", "no-cache, must-revalidate")
+	}
+	// For all other files, don't set Cache-Control (let browser use default behavior)
 }
 
 // responseRecorder captures the status code and body from the underlying handler.
