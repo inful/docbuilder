@@ -545,6 +545,43 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 	return links, nil
 }
 
+// collectMarkdownFiles walks a directory tree and returns all markdown files,
+// skipping hidden directories and ignored files.
+func collectMarkdownFiles(rootPath string) ([]string, error) {
+	var filesToScan []string
+	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip hidden directories and files
+		if info.Name() != "." && strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		// Skip standard ignored files (case-insensitive)
+		if isIgnoredFile(info.Name()) {
+			return nil
+		}
+
+		if IsDocFile(path) {
+			filesToScan = append(filesToScan, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk directory: %w", err)
+	}
+	return filesToScan, nil
+}
+
 // detectBrokenLinks scans all markdown files in a path for links to non-existent files.
 func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 	var brokenLinks []BrokenLink
@@ -557,36 +594,9 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 
 	var filesToScan []string
 	if info.IsDir() {
-		// Walk directory to find all markdown files
-		err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			// Skip hidden directories and files
-			if info.Name() != "." && strings.HasPrefix(info.Name(), ".") {
-				if info.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-
-			if info.IsDir() {
-				return nil
-			}
-
-			// Skip standard ignored files (case-insensitive)
-			if isIgnoredFile(info.Name()) {
-				return nil
-			}
-
-			if IsDocFile(path) {
-				filesToScan = append(filesToScan, path)
-			}
-			return nil
-		})
+		filesToScan, err = collectMarkdownFiles(rootPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to walk directory: %w", err)
+			return nil, err
 		}
 	} else if IsDocFile(rootPath) {
 		filesToScan = []string{rootPath}
