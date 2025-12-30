@@ -186,20 +186,9 @@ func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 
 // TestRenderMode_Auto_WithoutEnvVars verifies auto mode doesn't run Hugo by default.
 func TestRenderMode_Auto_WithoutEnvVars(t *testing.T) {
-	// Save and clear env vars
-	oldRunHugo := os.Getenv("DOCBUILDER_RUN_HUGO")
-	oldSkipHugo := os.Getenv("DOCBUILDER_SKIP_HUGO")
-	_ = os.Unsetenv("DOCBUILDER_RUN_HUGO")
-	_ = os.Unsetenv("DOCBUILDER_SKIP_HUGO")
-	defer func() {
-		if oldRunHugo != "" {
-			_ = os.Setenv("DOCBUILDER_RUN_HUGO", oldRunHugo)
-		}
-		if oldSkipHugo != "" {
-			_ = os.Setenv("DOCBUILDER_SKIP_HUGO", oldSkipHugo)
-		}
-	}()
-
+	// Clear env vars for this test
+	t.Setenv("DOCBUILDER_RUN_HUGO", "")
+	t.Setenv("DOCBUILDER_SKIP_HUGO", "")
 	dir := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test"
@@ -292,8 +281,7 @@ func TestRendererPrecedence(t *testing.T) {
 			cfg.Build.RenderMode = tt.renderMode
 
 			if tt.envRunHugo != "" {
-				_ = os.Setenv("DOCBUILDER_RUN_HUGO", tt.envRunHugo)
-				defer func() { _ = os.Unsetenv("DOCBUILDER_RUN_HUGO") }()
+				t.Setenv("DOCBUILDER_RUN_HUGO", tt.envRunHugo)
 			}
 			g := NewGenerator(cfg, dir)
 			if tt.customRenderer != nil {

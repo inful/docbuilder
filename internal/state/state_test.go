@@ -8,17 +8,13 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
-"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // TestJSONStore demonstrates basic functionality of the new state management system.
 func TestJSONStore(t *testing.T) {
 	// Create temporary directory for test
-	tmpDir, err := os.MkdirTemp("", "docbuilder-state-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
+	tmpDir := t.TempDir()
 
 	// Create JSON store
 	storeResult := NewJSONStore(tmpDir)
@@ -344,11 +340,7 @@ func TestJSONStore(t *testing.T) {
 // TestStateService demonstrates the service integration.
 func TestStateService(t *testing.T) {
 	// Create temporary directory for test
-	tmpDir, err := os.MkdirTemp("", "docbuilder-service-test-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer func() { _ = os.RemoveAll(tmpDir) }()
+	tmpDir := t.TempDir()
 
 	// Create state service
 	serviceResult := NewService(tmpDir)

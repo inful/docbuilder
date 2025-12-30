@@ -13,11 +13,7 @@ import (
 
 func TestDocumentationDiscovery(t *testing.T) {
 	// Create temporary directory structure for testing
-	tempDir, err := os.MkdirTemp("", "docbuilder-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.RemoveAll(tempDir) }()
+	tempDir := t.TempDir()
 
 	// Create test repository structure
 	repoDir := filepath.Join(tempDir, "test-repo")
@@ -149,11 +145,7 @@ func TestIgnoredFiles(t *testing.T) {
 }
 
 func TestForgeNamespacingModes(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "docbuilder-ns-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.RemoveAll(tempDir) }()
+	tempDir := t.TempDir()
 
 	mkRepo := func(name, forgeType string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
@@ -218,11 +210,7 @@ func TestForgeNamespacingModes(t *testing.T) {
 }
 
 func TestForgeNamespacingAutoSingleForge(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "docbuilder-ns-single")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.RemoveAll(tempDir) }()
+	tempDir := t.TempDir()
 
 	mkRepo := func(name string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
@@ -288,11 +276,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		repositories := forge.ToConfigRepositories()
 
 		// Create temporary directories for all repositories
-		tempDir, err := os.MkdirTemp("", "large-scale-discovery-test")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.RemoveAll(tempDir) }()
+		tempDir := t.TempDir()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {
@@ -430,11 +414,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		}
 
 		// Create temporary directories
-		tempDir, err := os.MkdirTemp("", "multi-platform-discovery-test")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.RemoveAll(tempDir) }()
+		tempDir := t.TempDir()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range allRepositories {
@@ -576,11 +556,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		repositories := forge.ToConfigRepositories()
 
 		// Create comprehensive test scenarios with various file types
-		tempDir, err := os.MkdirTemp("", "filtering-test")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.RemoveAll(tempDir) }()
+		tempDir := t.TempDir()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {
@@ -753,11 +729,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		repositories := forge.ToConfigRepositories()
 
 		// Create minimal file structure for performance testing
-		tempDir, err := os.MkdirTemp("", "performance-test")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer func() { _ = os.RemoveAll(tempDir) }()
+		tempDir := t.TempDir()
 
 		repoPaths := make(map[string]string)
 		for _, repo := range repositories {
@@ -815,11 +787,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 // TestPathCollisionDetection verifies that case-insensitive path collisions are detected.
 func TestPathCollisionDetection(t *testing.T) {
 	// Create temporary directory structure for testing
-	tempDir, err := os.MkdirTemp("", "docbuilder-collision-test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.RemoveAll(tempDir) }()
+	tempDir := t.TempDir()
 
 	// Create test repository with files that will collide when lowercased
 	repoDir := filepath.Join(tempDir, "collision-repo")
