@@ -100,50 +100,106 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 	if err == nil {
 		return StageOutcome{Stage: stage, Result: StageResultSuccess}
 	}
+	
 	var se *StageError
-	if errors.As(err, &se) {
-		code := IssueGenericStageError
-		switch se.Stage {
-		case StageCloneRepos:
-			if errors.Is(se.Err, build.ErrClone) {
-				if bs.Report.ClonedRepositories == 0 {
-					code = IssueAllClonesFailed
-				} else if bs.Report.FailedRepositories > 0 {
-					code = IssuePartialClone
-				} else {
-					code = IssueCloneFailure
-				}
-			} else {
-				code = IssueCloneFailure
-			}
-		case StageDiscoverDocs:
-			if errors.Is(se.Err, build.ErrDiscovery) {
-				if len(bs.Git.RepoPaths) == 0 {
-					code = IssueNoRepositories
-				} else {
-					code = IssueDiscoveryFailure
-				}
-			} else {
-				code = IssueDiscoveryFailure
-			}
-		case StageRunHugo:
-			if errors.Is(se.Err, build.ErrHugo) {
-				code = IssueHugoExecution
-			} else {
-				code = IssueHugoExecution
-			}
-		default:
-			if se.Kind == StageErrorCanceled {
-				code = IssueCanceled
-			}
-		}
-		return StageOutcome{
-			Stage: stage, Error: se, Result: resultFromStageErrorKind(se.Kind), IssueCode: code,
-			Severity: severityFromStageErrorKind(se.Kind), Transient: se.Transient(), Abort: se.Kind == StageErrorFatal || se.Kind == StageErrorCanceled,
-		}
+	if !errors.As(err, &se) {
+		// Not a StageError - treat as fatal
+		se = newFatalStageError(stage, err)
+		return buildFatalOutcome(stage, se)
 	}
-	se = newFatalStageError(stage, err)
-	return StageOutcome{Stage: stage, Error: se, Result: StageResultFatal, IssueCode: IssueGenericStageError, Severity: SeverityError, Transient: false, Abort: true}
+	
+	// Check for cancellation first - applies to all stages
+	if se.Kind == StageErrorCanceled {
+		return buildCanceledOutcome(stage, se)
+	}
+	
+	// Classify by stage type
+	code := classifyIssueCode(se, bs)
+	
+	return StageOutcome{
+		Stage:     stage,
+		Error:     se,
+		Result:    resultFromStageErrorKind(se.Kind),
+		IssueCode: code,
+		Severity:  severityFromStageErrorKind(se.Kind),
+		Transient: se.Transient(),
+		Abort:     se.Kind == StageErrorFatal || se.Kind == StageErrorCanceled,
+	}
+}
+
+// classifyIssueCode determines the issue code based on stage type and error
+func classifyIssueCode(se *StageError, bs *BuildState) ReportIssueCode {
+	switch se.Stage {
+	case StageCloneRepos:
+		return classifyCloneIssue(se, bs)
+	case StageDiscoverDocs:
+		return classifyDiscoveryIssue(se, bs)
+	case StageRunHugo:
+		return classifyHugoIssue(se)
+	default:
+		return IssueGenericStageError
+	}
+}
+
+// classifyCloneIssue classifies clone stage errors
+func classifyCloneIssue(se *StageError, bs *BuildState) ReportIssueCode {
+	if !errors.Is(se.Err, build.ErrClone) {
+		return IssueCloneFailure
+	}
+	
+	if bs.Report.ClonedRepositories == 0 {
+		return IssueAllClonesFailed
+	}
+	
+	if bs.Report.FailedRepositories > 0 {
+		return IssuePartialClone
+	}
+	
+	return IssueCloneFailure
+}
+
+// classifyDiscoveryIssue classifies discovery stage errors
+func classifyDiscoveryIssue(se *StageError, bs *BuildState) ReportIssueCode {
+	if !errors.Is(se.Err, build.ErrDiscovery) {
+		return IssueDiscoveryFailure
+	}
+	
+	if len(bs.Git.RepoPaths) == 0 {
+		return IssueNoRepositories
+	}
+	
+	return IssueDiscoveryFailure
+}
+
+// classifyHugoIssue classifies Hugo stage errors
+func classifyHugoIssue(se *StageError) ReportIssueCode {
+	return IssueHugoExecution
+}
+
+// buildFatalOutcome creates an outcome for fatal errors
+func buildFatalOutcome(stage StageName, se *StageError) StageOutcome {
+	return StageOutcome{
+		Stage:     stage,
+		Error:     se,
+		Result:    StageResultFatal,
+		IssueCode: IssueGenericStageError,
+		Severity:  SeverityError,
+		Transient: false,
+		Abort:     true,
+	}
+}
+
+// buildCanceledOutcome creates an outcome for canceled stages
+func buildCanceledOutcome(stage StageName, se *StageError) StageOutcome {
+	return StageOutcome{
+		Stage:     stage,
+		Error:     se,
+		Result:    resultFromStageErrorKind(se.Kind),
+		IssueCode: IssueCanceled,
+		Severity:  severityFromStageErrorKind(se.Kind),
+		Transient: se.Transient(),
+		Abort:     true,
+	}
 }
 
 // Helper constructors.
