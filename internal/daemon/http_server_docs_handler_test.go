@@ -151,12 +151,12 @@ func TestDocsHandlerBuildErrorPage(t *testing.T) {
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := srv.resolveDocsRoot()
 		out := resolveOutputDirectory(srv.config.Output.Directory)
-		
+
 		if shouldShowBuildError(srv, root, out) {
 			serveBuildErrorPage(w, srv.daemon.buildStatus)
 			return
 		}
-		
+
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 	rootHandler.ServeHTTP(rec, req)
@@ -208,12 +208,12 @@ func shouldShowBuildError(srv *HTTPServer, root, out string) bool {
 func serveBuildErrorPage(w http.ResponseWriter, status interface{ getStatus() (bool, error, bool) }) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
-	
+
 	errorMsg := "Unknown error"
 	if _, buildErr, _ := status.getStatus(); buildErr != nil {
 		errorMsg = buildErr.Error()
 	}
-	
+
 	html := `<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title></head>` +
 		`<body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build.</p>` +
 		`<h2>Error Details:</h2><pre>` + errorMsg + `</pre></body></html>`

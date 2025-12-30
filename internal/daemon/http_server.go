@@ -308,7 +308,7 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 	return nil
 }
 
-// resolveAbsoluteOutputDir resolves the output directory to an absolute path
+// resolveAbsoluteOutputDir resolves the output directory to an absolute path.
 func (s *HTTPServer) resolveAbsoluteOutputDir() string {
 	out := s.config.Output.Directory
 	if out == "" {
@@ -322,18 +322,18 @@ func (s *HTTPServer) resolveAbsoluteOutputDir() string {
 	return out
 }
 
-// shouldShowStatusPage checks if we should show a status page instead of serving files
+// shouldShowStatusPage checks if we should show a status page instead of serving files.
 func (s *HTTPServer) shouldShowStatusPage(root string) bool {
 	out := s.resolveAbsoluteOutputDir()
 	if root != out {
 		return false
 	}
-	
+
 	_, err := os.Stat(filepath.Join(out, "public"))
 	return os.IsNotExist(err)
 }
 
-// handleStatusPage determines which status page to show and renders it
+// handleStatusPage determines which status page to show and renders it.
 func (s *HTTPServer) handleStatusPage(w http.ResponseWriter, r *http.Request, root string) {
 	// Check if there's a build error
 	if s.daemon != nil && s.daemon.buildStatus != nil {
@@ -343,43 +343,43 @@ func (s *HTTPServer) handleStatusPage(w http.ResponseWriter, r *http.Request, ro
 			return
 		}
 	}
-	
+
 	// Show pending page for root path only
 	if r.URL.Path == "/" || r.URL.Path == "" {
 		s.renderBuildPendingPage(w)
 		return
 	}
-	
+
 	// For non-root paths, fall through to file server (will likely 404)
 	http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 }
 
-// renderBuildErrorPage renders an error page when build fails
+// renderBuildErrorPage renders an error page when build fails.
 func (s *HTTPServer) renderBuildErrorPage(w http.ResponseWriter, buildErr error) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
-	
+
 	errorMsg := "Unknown error"
 	if buildErr != nil {
 		errorMsg = parseHugoError(buildErr.Error())
 	}
-	
+
 	scriptTag := s.getLiveReloadScript()
-	
+
 	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title><style>body{font-family:sans-serif;max-width:800px;margin:50px auto;padding:20px}h1{color:#d32f2f}pre{background:#f5f5f5;padding:15px;border-radius:4px;overflow-x:auto}</style></head><body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build. Fix the error below and save to rebuild automatically.</p><h2>Error Details:</h2><pre>%s</pre><p><small>This page will refresh automatically when you fix the error.</small></p>%s</body></html>`, errorMsg, scriptTag)
 }
 
-// renderBuildPendingPage renders a page shown while build is in progress
+// renderBuildPendingPage renders a page shown while build is in progress.
 func (s *HTTPServer) renderBuildPendingPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
-	
+
 	scriptTag := s.getLiveReloadScript()
-	
+
 	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>%s</body></html>`, scriptTag)
 }
 
-// getLiveReloadScript returns the livereload script tag if enabled, empty string otherwise
+// getLiveReloadScript returns the livereload script tag if enabled, empty string otherwise.
 func (s *HTTPServer) getLiveReloadScript() string {
 	if !s.config.Build.LiveReload {
 		return ""
@@ -401,7 +401,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	// switching to the fully rendered site once available—without restarting the daemon.
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := s.resolveDocsRoot()
-		
+
 		// Check if we need to show a status page instead of serving files
 		if s.shouldShowStatusPage(root) {
 			s.handleStatusPage(w, r, root)

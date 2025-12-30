@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"encoding/json"
+	stderr "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -245,7 +246,7 @@ func decodeStateSnapshot(data []byte) (stateSnapshot, error) {
 		return stateSnapshot{}, err
 	}
 	if snapshot.FormatVersion == "" {
-		return stateSnapshot{}, fmt.Errorf("state snapshot missing format_version (legacy files are no longer supported)")
+		return stateSnapshot{}, stderr.New("state snapshot missing format_version (legacy files are no longer supported)")
 	}
 	if snapshot.FormatVersion != stateSnapshotFormatVersion {
 		return stateSnapshot{}, fmt.Errorf("unsupported state snapshot format_version %q (expected %s)", snapshot.FormatVersion, stateSnapshotFormatVersion)

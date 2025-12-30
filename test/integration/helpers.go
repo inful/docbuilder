@@ -457,7 +457,7 @@ func buildStructureTree(rootDir string) map[string]any {
 
 // runGoldenTest is a helper that executes a golden test with standard setup.
 // It handles repository setup, configuration loading, build execution, and verification.
-func runGoldenTest(t *testing.T, testRepoPath, configPath, goldenDirPath string) {
+func runGoldenTest(t *testing.T, testRepoPath, configPath, goldenDirPath string, updateGolden bool) {
 	t.Helper()
 
 	// Create temporary git repository from testdata
@@ -480,8 +480,8 @@ func runGoldenTest(t *testing.T, testRepoPath, configPath, goldenDirPath string)
 	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
 
 	// Verify outputs
-	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", *updateGolden)
-	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", *updateGolden)
+	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", updateGolden)
+	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", updateGolden)
 }
 
 // runBuildPipeline creates and runs the build service.
@@ -503,7 +503,7 @@ func runBuildPipeline(t *testing.T, cfg *config.Config, outputDir string) (*buil
 
 // runMultiRepoGoldenTest is a helper for tests with multiple repositories.
 // It handles setup for 2 repositories, configuration loading, build execution, and verification.
-func runMultiRepoGoldenTest(t *testing.T, repo1Path, repo2Path, configPath, goldenDirPath string) {
+func runMultiRepoGoldenTest(t *testing.T, repo1Path, repo2Path, configPath, goldenDirPath string, updateGolden bool) {
 	t.Helper()
 
 	// Create temporary git repositories from testdata
@@ -528,6 +528,6 @@ func runMultiRepoGoldenTest(t *testing.T, repo1Path, repo2Path, configPath, gold
 	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
 
 	// Verify outputs
-	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", *updateGolden)
-	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", *updateGolden)
+	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", updateGolden)
+	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", updateGolden)
 }

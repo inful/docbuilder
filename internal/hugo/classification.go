@@ -100,22 +100,22 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 	if err == nil {
 		return StageOutcome{Stage: stage, Result: StageResultSuccess}
 	}
-	
+
 	var se *StageError
 	if !errors.As(err, &se) {
 		// Not a StageError - treat as fatal
 		se = newFatalStageError(stage, err)
 		return buildFatalOutcome(stage, se)
 	}
-	
+
 	// Check for cancellation first - applies to all stages
 	if se.Kind == StageErrorCanceled {
 		return buildCanceledOutcome(stage, se)
 	}
-	
+
 	// Classify by stage type
 	code := classifyIssueCode(se, bs)
-	
+
 	return StageOutcome{
 		Stage:     stage,
 		Error:     se,
@@ -127,7 +127,7 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 	}
 }
 
-// classifyIssueCode determines the issue code based on stage type and error
+// classifyIssueCode determines the issue code based on stage type and error.
 func classifyIssueCode(se *StageError, bs *BuildState) ReportIssueCode {
 	switch se.Stage {
 	case StageCloneRepos:
@@ -141,42 +141,42 @@ func classifyIssueCode(se *StageError, bs *BuildState) ReportIssueCode {
 	}
 }
 
-// classifyCloneIssue classifies clone stage errors
+// classifyCloneIssue classifies clone stage errors.
 func classifyCloneIssue(se *StageError, bs *BuildState) ReportIssueCode {
 	if !errors.Is(se.Err, build.ErrClone) {
 		return IssueCloneFailure
 	}
-	
+
 	if bs.Report.ClonedRepositories == 0 {
 		return IssueAllClonesFailed
 	}
-	
+
 	if bs.Report.FailedRepositories > 0 {
 		return IssuePartialClone
 	}
-	
+
 	return IssueCloneFailure
 }
 
-// classifyDiscoveryIssue classifies discovery stage errors
+// classifyDiscoveryIssue classifies discovery stage errors.
 func classifyDiscoveryIssue(se *StageError, bs *BuildState) ReportIssueCode {
 	if !errors.Is(se.Err, build.ErrDiscovery) {
 		return IssueDiscoveryFailure
 	}
-	
+
 	if len(bs.Git.RepoPaths) == 0 {
 		return IssueNoRepositories
 	}
-	
+
 	return IssueDiscoveryFailure
 }
 
-// classifyHugoIssue classifies Hugo stage errors
+// classifyHugoIssue classifies Hugo stage errors.
 func classifyHugoIssue(se *StageError) ReportIssueCode {
 	return IssueHugoExecution
 }
 
-// buildFatalOutcome creates an outcome for fatal errors
+// buildFatalOutcome creates an outcome for fatal errors.
 func buildFatalOutcome(stage StageName, se *StageError) StageOutcome {
 	return StageOutcome{
 		Stage:     stage,
@@ -189,7 +189,7 @@ func buildFatalOutcome(stage StageName, se *StageError) StageOutcome {
 	}
 }
 
-// buildCanceledOutcome creates an outcome for canceled stages
+// buildCanceledOutcome creates an outcome for canceled stages.
 func buildCanceledOutcome(stage StageName, se *StageError) StageOutcome {
 	return StageOutcome{
 		Stage:     stage,

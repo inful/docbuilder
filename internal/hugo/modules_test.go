@@ -73,7 +73,7 @@ func TestEnsureGoModForModules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temporary directory
 			tmpDir := t.TempDir()
-			
+
 			// Create generator with test config
 			cfg := &config.Config{
 				Hugo: config.HugoConfig{
@@ -83,12 +83,12 @@ func TestEnsureGoModForModules(t *testing.T) {
 					Directory: tmpDir,
 				},
 			}
-			
+
 			gen := &Generator{
 				config:    cfg,
 				outputDir: tmpDir,
 			}
-			
+
 			// Create existing go.mod if specified
 			goModPath := filepath.Join(tmpDir, "go.mod")
 			if tt.existingGoMod != "" {
@@ -97,30 +97,30 @@ func TestEnsureGoModForModules(t *testing.T) {
 					t.Fatalf("Failed to create test go.mod: %v", err)
 				}
 			}
-			
+
 			// Run the function
 			err := gen.ensureGoModForModules()
-			
+
 			// Check error expectation
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ensureGoModForModules() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			// Verify go.mod was created
 			content, err := os.ReadFile(goModPath)
 			if err != nil {
 				t.Fatalf("Failed to read go.mod: %v", err)
 			}
-			
+
 			contentStr := string(content)
-			
+
 			// Verify module name
 			if !strings.Contains(contentStr, "module "+tt.wantModuleName) {
-				t.Errorf("go.mod module name = %q, want %q\nFull content:\n%s", 
+				t.Errorf("go.mod module name = %q, want %q\nFull content:\n%s",
 					extractModuleName(contentStr), tt.wantModuleName, contentStr)
 			}
-			
+
 			// Verify go version is present
 			if !strings.Contains(contentStr, "go 1.21") {
 				t.Errorf("go.mod missing go version directive\nFull content:\n%s", contentStr)
@@ -130,11 +130,11 @@ func TestEnsureGoModForModules(t *testing.T) {
 }
 
 func extractModuleName(goModContent string) string {
-	lines := strings.Split(goModContent, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(goModContent, "\n")
+	for line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimPrefix(line, "module ")
+		if after, ok := strings.CutPrefix(line, "module "); ok {
+			return after
 		}
 	}
 	return ""
@@ -165,24 +165,24 @@ func TestDeriveModuleName(t *testing.T) {
 					Directory: tmpDir,
 				},
 			}
-			
+
 			gen := &Generator{
 				config:    cfg,
 				outputDir: tmpDir,
 			}
-			
+
 			// Call ensureGoModForModules which will use deriveModuleName internally
 			err := gen.ensureGoModForModules()
 			if err != nil {
 				t.Fatalf("ensureGoModForModules() error = %v", err)
 			}
-			
+
 			// Read and verify
 			content, err := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
 			if err != nil {
 				t.Fatalf("Failed to read go.mod: %v", err)
 			}
-			
+
 			moduleName := extractModuleName(string(content))
 			if moduleName != tt.want {
 				t.Errorf("module name = %q, want %q", moduleName, tt.want)
