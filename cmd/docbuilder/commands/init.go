@@ -22,6 +22,7 @@ func (i *InitCmd) Run(_ *Global, root *CLI) error {
 	return RunInit(root.Config, i.Force)
 }
 
+//nolint:forbidigo // fmt is used for user-facing messages
 func RunInit(configPath string, force bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Initializing DocBuilder project")

@@ -8,6 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
+//nolint:forbidigo // fmt is used for demonstration purposes
 func main() {
 	ctx := context.Background()
 

@@ -94,6 +94,8 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 // FixWithConfirmation fixes issues with interactive confirmation prompts.
 // Shows a preview of changes and prompts the user before applying.
 // Creates a backup of modified files before making changes.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
 func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	// If in dry-run mode, no need for confirmation or backup
 	if f.dryRun {
@@ -239,6 +241,8 @@ func (f *Fixer) WithAutoConfirm(autoConfirm bool) *Fixer {
 // ConfirmChanges prompts the user to confirm the proposed changes.
 // Returns true if user confirms, false if they decline or if there's an error.
 // Automatically returns true if autoConfirm is enabled or in dry-run mode.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
 func (f *Fixer) ConfirmChanges(result *FixResult) (bool, error) {
 	// Auto-confirm in dry-run mode or if autoConfirm flag is set
 	if f.dryRun || f.autoConfirm {

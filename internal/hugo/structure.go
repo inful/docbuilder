@@ -199,7 +199,7 @@ func (g *Generator) abortStaging() {
 		slog.Info("Build failed - staging directory preserved for debugging",
 			slog.String("staging", g.stageDir),
 			slog.String("output", g.outputDir))
-		fmt.Printf("\nStaging directory preserved for debugging: %s\n", g.stageDir)
+		slog.Debug("Staging directory preserved for debugging: " + g.stageDir)
 		return
 	}
 	slog.Warn("Aborting build - cleaning up staging directory",

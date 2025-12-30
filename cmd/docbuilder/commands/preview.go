@@ -23,6 +23,7 @@ type PreviewCmd struct {
 	NoLiveReload bool   `name:"no-live-reload" help:"Disable LiveReload SSE and script injection for preview."`
 }
 
+//nolint:forbidigo // fmt is used for user-facing messages
 func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	// Setup signal-based context for graceful shutdown
 	sigctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
