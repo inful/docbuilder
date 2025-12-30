@@ -16,35 +16,16 @@ type jsonScheduleStore struct {
 }
 
 func (ss *jsonScheduleStore) Create(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
-	if schedule == nil {
-		return foundation.Err[*Schedule, error](
-			errors.ValidationError("schedule cannot be nil").Build(),
-		)
-	}
-
-	if validationResult := schedule.Validate(); !validationResult.Valid {
-		return foundation.Err[*Schedule, error](validationResult.ToError())
-	}
-
-	ss.store.mu.Lock()
-	defer ss.store.mu.Unlock()
-
-	now := time.Now()
-	schedule.CreatedAt = now
-	schedule.UpdatedAt = now
-
-	ss.store.schedules[schedule.ID] = schedule
-
-	if ss.store.autoSaveEnabled {
-		if err := ss.store.saveToDiskUnsafe(); err != nil {
-			delete(ss.store.schedules, schedule.ID)
-			return foundation.Err[*Schedule, error](
-				errors.InternalError("failed to save schedule").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[*Schedule, error](schedule)
+	return createEntity(
+		schedule,
+		"schedule",
+		&ss.store.mu,
+		func(s *Schedule) { s.CreatedAt = time.Now(); s.UpdatedAt = s.CreatedAt },
+		func(s *Schedule) { ss.store.schedules[s.ID] = s },
+		func(s *Schedule) { delete(ss.store.schedules, s.ID) },
+		ss.store.autoSaveEnabled,
+		ss.store.saveToDiskUnsafe,
+	)
 }
 
 func (ss *jsonScheduleStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Schedule], error] {

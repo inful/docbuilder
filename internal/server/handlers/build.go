@@ -32,8 +32,8 @@ func NewBuildHandlers(daemon DaemonBuildInterface) *BuildHandlers {
 	}
 }
 
-// HandleTriggerDiscovery handles the discovery trigger endpoint.
-func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Request) {
+// handleTriggerAction is a generic handler for trigger endpoints.
+func (h *BuildHandlers) handleTriggerAction(w http.ResponseWriter, r *http.Request, serviceName string, triggerFunc func() string, errMsg string) {
 	if r.Method != http.MethodPost {
 		err := errors.ValidationError("invalid HTTP method").
 			WithContext("method", r.Method).
@@ -44,52 +44,32 @@ func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Re
 	}
 
 	if h.daemon != nil {
-		jobID := h.daemon.TriggerDiscovery()
+		jobID := triggerFunc()
 		response := &responses.TriggerResponse{
 			Status: "triggered",
 			JobID:  jobID,
 		}
 		if err := writeJSON(w, http.StatusOK, response); err != nil {
-			internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode discovery trigger response").
+			internalErr := errors.WrapError(err, errors.CategoryInternal, errMsg).
 				Build()
 			h.errorAdapter.WriteErrorResponse(w, internalErr)
 		}
 	} else {
 		err := errors.DaemonError("daemon not available").
-			WithContext("service", "discovery").
+			WithContext("service", serviceName).
 			Build()
 		h.errorAdapter.WriteErrorResponse(w, err)
 	}
 }
 
+// HandleTriggerDiscovery handles the discovery trigger endpoint.
+func (h *BuildHandlers) HandleTriggerDiscovery(w http.ResponseWriter, r *http.Request) {
+	h.handleTriggerAction(w, r, "discovery", h.daemon.TriggerDiscovery, "failed to encode discovery trigger response")
+}
+
 // HandleTriggerBuild handles the build trigger endpoint.
 func (h *BuildHandlers) HandleTriggerBuild(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		err := errors.ValidationError("invalid HTTP method").
-			WithContext("method", r.Method).
-			WithContext("allowed_method", "POST").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
-		return
-	}
-
-	if h.daemon != nil {
-		jobID := h.daemon.TriggerBuild()
-		response := &responses.TriggerResponse{
-			Status: "triggered",
-			JobID:  jobID,
-		}
-		if err := writeJSON(w, http.StatusOK, response); err != nil {
-			internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode build trigger response").
-				Build()
-			h.errorAdapter.WriteErrorResponse(w, internalErr)
-		}
-	} else {
-		err := errors.DaemonError("daemon not available").
-			WithContext("service", "build").
-			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
-	}
+	h.handleTriggerAction(w, r, "build", h.daemon.TriggerBuild, "failed to encode build trigger response")
 }
 
 // HandleBuildStatus handles the build status endpoint.

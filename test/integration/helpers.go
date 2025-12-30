@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/require"
@@ -434,4 +437,81 @@ func buildStructureTree(rootDir string) map[string]interface{} {
 	})
 
 	return tree
+}
+
+// runGoldenTest is a helper that executes a golden test with standard setup.
+// It handles repository setup, configuration loading, build execution, and verification.
+func runGoldenTest(t *testing.T, testRepoPath, configPath, goldenDirPath string) {
+	t.Helper()
+
+	// Create temporary git repository from testdata
+	repoPath := setupTestRepo(t, testRepoPath)
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, configPath)
+
+	// Point configuration to temporary repository
+	require.Len(t, cfg.Repositories, 1, "expected exactly one repository in config")
+	cfg.Repositories[0].URL = repoPath
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Execute build
+	result, err := runBuildPipeline(t, cfg, outputDir)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify outputs
+	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", *updateGolden)
+	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", *updateGolden)
+}
+
+// runBuildPipeline creates and runs the build service.
+func runBuildPipeline(t *testing.T, cfg *config.Config, outputDir string) (*build.BuildResult, error) {
+	t.Helper()
+
+	svc := build.NewBuildService().
+		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		})
+
+	req := build.BuildRequest{
+		Config:    cfg,
+		OutputDir: outputDir,
+	}
+
+	return svc.Run(context.Background(), req)
+}
+
+// runMultiRepoGoldenTest is a helper for tests with multiple repositories.
+// It handles setup for 2 repositories, configuration loading, build execution, and verification.
+func runMultiRepoGoldenTest(t *testing.T, repo1Path, repo2Path, configPath, goldenDirPath string) {
+	t.Helper()
+
+	// Create temporary git repositories from testdata
+	tmpRepo1 := setupTestRepo(t, repo1Path)
+	tmpRepo2 := setupTestRepo(t, repo2Path)
+
+	// Load test configuration
+	cfg := loadGoldenConfig(t, configPath)
+
+	// Point configuration to temporary repositories
+	require.Len(t, cfg.Repositories, 2, "expected exactly two repositories in config")
+	cfg.Repositories[0].URL = tmpRepo1
+	cfg.Repositories[1].URL = tmpRepo2
+
+	// Create temporary output directory
+	outputDir := t.TempDir()
+	cfg.Output.Directory = outputDir
+
+	// Execute build
+	result, err := runBuildPipeline(t, cfg, outputDir)
+	require.NoError(t, err, "build pipeline failed")
+	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
+
+	// Verify outputs
+	verifyHugoConfig(t, outputDir, goldenDirPath+"/hugo-config.golden.yaml", *updateGolden)
+	verifyContentStructure(t, outputDir, goldenDirPath+"/content-structure.golden.json", *updateGolden)
 }
