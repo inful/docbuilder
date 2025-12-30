@@ -141,7 +141,8 @@ func TestJSONStore(t *testing.T) {
 				if res.IsOk() {
 					t.Fatalf("%s unexpectedly succeeded for missing repository", tc.name)
 				}
-				if classified, ok := res.UnwrapErr().(*errors.ClassifiedError); !ok || classified.Category() != errors.CategoryNotFound {
+				classified, ok := errors.AsClassified(res.UnwrapErr())
+				if !ok || classified.Category() != errors.CategoryNotFound {
 					t.Fatalf("%s returned wrong error: %v", tc.name, res.UnwrapErr())
 				}
 			}
