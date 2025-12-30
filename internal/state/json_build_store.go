@@ -15,35 +15,16 @@ type jsonBuildStore struct {
 }
 
 func (bs *jsonBuildStore) Create(_ context.Context, build *Build) foundation.Result[*Build, error] {
-	if build == nil {
-		return foundation.Err[*Build, error](
-			errors.ValidationError("build cannot be nil").Build(),
-		)
-	}
-
-	if validationResult := build.Validate(); !validationResult.Valid {
-		return foundation.Err[*Build, error](validationResult.ToError())
-	}
-
-	bs.store.mu.Lock()
-	defer bs.store.mu.Unlock()
-
-	now := time.Now()
-	build.CreatedAt = now
-	build.UpdatedAt = now
-
-	bs.store.builds[build.ID] = build
-
-	if bs.store.autoSaveEnabled {
-		if err := bs.store.saveToDiskUnsafe(); err != nil {
-			delete(bs.store.builds, build.ID)
-			return foundation.Err[*Build, error](
-				errors.InternalError("failed to save build").WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[*Build, error](build)
+	return createEntity(
+		build,
+		"build",
+		&bs.store.mu,
+		func(b *Build) { b.CreatedAt = time.Now(); b.UpdatedAt = b.CreatedAt },
+		func(b *Build) { bs.store.builds[b.ID] = b },
+		func(b *Build) { delete(bs.store.builds, b.ID) },
+		bs.store.autoSaveEnabled,
+		bs.store.saveToDiskUnsafe,
+	)
 }
 
 func (bs *jsonBuildStore) GetByID(_ context.Context, id string) foundation.Result[foundation.Option[*Build], error] {
