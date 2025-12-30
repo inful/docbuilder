@@ -199,12 +199,12 @@ func (c *GitHubClient) GetRepository(ctx context.Context, owner, repo string) (*
 		return nil, err
 	}
 
-	var githubRepo githubRepo
-	if err = c.DoRequest(req, &githubRepo); err != nil {
+	var githubRepository githubRepo
+	if err = c.DoRequest(req, &githubRepository); err != nil {
 		return nil, err
 	}
 
-	return c.convertGitHubRepo(&githubRepo), nil
+	return c.convertGitHubRepo(&githubRepository), nil
 }
 
 // CheckDocumentation checks if repository has docs folder and .docignore.

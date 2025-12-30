@@ -88,8 +88,8 @@ func TestLoadConfig(t *testing.T) {
 	}
 	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-	if _, err := tmpFile.WriteString(configContent); err != nil {
-		t.Fatalf("Failed to write config: %v", err)
+	if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+		t.Fatalf("Failed to write config: %v", writeErr)
 	}
 	_ = tmpFile.Close()
 
@@ -179,8 +179,8 @@ hugo:
 	}
 	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-	if _, err := tmpFile.WriteString(configContent); err != nil {
-		t.Fatalf("Failed to write config: %v", err)
+	if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+		t.Fatalf("Failed to write config: %v", writeErr)
 	}
 	_ = tmpFile.Close()
 
@@ -326,8 +326,8 @@ versioning:
 			}
 			defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-			if _, err := tmpFile.WriteString(tt.configContent); err != nil {
-				t.Fatalf("Failed to write config: %v", err)
+			if _, writeErr := tmpFile.WriteString(tt.configContent); writeErr != nil {
+				t.Fatalf("Failed to write config: %v", writeErr)
 			}
 			_ = tmpFile.Close()
 
@@ -358,7 +358,7 @@ func TestInit(t *testing.T) {
 	}
 
 	// Verify file was created
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+	if _, statErr := os.Stat(configPath); os.IsNotExist(statErr) {
 		t.Fatal("InitV2() did not create config file")
 	}
 
@@ -435,8 +435,8 @@ forges:
 			}
 			defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-			if _, err := tmpFile.WriteString(tt.configContent); err != nil {
-				t.Fatalf("Failed to write config: %v", err)
+			if _, writeErr := tmpFile.WriteString(tt.configContent); writeErr != nil {
+				t.Fatalf("Failed to write config: %v", writeErr)
 			}
 			_ = tmpFile.Close()
 
@@ -490,8 +490,8 @@ hugo:
 	}
 	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-	if _, err := tmpFile.WriteString(configContent); err != nil {
-		t.Fatalf("Failed to write config: %v", err)
+	if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+		t.Fatalf("Failed to write config: %v", writeErr)
 	}
 	_ = tmpFile.Close()
 
@@ -548,8 +548,8 @@ hugo:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 
@@ -620,8 +620,8 @@ hugo:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 
@@ -691,8 +691,8 @@ hugo:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 
@@ -754,8 +754,8 @@ hugo:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 
@@ -817,8 +817,8 @@ hugo:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 
@@ -871,8 +871,8 @@ monitoring:
 		}
 		defer func() { _ = os.Remove(tmpFile.Name()) }()
 
-		if _, err := tmpFile.WriteString(configContent); err != nil {
-			t.Fatalf("Failed to write config: %v", err)
+		if _, writeErr := tmpFile.WriteString(configContent); writeErr != nil {
+			t.Fatalf("Failed to write config: %v", writeErr)
 		}
 		_ = tmpFile.Close()
 

@@ -21,19 +21,19 @@ func TestComputeRepoHashConsistency(t *testing.T) {
 
 	// Create test files
 	testFile := filepath.Join(repoPath, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test content"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	if writeFileErr := os.WriteFile(testFile, []byte("test content"), 0600); writeFileErr != nil {
+		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
 	// Create docs directory
 	docsDir := filepath.Join(repoPath, "docs")
-	if err := os.MkdirAll(docsDir, 0o750); err != nil {
-		t.Fatalf("Failed to create docs dir: %v", err)
+	if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
+		t.Fatalf("Failed to create docs dir: %v", mkdirErr)
 	}
 
 	docsFile := filepath.Join(docsDir, "readme.md")
-	if err := os.WriteFile(docsFile, []byte("# Documentation"), 0600); err != nil {
-		t.Fatalf("Failed to write docs file: %v", err)
+	if writeFileErr := os.WriteFile(docsFile, []byte("# Documentation"), 0600); writeFileErr != nil {
+		t.Fatalf("Failed to write docs file: %v", writeFileErr)
 	}
 
 	// Stage and commit
@@ -42,8 +42,8 @@ func TestComputeRepoHashConsistency(t *testing.T) {
 		t.Fatalf("Failed to get worktree: %v", err)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit, err := w.Commit("Initial commit", &git.CommitOptions{
@@ -90,13 +90,13 @@ func TestComputeRepoHashWithPaths(t *testing.T) {
 	dirs := []string{"docs", "src", "config"}
 	for _, dir := range dirs {
 		dirPath := filepath.Join(repoPath, dir)
-		if err := os.MkdirAll(dirPath, 0o750); err != nil {
-			t.Fatalf("Failed to create dir %s: %v", dir, err)
+		if mkdirErr := os.MkdirAll(dirPath, 0o750); mkdirErr != nil {
+			t.Fatalf("Failed to create dir %s: %v", dir, mkdirErr)
 		}
 
 		file := filepath.Join(dirPath, "file.txt")
-		if err := os.WriteFile(file, []byte(dir+" content"), 0600); err != nil {
-			t.Fatalf("Failed to write file: %v", err)
+		if writeFileErr := os.WriteFile(file, []byte(dir+" content"), 0600); writeFileErr != nil {
+			t.Fatalf("Failed to write file: %v", writeFileErr)
 		}
 	}
 
@@ -105,8 +105,8 @@ func TestComputeRepoHashWithPaths(t *testing.T) {
 		t.Fatalf("Failed to get worktree: %v", err)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit, err := w.Commit("Add directories", &git.CommitOptions{
@@ -161,8 +161,8 @@ func TestComputeRepoHashChangesWithContent(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if err := os.WriteFile(testFile, []byte("version 1"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	if writeFileErr := os.WriteFile(testFile, []byte("version 1"), 0600); writeFileErr != nil {
+		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
 	w, err := repo.Worktree()
@@ -170,8 +170,8 @@ func TestComputeRepoHashChangesWithContent(t *testing.T) {
 		t.Fatalf("Failed to get worktree: %v", err)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit1, err := w.Commit("Version 1", &git.CommitOptions{
@@ -190,12 +190,12 @@ func TestComputeRepoHashChangesWithContent(t *testing.T) {
 	}
 
 	// Modify file and commit again
-	if err := os.WriteFile(testFile, []byte("version 2"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	if writeFileErr := os.WriteFile(testFile, []byte("version 2"), 0600); writeFileErr != nil {
+		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit2, err := w.Commit("Version 2", &git.CommitOptions{
@@ -268,8 +268,8 @@ func TestGetRepoTree(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	if writeFileErr := os.WriteFile(testFile, []byte("test"), 0600); writeFileErr != nil {
+		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
 	w, err := repo.Worktree()
@@ -277,8 +277,8 @@ func TestGetRepoTree(t *testing.T) {
 		t.Fatalf("Failed to get worktree: %v", err)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit, err := w.Commit("Test", &git.CommitOptions{
@@ -324,8 +324,8 @@ func TestComputeRepoHashNonexistentPath(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
-		t.Fatalf("Failed to write file: %v", err)
+	if writeErr := os.WriteFile(testFile, []byte("test"), 0600); writeErr != nil {
+		t.Fatalf("Failed to write file: %v", writeErr)
 	}
 
 	w, err := repo.Worktree()
@@ -333,8 +333,8 @@ func TestComputeRepoHashNonexistentPath(t *testing.T) {
 		t.Fatalf("Failed to get worktree: %v", err)
 	}
 
-	if _, err := w.Add("."); err != nil {
-		t.Fatalf("Failed to add files: %v", err)
+	if _, addErr := w.Add("."); addErr != nil {
+		t.Fatalf("Failed to add files: %v", addErr)
 	}
 
 	commit, err := w.Commit("Test", &git.CommitOptions{

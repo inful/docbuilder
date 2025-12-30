@@ -283,8 +283,8 @@ func TestBaseForge_Integration(t *testing.T) {
 	}
 
 	var getResult map[string]bool
-	if err := bf.DoRequest(req, &getResult); err != nil {
-		t.Errorf("DoRequest() GET error = %v", err)
+	if requestErr := bf.DoRequest(req, &getResult); requestErr != nil {
+		t.Errorf("DoRequest() GET error = %v", requestErr)
 	}
 
 	if !getResult["success"] {
