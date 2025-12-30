@@ -27,10 +27,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	}
 
 	// Resolve target branch early
-	branch, err := resolveTargetBranch(repository, repo)
-	if err != nil {
-		return "", err
-	}
+	branch := resolveTargetBranch(repository, repo)
 
 	// Check if remote HEAD has changed using cache (skip fetch if unchanged)
 	fetchNeeded := true
@@ -117,17 +114,17 @@ func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository)
 
 // resolveTargetBranch determines the branch to update or checkout, following precedence rules:
 // 1. Explicit branch in config, 2. Current HEAD branch, 3. Remote default branch, 4. "main" fallback.
-func resolveTargetBranch(repository *git.Repository, repo appcfg.Repository) (string, error) {
+func resolveTargetBranch(repository *git.Repository, repo appcfg.Repository) string {
 	if repo.Branch != "" {
-		return repo.Branch, nil
+		return repo.Branch
 	}
 	if headRef, err := repository.Head(); err == nil && headRef.Name().IsBranch() {
-		return headRef.Name().Short(), nil
+		return headRef.Name().Short()
 	}
 	if def, err := resolveRemoteDefaultBranch(repository); err == nil && def != "" {
-		return def, nil
+		return def
 	}
-	return "main", nil
+	return "main"
 }
 
 // checkoutAndGetRefs ensures the local branch exists and is checked out, returning both local and remote references.

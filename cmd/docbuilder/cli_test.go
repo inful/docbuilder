@@ -198,11 +198,11 @@ func (env *MockCLIEnvironment) RunCommand(args ...string) *CLIResult {
 	case "build":
 		exitCode, generatedFiles = env.simulateBuildCommand(args[1:])
 	case "discover":
-		exitCode, generatedFiles = env.simulateDiscoverCommand(args[1:])
+		exitCode = env.simulateDiscoverCommand(args[1:])
 	case "daemon":
-		exitCode, generatedFiles = env.simulateDaemonCommand(args[1:])
+		exitCode = env.simulateDaemonCommand(args[1:])
 	case "validate":
-		exitCode, generatedFiles = env.simulateValidateCommand(args[1:])
+		exitCode = env.simulateValidateCommand(args[1:])
 	default:
 		env.errorCapture.WriteString("Unknown command: " + command)
 		exitCode = 1
@@ -338,7 +338,7 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 }
 
 // simulateDiscoverCommand simulates the 'docbuilder discover' command.
-func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) int {
 	env.outputCapture.WriteString("Discovering documentation repositories...\n")
 
 	ctx := context.Background()
@@ -373,27 +373,27 @@ func (env *MockCLIEnvironment) simulateDiscoverCommand(_ []string) (int, []strin
 		env.outputCapture.WriteString("  Coverage: " + strconv.Itoa(coverage) + "%\n")
 	}
 
-	return 0, nil
+	return 0
 }
 
 // simulateDaemonCommand simulates the 'docbuilder daemon' command.
-func (env *MockCLIEnvironment) simulateDaemonCommand(_ []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateDaemonCommand(_ []string) int {
 	env.outputCapture.WriteString("DocBuilder daemon mode\n")
 	env.outputCapture.WriteString("✓ Daemon configuration loaded\n")
 	env.outputCapture.WriteString("✓ Webhook endpoints configured\n")
 	env.outputCapture.WriteString("✓ Background services started\n")
 	env.outputCapture.WriteString("Daemon is running... (simulated)\n")
 
-	return 0, nil
+	return 0
 }
 
 // simulateValidateCommand simulates the 'docbuilder validate' command.
-func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) (int, []string) {
+func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) int {
 	env.outputCapture.WriteString("Validating DocBuilder configuration...\n")
 
 	if env.testConfig == nil {
 		env.errorCapture.WriteString("No configuration found")
-		return 1, nil
+		return 1
 	}
 
 	// Simulate validation checks
@@ -411,7 +411,7 @@ func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) (int, []strin
 
 	env.outputCapture.WriteString("Configuration validation passed!\n")
 
-	return 0, nil
+	return 0
 }
 
 // AssertExitCode checks that the command exited with the expected code.

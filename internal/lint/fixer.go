@@ -88,7 +88,7 @@ type LinkReference struct {
 // Fix attempts to automatically fix issues found in the given path.
 // For interactive use with confirmation prompts, use FixWithConfirmation instead.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
-	return f.fix(path, false)
+	return f.fix(path)
 }
 
 // FixWithConfirmation fixes issues with interactive confirmation prompts.
@@ -99,13 +99,13 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	// If in dry-run mode, no need for confirmation or backup
 	if f.dryRun {
-		return f.fix(path, false)
+		return f.fix(path)
 	}
 
 	// Phase 1: Preview changes (dry-run mode internally)
 	originalDryRun := f.dryRun
 	f.dryRun = true
-	previewResult, err := f.fix(path, false)
+	previewResult, err := f.fix(path)
 	f.dryRun = originalDryRun
 
 	if err != nil {
@@ -143,11 +143,11 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 4: Apply fixes
-	return f.fix(path, true)
+	return f.fix(path)
 }
 
 // fix is the internal implementation that actually performs the fixes.
-func (f *Fixer) fix(path string, skipPrompts bool) (*FixResult, error) {
+func (f *Fixer) fix(path string) (*FixResult, error) {
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {
@@ -189,7 +189,7 @@ func (f *Fixer) fix(path string, skipPrompts bool) (*FixResult, error) {
 	for filePath, issues := range fileIssues {
 		// Check if this is a filename issue that can be fixed
 		if f.canFixFilename(issues) {
-			op := f.renameFile(filePath, issues)
+			op := f.renameFile(filePath)
 			fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
 
 			if op.Success {
@@ -348,7 +348,7 @@ func (f *Fixer) copyFile(src, dst string) error {
 }
 
 // renameFile renames a file to fix filename issues.
-func (f *Fixer) renameFile(oldPath string, issues []Issue) RenameOperation {
+func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	op := RenameOperation{
 		OldPath: oldPath,
 		Success: false,
@@ -1125,7 +1125,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		content, err := os.ReadFile(sourceFile)
 		if err != nil {
 			// Rollback any previous changes
-			f.rollbackLinkUpdates(updatedFiles, backupPaths)
+			f.rollbackLinkUpdates(backupPaths)
 			return nil, fmt.Errorf("failed to read %s: %w", sourceFile, err)
 		}
 
@@ -1187,7 +1187,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			err := os.WriteFile(backupPath, content, 0o644)
 			if err != nil {
 				// Rollback previous changes
-				f.rollbackLinkUpdates(updatedFiles, backupPaths)
+				f.rollbackLinkUpdates(backupPaths)
 				return nil, fmt.Errorf("failed to create backup for %s: %w", sourceFile, err)
 			}
 			backupPaths = append(backupPaths, backupPath)
@@ -1196,7 +1196,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			err = os.WriteFile(sourceFile, []byte(newContent), 0o644)
 			if err != nil {
 				// Rollback previous changes
-				f.rollbackLinkUpdates(updatedFiles, backupPaths)
+				f.rollbackLinkUpdates(backupPaths)
 				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
 			}
 
@@ -1237,7 +1237,7 @@ func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) st
 
 // rollbackLinkUpdates restores files from their backups.
 // This provides transactional rollback on any failure during link updates.
-func (f *Fixer) rollbackLinkUpdates(files []string, backupPaths []string) {
+func (f *Fixer) rollbackLinkUpdates(backupPaths []string) {
 	for _, backupPath := range backupPaths {
 		// Extract original file path by removing .backup suffix
 		originalFile := strings.TrimSuffix(backupPath, ".backup")

@@ -68,7 +68,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	buildStat := &buildStatus{}
 
 	// Initial build
-	if _, err = buildFromLocal(cfg, absDocs); err != nil {
+	if err = buildFromLocal(cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
 		buildStat.setError(err)
 	} else {
@@ -131,7 +131,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 				mu.Unlock()
 
 				slog.Info("Change detected; rebuilding site")
-				if _, err := buildFromLocal(cfg, absDocs); err != nil {
+				if err := buildFromLocal(cfg, absDocs); err != nil {
 					slog.Warn("rebuild failed", "error", err)
 					buildStat.setError(err)
 					// Notify browsers about error so they can display error overlay
@@ -268,7 +268,7 @@ func shouldIgnoreEvent(path string) bool {
 	return false
 }
 
-func buildFromLocal(cfg *config.Config, docsPath string) (bool, error) {
+func buildFromLocal(cfg *config.Config, docsPath string) error {
 	// Prepare discovery objects
 	repos := []config.Repository{{
 		URL:    docsPath,
@@ -280,14 +280,14 @@ func buildFromLocal(cfg *config.Config, docsPath string) (bool, error) {
 	repoPaths := map[string]string{"local": docsPath}
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if len(docFiles) == 0 {
 		slog.Warn("no docs found in local directory", "dir", docsPath)
 	}
 	generator := hugo.NewGenerator(cfg, cfg.Output.Directory)
 	if err := generator.GenerateSite(docFiles); err != nil {
-		return false, err
+		return err
 	}
-	return true, nil
+	return nil
 }

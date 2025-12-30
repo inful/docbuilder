@@ -90,7 +90,7 @@ func (e *EventEmitter) EmitBuildReport(ctx context.Context, buildID string, repo
 
 	// Trigger daemon hooks (like link verification) after event is persisted
 	if e.daemon != nil {
-		return e.daemon.onBuildReportEmitted(ctx, buildID, report)
+		return e.daemon.onBuildReportEmitted(buildID, report)
 	}
 
 	return nil
