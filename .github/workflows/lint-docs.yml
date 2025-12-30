@@ -41,7 +41,7 @@ jobs:
           # sudo mv docbuilder /usr/local/bin/
           
           # Option 2: Install from source (development/testing)
-          go build ./cmd/docbuilder -o /usr/local/bin/docbuilder
+          go build -o /usr/local/bin/docbuilder ./cmd/docbuilder 
       
       - name: Lint Documentation (JSON output)
         id: lint
