@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -13,7 +14,7 @@ import (
 func newTestBuildState() *BuildState {
 	cfg := &cfgpkg.Config{Hugo: cfgpkg.HugoConfig{Title: "T"}}
 	g := NewGenerator(cfg, "")
-	rep := newBuildReport(0, 0)
+	rep := newBuildReport(context.Background(), 0, 0)
 	return newBuildState(g, nil, rep)
 }
 

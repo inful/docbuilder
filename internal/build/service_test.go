@@ -181,7 +181,7 @@ type mockSkipEvaluator struct {
 	skipReport any
 }
 
-func (m *mockSkipEvaluator) Evaluate(repos []any) (any, bool) {
+func (m *mockSkipEvaluator) Evaluate(ctx context.Context, repos []any) (any, bool) {
 	return m.skipReport, m.canSkip
 }
 

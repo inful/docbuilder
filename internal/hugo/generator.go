@@ -160,7 +160,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	for _, f := range docFiles {
 		repoSet[f.Repository] = struct{}{}
 	}
-	report := newBuildReport(len(repoSet), len(docFiles))
+	report := newBuildReport(ctx, len(repoSet), len(docFiles))
 	// Populate observability enrichment fields
 	report.PipelineVersion = 1
 	report.EffectiveRenderMode = string(config.ResolveEffectiveRenderMode(g.config))
@@ -271,7 +271,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 // GenerateFullSite clones repositories, discovers documentation, then executes the standard generation stages.
 // repositories: list of repositories to process. workspaceDir: directory for git operations (created if missing).
 func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.Repository, workspaceDir string) (*BuildReport, error) {
-	report := newBuildReport(0, 0) // counts filled after discovery
+	report := newBuildReport(ctx, 0, 0) // counts filled after discovery
 	report.PipelineVersion = 1
 	report.EffectiveRenderMode = string(config.ResolveEffectiveRenderMode(g.config))
 	// By default full site path includes clone stage; mark skipped=false (may stay false)

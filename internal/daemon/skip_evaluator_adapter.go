@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"context"
+
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
@@ -10,7 +12,7 @@ type skipEvaluatorAdapter struct {
 }
 
 // Evaluate implements build.SkipEvaluator by converting types.
-func (a *skipEvaluatorAdapter) Evaluate(repos []any) (report any, canSkip bool) {
+func (a *skipEvaluatorAdapter) Evaluate(ctx context.Context, repos []any) (report any, canSkip bool) {
 	if a.inner == nil {
 		return nil, false
 	}
@@ -27,7 +29,7 @@ func (a *skipEvaluatorAdapter) Evaluate(repos []any) (report any, canSkip bool) 
 	}
 
 	// Call typed evaluator
-	buildReport, canSkip := a.inner.Evaluate(typedRepos)
+	buildReport, canSkip := a.inner.Evaluate(ctx, typedRepos)
 
 	// Return as any
 	return buildReport, canSkip

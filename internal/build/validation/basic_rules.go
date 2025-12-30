@@ -95,7 +95,7 @@ func (r VersionMismatchRule) Validate(ctx Context) Result {
 	// Check Hugo version (only if Hugo was used in previous build)
 	// Empty previous Hugo version means Hugo wasn't executed
 	if ctx.PrevReport.HugoVersion != "" {
-		currentHugoVersion := hugo.DetectHugoVersion()
+		currentHugoVersion := hugo.DetectHugoVersion(ctx.Context)
 		if currentHugoVersion != ctx.PrevReport.HugoVersion {
 			return Failure("hugo version changed")
 		}

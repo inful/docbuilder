@@ -10,7 +10,7 @@ import (
 // DetectHugoVersion attempts to detect the version of the hugo binary on PATH.
 // Returns the version string (e.g., "0.152.2") or empty string if detection fails.
 // This is best-effort and will not error if hugo is unavailable.
-func DetectHugoVersion() string {
+func DetectHugoVersion(ctx context.Context) string {
 	// Check if hugo is available
 	hugoPath, err := exec.LookPath("hugo")
 	if err != nil {
@@ -18,7 +18,7 @@ func DetectHugoVersion() string {
 	}
 
 	// Run hugo version command
-	cmd := exec.CommandContext(context.Background(), hugoPath, "version")
+	cmd := exec.CommandContext(ctx, hugoPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return ""

@@ -1,6 +1,8 @@
 package daemon
 
 import (
+	"context"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -26,6 +28,6 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 
 // Evaluate returns (report, true) when the build can be skipped, otherwise (nil, false).
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
-func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bool) {
-	return se.validator.Evaluate(repos)
+func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*hugo.BuildReport, bool) {
+	return se.validator.Evaluate(ctx, repos)
 }

@@ -24,7 +24,7 @@ type HugoGeneratorFactory func(cfg any, outputDir string) HugoGenerator
 // SkipEvaluator evaluates whether a build can be skipped due to no changes.
 // Returns a skip report and true if skip is possible, otherwise nil and false.
 type SkipEvaluator interface {
-	Evaluate(repos []any) (report any, canSkip bool)
+	Evaluate(ctx context.Context, repos []any) (report any, canSkip bool)
 }
 
 // SkipEvaluatorFactory creates a SkipEvaluator for a given output directory.
@@ -128,7 +128,7 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 				repos[i] = repo
 			}
 
-			if skipReport, canSkip := evaluator.Evaluate(repos); canSkip {
+			if skipReport, canSkip := evaluator.Evaluate(ctx, repos); canSkip {
 				observability.InfoContext(ctx, "Build skipped - no changes detected")
 				result.Status = BuildStatusSkipped
 				result.Skipped = true
