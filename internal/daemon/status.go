@@ -230,7 +230,7 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 //
 //nolint:unparam // generateRepositoryStatus currently never returns an error.
 func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
-	var repositories = make([]RepositoryStatus, 0)
+	repositories := make([]RepositoryStatus, 0)
 
 	// Use cached discovery result for fast response
 	result, discoveryErr := d.discoveryCache.Get()

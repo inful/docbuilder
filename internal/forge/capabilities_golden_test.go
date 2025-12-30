@@ -16,7 +16,7 @@ func TestGoldenForgeCapabilities(t *testing.T) {
 		SupportsWebhooks  bool             `json:"webhooks"`
 		SupportsTopics    bool             `json:"topics"`
 	}
-	var rows = make([]row, 0, len(capabilities))
+	rows := make([]row, 0, len(capabilities))
 	for ft, c := range capabilities {
 		rows = append(rows, row{Forge: ft, SupportsEditLinks: c.SupportsEditLinks, SupportsWebhooks: c.SupportsWebhooks, SupportsTopics: c.SupportsTopics})
 	}

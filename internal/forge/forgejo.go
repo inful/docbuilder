@@ -166,7 +166,7 @@ func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []st
 		}
 	}
 
-	var allRepos = make([]*Repository, 0, len(repoMap))
+	allRepos := make([]*Repository, 0, len(repoMap))
 	for _, r := range repoMap {
 		allRepos = append(allRepos, r)
 	}
@@ -406,7 +406,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 
-	var commits = make([]WebhookCommit, 0, len(pushEvent.Commits))
+	commits := make([]WebhookCommit, 0, len(pushEvent.Commits))
 	for _, commit := range pushEvent.Commits {
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,

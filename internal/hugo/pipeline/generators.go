@@ -129,7 +129,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		}
 	}
 
-	var generated = make([]*Document, 0)
+	generated := make([]*Document, 0)
 
 	// Generate indexes for missing sections
 
