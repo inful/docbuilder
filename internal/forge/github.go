@@ -335,7 +335,10 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 			repoMap["id"] = intID
 		}
 	}
-	repoBytes, _ := json.Marshal(repoMap)
+	repoBytes, marshalErr := json.Marshal(repoMap)
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
 	var repo githubRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
 		return nil, err
@@ -404,7 +407,10 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 			repoMap["id"] = intID
 		}
 	}
-	repoBytes, _ := json.Marshal(repoMap)
+	repoBytes, marshalErr := json.Marshal(repoMap)
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
 	var repo githubRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
 		return nil, err

@@ -185,8 +185,14 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	err = yaml.Unmarshal(goldenData, &expected)
 	require.NoError(t, err, "failed to parse golden config")
 
-	actualJSON, _ := json.MarshalIndent(actual, "", "  ")
-	expectedJSON, _ := json.MarshalIndent(expected, "", "  ")
+	actualJSON, marshalErr := json.MarshalIndent(actual, "", "  ")
+	if marshalErr != nil {
+		t.Fatalf("failed to marshal actual content structure: %v", marshalErr)
+	}
+	expectedJSON, marshalErr := json.MarshalIndent(expected, "", "  ")
+	if marshalErr != nil {
+		t.Fatalf("failed to marshal expected content structure: %v", marshalErr)
+	}
 
 	require.JSONEq(t, string(expectedJSON), string(actualJSON), "Hugo config mismatch")
 }
@@ -304,8 +310,14 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 	err = json.Unmarshal(goldenData, &expected)
 	require.NoError(t, err, "failed to parse golden content structure")
 
-	actualJSON, _ := json.MarshalIndent(actual, "", "  ")
-	expectedJSON, _ := json.MarshalIndent(expected, "", "  ")
+	actualJSON, marshalErr := json.MarshalIndent(actual, "", "  ")
+	if marshalErr != nil {
+		t.Fatalf("failed to marshal actual content structure: %v", marshalErr)
+	}
+	expectedJSON, marshalErr := json.MarshalIndent(expected, "", "  ")
+	if marshalErr != nil {
+		t.Fatalf("failed to marshal expected content structure: %v", marshalErr)
+	}
 
 	// If content structures don't match, provide detailed diff of mismatched files
 	if !bytes.Equal(expectedJSON, actualJSON) {

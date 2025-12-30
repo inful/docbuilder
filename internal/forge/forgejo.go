@@ -395,7 +395,10 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 			repoMap["id"] = intID
 		}
 	}
-	repoBytes, _ := json.Marshal(repoMap)
+	repoBytes, marshalErr := json.Marshal(repoMap)
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
 	var repo forgejoRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
 		return nil, err

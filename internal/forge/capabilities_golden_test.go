@@ -21,7 +21,10 @@ func TestGoldenForgeCapabilities(t *testing.T) {
 		rows = append(rows, row{Forge: ft, SupportsEditLinks: c.SupportsEditLinks, SupportsWebhooks: c.SupportsWebhooks, SupportsTopics: c.SupportsTopics})
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Forge < rows[j].Forge })
-	gotBytes, _ := json.Marshal(rows)
+	gotBytes, err := json.Marshal(rows)
+	if err != nil {
+		t.Fatalf("failed to marshal rows: %v", err)
+	}
 	got := string(gotBytes)
 	const expected = `[{"forge":"forgejo","edit_links":true,"webhooks":true,"topics":false},{"forge":"github","edit_links":true,"webhooks":true,"topics":true},{"forge":"gitlab","edit_links":true,"webhooks":true,"topics":true}]`
 	if got != expected {
