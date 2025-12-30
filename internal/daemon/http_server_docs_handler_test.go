@@ -12,7 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// TestDocsHandlerStaticRoot tests serving files when public directory exists
+// TestDocsHandlerStaticRoot tests serving files when public directory exists.
 func TestDocsHandlerStaticRoot(t *testing.T) {
 	// Create temp directory structure
 	tmpDir := t.TempDir()
@@ -20,7 +20,7 @@ func TestDocsHandlerStaticRoot(t *testing.T) {
 	if err := os.MkdirAll(publicDir, 0o755); err != nil {
 		t.Fatalf("failed to create public dir: %v", err)
 	}
-	
+
 	// Create a test file in public directory
 	testFile := filepath.Join(publicDir, "index.html")
 	content := []byte("<html><body>Test Content</body></html>")
@@ -56,7 +56,7 @@ func TestDocsHandlerStaticRoot(t *testing.T) {
 	}
 }
 
-// TestDocsHandlerNoBuildPendingPage tests showing pending page when no build exists
+// TestDocsHandlerNoBuildPendingPage tests showing pending page when no build exists.
 func TestDocsHandlerNoBuildPendingPage(t *testing.T) {
 	// Create temp directory without public subdirectory
 	tmpDir := t.TempDir()
@@ -120,7 +120,7 @@ func TestDocsHandlerNoBuildPendingPage(t *testing.T) {
 	}
 }
 
-// TestDocsHandlerBuildErrorPage tests showing error page when build fails
+// TestDocsHandlerBuildErrorPage tests showing error page when build fails.
 func TestDocsHandlerBuildErrorPage(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -150,30 +150,13 @@ func TestDocsHandlerBuildErrorPage(t *testing.T) {
 	// Simulate the complex error checking logic
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := srv.resolveDocsRoot()
-		out := srv.config.Output.Directory
-		if !filepath.IsAbs(out) {
-			if abs, err := filepath.Abs(out); err == nil {
-				out = abs
-			}
+		out := resolveOutputDirectory(srv.config.Output.Directory)
+		
+		if shouldShowBuildError(srv, root, out) {
+			serveBuildErrorPage(w, srv.daemon.buildStatus)
+			return
 		}
-		if root == out {
-			if _, err := os.Stat(filepath.Join(out, "public")); os.IsNotExist(err) {
-				// Check if there's a build error
-				if srv.daemon != nil && srv.daemon.buildStatus != nil {
-					if hasError, buildErr, hasGoodBuild := srv.daemon.buildStatus.getStatus(); hasError && !hasGoodBuild {
-						// Build failed - show error page
-						w.Header().Set("Content-Type", "text/html; charset=utf-8")
-						w.WriteHeader(http.StatusServiceUnavailable)
-						errorMsg := "Unknown error"
-						if buildErr != nil {
-							errorMsg = buildErr.Error()
-						}
-						_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title></head><body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build.</p><h2>Error Details:</h2><pre>` + errorMsg + `</pre></body></html>`))
-						return
-					}
-				}
-			}
-		}
+		
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 	rootHandler.ServeHTTP(rec, req)
@@ -192,7 +175,52 @@ func TestDocsHandlerBuildErrorPage(t *testing.T) {
 	}
 }
 
-// TestDocsHandlerWithLiveReload tests that livereload script is injected when enabled
+// resolveOutputDirectory resolves the output directory to an absolute path.
+func resolveOutputDirectory(dir string) string {
+	if !filepath.IsAbs(dir) {
+		if abs, err := filepath.Abs(dir); err == nil {
+			return abs
+		}
+	}
+	return dir
+}
+
+// shouldShowBuildError determines if a build error page should be displayed.
+func shouldShowBuildError(srv *HTTPServer, root, out string) bool {
+	if root != out {
+		return false
+	}
+
+	_, err := os.Stat(filepath.Join(out, "public"))
+	if !os.IsNotExist(err) {
+		return false
+	}
+
+	if srv.daemon == nil || srv.daemon.buildStatus == nil {
+		return false
+	}
+
+	hasError, _, hasGoodBuild := srv.daemon.buildStatus.getStatus()
+	return hasError && !hasGoodBuild
+}
+
+// serveBuildErrorPage writes a build error page to the response.
+func serveBuildErrorPage(w http.ResponseWriter, status interface{ getStatus() (bool, error, bool) }) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusServiceUnavailable)
+	
+	errorMsg := "Unknown error"
+	if _, buildErr, _ := status.getStatus(); buildErr != nil {
+		errorMsg = buildErr.Error()
+	}
+	
+	html := `<!doctype html><html><head><meta charset="utf-8"><title>Build Failed</title></head>` +
+		`<body><h1>⚠️ Build Failed</h1><p>The documentation site failed to build.</p>` +
+		`<h2>Error Details:</h2><pre>` + errorMsg + `</pre></body></html>`
+	_, _ = w.Write([]byte(html))
+}
+
+// TestDocsHandlerWithLiveReload tests that livereload script is injected when enabled.
 func TestDocsHandlerWithLiveReload(t *testing.T) {
 	tmpDir := t.TempDir()
 
@@ -263,7 +291,7 @@ func (e *testError) Error() string {
 	return e.msg
 }
 
-// buildStatusTracker is a simplified version for testing
+// buildStatusTracker is a simplified version for testing.
 type buildStatusTracker struct {
 	hasError     bool
 	lastErr      error
