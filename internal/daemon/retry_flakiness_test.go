@@ -18,7 +18,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 	for i := range iterations {
 		t.Run("transient_then_success_iter_"+strconv.Itoa(i), func(t *testing.T) {
 			fr := newFakeRecorder()
-			tr, terr := transientReport(hugo.StageCloneRepos)
+			tr, terr := transientReport()
 			mb := &mockBuilder{seq: []struct {
 				rep *hugo.BuildReport
 				err error
@@ -43,7 +43,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 					t.Fatalf("timeout waiting (transient success) iter %d", i)
 				}
 			}
-			if got := fr.getRetry(string(hugo.StageCloneRepos)); got != 1 {
+			if got := fr.getRetry(); got != 1 {
 				t.Fatalf("expected 1 retry got %d", got)
 			}
 		})
@@ -77,7 +77,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 					t.Fatalf("timeout waiting (fatal no retry) iter %d", i)
 				}
 			}
-			if got := fr.getRetry(string(hugo.StageCloneRepos)); got != 0 {
+			if got := fr.getRetry(); got != 0 {
 				t.Fatalf("expected 0 retries got %d", got)
 			}
 		})

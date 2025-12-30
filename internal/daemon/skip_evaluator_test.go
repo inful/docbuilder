@@ -43,10 +43,7 @@ func newTestGenerator(_ *testing.T, cfg *cfg.Config, outDir string) *hugo.Genera
 }
 
 // writePrevReport helper writes a build-report.json with the provided fields and updates checksum state.
-func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, docHash string, st *fakeSkipState) {
-	// Reference unused parameter to satisfy unparam
-	// nolint:unparam // Test helper accepts fixed values in call sites by design.
-	_ = repos
+func writePrevReport(t *testing.T, outDir string, files, rendered int, docHash string, st *fakeSkipState) {
 	prev := struct {
 		Repositories      int    `json:"repositories"`
 		Files             int    `json:"files"`
@@ -54,7 +51,7 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 		DocFilesHash      string `json:"doc_files_hash"`
 		DocBuilderVersion string `json:"doc_builder_version"`
 		HugoVersion       string `json:"hugo_version"`
-	}{repos, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
+	}{1, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
 	b, err := json.Marshal(prev)
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
@@ -98,7 +95,7 @@ func TestSkipEvaluator_SkipHappyPath(t *testing.T) {
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
 	st.repoLastCommit[repo.URL] = "deadbeef"
 	st.repoDocHash[repo.URL] = "abc123"
-	writePrevReport(t, out, 1, 2, 2, "abc123", st)
+	writePrevReport(t, out, 2, 2, "abc123", st)
 	st.lastGlobalDocFiles = "abc123"
 	rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo})
 	if !ok {
@@ -131,7 +128,7 @@ func TestSkipEvaluator_ConfigHashChange(t *testing.T) {
 	conf1.Hugo.Title = "A"
 	conf1.Repositories = []cfg.Repository{repo}
 	gen1 := newTestGenerator(t, conf1, out)
-	writePrevReport(t, out, 1, 1, 1, "h1", st)
+	writePrevReport(t, out, 1, 1, "h1", st)
 	// store old hash then mutate config to change hash
 	st.lastConfigHash = gen1.ComputeConfigHashForPersistence()
 	conf1.Hugo.Title = "B" // forces a different hash for new generator
@@ -161,7 +158,7 @@ func TestSkipEvaluator_PublicDirMissing(t *testing.T) {
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
 	st.repoLastCommit[repo.URL] = "c1"
 	st.repoDocHash[repo.URL] = "h1"
-	writePrevReport(t, out, 1, 1, 1, "h1", st)
+	writePrevReport(t, out, 1, 1, "h1", st)
 	st.lastGlobalDocFiles = "h1"
 	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (no public dir)")
@@ -199,7 +196,7 @@ func setupHashMismatchTest(t *testing.T) (outDir string, st *fakeSkipState, repo
 func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 	out, st, repo, gen := setupHashMismatchTest(t)
 	st.repoDocHash[repo.URL] = "other" // mismatch with report
-	writePrevReport(t, out, 1, 1, 1, "match", st)
+	writePrevReport(t, out, 1, 1, "match", st)
 	st.lastGlobalDocFiles = "match"
 	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (per-repo hash mismatch)")
@@ -210,7 +207,7 @@ func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 func TestSkipEvaluator_GlobalHashMismatch(t *testing.T) {
 	out, st, repo, gen := setupHashMismatchTest(t)
 	st.repoDocHash[repo.URL] = "H" // matches report but global differs
-	writePrevReport(t, out, 1, 1, 1, "H", st)
+	writePrevReport(t, out, 1, 1, "H", st)
 	st.lastGlobalDocFiles = "DIFF"
 	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (global hash mismatch)")
@@ -239,7 +236,7 @@ func TestSkipEvaluator_MissingCommit(t *testing.T) {
 	conf1.Repositories = []cfg.Repository{repo}
 	gen := newTestGenerator(t, conf1, out)
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
-	writePrevReport(t, out, 1, 1, 1, "H", st)
+	writePrevReport(t, out, 1, 1, "H", st)
 	st.repoDocHash[repo.URL] = "H"
 	st.lastGlobalDocFiles = "H"
 	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo}); ok || rep != nil {
@@ -271,7 +268,7 @@ func TestSkipEvaluator_SetsTimestampsOnSkip(t *testing.T) {
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
 	st.repoLastCommit[repo.URL] = "c1"
 	st.repoDocHash[repo.URL] = "X"
-	writePrevReport(t, out, 1, 5, 5, "X", st)
+	writePrevReport(t, out, 5, 5, "X", st)
 	st.lastGlobalDocFiles = "X"
 	rep, ok := NewSkipEvaluator(out, st, gen).Evaluate([]cfg.Repository{repo})
 	if !ok || rep == nil {

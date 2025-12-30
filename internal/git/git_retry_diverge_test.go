@@ -65,24 +65,21 @@ func TestIsPermanentGitError(t *testing.T) {
 	}
 }
 
-// helper to add a file and commit returning hash.
-func addFileAndCommit(repo *git.Repository, repoPath, filename, content, msg string) (plumbing.Hash, error) {
+// helper to add a file and commit.
+func addFileAndCommit(repo *git.Repository, repoPath, filename, content, msg string) error {
 	wt, err := repo.Worktree()
 	if err != nil {
-		return plumbing.Hash{}, err
+		return err
 	}
 	full := filepath.Join(repoPath, filename)
 	if writeFileErr := os.WriteFile(full, []byte(content), 0o600); writeFileErr != nil {
-		return plumbing.Hash{}, writeFileErr
+		return writeFileErr
 	}
 	if _, addErr := wt.Add(filename); addErr != nil {
-		return plumbing.Hash{}, addErr
+		return addErr
 	}
-	hash, err := wt.Commit(msg, &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "t@example.com", When: time.Now()}})
-	if err != nil {
-		return plumbing.Hash{}, err
-	}
-	return hash, nil
+	_, err = wt.Commit(msg, &git.CommitOptions{Author: &object.Signature{Name: "tester", Email: "t@example.com", When: time.Now()}})
+	return err
 }
 
 // TestDivergenceHandling verifies divergence error vs hard reset behavior.
@@ -104,7 +101,7 @@ func TestDivergenceHandling(t *testing.T) {
 		t.Fatalf("create remote: %v", remoteErr)
 	}
 
-	if _, commitErr := addFileAndCommit(workRepo, workPath, "a.txt", "A", "A"); commitErr != nil {
+	if commitErr := addFileAndCommit(workRepo, workPath, "a.txt", "A", "A"); commitErr != nil {
 		t.Fatalf("commit A: %v", commitErr)
 	}
 	if pushErr := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); pushErr != nil {
@@ -126,12 +123,12 @@ func TestDivergenceHandling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open local: %v", err)
 	}
-	if _, commitErr := addFileAndCommit(localRepo, localPath, "b.txt", "B", "B"); commitErr != nil {
+	if commitErr := addFileAndCommit(localRepo, localPath, "b.txt", "B", "B"); commitErr != nil {
 		t.Fatalf("commit B: %v", commitErr)
 	}
 
 	// Create commit C in remote working repo (still pointing to parent A) and push
-	if _, commitErr := addFileAndCommit(workRepo, workPath, "c.txt", "C", "C"); commitErr != nil {
+	if commitErr := addFileAndCommit(workRepo, workPath, "c.txt", "C", "C"); commitErr != nil {
 		t.Fatalf("commit C: %v", commitErr)
 	}
 	if pushErr := workRepo.Push(&git.PushOptions{RemoteName: "origin"}); pushErr != nil {
