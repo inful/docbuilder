@@ -155,40 +155,15 @@ func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*R
 
 // fetchAndConvertRepos is a helper that fetches paginated repositories and converts them.
 func (c *GitHubClient) fetchAndConvertRepos(ctx context.Context, endpoint string, pageSize int) ([]*Repository, error) {
-	githubRepos, err := PaginatedFetchHelper(
+	return fetchAndConvertReposGeneric(
+		c.BaseForge,
 		ctx,
 		endpoint,
 		"page",
 		"per_page",
 		pageSize,
-		func(ep string) ([]githubRepo, bool, error) {
-			req, err := c.NewRequest(ctx, "GET", ep, nil)
-			if err != nil {
-				return nil, false, err
-			}
-
-			var repos []githubRepo
-			if err := c.DoRequest(req, &repos); err != nil {
-				return nil, false, err
-			}
-
-			// Has more if we got a full page
-			hasMore := len(repos) >= pageSize
-			return repos, hasMore, nil
-		},
+		c.convertGitHubRepo,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to common Repository format
-	allRepos := make([]*Repository, 0, len(githubRepos))
-	for i := range githubRepos {
-		repo := c.convertGitHubRepo(&githubRepos[i])
-		allRepos = append(allRepos, repo)
-	}
-
-	return allRepos, nil
 }
 
 // GetRepository gets detailed information about a specific repository.
