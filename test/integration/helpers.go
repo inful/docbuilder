@@ -431,28 +431,42 @@ func buildStructureTree(rootDir string) map[string]any {
 		relPath, _ := filepath.Rel(rootDir, path)
 		parts := strings.Split(relPath, string(filepath.Separator))
 
-		current := tree
-		for i, part := range parts {
-			if i == len(parts)-1 {
-				if info.IsDir() {
-					if _, exists := current[part]; !exists {
-						current[part] = make(map[string]any)
-					}
-				} else {
-					current[part] = map[string]any{}
-				}
-			} else {
-				if _, exists := current[part]; !exists {
-					current[part] = make(map[string]any)
-				}
-				current = current[part].(map[string]any)
-			}
-		}
-
+		addPathToTree(tree, parts, info.IsDir())
 		return nil
 	})
 
 	return tree
+}
+
+// addPathToTree adds a file or directory path to the structure tree.
+func addPathToTree(tree map[string]any, parts []string, isDir bool) {
+	current := tree
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			addFinalPart(current, part, isDir)
+		} else {
+			current = ensureIntermediateDir(current, part)
+		}
+	}
+}
+
+// addFinalPart adds the final file or directory to the tree.
+func addFinalPart(current map[string]any, part string, isDir bool) {
+	if isDir {
+		if _, exists := current[part]; !exists {
+			current[part] = make(map[string]any)
+		}
+	} else {
+		current[part] = map[string]any{}
+	}
+}
+
+// ensureIntermediateDir ensures an intermediate directory exists in the tree.
+func ensureIntermediateDir(current map[string]any, part string) map[string]any {
+	if _, exists := current[part]; !exists {
+		current[part] = make(map[string]any)
+	}
+	return current[part].(map[string]any)
 }
 
 // runGoldenTest is a helper that executes a golden test with standard setup.
