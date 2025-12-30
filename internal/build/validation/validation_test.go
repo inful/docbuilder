@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -105,7 +106,7 @@ func TestSkipEvaluator_ValidationRulesIntegration(t *testing.T) {
 	st.lastGlobalDocFiles = "abc123"
 
 	evaluator := NewSkipEvaluator(out, st, gen)
-	rep, ok := evaluator.Evaluate([]cfg.Repository{repo})
+	rep, ok := evaluator.Evaluate(context.Background(), []cfg.Repository{repo})
 
 	if !ok {
 		t.Fatalf("expected skip to succeed")
@@ -121,7 +122,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := BasicPrerequisitesRule{}
 
 		// Valid context
-		ctx := Context{
+		ctx := Context{Context: context.Background(), 
 			State:     &fakeSkipState{},
 			Generator: &hugo.Generator{},
 			Repos:     []cfg.Repository{{Name: "test"}},
@@ -149,7 +150,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid hash
 		hash := gen.ComputeConfigHashForPersistence()
 		st.lastConfigHash = hash
-		ctx := Context{State: st, Generator: gen}
+		ctx := Context{Context: context.Background(), State: st, Generator: gen}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -175,7 +176,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o600); err != nil {
 			t.Fatalf("write index.html: %v", err)
 		}
-		ctx := Context{OutDir: out}
+		ctx := Context{Context: context.Background(), OutDir: out}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -194,7 +195,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := ContentIntegrityRule{}
 
 		// Skip when no previous files
-		ctx := Context{PrevReport: &PreviousReport{Files: 0}}
+		ctx := Context{Context: context.Background(), PrevReport: &PreviousReport{Files: 0}}
 		result := rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success (skip), got failure: %s", result.Reason)
@@ -209,7 +210,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o600); err != nil {
 			t.Fatalf("write test.md: %v", err)
 		}
-		ctx = Context{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
+		ctx = Context{Context: context.Background(), OutDir: out, PrevReport: &PreviousReport{Files: 1}}
 		result = rule.Validate(ctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
@@ -220,14 +221,14 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := VersionMismatchRule{}
 
 		// No previous report
-		ctx := Context{PrevReport: nil}
+		ctx := Context{Context: context.Background(), PrevReport: nil}
 		result := rule.Validate(ctx)
 		if result.Passed {
 			t.Errorf("expected failure when no previous report")
 		}
 
 		// Same versions (no Hugo)
-		ctx = Context{
+		ctx = Context{Context: context.Background(), 
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "2.1.0-dev", // Should match version.Version in tests
 				HugoVersion:       "",          // No Hugo used
@@ -239,7 +240,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		}
 
 		// DocBuilder version changed
-		ctx = Context{
+		ctx = Context{Context: context.Background(), 
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "1.0.0", // Different from current
 				HugoVersion:       "",
@@ -256,7 +257,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Hugo version changed (detected vs previous)
 		// Note: This test assumes DetectHugoVersion() returns something or empty
 		// In CI without Hugo, DetectHugoVersion() returns "" so we test that case
-		ctx = Context{
+		ctx = Context{Context: context.Background(), 
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "2.1.0-dev",
 				HugoVersion:       "0.100.0", // Any previous Hugo version
@@ -278,7 +279,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("all rules pass", func(t *testing.T) {
 		chain := NewRuleChain(successRule, successRule)
-		result := chain.Validate(Context{})
+		result := chain.Validate(Context{Context: context.Background(), })
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -286,7 +287,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("early failure stops chain", func(t *testing.T) {
 		chain := NewRuleChain(successRule, failureRule, successRule)
-		result := chain.Validate(Context{})
+		result := chain.Validate(Context{Context: context.Background(), })
 		if result.Passed {
 			t.Errorf("expected failure, got success")
 		}

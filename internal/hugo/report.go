@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -141,7 +142,7 @@ type StageCount struct {
 	Canceled int
 }
 
-func newBuildReport(repos, files int) *BuildReport {
+func newBuildReport(ctx context.Context, repos, files int) *BuildReport {
 	return &BuildReport{
 		SchemaVersion:     1,
 		Repositories:      repos,
@@ -152,7 +153,7 @@ func newBuildReport(repos, files int) *BuildReport {
 		StageCounts:       make(map[StageName]StageCount),
 		IndexTemplates:    make(map[string]IndexTemplateInfo),
 		DocBuilderVersion: getDocBuilderVersion(),
-		HugoVersion:       DetectHugoVersion(),
+		HugoVersion:       DetectHugoVersion(ctx),
 		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
 	}
 }

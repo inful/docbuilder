@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 // ignore duration numeric drift by clamping to milliseconds. The golden can be updated intentionally
 // when schema additions occur (additive changes require appending keys, not removing existing ones).
 func TestBuildReportStability(t *testing.T) {
-	r := newBuildReport(1, 3)
+	r := newBuildReport(context.Background(), 1, 3)
 	r.ClonedRepositories = 1
 	r.RenderedPages = 3
 	r.StageDurations["prepare_output"] = 123 * time.Millisecond

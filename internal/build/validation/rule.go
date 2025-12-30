@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"log/slog"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
@@ -20,6 +21,7 @@ type SkipStateAccess interface {
 
 // Context contains all the data needed by validation rules.
 type Context struct {
+	Context    context.Context
 	OutDir     string
 	State      SkipStateAccess
 	Generator  *hugo.Generator

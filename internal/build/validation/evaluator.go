@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -34,8 +35,9 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 
 // Evaluate returns (report, true) when the build can be skipped, otherwise (nil, false).
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
-func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bool) {
-	ctx := Context{
+func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*hugo.BuildReport, bool) {
+	vctx := Context{
+		Context:   ctx,
 		OutDir:    se.outDir,
 		State:     se.state,
 		Generator: se.generator,
@@ -44,7 +46,7 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 	}
 
 	// Special handling for PreviousReportRule since it needs to populate context
-	if !se.validateAndPopulateContext(&ctx) {
+	if !se.validateAndPopulateContext(&vctx) {
 		return nil, false
 	}
 
@@ -57,13 +59,13 @@ func (se *SkipEvaluator) Evaluate(repos []cfg.Repository) (*hugo.BuildReport, bo
 		CommitMetadataRule{},
 	)
 
-	result := remainingRules.Validate(ctx)
+	result := remainingRules.Validate(vctx)
 	if !result.Passed {
 		return nil, false
 	}
 
 	// All validation rules passed - construct skip report
-	return se.constructSkipReport(ctx)
+	return se.constructSkipReport(vctx)
 }
 
 // validateAndPopulateContext runs the initial validation rules and populates the context.
