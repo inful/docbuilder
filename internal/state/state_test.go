@@ -359,7 +359,8 @@ func TestStateService(t *testing.T) {
 			t.Fatalf("Failed to start service: %v", err)
 		}
 
-		// Test health
+		// Test health (Health() creates its own context internally)
+		//nolint:contextcheck // Health() intentionally creates its own context for health checks
 		health := service.Health()
 		if health.Status != "healthy" {
 			t.Errorf("Expected healthy status, got %q with message: %s", health.Status, health.Message)

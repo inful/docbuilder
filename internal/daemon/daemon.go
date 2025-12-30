@@ -470,7 +470,7 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 
 // onBuildReportEmitted is called after a build report is emitted to the event store.
 // This is where we trigger post-build hooks like link verification and state updates.
-func (d *Daemon) onBuildReportEmitted(buildID string, report *hugo.BuildReport) error {
+func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *hugo.BuildReport) error {
 	// Update state manager after successful builds
 	// This is critical for skip evaluation to work correctly on subsequent builds
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.stateManager != nil && d.config != nil {
@@ -489,7 +489,7 @@ func (d *Daemon) onBuildReportEmitted(buildID string, report *hugo.BuildReport) 
 		}(),
 		"verifier_nil", d.linkVerifier == nil)
 	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.linkVerifier != nil {
-		go d.verifyLinksAfterBuild(buildID)
+		go d.verifyLinksAfterBuild(ctx, buildID)
 	}
 
 	return nil
@@ -570,9 +570,9 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 
 // verifyLinksAfterBuild runs link verification in the background after a successful build.
 // This is a low-priority task that doesn't block the build pipeline.
-func (d *Daemon) verifyLinksAfterBuild(buildID string) {
-	// Create background context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+func (d *Daemon) verifyLinksAfterBuild(ctx context.Context, buildID string) {
+	// Create background context with timeout (derived from parent ctx)
+	verifyCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 
 	slog.Info("Starting link verification for build", "build_id", buildID)
@@ -587,7 +587,7 @@ func (d *Daemon) verifyLinksAfterBuild(buildID string) {
 	}
 
 	// Verify links
-	if err := d.linkVerifier.VerifyPages(ctx, pages); err != nil {
+	if err := d.linkVerifier.VerifyPages(verifyCtx, pages); err != nil {
 		slog.Warn("Link verification encountered errors",
 			"build_id", buildID,
 			"error", err)
@@ -938,12 +938,12 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-ticker.C:
 			d.updateStatus()
 		case <-initialDiscoveryTimer.C:
-			go d.discoveryRunner.SafeRun(d.GetStatus)
+			go d.discoveryRunner.SafeRun(ctx, d.GetStatus)
 		case <-discoveryTicker.C:
 			slog.Info("Scheduled tick", slog.Duration("interval", discoveryInterval))
 			// For forge-based discovery, run discovery
 			if len(d.config.Forges) > 0 {
-				go d.discoveryRunner.SafeRun(d.GetStatus)
+				go d.discoveryRunner.SafeRun(ctx, d.GetStatus)
 			}
 			// For explicit repositories, trigger a build to check for updates
 			if len(d.config.Repositories) > 0 {

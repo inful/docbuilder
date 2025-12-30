@@ -44,7 +44,7 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -64,7 +64,7 @@ func (h *MonitoringHandlers) HandleHealthCheck(w http.ResponseWriter, r *http.Re
 	if err := writeJSONPretty(w, r, http.StatusOK, health); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write health response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }
 
@@ -75,7 +75,7 @@ func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Reques
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -92,6 +92,6 @@ func (h *MonitoringHandlers) HandleMetrics(w http.ResponseWriter, r *http.Reques
 	if err := writeJSONPretty(w, r, http.StatusOK, metrics); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write metrics response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }

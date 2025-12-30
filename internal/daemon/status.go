@@ -322,7 +322,7 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to generate status data").
 			Build()
-		errorAdapter.WriteErrorResponse(w, internalErr)
+		errorAdapter.WriteErrorResponse(w, r, internalErr)
 		return
 	}
 
@@ -342,7 +342,7 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 		if encodeErr := json.NewEncoder(w).Encode(statusData); encodeErr != nil {
 			slog.Error("failed to encode status json", logfields.Error(encodeErr))
 			internalErr := errors.WrapError(encodeErr, errors.CategoryInternal, "failed to encode status json").Build()
-			errorAdapter.WriteErrorResponse(w, internalErr)
+			errorAdapter.WriteErrorResponse(w, r, internalErr)
 		}
 		return
 	}
@@ -452,14 +452,14 @@ func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to parse status template").
 			Build()
-		errorAdapter.WriteErrorResponse(w, internalErr)
+		errorAdapter.WriteErrorResponse(w, r, internalErr)
 		return
 	}
 
 	if err := t.Execute(w, statusData); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to render status template").
 			Build()
-		errorAdapter.WriteErrorResponse(w, internalErr)
+		errorAdapter.WriteErrorResponse(w, r, internalErr)
 		return
 	}
 }

@@ -60,6 +60,10 @@ func NewNATSClient(cfg *config.LinkVerificationConfig) (*NATSClient, error) {
 
 // connect establishes connection to NATS server with reconnect handlers.
 func (c *NATSClient) connect() error {
+	return c.connectWithContext(context.Background())
+}
+
+func (c *NATSClient) connectWithContext(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -81,11 +85,12 @@ func (c *NATSClient) connect() error {
 				slog.Warn("NATS disconnected", "error", err)
 			}
 		}),
+		//nolint:contextcheck // ReconnectHandler is a callback without parent context
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			slog.Info("NATS reconnected", "url", nc.ConnectedUrl())
 			c.reconnecting.Store(false)
 			// Reinitialize KV bucket after reconnect
-			if err := c.initKVBucket(); err != nil {
+			if err := c.initKVBucket(context.Background()); err != nil {
 				slog.Error("Failed to reinitialize KV bucket after reconnect", "error", err)
 			}
 		}),
@@ -111,7 +116,7 @@ func (c *NATSClient) connect() error {
 	c.js = js
 
 	// Initialize KV bucket
-	if err := c.initKVBucket(); err != nil {
+	if err := c.initKVBucket(ctx); err != nil {
 		conn.Close()
 		c.conn = nil
 		c.js = nil
@@ -119,7 +124,7 @@ func (c *NATSClient) connect() error {
 	}
 
 	// Initialize stream for broken link events
-	if err := c.initStream(); err != nil {
+	if err := c.initStream(ctx); err != nil {
 		// Non-fatal: stream is optional for caching to work
 		slog.Warn("Failed to initialize NATS stream for broken link events",
 			"error", err,
@@ -135,7 +140,7 @@ func (c *NATSClient) connect() error {
 }
 
 // ensureConnected checks connection and reconnects if necessary.
-func (c *NATSClient) ensureConnected() error {
+func (c *NATSClient) ensureConnected(ctx context.Context) error {
 	c.mu.RLock()
 	connected := c.conn != nil && c.conn.IsConnected()
 	c.mu.RUnlock()
@@ -151,23 +156,23 @@ func (c *NATSClient) ensureConnected() error {
 	defer c.reconnecting.Store(false)
 
 	slog.Info("Attempting to reconnect to NATS", "url", c.cfg.NATSURL)
-	return c.connect()
+	return c.connectWithContext(ctx)
 }
 
 // initKVBucket creates or gets the KV bucket for link cache.
-func (c *NATSClient) initKVBucket() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func (c *NATSClient) initKVBucket(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	// Try to get existing bucket
-	kv, err := c.js.KeyValue(ctx, c.kvBucket)
+	kv, err := c.js.KeyValue(timeoutCtx, c.kvBucket)
 	if err == nil {
 		c.kv = kv
 		return nil
 	}
 
 	// Create new bucket if it doesn't exist
-	kv, err = c.js.CreateKeyValue(ctx, jetstream.KeyValueConfig{
+	kv, err = c.js.CreateKeyValue(timeoutCtx, jetstream.KeyValueConfig{
 		Bucket:      c.kvBucket,
 		Description: "Link verification cache for DocBuilder",
 		MaxBytes:    100 * 1024 * 1024, // 100MB max
@@ -184,20 +189,20 @@ func (c *NATSClient) initKVBucket() error {
 }
 
 // initStream creates or gets the JetStream stream for broken link events.
-func (c *NATSClient) initStream() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func (c *NATSClient) initStream(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	streamName := "DOCBUILDER_LINKS"
 
 	// Try to get existing stream
-	_, err := c.js.Stream(ctx, streamName)
+	_, err := c.js.Stream(timeoutCtx, streamName)
 	if err == nil {
 		return nil // Stream already exists
 	}
 
 	// Create new stream if it doesn't exist
-	_, err = c.js.CreateStream(ctx, jetstream.StreamConfig{
+	_, err = c.js.CreateStream(timeoutCtx, jetstream.StreamConfig{
 		Name:        streamName,
 		Description: "Broken link events from DocBuilder link verification",
 		Subjects:    []string{c.subject},
@@ -219,13 +224,13 @@ func (c *NATSClient) initStream() error {
 }
 
 // PublishBrokenLink publishes a broken link event to NATS.
-func (c *NATSClient) PublishBrokenLink(event *BrokenLinkEvent) error {
+func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEvent) error {
 	// Ensure we're connected before publishing
-	if err := c.ensureConnected(); err != nil {
+	if err := c.ensureConnected(ctx); err != nil {
 		return fmt.Errorf("NATS not connected: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	event.Timestamp = time.Now()
@@ -243,7 +248,7 @@ func (c *NATSClient) PublishBrokenLink(event *BrokenLinkEvent) error {
 		return errors.New("JetStream not available")
 	}
 
-	_, err = js.Publish(ctx, c.subject, data)
+	_, err = js.Publish(pubCtx, c.subject, data)
 	if err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
@@ -269,14 +274,14 @@ type CacheEntry struct {
 }
 
 // GetCachedResult retrieves a cached link verification result.
-func (c *NATSClient) GetCachedResult(url string) (*CacheEntry, error) {
+func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEntry, error) {
 	// Ensure we're connected before accessing cache
-	if err := c.ensureConnected(); err != nil {
+	if err := c.ensureConnected(ctx); err != nil {
 		slog.Debug("NATS not connected, skipping cache lookup", "error", err)
 		return nil, nil // Return nil to indicate cache miss
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	cacheCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	c.mu.RLock()
@@ -290,7 +295,7 @@ func (c *NATSClient) GetCachedResult(url string) (*CacheEntry, error) {
 	// Use MD5 hash as KV key
 	key := sanitizeKVKey(url)
 
-	entry, err := kv.Get(ctx, key)
+	entry, err := kv.Get(cacheCtx, key)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return nil, nil // Not cached
@@ -307,14 +312,14 @@ func (c *NATSClient) GetCachedResult(url string) (*CacheEntry, error) {
 }
 
 // SetCachedResult stores a link verification result in cache.
-func (c *NATSClient) SetCachedResult(entry *CacheEntry) error {
+func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) error {
 	// Ensure we're connected before updating cache
-	if err := c.ensureConnected(); err != nil {
+	if err := c.ensureConnected(ctx); err != nil {
 		slog.Debug("NATS not connected, skipping cache update", "error", err)
 		return nil // Non-fatal - continue without caching
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	cacheCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	entry.LastChecked = time.Now()
@@ -339,7 +344,7 @@ func (c *NATSClient) SetCachedResult(entry *CacheEntry) error {
 	key := sanitizeKVKey(entry.URL)
 
 	// Put entry in KV store
-	_, err = kv.Put(ctx, key, data)
+	_, err = kv.Put(cacheCtx, key, data)
 	if err != nil {
 		return fmt.Errorf("failed to put cache entry: %w", err)
 	}
@@ -385,13 +390,13 @@ func (c *NATSClient) Close() error {
 }
 
 // GetPageHash retrieves the cached MD5 hash for a page path.
-func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
+func (c *NATSClient) GetPageHash(ctx context.Context, pagePath string) (string, error) {
 	// Ensure we're connected
-	if err := c.ensureConnected(); err != nil {
+	if err := c.ensureConnected(ctx); err != nil {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	hashCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	c.mu.RLock()
@@ -406,7 +411,7 @@ func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
 	// NATS KV keys must match ^[a-zA-Z0-9_-]+$ (no colons allowed)
 	key := "page_" + sanitizeKVKey(pagePath)
 
-	entry, err := kv.Get(ctx, key)
+	entry, err := kv.Get(hashCtx, key)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return "", errors.New("page hash not cached")
@@ -418,14 +423,14 @@ func (c *NATSClient) GetPageHash(pagePath string) (string, error) {
 }
 
 // SetPageHash stores the MD5 hash for a page path in the cache.
-func (c *NATSClient) SetPageHash(pagePath, hash string) error {
+func (c *NATSClient) SetPageHash(ctx context.Context, pagePath, hash string) error {
 	// Ensure we're connected
-	if err := c.ensureConnected(); err != nil {
+	if err := c.ensureConnected(ctx); err != nil {
 		slog.Debug("NATS not connected, skipping page hash update", "error", err)
 		return nil // Non-fatal
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	hashCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
 	c.mu.RLock()
@@ -440,7 +445,7 @@ func (c *NATSClient) SetPageHash(pagePath, hash string) error {
 	// NATS KV keys must match ^[a-zA-Z0-9_-]+$ (no colons allowed)
 	key := "page_" + sanitizeKVKey(pagePath)
 
-	_, err := kv.Put(ctx, key, []byte(hash))
+	_, err := kv.Put(hashCtx, key, []byte(hash))
 	if err != nil {
 		return fmt.Errorf("failed to put page hash: %w", err)
 	}
