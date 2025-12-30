@@ -168,8 +168,9 @@ func TestSkipEvaluator_PublicDirMissing(t *testing.T) {
 	}
 }
 
-// TestSkipEvaluator_PerRepoHashMismatch ensures mismatch forces rebuild.
-func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
+// setupHashMismatchTest creates a test environment with a previous build report and state.
+func setupHashMismatchTest(t *testing.T) (outDir string, st *fakeSkipState, repo cfg.Repository, gen *hugo.Generator) {
+	t.Helper()
 	out := t.TempDir()
 	pubDir := filepath.Join(out, "public")
 	if err := os.MkdirAll(pubDir, 0o750); err != nil {
@@ -184,13 +185,19 @@ func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
 		t.Fatalf("write doc.md: %v", err)
 	}
-	st := newFakeSkipState()
-	repo := cfg.Repository{Name: "r1", URL: "u", Branch: "main"}
+	st = newFakeSkipState()
+	repo = cfg.Repository{Name: "r1", URL: "u", Branch: "main"}
 	conf1 := makeBaseConfig(out)
 	conf1.Repositories = []cfg.Repository{repo}
-	gen := newTestGenerator(t, conf1, out)
+	gen = newTestGenerator(t, conf1, out)
 	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
 	st.repoLastCommit[repo.URL] = "c1"
+	return out, st, repo, gen
+}
+
+// TestSkipEvaluator_PerRepoHashMismatch ensures mismatch forces rebuild.
+func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
+	out, st, repo, gen := setupHashMismatchTest(t)
 	st.repoDocHash[repo.URL] = "other" // mismatch with report
 	writePrevReport(t, out, 1, 1, 1, "match", st)
 	st.lastGlobalDocFiles = "match"
@@ -201,27 +208,7 @@ func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 
 // TestSkipEvaluator_GlobalHashMismatch ensures stored global vs report mismatch forces rebuild.
 func TestSkipEvaluator_GlobalHashMismatch(t *testing.T) {
-	out := t.TempDir()
-	pubDir := filepath.Join(out, "public")
-	if err := os.MkdirAll(pubDir, 0o750); err != nil {
-		t.Fatalf("mkdir public: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("x"), 0o600); err != nil {
-		t.Fatalf("write index: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(out, "content"), 0o750); err != nil {
-		t.Fatalf("mkdir content: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(out, "content", "doc.md"), []byte("# hi"), 0o600); err != nil {
-		t.Fatalf("write doc.md: %v", err)
-	}
-	st := newFakeSkipState()
-	repo := cfg.Repository{Name: "r1", URL: "u", Branch: "main"}
-	conf1 := makeBaseConfig(out)
-	conf1.Repositories = []cfg.Repository{repo}
-	gen := newTestGenerator(t, conf1, out)
-	st.lastConfigHash = gen.ComputeConfigHashForPersistence()
-	st.repoLastCommit[repo.URL] = "c1"
+	out, st, repo, gen := setupHashMismatchTest(t)
 	st.repoDocHash[repo.URL] = "H" // matches report but global differs
 	writePrevReport(t, out, 1, 1, 1, "H", st)
 	st.lastGlobalDocFiles = "DIFF"

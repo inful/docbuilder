@@ -142,6 +142,31 @@ func TestFilenameRule_UppercaseLetters(t *testing.T) {
 	}
 }
 
+// testFilenameRuleWithKeyword tests FilenameRule with test cases that should contain a specific keyword in error messages.
+func testFilenameRuleWithKeyword(t *testing.T, rule *FilenameRule, keyword, errorDesc string, tests []struct {
+	name     string
+	filename string
+	wantFix  string
+}) {
+	t.Helper()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			issues, err := rule.Check(tt.filename)
+			require.NoError(t, err)
+			require.NotEmpty(t, issues, "Should have issues for "+errorDesc)
+
+			hasExpectedError := false
+			for _, issue := range issues {
+				if issue.Severity == SeverityError && contains(issue.Message, keyword) {
+					hasExpectedError = true
+					assert.Contains(t, issue.Fix, tt.wantFix, "Fix should suggest correct filename")
+				}
+			}
+			assert.True(t, hasExpectedError, "Should have error about "+errorDesc)
+		})
+	}
+}
+
 func TestFilenameRule_Spaces(t *testing.T) {
 	rule := &FilenameRule{}
 
@@ -172,22 +197,7 @@ func TestFilenameRule_Spaces(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			issues, err := rule.Check(tt.filename)
-			require.NoError(t, err)
-			require.NotEmpty(t, issues, "Should have issues for spaces")
-
-			hasSpaceError := false
-			for _, issue := range issues {
-				if issue.Severity == SeverityError && contains(issue.Message, "space") {
-					hasSpaceError = true
-					assert.Contains(t, issue.Fix, tt.wantFix, "Fix should suggest correct filename")
-				}
-			}
-			assert.True(t, hasSpaceError, "Should have error about spaces")
-		})
-	}
+	testFilenameRuleWithKeyword(t, rule, "space", "spaces", tests)
 }
 
 func TestFilenameRule_SpecialCharacters(t *testing.T) {
@@ -277,22 +287,7 @@ func TestFilenameRule_LeadingTrailingSeparators(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			issues, err := rule.Check(tt.filename)
-			require.NoError(t, err)
-			require.NotEmpty(t, issues, "Should have issues for leading/trailing separators")
-
-			hasSeparatorError := false
-			for _, issue := range issues {
-				if issue.Severity == SeverityError && contains(issue.Message, "leading or trailing") {
-					hasSeparatorError = true
-					assert.Contains(t, issue.Fix, tt.wantFix, "Fix should suggest correct filename")
-				}
-			}
-			assert.True(t, hasSeparatorError, "Should have error about leading/trailing separators")
-		})
-	}
+	testFilenameRuleWithKeyword(t, rule, "leading or trailing", "leading/trailing separators", tests)
 }
 
 func TestSuggestFilename(t *testing.T) {

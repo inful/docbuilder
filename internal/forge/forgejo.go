@@ -203,15 +203,19 @@ func (c *ForgejoClient) listUserRepositories(ctx context.Context) ([]*Repository
 // getOrgRepositories gets all repositories for an organization
 func (c *ForgejoClient) getOrgRepositories(ctx context.Context, org string) ([]*Repository, error) {
 	baseEndpoint := fmt.Sprintf("/orgs/%s/repos", org)
+	return c.fetchAndConvertRepos(ctx, baseEndpoint, 50)
+}
 
+// fetchAndConvertRepos is a helper that fetches paginated repositories and converts them.
+func (c *ForgejoClient) fetchAndConvertRepos(ctx context.Context, endpoint string, pageSize int) ([]*Repository, error) {
 	forgejoRepos, err := PaginatedFetchHelper(
 		ctx,
-		baseEndpoint,
+		endpoint,
 		"page",
 		"limit",
-		50,
-		func(endpoint string) ([]forgejoRepo, bool, error) {
-			req, err := c.NewRequest(ctx, "GET", endpoint, nil)
+		pageSize,
+		func(ep string) ([]forgejoRepo, bool, error) {
+			req, err := c.NewRequest(ctx, "GET", ep, nil)
 			if err != nil {
 				return nil, false, err
 			}
@@ -222,7 +226,7 @@ func (c *ForgejoClient) getOrgRepositories(ctx context.Context, org string) ([]*
 			}
 
 			// Has more if we got a full page
-			hasMore := len(repos) >= 50
+			hasMore := len(repos) >= pageSize
 			return repos, hasMore, nil
 		},
 	)

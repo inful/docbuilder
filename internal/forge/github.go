@@ -149,15 +149,19 @@ func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []str
 // getOrgRepositories gets all repositories for an organization
 func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*Repository, error) {
 	baseEndpoint := fmt.Sprintf("/orgs/%s/repos?sort=updated", org)
+	return c.fetchAndConvertRepos(ctx, baseEndpoint, 100)
+}
 
+// fetchAndConvertRepos is a helper that fetches paginated repositories and converts them.
+func (c *GitHubClient) fetchAndConvertRepos(ctx context.Context, endpoint string, pageSize int) ([]*Repository, error) {
 	githubRepos, err := PaginatedFetchHelper(
 		ctx,
-		baseEndpoint,
+		endpoint,
 		"page",
 		"per_page",
-		100,
-		func(endpoint string) ([]githubRepo, bool, error) {
-			req, err := c.NewRequest(ctx, "GET", endpoint, nil)
+		pageSize,
+		func(ep string) ([]githubRepo, bool, error) {
+			req, err := c.NewRequest(ctx, "GET", ep, nil)
 			if err != nil {
 				return nil, false, err
 			}
@@ -168,7 +172,7 @@ func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*R
 			}
 
 			// Has more if we got a full page
-			hasMore := len(repos) >= 100
+			hasMore := len(repos) >= pageSize
 			return repos, hasMore, nil
 		},
 	)
