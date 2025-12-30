@@ -1116,7 +1116,6 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 	}
 
 	var updates []LinkUpdate
-	var updatedFiles []string
 	var backupPaths []string
 
 	// Process each file
@@ -1199,8 +1198,6 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 				f.rollbackLinkUpdates(backupPaths)
 				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
 			}
-
-			updatedFiles = append(updatedFiles, sourceFile)
 		}
 	}
 
