@@ -238,11 +238,12 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 		for _, repo := range result.Repositories {
 			// Extract platform from repository structure
 			if repo.CloneURL != "" {
-				if stringContains(repo.CloneURL, "github.com") {
+				switch {
+				case stringContains(repo.CloneURL, "github.com"):
 					platformCounts["github"]++
-				} else if stringContains(repo.CloneURL, "gitlab.com") {
+				case stringContains(repo.CloneURL, "gitlab.com"):
 					platformCounts["gitlab"]++
-				} else if stringContains(repo.CloneURL, "git.example.com") {
+				case stringContains(repo.CloneURL, "git.example.com"):
 					platformCounts["forgejo"]++
 				}
 			}
