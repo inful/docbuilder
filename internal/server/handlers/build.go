@@ -39,7 +39,7 @@ func (h *BuildHandlers) handleTriggerAction(w http.ResponseWriter, r *http.Reque
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "POST").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -52,13 +52,13 @@ func (h *BuildHandlers) handleTriggerAction(w http.ResponseWriter, r *http.Reque
 		if err := writeJSON(w, http.StatusOK, response); err != nil {
 			internalErr := errors.WrapError(err, errors.CategoryInternal, errMsg).
 				Build()
-			h.errorAdapter.WriteErrorResponse(w, internalErr)
+			h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 		}
 	} else {
 		err := errors.DaemonError("daemon not available").
 			WithContext("service", serviceName).
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 	}
 }
 
@@ -79,7 +79,7 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *BuildHandlers) HandleBuildStatus(w http.ResponseWriter, r *http.Request
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode build status").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }
 
@@ -108,7 +108,7 @@ func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Reques
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -121,6 +121,6 @@ func (h *BuildHandlers) HandleRepositories(w http.ResponseWriter, r *http.Reques
 	if err := writeJSONPretty(w, r, http.StatusOK, repos); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode repositories").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }

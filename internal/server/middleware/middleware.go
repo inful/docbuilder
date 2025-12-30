@@ -50,7 +50,7 @@ func panicRecoveryMiddleware(logger *slog.Logger, adapter *derrors.HTTPErrorAdap
 					WithContext("method", r.Method).
 					Build()
 
-				adapter.WriteErrorResponse(w, panicErr)
+				adapter.WriteErrorResponse(w, r, panicErr)
 			}
 		}()
 		next.ServeHTTP(w, r)

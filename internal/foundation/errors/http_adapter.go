@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -63,11 +62,14 @@ func (a *HTTPErrorAdapter) StatusCodeFor(err error) int {
 }
 
 // WriteErrorResponse writes a JSON error response and logs with appropriate level.
-func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, err error) {
+func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+
+	ctx := r.Context()
+	_ = ctx // Use context for future enhancements (tracing, etc.)
 
 	status := a.StatusCodeFor(err)
 	payload := a.FormatErrorResponse(err)
@@ -87,7 +89,7 @@ func (a *HTTPErrorAdapter) WriteErrorResponse(w http.ResponseWriter, err error) 
 	// Structured logging by severity
 	if c, ok := AsClassified(err); ok {
 		lvl := a.slogLevelFromSeverity(c.Severity())
-		a.logger.Log(context.Background(), lvl, c.Error())
+		a.logger.Log(r.Context(), lvl, c.Error())
 		return
 	}
 	// Unknown error

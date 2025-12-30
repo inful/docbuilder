@@ -80,7 +80,8 @@ func TestHTTPErrorAdapter_WriteErrorResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			adapter.WriteErrorResponse(w, tt.err)
+			r := httptest.NewRequest("GET", "/test", nil)
+			adapter.WriteErrorResponse(w, r, tt.err)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("WriteErrorResponse() status = %v, want %v", w.Code, tt.expectedStatus)

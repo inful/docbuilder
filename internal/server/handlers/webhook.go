@@ -46,7 +46,7 @@ func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "POST").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 			WithContext("content_type", r.Header.Get("Content-Type")).
 			WithContext("error", err.Error()).
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
+		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 	if err := writeJSONPretty(w, r, http.StatusAccepted, resp); err != nil {
 		derr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
+		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
 }
@@ -89,7 +89,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "POST").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 		derr := errors.ValidationError("failed to read request body").
 			WithContext("error", err.Error()).
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
+		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 					err := errors.ValidationError("webhook signature validation failed").
 						WithContext("forge", forgeName).
 						Build()
-					h.errorAdapter.WriteErrorResponse(w, err)
+					h.errorAdapter.WriteErrorResponse(w, r, err)
 					return
 				}
 				slog.Debug("Webhook signature validated", "forge", forgeName)
@@ -179,7 +179,7 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	if err := writeJSONPretty(w, r, http.StatusAccepted, resp); err != nil {
 		derr := errors.WrapError(err, errors.CategoryInternal, "failed to write webhook response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, derr)
+		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
 }

@@ -273,7 +273,7 @@ func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, _ *http.Reques
 	if err := json.NewEncoder(w).Encode(snapshot); err != nil {
 		adapter := errors.NewHTTPErrorAdapter(nil)
 		e := errors.WrapError(err, errors.CategoryInternal, "failed to encode metrics").Build()
-		adapter.WriteErrorResponse(w, e)
+		adapter.WriteErrorResponse(w, nil, e)
 		return
 	}
 }

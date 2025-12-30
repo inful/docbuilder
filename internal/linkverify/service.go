@@ -142,7 +142,7 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 
 	// Check if page content has changed using MD5 hash
 	if page.ContentHash != "" {
-		if cachedHash, err := s.nats.GetPageHash(page.RenderedPath); err == nil && cachedHash == page.ContentHash {
+		if cachedHash, err := s.nats.GetPageHash(ctx, page.RenderedPath); err == nil && cachedHash == page.ContentHash {
 			slog.Debug("Skipping link verification for unchanged page",
 				"path", page.RenderedPath,
 				"hash", page.ContentHash[:8])
@@ -193,7 +193,7 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 
 	// All links verified for this page - update page hash in cache
 	if page.ContentHash != "" {
-		if err := s.nats.SetPageHash(page.RenderedPath, page.ContentHash); err != nil {
+		if err := s.nats.SetPageHash(ctx, page.RenderedPath, page.ContentHash); err != nil {
 			slog.Debug("Failed to cache page hash", "path", page.RenderedPath, "error", err)
 		}
 	}
@@ -217,14 +217,14 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 	}
 
 	// Check cache first
-	cached, err := s.nats.GetCachedResult(absoluteURL)
+	cached, err := s.nats.GetCachedResult(ctx, absoluteURL)
 	if err != nil {
 		slog.Debug("Cache lookup error", "url", absoluteURL, "error", err)
 	} else if cached != nil && s.nats.IsCacheValid(cached) {
 		// Use cached result
 		if !cached.IsValid {
 			// Still broken, update failure count and possibly publish
-			s.handleBrokenLink(absoluteURL, link, page, cached.Status, cached.Error, cached)
+			s.handleBrokenLink(ctx, absoluteURL, link, page, cached.Status, cached.Error, cached)
 		}
 		return
 	}
@@ -257,7 +257,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 		cacheEntry.ConsecutiveFail = true
 
 		// Handle broken link
-		s.handleBrokenLink(absoluteURL, link, page, status, verifyErr.Error(), cacheEntry)
+		s.handleBrokenLink(ctx, absoluteURL, link, page, status, verifyErr.Error(), cacheEntry)
 	} else {
 		// Link is valid, reset failure count
 		cacheEntry.FailureCount = 0
@@ -265,7 +265,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 	}
 
 	// Update cache
-	if err := s.nats.SetCachedResult(cacheEntry); err != nil {
+	if err := s.nats.SetCachedResult(ctx, cacheEntry); err != nil {
 		slog.Warn("Failed to update cache", "url", absoluteURL, "error", err)
 	}
 }
@@ -328,7 +328,7 @@ func isAuthError(statusCode int) bool {
 }
 
 // handleBrokenLink creates and publishes a broken link event.
-func (s *VerificationService) handleBrokenLink(absoluteURL string, link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
+func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL string, link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
 	event := &BrokenLinkEvent{
 		URL:        absoluteURL,
 		Status:     status,
@@ -381,7 +381,7 @@ func (s *VerificationService) handleBrokenLink(absoluteURL string, link *Link, p
 	}
 
 	// Publish event
-	if err := s.nats.PublishBrokenLink(event); err != nil {
+	if err := s.nats.PublishBrokenLink(ctx, event); err != nil {
 		slog.Error("Failed to publish broken link event",
 			"url", absoluteURL,
 			"source", page.RenderedPath,

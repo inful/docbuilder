@@ -279,6 +279,6 @@ func (d *Daemon) EnhancedHealthHandler(w http.ResponseWriter, _ *http.Request) {
 	if err := json.NewEncoder(w).Encode(health); err != nil {
 		adapter := errors.NewHTTPErrorAdapter(nil)
 		e := errors.WrapError(err, errors.CategoryInternal, "failed to encode health response").Build()
-		adapter.WriteErrorResponse(w, e)
+		adapter.WriteErrorResponse(w, nil, e)
 	}
 }

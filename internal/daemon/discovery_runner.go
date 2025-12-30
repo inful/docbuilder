@@ -131,7 +131,7 @@ func (dr *DiscoveryRunner) triggerBuildForDiscoveredRepos(result *forge.Discover
 
 // SafeRun executes discovery with a timeout and panic protection.
 // It is suitable for use in goroutines.
-func (dr *DiscoveryRunner) SafeRun(daemonStatus func() Status) {
+func (dr *DiscoveryRunner) SafeRun(ctx context.Context, daemonStatus func() Status) {
 	if dr.discovery == nil {
 		return
 	}
@@ -140,14 +140,14 @@ func (dr *DiscoveryRunner) SafeRun(daemonStatus func() Status) {
 		return
 	}
 	// Use longer timeout for large instances with many repositories
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Error("Recovered from panic in SafeRun", "panic", r)
 		}
 	}()
-	if err := dr.Run(ctx); err != nil {
+	if err := dr.Run(timeoutCtx); err != nil {
 		slog.Warn("Periodic discovery failed", "error", err)
 	} else {
 		slog.Info("Periodic discovery completed")

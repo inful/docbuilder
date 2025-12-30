@@ -40,7 +40,7 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *APIHandlers) HandleDocsStatus(w http.ResponseWriter, r *http.Request) {
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write docs status response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }
 
@@ -68,7 +68,7 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *APIHandlers) HandleDaemonStatus(w http.ResponseWriter, r *http.Request)
 	if err := writeJSONPretty(w, r, http.StatusOK, status); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to encode daemon status").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }
 
@@ -98,7 +98,7 @@ func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request)
 			WithContext("method", r.Method).
 			WithContext("allowed_method", "GET").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, err)
+		h.errorAdapter.WriteErrorResponse(w, r, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (h *APIHandlers) HandleDaemonConfig(w http.ResponseWriter, r *http.Request)
 	if err := writeJSONPretty(w, r, http.StatusOK, response); err != nil {
 		internalErr := errors.WrapError(err, errors.CategoryInternal, "failed to write config response").
 			Build()
-		h.errorAdapter.WriteErrorResponse(w, internalErr)
+		h.errorAdapter.WriteErrorResponse(w, r, internalErr)
 	}
 }
 

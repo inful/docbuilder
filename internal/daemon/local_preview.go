@@ -68,7 +68,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	buildStat := &buildStatus{}
 
 	// Initial build
-	if err = buildFromLocal(cfg, absDocs); err != nil {
+	if err = buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
 		buildStat.setError(err)
 	} else {
@@ -131,7 +131,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 				mu.Unlock()
 
 				slog.Info("Change detected; rebuilding site")
-				if err := buildFromLocal(cfg, absDocs); err != nil {
+				if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 					slog.Warn("rebuild failed", "error", err)
 					buildStat.setError(err)
 					// Notify browsers about error so they can display error overlay
@@ -184,7 +184,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 			slog.Info("Shutting down preview server...")
 
 			// Create a timeout context for graceful shutdown
-			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
 			defer shutdownCancel()
 
 			// Stop HTTP server
@@ -268,7 +268,7 @@ func shouldIgnoreEvent(path string) bool {
 	return false
 }
 
-func buildFromLocal(cfg *config.Config, docsPath string) error {
+func buildFromLocal(ctx context.Context, cfg *config.Config, docsPath string) error {
 	// Prepare discovery objects
 	repos := []config.Repository{{
 		URL:    docsPath,
@@ -286,7 +286,7 @@ func buildFromLocal(cfg *config.Config, docsPath string) error {
 		slog.Warn("no docs found in local directory", "dir", docsPath)
 	}
 	generator := hugo.NewGenerator(cfg, cfg.Output.Directory)
-	if err := generator.GenerateSite(docFiles); err != nil {
+	if _, err := generator.GenerateSiteWithReportContext(ctx, docFiles); err != nil {
 		return err
 	}
 	return nil
