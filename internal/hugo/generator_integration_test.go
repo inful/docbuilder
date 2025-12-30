@@ -114,7 +114,7 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 	}
 
 	// Create realistic documentation files for multiple repositories
-	var files []docs.DocFile
+	var files = make([]docs.DocFile, 0, 3*len(repositories))
 	for i, repo := range repositories {
 		// Create different types of documentation for each repository
 		files = append(files,

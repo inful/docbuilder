@@ -203,7 +203,7 @@ func (tf *TestForge) GetUserOrganizations(_ context.Context) ([]forge.Organizati
 		return nil, err
 	}
 
-	var orgs []forge.Organization
+	var orgs = make([]forge.Organization, 0, len(tf.organizations))
 	titleCaser := cases.Title(language.English)
 	for _, orgName := range tf.organizations {
 		orgs = append(orgs, forge.Organization{
@@ -442,7 +442,7 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 
 // ToConfigRepositories converts TestForge repositories to config.Repository format.
 func (tf *TestForge) ToConfigRepositories() []config.Repository {
-	var configRepos []config.Repository
+	var configRepos = make([]config.Repository, 0, len(tf.repositories))
 
 	for _, repo := range tf.repositories {
 		configRepos = append(configRepos, config.Repository{
