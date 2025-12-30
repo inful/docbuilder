@@ -72,9 +72,9 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	var err error
 	var commitDate time.Time
 	if attemptUpdate {
-		path, err, commitDate = f.performUpdate(client, repo)
+		path, commitDate, err = f.performUpdate(client, repo)
 	} else {
-		path, err, commitDate = f.performClone(client, repo, &res)
+		path, commitDate, err = f.performClone(client, repo, &res)
 	}
 	res.Path = path
 	res.CommitDate = commitDate
@@ -94,8 +94,8 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	return res
 }
 
-// performUpdate updates an existing repository and returns its path, error, and commit date.
-func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repository) (string, error, time.Time) {
+// performUpdate updates an existing repository and returns its path, commit date, and error.
+func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repository) (string, time.Time, error) {
 	path, err := client.UpdateRepo(repo)
 	var commitDate time.Time
 	
@@ -106,12 +106,12 @@ func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repos
 		}
 	}
 	
-	return path, err, commitDate
+	return path, commitDate, err
 }
 
-// performClone performs a fresh clone and returns its path, error, and commit date.
+// performClone performs a fresh clone and returns its path, commit date, and error.
 // It also sets the PostHead field in res.
-func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Repository, res *RepoFetchResult) (string, error, time.Time) {
+func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Repository, res *RepoFetchResult) (string, time.Time, error) {
 	result, err := client.CloneRepoWithMetadata(repo)
 	var path string
 	var commitDate time.Time
@@ -122,7 +122,7 @@ func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Reposi
 		res.PostHead = result.CommitSHA
 	}
 	
-	return path, err, commitDate
+	return path, commitDate, err
 }
 
 // gitStatRepo isolates os.Stat dependency (simple indirection aids test stubbing later).

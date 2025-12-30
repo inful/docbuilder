@@ -504,25 +504,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		forgejoRepoCount := 0
 
 		for repoName, files := range filesByRepo {
-			if strings.Contains(repoName, "github") {
-				githubRepoCount++
-				// GitHub repos should have 4 files (README.md now included)
-				if len(files) != 4 {
-					t.Errorf("GitHub repo %s: expected 4 files, got %d", repoName, len(files))
-				}
-			} else if strings.Contains(repoName, "gitlab") {
-				gitlabRepoCount++
-				// GitLab repos should have 3 files (no README.md in test data)
-				if len(files) != 3 {
-					t.Errorf("GitLab repo %s: expected 3 files, got %d", repoName, len(files))
-				}
-			} else if strings.Contains(repoName, "forgejo") {
-				forgejoRepoCount++
-				// Forgejo repos should have 3 files (no README.md in test data)
-				if len(files) != 3 {
-					t.Errorf("Forgejo repo %s: expected 3 files, got %d", repoName, len(files))
-				}
-			}
+			countForgeRepos(t, repoName, len(files), &githubRepoCount, &gitlabRepoCount, &forgejoRepoCount)
 		}
 
 		t.Logf("✓ Multi-platform discovery validated: GitHub(%d repos), GitLab(%d repos), Forgejo(%d repos)",
@@ -849,4 +831,30 @@ func TestPathCollisionDetection(t *testing.T) {
 	}
 
 	t.Logf("✓ Path collision detection working: %v", err)
+}
+
+// countForgeRepos counts and validates the number of files in a repository by forge type.
+func countForgeRepos(t *testing.T, repoName string, fileCount int, github, gitlab, forgejo *int) {
+	t.Helper()
+
+	switch {
+	case strings.Contains(repoName, "github"):
+		(*github)++
+		// GitHub repos should have 4 files (README.md now included)
+		if fileCount != 4 {
+			t.Errorf("GitHub repo %s: expected 4 files, got %d", repoName, fileCount)
+		}
+	case strings.Contains(repoName, "gitlab"):
+		(*gitlab)++
+		// GitLab repos should have 3 files (no README.md in test data)
+		if fileCount != 3 {
+			t.Errorf("GitLab repo %s: expected 3 files, got %d", repoName, fileCount)
+		}
+	case strings.Contains(repoName, "forgejo"):
+		(*forgejo)++
+		// Forgejo repos should have 3 files (no README.md in test data)
+		if fileCount != 3 {
+			t.Errorf("Forgejo repo %s: expected 3 files, got %d", repoName, fileCount)
+		}
+	}
 }
