@@ -21,17 +21,15 @@ import (
 
 // buildStatus tracks the current build state for error display.
 type buildStatus struct {
-	mu            sync.RWMutex
-	lastError     error
-	lastErrorTime time.Time
-	hasGoodBuild  bool // true if at least one successful build exists
+	mu           sync.RWMutex
+	lastError    error
+	hasGoodBuild bool // true if at least one successful build exists
 }
 
 func (bs *buildStatus) setError(err error) {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
 	bs.lastError = err
-	bs.lastErrorTime = time.Now()
 }
 
 func (bs *buildStatus) setSuccess() {

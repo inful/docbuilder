@@ -14,9 +14,7 @@ import (
 // and integrates it with the service orchestrator. This bridges the gap between
 // the monolithic StateManager and the new composable state stores.
 type Service struct {
-	store     Store
-	dataDir   string
-	isRunning bool
+	store Store
 }
 
 // NewService creates a new state service with the default JSON store.
@@ -27,8 +25,7 @@ func NewService(dataDir string) foundation.Result[*Service, error] {
 	}
 
 	return foundation.Ok[*Service, error](&Service{
-		store:   store.Unwrap(),
-		dataDir: dataDir,
+		store: store.Unwrap(),
 	})
 }
 
@@ -36,8 +33,7 @@ func NewService(dataDir string) foundation.Result[*Service, error] {
 // This allows for dependency injection and testing with mock stores.
 func NewServiceWithStore(store Store, dataDir string) *Service {
 	return &Service{
-		store:   store,
-		dataDir: dataDir,
+		store: store,
 	}
 }
 
@@ -73,7 +69,6 @@ func (ss *Service) Start(ctx context.Context) error {
 			Build()
 	}
 
-	ss.isRunning = true
 	return nil
 }
 
@@ -96,7 +91,6 @@ func (ss *Service) Stop(ctx context.Context) error {
 			Build()
 	}
 
-	ss.isRunning = false
 	return nil
 }
 

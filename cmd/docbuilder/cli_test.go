@@ -280,7 +280,6 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 	// Simulate discovery phase
 	env.outputCapture.WriteString("Discovering documentation repositories...\n")
 
-	totalRepos := 0
 	for _, client := range env.forgeClients {
 		ctx := context.Background()
 		repos, err := client.ListRepositories(ctx, []string{})
@@ -288,7 +287,6 @@ func (env *MockCLIEnvironment) simulateBuildCommand(args []string) (int, []strin
 			env.errorCapture.WriteString("Discovery failed: " + err.Error())
 			return 1, nil
 		}
-		totalRepos += len(repos)
 		env.outputCapture.WriteString("✓ " + client.GetName() + ": found " + strconv.Itoa(len(repos)) + " repositories\n")
 	}
 

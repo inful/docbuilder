@@ -13,13 +13,11 @@ type Formatter interface {
 }
 
 // TextFormatter formats results as human-readable text.
-type TextFormatter struct {
-	useColor bool
-}
+type TextFormatter struct{}
 
 // NewTextFormatter creates a text formatter.
 func NewTextFormatter(useColor bool) *TextFormatter {
-	return &TextFormatter{useColor: useColor}
+	return &TextFormatter{}
 }
 
 // Format outputs results in human-readable text format.

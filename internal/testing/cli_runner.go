@@ -153,8 +153,7 @@ func (result *CLIResult) AssertFailure(t *testing.T) *CLIResult {
 // MockCLIEnvironment provides a complete testing environment for CLI integration tests.
 type MockCLIEnvironment struct {
 	*TestEnvironment
-	runner     *CLITestRunner
-	configFile string
+	runner *CLITestRunner
 }
 
 // NewMockCLIEnvironment creates a new mock CLI environment.
@@ -222,6 +221,5 @@ func (env *MockCLIEnvironment) WriteConfigFile() error {
 	configPath := env.ConfigPath()
 	builder := &ConfigBuilder{config: env.Config, t: env.t}
 	builder.BuildAndSave(configPath)
-	env.configFile = configPath
 	return nil
 }

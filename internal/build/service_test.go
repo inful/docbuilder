@@ -15,11 +15,9 @@ import (
 // mockHugoGenerator is a test double for HugoGenerator.
 type mockHugoGenerator struct {
 	generateError error
-	docFiles      []docs.DocFile
 }
 
 func (m *mockHugoGenerator) GenerateSite(docFiles []docs.DocFile) error {
-	m.docFiles = docFiles
 	return m.generateError
 }
 
