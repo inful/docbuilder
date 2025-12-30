@@ -157,7 +157,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		return nil, err
 	}
 	repoSet := map[string]struct{}{}
-	for _, f := range docFiles {
+	for i := range docFiles {
+		f := &docFiles[i]
 		repoSet[f.Repository] = struct{}{}
 	}
 	report := newBuildReport(ctx, len(repoSet), len(docFiles))
@@ -194,7 +195,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	// Compute doc files hash (direct generation path bypasses discovery stage where this normally occurs)
 	if report.DocFilesHash == "" && len(docFiles) > 0 {
 		paths := make([]string, 0, len(docFiles))
-		for _, f := range docFiles {
+		for i := range docFiles {
+			f := &docFiles[i]
 			paths = append(paths, f.GetHugoPath())
 		}
 		// Simple insertion sort to avoid importing sort (small slice typical for tests)

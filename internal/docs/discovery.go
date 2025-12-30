@@ -40,8 +40,9 @@ type Discovery struct {
 // NewDiscovery creates a new documentation discovery instance.
 func NewDiscovery(repositories []config.Repository, buildCfg *config.BuildConfig) *Discovery {
 	repoMap := make(map[string]config.Repository)
-	for _, repo := range repositories {
-		repoMap[repo.Name] = repo
+	for i := range repositories {
+		repo := &repositories[i]
+		repoMap[repo.Name] = *repo
 	}
 
 	return &Discovery{

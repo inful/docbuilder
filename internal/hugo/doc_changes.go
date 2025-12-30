@@ -30,7 +30,8 @@ func DetectDocumentChanges(prevFiles, newFiles []docs.DocFile) bool {
 // buildFilePathSet creates a set of Hugo paths from doc files.
 func buildFilePathSet(files []docs.DocFile) map[string]struct{} {
 	set := make(map[string]struct{}, len(files))
-	for _, f := range files {
+	for i := range files {
+		f := &files[i]
 		set[f.GetHugoPath()] = struct{}{}
 	}
 	return set

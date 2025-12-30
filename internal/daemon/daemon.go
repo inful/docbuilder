@@ -523,7 +523,8 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 	// Update repository commits and hashes
 	// Read from persistent workspace (repo_cache_dir/working) to get current commit SHAs
 	workspacePath := filepath.Join(d.config.Daemon.Storage.RepoCacheDir, "working")
-	for _, repo := range d.config.Repositories {
+	for i := range d.config.Repositories {
+		repo := &d.config.Repositories[i]
 		repoPath := filepath.Join(workspacePath, repo.Name)
 
 		// Check if repository exists
