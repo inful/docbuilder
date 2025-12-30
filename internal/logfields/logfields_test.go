@@ -72,12 +72,12 @@ func TestErrorHelper(t *testing.T) {
 	if attr.Value.String() != "" {
 		t.Fatalf("Expected empty error string, got %s", attr.Value.String())
 	}
-	attr = Error(errTest{})
+	attr = Error(testError{})
 	if attr.Value.String() != "err-test" {
 		t.Fatalf("Expected 'err-test', got %s", attr.Value.String())
 	}
 }
 
-type errTest struct{}
+type testError struct{}
 
-func (e errTest) Error() string { return "err-test" }
+func (e testError) Error() string { return "err-test" }
