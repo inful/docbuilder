@@ -19,7 +19,8 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 	versionManager := NewVersionManager(gitClient)
 	var expandedRepos []config.Repository
 
-	for _, repo := range cfg.Repositories {
+	for i := range cfg.Repositories {
+		repo := &cfg.Repositories[i]
 		// Convert config.VersioningConfig to versioning.VersionConfig
 		versionConfig := &VersionConfig{
 			Strategy:    VersionStrategy(cfg.Versioning.Strategy),
@@ -41,7 +42,7 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 				"repo", repo.Name,
 				"error", err)
 			// Fallback to single version
-			expandedRepos = append(expandedRepos, repo)
+			expandedRepos = append(expandedRepos, *repo)
 			continue
 		}
 
@@ -49,7 +50,7 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 		if len(result.Repository.Versions) == 0 {
 			slog.Warn("No versions found for repository, using default branch",
 				"repo", repo.Name)
-			expandedRepos = append(expandedRepos, repo)
+			expandedRepos = append(expandedRepos, *repo)
 			continue
 		}
 
@@ -58,7 +59,7 @@ func ExpandRepositoriesWithVersions(gitClient *git.Client, cfg *config.Config) (
 			"versions", len(result.Repository.Versions))
 
 		for _, version := range result.Repository.Versions {
-			versionedRepo := repo // Copy base config
+			versionedRepo := *repo // Copy base config by dereferencing pointer
 
 			// Set version-specific fields
 			versionedRepo.Branch = version.Name // Use Name as branch/tag reference

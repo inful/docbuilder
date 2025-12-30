@@ -68,20 +68,21 @@ func (ds *DocsState) BuildIndexes() {
 		ds.FilesBySection = make(map[string][]docs.DocFile)
 	}
 
-	for _, file := range ds.Files {
+	for i := range ds.Files {
+		file := &ds.Files[i]
 		// Repository index
 		repoKey := file.Repository
 		if file.Forge != "" {
 			repoKey = file.Forge + "/" + repoKey
 		}
-		ds.FilesByRepo[repoKey] = append(ds.FilesByRepo[repoKey], file)
+		ds.FilesByRepo[repoKey] = append(ds.FilesByRepo[repoKey], *file)
 
 		// Section index
 		sectionKey := repoKey
 		if file.Section != "" {
 			sectionKey = sectionKey + "/" + file.Section
 		}
-		ds.FilesBySection[sectionKey] = append(ds.FilesBySection[sectionKey], file)
+		ds.FilesBySection[sectionKey] = append(ds.FilesBySection[sectionKey], *file)
 	}
 }
 

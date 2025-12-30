@@ -382,7 +382,8 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 
 	commits := make([]WebhookCommit, 0, len(pushEvent.Commits))
-	for _, commit := range pushEvent.Commits {
+	for i := range pushEvent.Commits {
+		commit := &pushEvent.Commits[i]
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,
 			Message:   commit.Message,
