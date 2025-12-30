@@ -20,7 +20,7 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 		// Check for fenced code block markers (```  or ~~~)
 		trimmedLine := strings.TrimSpace(line)
 		inFencedCodeBlock, fenceMarker = updateFenceState(trimmedLine, inFencedCodeBlock, fenceMarker)
-		
+
 		if isFenceMarkerLine(trimmedLine) {
 			result.WriteString(line)
 			result.WriteString("\n")
@@ -71,7 +71,7 @@ func updateFenceState(trimmedLine string, inFencedCodeBlock bool, currentFenceMa
 	if !isFenceMarkerLine(trimmedLine) {
 		return inFencedCodeBlock, currentFenceMarker
 	}
-	
+
 	if !inFencedCodeBlock {
 		// Starting a code block
 		fenceMarker := "```"
@@ -80,11 +80,11 @@ func updateFenceState(trimmedLine string, inFencedCodeBlock bool, currentFenceMa
 		}
 		return true, fenceMarker
 	}
-	
+
 	if strings.HasPrefix(trimmedLine, currentFenceMarker) {
 		// Ending a code block
 		return false, currentFenceMarker
 	}
-	
+
 	return inFencedCodeBlock, currentFenceMarker
 }
