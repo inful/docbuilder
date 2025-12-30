@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,13 +12,13 @@ type ContentIntegrityRule struct{}
 
 func (r ContentIntegrityRule) Name() string { return "content_integrity" }
 
-func (r ContentIntegrityRule) Validate(ctx Context) Result {
+func (r ContentIntegrityRule) Validate(ctx context.Context, vctx Context) Result {
 	// Only validate if there were files in the previous build
-	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
+	if vctx.PrevReport == nil || vctx.PrevReport.Files == 0 {
 		return Success() // Skip validation for empty previous builds
 	}
 
-	contentDir := filepath.Join(ctx.OutDir, "content")
+	contentDir := filepath.Join(vctx.OutDir, "content")
 
 	// Check if content directory exists and is a directory
 	contentStat, err := os.Stat(contentDir)
@@ -54,14 +55,14 @@ type GlobalDocHashRule struct{}
 
 func (r GlobalDocHashRule) Name() string { return "global_doc_hash" }
 
-func (r GlobalDocHashRule) Validate(ctx Context) Result {
+func (r GlobalDocHashRule) Validate(ctx context.Context, vctx Context) Result {
 	// Only validate if there were files in the previous build
-	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
+	if vctx.PrevReport == nil || vctx.PrevReport.Files == 0 {
 		return Success()
 	}
 
-	lastGlobal := ctx.State.GetLastGlobalDocFilesHash()
-	reportHash := ctx.PrevReport.DocFilesHash
+	lastGlobal := vctx.State.GetLastGlobalDocFilesHash()
+	reportHash := vctx.PrevReport.DocFilesHash
 
 	if lastGlobal != "" && reportHash != "" && lastGlobal != reportHash {
 		return Failure("stored global doc_files_hash mismatch with report")
@@ -75,17 +76,17 @@ type PerRepoDocHashRule struct{}
 
 func (r PerRepoDocHashRule) Name() string { return "per_repo_doc_hash" }
 
-func (r PerRepoDocHashRule) Validate(ctx Context) Result {
+func (r PerRepoDocHashRule) Validate(ctx context.Context, vctx Context) Result {
 	// Only validate if there were files in the previous build
-	if ctx.PrevReport == nil || ctx.PrevReport.Files == 0 {
+	if vctx.PrevReport == nil || vctx.PrevReport.Files == 0 {
 		return Success()
 	}
 
 	// Handle single repository case
-	if len(ctx.Repos) == 1 {
-		repo := ctx.Repos[0]
-		repoHash := ctx.State.GetRepoDocFilesHash(repo.URL)
-		reportHash := ctx.PrevReport.DocFilesHash
+	if len(vctx.Repos) == 1 {
+		repo := vctx.Repos[0]
+		repoHash := vctx.State.GetRepoDocFilesHash(repo.URL)
+		reportHash := vctx.PrevReport.DocFilesHash
 
 		if repoHash == "" {
 			return Failure("single repository doc_files_hash missing")
@@ -97,8 +98,8 @@ func (r PerRepoDocHashRule) Validate(ctx Context) Result {
 	}
 
 	// Handle multiple repositories case
-	for _, repo := range ctx.Repos {
-		if ctx.State.GetRepoDocFilesHash(repo.URL) == "" {
+	for _, repo := range vctx.Repos {
+		if vctx.State.GetRepoDocFilesHash(repo.URL) == "" {
 			return Failure("missing per-repo doc_files_hash for " + repo.URL)
 		}
 	}
@@ -111,9 +112,9 @@ type CommitMetadataRule struct{}
 
 func (r CommitMetadataRule) Name() string { return "commit_metadata" }
 
-func (r CommitMetadataRule) Validate(ctx Context) Result {
-	for _, repo := range ctx.Repos {
-		if ctx.State.GetRepoLastCommit(repo.URL) == "" {
+func (r CommitMetadataRule) Validate(ctx context.Context, vctx Context) Result {
+	for _, repo := range vctx.Repos {
+		if vctx.State.GetRepoLastCommit(repo.URL) == "" {
 			return Failure("missing last commit metadata for " + repo.URL)
 		}
 	}

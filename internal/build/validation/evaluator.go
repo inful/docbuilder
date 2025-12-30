@@ -37,7 +37,6 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
 func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*hugo.BuildReport, bool) {
 	vctx := Context{
-		Context:   ctx,
 		OutDir:    se.outDir,
 		State:     se.state,
 		Generator: se.generator,
@@ -46,7 +45,7 @@ func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (
 	}
 
 	// Special handling for PreviousReportRule since it needs to populate context
-	if !se.validateAndPopulateContext(&vctx) {
+	if !se.validateAndPopulateContext(ctx, &vctx) {
 		return nil, false
 	}
 
@@ -59,7 +58,7 @@ func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (
 		CommitMetadataRule{},
 	)
 
-	result := remainingRules.Validate(vctx)
+	result := remainingRules.Validate(ctx, vctx)
 	if !result.Passed {
 		return nil, false
 	}
@@ -69,20 +68,20 @@ func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (
 }
 
 // validateAndPopulateContext runs the initial validation rules and populates the context.
-func (se *SkipEvaluator) validateAndPopulateContext(ctx *Context) bool {
+func (se *SkipEvaluator) validateAndPopulateContext(ctx context.Context, vctx *Context) bool {
 	initialRules := NewRuleChain(
 		BasicPrerequisitesRule{},
 		ConfigHashRule{},
 		PublicDirectoryRule{},
 	)
 
-	result := initialRules.Validate(*ctx)
+	result := initialRules.Validate(ctx, *vctx)
 	if !result.Passed {
 		return false
 	}
 
 	// Handle PreviousReportRule separately to populate context
-	return se.loadPreviousReport(ctx)
+	return se.loadPreviousReport(vctx)
 }
 
 // loadPreviousReport loads and validates the previous build report, populating the context.
