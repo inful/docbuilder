@@ -105,7 +105,7 @@ Real image: ![Real](./missing.png)
 	// Should NOT find links/images inside backticks or code blocks
 	assert.Len(t, broken, 2, "should only detect real broken links, not those in inline code")
 
-	var targets = make([]string, 0, len(broken))
+	targets := make([]string, 0, len(broken))
 	for _, bl := range broken {
 		targets = append(targets, bl.Target)
 	}
@@ -140,7 +140,7 @@ Backtick at end: ` + "`something` [Link](./real-missing.md)" + `
 
 	// Should find 2 broken links: ./missing.md and ./broken.md and ./real-missing.md
 	// Should NOT find ./example.md (inside backticks)
-	var targets = make([]string, 0, len(broken))
+	targets := make([]string, 0, len(broken))
 	for _, bl := range broken {
 		targets = append(targets, bl.Target)
 	}

@@ -47,7 +47,7 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 		return nil, fmt.Errorf("failed to list remote references: %w", err)
 	}
 
-	var remoteRefs = make([]*RemoteReference, 0, len(refs))
+	remoteRefs := make([]*RemoteReference, 0, len(refs))
 	for _, ref := range refs {
 		refName := ref.Name().String()
 
@@ -111,7 +111,7 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 		return nil, fmt.Errorf("failed to list remote references: %w", err)
 	}
 
-	var remoteRefs = make([]*RemoteReference, 0, len(refs))
+	remoteRefs := make([]*RemoteReference, 0, len(refs))
 	for _, ref := range refs {
 		refName := ref.Name().String()
 

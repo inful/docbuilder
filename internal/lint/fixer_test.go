@@ -337,7 +337,7 @@ func TestDetectBrokenLinks(t *testing.T) {
 	assert.Len(t, broken, 2, "should detect exactly 2 broken links")
 
 	// Verify broken link details
-	var brokenFiles = make([]string, 0, len(broken))
+	brokenFiles := make([]string, 0, len(broken))
 	for _, link := range broken {
 		brokenFiles = append(brokenFiles, link.Target)
 	}
