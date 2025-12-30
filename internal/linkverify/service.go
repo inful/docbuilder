@@ -242,21 +242,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 
 	if verifyErr != nil {
 		cacheEntry.Error = verifyErr.Error()
-
-		// Update failure tracking
-		if cached != nil {
-			cacheEntry.FailureCount = cached.FailureCount + 1
-			cacheEntry.FirstFailedAt = cached.FirstFailedAt
-			if cacheEntry.FirstFailedAt.IsZero() {
-				cacheEntry.FirstFailedAt = time.Now()
-			}
-		} else {
-			cacheEntry.FailureCount = 1
-			cacheEntry.FirstFailedAt = time.Now()
-		}
-		cacheEntry.ConsecutiveFail = true
-
-		// Handle broken link
+		s.updateFailureTracking(cacheEntry, cached)
 		s.handleBrokenLink(ctx, absoluteURL, link, page, status, verifyErr.Error(), cacheEntry)
 	} else {
 		// Link is valid, reset failure count
@@ -271,6 +257,21 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 }
 
 // checkLink performs the actual link verification.
+// updateFailureTracking updates the failure count and timing for a failed link.
+func (s *VerificationService) updateFailureTracking(entry *CacheEntry, cached *CacheEntry) {
+	if cached != nil {
+		entry.FailureCount = cached.FailureCount + 1
+		entry.FirstFailedAt = cached.FirstFailedAt
+		if entry.FirstFailedAt.IsZero() {
+			entry.FirstFailedAt = time.Now()
+		}
+	} else {
+		entry.FailureCount = 1
+		entry.FirstFailedAt = time.Now()
+	}
+	entry.ConsecutiveFail = true
+}
+
 // The linkURL should already be an absolute URL, resolved by verifyLink.
 func (s *VerificationService) checkLink(ctx context.Context, linkURL string, isInternal bool, page *PageMetadata) (int, error) {
 	slog.Debug("Checking link",
