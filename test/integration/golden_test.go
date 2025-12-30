@@ -327,7 +327,8 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 
 	// Build service is graceful - logs errors but may return success
 	// Verify that either we got an error OR the build shows skipped repos
-	if err == nil && result.Status == build.BuildStatusSuccess {
+	switch {
+	case err == nil && result.Status == build.BuildStatusSuccess:
 		// Check that the repository was actually skipped
 		if result.RepositoriesSkipped == 0 && result.Repositories > 0 {
 			t.Errorf("build succeeded with invalid repository - expected repository to be skipped but got: Processed=%d, Skipped=%d",
@@ -336,11 +337,11 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 			t.Logf("Build handled invalid repo gracefully - Processed: %d, Skipped: %d",
 				result.Repositories, result.RepositoriesSkipped)
 		}
-	} else if err != nil {
+	case err != nil:
 		// Error was returned - verify it's informative
 		t.Logf("Build returned error: %v", err)
 		require.Contains(t, err.Error(), "repository", "error should mention repository")
-	} else {
+	default:
 		t.Logf("Build failed gracefully with status: %v", result.Status)
 	}
 }

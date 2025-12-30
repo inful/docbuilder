@@ -63,6 +63,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 	}
 	forgeCount := 0
 	forgeSeen := map[string]struct{}{}
+	//nolint:gocritic // rangeValCopy: d.repositories is a map - cannot index map values in Go, must use value iteration
 	for _, r := range d.repositories {
 		if ft, ok := r.Tags["forge_type"]; ok && ft != "" {
 			if _, exists := forgeSeen[ft]; !exists {

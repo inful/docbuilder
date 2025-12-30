@@ -180,11 +180,12 @@ func TestTestForgeFrontmatterIntegration(t *testing.T) {
 			// Validate editURL generation with TestForge repository URLs
 			if editURL, ok := fm["editURL"]; ok {
 				editURLStr, isString := editURL.(string)
-				if !isString {
+				switch {
+				case !isString:
 					t.Errorf("editURL should be a string, got %T", editURL)
-				} else if len(editURLStr) == 0 {
+				case len(editURLStr) == 0:
 					t.Errorf("editURL should not be empty")
-				} else {
+				default:
 					t.Logf("✓ Generated editURL: %s", editURLStr)
 				}
 			}

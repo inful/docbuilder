@@ -328,11 +328,12 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		platformRepos := make(map[string][]string)
 		for _, repo := range result.Repositories {
 			var platform string
-			if stringContains(repo.CloneURL, "github.com") {
+			switch {
+			case stringContains(repo.CloneURL, "github.com"):
 				platform = "github"
-			} else if stringContains(repo.CloneURL, "gitlab.com") {
+			case stringContains(repo.CloneURL, "gitlab.com"):
 				platform = "gitlab"
-			} else if stringContains(repo.CloneURL, "git.example.com") {
+			case stringContains(repo.CloneURL, "git.example.com"):
 				platform = "forgejo"
 			}
 
