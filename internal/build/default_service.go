@@ -114,43 +114,12 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 
 	// Stage 0: Skip evaluation (optional)
 	if req.Options.SkipIfUnchanged && s.skipEvaluatorFactory != nil {
-		stageStart := time.Now()
-		ctx = observability.WithStage(ctx, "skip_evaluation")
-		observability.InfoContext(ctx, "Evaluating if build can be skipped")
-
-		evaluator := s.skipEvaluatorFactory(req.OutputDir)
-		if evaluator != nil {
-			// Convert repositories to []any for the generic interface
-			repos := make([]any, len(req.Config.Repositories))
-			for i := range req.Config.Repositories {
-				repos[i] = req.Config.Repositories[i]
-			}
-
-			if skipReport, canSkip := evaluator.Evaluate(ctx, repos); canSkip {
-				observability.InfoContext(ctx, "Build skipped - no changes detected")
-				result.Status = BuildStatusSkipped
-				result.Skipped = true
-				result.SkipReason = "no_changes"
-				result.Report = skipReport
-				result.EndTime = time.Now()
-				result.Duration = result.EndTime.Sub(startTime)
-				s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
-				s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
-				s.recorder.ObserveBuildDuration(result.Duration)
-				return result, nil
-			}
-		} else {
-			observability.WarnContext(ctx, "Skip evaluator factory returned nil - skipping evaluation disabled")
+		skipResult := s.evaluateSkip(ctx, req, startTime)
+		if skipResult != nil {
+			return skipResult, nil
 		}
-		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
-		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
 	} else {
-		if !req.Options.SkipIfUnchanged {
-			observability.DebugContext(ctx, "Skip evaluation disabled - SkipIfUnchanged=false")
-		}
-		if s.skipEvaluatorFactory == nil {
-			observability.WarnContext(ctx, "Skip evaluator factory not configured - cannot evaluate skip conditions")
-		}
+		s.logSkipEvaluationDisabled(ctx, req, s.skipEvaluatorFactory)
 	}
 
 	// Stage 1: Create workspace
@@ -332,4 +301,58 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	s.recorder.ObserveBuildDuration(result.Duration)
 
 	return result, nil
+}
+
+// evaluateSkip performs skip evaluation and returns a result if build should be skipped.
+// Returns nil if build should proceed.
+func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest, startTime time.Time) *BuildResult {
+	stageStart := time.Now()
+	ctx = observability.WithStage(ctx, "skip_evaluation")
+	observability.InfoContext(ctx, "Evaluating if build can be skipped")
+
+	evaluator := s.skipEvaluatorFactory(req.OutputDir)
+	if evaluator == nil {
+		observability.WarnContext(ctx, "Skip evaluator factory returned nil - skipping evaluation disabled")
+		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
+		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
+		return nil
+	}
+
+	// Convert repositories to []any for the generic interface
+	repos := make([]any, len(req.Config.Repositories))
+	for i := range req.Config.Repositories {
+		repos[i] = req.Config.Repositories[i]
+	}
+
+	skipReport, canSkip := evaluator.Evaluate(ctx, repos)
+	if !canSkip {
+		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
+		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
+		return nil
+	}
+
+	// Build should be skipped
+	observability.InfoContext(ctx, "Build skipped - no changes detected")
+	result := &BuildResult{
+		Status:     BuildStatusSkipped,
+		Skipped:    true,
+		SkipReason: "no_changes",
+		Report:     skipReport,
+		EndTime:    time.Now(),
+	}
+	result.Duration = result.EndTime.Sub(startTime)
+	s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
+	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
+	s.recorder.ObserveBuildDuration(result.Duration)
+	return result
+}
+
+// logSkipEvaluationDisabled logs why skip evaluation is disabled.
+func (s *DefaultBuildService) logSkipEvaluationDisabled(ctx context.Context, req BuildRequest, factory func(string) SkipEvaluator) {
+	if !req.Options.SkipIfUnchanged {
+		observability.DebugContext(ctx, "Skip evaluation disabled - SkipIfUnchanged=false")
+	}
+	if factory == nil {
+		observability.WarnContext(ctx, "Skip evaluator factory not configured - cannot evaluate skip conditions")
+	}
 }
