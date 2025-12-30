@@ -191,6 +191,7 @@ func (r *TypedTransformerRegistry) List() []TypedTransformer {
 }
 
 // ListByPriority returns transformers sorted by priority.
+//
 // Deprecated: Use ListByDependencies() for dependency-based ordering.
 func (r *TypedTransformerRegistry) ListByPriority() []TypedTransformer {
 	transformers := r.List()

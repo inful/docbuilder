@@ -95,8 +95,9 @@ func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
 func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	indexPath := filepath.Join(g.buildRoot(), "content", "_index.md")
 	repoGroups := make(map[string][]docs.DocFile)
-	for _, file := range docFiles {
-		repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
+	for i := range docFiles {
+		file := &docFiles[i]
+		repoGroups[file.Repository] = append(repoGroups[file.Repository], *file)
 	}
 	// Use fixed epoch date for reproducible builds (user can override via custom index.md)
 	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
