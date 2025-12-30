@@ -21,7 +21,7 @@ func NewLocalClient(config *Config) (Client, error) {
 	return lc, nil
 }
 
-func (c *LocalClient) GetType() Type   { return Type(cfg.ForgeLocal) }
+func (c *LocalClient) GetType() Type   { return cfg.ForgeLocal }
 func (c *LocalClient) GetName() string { return c.name }
 
 func (c *LocalClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
