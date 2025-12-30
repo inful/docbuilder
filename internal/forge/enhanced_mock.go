@@ -397,7 +397,7 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 
 	return &Config{
 		Name:    m.name,
-		Type:    Type(m.forgeType),
+		Type:    m.forgeType,
 		APIURL:  apiURL,
 		BaseURL: baseURL,
 		Organizations: func() []string {
