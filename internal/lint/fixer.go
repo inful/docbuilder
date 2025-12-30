@@ -662,62 +662,112 @@ func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []Broke
 	var broken []BrokenLink
 
 	for i := range len(line) {
-		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
-			// Skip if this link is inside inline code
-			if isInsideInlineCode(line, i) {
-				continue
-			}
-			start := -1
-			for j := i - 1; j >= 0; j-- {
-				if line[j] == '[' {
-					if j > 0 && line[j-1] == '!' {
-						break
-					}
-					start = j
-					break
-				}
-			}
-			if start == -1 {
-				continue
-			}
+		if !isInlineLinkStart(line, i) {
+			continue
+		}
 
-			end := strings.Index(line[i+2:], ")")
-			if end == -1 {
-				continue
-			}
-			end += i + 2
+		// Skip if this link is inside inline code
+		if isInsideInlineCode(line, i) {
+			continue
+		}
 
-			linkTarget := line[i+2 : end]
+		linkInfo := extractInlineLink(line, i)
+		if linkInfo == nil {
+			continue
+		}
 
-			// Skip external URLs
-			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
-				continue
-			}
-
-			// Remove fragment for file existence check
-			targetPath := strings.Split(linkTarget, "#")[0]
-			if targetPath == "" {
-				continue // Fragment-only link (same page)
-			}
-
-			// Resolve and check if file exists
-			resolved, err := resolveRelativePath(sourceFile, targetPath)
-			if err != nil {
-				continue
-			}
-
-			if !fileExists(resolved) {
-				broken = append(broken, BrokenLink{
-					SourceFile: sourceFile,
-					LineNumber: lineNum,
-					Target:     linkTarget,
-					LinkType:   LinkTypeInline,
-				})
-			}
+		if isBrokenLink(sourceFile, linkInfo.target) {
+			broken = append(broken, BrokenLink{
+				SourceFile: sourceFile,
+				LineNumber: lineNum,
+				Target:     linkInfo.target,
+				LinkType:   LinkTypeInline,
+			})
 		}
 	}
 
 	return broken
+}
+
+// inlineLinkInfo contains extracted inline link information.
+type inlineLinkInfo struct {
+	start  int
+	end    int
+	target string
+}
+
+// isInlineLinkStart checks if position i is the start of an inline link pattern ']('.
+func isInlineLinkStart(line string, i int) bool {
+	return i+1 < len(line) && line[i] == ']' && line[i+1] == '('
+}
+
+// extractInlineLink extracts link information from an inline link at position i.
+func extractInlineLink(line string, i int) *inlineLinkInfo {
+	start := findLinkTextStart(line, i)
+	if start == -1 {
+		return nil
+	}
+
+	end := findLinkEnd(line, i+2)
+	if end == -1 {
+		return nil
+	}
+
+	linkTarget := line[i+2 : end]
+
+	// Skip external URLs
+	if isExternalURL(linkTarget) {
+		return nil
+	}
+
+	// Remove fragment for file existence check
+	targetPath := strings.Split(linkTarget, "#")[0]
+	if targetPath == "" {
+		return nil // Fragment-only link (same page)
+	}
+
+	return &inlineLinkInfo{
+		start:  start,
+		end:    end,
+		target: linkTarget,
+	}
+}
+
+// findLinkTextStart finds the opening '[' bracket for link text, excluding image links.
+func findLinkTextStart(line string, closeBracketPos int) int {
+	for j := closeBracketPos - 1; j >= 0; j-- {
+		if line[j] == '[' {
+			// Make sure it's not an image link (preceded by !)
+			if j > 0 && line[j-1] == '!' {
+				return -1
+			}
+			return j
+		}
+	}
+	return -1
+}
+
+// findLinkEnd finds the closing ')' parenthesis for the link target.
+func findLinkEnd(line string, startPos int) int {
+	end := strings.Index(line[startPos:], ")")
+	if end == -1 {
+		return -1
+	}
+	return startPos + end
+}
+
+// isExternalURL checks if a link target is an external URL.
+func isExternalURL(target string) bool {
+	return strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://")
+}
+
+// isBrokenLink checks if a link target points to a non-existent file.
+func isBrokenLink(sourceFile, linkTarget string) bool {
+	resolved, err := resolveRelativePath(sourceFile, linkTarget)
+	if err != nil {
+		return false
+	}
+	return !fileExists(resolved)
 }
 
 // checkReferenceLinksBroken checks for broken reference-style links in a line.
@@ -941,73 +991,52 @@ func findContentRoot(sourceFile string) string {
 
 // findInlineLinks finds inline-style markdown links: [text](path).
 func findInlineLinks(line string, lineNum int, sourceFile, targetPath string) []LinkReference {
-	// Pattern: [text](path) or [text](path#fragment)
-	// We'll use a simple string search for now, can be improved with regex
 	var links []LinkReference
 
-	// Look for ]( pattern
 	for i := range len(line) {
-		if i+1 < len(line) && line[i] == ']' && line[i+1] == '(' {
-			// Find the opening [
-			start := -1
-			for j := i - 1; j >= 0; j-- {
-				if line[j] == '[' {
-					// Make sure it's not an image link (preceded by !)
-					if j > 0 && line[j-1] == '!' {
-						break
-					}
-					start = j
-					break
-				}
-			}
+		if !isInlineLinkStart(line, i) {
+			continue
+		}
 
-			if start == -1 {
-				continue
-			}
+		linkInfo := extractInlineLink(line, i)
+		if linkInfo == nil {
+			continue
+		}
 
-			// Find the closing )
-			end := strings.Index(line[i+2:], ")")
-			if end == -1 {
-				continue
-			}
-			end += i + 2
+		// Resolve the path
+		resolved, err := resolveRelativePath(sourceFile, linkInfo.target)
+		if err != nil {
+			continue
+		}
 
-			// Extract the link target
-			linkTarget := line[i+2 : end]
-
-			// Skip external URLs
-			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
-				continue
-			}
-
-			// Resolve the path
-			resolved, err := resolveRelativePath(sourceFile, linkTarget)
-			if err != nil {
-				continue
-			}
-
-			// Check if this link points to our target (case-insensitive for filesystem compatibility)
-			if pathsEqualCaseInsensitive(resolved, targetPath) {
-				// Extract fragment if present
-				fragment := ""
-				if idx := strings.Index(linkTarget, "#"); idx != -1 {
-					fragment = linkTarget[idx:]
-					linkTarget = linkTarget[:idx]
-				}
-
-				links = append(links, LinkReference{
-					SourceFile: sourceFile,
-					LineNumber: lineNum,
-					LinkType:   LinkTypeInline,
-					Target:     linkTarget,
-					Fragment:   fragment,
-					FullMatch:  line[start : end+1],
-				})
-			}
+		// Check if this link points to our target
+		if pathsEqualCaseInsensitive(resolved, targetPath) {
+			linkRef := createLinkReference(line, lineNum, sourceFile, linkInfo)
+			links = append(links, linkRef)
 		}
 	}
 
 	return links
+}
+
+// createLinkReference creates a LinkReference from extracted link information.
+func createLinkReference(line string, lineNum int, sourceFile string, linkInfo *inlineLinkInfo) LinkReference {
+	// Extract fragment if present
+	fragment := ""
+	linkTarget := linkInfo.target
+	if idx := strings.Index(linkTarget, "#"); idx != -1 {
+		fragment = linkTarget[idx:]
+		linkTarget = linkTarget[:idx]
+	}
+
+	return LinkReference{
+		SourceFile: sourceFile,
+		LineNumber: lineNum,
+		LinkType:   LinkTypeInline,
+		Target:     linkTarget,
+		Fragment:   fragment,
+		FullMatch:  line[linkInfo.start : linkInfo.end+1],
+	}
 }
 
 // findReferenceLinks finds reference-style markdown links: [id]: path.
