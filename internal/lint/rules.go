@@ -205,7 +205,7 @@ func hasUppercase(filename string) bool {
 	return false
 }
 
-// hasSpecialChars checks if filename contains characters outside [a-z0-9-_.]
+// hasSpecialChars checks if filename contains characters outside [a-z0-9-_.].
 func hasSpecialChars(filename string) bool {
 	// Pattern matches valid characters: lowercase, digits, hyphen, underscore, dot
 	validPattern := regexp.MustCompile(`^[a-z0-9\-_.]+$`)

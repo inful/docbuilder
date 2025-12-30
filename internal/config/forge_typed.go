@@ -12,20 +12,20 @@ type ForgeTyped struct {
 	value string
 }
 
-// Predefined forge types using the new pattern
+// Predefined forge types using the new pattern.
 var (
 	ForgeTypedGitHub  = ForgeTyped{"github"}
 	ForgeTypedGitLab  = ForgeTyped{"gitlab"}
 	ForgeTypedForgejo = ForgeTyped{"forgejo"}
 
-	// Registry for validation and parsing
+	// Registry for validation and parsing.
 	forgeTypeNormalizer = foundation.NewNormalizer(map[string]ForgeTyped{
 		"github":  ForgeTypedGitHub,
 		"gitlab":  ForgeTypedGitLab,
 		"forgejo": ForgeTypedForgejo,
 	}, ForgeTypedGitHub) // default to GitHub
 
-	// Validation for forge type fields
+	// Validation for forge type fields.
 	forgeTypeValidator = foundation.OneOf("forge_type", []ForgeTyped{
 		ForgeTypedGitHub, ForgeTypedGitLab, ForgeTypedForgejo,
 	})

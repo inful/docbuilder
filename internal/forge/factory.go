@@ -6,7 +6,7 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// NewForgeClient creates a new forge client based on the configuration
+// NewForgeClient creates a new forge client based on the configuration.
 func NewForgeClient(config *Config) (Client, error) {
 	switch config.Type {
 	case cfg.ForgeGitHub:
@@ -22,7 +22,7 @@ func NewForgeClient(config *Config) (Client, error) {
 	}
 }
 
-// CreateForgeManager creates a forge manager with the provided configurations
+// CreateForgeManager creates a forge manager with the provided configurations.
 func CreateForgeManager(configs []*Config) (*Manager, error) {
 	manager := NewForgeManager()
 

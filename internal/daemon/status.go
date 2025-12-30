@@ -15,7 +15,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
-// StatusPageData represents data for status page rendering
+// StatusPageData represents data for status page rendering.
 type StatusPageData struct {
 	DaemonInfo     Info               `json:"daemon_info"`
 	Repositories   []RepositoryStatus `json:"repositories"`
@@ -29,7 +29,7 @@ type StatusPageData struct {
 	DiscoveryErrors map[string]string `json:"discovery_errors,omitempty"`
 }
 
-// Info holds basic daemon information
+// Info holds basic daemon information.
 type Info struct {
 	Status     Status    `json:"status"`
 	Version    string    `json:"version"`
@@ -38,7 +38,7 @@ type Info struct {
 	ConfigFile string    `json:"config_file"`
 }
 
-// RepositoryStatus tracks status of individual repositories
+// RepositoryStatus tracks status of individual repositories.
 type RepositoryStatus struct {
 	Name              string               `json:"name"`
 	URL               string               `json:"url"`
@@ -51,7 +51,7 @@ type RepositoryStatus struct {
 	LastError         *string              `json:"last_error,omitempty"`
 }
 
-// VersionSummary provides overview of versioning across all repositories
+// VersionSummary provides overview of versioning across all repositories.
 type VersionSummary struct {
 	TotalRepositories int                            `json:"total_repositories"`
 	TotalVersions     int                            `json:"total_versions"`
@@ -59,7 +59,7 @@ type VersionSummary struct {
 	VersionTypes      map[versioning.VersionType]int `json:"version_types"`
 }
 
-// BuildStatusInfo tracks build queue and execution status
+// BuildStatusInfo tracks build queue and execution status.
 type BuildStatusInfo struct {
 	QueueLength         int32                     `json:"queue_length"`
 	ActiveJobs          int32                     `json:"active_jobs"`
@@ -80,7 +80,7 @@ type BuildStatusInfo struct {
 	StageCounts         map[string]map[string]int `json:"stage_counts,omitempty"` // stage -> {success,warning,fatal,canceled}
 }
 
-// SystemMetrics provides system resource information
+// SystemMetrics provides system resource information.
 type SystemMetrics struct {
 	MemoryUsage    string `json:"memory_usage"`
 	DiskUsage      string `json:"disk_usage"`
@@ -88,7 +88,7 @@ type SystemMetrics struct {
 	WorkspaceSize  string `json:"workspace_size"`
 }
 
-// GenerateStatusData collects and formats status information
+// GenerateStatusData collects and formats status information.
 func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 	slog.Debug("Status: acquiring read lock")
 	d.mu.RLock()
@@ -266,7 +266,7 @@ func (d *Daemon) generateRepositoryStatus() ([]RepositoryStatus, error) {
 	return repositories, nil
 }
 
-// generateVersionSummary creates version overview across all repositories
+// generateVersionSummary creates version overview across all repositories.
 func (d *Daemon) generateVersionSummary(repositories []RepositoryStatus) VersionSummary {
 	summary := VersionSummary{
 		TotalRepositories: len(repositories),
@@ -294,7 +294,7 @@ func (d *Daemon) generateVersionSummary(repositories []RepositoryStatus) Version
 	return summary
 }
 
-// generateSystemMetrics collects system resource information
+// generateSystemMetrics collects system resource information.
 func (d *Daemon) generateSystemMetrics() SystemMetrics {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
@@ -311,7 +311,7 @@ func (d *Daemon) generateSystemMetrics() SystemMetrics {
 	}
 }
 
-// StatusHandler serves the status page as JSON or HTML
+// StatusHandler serves the status page as JSON or HTML.
 func (d *Daemon) StatusHandler(w http.ResponseWriter, r *http.Request) {
 	errorAdapter := errors.NewHTTPErrorAdapter(slog.Default())
 

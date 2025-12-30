@@ -13,7 +13,7 @@ type (
 	DeltaAnalyzer    = delta.DeltaAnalyzer
 )
 
-// Re-export constants
+// Re-export constants.
 const (
 	DeltaDecisionFull       = delta.DeltaDecisionFull
 	DeltaDecisionPartial    = delta.DeltaDecisionPartial

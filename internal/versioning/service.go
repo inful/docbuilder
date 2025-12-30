@@ -4,7 +4,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// GetVersioningConfig creates a VersionConfig from V2Config
+// GetVersioningConfig creates a VersionConfig from V2Config.
 func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 	if v2Config.Versioning == nil {
 		// Return default configuration

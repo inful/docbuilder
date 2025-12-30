@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// CLITestRunner provides utilities for testing CLI commands
+// CLITestRunner provides utilities for testing CLI commands.
 type CLITestRunner struct {
 	t          *testing.T
 	binaryPath string
@@ -21,7 +21,7 @@ type CLITestRunner struct {
 	timeout    time.Duration
 }
 
-// NewCLITestRunner creates a new CLI test runner
+// NewCLITestRunner creates a new CLI test runner.
 func NewCLITestRunner(t *testing.T, binaryPath string) *CLITestRunner {
 	return &CLITestRunner{
 		t:          t,
@@ -30,25 +30,25 @@ func NewCLITestRunner(t *testing.T, binaryPath string) *CLITestRunner {
 	}
 }
 
-// WithWorkingDir sets the working directory for CLI commands
+// WithWorkingDir sets the working directory for CLI commands.
 func (r *CLITestRunner) WithWorkingDir(dir string) *CLITestRunner {
 	r.workingDir = dir
 	return r
 }
 
-// WithEnv sets environment variables for CLI commands
+// WithEnv sets environment variables for CLI commands.
 func (r *CLITestRunner) WithEnv(env []string) *CLITestRunner {
 	r.env = env
 	return r
 }
 
-// WithTimeout sets the timeout for CLI commands
+// WithTimeout sets the timeout for CLI commands.
 func (r *CLITestRunner) WithTimeout(timeout time.Duration) *CLITestRunner {
 	r.timeout = timeout
 	return r
 }
 
-// CLIResult represents the result of a CLI command execution
+// CLIResult represents the result of a CLI command execution.
 type CLIResult struct {
 	ExitCode int
 	Stdout   string
@@ -57,7 +57,7 @@ type CLIResult struct {
 	Error    error
 }
 
-// Run executes a CLI command and returns the result
+// Run executes a CLI command and returns the result.
 func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	r.t.Helper()
 
@@ -103,7 +103,7 @@ func (r *CLITestRunner) Run(args ...string) *CLIResult {
 	return result
 }
 
-// AssertExitCode validates the exit code
+// AssertExitCode validates the exit code.
 func (result *CLIResult) AssertExitCode(t *testing.T, expected int) *CLIResult {
 	t.Helper()
 	if result.ExitCode != expected {
@@ -113,7 +113,7 @@ func (result *CLIResult) AssertExitCode(t *testing.T, expected int) *CLIResult {
 	return result
 }
 
-// AssertOutputContains validates that stdout contains expected text
+// AssertOutputContains validates that stdout contains expected text.
 func (result *CLIResult) AssertOutputContains(t *testing.T, expected string) *CLIResult {
 	t.Helper()
 	if !strings.Contains(result.Stdout, expected) {
@@ -122,7 +122,7 @@ func (result *CLIResult) AssertOutputContains(t *testing.T, expected string) *CL
 	return result
 }
 
-// AssertErrorContains validates that stderr contains expected text
+// AssertErrorContains validates that stderr contains expected text.
 func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) *CLIResult {
 	t.Helper()
 	if !strings.Contains(result.Stderr, expected) {
@@ -131,7 +131,7 @@ func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) *CLI
 	return result
 }
 
-// AssertSuccess validates that the command succeeded (exit code 0, no error)
+// AssertSuccess validates that the command succeeded (exit code 0, no error).
 func (result *CLIResult) AssertSuccess(t *testing.T) *CLIResult {
 	t.Helper()
 	if result.ExitCode != 0 {
@@ -141,7 +141,7 @@ func (result *CLIResult) AssertSuccess(t *testing.T) *CLIResult {
 	return result
 }
 
-// AssertFailure validates that the command failed (non-zero exit code)
+// AssertFailure validates that the command failed (non-zero exit code).
 func (result *CLIResult) AssertFailure(t *testing.T) *CLIResult {
 	t.Helper()
 	if result.ExitCode == 0 {
@@ -150,14 +150,14 @@ func (result *CLIResult) AssertFailure(t *testing.T) *CLIResult {
 	return result
 }
 
-// MockCLIEnvironment provides a complete testing environment for CLI integration tests
+// MockCLIEnvironment provides a complete testing environment for CLI integration tests.
 type MockCLIEnvironment struct {
 	*TestEnvironment
 	runner     *CLITestRunner
 	configFile string
 }
 
-// NewMockCLIEnvironment creates a new mock CLI environment
+// NewMockCLIEnvironment creates a new mock CLI environment.
 func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 	env := NewTestEnvironment(t)
 	runner := NewCLITestRunner(t, "docbuilder") // Assumes binary is in PATH
@@ -168,7 +168,7 @@ func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
 	}
 }
 
-// WithBinaryPath sets the path to the DocBuilder binary
+// WithBinaryPath sets the path to the DocBuilder binary.
 func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	// Resolve to absolute path so the runner can execute it from any working dir.
 	absPath, err := filepath.Abs(path)
@@ -208,12 +208,12 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	return env
 }
 
-// RunCommand executes a DocBuilder CLI command
+// RunCommand executes a DocBuilder CLI command.
 func (env *MockCLIEnvironment) RunCommand(args ...string) *CLIResult {
 	return env.runner.Run(args...)
 }
 
-// WriteConfigFile writes the environment's config to a file
+// WriteConfigFile writes the environment's config to a file.
 func (env *MockCLIEnvironment) WriteConfigFile() error {
 	if env.Config == nil {
 		env.t.Fatal("No config set in environment")

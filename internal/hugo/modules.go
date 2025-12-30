@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work
+// ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work.
 func (g *Generator) ensureGoModForModules() error {
 	goModPath := filepath.Join(g.buildRoot(), "go.mod")
 	deriveModuleName := func() string {
@@ -71,7 +71,7 @@ func (g *Generator) ensureGoModForModules() error {
 }
 
 // ensureThemeVersionRequires is no longer needed since we hardcode Relearn module
-// Hugo will fetch the latest compatible version automatically
+// Hugo will fetch the latest compatible version automatically.
 func (g *Generator) ensureThemeVersionRequires(goModPath string) error {
 	// No-op: Hugo Modules will automatically resolve and download Relearn
 	// The module path in hugo.yaml is sufficient

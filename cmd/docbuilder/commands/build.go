@@ -190,7 +190,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	return nil
 }
 
-// runLocalBuild builds from a local docs directory without git cloning
+// runLocalBuild builds from a local docs directory without git cloning.
 func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, keepWorkspace bool) error {
 	fmt.Println("Starting DocBuilder local build")
 
@@ -262,7 +262,7 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	return nil
 }
 
-// createLocalConfig creates a minimal configuration for building from a local docs directory
+// createLocalConfig creates a minimal configuration for building from a local docs directory.
 func (b *BuildCmd) createLocalConfig() *config.Config {
 	cfg := &config.Config{}
 	cfg.Version = "2.0"
@@ -287,7 +287,7 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 	return cfg
 }
 
-// fileExists checks if a file exists
+// fileExists checks if a file exists.
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil

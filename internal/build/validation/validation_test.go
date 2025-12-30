@@ -36,7 +36,7 @@ func (f *fakeSkipState) GetRepoDocFilesHash(u string) string { return f.repoDocH
 func (f *fakeSkipState) GetLastGlobalDocFilesHash() string   { return f.lastGlobalDocFiles }
 func (f *fakeSkipState) SetLastGlobalDocFilesHash(s string)  { f.lastGlobalDocFiles = s }
 
-// Test helpers
+// Test helpers.
 func newTestGenerator(t *testing.T, cfg *cfg.Config, outDir string) *hugo.Generator {
 	t.Helper()
 	return hugo.NewGenerator(cfg, outDir)

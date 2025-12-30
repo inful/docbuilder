@@ -11,7 +11,7 @@ import (
 )
 
 // EnhancedMockForgeClient provides advanced mock capabilities for testing forge integrations
-// This is the production-ready version of the enhanced mock system developed in Phase 1 & 2
+// This is the production-ready version of the enhanced mock system developed in Phase 1 & 2.
 type EnhancedMockForgeClient struct {
 	name          string
 	forgeType     Type
@@ -33,13 +33,13 @@ type EnhancedMockForgeClient struct {
 	mu             sync.Mutex // protects operationCount
 }
 
-// RateLimitConfig defines rate limiting parameters
+// RateLimitConfig defines rate limiting parameters.
 type RateLimitConfig struct {
 	RequestsPerHour int
 	ResetTime       time.Time
 }
 
-// NewEnhancedMockForgeClient creates a new enhanced mock forge client
+// NewEnhancedMockForgeClient creates a new enhanced mock forge client.
 func NewEnhancedMockForgeClient(name string, forgeType Type) *EnhancedMockForgeClient {
 	return &EnhancedMockForgeClient{
 		name:          name,
@@ -49,7 +49,7 @@ func NewEnhancedMockForgeClient(name string, forgeType Type) *EnhancedMockForgeC
 	}
 }
 
-// NewEnhancedGitHubMock creates a pre-configured GitHub mock with realistic defaults
+// NewEnhancedGitHubMock creates a pre-configured GitHub mock with realistic defaults.
 func NewEnhancedGitHubMock(name string) *EnhancedMockForgeClient {
 	mock := NewEnhancedMockForgeClient(name, TypeGitHub)
 
@@ -67,7 +67,7 @@ func NewEnhancedGitHubMock(name string) *EnhancedMockForgeClient {
 	return mock
 }
 
-// NewEnhancedGitLabMock creates a pre-configured GitLab mock with realistic defaults
+// NewEnhancedGitLabMock creates a pre-configured GitLab mock with realistic defaults.
 func NewEnhancedGitLabMock(name string) *EnhancedMockForgeClient {
 	mock := NewEnhancedMockForgeClient(name, TypeGitLab)
 
@@ -85,7 +85,7 @@ func NewEnhancedGitLabMock(name string) *EnhancedMockForgeClient {
 	return mock
 }
 
-// NewEnhancedForgejoMock creates a pre-configured Forgejo mock with realistic defaults
+// NewEnhancedForgejoMock creates a pre-configured Forgejo mock with realistic defaults.
 func NewEnhancedForgejoMock(name string) *EnhancedMockForgeClient {
 	mock := NewEnhancedMockForgeClient(name, TypeForgejo)
 
@@ -105,41 +105,41 @@ func NewEnhancedForgejoMock(name string) *EnhancedMockForgeClient {
 
 // Repository Management Methods
 
-// AddRepository adds a repository to the mock
+// AddRepository adds a repository to the mock.
 func (m *EnhancedMockForgeClient) AddRepository(repo *Repository) {
 	m.repositories = append(m.repositories, repo)
 }
 
-// AddOrganization adds an organization to the mock
+// AddOrganization adds an organization to the mock.
 func (m *EnhancedMockForgeClient) AddOrganization(org *Organization) {
 	m.organizations = append(m.organizations, org)
 }
 
-// ClearRepositories removes all repositories
+// ClearRepositories removes all repositories.
 func (m *EnhancedMockForgeClient) ClearRepositories() {
 	m.repositories = make([]*Repository, 0)
 }
 
-// ClearOrganizations removes all organizations
+// ClearOrganizations removes all organizations.
 func (m *EnhancedMockForgeClient) ClearOrganizations() {
 	m.organizations = make([]*Organization, 0)
 }
 
 // Failure Simulation Methods
 
-// WithWebhookSecret sets the webhook secret for testing
+// WithWebhookSecret sets the webhook secret for testing.
 func (m *EnhancedMockForgeClient) WithWebhookSecret(secret string) *EnhancedMockForgeClient {
 	m.webhookSecret = secret
 	return m
 }
 
-// WithAuthFailure enables authentication failure simulation
+// WithAuthFailure enables authentication failure simulation.
 func (m *EnhancedMockForgeClient) WithAuthFailure() *EnhancedMockForgeClient {
 	m.authFailure = true
 	return m
 }
 
-// WithRateLimit enables rate limiting simulation
+// WithRateLimit enables rate limiting simulation.
 func (m *EnhancedMockForgeClient) WithRateLimit(requestsPerHour int, resetDuration time.Duration) *EnhancedMockForgeClient {
 	m.rateLimit = &RateLimitConfig{
 		RequestsPerHour: requestsPerHour,
@@ -148,19 +148,19 @@ func (m *EnhancedMockForgeClient) WithRateLimit(requestsPerHour int, resetDurati
 	return m
 }
 
-// WithNetworkTimeout enables network timeout simulation
+// WithNetworkTimeout enables network timeout simulation.
 func (m *EnhancedMockForgeClient) WithNetworkTimeout(timeout time.Duration) *EnhancedMockForgeClient {
 	m.networkTimeout = timeout
 	return m
 }
 
-// WithDelay enables response delay simulation
+// WithDelay enables response delay simulation.
 func (m *EnhancedMockForgeClient) WithDelay(delay time.Duration) *EnhancedMockForgeClient {
 	m.responseDelay = delay
 	return m
 }
 
-// ClearFailures removes all failure conditions
+// ClearFailures removes all failure conditions.
 func (m *EnhancedMockForgeClient) ClearFailures() {
 	m.authFailure = false
 	m.rateLimit = nil
@@ -172,17 +172,17 @@ func (m *EnhancedMockForgeClient) ClearFailures() {
 
 // ForgeClient Interface Implementation
 
-// GetType returns the forge type
+// GetType returns the forge type.
 func (m *EnhancedMockForgeClient) GetType() Type {
 	return m.forgeType
 }
 
-// GetName returns the forge name
+// GetName returns the forge name.
 func (m *EnhancedMockForgeClient) GetName() string {
 	return m.name
 }
 
-// ListOrganizations returns mock organizations with failure simulation
+// ListOrganizations returns mock organizations with failure simulation.
 func (m *EnhancedMockForgeClient) ListOrganizations(_ context.Context) ([]*Organization, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (m *EnhancedMockForgeClient) ListOrganizations(_ context.Context) ([]*Organ
 	return m.organizations, nil
 }
 
-// ListRepositories returns mock repositories with failure simulation
+// ListRepositories returns mock repositories with failure simulation.
 func (m *EnhancedMockForgeClient) ListRepositories(_ context.Context, organizations []string) ([]*Repository, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (m *EnhancedMockForgeClient) ListRepositories(_ context.Context, organizati
 	return filtered, nil
 }
 
-// GetRepository returns a specific repository
+// GetRepository returns a specific repository.
 func (m *EnhancedMockForgeClient) GetRepository(_ context.Context, owner, repo string) (*Repository, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (m *EnhancedMockForgeClient) GetRepository(_ context.Context, owner, repo s
 	return nil, fmt.Errorf("repository %s not found", fullName)
 }
 
-// CheckDocumentation checks if repository has documentation
+// CheckDocumentation checks if repository has documentation.
 func (m *EnhancedMockForgeClient) CheckDocumentation(_ context.Context, _ *Repository) error {
 	if err := m.simulateFailures(); err != nil {
 		return err
@@ -244,7 +244,7 @@ func (m *EnhancedMockForgeClient) CheckDocumentation(_ context.Context, _ *Repos
 	return nil
 }
 
-// ValidateWebhook simulates webhook validation
+// ValidateWebhook simulates webhook validation.
 func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature, secret string) bool {
 	// Empty signature should fail
 	if signature == "" {
@@ -288,7 +288,7 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature, secret st
 	}
 }
 
-// ParseWebhookEvent parses webhook events
+// ParseWebhookEvent parses webhook events.
 func (m *EnhancedMockForgeClient) ParseWebhookEvent(_ []byte, eventType string) (*WebhookEvent, error) {
 	if err := m.simulateFailures(); err != nil {
 		return nil, err
@@ -342,7 +342,7 @@ func (m *EnhancedMockForgeClient) ParseWebhookEvent(_ []byte, eventType string) 
 	return event, nil
 }
 
-// RegisterWebhook registers webhooks (mock implementation)
+// RegisterWebhook registers webhooks (mock implementation).
 func (m *EnhancedMockForgeClient) RegisterWebhook(_ context.Context, _ *Repository, webhookURL string) error {
 	if err := m.simulateFailures(); err != nil {
 		return err
@@ -361,7 +361,7 @@ func (m *EnhancedMockForgeClient) RegisterWebhook(_ context.Context, _ *Reposito
 	return nil // Mock success
 }
 
-// GetEditURL generates platform-specific edit URLs
+// GetEditURL generates platform-specific edit URLs.
 func (m *EnhancedMockForgeClient) GetEditURL(repo *Repository, filePath string, branch string) string {
 	switch m.forgeType {
 	case TypeGitHub:
@@ -377,7 +377,7 @@ func (m *EnhancedMockForgeClient) GetEditURL(repo *Repository, filePath string, 
 
 // Configuration Generation
 
-// GenerateForgeConfig generates a complete forge configuration
+// GenerateForgeConfig generates a complete forge configuration.
 func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 	var apiURL, baseURL string
 
@@ -427,7 +427,7 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 
 // Private helper methods
 
-// simulateFailures simulates various failure modes
+// simulateFailures simulates various failure modes.
 func (m *EnhancedMockForgeClient) simulateFailures() error {
 	m.mu.Lock()
 	m.operationCount++
@@ -467,7 +467,7 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 	return nil
 }
 
-// containsOrganization checks if a repository full name contains the organization
+// containsOrganization checks if a repository full name contains the organization.
 func containsOrganization(fullName, org string) bool {
 	return len(fullName) > len(org) && fullName[:len(org)] == org
 }

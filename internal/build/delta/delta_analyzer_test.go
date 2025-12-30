@@ -12,7 +12,7 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// fakeDeltaState reuses only needed fields (separate from skip tests for clarity)
+// fakeDeltaState reuses only needed fields (separate from skip tests for clarity).
 type fakeDeltaState struct {
 	global  string
 	perRepo map[string]string
@@ -105,7 +105,7 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Test single repo unchanged: quick hash matches stored -> no change (full rebuild with no_detected_repo_change)
+// Test single repo unchanged: quick hash matches stored -> no change (full rebuild with no_detected_repo_change).
 func TestDeltaAnalyzer_QuickHashSingleRepoUnchanged(t *testing.T) {
 	tmp := t.TempDir()
 	repoName := "repo1"
@@ -126,7 +126,7 @@ func TestDeltaAnalyzer_QuickHashSingleRepoUnchanged(t *testing.T) {
 	}
 }
 
-// Test subset changed: one repo unchanged, second repo modified after stored hash snapshot -> partial
+// Test subset changed: one repo unchanged, second repo modified after stored hash snapshot -> partial.
 func TestDeltaAnalyzer_QuickHashSubsetChanged(t *testing.T) {
 	tmp := t.TempDir()
 	// repo A (unchanged)

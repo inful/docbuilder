@@ -146,7 +146,7 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 	return StageOutcome{Stage: stage, Error: se, Result: StageResultFatal, IssueCode: IssueGenericStageError, Severity: SeverityError, Transient: false, Abort: true}
 }
 
-// Helper constructors
+// Helper constructors.
 func newFatalStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
 }

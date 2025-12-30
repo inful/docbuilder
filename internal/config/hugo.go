@@ -1,6 +1,6 @@
 package config
 
-// HugoConfig represents Hugo-specific configuration for Relearn theme
+// HugoConfig represents Hugo-specific configuration for Relearn theme.
 type HugoConfig struct {
 	BaseURL               string            `yaml:"base_url,omitempty"`
 	Title                 string            `yaml:"title"`

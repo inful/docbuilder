@@ -22,8 +22,9 @@ This tutorial walks you through producing a multi‑repository Hugo documentatio
 ## 1. Install / Build
 
 ```bash
-make build
-# Result: ./bin/docbuilder
+go build -o ./bin/docbuilder ./cmd/docbuilder
+# Or run directly without building:
+go run ./cmd/docbuilder <command>
 ```
 
 ## 2. Initialize Configuration
@@ -46,14 +47,25 @@ repositories:
     paths: [docs]
     auth:
       type: token
-      token: ${GIT_ACCESS_TOKEN}
+      token: "${GIT_ACCESS_TOKEN}"
   - url: https://git.example.com/org/monorepo.git
     name: monorepo
     branch: main
     paths: [docs, documentation/guides]
     auth:
       type: token
-      token: ${GIT_ACCESS_TOKEN}
+      token: "${GIT_ACCESS_TOKEN}"
+
+hugo:
+  title: "My Documentation Site"
+  description: "Aggregated documentation from multiple repositories"
+  base_url: "https://docs.example.com"
+  theme: "hextra"
+  params:
+    search:
+      enable: true
+      type: flexsearch
+
 output:
   directory: ./site
   clean: true
@@ -88,62 +100,66 @@ Or run Hugo manually afterwards:
 
 ## 6. Incremental Workflow
 
-Enable incremental builds to skip unchanged repositories:
+Enable workspace persistence to reuse existing clones:
 
 ```yaml
 build:
-  enable_incremental: true
-  cache_dir: .docbuilder-cache
-  clone_strategy: auto  # Reuse existing clones
+  workspace_dir: ./site/_workspace  # Persist clones between builds
 ```
 
 On subsequent runs, DocBuilder will:
-- Check cached build manifests
-- Skip builds if inputs haven't changed
-- Significantly speed up CI pipelines
+- Reuse existing clones when possible
+- Only fetch updates (git pull) instead of full clones
+- Significantly speed up builds
 
-## 7. Multi-Version Documentation (Optional)
+## 7. Continuous Updates (Daemon Mode)
 
-To build documentation from multiple branches/tags:
+For live documentation updates, use daemon mode:
 
-```yaml
-versioning:
-  enabled: true
-  strategy: branches_and_tags
-  max_versions_per_repo: 5
-  tag_patterns:
-    - "v*"           # Semantic versions
-    - "[0-9]*"       # Numeric tags
-  branch_patterns:
-    - "main"
-    - "develop"
+```bash
+./bin/docbuilder daemon -c config.yaml -v
 ```
 
 This will:
-- Discover all matching branches/tags
-- Clone each version separately
-- Generate version-specific content paths
-- Create Hugo config with version metadata
+- Poll repositories for changes
+- Automatically rebuild when changes detected
+- Serve documentation with live reload
 
-```yaml
-build:
-  clone_strategy: auto
-  shallow_depth: 5
-```
-
-Re-run:
+Or for local development without git polling:
 
 ```bash
-./bin/docbuilder build -c config.yaml -v
+./bin/docbuilder preview --docs-dir ./docs
 ```
 
-You’ll see logs about unchanged repository heads and (when applicable) an unchanged documentation set.
-
-## 7. Next Steps
+## 8. Next Steps
 
 - Customize landing pages with `templates/index/*.tmpl`.
 - Pick a supported theme (`hextra`, `docsy`, or `relearn`).
 - Integrate with CI: compare `doc_files_hash` between runs to skip downstream jobs.
+
+## Additional Commands
+
+### Linting Documentation
+
+Validate documentation follows best practices:
+
+```bash
+./bin/docbuilder lint docs/
+
+# Automatically fix issues
+./bin/docbuilder lint docs/ --fix
+
+# Preview fixes without applying
+./bin/docbuilder lint docs/ --fix --dry-run
+```
+
+### Generate from Local Directory
+
+Generate a Hugo site from local documentation (no git required):
+
+```bash
+./bin/docbuilder generate --docs-dir ./docs --output ./site
+```
 
 ---
 **You are ready to explore How‑To guides for specific tasks.**

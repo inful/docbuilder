@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 )
 
-// DefaultApplier applies defaults for a specific configuration domain
+// DefaultApplier applies defaults for a specific configuration domain.
 type DefaultApplier interface {
 	ApplyDefaults(cfg *Config) error
 	Domain() string
 }
 
-// BuildDefaultApplier handles Build configuration defaults
+// BuildDefaultApplier handles Build configuration defaults.
 type BuildDefaultApplier struct{}
 
 func (b *BuildDefaultApplier) Domain() string { return "build" }
@@ -94,7 +94,7 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// HugoDefaultApplier handles Hugo configuration defaults
+// HugoDefaultApplier handles Hugo configuration defaults.
 type HugoDefaultApplier struct{}
 
 func (h *HugoDefaultApplier) Domain() string { return "hugo" }
@@ -107,7 +107,7 @@ func (h *HugoDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// OutputDefaultApplier handles Output configuration defaults
+// OutputDefaultApplier handles Output configuration defaults.
 type OutputDefaultApplier struct{}
 
 func (o *OutputDefaultApplier) Domain() string { return "output" }
@@ -136,7 +136,7 @@ func (o *OutputDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// DaemonDefaultApplier handles Daemon configuration defaults
+// DaemonDefaultApplier handles Daemon configuration defaults.
 type DaemonDefaultApplier struct{}
 
 func (d *DaemonDefaultApplier) Domain() string { return "daemon" }
@@ -240,7 +240,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// FilteringDefaultApplier handles Filtering configuration defaults
+// FilteringDefaultApplier handles Filtering configuration defaults.
 type FilteringDefaultApplier struct{}
 
 func (f *FilteringDefaultApplier) Domain() string { return "filtering" }
@@ -261,7 +261,7 @@ func (f *FilteringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// VersioningDefaultApplier handles Versioning configuration defaults
+// VersioningDefaultApplier handles Versioning configuration defaults.
 type VersioningDefaultApplier struct{}
 
 func (v *VersioningDefaultApplier) Domain() string { return "versioning" }
@@ -298,7 +298,7 @@ func (v *VersioningDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// MonitoringDefaultApplier handles Monitoring configuration defaults
+// MonitoringDefaultApplier handles Monitoring configuration defaults.
 type MonitoringDefaultApplier struct{}
 
 func (m *MonitoringDefaultApplier) Domain() string { return "monitoring" }
@@ -334,7 +334,7 @@ func (m *MonitoringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	return nil
 }
 
-// RepositoryDefaultApplier handles Repository configuration defaults
+// RepositoryDefaultApplier handles Repository configuration defaults.
 type RepositoryDefaultApplier struct{}
 
 func (r *RepositoryDefaultApplier) Domain() string { return "repositories" }

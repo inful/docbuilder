@@ -17,7 +17,7 @@ const (
 	TypeForgejo Type = config.ForgeForgejo
 )
 
-// Repository represents a repository discovered from a forge
+// Repository represents a repository discovered from a forge.
 type Repository struct {
 	ID            string            `json:"id"`             // Unique ID from the forge
 	Name          string            `json:"name"`           // Repository name
@@ -36,7 +36,7 @@ type Repository struct {
 	Metadata      map[string]string `json:"metadata"`       // Additional forge-specific metadata
 }
 
-// Organization represents an organization/group on a forge
+// Organization represents an organization/group on a forge.
 type Organization struct {
 	ID          string            `json:"id"`           // Unique ID from the forge
 	Name        string            `json:"name"`         // Organization name
@@ -47,14 +47,14 @@ type Organization struct {
 }
 
 // Config represents configuration for a specific forge instance
-// Note: This is now defined in config.Config to avoid import cycles
+// Note: This is now defined in config.Config to avoid import cycles.
 type Config = config.ForgeConfig
 
 // WebhookConfig represents webhook configuration for a forge
-// Note: This is now defined in config.WebhookConfig to avoid import cycles
+// Note: This is now defined in config.WebhookConfig to avoid import cycles.
 type WebhookConfig = config.WebhookConfig
 
-// Client interface defines the contract for forge platform clients
+// Client interface defines the contract for forge platform clients.
 type Client interface {
 	// GetType returns the type of this forge
 	GetType() Type
@@ -87,7 +87,7 @@ type Client interface {
 	GetEditURL(repo *Repository, filePath string, branch string) string
 }
 
-// WebhookEvent represents a standardized webhook event
+// WebhookEvent represents a standardized webhook event.
 type WebhookEvent struct {
 	Type       WebhookEventType  `json:"type"`
 	Repository *Repository       `json:"repository"`
@@ -99,7 +99,7 @@ type WebhookEvent struct {
 	Metadata   map[string]string `json:"metadata"` // Platform-specific data
 }
 
-// WebhookEventType represents the type of webhook event
+// WebhookEventType represents the type of webhook event.
 type WebhookEventType string
 
 const (
@@ -109,7 +109,7 @@ const (
 	WebhookEventTag        WebhookEventType = "tag"        // created, deleted
 )
 
-// WebhookCommit represents commit information from a webhook
+// WebhookCommit represents commit information from a webhook.
 type WebhookCommit struct {
 	ID        string    `json:"id"`
 	Message   string    `json:"message"`
@@ -120,13 +120,13 @@ type WebhookCommit struct {
 	Removed   []string  `json:"removed"`
 }
 
-// Manager manages multiple forge clients
+// Manager manages multiple forge clients.
 type Manager struct {
 	clients map[string]Client
 	configs map[string]*Config
 }
 
-// NewForgeManager creates a new forge manager
+// NewForgeManager creates a new forge manager.
 func NewForgeManager() *Manager {
 	return &Manager{
 		clients: make(map[string]Client),
@@ -134,28 +134,28 @@ func NewForgeManager() *Manager {
 	}
 }
 
-// AddForge adds a forge client to the manager
+// AddForge adds a forge client to the manager.
 func (m *Manager) AddForge(config *Config, client Client) {
 	m.configs[config.Name] = config
 	m.clients[config.Name] = client
 }
 
-// GetForge returns a forge client by name
+// GetForge returns a forge client by name.
 func (m *Manager) GetForge(name string) Client {
 	return m.clients[name]
 }
 
-// GetAllForges returns all registered forge clients
+// GetAllForges returns all registered forge clients.
 func (m *Manager) GetAllForges() map[string]Client {
 	return m.clients
 }
 
-// GetForgeConfigs returns all forge configurations
+// GetForgeConfigs returns all forge configurations.
 func (m *Manager) GetForgeConfigs() map[string]*Config {
 	return m.configs
 }
 
-// ToConfigRepository converts a forge repository to a config repository
+// ToConfigRepository converts a forge repository to a config repository.
 func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Repository {
 	// Use SSH URL if available and auth is SSH, otherwise use clone URL
 	url := r.CloneURL

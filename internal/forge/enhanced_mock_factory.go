@@ -8,7 +8,7 @@ import (
 // Repository Factory Functions
 // These functions create pre-configured repository instances for testing
 
-// CreateMockGitHubRepo creates a GitHub repository with realistic defaults
+// CreateMockGitHubRepo creates a GitHub repository with realistic defaults.
 func CreateMockGitHubRepo(owner, name string, hasDocs, isPrivate, isArchived, isFork bool) *Repository {
 	return &Repository{
 		ID:            fmt.Sprintf("github-%s-%s", owner, name),
@@ -33,7 +33,7 @@ func CreateMockGitHubRepo(owner, name string, hasDocs, isPrivate, isArchived, is
 	}
 }
 
-// CreateMockGitLabRepo creates a GitLab repository with realistic defaults
+// CreateMockGitLabRepo creates a GitLab repository with realistic defaults.
 func CreateMockGitLabRepo(group, name string, hasDocs, isPrivate, isArchived, isFork bool) *Repository {
 	return &Repository{
 		ID:            fmt.Sprintf("gitlab-%s-%s", group, name),
@@ -58,7 +58,7 @@ func CreateMockGitLabRepo(group, name string, hasDocs, isPrivate, isArchived, is
 	}
 }
 
-// CreateMockForgejoRepo creates a Forgejo repository with realistic defaults
+// CreateMockForgejoRepo creates a Forgejo repository with realistic defaults.
 func CreateMockForgejoRepo(org, name string, hasDocs, isPrivate, isArchived, isFork bool) *Repository {
 	return &Repository{
 		ID:            fmt.Sprintf("forgejo-%s-%s", org, name),
@@ -85,7 +85,7 @@ func CreateMockForgejoRepo(org, name string, hasDocs, isPrivate, isArchived, isF
 
 // Organization Factory Functions
 
-// CreateMockGitHubOrg creates a GitHub organization with realistic defaults
+// CreateMockGitHubOrg creates a GitHub organization with realistic defaults.
 func CreateMockGitHubOrg(name string) *Organization {
 	return &Organization{
 		ID:          fmt.Sprintf("github-org-%s", name),
@@ -100,7 +100,7 @@ func CreateMockGitHubOrg(name string) *Organization {
 	}
 }
 
-// CreateMockGitLabGroup creates a GitLab group with realistic defaults
+// CreateMockGitLabGroup creates a GitLab group with realistic defaults.
 func CreateMockGitLabGroup(name string) *Organization {
 	return &Organization{
 		ID:          fmt.Sprintf("gitlab-group-%s", name),
@@ -115,7 +115,7 @@ func CreateMockGitLabGroup(name string) *Organization {
 	}
 }
 
-// CreateMockForgejoOrg creates a Forgejo organization with realistic defaults
+// CreateMockForgejoOrg creates a Forgejo organization with realistic defaults.
 func CreateMockForgejoOrg(name string) *Organization {
 	return &Organization{
 		ID:          fmt.Sprintf("forgejo-org-%s", name),
@@ -132,7 +132,7 @@ func CreateMockForgejoOrg(name string) *Organization {
 
 // Bulk Repository Creation Functions
 
-// CreateMockRepositorySet creates a set of repositories for testing
+// CreateMockRepositorySet creates a set of repositories for testing.
 func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repository {
 	repos := make([]*Repository, count)
 
@@ -169,19 +169,19 @@ func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repos
 
 // Enhanced Mock Builder Pattern
 
-// EnhancedMockBuilder provides a fluent interface for building enhanced mocks
+// EnhancedMockBuilder provides a fluent interface for building enhanced mocks.
 type EnhancedMockBuilder struct {
 	mock *EnhancedMockForgeClient
 }
 
-// NewEnhancedMockBuilder creates a new builder
+// NewEnhancedMockBuilder creates a new builder.
 func NewEnhancedMockBuilder(name string, forgeType Type) *EnhancedMockBuilder {
 	return &EnhancedMockBuilder{
 		mock: NewEnhancedMockForgeClient(name, forgeType),
 	}
 }
 
-// WithRepositories adds multiple repositories
+// WithRepositories adds multiple repositories.
 func (b *EnhancedMockBuilder) WithRepositories(repos ...*Repository) *EnhancedMockBuilder {
 	for _, repo := range repos {
 		b.mock.AddRepository(repo)
@@ -189,7 +189,7 @@ func (b *EnhancedMockBuilder) WithRepositories(repos ...*Repository) *EnhancedMo
 	return b
 }
 
-// WithOrganizations adds multiple organizations
+// WithOrganizations adds multiple organizations.
 func (b *EnhancedMockBuilder) WithOrganizations(orgs ...*Organization) *EnhancedMockBuilder {
 	for _, org := range orgs {
 		b.mock.AddOrganization(org)
@@ -197,32 +197,32 @@ func (b *EnhancedMockBuilder) WithOrganizations(orgs ...*Organization) *Enhanced
 	return b
 }
 
-// WithAuthFailure enables auth failure
+// WithAuthFailure enables auth failure.
 func (b *EnhancedMockBuilder) WithAuthFailure() *EnhancedMockBuilder {
 	b.mock.WithAuthFailure()
 	return b
 }
 
-// WithRateLimit enables rate limiting
+// WithRateLimit enables rate limiting.
 func (b *EnhancedMockBuilder) WithRateLimit(requestsPerHour int, resetDuration time.Duration) *EnhancedMockBuilder {
 	b.mock.WithRateLimit(requestsPerHour, resetDuration)
 	return b
 }
 
-// WithDelay enables response delay
+// WithDelay enables response delay.
 func (b *EnhancedMockBuilder) WithDelay(delay time.Duration) *EnhancedMockBuilder {
 	b.mock.WithDelay(delay)
 	return b
 }
 
-// Build returns the configured mock
+// Build returns the configured mock.
 func (b *EnhancedMockBuilder) Build() *EnhancedMockForgeClient {
 	return b.mock
 }
 
 // Quick Setup Functions for Common Test Scenarios
 
-// CreateRealisticGitHubMock creates a GitHub mock with realistic data
+// CreateRealisticGitHubMock creates a GitHub mock with realistic data.
 func CreateRealisticGitHubMock(name string) *EnhancedMockForgeClient {
 	return NewEnhancedMockBuilder(name, TypeGitHub).
 		WithOrganizations(CreateMockGitHubOrg("company")).
@@ -234,7 +234,7 @@ func CreateRealisticGitHubMock(name string) *EnhancedMockForgeClient {
 		Build()
 }
 
-// CreateRealisticGitLabMock creates a GitLab mock with realistic data
+// CreateRealisticGitLabMock creates a GitLab mock with realistic data.
 func CreateRealisticGitLabMock(name string) *EnhancedMockForgeClient {
 	return NewEnhancedMockBuilder(name, TypeGitLab).
 		WithOrganizations(CreateMockGitLabGroup("team")).
@@ -246,7 +246,7 @@ func CreateRealisticGitLabMock(name string) *EnhancedMockForgeClient {
 		Build()
 }
 
-// CreateRealisticForgejoMock creates a Forgejo mock with realistic data
+// CreateRealisticForgejoMock creates a Forgejo mock with realistic data.
 func CreateRealisticForgejoMock(name string) *EnhancedMockForgeClient {
 	return NewEnhancedMockBuilder(name, TypeForgejo).
 		WithOrganizations(CreateMockForgejoOrg("self-hosted")).

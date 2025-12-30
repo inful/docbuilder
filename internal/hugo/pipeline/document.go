@@ -101,7 +101,7 @@ type FileTransform func(doc *Document) ([]*Document, error)
 // Generators should:
 // - Analyze ctx.Discovered to find gaps (missing index files, etc.)
 // - Create new Document instances with Generated = true
-// - NOT modify documents in ctx.Discovered (read-only access)
+// - NOT modify documents in ctx.Discovered (read-only access).
 type FileGenerator func(ctx *GenerationContext) ([]*Document, error)
 
 // GenerationContext provides access to discovered files for analysis.

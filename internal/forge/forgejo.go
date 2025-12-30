@@ -17,14 +17,14 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API)
+// ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API).
 type ForgejoClient struct {
 	*BaseForge
 	config  *Config
 	baseURL string
 }
 
-// NewForgejoClient creates a new Forgejo client
+// NewForgejoClient creates a new Forgejo client.
 func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	if fg.Type != cfg.ForgeForgejo {
 		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
@@ -49,10 +49,10 @@ func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	}, nil
 }
 
-// GetType returns the forge type
+// GetType returns the forge type.
 func (c *ForgejoClient) GetType() cfg.ForgeType { return cfg.ForgeForgejo }
 
-// GetName returns the configured name
+// GetName returns the configured name.
 func (c *ForgejoClient) GetName() string {
 	if c == nil || c.config == nil {
 		return ""
@@ -60,7 +60,7 @@ func (c *ForgejoClient) GetName() string {
 	return c.config.Name
 }
 
-// forgejoOrg represents a Forgejo organization
+// forgejoOrg represents a Forgejo organization.
 type forgejoOrg struct {
 	ID          int    `json:"id"`
 	Username    string `json:"username"`
@@ -69,7 +69,7 @@ type forgejoOrg struct {
 	Website     string `json:"website"`
 }
 
-// forgejoRepo represents a Forgejo repository
+// forgejoRepo represents a Forgejo repository.
 type forgejoRepo struct {
 	ID            int         `json:"id"`
 	Name          string      `json:"name"`
@@ -87,7 +87,7 @@ type forgejoRepo struct {
 	Owner         forgejoUser `json:"owner"`
 }
 
-// forgejoUser represents a Forgejo user
+// forgejoUser represents a Forgejo user.
 type forgejoUser struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -95,7 +95,7 @@ type forgejoUser struct {
 	Email    string `json:"email"`
 }
 
-// ListOrganizations returns accessible organizations
+// ListOrganizations returns accessible organizations.
 func (c *ForgejoClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
 	var orgs []*Organization
 	page := 1
@@ -141,7 +141,7 @@ func (c *ForgejoClient) ListOrganizations(ctx context.Context) ([]*Organization,
 	return orgs, nil
 }
 
-// ListRepositories returns repositories for specified organizations
+// ListRepositories returns repositories for specified organizations.
 func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
 	repoMap := make(map[string]*Repository)
 
@@ -200,7 +200,7 @@ func (c *ForgejoClient) listUserRepositories(ctx context.Context) ([]*Repository
 	return all, nil
 }
 
-// getOrgRepositories gets all repositories for an organization
+// getOrgRepositories gets all repositories for an organization.
 func (c *ForgejoClient) getOrgRepositories(ctx context.Context, org string) ([]*Repository, error) {
 	baseEndpoint := fmt.Sprintf("/orgs/%s/repos", org)
 	return c.fetchAndConvertRepos(ctx, baseEndpoint, 50)
@@ -245,7 +245,7 @@ func (c *ForgejoClient) fetchAndConvertRepos(ctx context.Context, endpoint strin
 	return allRepos, nil
 }
 
-// GetRepository gets detailed information about a specific repository
+// GetRepository gets detailed information about a specific repository.
 func (c *ForgejoClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s", owner, repo)
 	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
@@ -261,7 +261,7 @@ func (c *ForgejoClient) GetRepository(ctx context.Context, owner, repo string) (
 	return c.convertForgejoRepo(&forgejoRepo), nil
 }
 
-// CheckDocumentation checks if repository has docs folder and .docignore
+// CheckDocumentation checks if repository has docs folder and .docignore.
 func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
 	owner, repoName := c.splitFullName(repo.FullName)
 
@@ -282,7 +282,7 @@ func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository
 	return nil
 }
 
-// checkPathExists checks if a path exists in the repository
+// checkPathExists checks if a path exists in the repository.
 func (c *ForgejoClient) checkPathExists(ctx context.Context, owner, repo, path, branch string) (bool, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, path, branch)
 	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
@@ -308,7 +308,7 @@ func (c *ForgejoClient) checkPathExists(ctx context.Context, owner, repo, path, 
 	return true, nil
 }
 
-// ValidateWebhook validates Forgejo webhook signature (Gitea-style HMAC-SHA1)
+// ValidateWebhook validates Forgejo webhook signature (Gitea-style HMAC-SHA1).
 func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret string) bool {
 	if signature == "" || secret == "" {
 		return false
@@ -336,7 +336,7 @@ func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret
 	return hmac.Equal([]byte(signature), []byte(calc))
 }
 
-// ParseWebhookEvent parses Forgejo webhook payload
+// ParseWebhookEvent parses Forgejo webhook payload.
 func (c *ForgejoClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	switch eventType {
 	case "push":
@@ -348,7 +348,7 @@ func (c *ForgejoClient) ParseWebhookEvent(payload []byte, eventType string) (*We
 	}
 }
 
-// forgejoPushEvent represents a Forgejo push event
+// forgejoPushEvent represents a Forgejo push event.
 type forgejoPushEvent struct {
 	Ref        string          `json:"ref"`
 	Repository json.RawMessage `json:"repository"`
@@ -357,7 +357,7 @@ type forgejoPushEvent struct {
 	Pusher     forgejoUser     `json:"pusher"`
 }
 
-// forgejoCommit represents a Forgejo commit
+// forgejoCommit represents a Forgejo commit.
 type forgejoCommit struct {
 	ID        string    `json:"id"`
 	Message   string    `json:"message"`
@@ -375,7 +375,7 @@ type forgejoCommit struct {
 	Modified []string `json:"modified"`
 }
 
-// parsePushEvent parses a Forgejo push event
+// parsePushEvent parses a Forgejo push event.
 func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent forgejoPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
@@ -430,7 +430,7 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}, nil
 }
 
-// parseRepositoryEvent parses a Forgejo repository event
+// parseRepositoryEvent parses a Forgejo repository event.
 func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
 	var repoEvent map[string]interface{}
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
@@ -463,7 +463,7 @@ func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, err
 	return event, nil
 }
 
-// RegisterWebhook registers a webhook for a repository
+// RegisterWebhook registers a webhook for a repository.
 func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
 		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
@@ -499,7 +499,7 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 	return c.DoRequest(req, &result)
 }
 
-// GetEditURL returns the URL to edit a file in Forgejo
+// GetEditURL returns the URL to edit a file in Forgejo.
 func (c *ForgejoClient) GetEditURL(repo *Repository, filePath, branch string) string {
 	return GenerateEditURL(TypeForgejo, c.baseURL, repo.FullName, branch, filePath)
 }

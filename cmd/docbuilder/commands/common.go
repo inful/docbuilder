@@ -46,7 +46,7 @@ func (c *CLI) AfterApply() error {
 }
 
 // parseLogLevel determines the log level from DOCBUILDER_LOG_LEVEL env var or verbose flag.
-// Precedence: --verbose flag > DOCBUILDER_LOG_LEVEL > default (info)
+// Precedence: --verbose flag > DOCBUILDER_LOG_LEVEL > default (info).
 func parseLogLevel(verbose bool) slog.Level {
 	// Verbose flag takes precedence for backwards compatibility
 	if verbose {
@@ -75,7 +75,7 @@ func parseLogLevel(verbose bool) slog.Level {
 }
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.
-// Priority: CLI flag > config base_directory + directory > config directory
+// Priority: CLI flag > config base_directory + directory > config directory.
 func ResolveOutputDir(cliOutput string, cfg *config.Config) string {
 	// If CLI flag is provided and not the default, use it directly
 	if cliOutput != "" && cliOutput != "./site" {
@@ -95,7 +95,7 @@ func ResolveOutputDir(cliOutput string, cfg *config.Config) string {
 	return cliOutput // fallback to CLI default
 }
 
-// CopyDir recursively copies a directory tree, handling cross-device scenarios
+// CopyDir recursively copies a directory tree, handling cross-device scenarios.
 func CopyDir(src, dst string) error {
 	// Get properties of source dir
 	srcInfo, err := os.Stat(src)
@@ -134,7 +134,7 @@ func CopyDir(src, dst string) error {
 	return nil
 }
 
-// copyFile copies a single file from src to dst
+// copyFile copies a single file from src to dst.
 func copyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {

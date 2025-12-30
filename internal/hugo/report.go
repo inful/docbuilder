@@ -133,7 +133,7 @@ type IndexTemplateInfo struct {
 	Path   string `json:"path,omitempty"`
 }
 
-// StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps)
+// StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps).
 type StageCount struct {
 	Success  int
 	Warning  int
@@ -170,7 +170,7 @@ func (r *BuildReport) Summary() string {
 	return fmt.Sprintf("repos=%d files=%d duration=%s errors=%d warnings=%d stages=%d rendered=%d outcome=%s", r.Repositories, r.Files, dur.Truncate(time.Millisecond), len(r.Errors), len(r.Warnings), len(r.StageDurations), r.RenderedPages, string(r.Outcome))
 }
 
-// deriveOutcome sets the Outcome field based on recorded errors/warnings
+// deriveOutcome sets the Outcome field based on recorded errors/warnings.
 func (r *BuildReport) deriveOutcome() {
 	if len(r.Errors) > 0 {
 		for _, e := range r.Errors {

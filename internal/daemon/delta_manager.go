@@ -25,7 +25,7 @@ func NewDeltaManager() *deltaManager {
 	return &deltaManager{}
 }
 
-// AttachDeltaMetadata adds delta information to the build report
+// AttachDeltaMetadata adds delta information to the build report.
 func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan *DeltaPlan, job *BuildJob) {
 	if deltaPlan == nil {
 		return
@@ -56,7 +56,7 @@ func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan 
 // The following interfaces were removed as they're already covered by state.RepositoryMetadataStore
 // which is the proper abstraction for repository metadata operations.
 
-// RecomputeGlobalDocHash recalculates the global documentation hash for partial builds
+// RecomputeGlobalDocHash recalculates the global documentation hash for partial builds.
 func (dm *deltaManager) RecomputeGlobalDocHash(
 	report *hugo.BuildReport,
 	deltaPlan *DeltaPlan,
@@ -121,7 +121,7 @@ func (dm *deltaManager) RecomputeGlobalDocHash(
 	return deletionsDetected, nil
 }
 
-// scanForDeletions scans a repository for current markdown files and compares with persisted paths
+// scanForDeletions scans a repository for current markdown files and compares with persisted paths.
 func (dm *deltaManager) scanForDeletions(repo config.Repository, workspace string, persistedPaths []string) ([]string, int, error) {
 	repoRoot := filepath.Join(workspace, repo.Name)
 
@@ -184,7 +184,7 @@ func (dm *deltaManager) scanForDeletions(repo config.Repository, workspace strin
 	return persistedPaths, 0, nil
 }
 
-// computePathsHash computes a SHA256 hash of file paths
+// computePathsHash computes a SHA256 hash of file paths.
 func (dm *deltaManager) computePathsHash(paths []string) string {
 	h := sha256.New()
 	for _, p := range paths {

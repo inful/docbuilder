@@ -12,10 +12,10 @@ import (
 
 var (
 	promRegistry = prom.NewRegistry()
-	// Export daemon build counters as Prometheus metrics (bridge pattern)
+	// Export daemon build counters as Prometheus metrics (bridge pattern).
 	daemonBuildsTotal       = prom.NewCounter(prom.CounterOpts{Namespace: "docbuilder", Name: "daemon_builds_total", Help: "Total builds processed by daemon"})
 	daemonBuildsFailedTotal = prom.NewCounter(prom.CounterOpts{Namespace: "docbuilder", Name: "daemon_builds_failed_total", Help: "Failed builds processed by daemon"})
-	// Gauges (scrape-time via GaugeFunc)
+	// Gauges (scrape-time via GaugeFunc).
 	daemonActiveJobsGauge = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_active_jobs", Help: "Number of build jobs currently running"}, func() float64 {
 		if defaultDaemonInstance == nil {
 			return 0
@@ -28,7 +28,7 @@ var (
 		}
 		return float64(atomic.LoadInt32(&defaultDaemonInstance.queueLength))
 	})
-	// Last build snapshot gauges
+	// Last build snapshot gauges.
 	daemonLastBuildRenderedPages = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_rendered_pages", Help: "Pages rendered in most recent completed build"}, func() float64 {
 		return float64(atomic.LoadInt64(&lastRenderedPages))
 	})
@@ -37,7 +37,7 @@ var (
 	})
 )
 
-// register base collectors once
+// register base collectors once.
 func init() {
 	promRegistry.MustRegister(daemonBuildsTotal, daemonBuildsFailedTotal)
 	promRegistry.MustRegister(daemonActiveJobsGauge, daemonQueueLengthGauge, daemonLastBuildRenderedPages, daemonLastBuildRepositories)

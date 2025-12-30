@@ -24,7 +24,7 @@ type Client struct {
 	remoteHeadCache *RemoteHeadCache    // cache for remote HEAD refs to skip unnecessary fetches
 }
 
-// CloneResult contains the result of a clone or update operation
+// CloneResult contains the result of a clone or update operation.
 type CloneResult struct {
 	Path       string    // local filesystem path
 	CommitSHA  string    // HEAD commit SHA

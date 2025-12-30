@@ -35,7 +35,7 @@ type ModuleImport struct {
 	Path string `yaml:"path"`
 }
 
-// Helpers for common Markup mutations while preserving map shape
+// Helpers for common Markup mutations while preserving map shape.
 func (rc *RootConfig) EnsureGoldmark() map[string]any {
 	if rc.Markup == nil {
 		rc.Markup = map[string]any{}
@@ -102,7 +102,7 @@ func (rc *RootConfig) EnsureHighlightDefaults() {
 	}
 }
 
-// Outputs helpers
+// Outputs helpers.
 func (rc *RootConfig) EnsureOutputs() map[string][]string {
 	if rc.Outputs == nil {
 		rc.Outputs = make(map[string][]string)

@@ -105,7 +105,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 }
 
 // CheckRemoteChanged checks if remote HEAD has changed since last fetch.
-// Returns: changed (true if fetch needed), currentSHA, error
+// Returns: changed (true if fetch needed), currentSHA, error.
 func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Repository, branch string) (bool, string, error) {
 	if cache == nil {
 		return true, "", nil // No cache, assume changed

@@ -12,10 +12,10 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
-// CustomMetric represents user-defined metrics with constrained JSON-friendly types
+// CustomMetric represents user-defined metrics with constrained JSON-friendly types.
 type CustomMetric any
 
-// MetricsCollector aggregates and exposes daemon metrics
+// MetricsCollector aggregates and exposes daemon metrics.
 type MetricsCollector struct {
 	startTime     time.Time
 	mu            sync.RWMutex
@@ -25,7 +25,7 @@ type MetricsCollector struct {
 	customMetrics map[string]CustomMetric
 }
 
-// Histogram tracks value distributions over time
+// Histogram tracks value distributions over time.
 type Histogram struct {
 	mu     sync.RWMutex
 	values []float64
@@ -33,7 +33,7 @@ type Histogram struct {
 	count  int64
 }
 
-// MetricSnapshot represents a point-in-time view of metrics
+// MetricSnapshot represents a point-in-time view of metrics.
 type MetricSnapshot struct {
 	Timestamp     time.Time                 `json:"timestamp"`
 	Uptime        string                    `json:"uptime"`
@@ -44,7 +44,7 @@ type MetricSnapshot struct {
 	Custom        map[string]CustomMetric   `json:"custom_metrics"`
 }
 
-// HistogramStats provides statistical summary of histogram data
+// HistogramStats provides statistical summary of histogram data.
 type HistogramStats struct {
 	Count int64   `json:"count"`
 	Sum   float64 `json:"sum"`
@@ -56,7 +56,7 @@ type HistogramStats struct {
 	P99   float64 `json:"p99"`
 }
 
-// SystemMetricsSnapshot captures system-level metrics
+// SystemMetricsSnapshot captures system-level metrics.
 type SystemMetricsSnapshot struct {
 	GoVersion   string  `json:"go_version"`
 	Goroutines  int     `json:"goroutines"`
@@ -69,7 +69,7 @@ type SystemMetricsSnapshot struct {
 	CPUUsage    float64 `json:"cpu_usage_percent"`
 }
 
-// NewMetricsCollector creates a new metrics collector
+// NewMetricsCollector creates a new metrics collector.
 func NewMetricsCollector() *MetricsCollector {
 	return &MetricsCollector{
 		startTime:     time.Now(),
@@ -80,7 +80,7 @@ func NewMetricsCollector() *MetricsCollector {
 	}
 }
 
-// IncrementCounter increments a counter metric
+// IncrementCounter increments a counter metric.
 func (mc *MetricsCollector) IncrementCounter(name string) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
@@ -93,7 +93,7 @@ func (mc *MetricsCollector) IncrementCounter(name string) {
 	}
 }
 
-// SetGauge sets a gauge metric value
+// SetGauge sets a gauge metric value.
 func (mc *MetricsCollector) SetGauge(name string, value int64) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
@@ -106,7 +106,7 @@ func (mc *MetricsCollector) SetGauge(name string, value int64) {
 	}
 }
 
-// RecordHistogram records a value in a histogram
+// RecordHistogram records a value in a histogram.
 func (mc *MetricsCollector) RecordHistogram(name string, value float64) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
@@ -120,14 +120,14 @@ func (mc *MetricsCollector) RecordHistogram(name string, value float64) {
 	}
 }
 
-// SetCustomMetric sets a custom metric value
+// SetCustomMetric sets a custom metric value.
 func (mc *MetricsCollector) SetCustomMetric(name string, value CustomMetric) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
 	mc.customMetrics[name] = value
 }
 
-// GetSnapshot returns a complete metrics snapshot
+// GetSnapshot returns a complete metrics snapshot.
 func (mc *MetricsCollector) GetSnapshot() *MetricSnapshot {
 	mc.mu.RLock()
 	defer mc.mu.RUnlock()
@@ -167,7 +167,7 @@ func (mc *MetricsCollector) GetSnapshot() *MetricSnapshot {
 	return snapshot
 }
 
-// getSystemMetrics collects Go runtime and system metrics
+// getSystemMetrics collects Go runtime and system metrics.
 func (mc *MetricsCollector) getSystemMetrics() SystemMetricsSnapshot {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
@@ -185,7 +185,7 @@ func (mc *MetricsCollector) getSystemMetrics() SystemMetricsSnapshot {
 	}
 }
 
-// Record adds a value to the histogram
+// Record adds a value to the histogram.
 func (h *Histogram) Record(value float64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -201,7 +201,7 @@ func (h *Histogram) Record(value float64) {
 	}
 }
 
-// GetStats calculates statistical summary of the histogram
+// GetStats calculates statistical summary of the histogram.
 func (h *Histogram) GetStats() HistogramStats {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -241,7 +241,7 @@ func (h *Histogram) GetStats() HistogramStats {
 	return stats
 }
 
-// percentile calculates the value at a given percentile
+// percentile calculates the value at a given percentile.
 func percentile(sorted []float64, p float64) float64 {
 	n := len(sorted)
 	if n == 0 {
@@ -263,7 +263,7 @@ func percentile(sorted []float64, p float64) float64 {
 	return sorted[lower]*(1-weight) + sorted[upper]*weight
 }
 
-// MetricsHandler serves metrics in JSON format
+// MetricsHandler serves metrics in JSON format.
 func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, _ *http.Request) {
 	snapshot := mc.GetSnapshot()
 
@@ -278,7 +278,7 @@ func (mc *MetricsCollector) MetricsHandler(w http.ResponseWriter, _ *http.Reques
 	}
 }
 
-// PrometheusHandler serves metrics in Prometheus format (basic implementation)
+// PrometheusHandler serves metrics in Prometheus format (basic implementation).
 func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, _ *http.Request) {
 	snapshot := mc.GetSnapshot()
 

@@ -13,7 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// generateHugoConfig creates the Hugo configuration file with Relearn theme
+// generateHugoConfig creates the Hugo configuration file with Relearn theme.
 func (g *Generator) generateHugoConfig() error {
 	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
 
@@ -129,7 +129,7 @@ func (g *Generator) generateHugoConfig() error {
 	return nil
 }
 
-// applyRelearnThemeDefaults applies Relearn-specific parameter defaults
+// applyRelearnThemeDefaults applies Relearn-specific parameter defaults.
 func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 	// Theme variant/color scheme - auto mode with zen-light/zen-dark
 	if params["themeVariant"] == nil {
@@ -220,7 +220,7 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 }
 
 // collectVersionMetadata collects version information from versioned repositories
-// Returns a map of base repository names to their available versions
+// Returns a map of base repository names to their available versions.
 func (g *Generator) collectVersionMetadata() map[string]any {
 	versionsByBase := make(map[string][]map[string]any)
 

@@ -22,7 +22,7 @@ import (
 
 // parseHugoError extracts useful error information from Hugo build output.
 // Hugo errors typically contain paths like: "/tmp/.../content/local/file.md:line:col": error message
-// This function extracts: file.md:line:col: error message
+// This function extracts: file.md:line:col: error message.
 func parseHugoError(errStr string) string {
 	// Pattern 1: Match Hugo error format in output:
 	// Error: error building site: process: readAndProcessContent: "/path/to/content/file.md:123:45": error message
@@ -120,7 +120,7 @@ func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
 	return s
 }
 
-// daemonAdapter adapts Daemon to handler interfaces
+// daemonAdapter adapts Daemon to handler interfaces.
 type daemonAdapter struct {
 	daemon *Daemon
 }
@@ -137,7 +137,7 @@ func (a *daemonAdapter) GetStartTime() time.Time {
 	return a.daemon.GetStartTime()
 }
 
-// Metrics bridge for MonitoringHandlers
+// Metrics bridge for MonitoringHandlers.
 func (a *daemonAdapter) HTTPRequestsTotal() int {
 	if a.daemon == nil || a.daemon.metrics == nil {
 		return 0
@@ -423,7 +423,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 
 // resolveDocsRoot picks the directory to serve. Preference order:
 // 1. <outputDir>/public if it exists (Hugo static render completed)
-// 2. <outputDir> (Hugo project scaffold / in-progress)
+// 2. <outputDir> (Hugo project scaffold / in-progress).
 func (s *HTTPServer) resolveDocsRoot() string {
 	out := s.config.Output.Directory
 	if out == "" {
@@ -469,7 +469,7 @@ func (s *HTTPServer) resolveDocsRoot() string {
 	return out
 }
 
-// findNearestValidParent walks up the URL path hierarchy to find the nearest existing page
+// findNearestValidParent walks up the URL path hierarchy to find the nearest existing page.
 func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
 	// Clean the path
 	urlPath = filepath.Clean(urlPath)
@@ -508,7 +508,7 @@ func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
 // Different asset types receive different cache durations:
 // - Immutable assets (CSS, JS, fonts, images): 1 year (31536000s)
 // - HTML pages: no cache (to ensure content updates are immediately visible)
-// - Other assets: short cache (5 minutes)
+// - Other assets: short cache (5 minutes).
 func (s *HTTPServer) addCacheControlHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
@@ -548,7 +548,7 @@ func (s *HTTPServer) addCacheControlHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// responseRecorder captures the status code and body from the underlying handler
+// responseRecorder captures the status code and body from the underlying handler.
 type responseRecorder struct {
 	http.ResponseWriter
 	statusCode int
@@ -839,7 +839,7 @@ func (l *liveReloadInjector) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-// finalize must be called after the handler completes to inject the script
+// finalize must be called after the handler completes to inject the script.
 func (l *liveReloadInjector) finalize() {
 	if l.passthrough || len(l.buffer) == 0 {
 		if !l.headerWritten {

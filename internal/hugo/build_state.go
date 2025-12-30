@@ -7,7 +7,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
-// GitState manages git repository operations and state tracking
+// GitState manages git repository operations and state tracking.
 type GitState struct {
 	Repositories      []config.Repository  // configured repositories (post-filter)
 	RepoPaths         map[string]string    // name -> local filesystem path
@@ -18,7 +18,7 @@ type GitState struct {
 	AllReposUnchanged bool                 // computed lazily: true if every repo head unchanged (and no fresh clones)
 }
 
-// AllReposUnchangedComputed computes whether all repositories had no HEAD changes
+// AllReposUnchangedComputed computes whether all repositories had no HEAD changes.
 func (gs *GitState) AllReposUnchangedComputed() bool {
 	if len(gs.preHeads) == 0 {
 		return false // fresh clones, not unchanged
@@ -31,35 +31,35 @@ func (gs *GitState) AllReposUnchangedComputed() bool {
 	return true
 }
 
-// SetPreHead records the HEAD commit before update operations
+// SetPreHead records the HEAD commit before update operations.
 func (gs *GitState) SetPreHead(repo, head string) {
 	gs.preHeads[repo] = head
 }
 
-// SetPostHead records the HEAD commit after clone/update operations
+// SetPostHead records the HEAD commit after clone/update operations.
 func (gs *GitState) SetPostHead(repo, head string) {
 	gs.postHeads[repo] = head
 }
 
-// SetCommitDate records the commit date for a repository's HEAD commit
+// SetCommitDate records the commit date for a repository's HEAD commit.
 func (gs *GitState) SetCommitDate(repo string, date time.Time) {
 	gs.commitDates[repo] = date
 }
 
-// GetCommitDate retrieves the commit date for a repository
+// GetCommitDate retrieves the commit date for a repository.
 func (gs *GitState) GetCommitDate(repo string) (time.Time, bool) {
 	date, ok := gs.commitDates[repo]
 	return date, ok
 }
 
-// DocsState manages documentation discovery and processing state
+// DocsState manages documentation discovery and processing state.
 type DocsState struct {
 	Files          []docs.DocFile            // discovered documentation files
 	FilesByRepo    map[string][]docs.DocFile // files grouped by repository (computed lazily)
 	FilesBySection map[string][]docs.DocFile // files grouped by section (computed lazily)
 }
 
-// BuildIndexes populates the repository and section indexes
+// BuildIndexes populates the repository and section indexes.
 func (ds *DocsState) BuildIndexes() {
 	if ds.FilesByRepo == nil {
 		ds.FilesByRepo = make(map[string][]docs.DocFile)
@@ -85,7 +85,7 @@ func (ds *DocsState) BuildIndexes() {
 	}
 }
 
-// PipelineState tracks execution state and metadata across stages
+// PipelineState tracks execution state and metadata across stages.
 type PipelineState struct {
 	ConfigHash string    // fingerprint of relevant config for change detection
 	StartTime  time.Time // pipeline start time

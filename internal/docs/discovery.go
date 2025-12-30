@@ -12,7 +12,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// DocFile represents a discovered documentation file or asset
+// DocFile represents a discovered documentation file or asset.
 type DocFile struct {
 	Path             string            // Absolute path to the file
 	RelativePath     string            // Path relative to the docs directory
@@ -28,14 +28,14 @@ type DocFile struct {
 	IsAsset          bool              // True for images and other non-markdown files
 }
 
-// Discovery handles documentation file discovery
+// Discovery handles documentation file discovery.
 type Discovery struct {
 	repositories map[string]config.Repository
 	docFiles     []DocFile
 	buildConfig  *config.BuildConfig
 }
 
-// NewDiscovery creates a new documentation discovery instance
+// NewDiscovery creates a new documentation discovery instance.
 func NewDiscovery(repositories []config.Repository, buildCfg *config.BuildConfig) *Discovery {
 	repoMap := make(map[string]config.Repository)
 	for _, repo := range repositories {
@@ -49,7 +49,7 @@ func NewDiscovery(repositories []config.Repository, buildCfg *config.BuildConfig
 	}
 }
 
-// DiscoverDocs finds all documentation files in the specified repositories
+// DiscoverDocs finds all documentation files in the specified repositories.
 func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error) {
 	d.docFiles = make([]DocFile, 0)
 
@@ -131,7 +131,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 	return d.docFiles, nil
 }
 
-// walkDocsDirectory recursively walks a documentation directory
+// walkDocsDirectory recursively walks a documentation directory.
 func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath string, metadata map[string]string) ([]DocFile, error) {
 	var files []DocFile
 
@@ -207,7 +207,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 	return files, err
 }
 
-// LoadContent loads the content of a documentation file
+// LoadContent loads the content of a documentation file.
 func (df *DocFile) LoadContent() error {
 	if df.Content != nil {
 		return nil // Already loaded
@@ -222,7 +222,7 @@ func (df *DocFile) LoadContent() error {
 	return nil
 }
 
-// GetHugoPath returns the Hugo-compatible path for this documentation file
+// GetHugoPath returns the Hugo-compatible path for this documentation file.
 func (df *DocFile) GetHugoPath() string {
 	// Path shape:
 	//   Single forge (no namespace): content/{repository}/{section}/{name}.md
@@ -248,7 +248,7 @@ func (df *DocFile) GetHugoPath() string {
 	return filepath.Join(parts...)
 }
 
-// isMarkdownFile checks if a file is a markdown file
+// isMarkdownFile checks if a file is a markdown file.
 func isMarkdownFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	return ext == ".md" || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
@@ -275,7 +275,7 @@ func isAsset(filename string) bool {
 	return false
 }
 
-// isIgnoredFile checks if a file should be ignored
+// isIgnoredFile checks if a file should be ignored.
 func isIgnoredFile(filename string) bool {
 	ignored := []string{
 		"README.md",       // Usually repository readme, not docs
@@ -293,7 +293,7 @@ func isIgnoredFile(filename string) bool {
 	return false
 }
 
-// copyMetadata creates a copy of metadata map
+// copyMetadata creates a copy of metadata map.
 func copyMetadata(metadata map[string]string) map[string]string {
 	if metadata == nil {
 		return nil
@@ -307,12 +307,12 @@ func copyMetadata(metadata map[string]string) map[string]string {
 	return copyMap
 }
 
-// GetDocFiles returns all discovered documentation files
+// GetDocFiles returns all discovered documentation files.
 func (d *Discovery) GetDocFiles() []DocFile {
 	return d.docFiles
 }
 
-// GetDocFilesByRepository returns documentation files grouped by repository
+// GetDocFilesByRepository returns documentation files grouped by repository.
 func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 	result := make(map[string][]DocFile)
 	for _, file := range d.docFiles {
@@ -325,7 +325,7 @@ func (d *Discovery) GetDocFilesByRepository() map[string][]DocFile {
 	return result
 }
 
-// GetDocFilesBySection returns documentation files grouped by section
+// GetDocFilesBySection returns documentation files grouped by section.
 func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 	result := make(map[string][]DocFile)
 	for _, file := range d.docFiles {
@@ -339,7 +339,7 @@ func (d *Discovery) GetDocFilesBySection() map[string][]DocFile {
 	return result
 }
 
-// checkDocIgnore checks if a repository has a .docignore file in its root
+// checkDocIgnore checks if a repository has a .docignore file in its root.
 func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 	docIgnorePath := filepath.Join(repoPath, ".docignore")
 

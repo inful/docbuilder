@@ -10,14 +10,14 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// Manager handles workspace operations (both temporary and persistent)
+// Manager handles workspace operations (both temporary and persistent).
 type Manager struct {
 	baseDir    string
 	tempDir    string
 	persistent bool // If true, use baseDir directly without timestamps
 }
 
-// NewManager creates a new workspace manager with ephemeral timestamped directories
+// NewManager creates a new workspace manager with ephemeral timestamped directories.
 func NewManager(baseDir string) *Manager {
 	if baseDir == "" {
 		baseDir = os.TempDir()
@@ -46,7 +46,7 @@ func NewPersistentManager(baseDir, subdirName string) *Manager {
 
 // Create creates a workspace directory
 // For ephemeral mode: creates a timestamped directory
-// For persistent mode: ensures the fixed directory exists
+// For persistent mode: ensures the fixed directory exists.
 func (m *Manager) Create() error {
 	if m.persistent {
 		// Persistent mode: use fixed directory
@@ -70,14 +70,14 @@ func (m *Manager) Create() error {
 	return nil
 }
 
-// GetPath returns the path to the workspace directory
+// GetPath returns the path to the workspace directory.
 func (m *Manager) GetPath() string {
 	return m.tempDir
 }
 
 // Cleanup removes the workspace directory
 // For persistent mode: does nothing (keeps directory for incremental builds)
-// For ephemeral mode: removes the timestamped directory
+// For ephemeral mode: removes the timestamped directory.
 func (m *Manager) Cleanup() error {
 	if m.tempDir == "" {
 		return nil

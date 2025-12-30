@@ -9,13 +9,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigBuilder provides a fluent interface for creating test configurations
+// ConfigBuilder provides a fluent interface for creating test configurations.
 type ConfigBuilder struct {
 	config *config.Config
 	t      *testing.T
 }
 
-// NewConfigBuilder creates a new configuration builder for tests
+// NewConfigBuilder creates a new configuration builder for tests.
 func NewConfigBuilder(t *testing.T) *ConfigBuilder {
 	return &ConfigBuilder{
 		config: &config.Config{
@@ -37,24 +37,24 @@ func NewConfigBuilder(t *testing.T) *ConfigBuilder {
 	}
 }
 
-// WithTitle sets the Hugo title
+// WithTitle sets the Hugo title.
 func (cb *ConfigBuilder) WithTitle(title string) *ConfigBuilder {
 	cb.config.Hugo.Title = title
 	return cb
 }
 
-// WithTheme sets the Hugo theme
+// WithTheme sets the Hugo theme.
 func (cb *ConfigBuilder) WithTheme(theme string) *ConfigBuilder {
 	return cb
 }
 
-// WithOutputDir sets the output directory
+// WithOutputDir sets the output directory.
 func (cb *ConfigBuilder) WithOutputDir(dir string) *ConfigBuilder {
 	cb.config.Output.Directory = dir
 	return cb
 }
 
-// WithGitHubForge adds a GitHub forge configuration
+// WithGitHubForge adds a GitHub forge configuration.
 func (cb *ConfigBuilder) WithGitHubForge(name, token string, organizations ...string) *ConfigBuilder {
 	forge := &config.ForgeConfig{
 		Name:          name,
@@ -71,7 +71,7 @@ func (cb *ConfigBuilder) WithGitHubForge(name, token string, organizations ...st
 	return cb
 }
 
-// WithGitLabForge adds a GitLab forge configuration
+// WithGitLabForge adds a GitLab forge configuration.
 func (cb *ConfigBuilder) WithGitLabForge(name, token string, groups ...string) *ConfigBuilder {
 	forge := &config.ForgeConfig{
 		Name:    name,
@@ -88,7 +88,7 @@ func (cb *ConfigBuilder) WithGitLabForge(name, token string, groups ...string) *
 	return cb
 }
 
-// WithForgejoForge adds a Forgejo forge configuration
+// WithForgejoForge adds a Forgejo forge configuration.
 func (cb *ConfigBuilder) WithForgejoForge(name, baseURL, token string, organizations ...string) *ConfigBuilder {
 	forge := &config.ForgeConfig{
 		Name:          name,
@@ -105,7 +105,7 @@ func (cb *ConfigBuilder) WithForgejoForge(name, baseURL, token string, organizat
 	return cb
 }
 
-// WithAutoDiscovery enables auto-discovery for the last added forge
+// WithAutoDiscovery enables auto-discovery for the last added forge.
 func (cb *ConfigBuilder) WithAutoDiscovery() *ConfigBuilder {
 	if len(cb.config.Forges) > 0 {
 		cb.config.Forges[len(cb.config.Forges)-1].AutoDiscover = true
@@ -113,7 +113,7 @@ func (cb *ConfigBuilder) WithAutoDiscovery() *ConfigBuilder {
 	return cb
 }
 
-// WithRepository adds an explicit repository configuration
+// WithRepository adds an explicit repository configuration.
 func (cb *ConfigBuilder) WithRepository(name, url, branch string) *ConfigBuilder {
 	repo := config.Repository{
 		Name:   name,
@@ -124,7 +124,7 @@ func (cb *ConfigBuilder) WithRepository(name, url, branch string) *ConfigBuilder
 	return cb
 }
 
-// WithDaemon adds daemon configuration
+// WithDaemon adds daemon configuration.
 func (cb *ConfigBuilder) WithDaemon(docsPort, webhookPort, adminPort int) *ConfigBuilder {
 	cb.config.Daemon = &config.DaemonConfig{
 		HTTP: config.HTTPConfig{
@@ -141,7 +141,7 @@ func (cb *ConfigBuilder) WithDaemon(docsPort, webhookPort, adminPort int) *Confi
 	return cb
 }
 
-// WithMonitoring adds monitoring configuration
+// WithMonitoring adds monitoring configuration.
 func (cb *ConfigBuilder) WithMonitoring(metricsEnabled bool) *ConfigBuilder {
 	cb.config.Monitoring = &config.MonitoringConfig{
 		Metrics: config.MonitoringMetrics{
@@ -159,7 +159,7 @@ func (cb *ConfigBuilder) WithMonitoring(metricsEnabled bool) *ConfigBuilder {
 	return cb
 }
 
-// WithVersioning adds versioning configuration
+// WithVersioning adds versioning configuration.
 func (cb *ConfigBuilder) WithVersioning(strategy config.VersioningStrategy) *ConfigBuilder {
 	cb.config.Versioning = &config.VersioningConfig{
 		Strategy: strategy,
@@ -167,12 +167,12 @@ func (cb *ConfigBuilder) WithVersioning(strategy config.VersioningStrategy) *Con
 	return cb
 }
 
-// Build returns the built configuration
+// Build returns the built configuration.
 func (cb *ConfigBuilder) Build() *config.Config {
 	return cb.config
 }
 
-// BuildAndSave builds the configuration and saves it to a file
+// BuildAndSave builds the configuration and saves it to a file.
 func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 	// Create YAML content
 	data, err := yaml.Marshal(cb.config)
@@ -187,24 +187,24 @@ func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 	return cb.config
 }
 
-// ConfigFactory provides common configuration patterns for tests
+// ConfigFactory provides common configuration patterns for tests.
 type ConfigFactory struct {
 	t *testing.T
 }
 
-// NewConfigFactory creates a new configuration factory
+// NewConfigFactory creates a new configuration factory.
 func NewConfigFactory(t *testing.T) *ConfigFactory {
 	return &ConfigFactory{t: t}
 }
 
-// MinimalConfig creates a minimal valid configuration
+// MinimalConfig creates a minimal valid configuration.
 func (cf *ConfigFactory) MinimalConfig() *config.Config {
 	return NewConfigBuilder(cf.t).
 		WithGitHubForge("test-github", "test-token", "test-org").
 		Build()
 }
 
-// MultiForgeConfig creates a configuration with multiple forges
+// MultiForgeConfig creates a configuration with multiple forges.
 func (cf *ConfigFactory) MultiForgeConfig() *config.Config {
 	return NewConfigBuilder(cf.t).
 		WithGitHubForge("github", "github-token", "github-org").
@@ -213,7 +213,7 @@ func (cf *ConfigFactory) MultiForgeConfig() *config.Config {
 		Build()
 }
 
-// DaemonConfig creates a configuration suitable for daemon mode
+// DaemonConfig creates a configuration suitable for daemon mode.
 func (cf *ConfigFactory) DaemonConfig() *config.Config {
 	return NewConfigBuilder(cf.t).
 		WithGitHubForge("github", "github-token", "github-org").
@@ -223,7 +223,7 @@ func (cf *ConfigFactory) DaemonConfig() *config.Config {
 		Build()
 }
 
-// AutoDiscoveryConfig creates a configuration with auto-discovery enabled
+// AutoDiscoveryConfig creates a configuration with auto-discovery enabled.
 func (cf *ConfigFactory) AutoDiscoveryConfig() *config.Config {
 	return NewConfigBuilder(cf.t).
 		WithGitHubForge("github", "github-token").
@@ -231,7 +231,7 @@ func (cf *ConfigFactory) AutoDiscoveryConfig() *config.Config {
 		Build()
 }
 
-// ValidationTestConfig creates a configuration for validation testing
+// ValidationTestConfig creates a configuration for validation testing.
 func (cf *ConfigFactory) ValidationTestConfig(invalidField string) *config.Config {
 	builder := NewConfigBuilder(cf.t)
 

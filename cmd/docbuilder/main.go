@@ -8,7 +8,7 @@ import (
 	"github.com/alecthomas/kong"
 )
 
-// Set at build time with: -ldflags "-X main.version=1.0.0-rc1"
+// Set at build time with: -ldflags "-X main.version=1.0.0-rc1".
 var version = "dev"
 
 func main() {

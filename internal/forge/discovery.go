@@ -11,13 +11,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// DiscoveryService handles repository discovery across multiple forges
+// DiscoveryService handles repository discovery across multiple forges.
 type DiscoveryService struct {
 	forgeManager *Manager
 	filtering    *config.FilteringConfig
 }
 
-// NewDiscoveryService creates a new discovery service
+// NewDiscoveryService creates a new discovery service.
 func NewDiscoveryService(manager *Manager, filtering *config.FilteringConfig) *DiscoveryService {
 	return &DiscoveryService{
 		forgeManager: manager,
@@ -25,7 +25,7 @@ func NewDiscoveryService(manager *Manager, filtering *config.FilteringConfig) *D
 	}
 }
 
-// DiscoveryResult contains the results of a discovery operation
+// DiscoveryResult contains the results of a discovery operation.
 type DiscoveryResult struct {
 	Repositories  []*Repository              `json:"repositories"`
 	Organizations map[string][]*Organization `json:"organizations"` // Keyed by forge name
@@ -35,7 +35,7 @@ type DiscoveryResult struct {
 	Duration      time.Duration              `json:"duration"`
 }
 
-// DiscoverAll discovers repositories from all configured forges
+// DiscoverAll discovers repositories from all configured forges.
 func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, error) {
 	startTime := time.Now()
 	result := &DiscoveryResult{
@@ -79,7 +79,7 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 	return result, nil
 }
 
-// discoverForge discovers repositories from a single forge
+// discoverForge discovers repositories from a single forge.
 func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([]*Repository, []*Organization, []*Repository, error) {
 	forgeConfig := ds.forgeManager.GetForgeConfigs()[client.GetName()]
 	if forgeConfig == nil {
@@ -219,7 +219,7 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 	return validRepos, organizations, filteredRepos, nil
 }
 
-// shouldIncludeRepository determines if a repository should be included based on filtering config
+// shouldIncludeRepository determines if a repository should be included based on filtering config.
 func (ds *DiscoveryService) shouldIncludeRepository(repo *Repository) bool {
 	// Skip archived repositories
 	if repo.Archived {
@@ -260,7 +260,7 @@ func (ds *DiscoveryService) shouldIncludeRepository(repo *Repository) bool {
 	return true
 }
 
-// getFilterReason returns a human-readable reason why a repository was filtered out
+// getFilterReason returns a human-readable reason why a repository was filtered out.
 func (ds *DiscoveryService) getFilterReason(repo *Repository) string {
 	if repo.Archived {
 		return "archived"
@@ -297,7 +297,7 @@ func (ds *DiscoveryService) getFilterReason(repo *Repository) string {
 }
 
 // matchesPattern checks if a string matches a simple glob pattern
-// This is a basic implementation - could be enhanced with proper glob matching
+// This is a basic implementation - could be enhanced with proper glob matching.
 func matchesPattern(str, pattern string) bool {
 	// Simple wildcard matching
 	if pattern == "*" {
@@ -330,7 +330,7 @@ func matchesPattern(str, pattern string) bool {
 	return false
 }
 
-// contains checks if a string contains a substring (case-insensitive)
+// contains checks if a string contains a substring (case-insensitive).
 func contains(str, substr string) bool {
 	if len(substr) > len(str) {
 		return false
@@ -350,7 +350,7 @@ func contains(str, substr string) bool {
 	return false
 }
 
-// toLowerCase converts a byte to lowercase
+// toLowerCase converts a byte to lowercase.
 func toLowerCase(b byte) byte {
 	if b >= 'A' && b <= 'Z' {
 		return b + ('a' - 'A')
@@ -358,7 +358,7 @@ func toLowerCase(b byte) byte {
 	return b
 }
 
-// ConvertToConfigRepositories converts discovered repositories to config.Repository format
+// ConvertToConfigRepositories converts discovered repositories to config.Repository format.
 func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, forgeManager *Manager) []config.Repository {
 	var configRepos []config.Repository
 

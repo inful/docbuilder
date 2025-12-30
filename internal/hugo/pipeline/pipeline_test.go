@@ -253,7 +253,7 @@ func TestGenerateMainIndex(t *testing.T) {
 	}
 }
 
-// Helper function
+// Helper function.
 func containsString(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && indexString(s, substr) >= 0)
 }

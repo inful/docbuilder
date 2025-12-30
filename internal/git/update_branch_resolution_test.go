@@ -13,7 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-// helper to create a commit (duplicate of logic in other tests but kept local to avoid accidental coupling)
+// helper to create a commit (duplicate of logic in other tests but kept local to avoid accidental coupling).
 func addSimpleCommit(t *testing.T, repo *git.Repository, repoPath, name string) plumbing.Hash {
 	wt, err := repo.Worktree()
 	if err != nil {

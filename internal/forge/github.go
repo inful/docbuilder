@@ -16,14 +16,14 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// GitHubClient implements ForgeClient for GitHub
+// GitHubClient implements ForgeClient for GitHub.
 type GitHubClient struct {
 	*BaseForge
 	config  *Config
 	baseURL string
 }
 
-// NewGitHubClient creates a new GitHub client
+// NewGitHubClient creates a new GitHub client.
 func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 	if fg.Type != cfg.ForgeGitHub {
 		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
@@ -52,15 +52,15 @@ func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 	}, nil
 }
 
-// GetType returns the forge type
+// GetType returns the forge type.
 func (c *GitHubClient) GetType() cfg.ForgeType { return cfg.ForgeGitHub }
 
-// GetName returns the configured name
+// GetName returns the configured name.
 func (c *GitHubClient) GetName() string {
 	return c.config.Name
 }
 
-// githubOrg represents a GitHub organization
+// githubOrg represents a GitHub organization.
 type githubOrg struct {
 	ID          int    `json:"id"`
 	Login       string `json:"login"`
@@ -69,7 +69,7 @@ type githubOrg struct {
 	Type        string `json:"type"`
 }
 
-// githubRepo represents a GitHub repository
+// githubRepo represents a GitHub repository.
 type githubRepo struct {
 	ID            int       `json:"id"`
 	Name          string    `json:"name"`
@@ -86,7 +86,7 @@ type githubRepo struct {
 	Owner         githubOrg `json:"owner"`
 }
 
-// ListOrganizations returns accessible organizations
+// ListOrganizations returns accessible organizations.
 func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
 	var orgs []*Organization
 
@@ -100,7 +100,7 @@ func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 	return orgs, nil
 }
 
-// getUserOrganizations gets organizations for the authenticated user
+// getUserOrganizations gets organizations for the authenticated user.
 func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organization, error) {
 	req, err := c.NewRequest(ctx, "GET", "/user/orgs", nil)
 	if err != nil {
@@ -131,7 +131,7 @@ func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organizatio
 	return orgs, nil
 }
 
-// ListRepositories returns repositories for specified organizations
+// ListRepositories returns repositories for specified organizations.
 func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
 	var allRepos []*Repository
 
@@ -146,7 +146,7 @@ func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []str
 	return allRepos, nil
 }
 
-// getOrgRepositories gets all repositories for an organization
+// getOrgRepositories gets all repositories for an organization.
 func (c *GitHubClient) getOrgRepositories(ctx context.Context, org string) ([]*Repository, error) {
 	baseEndpoint := fmt.Sprintf("/orgs/%s/repos?sort=updated", org)
 	return c.fetchAndConvertRepos(ctx, baseEndpoint, 100)
@@ -191,7 +191,7 @@ func (c *GitHubClient) fetchAndConvertRepos(ctx context.Context, endpoint string
 	return allRepos, nil
 }
 
-// GetRepository gets detailed information about a specific repository
+// GetRepository gets detailed information about a specific repository.
 func (c *GitHubClient) GetRepository(ctx context.Context, owner, repo string) (*Repository, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s", owner, repo)
 	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
@@ -207,7 +207,7 @@ func (c *GitHubClient) GetRepository(ctx context.Context, owner, repo string) (*
 	return c.convertGitHubRepo(&githubRepo), nil
 }
 
-// CheckDocumentation checks if repository has docs folder and .docignore
+// CheckDocumentation checks if repository has docs folder and .docignore.
 func (c *GitHubClient) CheckDocumentation(ctx context.Context, repo *Repository) error {
 	owner, repoName := c.splitFullName(repo.FullName)
 
@@ -228,7 +228,7 @@ func (c *GitHubClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	return nil
 }
 
-// checkPathExists checks if a path exists in the repository
+// checkPathExists checks if a path exists in the repository.
 func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, branch string) (bool, error) {
 	endpoint := fmt.Sprintf("/repos/%s/%s/contents/%s?ref=%s", owner, repo, path, branch)
 	req, err := c.NewRequest(ctx, "GET", endpoint, nil)
@@ -252,7 +252,7 @@ func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, b
 	return true, nil
 }
 
-// ValidateWebhook validates the GitHub webhook signature
+// ValidateWebhook validates the GitHub webhook signature.
 func (c *GitHubClient) ValidateWebhook(payload []byte, signature, secret string) bool {
 	if signature == "" || secret == "" {
 		return false
@@ -279,7 +279,7 @@ func (c *GitHubClient) ValidateWebhook(payload []byte, signature, secret string)
 	return false
 }
 
-// ParseWebhookEvent parses GitHub webhook payload
+// ParseWebhookEvent parses GitHub webhook payload.
 func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	switch eventType {
 	case "push":
@@ -291,7 +291,7 @@ func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 	}
 }
 
-// githubPushEvent represents a GitHub push event
+// githubPushEvent represents a GitHub push event.
 type githubPushEvent struct {
 	Ref        string          `json:"ref"`
 	Repository json.RawMessage `json:"repository"` // decode later to handle id as string/int
@@ -299,7 +299,7 @@ type githubPushEvent struct {
 	HeadCommit githubCommit    `json:"head_commit"`
 }
 
-// githubCommit represents a GitHub commit
+// githubCommit represents a GitHub commit.
 type githubCommit struct {
 	ID        string    `json:"id"`
 	Message   string    `json:"message"`
@@ -313,7 +313,7 @@ type githubCommit struct {
 	Removed  []string `json:"removed"`
 }
 
-// parsePushEvent parses a GitHub push event
+// parsePushEvent parses a GitHub push event.
 func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent githubPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
@@ -371,7 +371,7 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}, nil
 }
 
-// githubRepositoryEvent represents a GitHub repository event
+// githubRepositoryEvent represents a GitHub repository event.
 type githubRepositoryEvent struct {
 	Action     string          `json:"action"`
 	Repository json.RawMessage `json:"repository"`
@@ -384,7 +384,7 @@ type githubRepositoryEvent struct {
 	} `json:"changes"`
 }
 
-// parseRepositoryEvent parses a GitHub repository event
+// parseRepositoryEvent parses a GitHub repository event.
 func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
 	var repoEvent githubRepositoryEvent
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
@@ -429,7 +429,7 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 	return event, nil
 }
 
-// RegisterWebhook registers a webhook for a repository
+// RegisterWebhook registers a webhook for a repository.
 func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
 		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
@@ -464,7 +464,7 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	return c.DoRequest(req, &result)
 }
 
-// GetEditURL returns the URL to edit a file in GitHub
+// GetEditURL returns the URL to edit a file in GitHub.
 func (c *GitHubClient) GetEditURL(repo *Repository, filePath, branch string) string {
 	return GenerateEditURL(TypeGitHub, c.baseURL, repo.FullName, branch, filePath)
 }

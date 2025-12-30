@@ -4,7 +4,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
 )
 
-// AuthType enumerates supported authentication methods (stringly for YAML compatibility)
+// AuthType enumerates supported authentication methods (stringly for YAML compatibility).
 type AuthType string
 
 const (
@@ -32,7 +32,7 @@ func (a AuthType) IsValid() bool {
 	return NormalizeAuthType(string(a)) != ""
 }
 
-// AuthConfig represents authentication configuration
+// AuthConfig represents authentication configuration.
 type AuthConfig struct {
 	Type     AuthType `yaml:"type"` // ssh|token|basic|none
 	Username string   `yaml:"username,omitempty"`

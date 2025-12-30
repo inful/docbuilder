@@ -11,7 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
-// mockHugoGenerator is a test double for HugoGenerator
+// mockHugoGenerator is a test double for HugoGenerator.
 type mockHugoGenerator struct {
 	generateError error
 	docFiles      []docs.DocFile
@@ -177,7 +177,7 @@ func TestBuildResult_Duration(t *testing.T) {
 	}
 }
 
-// mockSkipEvaluator is a test double for SkipEvaluator
+// mockSkipEvaluator is a test double for SkipEvaluator.
 type mockSkipEvaluator struct {
 	canSkip    bool
 	skipReport any

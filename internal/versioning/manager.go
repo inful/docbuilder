@@ -14,14 +14,14 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
-// DefaultVersionManager implements VersionManager using Git operations
+// DefaultVersionManager implements VersionManager using Git operations.
 type DefaultVersionManager struct {
 	gitClient    *git.Client
 	repositories map[string]*RepositoryVersions // In-memory cache
 	mu           sync.RWMutex                   // Protects repositories map
 }
 
-// NewVersionManager creates a new version manager
+// NewVersionManager creates a new version manager.
 func NewVersionManager(gitClient *git.Client) *DefaultVersionManager {
 	return &DefaultVersionManager{
 		gitClient:    gitClient,
@@ -29,12 +29,12 @@ func NewVersionManager(gitClient *git.Client) *DefaultVersionManager {
 	}
 }
 
-// DiscoverVersions discovers available versions for a repository
+// DiscoverVersions discovers available versions for a repository.
 func (vm *DefaultVersionManager) DiscoverVersions(repoURL string, config *VersionConfig) (*VersionDiscoveryResult, error) {
 	return vm.DiscoverVersionsWithAuth(repoURL, config, nil)
 }
 
-// DiscoverVersionsWithAuth discovers available versions for a repository with authentication
+// DiscoverVersionsWithAuth discovers available versions for a repository with authentication.
 func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config *VersionConfig, authConfig interface{}) (*VersionDiscoveryResult, error) {
 	slog.Info("Discovering versions for repository", "repo_url", repoURL, "strategy", config.Strategy)
 
@@ -97,7 +97,7 @@ func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config
 	return result, nil
 }
 
-// UpdateVersions updates the versions for a repository
+// UpdateVersions updates the versions for a repository.
 func (vm *DefaultVersionManager) UpdateVersions(repoURL string, versions []*Version) error {
 	vm.mu.Lock()
 	defer vm.mu.Unlock()
@@ -117,7 +117,7 @@ func (vm *DefaultVersionManager) UpdateVersions(repoURL string, versions []*Vers
 	return nil
 }
 
-// CleanupOldVersions removes old versions based on retention policy
+// CleanupOldVersions removes old versions based on retention policy.
 func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *VersionConfig) error {
 	vm.mu.Lock()
 	defer vm.mu.Unlock()
@@ -221,7 +221,7 @@ func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authCo
 	return gitRefs, nil
 }
 
-// getDefaultBranch determines the default branch for the repository
+// getDefaultBranch determines the default branch for the repository.
 func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitReference) (string, error) {
 	// Look for common default branch names
 	defaultCandidates := []string{"main", "master", "trunk"}
@@ -244,7 +244,7 @@ func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitRef
 	return "", fmt.Errorf("no branches found in repository: %s", repoURL)
 }
 
-// filterAndConvertReferences filters Git references based on configuration and converts to versions
+// filterAndConvertReferences filters Git references based on configuration and converts to versions.
 func (vm *DefaultVersionManager) filterAndConvertReferences(refs []*GitReference, config *VersionConfig, defaultBranch string) []*Version {
 	versions := make([]*Version, 0)
 
@@ -258,7 +258,7 @@ func (vm *DefaultVersionManager) filterAndConvertReferences(refs []*GitReference
 	return versions
 }
 
-// convertReferenceToVersion converts a Git reference to a Version if it matches the configuration
+// convertReferenceToVersion converts a Git reference to a Version if it matches the configuration.
 func (vm *DefaultVersionManager) convertReferenceToVersion(ref *GitReference, config *VersionConfig, defaultBranch string) *Version {
 	// Check if this reference should be included based on strategy
 	include := false
@@ -301,7 +301,7 @@ func (vm *DefaultVersionManager) convertReferenceToVersion(ref *GitReference, co
 	return version
 }
 
-// matchesPatterns checks if a name matches any of the given patterns
+// matchesPatterns checks if a name matches any of the given patterns.
 func (vm *DefaultVersionManager) matchesPatterns(name string, patterns []string) bool {
 	if len(patterns) == 0 {
 		return true // No patterns means match all
@@ -330,7 +330,7 @@ func (vm *DefaultVersionManager) matchesPatterns(name string, patterns []string)
 	return false
 }
 
-// generateDisplayName creates a human-readable display name for the version
+// generateDisplayName creates a human-readable display name for the version.
 func (vm *DefaultVersionManager) generateDisplayName(name, refType string) string {
 	if refType == "tag" {
 		// For tags, use the tag name as-is (it's usually semantic version)
@@ -354,7 +354,7 @@ func (vm *DefaultVersionManager) generateDisplayName(name, refType string) strin
 	}
 }
 
-// generateVersionPath creates a Hugo-compatible path for the version
+// generateVersionPath creates a Hugo-compatible path for the version.
 func (vm *DefaultVersionManager) generateVersionPath(name, refType, defaultBranch string) string {
 	if refType == "branch" && name == defaultBranch {
 		return "latest" // Default branch uses "latest" path
@@ -369,7 +369,7 @@ func (vm *DefaultVersionManager) generateVersionPath(name, refType, defaultBranc
 	return path
 }
 
-// calculateVersionChanges compares old and new versions to determine changes
+// calculateVersionChanges compares old and new versions to determine changes.
 func (vm *DefaultVersionManager) calculateVersionChanges(oldVersions, newVersions []*Version) (newCount, updatedCount, removedCount int) {
 	oldMap := make(map[string]*Version)
 	for _, v := range oldVersions {

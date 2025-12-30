@@ -10,19 +10,19 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
-// DaemonModeType represents the daemon operation mode
+// DaemonModeType represents the daemon operation mode.
 type DaemonModeType struct {
 	value string
 }
 
-// Predefined daemon modes
+// Predefined daemon modes.
 var (
 	DaemonModeHTTP      = DaemonModeType{"http"}
 	DaemonModeWebhook   = DaemonModeType{"webhook"}
 	DaemonModeScheduled = DaemonModeType{"scheduled"}
 	DaemonModeAPI       = DaemonModeType{"api"}
 
-	// Normalizer for daemon modes
+	// Normalizer for daemon modes.
 	daemonModeNormalizer = foundation.NewNormalizer(map[string]DaemonModeType{
 		"http":      DaemonModeHTTP,
 		"webhook":   DaemonModeWebhook,
@@ -30,23 +30,23 @@ var (
 		"api":       DaemonModeAPI,
 	}, DaemonModeHTTP) // default to HTTP
 
-	// Validator for daemon modes
+	// Validator for daemon modes.
 	daemonModeValidator = foundation.OneOf("daemon_mode", []DaemonModeType{
 		DaemonModeHTTP, DaemonModeWebhook, DaemonModeScheduled, DaemonModeAPI,
 	})
 )
 
-// String returns the string representation of the daemon mode
+// String returns the string representation of the daemon mode.
 func (dm DaemonModeType) String() string {
 	return dm.value
 }
 
-// Valid checks if the daemon mode is valid
+// Valid checks if the daemon mode is valid.
 func (dm DaemonModeType) Valid() bool {
 	return daemonModeValidator(dm).Valid
 }
 
-// RequiresHTTPServer indicates if this mode requires an HTTP server
+// RequiresHTTPServer indicates if this mode requires an HTTP server.
 func (dm DaemonModeType) RequiresHTTPServer() bool {
 	switch dm {
 	case DaemonModeHTTP, DaemonModeWebhook, DaemonModeAPI:
@@ -56,7 +56,7 @@ func (dm DaemonModeType) RequiresHTTPServer() bool {
 	}
 }
 
-// SupportsWebhooks indicates if this mode supports webhook processing
+// SupportsWebhooks indicates if this mode supports webhook processing.
 func (dm DaemonModeType) SupportsWebhooks() bool {
 	switch dm {
 	case DaemonModeWebhook, DaemonModeAPI:
@@ -66,7 +66,7 @@ func (dm DaemonModeType) SupportsWebhooks() bool {
 	}
 }
 
-// ParseDaemonModeType parses a string into a DaemonModeType
+// ParseDaemonModeType parses a string into a DaemonModeType.
 func ParseDaemonModeType(s string) foundation.Result[DaemonModeType, error] {
 	mode, err := daemonModeNormalizer.NormalizeWithError(s)
 	if err != nil {
@@ -80,12 +80,12 @@ func ParseDaemonModeType(s string) foundation.Result[DaemonModeType, error] {
 	return foundation.Ok[DaemonModeType, error](mode)
 }
 
-// LogLevelType represents strongly-typed log levels
+// LogLevelType represents strongly-typed log levels.
 type LogLevelType struct {
 	value string
 }
 
-// Predefined log levels
+// Predefined log levels.
 var (
 	LogLevelDebug = LogLevelType{"debug"}
 	LogLevelInfo  = LogLevelType{"info"}
@@ -93,7 +93,7 @@ var (
 	LogLevelError = LogLevelType{"error"}
 	LogLevelFatal = LogLevelType{"fatal"}
 
-	// Normalizer for log levels
+	// Normalizer for log levels.
 	logLevelNormalizer = foundation.NewNormalizer(map[string]LogLevelType{
 		"debug": LogLevelDebug,
 		"info":  LogLevelInfo,
@@ -102,23 +102,23 @@ var (
 		"fatal": LogLevelFatal,
 	}, LogLevelInfo) // default to info
 
-	// Validator for log levels
+	// Validator for log levels.
 	logLevelValidator = foundation.OneOf("log_level", []LogLevelType{
 		LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError, LogLevelFatal,
 	})
 )
 
-// String returns the string representation of the log level
+// String returns the string representation of the log level.
 func (ll LogLevelType) String() string {
 	return ll.value
 }
 
-// Valid checks if the log level is valid
+// Valid checks if the log level is valid.
 func (ll LogLevelType) Valid() bool {
 	return logLevelValidator(ll).Valid
 }
 
-// ParseLogLevelType parses a string into a LogLevelType
+// ParseLogLevelType parses a string into a LogLevelType.
 func ParseLogLevelType(s string) foundation.Result[LogLevelType, error] {
 	level, err := logLevelNormalizer.NormalizeWithError(s)
 	if err != nil {
@@ -132,7 +132,7 @@ func ParseLogLevelType(s string) foundation.Result[LogLevelType, error] {
 	return foundation.Ok[LogLevelType, error](level)
 }
 
-// DaemonConfig represents a strongly-typed daemon configuration
+// DaemonConfig represents a strongly-typed daemon configuration.
 type DaemonConfig struct {
 	// Operation mode
 	Mode DaemonModeType `json:"mode" yaml:"mode"`
@@ -168,7 +168,7 @@ type DaemonConfig struct {
 	Custom map[string]any `json:"custom,omitempty" yaml:"custom,omitempty"`
 }
 
-// ServerConfig represents HTTP server configuration
+// ServerConfig represents HTTP server configuration.
 type ServerConfig struct {
 	Host         string                           `json:"host" yaml:"host"`
 	Port         int                              `json:"port" yaml:"port"`
@@ -179,7 +179,7 @@ type ServerConfig struct {
 	CORS         foundation.Option[CORSConfig]    `json:"cors,omitempty" yaml:"cors,omitempty"`
 }
 
-// TLSConfig represents TLS configuration
+// TLSConfig represents TLS configuration.
 type TLSConfig struct {
 	Enabled  bool                      `json:"enabled" yaml:"enabled"`
 	CertFile foundation.Option[string] `json:"cert_file,omitempty" yaml:"cert_file,omitempty"`
@@ -187,7 +187,7 @@ type TLSConfig struct {
 	Auto     bool                      `json:"auto" yaml:"auto"` // For automatic certificate generation
 }
 
-// CORSConfig represents CORS configuration
+// CORSConfig represents CORS configuration.
 type CORSConfig struct {
 	Enabled        bool     `json:"enabled" yaml:"enabled"`
 	AllowedOrigins []string `json:"allowed_origins,omitempty" yaml:"allowed_origins,omitempty"`
@@ -195,7 +195,7 @@ type CORSConfig struct {
 	AllowedHeaders []string `json:"allowed_headers,omitempty" yaml:"allowed_headers,omitempty"`
 }
 
-// LoggingConfig represents logging configuration
+// LoggingConfig represents logging configuration.
 type LoggingConfig struct {
 	Level      LogLevelType              `json:"level" yaml:"level"`
 	Format     foundation.Option[string] `json:"format,omitempty" yaml:"format,omitempty"`
@@ -204,7 +204,7 @@ type LoggingConfig struct {
 	Structured bool                      `json:"structured" yaml:"structured"`
 }
 
-// BuildConfig represents build execution configuration
+// BuildConfig represents build execution configuration.
 type BuildConfig struct {
 	Timeout       foundation.Option[time.Duration] `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	MaxConcurrent foundation.Option[int]           `json:"max_concurrent,omitempty" yaml:"max_concurrent,omitempty"`
@@ -213,7 +213,7 @@ type BuildConfig struct {
 	CleanupAfter  foundation.Option[time.Duration] `json:"cleanup_after,omitempty" yaml:"cleanup_after,omitempty"`
 }
 
-// MonitoringConfig represents monitoring and health check configuration
+// MonitoringConfig represents monitoring and health check configuration.
 type MonitoringConfig struct {
 	Enabled     bool                             `json:"enabled" yaml:"enabled"`
 	HealthCheck HealthCheckConfig                `json:"health_check" yaml:"health_check"`
@@ -221,28 +221,28 @@ type MonitoringConfig struct {
 	Tracing     foundation.Option[TracingConfig] `json:"tracing,omitempty" yaml:"tracing,omitempty"`
 }
 
-// HealthCheckConfig represents health check configuration
+// HealthCheckConfig represents health check configuration.
 type HealthCheckConfig struct {
 	Enabled  bool                             `json:"enabled" yaml:"enabled"`
 	Endpoint foundation.Option[string]        `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 	Interval foundation.Option[time.Duration] `json:"interval,omitempty" yaml:"interval,omitempty"`
 }
 
-// MetricsConfig represents metrics collection configuration
+// MetricsConfig represents metrics collection configuration.
 type MetricsConfig struct {
 	Enabled  bool                      `json:"enabled" yaml:"enabled"`
 	Endpoint foundation.Option[string] `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 	Provider foundation.Option[string] `json:"provider,omitempty" yaml:"provider,omitempty"`
 }
 
-// TracingConfig represents distributed tracing configuration
+// TracingConfig represents distributed tracing configuration.
 type TracingConfig struct {
 	Enabled     bool                      `json:"enabled" yaml:"enabled"`
 	ServiceName foundation.Option[string] `json:"service_name,omitempty" yaml:"service_name,omitempty"`
 	Endpoint    foundation.Option[string] `json:"endpoint,omitempty" yaml:"endpoint,omitempty"`
 }
 
-// WebhookConfig represents webhook processing configuration
+// WebhookConfig represents webhook processing configuration.
 type WebhookConfig struct {
 	Enabled        bool                             `json:"enabled" yaml:"enabled"`
 	Secret         foundation.Option[string]        `json:"secret,omitempty" yaml:"secret,omitempty"`
@@ -252,7 +252,7 @@ type WebhookConfig struct {
 	AuthRequired   bool                             `json:"auth_required" yaml:"auth_required"`
 }
 
-// ScheduleConfig represents scheduled build configuration
+// ScheduleConfig represents scheduled build configuration.
 type ScheduleConfig struct {
 	Enabled  bool                             `json:"enabled" yaml:"enabled"`
 	Cron     foundation.Option[string]        `json:"cron,omitempty" yaml:"cron,omitempty"`
@@ -260,7 +260,7 @@ type ScheduleConfig struct {
 	Timezone foundation.Option[string]        `json:"timezone,omitempty" yaml:"timezone,omitempty"`
 }
 
-// SecurityConfig represents security configuration
+// SecurityConfig represents security configuration.
 type SecurityConfig struct {
 	APIKey         foundation.Option[string]          `json:"api_key,omitempty" yaml:"api_key,omitempty"`
 	JWTSecret      foundation.Option[string]          `json:"jwt_secret,omitempty" yaml:"jwt_secret,omitempty"`
@@ -269,7 +269,7 @@ type SecurityConfig struct {
 	TrustedProxies []string                           `json:"trusted_proxies,omitempty" yaml:"trusted_proxies,omitempty"`
 }
 
-// RateLimitConfig represents rate limiting configuration
+// RateLimitConfig represents rate limiting configuration.
 type RateLimitConfig struct {
 	Enabled           bool                             `json:"enabled" yaml:"enabled"`
 	RequestsPerMinute foundation.Option[int]           `json:"requests_per_minute,omitempty" yaml:"requests_per_minute,omitempty"`
@@ -277,7 +277,7 @@ type RateLimitConfig struct {
 	WindowSize        foundation.Option[time.Duration] `json:"window_size,omitempty" yaml:"window_size,omitempty"`
 }
 
-// PerformanceConfig represents performance tuning configuration
+// PerformanceConfig represents performance tuning configuration.
 type PerformanceConfig struct {
 	MaxWorkers     foundation.Option[int]           `json:"max_workers,omitempty" yaml:"max_workers,omitempty"`
 	QueueSize      foundation.Option[int]           `json:"queue_size,omitempty" yaml:"queue_size,omitempty"`
@@ -286,7 +286,7 @@ type PerformanceConfig struct {
 	RequestTimeout foundation.Option[time.Duration] `json:"request_timeout,omitempty" yaml:"request_timeout,omitempty"`
 }
 
-// StorageConfig represents storage configuration
+// StorageConfig represents storage configuration.
 type StorageConfig struct {
 	WorkspaceDir foundation.Option[string]        `json:"workspace_dir,omitempty" yaml:"workspace_dir,omitempty"`
 	StateFile    foundation.Option[string]        `json:"state_file,omitempty" yaml:"state_file,omitempty"`
@@ -297,7 +297,7 @@ type StorageConfig struct {
 
 // Validation methods
 
-// Validate performs comprehensive validation of the daemon configuration
+// Validate performs comprehensive validation of the daemon configuration.
 func (dc *DaemonConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
 		// Validate daemon mode
@@ -329,7 +329,7 @@ func (dc *DaemonConfig) Validate() foundation.ValidationResult {
 	return chain.Validate(*dc)
 }
 
-// validateModeSpecificConfig validates configuration based on daemon mode
+// validateModeSpecificConfig validates configuration based on daemon mode.
 func (dc *DaemonConfig) validateModeSpecificConfig() foundation.ValidationResult {
 	switch dc.Mode {
 	case DaemonModeWebhook:
@@ -364,7 +364,7 @@ func (dc *DaemonConfig) validateModeSpecificConfig() foundation.ValidationResult
 	}
 }
 
-// Validate validates server configuration
+// Validate validates server configuration.
 func (sc *ServerConfig) Validate() foundation.ValidationResult {
 	chain := foundation.NewValidatorChain(
 		// Validate host
@@ -412,7 +412,7 @@ func (sc *ServerConfig) Validate() foundation.ValidationResult {
 	return chain.Validate(*sc)
 }
 
-// Validate validates TLS configuration
+// Validate validates TLS configuration.
 func (tc *TLSConfig) Validate() foundation.ValidationResult {
 	if !tc.Enabled {
 		return foundation.Valid()
@@ -439,7 +439,7 @@ func (tc *TLSConfig) Validate() foundation.ValidationResult {
 	return foundation.Valid()
 }
 
-// Validate validates logging configuration
+// Validate validates logging configuration.
 func (lc *LoggingConfig) Validate() foundation.ValidationResult {
 	// Validate log level
 	if !lc.Level.Valid() {
@@ -471,7 +471,7 @@ func (lc *LoggingConfig) Validate() foundation.ValidationResult {
 	return foundation.Valid()
 }
 
-// Validate validates webhook configuration
+// Validate validates webhook configuration.
 func (wc *WebhookConfig) Validate() foundation.ValidationResult {
 	if !wc.Enabled {
 		return foundation.Valid()
@@ -510,7 +510,7 @@ func (wc *WebhookConfig) Validate() foundation.ValidationResult {
 	return chain.Validate(*wc)
 }
 
-// Validate validates schedule configuration
+// Validate validates schedule configuration.
 func (sc *ScheduleConfig) Validate() foundation.ValidationResult {
 	if !sc.Enabled {
 		return foundation.Valid()
@@ -537,7 +537,7 @@ func (sc *ScheduleConfig) Validate() foundation.ValidationResult {
 	return foundation.Valid()
 }
 
-// Validate validates security configuration
+// Validate validates security configuration.
 func (sc *SecurityConfig) Validate() foundation.ValidationResult {
 	// Validate rate limit configuration if present
 	if sc.RateLimit.IsSome() {
@@ -547,7 +547,7 @@ func (sc *SecurityConfig) Validate() foundation.ValidationResult {
 	return foundation.Valid()
 }
 
-// Validate validates rate limit configuration
+// Validate validates rate limit configuration.
 func (rlc *RateLimitConfig) Validate() foundation.ValidationResult {
 	if !rlc.Enabled {
 		return foundation.Valid()
@@ -588,7 +588,7 @@ func (rlc *RateLimitConfig) Validate() foundation.ValidationResult {
 
 // Helper functions
 
-// isValidHostname checks if a string is a valid hostname
+// isValidHostname checks if a string is a valid hostname.
 func isValidHostname(hostname string) bool {
 	if hostname == "" || len(hostname) > 253 {
 		return false
