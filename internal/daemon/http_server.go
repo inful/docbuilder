@@ -378,7 +378,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 		rootHandler.ServeHTTP(rec, r)
 
 		// If we got a 404 and this is a GET request from LiveReload, try to redirect to parent
-		if rec.statusCode == http.StatusNotFound && r.Method == "GET" {
+		if rec.statusCode == http.StatusNotFound && r.Method == http.MethodGet {
 			// Check if this is a LiveReload-triggered reload via Cookie
 			if cookie, err := r.Cookie("docbuilder_lr_reload"); err == nil && cookie.Value == "1" {
 				root := s.resolveDocsRoot()
@@ -685,7 +685,7 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
 			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-			if r.Method == "OPTIONS" {
+			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}

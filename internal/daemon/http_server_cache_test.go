@@ -72,7 +72,7 @@ func TestCacheControlHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			req := httptest.NewRequest("GET", tt.path, nil)
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
 			rec := httptest.NewRecorder()
 
 			handler.ServeHTTP(rec, req)
@@ -106,7 +106,7 @@ func TestCacheControlNoInterferenceWithLiveReload(t *testing.T) {
 
 	handler := srv.addCacheControlHeaders(simpleHandler)
 
-	req := httptest.NewRequest("GET", "/static/app.css", nil)
+	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)

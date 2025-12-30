@@ -213,7 +213,7 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Link", `<https://api.example.com?page=2>; rel="next"`)
 		w.Header().Set("X-Total-Count", "100")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`[{"id": 1}]`))
 	}))
 	defer server.Close()
@@ -267,7 +267,7 @@ func TestBaseForge_Integration(t *testing.T) {
 			}
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"success": true}`))
 	}))
 	defer server.Close()
