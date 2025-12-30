@@ -74,7 +74,8 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 	// Build request with optional body
 	var req *http.Request
 	if body != nil {
-		jsonBody, err := json.Marshal(body)
+		var jsonBody []byte
+		jsonBody, err = json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("marshal request body: %w", err)
 		}

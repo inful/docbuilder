@@ -200,7 +200,7 @@ func (c *GitHubClient) GetRepository(ctx context.Context, owner, repo string) (*
 	}
 
 	var githubRepo githubRepo
-	if err := c.DoRequest(req, &githubRepo); err != nil {
+	if err = c.DoRequest(req, &githubRepo); err != nil {
 		return nil, err
 	}
 

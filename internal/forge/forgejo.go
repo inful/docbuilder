@@ -254,7 +254,7 @@ func (c *ForgejoClient) GetRepository(ctx context.Context, owner, repo string) (
 	}
 
 	var forgejoRepo forgejoRepo
-	if err := c.DoRequest(req, &forgejoRepo); err != nil {
+	if err = c.DoRequest(req, &forgejoRepo); err != nil {
 		return nil, err
 	}
 
@@ -448,7 +448,7 @@ func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, err
 	if repository, ok := repoEvent["repository"].(map[string]interface{}); ok {
 		if repoData, err := json.Marshal(repository); err == nil {
 			var forgejoRepo forgejoRepo
-			if err := json.Unmarshal(repoData, &forgejoRepo); err == nil {
+			if unmarshalErr := json.Unmarshal(repoData, &forgejoRepo); unmarshalErr == nil {
 				event.Repository = c.convertForgejoRepo(&forgejoRepo)
 			}
 		}

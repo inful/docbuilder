@@ -212,7 +212,7 @@ func (c *GitLabClient) GetRepository(ctx context.Context, owner, repo string) (*
 	}
 
 	var gitlabProject gitlabProject
-	if err := c.DoRequest(req, &gitlabProject); err != nil {
+	if err = c.DoRequest(req, &gitlabProject); err != nil {
 		return nil, err
 	}
 

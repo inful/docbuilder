@@ -102,7 +102,8 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	// Step 2.5: Expand repositories with versioning if enabled
 	repositories := cfg.Repositories
 	if cfg.Versioning != nil && !cfg.Versioning.DefaultBranchOnly {
-		expandedRepos, err := versioning.ExpandRepositoriesWithVersions(gitClient, cfg)
+		var expandedRepos []config.Repository
+		expandedRepos, err = versioning.ExpandRepositoriesWithVersions(gitClient, cfg)
 		if err != nil {
 			slog.Warn("Failed to expand repositories with versions, using original list", "error", err)
 		} else {
@@ -118,7 +119,6 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		slog.Info("Processing repository", "name", repo.Name, "url", repo.URL)
 
 		var repoPath string
-		var err error
 
 		if incrementalMode {
 			repoPath, err = gitClient.UpdateRepo(repo)
@@ -209,7 +209,7 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	}
 
 	// Verify docs directory exists
-	if st, err := os.Stat(docsPath); err != nil || !st.IsDir() {
+	if st, statErr := os.Stat(docsPath); statErr != nil || !st.IsDir() {
 		return fmt.Errorf("docs dir not found or not a directory: %s (use -d to specify a different path)", docsPath)
 	}
 

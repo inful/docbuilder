@@ -55,8 +55,8 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 				slog.String("branch", branch))
 		}
 
-		if err := c.fetchOrigin(repository, repo); err != nil {
-			return "", classifyFetchError(repo.URL, err)
+		if fetchErr := c.fetchOrigin(repository, repo); fetchErr != nil {
+			return "", classifyFetchError(repo.URL, fetchErr)
 		}
 
 		// Update cache with new remote HEAD
