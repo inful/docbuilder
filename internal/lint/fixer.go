@@ -846,52 +846,66 @@ func checkImageLinksBroken(line string, lineNum int, sourceFile string) []Broken
 	var broken []BrokenLink
 
 	for i := range len(line) {
-		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
-			// Skip if this image link is inside inline code
-			if isInsideInlineCode(line, i) {
-				continue
-			}
-			closeBracket := strings.Index(line[i+2:], "]")
-			if closeBracket == -1 {
-				continue
-			}
-			closeBracket += i + 2
+		if !isImageLinkStart(line, i) {
+			continue
+		}
+		if isInsideInlineCode(line, i) {
+			continue
+		}
 
-			if closeBracket+1 >= len(line) || line[closeBracket+1] != '(' {
-				continue
-			}
+		linkInfo := extractImageLink(line, i)
+		if linkInfo == nil {
+			continue
+		}
 
-			end := strings.Index(line[closeBracket+2:], ")")
-			if end == -1 {
-				continue
-			}
-			end += closeBracket + 2
-
-			linkTarget := line[closeBracket+2 : end]
-
-			// Skip external URLs
-			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
-				continue
-			}
-
-			// Resolve and check if file exists
-			resolved, err := resolveRelativePath(sourceFile, linkTarget)
-			if err != nil {
-				continue
-			}
-
-			if !fileExists(resolved) {
-				broken = append(broken, BrokenLink{
-					SourceFile: sourceFile,
-					LineNumber: lineNum,
-					Target:     linkTarget,
-					LinkType:   LinkTypeImage,
-				})
-			}
+		if isBrokenLink(sourceFile, linkInfo.target) {
+			broken = append(broken, BrokenLink{
+				SourceFile: sourceFile,
+				LineNumber: lineNum,
+				Target:     linkInfo.target,
+				LinkType:   LinkTypeImage,
+			})
 		}
 	}
-
 	return broken
+}
+
+// isImageLinkStart checks if position i is the start of an image link ![.
+func isImageLinkStart(line string, i int) bool {
+	return i+2 < len(line) && line[i] == '!' && line[i+1] == '['
+}
+
+// extractImageLink extracts image link information starting at position i.
+// Returns nil if the image link is malformed or external.
+func extractImageLink(line string, i int) *inlineLinkInfo {
+	closeBracket := strings.Index(line[i+2:], "]")
+	if closeBracket == -1 {
+		return nil
+	}
+	closeBracket += i + 2
+
+	if closeBracket+1 >= len(line) || line[closeBracket+1] != '(' {
+		return nil
+	}
+
+	end := strings.Index(line[closeBracket+2:], ")")
+	if end == -1 {
+		return nil
+	}
+	end += closeBracket + 2
+
+	linkTarget := line[closeBracket+2 : end]
+
+	// Skip external URLs
+	if isExternalURL(linkTarget) {
+		return nil
+	}
+
+	return &inlineLinkInfo{
+		start:  i,
+		end:    end,
+		target: linkTarget,
+	}
 }
 
 // fileExists checks if a file exists (case-insensitive on applicable filesystems).
