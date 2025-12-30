@@ -46,7 +46,7 @@ func (s *Scheduler) Stop(ctx context.Context) error {
 
 // SchedulePeriodicBuild schedules a periodic build job
 // Returns the job ID for later management.
-func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildType, repos []interface{}) (string, error) {
+func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildType, repos []any) (string, error) {
 	job, err := s.scheduler.NewJob(
 		gocron.DurationJob(interval),
 		gocron.NewTask(s.executeBuild, jobType, repos),
@@ -60,7 +60,7 @@ func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildT
 }
 
 // executeBuild is called by gocron to execute a scheduled build.
-func (s *Scheduler) executeBuild(jobType BuildType, repos []interface{}) {
+func (s *Scheduler) executeBuild(jobType BuildType, repos []any) {
 	if s.daemon == nil {
 		slog.Error("Daemon reference not set in scheduler")
 		return

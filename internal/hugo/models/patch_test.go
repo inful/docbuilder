@@ -70,7 +70,7 @@ func TestFrontMatterPatch_Apply_Replace(t *testing.T) {
 		Title:      "Original Title",
 		Tags:       []string{"old_tag"},
 		Categories: []string{"old_cat"},
-		Custom: map[string]interface{}{
+		Custom: map[string]any{
 			"old_field": "old_value",
 		},
 	}
@@ -101,7 +101,7 @@ func TestFrontMatterPatch_Apply_SetIfMissing(t *testing.T) {
 		Description: "", // Empty, should be set
 		Tags:        []string{"existing_tag"},
 		Categories:  nil, // Nil, should be set
-		Custom: map[string]interface{}{
+		Custom: map[string]any{
 			"existing_field": "existing_value",
 		},
 	}
@@ -130,7 +130,7 @@ func TestFrontMatterPatch_Apply_Deep(t *testing.T) {
 	original := &FrontMatter{
 		Title: "Original Title",
 		Tags:  []string{"tag1", "tag2"},
-		Custom: map[string]interface{}{
+		Custom: map[string]any{
 			"existing_field": "existing_value",
 		},
 	}

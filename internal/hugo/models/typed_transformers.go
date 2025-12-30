@@ -27,7 +27,7 @@ func NewFrontMatterParserV2() *FrontMatterParserV2 {
 			PreservesOriginal:   true,
 			ModifiesContent:     true,
 			ModifiesFrontMatter: true,
-			Properties:          make(map[string]interface{}),
+			Properties:          make(map[string]any),
 		},
 	}
 }
@@ -112,7 +112,7 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	remainingContent := search[endIndex+5:] // Skip "\n---\n"
 
 	// Parse YAML front matter
-	var frontMatterMap map[string]interface{}
+	var frontMatterMap map[string]any
 	if err := yaml.Unmarshal([]byte(frontMatterContent), &frontMatterMap); err != nil {
 		if t.config.FailOnError {
 			return result.SetError(fmt.Errorf("failed to parse front matter: %w", err)).SetDuration(time.Since(startTime)), nil
@@ -183,7 +183,7 @@ func NewFrontMatterBuilderV3() *FrontMatterBuilderV3 {
 			PreservesOriginal:   true,
 			ModifiesContent:     false,
 			ModifiesFrontMatter: true,
-			Properties:          make(map[string]interface{}),
+			Properties:          make(map[string]any),
 		},
 	}
 }
@@ -315,7 +315,7 @@ func NewEditLinkInjectorV3() *EditLinkInjectorV3 {
 			PreservesOriginal:   true,
 			ModifiesContent:     false,
 			ModifiesFrontMatter: true,
-			Properties:          make(map[string]interface{}),
+			Properties:          make(map[string]any),
 		},
 	}
 }
@@ -455,7 +455,7 @@ func NewContentProcessorV2() *ContentProcessorV2 {
 			PreservesOriginal:   false,
 			ModifiesContent:     true,
 			ModifiesFrontMatter: false,
-			Properties:          make(map[string]interface{}),
+			Properties:          make(map[string]any),
 		},
 	}
 }

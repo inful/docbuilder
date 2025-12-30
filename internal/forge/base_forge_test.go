@@ -14,7 +14,7 @@ func TestBaseForge_NewRequest(t *testing.T) {
 		name              string
 		apiURL            string
 		endpoint          string
-		body              interface{}
+		body              any
 		authPrefix        string
 		customHeaders     map[string]string
 		wantPath          string
@@ -141,7 +141,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 		name           string
 		serverResponse string
 		statusCode     int
-		result         interface{}
+		result         any
 		wantErr        bool
 		errContains    string
 	}{
@@ -149,7 +149,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 			name:           "successful JSON response",
 			serverResponse: `{"id": 123, "name": "test"}`,
 			statusCode:     200,
-			result:         &map[string]interface{}{},
+			result:         &map[string]any{},
 			wantErr:        false,
 		},
 		{
@@ -163,7 +163,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 			name:           "error response",
 			serverResponse: `{"message": "Not Found"}`,
 			statusCode:     404,
-			result:         &map[string]interface{}{},
+			result:         &map[string]any{},
 			wantErr:        true,
 			errContains:    "404",
 		},
@@ -226,7 +226,7 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 		t.Fatalf("failed to create request: %v", err)
 	}
 
-	result := []map[string]interface{}{}
+	result := []map[string]any{}
 	headers, err := bf.DoRequestWithHeaders(req, &result)
 	if err != nil {
 		t.Errorf("DoRequestWithHeaders() error = %v", err)

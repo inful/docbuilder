@@ -189,8 +189,8 @@ func (c *GitLabClient) getGroupProjects(ctx context.Context, group string) ([]*R
 			break
 		}
 
-		for _, gProject := range gitlabProjects {
-			repo := c.convertGitLabProject(&gProject)
+		for i := range gitlabProjects {
+			repo := c.convertGitLabProject(&gitlabProjects[i])
 			allRepos = append(allRepos, repo)
 		}
 
@@ -366,7 +366,8 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 	var commits = make([]WebhookCommit, 0, len(pushEvent.Commits))
-	for _, commit := range pushEvent.Commits {
+	for i := range pushEvent.Commits {
+		commit := &pushEvent.Commits[i]
 		commits = append(commits, WebhookCommit{
 			ID:        commit.ID,
 			Message:   commit.Message,
@@ -409,13 +410,13 @@ func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) 
 
 // parseRepositoryEvent parses a GitLab repository event.
 func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
-	var repoEvent map[string]interface{}
+	var repoEvent map[string]any
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
 		return nil, err
 	}
 
 	event := &WebhookEvent{Type: WebhookEventRepository, Timestamp: time.Now(), Changes: make(map[string]string), Metadata: make(map[string]string)}
-	if project, ok := repoEvent["project"].(map[string]interface{}); ok {
+	if project, ok := repoEvent["project"].(map[string]any); ok {
 		if projectData, err := json.Marshal(project); err == nil {
 			var gProj gitlabProject
 			if err := json.Unmarshal(projectData, &gProj); err == nil {
@@ -441,7 +442,7 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		events = []string{"push_events", "repository_update_events"}
 	}
 
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"url":   webhookURL,
 		"token": c.config.Webhook.Secret,
 	}
@@ -461,7 +462,7 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 		return err
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	return c.DoRequest(req, &result)
 }
 

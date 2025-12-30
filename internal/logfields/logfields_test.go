@@ -11,7 +11,7 @@ func TestHelperKeyNames(t *testing.T) {
 		name    string
 		attrKey string
 		attrVal string
-		attr    interface{}
+		attr    any
 	}{
 		{"JobID", KeyJobID, "123", JobID("123")},
 		{"JobType", KeyJobType, "build", JobType("build")},

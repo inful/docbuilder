@@ -60,11 +60,11 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 		var include bool
 
 		// Extract branch names
-		if strings.HasPrefix(refName, "refs/heads/") {
-			shortName = strings.TrimPrefix(refName, "refs/heads/")
+		if after, ok := strings.CutPrefix(refName, "refs/heads/"); ok {
+			shortName = after
 			include = true
-		} else if strings.HasPrefix(refName, "refs/tags/") {
-			shortName = strings.TrimPrefix(refName, "refs/tags/")
+		} else if after, ok := strings.CutPrefix(refName, "refs/tags/"); ok {
+			shortName = after
 			include = true
 		}
 
@@ -124,11 +124,11 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 		var include bool
 
 		// Extract branch names
-		if strings.HasPrefix(refName, "refs/heads/") {
-			shortName = strings.TrimPrefix(refName, "refs/heads/")
+		if after, ok := strings.CutPrefix(refName, "refs/heads/"); ok {
+			shortName = after
 			include = true
-		} else if strings.HasPrefix(refName, "refs/tags/") {
-			shortName = strings.TrimPrefix(refName, "refs/tags/")
+		} else if after, ok := strings.CutPrefix(refName, "refs/tags/"); ok {
+			shortName = after
 			include = true
 		}
 

@@ -93,9 +93,7 @@ func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
 		WithWorkspaceFactory(func() *workspace.Manager {
 			return workspace.NewManager("")
 		}).
-		WithGitClientFactory(func(path string) *git.Client {
-			return git.NewClient(path)
-		})
+		WithGitClientFactory(git.NewClient)
 
 	cfg := &config.Config{
 		Repositories: []config.Repository{
@@ -231,9 +229,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 			WithWorkspaceFactory(func() *workspace.Manager {
 				return wsManager
 			}).
-			WithGitClientFactory(func(path string) *git.Client {
-				return git.NewClient(path)
-			}).
+			WithGitClientFactory(git.NewClient).
 			WithHugoGeneratorFactory(func(cfg any, outputDir string) HugoGenerator {
 				return &mockHugoGenerator{}
 			})

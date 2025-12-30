@@ -35,10 +35,10 @@ func NewProcessor(cfg *config.Config) *Processor {
 // 2. Transformation - Process all documents (discovered + generated)
 //
 // Returns processed documents ready for Hugo site generation.
-func (p *Processor) ProcessContent(discovered []*Document, repoMetadata map[string]RepositoryInfo) ([]*Document, error) {
+func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[string]RepositoryInfo) ([]*Document, error) {
 	// Inject repository metadata (URL, commit) into discovered documents
 	// This must happen before generation/transformation so edit links work correctly
-	for _, doc := range discovered {
+	for _, doc := range documents {
 		if doc.Repository != "" {
 			if repoInfo, ok := repoMetadata[doc.Repository]; ok {
 				doc.SourceURL = repoInfo.URL
@@ -50,10 +50,10 @@ func (p *Processor) ProcessContent(discovered []*Document, repoMetadata map[stri
 	}
 
 	// Phase 1: Generation - Create missing files
-	slog.Info("Pipeline: Starting generation phase", slog.Int("discovered", len(discovered)))
+	slog.Info("Pipeline: Starting generation phase", slog.Int("discovered", len(documents)))
 
 	ctx := &GenerationContext{
-		Discovered:         discovered,
+		Discovered:         documents,
 		Config:             p.config,
 		RepositoryMetadata: repoMetadata,
 	}
@@ -72,11 +72,11 @@ func (p *Processor) ProcessContent(discovered []*Document, repoMetadata map[stri
 
 	slog.Info("Pipeline: Generation phase complete", slog.Int("generated", len(generated)))
 
-	// Phase 2: Transformation - Process all documents
-	allDocs := append(discovered, generated...)
-	slog.Info("Pipeline: Starting transformation phase", slog.Int("total_docs", len(allDocs)))
+	// Phase 2: Transformation - Process all documents, including generated ones
+	documents = append(documents, generated...)
+	slog.Info("Pipeline: Starting transformation phase", slog.Int("total_docs", len(documents)))
 
-	processedDocs, err := p.processTransforms(allDocs)
+	processedDocs, err := p.processTransforms(documents)
 	if err != nil {
 		return nil, fmt.Errorf("transformation phase failed: %w", err)
 	}

@@ -98,10 +98,7 @@ func (bs *jsonBuildStore) List(_ context.Context, opts ListOptions) foundation.R
 			start = len(builds)
 		}
 
-		end := start + opts.Limit.Unwrap()
-		if end > len(builds) {
-			end = len(builds)
-		}
+		end := min(start+opts.Limit.Unwrap(), len(builds))
 
 		builds = builds[start:end]
 	}

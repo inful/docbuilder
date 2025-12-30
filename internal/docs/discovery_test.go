@@ -404,11 +404,12 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				allRepositories[i].Tags = make(map[string]string)
 			}
 
-			if strings.Contains(repo.Name, "github") {
+			switch {
+			case strings.Contains(repo.Name, "github"):
 				allRepositories[i].Tags["forge_type"] = "github"
-			} else if strings.Contains(repo.Name, "gitlab") {
+			case strings.Contains(repo.Name, "gitlab"):
 				allRepositories[i].Tags["forge_type"] = "gitlab"
-			} else if strings.Contains(repo.Name, "forgejo") {
+			case strings.Contains(repo.Name, "forgejo"):
 				allRepositories[i].Tags["forge_type"] = "forgejo"
 			}
 		}

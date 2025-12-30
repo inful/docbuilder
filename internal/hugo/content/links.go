@@ -51,7 +51,7 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 			}
 			// Add trailing slash for Hugo's pretty URLs
 			if !strings.HasSuffix(trimmed, "/") {
-				trimmed = trimmed + "/"
+				trimmed += "/"
 			}
 			// Build the Hugo-absolute path with repository (and forge if present)
 			var prefix string
@@ -91,7 +91,7 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 			}
 			// Add trailing slash for Hugo's pretty URLs
 			if !strings.HasSuffix(trimmed, "/") {
-				trimmed = trimmed + "/"
+				trimmed += "/"
 			}
 			// Adjust relative paths for Hugo's deeper URL structure
 			// Hugo URLs are one level deeper than source files because the page name becomes a directory

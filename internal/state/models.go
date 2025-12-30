@@ -3,6 +3,7 @@
 package state
 
 import (
+	"slices"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -143,13 +144,7 @@ func (b *Build) Validate() foundation.ValidationResult {
 
 	// Validate status
 	validStatuses := []BuildStatus{BuildStatusPending, BuildStatusRunning, BuildStatusCompleted, BuildStatusFailed, BuildStatusCanceled}
-	statusValid := false
-	for _, status := range validStatuses {
-		if b.Status == status {
-			statusValid = true
-			break
-		}
-	}
+	statusValid := slices.Contains(validStatuses, b.Status)
 	if !statusValid {
 		errors = append(errors, foundation.NewValidationError("status", "invalid", "invalid build status"))
 	}

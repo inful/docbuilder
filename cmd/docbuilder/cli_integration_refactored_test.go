@@ -17,9 +17,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 		Name:        "CLIInitCommand",
 		Description: "Test CLI initialization workflow with various options",
 		Timeout:     10 * time.Second,
-		Setup: func(t *testing.T) *testutils.TestEnvironment {
-			return testutils.NewTestEnvironment(t)
-		},
+		Setup:       testutils.NewTestEnvironment,
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
 			cliEnv := testutils.NewMockCLIEnvironment(t).
 				WithBinaryPath("../../bin/docbuilder")

@@ -38,7 +38,6 @@ type CLI struct {
 }
 
 // AfterApply runs after flag parsing; setup logging once.
-// nolint:unparam // AfterApply currently never returns an error.
 func (c *CLI) AfterApply() error {
 	level := parseLogLevel(c.Verbose)
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))

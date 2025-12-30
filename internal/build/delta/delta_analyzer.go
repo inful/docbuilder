@@ -125,7 +125,8 @@ func (da *DeltaAnalyzer) Analyze(_ string, repos []cfg.Repository) DeltaPlan {
 	changed := make([]string, 0, len(repos))
 	unknown := 0
 	reasons := make(map[string]string, len(repos))
-	for _, repo := range repos {
+	for i := range repos {
+		repo := &repos[i]
 		docHash := da.state.GetRepoDocFilesHash(repo.URL)
 		commit := da.state.GetRepoLastCommit(repo.URL)
 		// Case 1: incomplete metadata forces rebuild

@@ -19,8 +19,8 @@ func ReadRepoHead(repoPath string) (string, error) {
 	line := strings.TrimSpace(string(data))
 
 	// If HEAD is a symbolic ref (e.g., "ref: refs/heads/main"), resolve it
-	if strings.HasPrefix(line, "ref:") {
-		ref := strings.TrimSpace(strings.TrimPrefix(line, "ref:"))
+	if after, ok := strings.CutPrefix(line, "ref:"); ok {
+		ref := strings.TrimSpace(after)
 		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
 		// #nosec G304 - refPath is internal git metadata, repoPath is controlled
 		if refData, refErr := os.ReadFile(refPath); refErr == nil {

@@ -126,10 +126,9 @@ func (d *Daemon) GenerateStatusData() (*StatusPageData, error) {
 	slog.Debug("Status: collecting build status")
 	// Update queue length from build queue if available
 	if d.buildQueue != nil {
-		qLen := d.buildQueue.Length()
-		if qLen > 2147483647 { // max int32
-			qLen = 2147483647
-		}
+		qLen := min(d.buildQueue.Length(),
+			// max int32
+			2147483647)
 		status.BuildStatus.QueueLength = int32(qLen) // #nosec G115 - bounds checked
 	} else {
 		status.BuildStatus.QueueLength = d.queueLength
@@ -275,12 +274,13 @@ func (d *Daemon) generateVersionSummary(repositories []RepositoryStatus) Version
 		VersionTypes:      make(map[versioning.VersionType]int),
 	}
 
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		summary.TotalVersions += repo.VersionCount
 
 		// Count version types
-		for _, version := range repo.AvailableVersions {
-			summary.VersionTypes[version.Type]++
+		for j := range repo.AvailableVersions {
+			summary.VersionTypes[repo.AvailableVersions[j].Type]++
 		}
 	}
 

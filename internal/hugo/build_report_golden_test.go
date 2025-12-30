@@ -27,7 +27,7 @@ func TestBuildReportGolden(t *testing.T) {
 	}
 
 	// Basic structural assertions (rather than brittle literal string match):
-	var m map[string]interface{}
+	var m map[string]any
 	if err := json.Unmarshal(jb, &m); err != nil {
 		t.Fatalf("unmarshal round trip: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestBuildReportGolden(t *testing.T) {
 		t.Errorf("expected outcome success, got %v", m["outcome"])
 	}
 	// Ensure stage_counts structure shape
-	if sc, ok := m["stage_counts"].(map[string]interface{}); ok {
+	if sc, ok := m["stage_counts"].(map[string]any); ok {
 		if _, ok2 := sc["prepare_output"]; !ok2 {
 			t.Errorf("expected prepare_output entry in stage_counts")
 		}

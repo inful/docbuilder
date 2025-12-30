@@ -420,9 +420,9 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			var subsections []string
 			for otherSection := range allSections[repoName] {
 				// Check if otherSection is a direct child of sectionName
-				if strings.HasPrefix(otherSection, sectionName+"/") {
+				if after, ok := strings.CutPrefix(otherSection, sectionName+"/"); ok {
 					// Get the relative path from this section
-					relPath := strings.TrimPrefix(otherSection, sectionName+"/")
+					relPath := after
 					// Only include if it's an immediate child (no further slashes)
 					if !strings.Contains(relPath, "/") {
 						subsections = append(subsections, relPath)
@@ -482,9 +482,9 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			var subsections []string
 			for otherSection := range allSections[repoName] {
 				// Check if otherSection is a direct child of sectionName
-				if strings.HasPrefix(otherSection, sectionName+"/") {
+				if after, ok := strings.CutPrefix(otherSection, sectionName+"/"); ok {
 					// Get the relative path from this section
-					relPath := strings.TrimPrefix(otherSection, sectionName+"/")
+					relPath := after
 					// Only include if it's an immediate child (no further slashes)
 					if !strings.Contains(relPath, "/") {
 						subsections = append(subsections, relPath)

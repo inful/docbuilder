@@ -45,7 +45,7 @@ func TestEventSerialization(t *testing.T) {
 		{
 			name: "HugoConfigGenerated",
 			createFn: func() (Event, error) {
-				return NewHugoConfigGenerated(buildID, "hash123", map[string]interface{}{"theme": "relearn"})
+				return NewHugoConfigGenerated(buildID, "hash123", map[string]any{"theme": "relearn"})
 			},
 			eventType: "HugoConfigGenerated",
 		},
@@ -97,7 +97,7 @@ func TestEventSerialization(t *testing.T) {
 				t.Error("payload should not be empty")
 			}
 
-			var data map[string]interface{}
+			var data map[string]any
 			if err := json.Unmarshal(payload, &data); err != nil {
 				t.Errorf("failed to unmarshal payload: %v", err)
 			}

@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"maps"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -81,9 +82,7 @@ func (cs *jsonConfigurationStore) GetAll(_ context.Context) foundation.Result[ma
 
 	// Return a deep copy to prevent external modification
 	result := make(map[string]any, len(cs.store.configuration))
-	for k, v := range cs.store.configuration {
-		result[k] = v
-	}
+	maps.Copy(result, cs.store.configuration)
 
 	return foundation.Ok[map[string]any, error](result)
 }

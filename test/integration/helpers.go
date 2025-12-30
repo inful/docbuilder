@@ -27,13 +27,13 @@ import (
 // ContentStructure represents the structure of generated content for golden testing.
 type ContentStructure struct {
 	Files     map[string]ContentFile `json:"files"`
-	Structure map[string]interface{} `json:"structure"`
+	Structure map[string]any         `json:"structure"`
 }
 
 // ContentFile represents a single content file with its front matter and hash.
 type ContentFile struct {
-	FrontMatter map[string]interface{} `json:"frontmatter"`
-	ContentHash string                 `json:"contentHash"`
+	FrontMatter map[string]any `json:"frontmatter"`
+	ContentHash string         `json:"contentHash"`
 }
 
 // setupTestRepo creates a temporary git repository from a directory structure.
@@ -157,7 +157,7 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	actualData, err := os.ReadFile(actualPath)
 	require.NoError(t, err, "failed to read generated hugo.yaml")
 
-	var actual map[string]interface{}
+	var actual map[string]any
 	err = yaml.Unmarshal(actualData, &actual)
 	require.NoError(t, err, "failed to parse hugo.yaml")
 
@@ -181,7 +181,7 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	goldenData, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 
-	var expected map[string]interface{}
+	var expected map[string]any
 	err = yaml.Unmarshal(goldenData, &expected)
 	require.NoError(t, err, "failed to parse golden config")
 
@@ -198,16 +198,16 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 }
 
 // normalizeDynamicFields removes or normalizes fields that change between runs.
-func normalizeDynamicFields(cfg map[string]interface{}) {
+func normalizeDynamicFields(cfg map[string]any) {
 	delete(cfg, "build_date")
 
-	if params, ok := cfg["params"].(map[string]interface{}); ok {
+	if params, ok := cfg["params"].(map[string]any); ok {
 		delete(params, "build_date")
 	}
 }
 
 // normalizeFrontMatter removes dynamic fields from front matter.
-func normalizeFrontMatter(fm map[string]interface{}) {
+func normalizeFrontMatter(fm map[string]any) {
 	if fm == nil {
 		return
 	}
@@ -244,7 +244,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 
 	actual := &ContentStructure{
 		Files:     make(map[string]ContentFile),
-		Structure: make(map[string]interface{}),
+		Structure: make(map[string]any),
 	}
 
 	err := filepath.Walk(contentDir, func(path string, info os.FileInfo, err error) error {
@@ -328,7 +328,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 }
 
 // parseFrontMatter extracts YAML front matter from markdown content.
-func parseFrontMatter(data []byte) (map[string]interface{}, []byte) {
+func parseFrontMatter(data []byte) (map[string]any, []byte) {
 	content := string(data)
 
 	if !strings.HasPrefix(content, "---\n") {
@@ -343,7 +343,7 @@ func parseFrontMatter(data []byte) (map[string]interface{}, []byte) {
 	fmStr := content[4 : endIdx+4]
 	bodyContent := content[endIdx+9:]
 
-	var fm map[string]interface{}
+	var fm map[string]any
 	if err := yaml.Unmarshal([]byte(fmStr), &fm); err != nil {
 		return nil, data
 	}
@@ -374,7 +374,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 	// Sort for deterministic output
 	sorted := make([]string, len(diffFiles))
 	copy(sorted, diffFiles)
-	for i := 0; i < len(sorted); i++ {
+	for i := range sorted {
 		for j := i + 1; j < len(sorted); j++ {
 			if sorted[i] > sorted[j] {
 				sorted[i], sorted[j] = sorted[j], sorted[i]
@@ -420,8 +420,8 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 }
 
 // buildStructureTree creates a nested map representing the directory structure.
-func buildStructureTree(rootDir string) map[string]interface{} {
-	tree := make(map[string]interface{})
+func buildStructureTree(rootDir string) map[string]any {
+	tree := make(map[string]any)
 
 	_ = filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || path == rootDir {
@@ -436,16 +436,16 @@ func buildStructureTree(rootDir string) map[string]interface{} {
 			if i == len(parts)-1 {
 				if info.IsDir() {
 					if _, exists := current[part]; !exists {
-						current[part] = make(map[string]interface{})
+						current[part] = make(map[string]any)
 					}
 				} else {
-					current[part] = map[string]interface{}{}
+					current[part] = map[string]any{}
 				}
 			} else {
 				if _, exists := current[part]; !exists {
-					current[part] = make(map[string]interface{})
+					current[part] = make(map[string]any)
 				}
-				current = current[part].(map[string]interface{})
+				current = current[part].(map[string]any)
 			}
 		}
 

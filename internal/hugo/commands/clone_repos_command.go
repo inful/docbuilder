@@ -134,7 +134,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 		go worker()
 	}
 
-	for _, r := range bs.Git.Repositories {
+	for i := range bs.Git.Repositories {
 		select {
 		case <-ctx.Done():
 			close(tasks)
@@ -144,7 +144,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 			return hugo.ExecutionFailure(err)
 		default:
 		}
-		tasks <- cloneTask{repo: r}
+		tasks <- cloneTask{repo: bs.Git.Repositories[i]}
 	}
 
 	close(tasks)

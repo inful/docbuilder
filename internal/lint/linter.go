@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -178,10 +179,5 @@ func isIgnoredFile(filename string) bool {
 		"SECURITY.MD",
 	}
 
-	for _, ignored := range ignoredFiles {
-		if upper == ignored {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ignoredFiles, upper)
 }

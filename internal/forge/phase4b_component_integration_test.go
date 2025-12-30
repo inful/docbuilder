@@ -210,7 +210,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 			// Simulate Hugo site generation with integrated content
 			hugoConfig := config.HugoConfig{
 				Title: "Integrated Documentation Site",
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"source_repos": len(docsRepos),
 					"forge_types":  []string{"github", "gitlab", "forgejo"},
 				},
@@ -350,7 +350,7 @@ func TestPhase4BComponentIntegration(t *testing.T) {
 			},
 			Hugo: config.HugoConfig{
 				Title: "Multi-Forge Documentation Hub",
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"multi_forge": true,
 					"forge_count": 3,
 				},

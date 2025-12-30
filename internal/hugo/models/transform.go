@@ -16,9 +16,9 @@ type TransformContext struct {
 	StartTime time.Time
 
 	// Transformation metadata
-	Source     string                 // Name of the transformer
-	Priority   int                    // Execution priority
-	Properties map[string]interface{} // Custom transformer properties
+	Source     string         // Name of the transformer
+	Priority   int            // Execution priority
+	Properties map[string]any // Custom transformer properties
 }
 
 // GeneratorProvider provides access to generator functionality without import cycles.
@@ -58,7 +58,7 @@ type ForgeConfig struct {
 type TransformConfig struct {
 	EnabledTransforms  []string
 	DisabledTransforms []string
-	Properties         map[string]interface{}
+	Properties         map[string]any
 }
 
 // EditLinkResolver provides type-safe edit link resolution.
@@ -90,7 +90,7 @@ type ContentTransformation struct {
 	RequiredAfter  []string
 
 	// Configuration
-	Config map[string]interface{}
+	Config map[string]any
 }
 
 // TransformationResult represents the result of a transformation.
@@ -116,8 +116,8 @@ type TransformationResult struct {
 type ChangeRecord struct {
 	Type      ChangeType
 	Field     string
-	OldValue  interface{}
-	NewValue  interface{}
+	OldValue  any
+	NewValue  any
 	Reason    string
 	Source    string
 	Timestamp time.Time
@@ -191,7 +191,7 @@ func NewTransformContext(provider GeneratorProvider) *TransformContext {
 	return &TransformContext{
 		Generator:  provider,
 		StartTime:  time.Now(),
-		Properties: make(map[string]interface{}),
+		Properties: make(map[string]any),
 	}
 }
 
@@ -208,16 +208,16 @@ func (tc *TransformContext) WithPriority(priority int) *TransformContext {
 }
 
 // WithProperty sets a custom property.
-func (tc *TransformContext) WithProperty(key string, value interface{}) *TransformContext {
+func (tc *TransformContext) WithProperty(key string, value any) *TransformContext {
 	if tc.Properties == nil {
-		tc.Properties = make(map[string]interface{})
+		tc.Properties = make(map[string]any)
 	}
 	tc.Properties[key] = value
 	return tc
 }
 
 // GetProperty retrieves a custom property.
-func (tc *TransformContext) GetProperty(key string) (interface{}, bool) {
+func (tc *TransformContext) GetProperty(key string) (any, bool) {
 	if tc.Properties == nil {
 		return nil, false
 	}
@@ -289,7 +289,7 @@ func (tr *TransformationResult) SetSource(source string) *TransformationResult {
 }
 
 // AddChange records a change made during transformation.
-func (tr *TransformationResult) AddChange(changeType ChangeType, field string, oldValue, newValue interface{}, reason, source string) *TransformationResult {
+func (tr *TransformationResult) AddChange(changeType ChangeType, field string, oldValue, newValue any, reason, source string) *TransformationResult {
 	change := ChangeRecord{
 		Type:      changeType,
 		Field:     field,

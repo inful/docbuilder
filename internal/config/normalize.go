@@ -28,7 +28,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
 //  output: normalize_output.go, filtering: normalize_filtering.go)
 
 // Helper constructors retained for existing warning string formats expected by tests.
-func warnChanged(field string, from, to interface{}) string {
+func warnChanged(field string, from, to any) string {
 	return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to)
 }
 

@@ -151,8 +151,8 @@ func (f *TextFormatter) formatIssue(w io.Writer, filePath string, issue Issue) e
 
 	// Explanation (indented)
 	if issue.Explanation != "" {
-		lines := strings.Split(strings.TrimSpace(issue.Explanation), "\n")
-		for _, line := range lines {
+		lines := strings.SplitSeq(strings.TrimSpace(issue.Explanation), "\n")
+		for line := range lines {
 			if _, err := fmt.Fprintf(w, "  %s\n", line); err != nil {
 				return err
 			}

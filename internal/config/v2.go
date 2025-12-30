@@ -30,16 +30,16 @@ type Config struct {
 
 // ForgeConfig represents configuration for a specific forge instance (e.g., GitHub, GitLab, Forgejo).
 type ForgeConfig struct {
-	Name          string                 `yaml:"name"`          // Friendly name for this forge
-	Type          ForgeType              `yaml:"type"`          // Typed forge kind
-	APIURL        string                 `yaml:"api_url"`       // API base URL
-	BaseURL       string                 `yaml:"base_url"`      // Web base URL (for edit links)
-	Organizations []string               `yaml:"organizations"` // Organizations to scan (GitHub)
-	Groups        []string               `yaml:"groups"`        // Groups to scan (GitLab/Forgejo)
-	AutoDiscover  bool                   `yaml:"auto_discover"` // Enable full auto-discovery when no org/group listed
-	Auth          *AuthConfig            `yaml:"auth"`          // Authentication config
-	Webhook       *WebhookConfig         `yaml:"webhook"`       // Webhook configuration
-	Options       map[string]interface{} `yaml:"options"`       // Forge-specific options
+	Name          string         `yaml:"name"`          // Friendly name for this forge
+	Type          ForgeType      `yaml:"type"`          // Typed forge kind
+	APIURL        string         `yaml:"api_url"`       // API base URL
+	BaseURL       string         `yaml:"base_url"`      // Web base URL (for edit links)
+	Organizations []string       `yaml:"organizations"` // Organizations to scan (GitHub)
+	Groups        []string       `yaml:"groups"`        // Groups to scan (GitLab/Forgejo)
+	AutoDiscover  bool           `yaml:"auto_discover"` // Enable full auto-discovery when no org/group listed
+	Auth          *AuthConfig    `yaml:"auth"`          // Authentication config
+	Webhook       *WebhookConfig `yaml:"webhook"`       // Webhook configuration
+	Options       map[string]any `yaml:"options"`       // Forge-specific options
 }
 
 // WebhookConfig represents webhook configuration for a forge, including secret, path, and events.

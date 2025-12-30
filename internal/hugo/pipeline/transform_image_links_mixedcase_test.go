@@ -31,13 +31,14 @@ func TestRewriteImageLinks_MixedCaseFilename(t *testing.T) {
 	actualLowercasePath := "/test-repo/guides/images/6_3_approve_mr.png"
 
 	// Currently the link rewriter does NOT lowercase, causing a mismatch
-	if strings.Contains(doc.Content, expectedPath) {
+	switch {
+	case strings.Contains(doc.Content, expectedPath):
 		t.Logf("Link rewriter preserved case: %s", expectedPath)
 		t.Logf("But file is written as: %s", actualLowercasePath)
 		t.Errorf("MISMATCH: Link references %s but file exists at %s", expectedPath, actualLowercasePath)
-	} else if strings.Contains(doc.Content, actualLowercasePath) {
+	case strings.Contains(doc.Content, actualLowercasePath):
 		t.Logf("SUCCESS: Link correctly normalized to: %s", actualLowercasePath)
-	} else {
+	default:
 		t.Errorf("Link rewriter produced unexpected output:\n%s", doc.Content)
 	}
 

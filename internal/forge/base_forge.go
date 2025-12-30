@@ -49,7 +49,7 @@ func (b *BaseForge) SetCustomHeader(key, value string) {
 // Handles URL building, body encoding, and header setting.
 // Endpoint should be relative path like "/user/orgs" or "repos/{owner}/{repo}".
 // For Forgejo compatibility, query strings in endpoint are properly handled.
-func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Request, error) {
+func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, body any) (*http.Request, error) {
 	// Parse endpoint to handle query strings and leading slashes
 	cleanEndpoint := strings.TrimPrefix(endpoint, "/")
 
@@ -105,7 +105,7 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 
 // DoRequest executes an HTTP request and decodes the response.
 // Consolidates error handling, response closing, and JSON decoding.
-func (b *BaseForge) DoRequest(req *http.Request, result interface{}) error {
+func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("execute request: %w", err)
@@ -130,7 +130,7 @@ func (b *BaseForge) DoRequest(req *http.Request, result interface{}) error {
 
 // DoRequestWithHeaders is like DoRequest but also returns response headers.
 // Useful for pagination that uses Link headers (GitHub).
-func (b *BaseForge) DoRequestWithHeaders(req *http.Request, result interface{}) (http.Header, error) {
+func (b *BaseForge) DoRequestWithHeaders(req *http.Request, result any) (http.Header, error) {
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("execute request: %w", err)
