@@ -209,40 +209,15 @@ func (c *ForgejoClient) getOrgRepositories(ctx context.Context, org string) ([]*
 
 // fetchAndConvertRepos is a helper that fetches paginated repositories and converts them.
 func (c *ForgejoClient) fetchAndConvertRepos(ctx context.Context, endpoint string, pageSize int) ([]*Repository, error) {
-	forgejoRepos, err := PaginatedFetchHelper(
+	return fetchAndConvertReposGeneric(
+		c.BaseForge,
 		ctx,
 		endpoint,
 		"page",
 		"limit",
 		pageSize,
-		func(ep string) ([]forgejoRepo, bool, error) {
-			req, err := c.NewRequest(ctx, "GET", ep, nil)
-			if err != nil {
-				return nil, false, err
-			}
-
-			var repos []forgejoRepo
-			if err := c.DoRequest(req, &repos); err != nil {
-				return nil, false, err
-			}
-
-			// Has more if we got a full page
-			hasMore := len(repos) >= pageSize
-			return repos, hasMore, nil
-		},
+		c.convertForgejoRepo,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert to common Repository format
-	allRepos := make([]*Repository, 0, len(forgejoRepos))
-	for i := range forgejoRepos {
-		repo := c.convertForgejoRepo(&forgejoRepos[i])
-		allRepos = append(allRepos, repo)
-	}
-
-	return allRepos, nil
 }
 
 // GetRepository gets detailed information about a specific repository.
