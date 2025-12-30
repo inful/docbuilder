@@ -3,6 +3,7 @@ package auth
 import (
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -103,33 +104,66 @@ func TestManager_CreateAuth(t *testing.T) {
 			}
 
 			// Additional type-specific checks
-			if !tt.expectError && !tt.expectNil {
-				switch tt.authConfig.Type {
-				case config.AuthTypeToken:
-					if basicAuth, ok := auth.(*http.BasicAuth); ok {
-						if basicAuth.Username != "token" {
-							t.Errorf("Token auth should use 'token' as username, got: %s", basicAuth.Username)
-						}
-						if basicAuth.Password != tt.authConfig.Token {
-							t.Errorf("Token auth password should match token")
-						}
-					} else {
-						t.Errorf("Token auth should create http.BasicAuth, got: %T", auth)
-					}
-				case config.AuthTypeBasic:
-					if basicAuth, ok := auth.(*http.BasicAuth); ok {
-						if basicAuth.Username != tt.authConfig.Username {
-							t.Errorf("Basic auth username mismatch")
-						}
-						if basicAuth.Password != tt.authConfig.Password {
-							t.Errorf("Basic auth password mismatch")
-						}
-					} else {
-						t.Errorf("Basic auth should create http.BasicAuth, got: %T", auth)
-					}
-				}
-			}
+			verifyAuthType(t, tt, auth)
 		})
+	}
+}
+
+// verifyAuthType performs type-specific auth verification.
+func verifyAuthType(t *testing.T, tt struct {
+	name        string
+	authConfig  *config.AuthConfig
+	expectNil   bool
+	expectError bool
+	description string
+}, auth transport.AuthMethod) {
+	t.Helper()
+
+	if tt.expectError || tt.expectNil {
+		return
+	}
+
+	switch tt.authConfig.Type {
+	case config.AuthTypeToken:
+		verifyTokenAuth(t, auth, tt.authConfig.Token)
+	case config.AuthTypeBasic:
+		verifyBasicAuth(t, auth, tt.authConfig.Username, tt.authConfig.Password)
+	}
+}
+
+// verifyTokenAuth verifies token authentication configuration.
+func verifyTokenAuth(t *testing.T, auth transport.AuthMethod, expectedToken string) {
+	t.Helper()
+
+	basicAuth, ok := auth.(*http.BasicAuth)
+	if !ok {
+		t.Errorf("Token auth should create http.BasicAuth, got: %T", auth)
+		return
+	}
+
+	if basicAuth.Username != "token" {
+		t.Errorf("Token auth should use 'token' as username, got: %s", basicAuth.Username)
+	}
+	if basicAuth.Password != expectedToken {
+		t.Errorf("Token auth password should match token")
+	}
+}
+
+// verifyBasicAuth verifies basic authentication configuration.
+func verifyBasicAuth(t *testing.T, auth transport.AuthMethod, expectedUsername, expectedPassword string) {
+	t.Helper()
+
+	basicAuth, ok := auth.(*http.BasicAuth)
+	if !ok {
+		t.Errorf("Basic auth should create http.BasicAuth, got: %T", auth)
+		return
+	}
+
+	if basicAuth.Username != expectedUsername {
+		t.Errorf("Basic auth username mismatch")
+	}
+	if basicAuth.Password != expectedPassword {
+		t.Errorf("Basic auth password mismatch")
 	}
 }
 
