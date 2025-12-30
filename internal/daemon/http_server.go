@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"errors"
-	stdErrors "errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -238,7 +237,7 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 				_ = b.ln.Close()
 			}
 		}
-		return fmt.Errorf("http startup failed: %w", stdErrors.Join(bindErrs...))
+		return fmt.Errorf("http startup failed: %w", errors.Join(bindErrs...))
 	}
 
 	// All ports bound successfully – now start servers handing them their pre-bound listeners.
