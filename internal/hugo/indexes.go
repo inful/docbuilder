@@ -386,7 +386,8 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			// Skip sections that only contain assets (no markdown files)
 			hasMarkdown := false
 			hasUserIndex := false
-			for _, f := range files {
+			for i := range files {
+				f := &files[i]
 				if !f.IsAsset {
 					hasMarkdown = true
 					// Check if this section has a user-provided index.md file
