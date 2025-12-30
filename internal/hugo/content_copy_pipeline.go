@@ -176,7 +176,8 @@ func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.
 		return metadata
 	}
 
-	for _, repo := range g.config.Repositories {
+	for i := range g.config.Repositories {
+		repo := &g.config.Repositories[i]
 		info := pipeline.RepositoryInfo{
 			Name:      repo.Name,
 			URL:       repo.URL,

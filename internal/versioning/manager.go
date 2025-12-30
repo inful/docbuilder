@@ -205,11 +205,12 @@ func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authCo
 		}
 
 		// Determine reference type based on name
-		if strings.HasPrefix(ref.RefName, "refs/heads/") {
+		switch {
+		case strings.HasPrefix(ref.RefName, "refs/heads/"):
 			gitRef.Type = VersionTypeBranch
-		} else if strings.HasPrefix(ref.RefName, "refs/tags/") {
+		case strings.HasPrefix(ref.RefName, "refs/tags/"):
 			gitRef.Type = VersionTypeTag
-		} else {
+		default:
 			// Skip other reference types (like pull requests, etc.)
 			continue
 		}
