@@ -19,19 +19,9 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 	for _, line := range lines {
 		// Check for fenced code block markers (```  or ~~~)
 		trimmedLine := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~") {
-			if !inFencedCodeBlock {
-				// Starting a code block
-				inFencedCodeBlock = true
-				if strings.HasPrefix(trimmedLine, "```") {
-					fenceMarker = "```"
-				} else {
-					fenceMarker = "~~~"
-				}
-			} else if strings.HasPrefix(trimmedLine, fenceMarker) {
-				// Ending a code block
-				inFencedCodeBlock = false
-			}
+		inFencedCodeBlock, fenceMarker = updateFenceState(trimmedLine, inFencedCodeBlock, fenceMarker)
+		
+		if isFenceMarkerLine(trimmedLine) {
 			result.WriteString(line)
 			result.WriteString("\n")
 			continue
@@ -69,4 +59,32 @@ func escapeShortcodesInCodeBlocks(doc *Document) ([]*Document, error) {
 	doc.Content = content
 	// This transform only modifies content, doesn't generate new documents
 	return nil, nil
+}
+
+// isFenceMarkerLine checks if line is a code block fence marker.
+func isFenceMarkerLine(trimmedLine string) bool {
+	return strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~")
+}
+
+// updateFenceState updates the fence state based on the current line.
+func updateFenceState(trimmedLine string, inFencedCodeBlock bool, currentFenceMarker string) (bool, string) {
+	if !isFenceMarkerLine(trimmedLine) {
+		return inFencedCodeBlock, currentFenceMarker
+	}
+	
+	if !inFencedCodeBlock {
+		// Starting a code block
+		fenceMarker := "```"
+		if strings.HasPrefix(trimmedLine, "~~~") {
+			fenceMarker = "~~~"
+		}
+		return true, fenceMarker
+	}
+	
+	if strings.HasPrefix(trimmedLine, currentFenceMarker) {
+		// Ending a code block
+		return false, currentFenceMarker
+	}
+	
+	return inFencedCodeBlock, currentFenceMarker
 }
