@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -13,14 +14,14 @@ type BasicPrerequisitesRule struct{}
 
 func (r BasicPrerequisitesRule) Name() string { return "basic_prerequisites" }
 
-func (r BasicPrerequisitesRule) Validate(ctx Context) Result {
-	if ctx.State == nil {
+func (r BasicPrerequisitesRule) Validate(ctx context.Context, vctx Context) Result {
+	if vctx.State == nil {
 		return Failure("state manager is nil")
 	}
-	if ctx.Generator == nil {
+	if vctx.Generator == nil {
 		return Failure("generator is nil")
 	}
-	if len(ctx.Repos) == 0 {
+	if len(vctx.Repos) == 0 {
 		return Failure("no repositories to process")
 	}
 	return Success()
@@ -31,13 +32,13 @@ type ConfigHashRule struct{}
 
 func (r ConfigHashRule) Name() string { return "config_hash" }
 
-func (r ConfigHashRule) Validate(ctx Context) Result {
-	currentHash := ctx.Generator.ComputeConfigHashForPersistence()
+func (r ConfigHashRule) Validate(ctx context.Context, vctx Context) Result {
+	currentHash := vctx.Generator.ComputeConfigHashForPersistence()
 	if currentHash == "" {
 		return Failure("current config hash is empty")
 	}
 
-	storedHash := ctx.State.GetLastConfigHash()
+	storedHash := vctx.State.GetLastConfigHash()
 	if currentHash != storedHash {
 		return Failure("config hash mismatch")
 	}
@@ -50,8 +51,8 @@ type PublicDirectoryRule struct{}
 
 func (r PublicDirectoryRule) Name() string { return "public_directory" }
 
-func (r PublicDirectoryRule) Validate(ctx Context) Result {
-	publicDir := filepath.Join(ctx.OutDir, "public")
+func (r PublicDirectoryRule) Validate(ctx context.Context, vctx Context) Result {
+	publicDir := filepath.Join(vctx.OutDir, "public")
 
 	// Check if directory exists and is a directory
 	fi, err := os.Stat(publicDir)
@@ -81,22 +82,22 @@ type VersionMismatchRule struct{}
 
 func (r VersionMismatchRule) Name() string { return "version_mismatch" }
 
-func (r VersionMismatchRule) Validate(ctx Context) Result {
-	if ctx.PrevReport == nil {
+func (r VersionMismatchRule) Validate(ctx context.Context, vctx Context) Result {
+	if vctx.PrevReport == nil {
 		return Failure("no previous report available")
 	}
 
 	// Check DocBuilder version
 	currentDocBuilderVersion := version.Version
-	if currentDocBuilderVersion != ctx.PrevReport.DocBuilderVersion {
+	if currentDocBuilderVersion != vctx.PrevReport.DocBuilderVersion {
 		return Failure("docbuilder version changed")
 	}
 
 	// Check Hugo version (only if Hugo was used in previous build)
 	// Empty previous Hugo version means Hugo wasn't executed
-	if ctx.PrevReport.HugoVersion != "" {
-		currentHugoVersion := hugo.DetectHugoVersion(ctx.Context)
-		if currentHugoVersion != ctx.PrevReport.HugoVersion {
+	if vctx.PrevReport.HugoVersion != "" {
+		currentHugoVersion := hugo.DetectHugoVersion(ctx)
+		if currentHugoVersion != vctx.PrevReport.HugoVersion {
 			return Failure("hugo version changed")
 		}
 	}

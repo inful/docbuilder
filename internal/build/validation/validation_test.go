@@ -122,19 +122,19 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := BasicPrerequisitesRule{}
 
 		// Valid context
-		ctx := Context{Context: context.Background(), 
+		vctx := Context{
 			State:     &fakeSkipState{},
 			Generator: &hugo.Generator{},
 			Repos:     []cfg.Repository{{Name: "test"}},
 		}
-		result := rule.Validate(ctx)
+		result := rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 
 		// Invalid context - nil state
-		ctx.State = nil
-		result = rule.Validate(ctx)
+		vctx.State = nil
+		result = rule.Validate(context.Background(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for nil state")
 		}
@@ -150,15 +150,15 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Valid hash
 		hash := gen.ComputeConfigHashForPersistence()
 		st.lastConfigHash = hash
-		ctx := Context{Context: context.Background(), State: st, Generator: gen}
-		result := rule.Validate(ctx)
+		vctx := Context{State: st, Generator: gen}
+		result := rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 
 		// Invalid hash
 		st.lastConfigHash = "different"
-		result = rule.Validate(ctx)
+		result = rule.Validate(context.Background(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for mismatched hash")
 		}
@@ -176,16 +176,16 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(pubDir, "index.html"), []byte("test"), 0o600); err != nil {
 			t.Fatalf("write index.html: %v", err)
 		}
-		ctx := Context{Context: context.Background(), OutDir: out}
-		result := rule.Validate(ctx)
+		vctx := Context{OutDir: out}
+		result := rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 
 		// Missing directory
 		out2 := t.TempDir()
-		ctx.OutDir = out2
-		result = rule.Validate(ctx)
+		vctx.OutDir = out2
+		result = rule.Validate(context.Background(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for missing directory")
 		}
@@ -195,8 +195,8 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := ContentIntegrityRule{}
 
 		// Skip when no previous files
-		ctx := Context{Context: context.Background(), PrevReport: &PreviousReport{Files: 0}}
-		result := rule.Validate(ctx)
+		vctx := Context{PrevReport: &PreviousReport{Files: 0}}
+		result := rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success (skip), got failure: %s", result.Reason)
 		}
@@ -210,8 +210,8 @@ func TestValidationRulesCoverage(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(contentDir, "test.md"), []byte("# Test"), 0o600); err != nil {
 			t.Fatalf("write test.md: %v", err)
 		}
-		ctx = Context{Context: context.Background(), OutDir: out, PrevReport: &PreviousReport{Files: 1}}
-		result = rule.Validate(ctx)
+		vctx = Context{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
+		result = rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -221,32 +221,32 @@ func TestValidationRulesCoverage(t *testing.T) {
 		rule := VersionMismatchRule{}
 
 		// No previous report
-		ctx := Context{Context: context.Background(), PrevReport: nil}
-		result := rule.Validate(ctx)
+		vctx := Context{PrevReport: nil}
+		result := rule.Validate(context.Background(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure when no previous report")
 		}
 
 		// Same versions (no Hugo)
-		ctx = Context{Context: context.Background(), 
+		vctx = Context{
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "2.1.0-dev", // Should match version.Version in tests
 				HugoVersion:       "",          // No Hugo used
 			},
 		}
-		result = rule.Validate(ctx)
+		result = rule.Validate(context.Background(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success for matching versions, got failure: %s", result.Reason)
 		}
 
 		// DocBuilder version changed
-		ctx = Context{Context: context.Background(), 
+		vctx = Context{
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "1.0.0", // Different from current
 				HugoVersion:       "",
 			},
 		}
-		result = rule.Validate(ctx)
+		result = rule.Validate(context.Background(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for docbuilder version mismatch")
 		}
@@ -257,13 +257,13 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Hugo version changed (detected vs previous)
 		// Note: This test assumes DetectHugoVersion() returns something or empty
 		// In CI without Hugo, DetectHugoVersion() returns "" so we test that case
-		ctx = Context{Context: context.Background(), 
+		vctx = Context{
 			PrevReport: &PreviousReport{
 				DocBuilderVersion: "2.1.0-dev",
 				HugoVersion:       "0.100.0", // Any previous Hugo version
 			},
 		}
-		result = rule.Validate(ctx)
+		result = rule.Validate(context.Background(), vctx)
 		// This will pass or fail depending on whether Hugo is installed
 		// If Hugo is not available, DetectHugoVersion() returns ""
 		// and will not match "0.100.0", causing failure
@@ -279,7 +279,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("all rules pass", func(t *testing.T) {
 		chain := NewRuleChain(successRule, successRule)
-		result := chain.Validate(Context{Context: context.Background(), })
+		result := chain.Validate(context.Background(), Context{})
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -287,7 +287,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("early failure stops chain", func(t *testing.T) {
 		chain := NewRuleChain(successRule, failureRule, successRule)
-		result := chain.Validate(Context{Context: context.Background(), })
+		result := chain.Validate(context.Background(), Context{})
 		if result.Passed {
 			t.Errorf("expected failure, got success")
 		}
@@ -305,7 +305,7 @@ type mockRule struct {
 
 func (m *mockRule) Name() string { return m.name }
 
-func (m *mockRule) Validate(_ Context) Result {
+func (m *mockRule) Validate(_ context.Context, _ Context) Result {
 	if m.shouldPass {
 		return Success()
 	}
