@@ -22,6 +22,7 @@ type GenerateCmd struct {
 	Render  bool   `name:"render" default:"true" help:"Run Hugo to render the site"`
 }
 
+//nolint:forbidigo // fmt is used for user-facing messages
 func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 	fmt.Println("Starting static site generation")
 

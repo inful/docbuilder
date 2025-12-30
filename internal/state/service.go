@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -84,7 +85,7 @@ func (ss *Service) Stop(ctx context.Context) error {
 	updateResult := daemonStore.UpdateStatus(ctx, "stopping")
 	if updateResult.IsErr() {
 		// Log error but continue with shutdown
-		fmt.Printf("Warning: failed to update daemon status during shutdown: %v\n", updateResult.UnwrapErr())
+		slog.Warn("failed to update daemon status during shutdown", "error", updateResult.UnwrapErr())
 	}
 
 	// Close the store to ensure data is persisted

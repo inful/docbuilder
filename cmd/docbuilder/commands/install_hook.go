@@ -15,6 +15,8 @@ type InstallHookCmd struct {
 }
 
 // Run executes the install-hook command.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
 func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	// Find git directory
 	gitDir, err := findGitDir()

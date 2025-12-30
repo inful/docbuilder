@@ -68,6 +68,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose, b.KeepWorkspace)
 }
 
+//nolint:forbidigo // fmt is used for user-facing messages
 func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, keepWorkspace bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
@@ -192,6 +193,8 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 }
 
 // runLocalBuild builds from a local docs directory without git cloning.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
 func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, keepWorkspace bool) error {
 	fmt.Println("Starting DocBuilder local build")
 

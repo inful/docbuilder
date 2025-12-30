@@ -26,6 +26,8 @@ type LintPathCmd struct {
 }
 
 // Run executes the lint path command.
+//
+//nolint:forbidigo // fmt is used for user-facing messages
 func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Validate flags
 	if parent.DryRun && !parent.Fix {
