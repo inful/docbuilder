@@ -53,87 +53,7 @@ func ExtractLinksFromReader(r io.Reader, baseURL string) ([]*Link, error) {
 	extract = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			lineNum++
-
-			// Extract links based on element type
-			switch n.Data {
-			case "a":
-				if href := getAttr(n, "href"); href != "" {
-					links = append(links, &Link{
-						URL:        href,
-						Text:       extractText(n),
-						Tag:        "a",
-						Attribute:  "href",
-						IsInternal: isInternalLink(href, base),
-						Line:       lineNum,
-					})
-				}
-			case "img":
-				if src := getAttr(n, "src"); src != "" {
-					links = append(links, &Link{
-						URL:        src,
-						Text:       getAttr(n, "alt"),
-						Tag:        "img",
-						Attribute:  "src",
-						IsInternal: isInternalLink(src, base),
-						Line:       lineNum,
-					})
-				}
-			case "script":
-				if src := getAttr(n, "src"); src != "" {
-					links = append(links, &Link{
-						URL:        src,
-						Text:       "",
-						Tag:        "script",
-						Attribute:  "src",
-						IsInternal: isInternalLink(src, base),
-						Line:       lineNum,
-					})
-				}
-			case "link":
-				if href := getAttr(n, "href"); href != "" {
-					links = append(links, &Link{
-						URL:        href,
-						Text:       getAttr(n, "rel"),
-						Tag:        "link",
-						Attribute:  "href",
-						IsInternal: isInternalLink(href, base),
-						Line:       lineNum,
-					})
-				}
-			case "iframe":
-				if src := getAttr(n, "src"); src != "" {
-					links = append(links, &Link{
-						URL:        src,
-						Text:       getAttr(n, "title"),
-						Tag:        "iframe",
-						Attribute:  "src",
-						IsInternal: isInternalLink(src, base),
-						Line:       lineNum,
-					})
-				}
-			case "video", "audio":
-				if src := getAttr(n, "src"); src != "" {
-					links = append(links, &Link{
-						URL:        src,
-						Text:       "",
-						Tag:        n.Data,
-						Attribute:  "src",
-						IsInternal: isInternalLink(src, base),
-						Line:       lineNum,
-					})
-				}
-			case "source":
-				if src := getAttr(n, "src"); src != "" {
-					links = append(links, &Link{
-						URL:        src,
-						Text:       "",
-						Tag:        "source",
-						Attribute:  "src",
-						IsInternal: isInternalLink(src, base),
-						Line:       lineNum,
-					})
-				}
-			}
+			extractElementLinks(n, &links, base, lineNum)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -142,8 +62,80 @@ func ExtractLinksFromReader(r io.Reader, baseURL string) ([]*Link, error) {
 	}
 
 	extract(doc)
-
 	return links, nil
+}
+
+// extractElementLinks extracts links from a single HTML element.
+func extractElementLinks(n *html.Node, links *[]*Link, base *url.URL, lineNum int) {
+	// Extract links based on element type
+	switch n.Data {
+	case "a":
+		if href := getAttr(n, "href"); href != "" {
+			*links = append(*links, &Link{
+				URL:        href,
+				Text:       extractText(n),
+				Tag:        "a",
+				Attribute:  "href",
+				IsInternal: isInternalLink(href, base),
+				Line:       lineNum,
+			})
+		}
+	case "img":
+		if src := getAttr(n, "src"); src != "" {
+			*links = append(*links, &Link{
+				URL:        src,
+				Text:       getAttr(n, "alt"),
+				Tag:        "img",
+				Attribute:  "src",
+				IsInternal: isInternalLink(src, base),
+				Line:       lineNum,
+			})
+		}
+	case "script":
+		if src := getAttr(n, "src"); src != "" {
+			*links = append(*links, &Link{
+				URL:        src,
+				Text:       "",
+				Tag:        "script",
+				Attribute:  "src",
+				IsInternal: isInternalLink(src, base),
+				Line:       lineNum,
+			})
+		}
+	case "link":
+		if href := getAttr(n, "href"); href != "" {
+			*links = append(*links, &Link{
+				URL:        href,
+				Text:       getAttr(n, "rel"),
+				Tag:        "link",
+				Attribute:  "href",
+				IsInternal: isInternalLink(href, base),
+				Line:       lineNum,
+			})
+		}
+	case "video", "audio":
+		if src := getAttr(n, "src"); src != "" {
+			*links = append(*links, &Link{
+				URL:        src,
+				Text:       "",
+				Tag:        n.Data,
+				Attribute:  "src",
+				IsInternal: isInternalLink(src, base),
+				Line:       lineNum,
+			})
+		}
+	case "source":
+		if src := getAttr(n, "src"); src != "" {
+			*links = append(*links, &Link{
+				URL:        src,
+				Text:       "",
+				Tag:        "source",
+				Attribute:  "src",
+				IsInternal: isInternalLink(src, base),
+				Line:       lineNum,
+			})
+		}
+	}
 }
 
 // getAttr retrieves an attribute value from an HTML node.
