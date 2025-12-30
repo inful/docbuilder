@@ -128,16 +128,49 @@ func TestFindInlineLinks(t *testing.T) {
 	}
 }
 
+// linkFinderTestCase defines a test case for link finder functions.
+type linkFinderTestCase struct {
+	name     string
+	line     string
+	lineNum  int
+	expected int
+}
+
+// testLinkFinder is a generic test helper that reduces duplication between
+// TestFindReferenceLinks, TestFindImageLinks, and similar link finder tests.
+//
+// It runs table-driven tests and verifies:
+//   - Number of links found matches expected count.
+//   - All links have correct SourceFile, LineNumber, and LinkType.
+func testLinkFinder(
+	t *testing.T,
+	sourceFile string,
+	targetPath string,
+	expectedLinkType LinkType,
+	finderFunc func(line string, lineNum int, sourceFile string, targetPath string) []LinkReference,
+	tests []linkFinderTestCase,
+) {
+	t.Helper()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			links := finderFunc(tt.line, tt.lineNum, sourceFile, targetPath)
+			assert.Len(t, links, tt.expected)
+
+			for _, link := range links {
+				assert.Equal(t, sourceFile, link.SourceFile)
+				assert.Equal(t, tt.lineNum, link.LineNumber)
+				assert.Equal(t, expectedLinkType, link.LinkType)
+			}
+		})
+	}
+}
+
 func TestFindReferenceLinks(t *testing.T) {
 	sourceFile := "/docs/guide.md"
 	targetPath := "/docs/api.md"
 
-	tests := []struct {
-		name     string
-		line     string
-		lineNum  int
-		expected int
-	}{
+	tests := []linkFinderTestCase{
 		{
 			name:     "simple reference link",
 			line:     "[api]: api.md",
@@ -170,30 +203,14 @@ func TestFindReferenceLinks(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			links := findReferenceLinks(tt.line, tt.lineNum, sourceFile, targetPath)
-			assert.Len(t, links, tt.expected)
-
-			for _, link := range links {
-				assert.Equal(t, sourceFile, link.SourceFile)
-				assert.Equal(t, tt.lineNum, link.LineNumber)
-				assert.Equal(t, LinkTypeReference, link.LinkType)
-			}
-		})
-	}
+	testLinkFinder(t, sourceFile, targetPath, LinkTypeReference, findReferenceLinks, tests)
 }
 
 func TestFindImageLinks(t *testing.T) {
 	sourceFile := "/docs/guide.md"
 	targetPath := "/docs/diagram.png"
 
-	tests := []struct {
-		name     string
-		line     string
-		lineNum  int
-		expected int
-	}{
+	tests := []linkFinderTestCase{
 		{
 			name:     "simple image link",
 			line:     "![Architecture](diagram.png)",
@@ -226,18 +243,7 @@ func TestFindImageLinks(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			links := findImageLinks(tt.line, tt.lineNum, sourceFile, targetPath)
-			assert.Len(t, links, tt.expected)
-
-			for _, link := range links {
-				assert.Equal(t, sourceFile, link.SourceFile)
-				assert.Equal(t, tt.lineNum, link.LineNumber)
-				assert.Equal(t, LinkTypeImage, link.LinkType)
-			}
-		})
-	}
+	testLinkFinder(t, sourceFile, targetPath, LinkTypeImage, findImageLinks, tests)
 }
 
 func TestFindLinksInFile(t *testing.T) {
