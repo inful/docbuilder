@@ -13,12 +13,12 @@ import (
 
 // GenerateCmd implements the 'generate' command for CI/CD pipelines.
 type GenerateCmd struct {
-	DocsDir string `name:"docs-dir" short:"d" help:"Path to local docs directory" default:"./docs"`
-	Output  string `short:"o" help:"Output directory for generated site" default:"./public"`
-	Theme   string `name:"theme" help:"Hugo theme to use (hextra or docsy)" default:"hextra"`
-	Title   string `name:"title" help:"Site title" default:"Documentation"`
-	BaseURL string `name:"base-url" help:"Base URL for the site" default:"/"`
-	Render  bool   `name:"render" help:"Run Hugo to render the site" default:"true"`
+	DocsDir string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory"`
+	Output  string `short:"o" default:"./public" help:"Output directory for generated site"`
+	Theme   string `name:"theme" default:"hextra" help:"Hugo theme to use (hextra or docsy)"`
+	Title   string `name:"title" default:"Documentation" help:"Site title"`
+	BaseURL string `name:"base-url" default:"/" help:"Base URL for the site"`
+	Render  bool   `name:"render" default:"true" help:"Run Hugo to render the site"`
 }
 
 func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {

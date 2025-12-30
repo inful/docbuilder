@@ -14,7 +14,7 @@ import (
 
 // DaemonCmd implements the 'daemon' command.
 type DaemonCmd struct {
-	DataDir string `short:"d" help:"Data directory for daemon state" default:"./daemon-data"`
+	DataDir string `short:"d" default:"./daemon-data" help:"Data directory for daemon state"`
 }
 
 func (d *DaemonCmd) Run(_ *Global, root *CLI) error {

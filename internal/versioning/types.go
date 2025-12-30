@@ -23,11 +23,11 @@ const (
 
 // VersionConfig represents versioning configuration
 type VersionConfig struct {
-	Strategy          VersionStrategy `yaml:"strategy" json:"strategy"`
-	DefaultBranchOnly bool            `yaml:"default_branch_only" json:"default_branch_only"`
-	BranchPatterns    []string        `yaml:"branch_patterns" json:"branch_patterns"`
-	TagPatterns       []string        `yaml:"tag_patterns" json:"tag_patterns"`
-	MaxVersions       int             `yaml:"max_versions_per_repo" json:"max_versions_per_repo"`
+	Strategy          VersionStrategy `json:"strategy" yaml:"strategy"`
+	DefaultBranchOnly bool            `json:"default_branch_only" yaml:"default_branch_only"`
+	BranchPatterns    []string        `json:"branch_patterns" yaml:"branch_patterns"`
+	TagPatterns       []string        `json:"tag_patterns" yaml:"tag_patterns"`
+	MaxVersions       int             `json:"max_versions_per_repo" yaml:"max_versions_per_repo"`
 }
 
 // VersionType identifies the type of version (branch or tag)

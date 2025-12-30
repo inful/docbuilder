@@ -15,11 +15,11 @@ import (
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
-	Output        string `short:"o" help:"Output directory for generated site" default:"./site"`
+	Output        string `short:"o" default:"./site" help:"Output directory for generated site"`
 	Incremental   bool   `short:"i" help:"Use incremental updates instead of fresh clone"`
 	RenderMode    string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
-	DocsDir       string `name:"docs-dir" short:"d" help:"Path to local docs directory (used when no config file provided)" default:"./docs"`
-	Title         string `name:"title" help:"Site title when no config provided" default:"Documentation"`
+	DocsDir       string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory (used when no config file provided)"`
+	Title         string `name:"title" default:"Documentation" help:"Site title when no config provided"`
 	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
 
@@ -28,7 +28,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	var cfg *config.Config
 	var err error
 	var useLocalMode bool
-	
+
 	if root.Config == "" || !fileExists(root.Config) {
 		// No config file - use local docs directory mode
 		cfg = b.createLocalConfig()
@@ -52,15 +52,15 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			slog.Warn("Ignoring invalid --render-mode value", "value", b.RenderMode)
 		}
 	}
-	
+
 	// Resolve output directory with base_directory support
 	outputDir := ResolveOutputDir(b.Output, cfg)
-	
+
 	// Use different build paths for local vs remote
 	if useLocalMode {
 		return b.runLocalBuild(cfg, outputDir, root.Verbose, b.KeepWorkspace)
 	}
-	
+
 	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	if err != nil {
 		return fmt.Errorf("resolve docs dir: %w", err)
 	}
-	
+
 	// Verify docs directory exists
 	if st, err := os.Stat(docsPath); err != nil || !st.IsDir() {
 		return fmt.Errorf("docs dir not found or not a directory: %s (use -d to specify a different path)", docsPath)
@@ -226,25 +226,25 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	}}
 	discovery := docs.NewDiscovery(repos, &cfg.Build)
 	repoPaths := map[string]string{"local": docsPath}
-	
+
 	// Discover docs
 	slog.Info("Discovering documentation files")
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
 	if err != nil {
 		return fmt.Errorf("discovery failed: %w", err)
 	}
-	
+
 	if len(docFiles) == 0 {
 		slog.Warn("No documentation files found in directory", "dir", docsPath)
 		return fmt.Errorf("no documentation files found in %s", docsPath)
 	}
-	
+
 	slog.Info("Documentation discovered", "files", len(docFiles))
 
 	// Generate Hugo site
 	slog.Info("Generating Hugo site", "output", outputDir)
 	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
-	
+
 	if err := generator.GenerateSite(docFiles); err != nil {
 		// Show staging location on error for debugging
 		if keepWorkspace {
@@ -266,16 +266,16 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 func (b *BuildCmd) createLocalConfig() *config.Config {
 	cfg := &config.Config{}
 	cfg.Version = "2.0"
-	
+
 	cfg.Output.Directory = b.Output
 	cfg.Output.Clean = true
-	
+
 	cfg.Hugo.Title = b.Title
 	cfg.Hugo.Description = "Documentation built with DocBuilder"
 	cfg.Hugo.BaseURL = "/"
-	
+
 	cfg.Build.RenderMode = config.RenderModeAlways
-	
+
 	// Single local repository entry pointing to DocsDir
 	cfg.Repositories = []config.Repository{{
 		URL:    b.DocsDir,
@@ -283,7 +283,7 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 		Branch: "",
 		Paths:  []string{"."},
 	}}
-	
+
 	return cfg
 }
 

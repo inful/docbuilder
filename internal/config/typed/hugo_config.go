@@ -40,128 +40,128 @@ func (hm HugoMarkupType) String() string {
 // HugoConfig represents a strongly-typed Hugo configuration
 type HugoConfig struct {
 	// Basic Hugo settings
-	Title   string                    `yaml:"title" json:"title"`
-	BaseURL foundation.Option[string] `yaml:"baseURL,omitempty" json:"baseURL,omitempty"`
+	Title   string                    `json:"title" yaml:"title"`
+	BaseURL foundation.Option[string] `json:"baseURL,omitempty" yaml:"baseURL,omitempty"`
 
 	// Content settings
-	ContentDir string   `yaml:"contentDir,omitempty" json:"contentDir,omitempty"`
-	PublishDir string   `yaml:"publishDir,omitempty" json:"publishDir,omitempty"`
-	StaticDir  []string `yaml:"staticDir,omitempty" json:"staticDir,omitempty"`
+	ContentDir string   `json:"contentDir,omitempty" yaml:"contentDir,omitempty"`
+	PublishDir string   `json:"publishDir,omitempty" yaml:"publishDir,omitempty"`
+	StaticDir  []string `json:"staticDir,omitempty" yaml:"staticDir,omitempty"`
 
 	// Language and locale
-	LanguageCode foundation.Option[string] `yaml:"languageCode,omitempty" json:"languageCode,omitempty"`
-	TimeZone     foundation.Option[string] `yaml:"timeZone,omitempty" json:"timeZone,omitempty"`
+	LanguageCode foundation.Option[string] `json:"languageCode,omitempty" yaml:"languageCode,omitempty"`
+	TimeZone     foundation.Option[string] `json:"timeZone,omitempty" yaml:"timeZone,omitempty"`
 
 	// Build settings
-	BuildDrafts  bool `yaml:"buildDrafts" json:"buildDrafts"`
-	BuildFuture  bool `yaml:"buildFuture" json:"buildFuture"`
-	BuildExpired bool `yaml:"buildExpired" json:"buildExpired"`
+	BuildDrafts  bool `json:"buildDrafts" yaml:"buildDrafts"`
+	BuildFuture  bool `json:"buildFuture" yaml:"buildFuture"`
+	BuildExpired bool `json:"buildExpired" yaml:"buildExpired"`
 
 	// Markup configuration
-	MarkupType HugoMarkupType `yaml:"markup_type,omitempty" json:"markup_type,omitempty"`
+	MarkupType HugoMarkupType `json:"markup_type,omitempty" yaml:"markup_type,omitempty"`
 
 	// Performance settings
-	Timeout foundation.Option[time.Duration] `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Timeout foundation.Option[time.Duration] `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 
 	// Theme-specific parameters
-	Params HugoParams `yaml:"params,omitempty" json:"params,omitempty"`
+	Params HugoParams `json:"params,omitempty" yaml:"params,omitempty"`
 
 	// Menu configuration
-	Menu MenuConfig `yaml:"menu,omitempty" json:"menu,omitempty"`
+	Menu MenuConfig `json:"menu,omitempty" yaml:"menu,omitempty"`
 
 	// Module configuration (for themes that support it)
-	Module foundation.Option[ModuleConfig] `yaml:"module,omitempty" json:"module,omitempty"`
+	Module foundation.Option[ModuleConfig] `json:"module,omitempty" yaml:"module,omitempty"`
 
 	// Custom settings for advanced configurations
-	CustomConfig map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
+	CustomConfig map[string]any `json:"custom,omitempty" yaml:"custom,omitempty"`
 }
 
 // HugoParams represents strongly-typed Hugo theme parameters
 type HugoParams struct {
 	// Common theme parameters
-	Author      foundation.Option[string] `yaml:"author,omitempty" json:"author,omitempty"`
-	Description foundation.Option[string] `yaml:"description,omitempty" json:"description,omitempty"`
-	Keywords    []string                  `yaml:"keywords,omitempty" json:"keywords,omitempty"`
+	Author      foundation.Option[string] `json:"author,omitempty" yaml:"author,omitempty"`
+	Description foundation.Option[string] `json:"description,omitempty" yaml:"description,omitempty"`
+	Keywords    []string                  `json:"keywords,omitempty" yaml:"keywords,omitempty"`
 
 	// Social and metadata
-	Social foundation.Option[SocialConfig] `yaml:"social,omitempty" json:"social,omitempty"`
+	Social foundation.Option[SocialConfig] `json:"social,omitempty" yaml:"social,omitempty"`
 
 	// Edit links configuration
-	EditLinks EditLinksConfig `yaml:"edit_links" json:"edit_links"`
+	EditLinks EditLinksConfig `json:"edit_links" yaml:"edit_links"`
 
 	// Search configuration
-	Search foundation.Option[SearchConfig] `yaml:"search,omitempty" json:"search,omitempty"`
+	Search foundation.Option[SearchConfig] `json:"search,omitempty" yaml:"search,omitempty"`
 
 	// Navigation configuration
-	Navigation NavigationConfig `yaml:"navigation" json:"navigation"`
+	Navigation NavigationConfig `json:"navigation" yaml:"navigation"`
 
 	// Custom parameters for extensibility (Relearn-specific params go here)
-	Custom map[string]any `yaml:"custom,omitempty" json:"custom,omitempty"`
+	Custom map[string]any `json:"custom,omitempty" yaml:"custom,omitempty"`
 }
 
 // SocialConfig represents social media configuration
 type SocialConfig struct {
-	GitHub   foundation.Option[string] `yaml:"github,omitempty" json:"github,omitempty"`
-	Twitter  foundation.Option[string] `yaml:"twitter,omitempty" json:"twitter,omitempty"`
-	LinkedIn foundation.Option[string] `yaml:"linkedin,omitempty" json:"linkedin,omitempty"`
-	Email    foundation.Option[string] `yaml:"email,omitempty" json:"email,omitempty"`
+	GitHub   foundation.Option[string] `json:"github,omitempty" yaml:"github,omitempty"`
+	Twitter  foundation.Option[string] `json:"twitter,omitempty" yaml:"twitter,omitempty"`
+	LinkedIn foundation.Option[string] `json:"linkedin,omitempty" yaml:"linkedin,omitempty"`
+	Email    foundation.Option[string] `json:"email,omitempty" yaml:"email,omitempty"`
 }
 
 // EditLinksConfig represents edit links configuration
 type EditLinksConfig struct {
-	Enabled  bool                      `yaml:"enabled" json:"enabled"`
-	BaseURL  foundation.Option[string] `yaml:"base_url,omitempty" json:"base_url,omitempty"`
-	EditText foundation.Option[string] `yaml:"edit_text,omitempty" json:"edit_text,omitempty"`
-	PerPage  bool                      `yaml:"per_page" json:"per_page"`
+	Enabled  bool                      `json:"enabled" yaml:"enabled"`
+	BaseURL  foundation.Option[string] `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	EditText foundation.Option[string] `json:"edit_text,omitempty" yaml:"edit_text,omitempty"`
+	PerPage  bool                      `json:"per_page" yaml:"per_page"`
 }
 
 // SearchConfig represents search functionality configuration
 type SearchConfig struct {
-	Enabled   bool                      `yaml:"enabled" json:"enabled"`
-	Provider  foundation.Option[string] `yaml:"provider,omitempty" json:"provider,omitempty"`
-	IndexPath foundation.Option[string] `yaml:"index_path,omitempty" json:"index_path,omitempty"`
+	Enabled   bool                      `json:"enabled" yaml:"enabled"`
+	Provider  foundation.Option[string] `json:"provider,omitempty" yaml:"provider,omitempty"`
+	IndexPath foundation.Option[string] `json:"index_path,omitempty" yaml:"index_path,omitempty"`
 }
 
 // NavigationConfig represents navigation configuration
 type NavigationConfig struct {
-	ShowTOC        bool `yaml:"show_toc" json:"show_toc"`
-	TOCMaxDepth    int  `yaml:"toc_max_depth" json:"toc_max_depth"`
-	ShowBreadcrumb bool `yaml:"show_breadcrumb" json:"show_breadcrumb"`
+	ShowTOC        bool `json:"show_toc" yaml:"show_toc"`
+	TOCMaxDepth    int  `json:"toc_max_depth" yaml:"toc_max_depth"`
+	ShowBreadcrumb bool `json:"show_breadcrumb" yaml:"show_breadcrumb"`
 }
 
 // MenuConfig represents Hugo menu configuration
 type MenuConfig struct {
-	Main   []MenuItem `yaml:"main,omitempty" json:"main,omitempty"`
-	Footer []MenuItem `yaml:"footer,omitempty" json:"footer,omitempty"`
+	Main   []MenuItem `json:"main,omitempty" yaml:"main,omitempty"`
+	Footer []MenuItem `json:"footer,omitempty" yaml:"footer,omitempty"`
 }
 
 // MenuItem represents a strongly-typed menu item
 type MenuItem struct {
-	Name       string                    `yaml:"name" json:"name"`
-	URL        string                    `yaml:"url" json:"url"`
-	Weight     foundation.Option[int]    `yaml:"weight,omitempty" json:"weight,omitempty"`
-	Identifier foundation.Option[string] `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	Parent     foundation.Option[string] `yaml:"parent,omitempty" json:"parent,omitempty"`
-	Pre        foundation.Option[string] `yaml:"pre,omitempty" json:"pre,omitempty"`
-	Post       foundation.Option[string] `yaml:"post,omitempty" json:"post,omitempty"`
+	Name       string                    `json:"name" yaml:"name"`
+	URL        string                    `json:"url" yaml:"url"`
+	Weight     foundation.Option[int]    `json:"weight,omitempty" yaml:"weight,omitempty"`
+	Identifier foundation.Option[string] `json:"identifier,omitempty" yaml:"identifier,omitempty"`
+	Parent     foundation.Option[string] `json:"parent,omitempty" yaml:"parent,omitempty"`
+	Pre        foundation.Option[string] `json:"pre,omitempty" yaml:"pre,omitempty"`
+	Post       foundation.Option[string] `json:"post,omitempty" yaml:"post,omitempty"`
 }
 
 // ModuleConfig represents Hugo module configuration
 type ModuleConfig struct {
-	Imports []ModuleImport `yaml:"imports" json:"imports"`
+	Imports []ModuleImport `json:"imports" yaml:"imports"`
 }
 
 // ModuleImport represents a Hugo module import
 type ModuleImport struct {
-	Path     string                  `yaml:"path" json:"path"`
-	Disabled foundation.Option[bool] `yaml:"disabled,omitempty" json:"disabled,omitempty"`
-	Mounts   []ModuleMount           `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+	Path     string                  `json:"path" yaml:"path"`
+	Disabled foundation.Option[bool] `json:"disabled,omitempty" yaml:"disabled,omitempty"`
+	Mounts   []ModuleMount           `json:"mounts,omitempty" yaml:"mounts,omitempty"`
 }
 
 // ModuleMount represents a Hugo module mount
 type ModuleMount struct {
-	Source string `yaml:"source" json:"source"`
-	Target string `yaml:"target" json:"target"`
+	Source string `json:"source" yaml:"source"`
+	Target string `json:"target" yaml:"target"`
 }
 
 // Validation methods for TypedHugoConfig

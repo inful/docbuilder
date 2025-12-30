@@ -1,8 +1,8 @@
 package config
 
 import (
-"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"fmt"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
@@ -62,12 +62,12 @@ func NormalizeForgeTyped(s string) ForgeTyped {
 
 // TypedForgeConfig demonstrates how to use strong typing instead of map[string]any.
 type TypedForgeConfig struct {
-	Type     ForgeTyped                `yaml:"type" json:"type"`
-	BaseURL  foundation.Option[string] `yaml:"base_url,omitempty" json:"base_url,omitempty"`
-	Token    foundation.Option[string] `yaml:"token,omitempty" json:"token,omitempty"`
-	Username foundation.Option[string] `yaml:"username,omitempty" json:"username,omitempty"`
-	Password foundation.Option[string] `yaml:"password,omitempty" json:"password,omitempty"`
-	Settings map[string]any            `yaml:"settings,omitempty" json:"settings,omitempty"` // For truly dynamic fields
+	Type     ForgeTyped                `json:"type" yaml:"type"`
+	BaseURL  foundation.Option[string] `json:"base_url,omitempty" yaml:"base_url,omitempty"`
+	Token    foundation.Option[string] `json:"token,omitempty" yaml:"token,omitempty"`
+	Username foundation.Option[string] `json:"username,omitempty" yaml:"username,omitempty"`
+	Password foundation.Option[string] `json:"password,omitempty" yaml:"password,omitempty"`
+	Settings map[string]any            `json:"settings,omitempty" yaml:"settings,omitempty"` // For truly dynamic fields
 }
 
 // Validate performs comprehensive validation of the forge configuration.

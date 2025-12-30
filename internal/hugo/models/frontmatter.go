@@ -9,32 +9,32 @@ import (
 // This replaces the map[string]any approach with compile-time type safety.
 type FrontMatter struct {
 	// Core Hugo fields
-	Title       string    `yaml:"title,omitempty" json:"title,omitempty"`
-	Date        time.Time `yaml:"date,omitempty" json:"date,omitempty"`
-	Draft       bool      `yaml:"draft,omitempty" json:"draft,omitempty"`
-	Description string    `yaml:"description,omitempty" json:"description,omitempty"`
+	Title       string    `json:"title,omitempty" yaml:"title,omitempty"`
+	Date        time.Time `json:"date,omitempty" yaml:"date,omitempty"`
+	Draft       bool      `json:"draft,omitempty" yaml:"draft,omitempty"`
+	Description string    `json:"description,omitempty" yaml:"description,omitempty"`
 
 	// Taxonomy fields
-	Tags       []string `yaml:"tags,omitempty" json:"tags,omitempty"`
-	Categories []string `yaml:"categories,omitempty" json:"categories,omitempty"`
-	Keywords   []string `yaml:"keywords,omitempty" json:"keywords,omitempty"`
+	Tags       []string `json:"tags,omitempty" yaml:"tags,omitempty"`
+	Categories []string `json:"categories,omitempty" yaml:"categories,omitempty"`
+	Keywords   []string `json:"keywords,omitempty" yaml:"keywords,omitempty"`
 
 	// DocBuilder-specific fields
-	Repository string `yaml:"repository,omitempty" json:"repository,omitempty"`
-	Forge      string `yaml:"forge,omitempty" json:"forge,omitempty"`
-	Section    string `yaml:"section,omitempty" json:"section,omitempty"`
-	EditURL    string `yaml:"edit_url,omitempty" json:"edit_url,omitempty"`
+	Repository string `json:"repository,omitempty" yaml:"repository,omitempty"`
+	Forge      string `json:"forge,omitempty" yaml:"forge,omitempty"`
+	Section    string `json:"section,omitempty" yaml:"section,omitempty"`
+	EditURL    string `json:"edit_url,omitempty" yaml:"edit_url,omitempty"`
 
 	// Weight and ordering
-	Weight int `yaml:"weight,omitempty" json:"weight,omitempty"`
+	Weight int `json:"weight,omitempty" yaml:"weight,omitempty"`
 
 	// Layout and rendering
-	Layout string `yaml:"layout,omitempty" json:"layout,omitempty"`
-	Type   string `yaml:"type,omitempty" json:"type,omitempty"`
+	Layout string `json:"layout,omitempty" yaml:"layout,omitempty"`
+	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
 
 	// Custom fields for extensibility
 	// These are type-safe containers for theme-specific or custom metadata
-	Custom map[string]interface{} `yaml:",inline" json:",inline"`
+	Custom map[string]interface{} `json:",inline" yaml:",inline"`
 }
 
 // NewFrontMatter creates a new FrontMatter with sensible defaults.
