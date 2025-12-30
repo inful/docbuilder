@@ -52,7 +52,6 @@ func TestEscapeShortcodesInCodeBlocks(t *testing.T) {
 			assert.Equal(t, tt.expected, doc.Content)
 		})
 	}
-
 }
 func TestEscapeShortcodesInCodeBlocks_NoSpuriousChanges(t *testing.T) {
 	tests := []struct {

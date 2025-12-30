@@ -94,7 +94,6 @@ func (dm *deltaManager) RecomputeGlobalDocHash(
 		// For unchanged repos, optionally detect deletions by scanning workspace clone
 		if _, isChanged := changedSet[r.URL]; !isChanged &&
 			workspace != "" && cfg != nil && cfg.Build.DetectDeletions {
-
 			freshPaths, deleted, err := dm.scanForDeletions(r, workspace, paths)
 			if err != nil {
 				continue // Skip on error, use existing paths
