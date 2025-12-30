@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -38,11 +39,15 @@ var (
 	})
 )
 
-// register base collectors once.
-func init() {
-	promRegistry.MustRegister(daemonBuildsTotal, daemonBuildsFailedTotal)
-	promRegistry.MustRegister(daemonActiveJobsGauge, daemonQueueLengthGauge, daemonLastBuildRenderedPages, daemonLastBuildRepositories)
-	promRegistry.MustRegister(promcollect.NewGoCollector(), promcollect.NewProcessCollector(promcollect.ProcessCollectorOpts{}))
+var registerMetricsOnce sync.Once
+
+// registerBaseCollectors registers base collectors once.
+func registerBaseCollectors() {
+	registerMetricsOnce.Do(func() {
+		promRegistry.MustRegister(daemonBuildsTotal, daemonBuildsFailedTotal)
+		promRegistry.MustRegister(daemonActiveJobsGauge, daemonQueueLengthGauge, daemonLastBuildRenderedPages, daemonLastBuildRepositories)
+		promRegistry.MustRegister(promcollect.NewGoCollector(), promcollect.NewProcessCollector(promcollect.ProcessCollectorOpts{}))
+	})
 }
 
 // updateDaemonPromMetrics copies selected counters from in-memory collector to Prometheus counters.
@@ -86,6 +91,7 @@ func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }
 
 // prometheusOptionalHandler returns handler and periodically syncs daemon metrics.
 func prometheusOptionalHandler() http.Handler {
+	registerBaseCollectors()
 	go func() {
 		for {
 			if defaultDaemonInstance != nil { // global pointer we establish in daemon init

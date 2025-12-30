@@ -173,3 +173,27 @@ func TestBaseCommand(t *testing.T) {
 		t.Errorf("Should not skip with valid build state")
 	}
 }
+
+func TestRegisterDefaultCommands(t *testing.T) {
+	// Clear DefaultRegistry for testing
+	DefaultRegistry = NewCommandRegistry()
+
+	RegisterDefaultCommands()
+
+	commands := DefaultRegistry.List()
+	if len(commands) != 3 {
+		t.Errorf("Expected 3 commands in DefaultRegistry, got %d", len(commands))
+	}
+
+	expectedNames := []hugo.StageName{
+		hugo.StageCloneRepos,
+		hugo.StageDiscoverDocs,
+		hugo.StagePrepareOutput,
+	}
+
+	for _, name := range expectedNames {
+		if _, exists := DefaultRegistry.Get(name); !exists {
+			t.Errorf("Expected command %s not found in DefaultRegistry", name)
+		}
+	}
+}

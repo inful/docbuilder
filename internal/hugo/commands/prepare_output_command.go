@@ -44,8 +44,3 @@ func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) h
 	c.LogStageSuccess()
 	return hugo.ExecutionSuccess()
 }
-
-func init() {
-	// Register the prepare output command
-	DefaultRegistry.Register(NewPrepareOutputCommand())
-}
