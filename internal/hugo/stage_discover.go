@@ -27,39 +27,18 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %w", build.ErrDiscovery, err))
 	}
 	prevCount := len(bs.Docs.Files)
-	prevSet := map[string]struct{}{}
-	for _, f := range bs.Docs.Files {
-		prevSet[f.GetHugoPath()] = struct{}{}
-	}
+	prevFiles := bs.Docs.Files
+
 	bs.Docs.Files = docFiles
 	bs.Docs.BuildIndexes() // Update indexes after changing files
-	if prevCount > 0 {
-		changed := false
-		if len(docFiles) != prevCount {
-			changed = true
-		}
-		if !changed {
-			nowSet := map[string]struct{}{}
-			for _, f := range docFiles {
-				p := f.GetHugoPath()
-				nowSet[p] = struct{}{}
-				if _, ok := prevSet[p]; !ok {
-					changed = true
-				}
-			}
-			if !changed {
-				for k := range prevSet {
-					if _, ok := nowSet[k]; !ok {
-						changed = true
-						break
-					}
-				}
-			}
-		}
-		if !changed && bs.Git.AllReposUnchanged {
-			slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
-		}
+
+	// Detect if documentation files have changed
+	if DetectDocumentChanges(prevFiles, docFiles) || !bs.Git.AllReposUnchanged {
+		// Files or repos changed - continue with build
+	} else if prevCount > 0 {
+		slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
 	}
+
 	repoSet := map[string]struct{}{}
 	for _, f := range docFiles {
 		repoSet[f.Repository] = struct{}{}
