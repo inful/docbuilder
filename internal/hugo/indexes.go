@@ -135,10 +135,11 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 
 func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 	repoGroups := make(map[string][]docs.DocFile)
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		// Only include markdown files in repository indexes, not assets
 		if !file.IsAsset {
-			repoGroups[file.Repository] = append(repoGroups[file.Repository], file)
+			repoGroups[file.Repository] = append(repoGroups[file.Repository], *file)
 		}
 	}
 	for repoName, files := range repoGroups {
@@ -191,13 +192,14 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			return fmt.Errorf("failed to marshal front matter: %w", err)
 		}
 		sectionGroups := make(map[string][]docs.DocFile)
-		for _, file := range files {
+		for i := range files {
+			file := &files[i]
 			// files already filtered to exclude assets, so no need to check again
 			s := file.Section
 			if s == "" {
 				s = "root"
 			}
-			sectionGroups[s] = append(sectionGroups[s], file)
+			sectionGroups[s] = append(sectionGroups[s], *file)
 		}
 
 		// Convert to sorted sections for deterministic template output
@@ -360,7 +362,8 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 	sectionGroups := make(map[string]map[string][]docs.DocFile)
 	allSections := make(map[string]map[string]bool) // Track all sections including intermediate ones
 
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		if file.Section == "" {
 			continue
 		}
@@ -368,7 +371,7 @@ func (g *Generator) generateSectionIndexes(docFiles []docs.DocFile) error {
 			sectionGroups[file.Repository] = make(map[string][]docs.DocFile)
 			allSections[file.Repository] = make(map[string]bool)
 		}
-		sectionGroups[file.Repository][file.Section] = append(sectionGroups[file.Repository][file.Section], file)
+		sectionGroups[file.Repository][file.Section] = append(sectionGroups[file.Repository][file.Section], *file)
 
 		// Track all parent sections to ensure intermediate directories get _index.md files
 		section := file.Section

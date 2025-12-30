@@ -214,7 +214,8 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 func (g *Generator) collectVersionMetadata() map[string]any {
 	versionsByBase := make(map[string][]map[string]any)
 
-	for _, repo := range g.config.Repositories {
+	for i := range g.config.Repositories {
+		repo := &g.config.Repositories[i]
 		// Skip non-versioned repos
 		if !repo.IsVersioned {
 			continue
