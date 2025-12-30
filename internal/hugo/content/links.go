@@ -34,33 +34,7 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 		// Handle repository-root-relative links (start with /)
 		// These need to be prefixed with repository (and forge if present) to work in Hugo
 		if strings.HasPrefix(link, "/") && repositoryName != "" {
-			anchor := ""
-			if idx := strings.IndexByte(link, '#'); idx >= 0 {
-				anchor = link[idx:]
-				link = link[:idx]
-			}
-			lowerPath := strings.ToLower(link)
-			trimmed := link
-			if strings.HasSuffix(lowerPath, ".md") {
-				trimmed = link[:len(link)-3]
-			} else if strings.HasSuffix(lowerPath, ".markdown") {
-				trimmed = link[:len(link)-9]
-			}
-			if trimmed == "" {
-				return m
-			}
-			// Add trailing slash for Hugo's pretty URLs
-			if !strings.HasSuffix(trimmed, "/") {
-				trimmed += "/"
-			}
-			// Build the Hugo-absolute path with repository (and forge if present)
-			var prefix string
-			if forgeName != "" {
-				prefix = fmt.Sprintf("/%s/%s", forgeName, repositoryName)
-			} else {
-				prefix = fmt.Sprintf("/%s", repositoryName)
-			}
-			return fmt.Sprintf("[%s](%s%s%s)", text, prefix, trimmed, anchor)
+			return rewriteAbsoluteLink(link, text, repositoryName, forgeName)
 		}
 
 		// Handle page-relative links (no leading /)
@@ -111,4 +85,41 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 		}
 		return m
 	})
+}
+
+// rewriteAbsoluteLink rewrites repository-root-relative links (starting with /).
+// Adds repository (and forge) prefix and converts .md links to Hugo pretty URLs.
+func rewriteAbsoluteLink(link, text, repositoryName, forgeName string) string {
+	anchor := ""
+	if idx := strings.IndexByte(link, '#'); idx >= 0 {
+		anchor = link[idx:]
+		link = link[:idx]
+	}
+
+	lowerPath := strings.ToLower(link)
+	trimmed := link
+	if strings.HasSuffix(lowerPath, ".md") {
+		trimmed = link[:len(link)-3]
+	} else if strings.HasSuffix(lowerPath, ".markdown") {
+		trimmed = link[:len(link)-9]
+	}
+
+	if trimmed == "" {
+		return fmt.Sprintf("[%s](%s)", text, link)
+	}
+
+	// Add trailing slash for Hugo's pretty URLs
+	if !strings.HasSuffix(trimmed, "/") {
+		trimmed += "/"
+	}
+
+	// Build the Hugo-absolute path with repository (and forge if present)
+	var prefix string
+	if forgeName != "" {
+		prefix = fmt.Sprintf("/%s/%s", forgeName, repositoryName)
+	} else {
+		prefix = fmt.Sprintf("/%s", repositoryName)
+	}
+
+	return fmt.Sprintf("[%s](%s%s%s)", text, prefix, trimmed, anchor)
 }
