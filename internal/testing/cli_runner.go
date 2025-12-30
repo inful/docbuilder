@@ -193,7 +193,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	}
 
 	// Binary doesn't exist or isn't executable, try to build it
-	buildCmd := exec.Command("go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder") //nolint:gosec // building test binary
+	buildCmd := exec.CommandContext(context.Background(), "go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder") //nolint:gosec // building test binary
 	buildCmd.Env = os.Environ()
 	if out, err := buildCmd.CombinedOutput(); err != nil {
 		env.t.Logf("Failed to build docbuilder binary at %s: %v\n%s", absPath, err, string(out))

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -147,7 +148,7 @@ func findGitDir() (string, error) {
 	}
 
 	// Try git command as fallback
-	cmd := exec.Command("git", "rev-parse", "--git-dir")
+	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--git-dir")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", errors.New("not in a git repository")

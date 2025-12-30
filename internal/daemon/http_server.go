@@ -221,9 +221,10 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		binds = append(binds, preBind{name: "livereload", port: s.config.Daemon.HTTP.LiveReloadPort})
 	}
 	var bindErrs []error
+	lc := net.ListenConfig{}
 	for i := range binds {
 		addr := fmt.Sprintf(":%d", binds[i].port)
-		ln, err := net.Listen("tcp", addr)
+		ln, err := lc.Listen(ctx, "tcp", addr)
 		if err != nil {
 			bindErrs = append(bindErrs, fmt.Errorf("%s port %d: %w", binds[i].name, binds[i].port, err))
 			continue

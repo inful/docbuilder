@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"context"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -17,7 +18,7 @@ func DetectHugoVersion() string {
 	}
 
 	// Run hugo version command
-	cmd := exec.Command(hugoPath, "version")
+	cmd := exec.CommandContext(context.Background(), hugoPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return ""

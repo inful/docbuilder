@@ -2,6 +2,7 @@ package lint
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -408,14 +409,14 @@ func (f *Fixer) shouldUseGitMv(filePath string) bool {
 	}
 
 	// Check if file is tracked by Git
-	cmd := exec.Command("git", "ls-files", "--error-unmatch", filePath)
+	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", filePath)
 	err := cmd.Run()
 	return err == nil
 }
 
 // gitMv performs a git mv operation.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
-	cmd := exec.Command("git", "mv", oldPath, newPath)
+	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%w: %s", err, string(output))
@@ -425,7 +426,7 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 
 // isGitRepository checks if the given directory is a Git repository.
 func isGitRepository(dir string) bool {
-	cmd := exec.Command("git", "-C", dir, "rev-parse", "--git-dir")
+	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "rev-parse", "--git-dir")
 	err := cmd.Run()
 	return err == nil
 }
