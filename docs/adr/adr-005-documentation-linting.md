@@ -1367,15 +1367,25 @@ Lefthook > pre-commit > lint-docs:
   - [x] TestGoldenAutoFix_BrokenLinkDetection: Broken link reporting
   - [x] Sorted results for consistent comparison across runs
   - [x] Normalized paths (filenames only) for portability
-- [ ] Integration tests for lint-DocBuilder sync
-- [ ] CI workflow to detect rule drift
+- [x] Integration tests for lint-DocBuilder sync
+  - [x] TestLintDocBuilderSync: Full build pipeline → lint validation
+  - [x] TestLintDocBuilderSync_FileNaming: Filename convention compliance
+  - [x] Test repository with cross-reference links (./relative-link.md syntax)
+  - [x] Link transformation bug fixes (strip ./ prefix in transform_links.go)
+  - [x] Linter path resolution enhancements (Hugo site-absolute paths in fixer.go)
+- [x] CI workflow to detect rule drift
+  - [x] GitHub Actions workflow: .github/workflows/detect-rule-drift.yml
+  - [x] Weekly schedule (Sunday midnight) + manual dispatch
+  - [x] Single theme testing (Relearn only)
+  - [x] Artifact uploads (90-day retention)
+  - [x] PR comment integration on drift detection
 
 ### Documentation
-- [ ] `docs/how-to/setup-linting.md` - Setup and usage guide
-- [ ] `docs/reference/lint-rules.md` - Complete rule reference
-- [ ] `docs/reference/lint-rules-changelog.md` - Rule version history
-- [ ] Migration guide for existing repositories
-- [ ] CI/CD integration examples
+- [x] `docs/how-to/setup-linting.md` - Setup and usage guide (completed)
+- [x] `docs/reference/lint-rules.md` - Complete rule reference (completed)
+- [x] `docs/reference/lint-rules-changelog.md` - Rule version history (completed)
+- [x] `docs/how-to/migrate-to-linting.md` - Migration guide for existing repositories (completed)
+- [x] `docs/how-to/ci-cd-linting.md` - CI/CD integration examples (completed)
 
 ### Future Enhancements
 - [ ] VS Code extension for real-time linting
