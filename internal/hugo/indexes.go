@@ -280,51 +280,27 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 
 	contentStr := string(readmeFile.TransformedBytes)
 
-	// Check if README already has front matter (it should, from transforms)
-	if strings.HasPrefix(contentStr, "---\n") {
-		// README has front matter, parse it and ensure required fields
-		parts := strings.SplitN(contentStr, "---\n", 3)
-		if len(parts) >= 3 {
-			// Parse existing front matter
-			var existingFM map[string]any
-			if err := yaml.Unmarshal([]byte(parts[1]), &existingFM); err != nil {
-				return fmt.Errorf("failed to parse existing front matter in README.md: %w", err)
-			}
+	// Parse front matter if it exists
+	fm, body, err := parseFrontMatterFromContent(contentStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse front matter in README.md: %w", err)
+	}
 
-			// Ensure required fields are set
-			if existingFM["type"] == nil {
-				existingFM["type"] = "docs"
-			}
-			if existingFM["repository"] == nil {
-				existingFM["repository"] = repoName
-			}
-			if existingFM["date"] == nil {
-				existingFM["date"] = "2024-01-01T00:00:00Z"
-			}
-
-			// Re-marshal the front matter
-			fmData, err := yaml.Marshal(existingFM)
-			if err != nil {
-				return fmt.Errorf("failed to marshal updated front matter: %w", err)
-			}
-
-			contentStr = fmt.Sprintf("---\n%s---\n%s", string(fmData), parts[2])
+	// If no front matter exists, create it
+	if fm == nil {
+		fm = map[string]any{
+			"title": titleCase(repoName),
 		}
-	} else {
-		// No front matter, add it
-		frontMatter := map[string]any{
-			"title":      titleCase(repoName),
-			"repository": repoName,
-			"type":       "docs",
-			"date":       "2024-01-01T00:00:00Z",
-		}
+		body = contentStr
+	}
 
-		fmData, err := yaml.Marshal(frontMatter)
-		if err != nil {
-			return fmt.Errorf("failed to marshal front matter: %w", err)
-		}
+	// Ensure required fields are present
+	ensureRequiredIndexFields(fm, repoName)
 
-		contentStr = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), contentStr)
+	// Reconstruct content with updated front matter
+	contentStr, err = reconstructContentWithFrontMatter(fm, body)
+	if err != nil {
+		return err
 	}
 
 	// Create directory if needed
@@ -594,4 +570,49 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 		}
 	}
 	return string(b)
+}
+
+// parseFrontMatterFromContent extracts front matter and body from content.
+// Returns (frontMatter map, body string, error).
+// If no front matter exists, returns (nil, originalContent, nil).
+func parseFrontMatterFromContent(content string) (map[string]any, string, error) {
+	if !strings.HasPrefix(content, "---\n") {
+		return nil, content, nil
+	}
+
+	parts := strings.SplitN(content, "---\n", 3)
+	if len(parts) < 3 {
+		return nil, content, nil
+	}
+
+	var fm map[string]any
+	if err := yaml.Unmarshal([]byte(parts[1]), &fm); err != nil {
+		return nil, "", fmt.Errorf("failed to parse front matter: %w", err)
+	}
+
+	return fm, parts[2], nil
+}
+
+// ensureRequiredIndexFields adds missing required fields to front matter.
+// Modifies the provided map in place.
+func ensureRequiredIndexFields(fm map[string]any, repoName string) {
+	if fm["type"] == nil {
+		fm["type"] = "docs"
+	}
+	if fm["repository"] == nil {
+		fm["repository"] = repoName
+	}
+	if fm["date"] == nil {
+		fm["date"] = "2024-01-01T00:00:00Z"
+	}
+}
+
+// reconstructContentWithFrontMatter rebuilds content string from front matter and body.
+func reconstructContentWithFrontMatter(fm map[string]any, body string) (string, error) {
+	fmData, err := yaml.Marshal(fm)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal front matter: %w", err)
+	}
+
+	return fmt.Sprintf("---\n%s---\n%s", string(fmData), body), nil
 }
