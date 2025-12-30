@@ -846,7 +846,7 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	targetPath := strings.Split(linkTarget, "#")[0]
 
 	var resolvedPath string
-	
+
 	// Handle absolute paths (e.g., /local/docs/api-guide)
 	// These are Hugo site-absolute paths that need to be resolved relative to content root
 	if strings.HasPrefix(targetPath, "/") {
@@ -865,7 +865,7 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 		sourceDir := filepath.Dir(sourceFile)
 		resolvedPath = filepath.Join(sourceDir, targetPath)
 	}
-	
+
 	cleanPath := filepath.Clean(resolvedPath)
 
 	// Try with .md extension if file doesn't exist as-is
