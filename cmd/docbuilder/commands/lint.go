@@ -131,33 +131,33 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 
 	// Display what was fixed
 	if dryRun {
-		fmt.Fprintf(os.Stdout, "DRY RUN: No changes will be applied\n")
-		fmt.Fprintf(os.Stdout, "\n")
+		_, _ = fmt.Fprintf(os.Stdout, "DRY RUN: No changes will be applied\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	if len(fixResult.FilesRenamed) > 0 {
-		fmt.Fprintf(os.Stdout, "Files to be renamed:\n")
+		_, _ = fmt.Fprintf(os.Stdout, "Files to be renamed:\n")
 		for _, op := range fixResult.FilesRenamed {
 			if op.Success {
-				fmt.Fprintf(os.Stdout, "  %s → %s\n", op.OldPath, op.NewPath)
+				_, _ = fmt.Fprintf(os.Stdout, "  %s → %s\n", op.OldPath, op.NewPath)
 			} else if op.Error != nil {
-				fmt.Fprintf(os.Stdout, "  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
+				_, _ = fmt.Fprintf(os.Stdout, "  %s → %s (ERROR: %v)\n", op.OldPath, op.NewPath, op.Error)
 			}
 		}
-		fmt.Fprintf(os.Stdout, "\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	if len(fixResult.LinksUpdated) > 0 {
-		fmt.Fprintf(os.Stdout, "Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
+		_, _ = fmt.Fprintf(os.Stdout, "Links updated in %d files:\n", countUniqueFiles(fixResult.LinksUpdated))
 		fileLinks := groupLinksByFile(fixResult.LinksUpdated)
 		for file, links := range fileLinks {
-			fmt.Fprintf(os.Stdout, "  %s (%d links)\n", file, len(links))
+			_, _ = fmt.Fprintf(os.Stdout, "  %s (%d links)\n", file, len(links))
 		}
-		fmt.Fprintf(os.Stdout, "\n")
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
 
 	// Display fix summary
-	fmt.Fprintf(os.Stdout, "%s\n", fixResult.Summary())
+	_, _ = fmt.Fprintf(os.Stdout, "%s\n", fixResult.Summary())
 
 	// Exit with error if fixes failed
 	if fixResult.HasErrors() {
@@ -165,7 +165,7 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 	}
 
 	if !dryRun {
-		fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+		_, _ = fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
 	}
 	return nil
 }
