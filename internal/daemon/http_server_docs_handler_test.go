@@ -12,6 +12,44 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+// normalizeOutputDir normalizes and returns absolute path of output directory.
+func normalizeOutputDir(out string) string {
+	if out == "" {
+		out = "./site"
+	}
+	if !filepath.IsAbs(out) {
+		if abs, err := filepath.Abs(out); err == nil {
+			out = abs
+		}
+	}
+	return out
+}
+
+// shouldShowPendingPage determines if pending page should be shown.
+func shouldShowPendingPage(root, out, urlPath string) bool {
+	if root != out {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(out, "public")); !os.IsNotExist(err) {
+		return false
+	}
+	return urlPath == "/" || urlPath == ""
+}
+
+// writePendingPageResponse writes the pending page HTML response.
+func writePendingPageResponse(w http.ResponseWriter, liveReload bool) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusServiceUnavailable)
+
+	scriptTag := ""
+	if liveReload {
+		scriptTag = `<script src="http://localhost:35729/livereload.js"></script>`
+	}
+
+	html := `<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>` + scriptTag + `</body></html>`
+	_, _ = w.Write([]byte(html))
+}
+
 // TestDocsHandlerStaticRoot tests serving files when public directory exists.
 func TestDocsHandlerStaticRoot(t *testing.T) {
 	// Create temp directory structure
@@ -78,30 +116,14 @@ func TestDocsHandlerNoBuildPendingPage(t *testing.T) {
 	// Simulate the complex handler logic
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := srv.resolveDocsRoot()
-		out := srv.config.Output.Directory
-		if out == "" {
-			out = "./site"
+		out := normalizeOutputDir(srv.config.Output.Directory)
+
+		// Check if site needs rendering and path is root
+		if shouldShowPendingPage(root, out, r.URL.Path) {
+			writePendingPageResponse(w, srv.config.Build.LiveReload)
+			return
 		}
-		if !filepath.IsAbs(out) {
-			if abs, err := filepath.Abs(out); err == nil {
-				out = abs
-			}
-		}
-		if root == out {
-			if _, err := os.Stat(filepath.Join(out, "public")); os.IsNotExist(err) {
-				// Show pending page for root path
-				if r.URL.Path == "/" || r.URL.Path == "" {
-					w.Header().Set("Content-Type", "text/html; charset=utf-8")
-					w.WriteHeader(http.StatusServiceUnavailable)
-					scriptTag := ""
-					if srv.config.Build.LiveReload {
-						scriptTag = `<script src="http://localhost:35729/livereload.js"></script>`
-					}
-					_, _ = w.Write([]byte(`<!doctype html><html><head><meta charset="utf-8"><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1><p>The site hasn't been rendered yet. This page will be replaced automatically once rendering completes.</p>` + scriptTag + `</body></html>`))
-					return
-				}
-			}
-		}
+
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 	rootHandler.ServeHTTP(rec, req)
@@ -245,26 +267,13 @@ func TestDocsHandlerWithLiveReload(t *testing.T) {
 
 	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		root := srv.resolveDocsRoot()
-		out := srv.config.Output.Directory
-		if !filepath.IsAbs(out) {
-			if abs, err := filepath.Abs(out); err == nil {
-				out = abs
-			}
+		out := normalizeOutputDir(srv.config.Output.Directory)
+
+		if shouldShowPendingPage(root, out, r.URL.Path) {
+			writePendingPageResponse(w, srv.config.Build.LiveReload)
+			return
 		}
-		if root == out {
-			if _, err := os.Stat(filepath.Join(out, "public")); os.IsNotExist(err) {
-				if r.URL.Path == "/" || r.URL.Path == "" {
-					w.Header().Set("Content-Type", "text/html; charset=utf-8")
-					w.WriteHeader(http.StatusServiceUnavailable)
-					scriptTag := ""
-					if srv.config.Build.LiveReload {
-						scriptTag = `<script src="http://localhost:35729/livereload.js"></script>`
-					}
-					_, _ = w.Write([]byte(`<!doctype html><html><head><title>Site rendering</title></head><body><h1>Documentation is being prepared</h1>` + scriptTag + `</body></html>`))
-					return
-				}
-			}
-		}
+
 		http.FileServer(http.Dir(root)).ServeHTTP(w, r)
 	})
 	rootHandler.ServeHTTP(rec, req)
