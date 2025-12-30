@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 )
@@ -24,7 +25,7 @@ func TestWriteJSONBasic(t *testing.T) {
 
 func TestWriteJSONPretty(t *testing.T) {
 	rec := httptest.NewRecorder()
-	r := httptest.NewRequest("GET", "/x?pretty=1", nil)
+	r := httptest.NewRequest(http.MethodGet, "/x?pretty=1", nil)
 	payload := map[string]string{"hello": "world"}
 	if err := writeJSONPretty(rec, r, 200, payload); err != nil {
 		t.Fatalf("writeJSONPretty error: %v", err)
