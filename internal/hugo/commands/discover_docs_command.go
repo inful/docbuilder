@@ -126,8 +126,3 @@ func (c *DiscoverDocsCommand) updateReportHash(bs *hugo.BuildState, docFiles []d
 	}
 	bs.Report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
 }
-
-func init() {
-	// Register the discover docs command
-	DefaultRegistry.Register(NewDiscoverDocsCommand())
-}

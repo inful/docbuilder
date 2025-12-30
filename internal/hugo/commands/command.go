@@ -172,3 +172,10 @@ func (e *ExecutionError) Unwrap() error {
 
 // DefaultRegistry is the default command registry used by the pipeline.
 var DefaultRegistry = NewCommandRegistry()
+
+// RegisterDefaultCommands registers all default commands to the DefaultRegistry.
+func RegisterDefaultCommands() {
+	DefaultRegistry.Register(NewCloneReposCommand())
+	DefaultRegistry.Register(NewDiscoverDocsCommand())
+	DefaultRegistry.Register(NewPrepareOutputCommand())
+}

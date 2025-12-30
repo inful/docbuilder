@@ -221,8 +221,3 @@ func (c *CloneReposCommand) classifyGitFailure(err error) hugo.ReportIssueCode {
 		return ""
 	}
 }
-
-func init() {
-	// Register the clone repos command
-	DefaultRegistry.Register(NewCloneReposCommand())
-}
