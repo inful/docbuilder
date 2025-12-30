@@ -11,7 +11,7 @@ linters:
     - contextcheck
     - copyloopvar
     - dogsled
-    # - dupl
+    - dupl
     - dupword
     - durationcheck
     - errcheck
