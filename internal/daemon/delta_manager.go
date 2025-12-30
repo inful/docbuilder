@@ -87,13 +87,14 @@ func (dm *deltaManager) RecomputeGlobalDocHash(
 	allPaths := make([]string, 0, 2048)
 	deletionsDetected := 0
 
-	for _, r := range orig {
+	for i := range orig {
+		r := &orig[i]
 		paths := metaStore.GetRepoDocFilePaths(r.URL)
 
 		// For unchanged repos, optionally detect deletions by scanning workspace clone
 		if _, isChanged := changedSet[r.URL]; !isChanged &&
 			workspace != "" && cfg != nil && cfg.Build.DetectDeletions {
-			freshPaths, deleted, err := dm.scanForDeletions(r, workspace, paths)
+			freshPaths, deleted, err := dm.scanForDeletions(*r, workspace, paths)
 			if err != nil {
 				continue // Skip on error, use existing paths
 			}

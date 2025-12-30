@@ -765,7 +765,8 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 
 	// Find matching repository in config
 	var targetRepos []config.Repository
-	for _, repo := range d.config.Repositories {
+	for i := range d.config.Repositories {
+		repo := &d.config.Repositories[i]
 		// Match by name or full name extracted from URL
 		// GitHub URL format: https://github.com/owner/repo.git or git@github.com:owner/repo.git
 		// GitLab URL format: https://gitlab.com/owner/repo.git or git@gitlab.com:owner/repo.git
@@ -773,7 +774,7 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 		if repo.Name == repoFullName || matchesRepoURL(repo.URL, repoFullName) {
 			// If branch is specified, only rebuild if it matches the configured branch
 			if branch == "" || repo.Branch == branch {
-				targetRepos = append(targetRepos, repo)
+				targetRepos = append(targetRepos, *repo)
 				slog.Info("Webhook matched repository",
 					"repo", repo.Name,
 					"full_name", repoFullName,

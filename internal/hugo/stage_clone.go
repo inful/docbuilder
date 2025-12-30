@@ -176,6 +176,7 @@ func recordCloneFailure(bs *BuildState, res RepoFetchResult) {
 }
 
 // readRepoHead returns the current HEAD commit hash for a repository path.
+//
 // Deprecated: Use gitpkg.ReadRepoHead directly.
 func readRepoHead(repoPath string) (string, error) {
 	return gitpkg.ReadRepoHead(repoPath)

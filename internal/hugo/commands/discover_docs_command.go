@@ -68,7 +68,8 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	}
 
 	repoSet := map[string]struct{}{}
-	for _, f := range docFiles {
+	for i := range docFiles {
+		f := &docFiles[i]
 		repoSet[f.Repository] = struct{}{}
 	}
 	bs.Report.Repositories = len(repoSet)
@@ -90,7 +91,8 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 // updateReportHash updates the build report with the overall documentation files hash.
 func (c *DiscoverDocsCommand) updateReportHash(bs *hugo.BuildState, docFiles []docs.DocFile) {
 	paths := make([]string, 0, len(docFiles))
-	for _, f := range docFiles {
+	for i := range docFiles {
+		f := &docFiles[i]
 		paths = append(paths, f.GetHugoPath())
 	}
 	sort.Strings(paths)

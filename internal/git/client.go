@@ -47,6 +47,7 @@ func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
 // CloneRepo clones a repository to the workspace directory.
 // If retry is enabled, it wraps the operation with retry logic.
 // Returns the local filesystem path and any error.
+//
 // Deprecated: Use CloneRepoWithMetadata for commit metadata.
 func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
 	result, err := c.CloneRepoWithMetadata(repo)
