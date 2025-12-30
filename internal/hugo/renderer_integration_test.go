@@ -92,7 +92,7 @@ func TestBinaryRenderer_MissingHugoBinary(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Try to execute - should fail with appropriate error
-	err := renderer.Execute(tempDir)
+	err := renderer.Execute(context.Background(), tempDir)
 	if err == nil {
 		// If Hugo is actually installed, this test might succeed
 		// That's OK - we're just verifying the error handling works

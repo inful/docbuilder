@@ -9,7 +9,7 @@ import (
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
-func stageRunHugo(_ context.Context, bs *BuildState) error {
+func stageRunHugo(ctx context.Context, bs *BuildState) error {
 	cfg := bs.Generator.Config()
 	mode := config.ResolveEffectiveRenderMode(cfg)
 	if mode == config.RenderModeNever {
@@ -35,7 +35,7 @@ func stageRunHugo(_ context.Context, bs *BuildState) error {
 	slog.Info("Executing Hugo renderer",
 		slog.String("root", root),
 		slog.String("renderer_type", fmt.Sprintf("%T", renderer)))
-	if err := renderer.Execute(root); err != nil {
+	if err := renderer.Execute(ctx, root); err != nil {
 		slog.Error("Renderer execution failed",
 			slog.String("error", err.Error()),
 			slog.String("root", root))

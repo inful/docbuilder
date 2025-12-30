@@ -392,16 +392,16 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0o644))
 
 	// Initialize git but don't commit
-	cmd := exec.Command("git", "init")
+	cmd := exec.CommandContext(context.Background(), "git", "init")
 	cmd.Dir = tmpDir
 	require.NoError(t, cmd.Run())
 
 	// Configure git
-	_ = exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
-	_ = exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
+	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
 
 	// Add files but don't commit (this creates an edge case)
-	_ = exec.Command("git", "-C", tmpDir, "add", ".").Run()
+	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "add", ".").Run()
 
 	// Load configuration
 	cfg := loadGoldenConfig(t, "../../test/testdata/configs/relearn-basic.yaml")

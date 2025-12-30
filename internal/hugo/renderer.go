@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -24,13 +25,13 @@ import (
 //
 // Errors returned are surfaced as warnings (non-fatal) unless future policy changes.
 type Renderer interface {
-	Execute(rootDir string) error
+	Execute(ctx context.Context, rootDir string) error
 }
 
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
 
-func (b *BinaryRenderer) Execute(rootDir string) error {
+func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
 	}
@@ -44,7 +45,7 @@ func (b *BinaryRenderer) Execute(rootDir string) error {
 	}
 
 	// Increase log verbosity for better diagnostics
-	cmd := exec.Command("hugo", "--logLevel", "debug")
+	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", "debug")
 	cmd.Dir = rootDir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -164,7 +165,7 @@ func parseHugoRenderError(line string) {
 // NoopRenderer performs no rendering; useful in tests or when only scaffolding is desired.
 type NoopRenderer struct{}
 
-func (n *NoopRenderer) Execute(rootDir string) error {
+func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 	slog.Debug("NoopRenderer skipping render", "dir", rootDir)
 	return nil
 }

@@ -188,7 +188,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 			client := server.Client()
 			bf := NewBaseForge(client, server.URL, "test-token")
 
-			req, err := http.NewRequest(http.MethodGet, server.URL+"/test", http.NoBody)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/test", http.NoBody)
 			if err != nil {
 				t.Fatalf("failed to create request: %v", err)
 			}
@@ -221,7 +221,7 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 	client := server.Client()
 	bf := NewBaseForge(client, server.URL, "test-token")
 
-	req, err := http.NewRequest(http.MethodGet, server.URL+"/test", http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/test", http.NoBody)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}

@@ -48,7 +48,7 @@ func (s *SQLiteStore) initialize() error {
 	CREATE INDEX IF NOT EXISTS idx_timestamp ON events(timestamp);
 	CREATE INDEX IF NOT EXISTS idx_event_type ON events(event_type);
 	`
-	_, err := s.db.Exec(schema)
+	_, err := s.db.ExecContext(context.Background(), schema)
 	return err
 }
 
