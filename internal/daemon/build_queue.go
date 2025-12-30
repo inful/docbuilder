@@ -256,7 +256,7 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 	bq.logJobCompletion(job, err, duration)
 }
 
-// markJobRunning marks a job as running and activates it
+// markJobRunning marks a job as running and activates it.
 func (bq *BuildQueue) markJobRunning(job *BuildJob, workerID string) {
 	startTime := time.Now()
 	bq.mu.Lock()
@@ -268,7 +268,7 @@ func (bq *BuildQueue) markJobRunning(job *BuildJob, workerID string) {
 	slog.Info("Build job started", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.Worker(workerID))
 }
 
-// emitBuildStartedEvent emits the build started event
+// emitBuildStartedEvent emits the build started event.
 func (bq *BuildQueue) emitBuildStartedEvent(ctx context.Context, job *BuildJob, workerID string) {
 	if bq.eventEmitter == nil {
 		return
@@ -284,7 +284,7 @@ func (bq *BuildQueue) emitBuildStartedEvent(ctx context.Context, job *BuildJob, 
 	}
 }
 
-// markJobCompleted marks a job as completed or failed and returns the duration
+// markJobCompleted marks a job as completed or failed and returns the duration.
 func (bq *BuildQueue) markJobCompleted(job *BuildJob, err error) time.Duration {
 	endTime := time.Now()
 	bq.mu.Lock()
@@ -311,7 +311,7 @@ func (bq *BuildQueue) markJobCompleted(job *BuildJob, err error) time.Duration {
 	return duration
 }
 
-// emitCompletionEvents emits build completion, failure, and report events
+// emitCompletionEvents emits build completion, failure, and report events.
 func (bq *BuildQueue) emitCompletionEvents(ctx context.Context, job *BuildJob, err error, duration time.Duration) {
 	if bq.eventEmitter == nil {
 		return
@@ -329,7 +329,7 @@ func (bq *BuildQueue) emitCompletionEvents(ctx context.Context, job *BuildJob, e
 	}
 }
 
-// extractBuildReport extracts the build report from job metadata
+// extractBuildReport extracts the build report from job metadata.
 func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
 	if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
 		return job.TypedMeta.BuildReport
@@ -337,7 +337,7 @@ func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
 	return nil
 }
 
-// emitBuildReportEvent emits the build report event if report is available
+// emitBuildReportEvent emits the build report event if report is available.
 func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, report *hugo.BuildReport) {
 	slog.Debug("Build queue event emit check",
 		logfields.JobID(job.ID),
@@ -354,14 +354,14 @@ func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, r
 	}
 }
 
-// emitBuildFailedEvent emits the build failed event
+// emitBuildFailedEvent emits the build failed event.
 func (bq *BuildQueue) emitBuildFailedEvent(ctx context.Context, job *BuildJob, err error) {
 	if emitErr := bq.eventEmitter.EmitBuildFailed(ctx, job.ID, "build", err.Error()); emitErr != nil {
 		slog.Warn("Failed to emit BuildFailed event", logfields.JobID(job.ID), logfields.Error(emitErr))
 	}
 }
 
-// emitBuildCompletedEvent emits the build completed event with artifacts
+// emitBuildCompletedEvent emits the build completed event with artifacts.
 func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob, duration time.Duration, report *hugo.BuildReport) {
 	artifacts := make(map[string]string)
 	// Extract artifacts from build report if available
@@ -374,7 +374,7 @@ func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob
 	}
 }
 
-// logJobCompletion logs the final job completion status
+// logJobCompletion logs the final job completion status.
 func (bq *BuildQueue) logJobCompletion(job *BuildJob, err error, duration time.Duration) {
 	if err != nil {
 		slog.Error("Build job failed", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), slog.Duration("duration", duration), logfields.Error(err))
