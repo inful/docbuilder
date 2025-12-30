@@ -35,20 +35,37 @@ func writeJSON(w http.ResponseWriter, status int, v any) error {
 // writeJSONPretty optionally pretty prints when pretty=true via query parameter.
 // It falls back to compact form if marshaling fails for any reason.
 func writeJSONPretty(w http.ResponseWriter, r *http.Request, status int, v any) error {
-	if r != nil {
-		if p := r.URL.Query().Get("pretty"); p == "1" || p == "true" {
-			b, err := json.MarshalIndent(v, "", "  ")
-			if err == nil {
-				w.Header().Set("Content-Type", "application/json; charset=utf-8")
-				w.WriteHeader(status)
-				if _, werr := w.Write(append(b, '\n')); werr != nil { // newline parity with Encoder
-					slog.Error("failed writing pretty JSON", logfields.Error(werr))
-					return werr
-				}
-				return nil
-			}
-			slog.Warn("pretty JSON marshal failed, falling back to standard encode", logfields.Error(err))
+	if shouldPrettyPrint(r) {
+		if err := tryWritePrettyJSON(w, status, v); err == nil {
+			return nil
 		}
+		// Fall through to standard JSON on error
 	}
 	return writeJSON(w, status, v)
+}
+
+// shouldPrettyPrint checks if the request wants pretty-printed JSON.
+func shouldPrettyPrint(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	p := r.URL.Query().Get("pretty")
+	return p == "1" || p == "true"
+}
+
+// tryWritePrettyJSON attempts to write pretty-printed JSON, returns error if it fails.
+func tryWritePrettyJSON(w http.ResponseWriter, status int, v any) error {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		slog.Warn("pretty JSON marshal failed, falling back to standard encode", logfields.Error(err))
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	if _, werr := w.Write(append(b, '\n')); werr != nil { // newline parity with Encoder
+		slog.Error("failed writing pretty JSON", logfields.Error(werr))
+		return werr
+	}
+	return nil
 }
