@@ -98,45 +98,7 @@ func (g *Generator) finalizeStaging() error {
 
 	prev := g.outputDir + ".prev"
 	// Remove old backup if present
-	if stat, err := os.Stat(prev); err == nil {
-		slog.Info("Removing old backup directory",
-			slog.String("path", prev),
-			slog.Time("modified", stat.ModTime()))
-		// Try multiple times to remove previous backup (may be locked/in-use)
-		for i := range 3 {
-			if err := os.RemoveAll(prev); err == nil {
-				slog.Debug("Successfully removed old backup",
-					slog.String("path", prev),
-					slog.Int("attempts", i+1))
-				break
-			} else if i == 2 {
-				slog.Warn("Failed to remove old backup after retries",
-					slog.String("path", prev),
-					slog.String("error", err.Error()))
-			}
-			if i < 2 {
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
-		// If still exists, try to force remove any remaining files
-		if _, err := os.Stat(prev); err == nil {
-			slog.Warn("Old backup still present, attempting force removal",
-				slog.String("path", prev))
-			// Last resort: remove with chmod
-			_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
-				if err == nil {
-					_ = os.Chmod(path, 0o600)
-				}
-				return nil
-			})
-			if err := os.RemoveAll(prev); err != nil {
-				slog.Warn("Failed to remove previous backup", logfields.Path(prev), "error", err)
-				// Continue anyway - rename will fail if prev still exists
-			}
-		}
-	} else {
-		slog.Debug("No old backup directory to remove")
-	}
+	g.removeOldBackup(prev)
 
 	// Step 1: Backup current output (if exists)
 	if stat, err := os.Stat(g.outputDir); err == nil {
@@ -214,5 +176,53 @@ func (g *Generator) abortStaging() {
 	} else {
 		slog.Info("Successfully cleaned up staging directory after build abort",
 			slog.String("path", dir))
+	}
+}
+
+// removeOldBackup removes an old backup directory with retry logic and force removal.
+func (g *Generator) removeOldBackup(prev string) {
+	stat, err := os.Stat(prev)
+	if err != nil {
+		slog.Debug("No old backup directory to remove")
+		return
+	}
+
+	slog.Info("Removing old backup directory",
+		slog.String("path", prev),
+		slog.Time("modified", stat.ModTime()))
+
+	// Try multiple times to remove previous backup (may be locked/in-use)
+	for i := range 3 {
+		if err := os.RemoveAll(prev); err == nil {
+			slog.Debug("Successfully removed old backup",
+				slog.String("path", prev),
+				slog.Int("attempts", i+1))
+			return
+		}
+		if i == 2 {
+			slog.Warn("Failed to remove old backup after retries",
+				slog.String("path", prev),
+				slog.String("error", err.Error()))
+		}
+		if i < 2 {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+
+	// If still exists, try to force remove any remaining files
+	if _, err := os.Stat(prev); err == nil {
+		slog.Warn("Old backup still present, attempting force removal",
+			slog.String("path", prev))
+		// Last resort: remove with chmod
+		_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
+			if err == nil {
+				_ = os.Chmod(path, 0o600)
+			}
+			return nil
+		})
+		if err := os.RemoveAll(prev); err != nil {
+			slog.Warn("Failed to remove previous backup", logfields.Path(prev), "error", err)
+			// Continue anyway - rename will fail if prev still exists
+		}
 	}
 }
