@@ -10,7 +10,7 @@ import (
 // InitCmd implements the 'init' command.
 type InitCmd struct {
 	Force  bool   `help:"Overwrite existing configuration file"`
-	Output string `help:"Output directory for generated config file" name:"output" short:"o"`
+	Output string `short:"o" name:"output" help:"Output directory for generated config file"`
 }
 
 func (i *InitCmd) Run(_ *Global, root *CLI) error {

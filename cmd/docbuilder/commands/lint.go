@@ -9,7 +9,7 @@ import (
 
 // LintCmd implements the 'lint' command.
 type LintCmd struct {
-	Format string `short:"f" enum:"text,json" default:"text" help:"Output format (text or json)"`
+	Format string `short:"f" default:"text" help:"Output format (text or json)" enum:"text,json"`
 	Quiet  bool   `short:"q" help:"Quiet mode: only show errors, suppress warnings"`
 	Fix    bool   `help:"Automatically fix issues where possible (requires confirmation)"`
 	DryRun bool   `help:"Show what would be fixed without applying changes (requires --fix)"`
@@ -21,7 +21,7 @@ type LintCmd struct {
 
 // LintPathCmd handles linting a specific path.
 type LintPathCmd struct {
-	Path string `arg:"" optional:"" help:"Path to lint (file or directory). Defaults to intelligent detection (docs/, documentation/, or .)"`
+	Path string `help:"Path to lint (file or directory). Defaults to intelligent detection (docs/, documentation/, or .)" arg:"" optional:""`
 }
 
 // Run executes the lint path command.
