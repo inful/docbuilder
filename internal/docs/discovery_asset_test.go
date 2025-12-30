@@ -5,9 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 func TestAssetPathInSubdirectories(t *testing.T) {

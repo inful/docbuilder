@@ -21,7 +21,7 @@ func TestComputeRepoHashConsistency(t *testing.T) {
 
 	// Create test files
 	testFile := filepath.Join(repoPath, "test.txt")
-	if writeFileErr := os.WriteFile(testFile, []byte("test content"), 0600); writeFileErr != nil {
+	if writeFileErr := os.WriteFile(testFile, []byte("test content"), 0o600); writeFileErr != nil {
 		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
@@ -32,7 +32,7 @@ func TestComputeRepoHashConsistency(t *testing.T) {
 	}
 
 	docsFile := filepath.Join(docsDir, "readme.md")
-	if writeFileErr := os.WriteFile(docsFile, []byte("# Documentation"), 0600); writeFileErr != nil {
+	if writeFileErr := os.WriteFile(docsFile, []byte("# Documentation"), 0o600); writeFileErr != nil {
 		t.Fatalf("Failed to write docs file: %v", writeFileErr)
 	}
 
@@ -95,7 +95,7 @@ func TestComputeRepoHashWithPaths(t *testing.T) {
 		}
 
 		file := filepath.Join(dirPath, "file.txt")
-		if writeFileErr := os.WriteFile(file, []byte(dir+" content"), 0600); writeFileErr != nil {
+		if writeFileErr := os.WriteFile(file, []byte(dir+" content"), 0o600); writeFileErr != nil {
 			t.Fatalf("Failed to write file: %v", writeFileErr)
 		}
 	}
@@ -161,7 +161,7 @@ func TestComputeRepoHashChangesWithContent(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if writeFileErr := os.WriteFile(testFile, []byte("version 1"), 0600); writeFileErr != nil {
+	if writeFileErr := os.WriteFile(testFile, []byte("version 1"), 0o600); writeFileErr != nil {
 		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
@@ -190,7 +190,7 @@ func TestComputeRepoHashChangesWithContent(t *testing.T) {
 	}
 
 	// Modify file and commit again
-	if writeFileErr := os.WriteFile(testFile, []byte("version 2"), 0600); writeFileErr != nil {
+	if writeFileErr := os.WriteFile(testFile, []byte("version 2"), 0o600); writeFileErr != nil {
 		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
@@ -228,12 +228,12 @@ func TestComputeRepoHashFromWorkdir(t *testing.T) {
 	}
 
 	file1 := filepath.Join(docsDir, "readme.md")
-	if err := os.WriteFile(file1, []byte("# Documentation"), 0600); err != nil {
+	if err := os.WriteFile(file1, []byte("# Documentation"), 0o600); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 
 	file2 := filepath.Join(docsDir, "guide.md")
-	if err := os.WriteFile(file2, []byte("# Guide"), 0600); err != nil {
+	if err := os.WriteFile(file2, []byte("# Guide"), 0o600); err != nil {
 		t.Fatalf("Failed to write file: %v", err)
 	}
 
@@ -268,7 +268,7 @@ func TestGetRepoTree(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if writeFileErr := os.WriteFile(testFile, []byte("test"), 0600); writeFileErr != nil {
+	if writeFileErr := os.WriteFile(testFile, []byte("test"), 0o600); writeFileErr != nil {
 		t.Fatalf("Failed to write file: %v", writeFileErr)
 	}
 
@@ -324,7 +324,7 @@ func TestComputeRepoHashNonexistentPath(t *testing.T) {
 	}
 
 	testFile := filepath.Join(repoPath, "test.txt")
-	if writeErr := os.WriteFile(testFile, []byte("test"), 0600); writeErr != nil {
+	if writeErr := os.WriteFile(testFile, []byte("test"), 0o600); writeErr != nil {
 		t.Fatalf("Failed to write file: %v", writeErr)
 	}
 

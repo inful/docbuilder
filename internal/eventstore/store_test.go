@@ -63,7 +63,7 @@ func TestEventStoreGetRange(t *testing.T) {
 	now := time.Now()
 
 	// Add events
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		eventErr := store.Append(ctx, "build-1", "Event", []byte("data"), nil)
 		if eventErr != nil {
 			t.Fatalf("failed to append event: %v", eventErr)

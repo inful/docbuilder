@@ -5,11 +5,12 @@ import (
 	"strings"
 	"time"
 
-	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/storage/memory"
+
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // RemoteReference represents a Git reference from a remote repository.

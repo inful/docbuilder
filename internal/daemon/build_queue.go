@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -44,7 +45,7 @@ const (
 	BuildStatusRunning   BuildStatus = "running"
 	BuildStatusCompleted BuildStatus = "completed"
 	BuildStatusFailed    BuildStatus = "failed"
-	BuildStatusCancelled BuildStatus = "cancelled"
+	BuildStatusCancelled BuildStatus = "canceled"
 )
 
 // BuildJob represents a single build job in the queue.
@@ -149,7 +150,7 @@ func (bq *BuildQueue) SetEventEmitter(emitter BuildEventEmitter) {
 func (bq *BuildQueue) Start(ctx context.Context) {
 	slog.Info("Starting build queue", "workers", bq.workers, "max_size", bq.maxSize)
 
-	for i := 0; i < bq.workers; i++ {
+	for i := range bq.workers {
 		bq.wg.Add(1)
 		go bq.worker(ctx, fmt.Sprintf("worker-%d", i))
 	}
@@ -177,11 +178,11 @@ func (bq *BuildQueue) Stop(_ context.Context) {
 // Enqueue adds a new build job to the queue.
 func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 	if job == nil {
-		return fmt.Errorf("job cannot be nil")
+		return errors.New("job cannot be nil")
 	}
 
 	if job.ID == "" {
-		return fmt.Errorf("job ID is required")
+		return errors.New("job ID is required")
 	}
 
 	job.Status = BuildStatusQueued
@@ -191,7 +192,7 @@ func (bq *BuildQueue) Enqueue(job *BuildJob) error {
 		slog.Info("Build job enqueued", logfields.JobID(job.ID), logfields.JobType(string(job.Type)), logfields.JobPriority(int(job.Priority)))
 		return nil
 	default:
-		return fmt.Errorf("build queue is full")
+		return errors.New("build queue is full")
 	}
 }
 
@@ -317,8 +318,8 @@ func (bq *BuildQueue) processJob(ctx context.Context, job *BuildJob, workerID st
 			artifacts := make(map[string]string)
 			// Extract artifacts from build report if available
 			if report != nil {
-				artifacts["files"] = fmt.Sprintf("%d", report.Files)
-				artifacts["repositories"] = fmt.Sprintf("%d", report.Repositories)
+				artifacts["files"] = strconv.Itoa(report.Files)
+				artifacts["repositories"] = strconv.Itoa(report.Repositories)
 			}
 			if emitErr := bq.eventEmitter.EmitBuildCompleted(ctx, job.ID, duration, artifacts); emitErr != nil {
 				slog.Warn("Failed to emit BuildCompleted event", logfields.JobID(job.ID), logfields.Error(emitErr))

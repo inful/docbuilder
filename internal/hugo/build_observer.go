@@ -31,6 +31,7 @@ func (r recorderObserver) OnStageComplete(stage StageName, d time.Duration, _ St
 		r.recorder.ObserveStageDuration(string(stage), d)
 	}
 }
+
 func (r recorderObserver) OnBuildComplete(report *BuildReport) {
 	if r.recorder != nil {
 		r.recorder.ObserveBuildDuration(report.End.Sub(report.Start))

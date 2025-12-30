@@ -264,12 +264,12 @@ Code block (should be ignored):
 ` + "```bash\n# See api.md for info\n```" + `
 `
 
-	err := os.WriteFile(sourceFile, []byte(sourceContent), 0644)
+	err := os.WriteFile(sourceFile, []byte(sourceContent), 0o644)
 	require.NoError(t, err)
 
 	// Create target file
 	targetFile := filepath.Join(tmpDir, "api.md")
-	err = os.WriteFile(targetFile, []byte("# API"), 0644)
+	err = os.WriteFile(targetFile, []byte("# API"), 0o644)
 	require.NoError(t, err)
 
 	// Get absolute paths
@@ -313,12 +313,12 @@ func TestFindLinksToFile(t *testing.T) {
 	// Create directory structure
 	docsDir := filepath.Join(tmpDir, "docs")
 	guidesDir := filepath.Join(docsDir, "guides")
-	err := os.MkdirAll(guidesDir, 0755)
+	err := os.MkdirAll(guidesDir, 0o755)
 	require.NoError(t, err)
 
 	// Create target file (to be renamed)
 	targetFile := filepath.Join(docsDir, "API_Guide.md")
-	err = os.WriteFile(targetFile, []byte("# API Guide"), 0644)
+	err = os.WriteFile(targetFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Create file with link from same directory
@@ -327,7 +327,7 @@ func TestFindLinksToFile(t *testing.T) {
 
 See the [API Guide](API_Guide.md) for details.
 `
-	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o644)
 	require.NoError(t, err)
 
 	// Create file with link from subdirectory
@@ -338,12 +338,12 @@ Check the [API Guide](../API_Guide.md) for reference.
 
 Also see [authentication](../API_Guide.md#auth).
 `
-	err = os.WriteFile(tutorialFile, []byte(tutorialContent), 0644)
+	err = os.WriteFile(tutorialFile, []byte(tutorialContent), 0o644)
 	require.NoError(t, err)
 
 	// Create file with no links
 	readmeFile := filepath.Join(docsDir, "README.md")
-	err = os.WriteFile(readmeFile, []byte("# README\n\nNo links here."), 0644)
+	err = os.WriteFile(readmeFile, []byte("# README\n\nNo links here."), 0o644)
 	require.NoError(t, err)
 
 	// Get absolute path of target
@@ -401,12 +401,12 @@ Indented code (4 spaces):
 Regular text continues here with [link](api.md).
 `
 
-	err := os.WriteFile(sourceFile, []byte(sourceContent), 0644)
+	err := os.WriteFile(sourceFile, []byte(sourceContent), 0o644)
 	require.NoError(t, err)
 
 	// Create target file
 	targetFile := filepath.Join(tmpDir, "api.md")
-	err = os.WriteFile(targetFile, []byte("# API"), 0644)
+	err = os.WriteFile(targetFile, []byte("# API"), 0o644)
 	require.NoError(t, err)
 
 	// Get absolute paths

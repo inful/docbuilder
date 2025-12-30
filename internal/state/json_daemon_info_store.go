@@ -1,11 +1,11 @@
 package state
 
 import (
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // jsonDaemonInfoStore implements DaemonInfoStore for the JSON store.

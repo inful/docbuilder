@@ -153,7 +153,6 @@ func (dm *deltaManager) scanForDeletions(repo config.Repository, workspace strin
 			}
 			return nil
 		})
-
 		if err != nil {
 			return persistedPaths, 0, fmt.Errorf("walking directory %s: %w", base, err)
 		}

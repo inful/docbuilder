@@ -150,9 +150,11 @@ func classifyStageResult(stage StageName, err error, bs *BuildState) StageOutcom
 func newFatalStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorFatal, Stage: stage, Err: err}
 }
+
 func newWarnStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorWarning, Stage: stage, Err: err}
 }
+
 func newCanceledStageError(stage StageName, err error) *StageError {
 	return &StageError{Kind: StageErrorCanceled, Stage: stage, Err: err}
 }

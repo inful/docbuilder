@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -130,7 +131,7 @@ func (g *GenerateCmd) Run(_ *Global, _ *CLI) error {
 
 		// Verify the public directory exists
 		if _, err := os.Stat(publicDir); os.IsNotExist(err) {
-			return fmt.Errorf("hugo did not generate public directory")
+			return errors.New("hugo did not generate public directory")
 		}
 
 		// Clean the output directory if it exists

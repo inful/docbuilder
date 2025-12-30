@@ -10,10 +10,9 @@ import (
 	"sync"
 	"time"
 
-	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
-
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 func stageCloneRepos(ctx context.Context, bs *BuildState) error {
@@ -21,7 +20,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return nil
 	}
 	if bs.Git.WorkspaceDir == "" {
-		return newFatalStageError(StageCloneRepos, fmt.Errorf("workspace directory not set"))
+		return newFatalStageError(StageCloneRepos, errors.New("workspace directory not set"))
 	}
 	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
 	// Ensure workspace directory structure (previously via git client)
@@ -93,7 +92,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		}
 	}
 	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go worker()
 	}
 	for _, r := range bs.Git.Repositories {

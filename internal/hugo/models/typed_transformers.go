@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -104,7 +105,7 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	search := content[4:] // Skip initial "---\n"
 	endIndex := strings.Index(search, "\n---\n")
 	if endIndex == -1 {
-		return result.SetError(fmt.Errorf("unterminated front matter")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(errors.New("unterminated front matter")).SetDuration(time.Since(startTime)), nil
 	}
 
 	frontMatterContent := search[:endIndex]
@@ -253,7 +254,7 @@ func (t *FrontMatterBuilderV3) Transform(page *ContentPage, context *TransformCo
 	// Get configuration
 	config := context.Generator.GetConfig()
 	if config == nil {
-		return result.SetError(fmt.Errorf("configuration required but not available")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(errors.New("configuration required but not available")).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Build base patch using migration helper
@@ -404,7 +405,7 @@ func (t *EditLinkInjectorV3) Transform(page *ContentPage, context *TransformCont
 
 	resolver := context.Generator.GetEditLinkResolver()
 	if resolver == nil {
-		return result.SetError(fmt.Errorf("edit link resolver required but not available")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(errors.New("edit link resolver required but not available")).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Resolve edit URL

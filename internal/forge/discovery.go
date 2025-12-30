@@ -337,7 +337,7 @@ func contains(str, substr string) bool {
 	}
 	for i := 0; i <= len(str)-len(substr); i++ {
 		match := true
-		for j := 0; j < len(substr); j++ {
+		for j := range len(substr) {
 			if toLowerCase(str[i+j]) != toLowerCase(substr[j]) {
 				match = false
 				break

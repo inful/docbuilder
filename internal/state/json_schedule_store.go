@@ -5,9 +5,8 @@ import (
 	"sort"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
-
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // jsonScheduleStore implements ScheduleStore for the JSON store.

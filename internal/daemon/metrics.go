@@ -223,8 +223,8 @@ func (h *Histogram) GetStats() HistogramStats {
 
 		// Simple bubble sort (adequate for small datasets)
 		n := len(sorted)
-		for i := 0; i < n-1; i++ {
-			for j := 0; j < n-i-1; j++ {
+		for i := range n - 1 {
+			for j := range n - i - 1 {
 				if sorted[j] > sorted[j+1] {
 					sorted[j], sorted[j+1] = sorted[j+1], sorted[j]
 				}

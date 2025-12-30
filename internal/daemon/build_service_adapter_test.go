@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -100,7 +101,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		}
 	})
 
-	t.Run("cancelled", func(t *testing.T) {
+	t.Run("canceled", func(t *testing.T) {
 		svc := &mockBuildService{
 			runFunc: func(ctx context.Context, req build.BuildRequest) (*build.BuildResult, error) {
 				return &build.BuildResult{
@@ -116,7 +117,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		}
 
 		_, err := adapter.Build(context.Background(), job)
-		if err != context.Canceled {
+		if !errors.Is(err, context.Canceled) {
 			t.Errorf("expected context.Canceled, got %v", err)
 		}
 	})

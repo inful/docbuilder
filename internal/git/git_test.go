@@ -122,9 +122,10 @@ func TestPruneAllowDenyGlobs(t *testing.T) {
 	}
 
 	repo := appcfg.Repository{URL: "https://example.com/repo3.git", Name: "repo3", Paths: []string{"docs"}}
-	cfg := &appcfg.BuildConfig{PruneNonDocPaths: true,
-		PruneAllow: []string{"LICENSE*", "README.*"},
-		PruneDeny:  []string{"README.old", "CHANGELOG", "tmp", "cache"},
+	cfg := &appcfg.BuildConfig{
+		PruneNonDocPaths: true,
+		PruneAllow:       []string{"LICENSE*", "README.*"},
+		PruneDeny:        []string{"README.old", "CHANGELOG", "tmp", "cache"},
 	}
 	client := NewClient(tmpDir).WithBuildConfig(cfg)
 	if err := client.pruneNonDocTopLevel(repoPath, repo); err != nil {

@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -385,10 +386,10 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 
 	// Create a minimal docs directory
 	docsDir := filepath.Join(tmpDir, "docs")
-	require.NoError(t, os.MkdirAll(docsDir, 0755))
+	require.NoError(t, os.MkdirAll(docsDir, 0o755))
 
 	testFile := filepath.Join(docsDir, "test.md")
-	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0644))
+	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0o644))
 
 	// Initialize git but don't commit
 	cmd := exec.Command("git", "init")

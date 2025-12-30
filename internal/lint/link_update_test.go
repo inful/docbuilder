@@ -20,8 +20,8 @@ func TestApplyLinkUpdates_BasicUpdate(t *testing.T) {
 
 See [API Guide](./api-guide.md) for details.
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
-	require.NoError(t, os.WriteFile(targetFile, []byte("# API Guide"), 0644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
+	require.NoError(t, os.WriteFile(targetFile, []byte("# API Guide"), 0o644))
 
 	// Create link reference
 	links := []LinkReference{
@@ -76,7 +76,7 @@ Reference: [api-guide][1]
 
 [1]: ./api-guide.md
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
 
 	// Create link references (will be sorted reverse by applyLinkUpdates)
 	links := []LinkReference{
@@ -139,8 +139,8 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 	source2 := filepath.Join(tmpDir, "guide2.md")
 
 	// Create source files
-	require.NoError(t, os.WriteFile(source1, []byte("[API](./api-guide.md)"), 0644))
-	require.NoError(t, os.WriteFile(source2, []byte("[API](./api-guide.md)"), 0644))
+	require.NoError(t, os.WriteFile(source1, []byte("[API](./api-guide.md)"), 0o644))
+	require.NoError(t, os.WriteFile(source2, []byte("[API](./api-guide.md)"), 0o644))
 
 	// Create link references from multiple files
 	links := []LinkReference{
@@ -183,7 +183,7 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourceFile := filepath.Join(tmpDir, "docs", "source.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(sourceFile), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(sourceFile), 0o755))
 
 	// Create source file with various relative paths
 	sourceContent := `# Links
@@ -193,7 +193,7 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 - [Subdir](./sub/api-guide.md)
 - [No prefix](api-guide.md)
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
 
 	// Create link references with different path styles
 	links := []LinkReference{
@@ -254,7 +254,7 @@ func TestApplyLinkUpdates_AnchorFragmentPreservation(t *testing.T) {
 
 See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
 
 	// Create link references with anchors
 	links := []LinkReference{
@@ -301,11 +301,11 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 
 	// Create first source file (valid)
 	originalContent1 := "[API](./api-guide.md)"
-	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0644))
+	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
 
 	// Create second source file as read-only to trigger error
 	originalContent2 := "[API](./api-guide.md)"
-	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0000)) // No write permission
+	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o000)) // No write permission
 
 	// Create link references
 	links := []LinkReference{
@@ -345,7 +345,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 	assert.True(t, os.IsNotExist(err), "backup file should be cleaned up")
 
 	// Clean up read-only file
-	_ = os.Chmod(source2, 0644)
+	_ = os.Chmod(source2, 0o644)
 }
 
 // TestApplyLinkUpdates_EmptyLinks tests behavior with no links to update.
@@ -430,16 +430,16 @@ func TestIntegration_RenameWithLinkUpdates(t *testing.T) {
 	apiFile := filepath.Join(tmpDir, "API_Guide.md") // Uppercase - violates kebab-case
 	indexFile := filepath.Join(tmpDir, "index.md")
 	readmeFile := filepath.Join(tmpDir, "docs", "README.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(readmeFile), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(readmeFile), 0o755))
 
 	// Create files with cross-references
-	require.NoError(t, os.WriteFile(apiFile, []byte("# API Guide"), 0644))
+	require.NoError(t, os.WriteFile(apiFile, []byte("# API Guide"), 0o644))
 	require.NoError(t, os.WriteFile(indexFile, []byte(`# Index
 See [API Guide](./API_Guide.md) for details.
-`), 0644))
+`), 0o644))
 	require.NoError(t, os.WriteFile(readmeFile, []byte(`# Docs
 Check [API](../API_Guide.md).
-`), 0644))
+`), 0o644))
 
 	// Create linter and fixer
 	linter := NewLinter(&Config{Format: "text"})
@@ -492,7 +492,7 @@ Also check [Overview](./api-guide.md#overview) section.
 
 Reference to [Errors](../api-guide.md#errors).
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
 
 	// Create link references with anchor fragments
 	links := []LinkReference{
@@ -572,14 +572,14 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 
 	// Create first source file
 	originalContent1 := "[API](./api-guide.md)"
-	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0644))
+	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
 
 	// Create second source file as read-only to trigger failure
 	originalContent2 := "[API](./api-guide.md)"
-	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0644))
-	require.NoError(t, os.Chmod(source2, 0444)) // Make it read-only
+	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o644))
+	require.NoError(t, os.Chmod(source2, 0o444)) // Make it read-only
 	defer func() {
-		_ = os.Chmod(source2, 0644) // Clean up (ignore error)
+		_ = os.Chmod(source2, 0o644) // Clean up (ignore error)
 	}()
 
 	// Create link references - source1 will succeed, source2 will fail

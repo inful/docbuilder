@@ -91,8 +91,8 @@ const (
 	// BuildStatusSkipped indicates the build was skipped (e.g., no changes).
 	BuildStatusSkipped BuildStatus = "skipped"
 
-	// BuildStatusCancelled indicates the build was cancelled.
-	BuildStatusCancelled BuildStatus = "cancelled"
+	// BuildStatusCancelled indicates the build was canceled.
+	BuildStatusCancelled BuildStatus = "canceled"
 )
 
 // IsSuccess returns true if the build completed successfully.

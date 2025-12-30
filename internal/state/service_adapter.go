@@ -2,11 +2,11 @@ package state
 
 import (
 	"context"
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ServiceAdapter wraps a state.Service and implements the narrow interfaces

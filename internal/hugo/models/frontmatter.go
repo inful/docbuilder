@@ -1,7 +1,7 @@
 package models
 
 import (
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -333,16 +333,16 @@ func (fm *FrontMatter) AddKeyword(keyword string) {
 // Validate performs basic validation of the front matter.
 func (fm *FrontMatter) Validate() error {
 	if fm.Title == "" {
-		return fmt.Errorf("title is required")
+		return errors.New("title is required")
 	}
 
 	if fm.Date.IsZero() {
-		return fmt.Errorf("date is required")
+		return errors.New("date is required")
 	}
 
 	// Repository should be set for DocBuilder-generated content
 	if fm.Repository == "" {
-		return fmt.Errorf("repository is required for DocBuilder content")
+		return errors.New("repository is required for DocBuilder content")
 	}
 
 	return nil

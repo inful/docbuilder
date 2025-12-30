@@ -210,7 +210,7 @@ func TestCLIPerformanceTesting(t *testing.T) {
 		// Add bulk repositories for performance testing
 		if enhancedGitHub, ok := github.(*forge.EnhancedMockForgeClient); ok {
 			// Add multiple repositories for performance testing
-			for i := 0; i < 50; i++ {
+			for i := range 50 {
 				repo := forge.CreateMockGitHubRepo("company", "docs-repo-"+string(rune(i)), true, false, false, false)
 				enhancedGitHub.AddRepository(repo)
 			}
@@ -248,7 +248,7 @@ func TestCLIPerformanceTesting(t *testing.T) {
 		for name, client := range env.forgeClients {
 			if enhancedClient, ok := client.(*forge.EnhancedMockForgeClient); ok {
 				// Add bulk repositories based on forge type
-				for i := 0; i < 25; i++ {
+				for i := range 25 {
 					var repo *forge.Repository
 					switch enhancedClient.GetType() {
 					case forge.TypeGitHub:

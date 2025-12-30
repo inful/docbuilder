@@ -1,11 +1,11 @@
 package state
 
 import (
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"context"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // jsonStatisticsStore implements StatisticsStore for the JSON store.

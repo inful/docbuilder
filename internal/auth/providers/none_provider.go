@@ -1,8 +1,9 @@
 package providers
 
 import (
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // NoneProvider handles "none" authentication (no authentication).

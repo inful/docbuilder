@@ -45,7 +45,7 @@ func TestFixer_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "API_Guide.md")
 
-	err := os.WriteFile(testFile, []byte("# API Guide"), 0644)
+	err := os.WriteFile(testFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Run fixer in dry-run mode
@@ -72,7 +72,7 @@ func TestFixer_RenameFile(t *testing.T) {
 	oldFile := filepath.Join(tmpDir, "API_Guide.md")
 	expectedNewFile := filepath.Join(tmpDir, "api_guide.md")
 
-	err := os.WriteFile(oldFile, []byte("# API Guide"), 0644)
+	err := os.WriteFile(oldFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Run fixer (not dry-run)
@@ -113,7 +113,7 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 
 	for _, f := range files {
 		oldPath := filepath.Join(tmpDir, f.old)
-		err := os.WriteFile(oldPath, []byte("# Test"), 0644)
+		err := os.WriteFile(oldPath, []byte("# Test"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -156,10 +156,10 @@ func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	oldFile := filepath.Join(tmpDir, "API_Guide.md")
 	newFile := filepath.Join(tmpDir, "api_guide.md")
 
-	err := os.WriteFile(oldFile, []byte("# API Guide"), 0644)
+	err := os.WriteFile(oldFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
-	err = os.WriteFile(newFile, []byte("# Existing"), 0644)
+	err = os.WriteFile(newFile, []byte("# Existing"), 0o644)
 	require.NoError(t, err)
 
 	// Run fixer without force flag
@@ -281,7 +281,7 @@ func TestFileExists(t *testing.T) {
 
 	// Create test files
 	testFile := filepath.Join(tmpDir, "TestFile.md")
-	err := os.WriteFile(testFile, []byte("test"), 0644)
+	err := os.WriteFile(testFile, []byte("test"), 0o644)
 	require.NoError(t, err)
 
 	t.Run("exact case match", func(t *testing.T) {
@@ -308,7 +308,7 @@ func TestDetectBrokenLinks(t *testing.T) {
 
 	// Create test structure
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a file with broken links
@@ -320,12 +320,12 @@ func TestDetectBrokenLinks(t *testing.T) {
 [External Link](https://example.com/guide.md)
 [Fragment Only](#section)
 `
-	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o644)
 	require.NoError(t, err)
 
 	// Create the existing file
 	guideFile := filepath.Join(docsDir, "guide.md")
-	err = os.WriteFile(guideFile, []byte("# Guide"), 0644)
+	err = os.WriteFile(guideFile, []byte("# Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Run broken link detection
@@ -352,12 +352,12 @@ func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
 
 	// Create test files
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create file with specific case
 	actualFile := filepath.Join(docsDir, "API_Guide.md")
-	err = os.WriteFile(actualFile, []byte("# API Guide"), 0644)
+	err = os.WriteFile(actualFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Create index file that links with different case
@@ -366,7 +366,7 @@ func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
 [API Guide](./api_guide.md)
 [Another Link](./Api_Guide.md)
 `
-	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o644)
 	require.NoError(t, err)
 
 	// Run broken link detection
@@ -390,12 +390,12 @@ func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
 
 	// Create test structure
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create target file with specific case
 	targetFile := filepath.Join(docsDir, "API_Guide.md")
-	err = os.WriteFile(targetFile, []byte("# API Guide"), 0644)
+	err = os.WriteFile(targetFile, []byte("# API Guide"), 0o644)
 	require.NoError(t, err)
 
 	// Create index file that links to target with different case
@@ -405,7 +405,7 @@ func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
 [Another Reference](./Api_Guide.md)
 ![Diagram](./API_GUIDE.md)
 `
-	err = os.WriteFile(indexFile, []byte(indexContent), 0644)
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o644)
 	require.NoError(t, err)
 
 	// Find links to the target file
@@ -426,7 +426,7 @@ func TestFix_WithBrokenLinkDetection(t *testing.T) {
 
 	// Create test structure
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0755)
+	err := os.MkdirAll(docsDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a file with naming issues and broken links
@@ -435,12 +435,12 @@ func TestFix_WithBrokenLinkDetection(t *testing.T) {
 [Existing](./good.md)
 [Broken](./missing.md)
 `
-	err = os.WriteFile(badFile, []byte(badContent), 0644)
+	err = os.WriteFile(badFile, []byte(badContent), 0o644)
 	require.NoError(t, err)
 
 	// Create the existing referenced file
 	goodFile := filepath.Join(docsDir, "good.md")
-	err = os.WriteFile(goodFile, []byte("# Good"), 0644)
+	err = os.WriteFile(goodFile, []byte("# Good"), 0o644)
 	require.NoError(t, err)
 
 	// Run fix

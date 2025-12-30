@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math"
@@ -15,6 +16,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	ggit "github.com/go-git/go-git/v5"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -25,8 +28,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
-
-	ggit "github.com/go-git/go-git/v5"
 )
 
 // Status represents the current state of the daemon.
@@ -91,11 +92,11 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 // NewDaemonWithConfigFile creates a new daemon instance with config file watching.
 func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon, error) {
 	if cfg == nil {
-		return nil, fmt.Errorf("configuration is required")
+		return nil, errors.New("configuration is required")
 	}
 
 	if cfg.Daemon == nil {
-		return nil, fmt.Errorf("daemon configuration is required")
+		return nil, errors.New("daemon configuration is required")
 	}
 
 	daemon := &Daemon{
@@ -669,7 +670,6 @@ func (d *Daemon) collectPageMetadata(buildID string, report *hugo.BuildReport) (
 		pages = append(pages, page)
 		return nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to walk public directory: %w", err)
 	}

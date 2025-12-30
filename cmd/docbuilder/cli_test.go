@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
-	"gopkg.in/yaml.v3"
 )
 
 // MockCLIEnvironment provides a comprehensive testing environment for CLI commands.
@@ -84,7 +85,8 @@ func (env *MockCLIEnvironment) WithRealisticForgeEcosystem() *MockCLIEnvironment
 }
 
 // WithTestConfiguration creates a test configuration file
-// nolint:unparam // Method returns receiver for chaining; result sometimes ignored in tests.
+//
+//nolint:unparam // Method returns receiver for chaining; result sometimes ignored in tests.
 func (env *MockCLIEnvironment) WithTestConfiguration() *MockCLIEnvironment {
 	env.testConfig = &config.Config{
 		Version: "2.0",

@@ -7,7 +7,7 @@ import (
 )
 
 func TestEscapeShortcodesInCodeBlocks(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		content  string
 		expected string
@@ -53,6 +53,7 @@ func TestEscapeShortcodesInCodeBlocks(t *testing.T) {
 		})
 	}
 }
+
 func TestEscapeShortcodesInCodeBlocks_NoSpuriousChanges(t *testing.T) {
 	tests := []struct {
 		name    string

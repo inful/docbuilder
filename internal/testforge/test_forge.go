@@ -3,7 +3,9 @@ package testforge
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -183,13 +185,13 @@ func (tf *TestForge) simulate() error {
 
 	switch tf.failMode {
 	case FailModeAuth:
-		return fmt.Errorf("authentication failed: invalid credentials")
+		return errors.New("authentication failed: invalid credentials")
 	case FailModeNetwork:
-		return fmt.Errorf("network error: connection timeout")
+		return errors.New("network error: connection timeout")
 	case FailModeRateLimit:
-		return fmt.Errorf("rate limit exceeded: try again later")
+		return errors.New("rate limit exceeded: try again later")
 	case FailModeNotFound:
-		return fmt.Errorf("not found: resource does not exist")
+		return errors.New("not found: resource does not exist")
 	default:
 		return nil
 	}
@@ -241,7 +243,7 @@ func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName s
 				Language:      testRepo.Language,
 				Metadata: map[string]string{
 					"created_at": testRepo.CreatedAt.Format(time.RFC3339),
-					"is_fork":    fmt.Sprintf("%t", testRepo.Fork),
+					"is_fork":    strconv.FormatBool(testRepo.Fork),
 				},
 			})
 		}
@@ -451,9 +453,9 @@ func (tf *TestForge) ToConfigRepositories() []config.Repository {
 			Tags: map[string]string{
 				"description": repo.Description,
 				"language":    repo.Language,
-				"private":     fmt.Sprintf("%t", repo.Private),
-				"archived":    fmt.Sprintf("%t", repo.Archived),
-				"fork":        fmt.Sprintf("%t", repo.Fork),
+				"private":     strconv.FormatBool(repo.Private),
+				"archived":    strconv.FormatBool(repo.Archived),
+				"fork":        strconv.FormatBool(repo.Fork),
 			},
 		})
 	}

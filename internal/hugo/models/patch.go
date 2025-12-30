@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -210,7 +211,7 @@ func (p *FrontMatterPatch) WithArrayMergeStrategy(strategy ArrayMergeStrategy) *
 // Apply applies this patch to the given FrontMatter, returning a new instance.
 func (p *FrontMatterPatch) Apply(fm *FrontMatter) (*FrontMatter, error) {
 	if fm == nil {
-		return nil, fmt.Errorf("cannot apply patch to nil front matter")
+		return nil, errors.New("cannot apply patch to nil front matter")
 	}
 
 	// Clone the original to avoid mutation

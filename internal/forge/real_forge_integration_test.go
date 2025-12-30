@@ -2,7 +2,7 @@ package forge
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 
@@ -322,7 +322,7 @@ func TestRealForgeIntegration(t *testing.T) {
 	t.Run("ForgeErrorHandling", func(t *testing.T) {
 		// Create a mock forge that will return errors
 		errorMock := NewMockForgeClient("error-forge", TypeGitHub)
-		errorMock.SetError("ListRepositories", fmt.Errorf("network error"))
+		errorMock.SetError("ListRepositories", errors.New("network error"))
 
 		forgeConfig := &config.ForgeConfig{
 			Name:          "error-forge",

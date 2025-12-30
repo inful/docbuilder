@@ -15,7 +15,7 @@ import (
 func TestRetryFlakinessSmoke(t *testing.T) {
 	const iterations = 25
 	// Transient then success scenario loop
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		t.Run("transient_then_success_iter_"+strconv.Itoa(i), func(t *testing.T) {
 			fr := newFakeRecorder()
 			tr, terr := transientReport(hugo.StageCloneRepos)
@@ -49,7 +49,7 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 		})
 	}
 	// Fatal no retry scenario loop
-	for i := 0; i < iterations; i++ {
+	for i := range iterations {
 		t.Run("fatal_no_retry_iter_"+strconv.Itoa(i), func(t *testing.T) {
 			fr := newFakeRecorder()
 			frpt, ferr := fatalReport(hugo.StageCloneRepos)

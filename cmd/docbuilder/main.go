@@ -3,9 +3,10 @@ package main
 import (
 	"log/slog"
 
+	"github.com/alecthomas/kong"
+
 	"git.home.luguber.info/inful/docbuilder/cmd/docbuilder/commands"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
-	"github.com/alecthomas/kong"
 )
 
 // Set at build time with: -ldflags "-X main.version=1.0.0-rc1".

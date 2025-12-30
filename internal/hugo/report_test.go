@@ -156,7 +156,6 @@ func TestTestForgeFailureScenarios(t *testing.T) {
 
 	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
 	rep, err := gen.GenerateSiteWithReport(files)
-
 	// Hugo generation should succeed despite forge failures
 	if err != nil {
 		t.Fatalf("Hugo generation should succeed despite forge failures: %v", err)

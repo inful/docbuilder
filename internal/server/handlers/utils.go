@@ -33,7 +33,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) error {
 }
 
 // writeJSONPretty optionally pretty prints when pretty=true via query parameter.
-// It falls back to compact form if marshalling fails for any reason.
+// It falls back to compact form if marshaling fails for any reason.
 func writeJSONPretty(w http.ResponseWriter, r *http.Request, status int, v any) error {
 	if r != nil {
 		if p := r.URL.Query().Get("pretty"); p == "1" || p == "true" {

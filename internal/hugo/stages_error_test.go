@@ -13,6 +13,7 @@ import (
 func failingFatalStage(_ context.Context, _ *BuildState) error {
 	return newFatalStageError(StageName("fatal_stage"), errors.New("boom"))
 }
+
 func failingWarnStage(_ context.Context, _ *BuildState) error {
 	return newWarnStageError(StageName("warn_stage"), errors.New("soft"))
 }

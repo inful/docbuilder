@@ -2,7 +2,7 @@ package forge
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -174,8 +174,8 @@ func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Reposito
 			"full_name":    r.FullName,
 			"description":  r.Description,
 			"language":     r.Language,
-			"private":      fmt.Sprintf("%t", r.Private),
-			"has_docs":     fmt.Sprintf("%t", r.HasDocs),
+			"private":      strconv.FormatBool(r.Private),
+			"has_docs":     strconv.FormatBool(r.HasDocs),
 			"last_updated": r.LastUpdated.Format(time.RFC3339),
 			// forge_type is injected later by discovery when we know the client type; added defensively here if metadata contains it
 			// leaving empty if absent avoids breaking existing configs but enables downstream hugo edit link logic to prefer explicit type.

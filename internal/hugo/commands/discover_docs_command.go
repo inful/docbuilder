@@ -49,7 +49,7 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.Config().Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		err = fmt.Errorf("%w: %v", build.ErrDiscovery, err)
+		err = fmt.Errorf("%w: %w", build.ErrDiscovery, err)
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}

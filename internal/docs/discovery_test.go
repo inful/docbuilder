@@ -265,7 +265,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		forge := testforge.NewTestForge("large-scale-discovery", config.ForgeGitHub)
 
 		// Add multiple test repositories to simulate a medium-sized organization
-		for i := 0; i < 50; i++ {
+		for i := range 50 {
 			repo := testforge.TestRepository{
 				ID:            fmt.Sprintf("repo-%d", i+1),
 				Name:          fmt.Sprintf("docs-repo-%d", i+1),
@@ -474,7 +474,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				docFiles = map[string]string{
 					"docs/index.md": "# " + repo.Name + " Documentation\n\nGeneric documentation.",
 					"docs/guide.md": "# Guide\n\nGeneral guide.",
-					"docs/api.md":   "# API\n\nAPI documentation.",
+					"docs/api.md":   "# API\n\ndocumentation.",
 				}
 			}
 
@@ -483,7 +483,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 				if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
 					t.Fatalf("Failed to create dir for %s: %v", fullPath, mkdirErr)
 				}
-				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0600); writeFileErr != nil {
+				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
 					t.Fatalf("Failed to write file %s: %v", fullPath, writeFileErr)
 				}
 			}
@@ -553,7 +553,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		forge := testforge.NewTestForge("filtering-test", config.ForgeGitHub)
 
 		// Add multiple repositories for comprehensive filtering testing
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			repo := testforge.TestRepository{
 				ID:            fmt.Sprintf("filter-repo-%d", i+1),
 				Name:          fmt.Sprintf("filter-repo-%d", i+1),
@@ -730,7 +730,7 @@ func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
 		forge := testforge.NewTestForge("performance-test", config.ForgeGitHub)
 
 		// Add 100 test repositories for large organization simulation
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			repo := testforge.TestRepository{
 				ID:            fmt.Sprintf("perf-repo-%d", i+1),
 				Name:          fmt.Sprintf("perf-repo-%d", i+1),

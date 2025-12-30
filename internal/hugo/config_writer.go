@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"gopkg.in/yaml.v3"
 )
 
 // generateHugoConfig creates the Hugo configuration file with Relearn theme.

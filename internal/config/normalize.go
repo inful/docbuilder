@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -11,7 +12,7 @@ type NormalizationResult struct{ Warnings []string }
 // It mutates the provided config in-place and returns a result describing any coercions.
 func NormalizeConfig(c *Config) (*NormalizationResult, error) {
 	if c == nil {
-		return nil, fmt.Errorf("config nil")
+		return nil, errors.New("config nil")
 	}
 	res := &NormalizationResult{}
 	normalizeBuildConfig(&c.Build, res)
@@ -30,6 +31,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
 func warnChanged(field string, from, to interface{}) string {
 	return fmt.Sprintf("normalized %s from '%v' to '%v'", field, from, to)
 }
+
 func warnUnknown(field, value, def string) string {
 	return fmt.Sprintf("unknown %s '%s', defaulting to %s", field, value, def)
 }

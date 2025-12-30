@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -22,5 +23,5 @@ func loadEnvFile() error {
 			return nil
 		}
 	}
-	return fmt.Errorf("no .env file found")
+	return errors.New("no .env file found")
 }

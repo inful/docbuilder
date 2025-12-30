@@ -7,8 +7,9 @@ import (
 	"sort"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"gopkg.in/yaml.v3"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // normalizeConfig removes volatile fields (dates) and sorts maps for stable serialization.

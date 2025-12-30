@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -28,7 +29,7 @@ type LintPathCmd struct {
 func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Validate flags
 	if parent.DryRun && !parent.Fix {
-		return fmt.Errorf("--dry-run requires --fix flag")
+		return errors.New("--dry-run requires --fix flag")
 	}
 
 	// Determine path to lint

@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"github.com/go-git/go-git/v5/plumbing/transport"
+
 	"git.home.luguber.info/inful/docbuilder/internal/auth/providers"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
 // Manager provides a high-level interface for authentication operations.

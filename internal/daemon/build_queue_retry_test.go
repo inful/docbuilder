@@ -38,6 +38,7 @@ func (f *fakeRecorder) IncBuildRetry(stage string) {
 	defer f.mu.Unlock()
 	f.retries[stage]++
 }
+
 func (f *fakeRecorder) IncBuildRetryExhausted(stage string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"git.home.luguber.info/inful/docbuilder/internal/lint"
 )
 
 func TestLintGolden_ValidCorrectFilenames(t *testing.T) {
@@ -113,10 +114,10 @@ func verifyLintResult(t *testing.T, result *lint.Result, goldenPath string, upda
 		data, err := json.MarshalIndent(normalized, "", "  ")
 		require.NoError(t, err, "failed to marshal result")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0644)
+		err = os.WriteFile(goldenPath, data, 0o644)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)

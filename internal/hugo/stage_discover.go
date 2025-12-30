@@ -24,7 +24,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.config.Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %v", build.ErrDiscovery, err))
+		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %w", build.ErrDiscovery, err))
 	}
 	prevCount := len(bs.Docs.Files)
 	prevSet := map[string]struct{}{}

@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"github.com/stretchr/testify/assert"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
 func TestNormalizeHugoTheme(t *testing.T) {

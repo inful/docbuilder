@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -50,7 +51,7 @@ func (cv *configurationValidator) validate() error {
 func (cv *configurationValidator) validateForges() error {
 	// If repositories are explicitly configured, forges are optional
 	if len(cv.config.Forges) == 0 && len(cv.config.Repositories) == 0 {
-		return fmt.Errorf("either forges or repositories must be configured")
+		return errors.New("either forges or repositories must be configured")
 	}
 
 	// Skip forge validation if no forges configured (direct repository mode)
@@ -64,7 +65,7 @@ func (cv *configurationValidator) validateForges() error {
 	for _, forge := range cv.config.Forges {
 		// Validate forge name
 		if forge.Name == "" {
-			return fmt.Errorf("forge name cannot be empty")
+			return errors.New("forge name cannot be empty")
 		}
 		if forgeNames[forge.Name] {
 			return fmt.Errorf("duplicate forge name: %s", forge.Name)
@@ -292,7 +293,7 @@ func (cv *configurationValidator) validateVersioning() error {
 
 	// If versioning is explicitly enabled, require a strategy
 	if cv.config.Versioning.Enabled && cv.config.Versioning.Strategy == "" {
-		return fmt.Errorf("versioning.strategy is required when versioning.enabled is true")
+		return errors.New("versioning.strategy is required when versioning.enabled is true")
 	}
 
 	return nil

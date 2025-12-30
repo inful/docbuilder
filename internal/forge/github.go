@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -176,7 +177,6 @@ func (c *GitHubClient) fetchAndConvertRepos(ctx context.Context, endpoint string
 			return repos, hasMore, nil
 		},
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +321,7 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 
 	if len(pushEvent.Repository) == 0 {
-		return nil, fmt.Errorf("missing repository in push event")
+		return nil, errors.New("missing repository in push event")
 	}
 
 	// Decode repository allowing id to be string or int
@@ -392,7 +392,7 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 	}
 
 	if len(repoEvent.Repository) == 0 {
-		return nil, fmt.Errorf("missing repository in repository event")
+		return nil, errors.New("missing repository in repository event")
 	}
 
 	var repoMap map[string]interface{}
