@@ -140,42 +140,14 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 
 		if info.IsDir() {
 			// Walk directory
-			err := filepath.Walk(fullPath, func(p string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-
-				// Skip directories and hidden files
-				if info.IsDir() || strings.HasPrefix(info.Name(), ".") {
-					return nil
-				}
-
-				// Compute file hash
-				// #nosec G304 - p is from filepath.Walk, within controlled directory
-				content, err := os.ReadFile(p)
-				if err != nil {
-					return fmt.Errorf("read %s: %w", p, err)
-				}
-
-				h := sha256.Sum256(content)
-				relPath, _ := filepath.Rel(repoPath, p)
-				fileHashes = append(fileHashes, fmt.Sprintf("%s:%s", relPath, hex.EncodeToString(h[:])))
-				return nil
-			})
-			if err != nil {
-				return "", fmt.Errorf("walk %s: %w", fullPath, err)
+			if err := hashDirectory(repoPath, fullPath, &fileHashes); err != nil {
+				return "", err
 			}
 		} else {
 			// Single file
-			// #nosec G304 - fullPath is validated and within controlled directory
-			content, err := os.ReadFile(fullPath)
-			if err != nil {
-				return "", fmt.Errorf("read %s: %w", fullPath, err)
+			if err := hashSingleFile(repoPath, fullPath, &fileHashes); err != nil {
+				return "", err
 			}
-
-			h := sha256.Sum256(content)
-			relPath, _ := filepath.Rel(repoPath, fullPath)
-			fileHashes = append(fileHashes, fmt.Sprintf("%s:%s", relPath, hex.EncodeToString(h[:])))
 		}
 	}
 
@@ -190,6 +162,50 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// hashDirectory walks a directory and hashes all non-hidden files.
+func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
+	err := filepath.Walk(dirPath, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories and hidden files
+		if info.IsDir() || strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+
+		// Compute file hash
+		// #nosec G304 - p is from filepath.Walk, within controlled directory
+		content, err := os.ReadFile(p)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", p, err)
+		}
+
+		h := sha256.Sum256(content)
+		relPath, _ := filepath.Rel(repoPath, p)
+		*fileHashes = append(*fileHashes, fmt.Sprintf("%s:%s", relPath, hex.EncodeToString(h[:])))
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("walk %s: %w", dirPath, err)
+	}
+	return nil
+}
+
+// hashSingleFile hashes a single file and adds it to the hash list.
+func hashSingleFile(repoPath, filePath string, fileHashes *[]string) error {
+	// #nosec G304 - filePath is validated and within controlled directory
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", filePath, err)
+	}
+
+	h := sha256.Sum256(content)
+	relPath, _ := filepath.Rel(repoPath, filePath)
+	*fileHashes = append(*fileHashes, fmt.Sprintf("%s:%s", relPath, hex.EncodeToString(h[:])))
+	return nil
 }
 
 // GetRepoTree computes and returns a RepoTree for the given repository.
