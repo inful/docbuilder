@@ -1134,51 +1134,36 @@ func findImageLinks(line string, lineNum int, sourceFile, targetPath string) []L
 
 	// Look for ![]( pattern
 	for i := range len(line) {
-		if i+2 < len(line) && line[i] == '!' && line[i+1] == '[' {
-			// Find the closing ]
-			closeBracket := strings.Index(line[i+2:], "]")
-			if closeBracket == -1 {
-				continue
-			}
-			closeBracket += i + 2
+		if !isImageLinkStart(line, i) {
+			continue
+		}
 
-			// Check for opening (
-			if closeBracket+1 >= len(line) || line[closeBracket+1] != '(' {
-				continue
-			}
+		linkInfo := extractImageLink(line, i)
+		if linkInfo == nil {
+			continue
+		}
 
-			// Find the closing )
-			end := strings.Index(line[closeBracket+2:], ")")
-			if end == -1 {
-				continue
-			}
-			end += closeBracket + 2
+		// Skip external URLs
+		if strings.HasPrefix(linkInfo.target, "http://") || strings.HasPrefix(linkInfo.target, "https://") {
+			continue
+		}
 
-			// Extract the link target
-			linkTarget := line[closeBracket+2 : end]
+		// Resolve the path
+		resolved, err := resolveRelativePath(sourceFile, linkInfo.target)
+		if err != nil {
+			continue
+		}
 
-			// Skip external URLs
-			if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
-				continue
-			}
-
-			// Resolve the path
-			resolved, err := resolveRelativePath(sourceFile, linkTarget)
-			if err != nil {
-				continue
-			}
-
-			// Check if this link points to our target (case-insensitive for filesystem compatibility)
-			if pathsEqualCaseInsensitive(resolved, targetPath) {
-				links = append(links, LinkReference{
-					SourceFile: sourceFile,
-					LineNumber: lineNum,
-					LinkType:   LinkTypeImage,
-					Target:     linkTarget,
-					Fragment:   "",
-					FullMatch:  line[i : end+1],
-				})
-			}
+		// Check if this link points to our target (case-insensitive for filesystem compatibility)
+		if pathsEqualCaseInsensitive(resolved, targetPath) {
+			links = append(links, LinkReference{
+				SourceFile: sourceFile,
+				LineNumber: lineNum,
+				LinkType:   LinkTypeImage,
+				Target:     linkInfo.target,
+				Fragment:   "",
+				FullMatch:  line[linkInfo.start : linkInfo.end+1],
+			})
 		}
 	}
 
