@@ -67,22 +67,9 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 			success := res.Err == nil
 			mu.Lock()
 			if success {
-				bs.Report.ClonedRepositories++
-				bs.Git.RepoPaths[task.repo.Name] = res.Path
-				if res.PostHead != "" {
-					bs.Git.SetPostHead(task.repo.Name, res.PostHead)
-				}
-				if res.PreHead != "" {
-					bs.Git.SetPreHead(task.repo.Name, res.PreHead)
-				}
+				recordCloneSuccess(bs, task.repo, res)
 			} else {
-				bs.Report.FailedRepositories++
-				if bs.Report != nil {
-					code := classifyGitFailure(res.Err)
-					if code != "" {
-						bs.Report.AddIssue(code, StageCloneRepos, SeverityError, res.Err.Error(), false, res.Err)
-					}
-				}
+				recordCloneFailure(bs, res)
 			}
 			mu.Unlock()
 			if bs.Generator != nil && bs.Generator.recorder != nil {
@@ -162,6 +149,29 @@ func classifyGitFailure(err error) ReportIssueCode {
 		return IssueNetworkTimeout
 	default:
 		return ""
+	}
+}
+
+// recordCloneSuccess updates build state after a successful repository clone.
+func recordCloneSuccess(bs *BuildState, repo config.Repository, res RepoFetchResult) {
+	bs.Report.ClonedRepositories++
+	bs.Git.RepoPaths[repo.Name] = res.Path
+	if res.PostHead != "" {
+		bs.Git.SetPostHead(repo.Name, res.PostHead)
+	}
+	if res.PreHead != "" {
+		bs.Git.SetPreHead(repo.Name, res.PreHead)
+	}
+}
+
+// recordCloneFailure updates build state after a failed repository clone.
+func recordCloneFailure(bs *BuildState, res RepoFetchResult) {
+	bs.Report.FailedRepositories++
+	if bs.Report != nil {
+		code := classifyGitFailure(res.Err)
+		if code != "" {
+			bs.Report.AddIssue(code, StageCloneRepos, SeverityError, res.Err.Error(), false, res.Err)
+		}
 	}
 }
 
