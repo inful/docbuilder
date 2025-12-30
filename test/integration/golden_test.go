@@ -34,6 +34,7 @@ func TestGolden_FrontmatterInjection(t *testing.T) {
 		"../../test/testdata/repos/transforms/frontmatter-injection",
 		"../../test/testdata/configs/frontmatter-injection.yaml",
 		"../../test/testdata/golden/frontmatter-injection",
+		*updateGolden,
 	)
 }
 
@@ -53,6 +54,7 @@ func TestGolden_TwoRepos(t *testing.T) {
 		"../../test/testdata/repos/multi-repo/two-repos/repo2",
 		"../../test/testdata/configs/two-repos.yaml",
 		"../../test/testdata/golden/two-repos",
+		*updateGolden,
 	)
 }
 
@@ -71,6 +73,7 @@ func TestGolden_ImagePaths(t *testing.T) {
 		"../../test/testdata/repos/transforms/image-paths",
 		"../../test/testdata/configs/image-paths.yaml",
 		"../../test/testdata/golden/image-paths",
+		*updateGolden,
 	)
 }
 
@@ -89,6 +92,7 @@ func TestGolden_SectionIndexes(t *testing.T) {
 		"../../test/testdata/repos/transforms/section-indexes",
 		"../../test/testdata/configs/section-indexes.yaml",
 		"../../test/testdata/golden/section-indexes",
+		*updateGolden,
 	)
 }
 
@@ -108,6 +112,7 @@ func TestGolden_ConflictingPaths(t *testing.T) {
 		"../../test/testdata/repos/multi-repo/conflicting-paths/repo-b",
 		"../../test/testdata/configs/conflicting-paths.yaml",
 		"../../test/testdata/golden/conflicting-paths",
+		*updateGolden,
 	)
 }
 
@@ -126,6 +131,7 @@ func TestGolden_MenuGeneration(t *testing.T) {
 		"../../test/testdata/repos/transforms/menu-generation",
 		"../../test/testdata/configs/menu-generation.yaml",
 		"../../test/testdata/golden/menu-generation",
+		*updateGolden,
 	)
 }
 
@@ -145,6 +151,7 @@ func TestGolden_CrossRepoLinks(t *testing.T) {
 		"../../test/testdata/repos/transforms/cross-repo-links/repo-backend",
 		"../../test/testdata/configs/cross-repo-links.yaml",
 		"../../test/testdata/golden/cross-repo-links",
+		*updateGolden,
 	)
 }
 
@@ -209,6 +216,7 @@ func TestGolden_OnlyReadme(t *testing.T) {
 		"../../test/testdata/repos/edge-cases/only-readme",
 		"../../test/testdata/configs/only-readme.yaml",
 		"../../test/testdata/golden/only-readme",
+		*updateGolden,
 	)
 }
 
@@ -226,6 +234,7 @@ func TestGolden_MalformedFrontmatter(t *testing.T) {
 		"../../test/testdata/repos/edge-cases/malformed-frontmatter",
 		"../../test/testdata/configs/malformed-frontmatter.yaml",
 		"../../test/testdata/golden/malformed-frontmatter",
+		*updateGolden,
 	)
 }
 
@@ -243,6 +252,7 @@ func TestGolden_DeepNesting(t *testing.T) {
 		"../../test/testdata/repos/edge-cases/deep-nesting",
 		"../../test/testdata/configs/deep-nesting.yaml",
 		"../../test/testdata/golden/deep-nesting",
+		*updateGolden,
 	)
 }
 
@@ -260,6 +270,7 @@ func TestGolden_UnicodeNames(t *testing.T) {
 		"../../test/testdata/repos/edge-cases/unicode-names",
 		"../../test/testdata/configs/unicode-names.yaml",
 		"../../test/testdata/golden/unicode-names",
+		*updateGolden,
 	)
 }
 
@@ -277,6 +288,7 @@ func TestGolden_SpecialChars(t *testing.T) {
 		"../../test/testdata/repos/edge-cases/special-chars",
 		"../../test/testdata/configs/special-chars.yaml",
 		"../../test/testdata/golden/special-chars",
+		*updateGolden,
 	)
 }
 

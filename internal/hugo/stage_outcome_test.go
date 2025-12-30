@@ -53,7 +53,7 @@ func TestClassifyStageResult_UnknownFatal(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_AllClonesFailed tests when all clones fail
+// TestClassifyStageResult_AllClonesFailed tests when all clones fail.
 func TestClassifyStageResult_AllClonesFailed(t *testing.T) {
 	bs := newTestBuildState()
 	bs.Report.ClonedRepositories = 0
@@ -66,7 +66,7 @@ func TestClassifyStageResult_AllClonesFailed(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_CloneFailureNonStandard tests clone failure without build.ErrClone
+// TestClassifyStageResult_CloneFailureNonStandard tests clone failure without build.ErrClone.
 func TestClassifyStageResult_CloneFailureNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other clone error")
@@ -77,7 +77,7 @@ func TestClassifyStageResult_CloneFailureNonStandard(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_NoRepositories tests discovery when no repos found
+// TestClassifyStageResult_NoRepositories tests discovery when no repos found.
 func TestClassifyStageResult_NoRepositories(t *testing.T) {
 	bs := newTestBuildState()
 	bs.Git.RepoPaths = make(map[string]string) // empty
@@ -89,7 +89,7 @@ func TestClassifyStageResult_NoRepositories(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_DiscoveryFailure tests discovery failure with repos
+// TestClassifyStageResult_DiscoveryFailure tests discovery failure with repos.
 func TestClassifyStageResult_DiscoveryFailure(t *testing.T) {
 	bs := newTestBuildState()
 	bs.Git.RepoPaths = map[string]string{"repo1": "/path/to/repo"}
@@ -101,7 +101,7 @@ func TestClassifyStageResult_DiscoveryFailure(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_DiscoveryFailureNonStandard tests discovery error without build.ErrDiscovery
+// TestClassifyStageResult_DiscoveryFailureNonStandard tests discovery error without build.ErrDiscovery.
 func TestClassifyStageResult_DiscoveryFailureNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other discovery error")
@@ -112,7 +112,7 @@ func TestClassifyStageResult_DiscoveryFailureNonStandard(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_HugoExecution tests hugo execution failure
+// TestClassifyStageResult_HugoExecution tests hugo execution failure.
 func TestClassifyStageResult_HugoExecution(t *testing.T) {
 	bs := newTestBuildState()
 	wrapped := fmt.Errorf("wrap: %w", build.ErrHugo)
@@ -123,7 +123,7 @@ func TestClassifyStageResult_HugoExecution(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_HugoExecutionNonStandard tests hugo error without build.ErrHugo
+// TestClassifyStageResult_HugoExecutionNonStandard tests hugo error without build.ErrHugo.
 func TestClassifyStageResult_HugoExecutionNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other hugo error")
@@ -134,7 +134,7 @@ func TestClassifyStageResult_HugoExecutionNonStandard(t *testing.T) {
 	}
 }
 
-// TestClassifyStageResult_Canceled tests canceled stage
+// TestClassifyStageResult_Canceled tests canceled stage.
 func TestClassifyStageResult_Canceled(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("canceled")

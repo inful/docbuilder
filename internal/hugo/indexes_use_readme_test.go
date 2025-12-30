@@ -163,7 +163,7 @@ func TestUseReadmeAsIndex_EmptyTransformedBytes(t *testing.T) {
 	}
 }
 
-// TestUseReadmeAsIndex_InvalidYAML tests handling of malformed front matter
+// TestUseReadmeAsIndex_InvalidYAML tests handling of malformed front matter.
 func TestUseReadmeAsIndex_InvalidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	g := &Generator{
@@ -192,7 +192,7 @@ invalid: [yaml
 	}
 }
 
-// TestUseReadmeAsIndex_PartialFrontMatter tests front matter with some fields missing
+// TestUseReadmeAsIndex_PartialFrontMatter tests front matter with some fields missing.
 func TestUseReadmeAsIndex_PartialFrontMatter(t *testing.T) {
 	tmpDir := t.TempDir()
 	g := &Generator{
@@ -251,7 +251,7 @@ title: "Partial Front Matter"
 	}
 }
 
-// TestUseReadmeAsIndex_FrontMatterWithAllFields tests when all fields are already present
+// TestUseReadmeAsIndex_FrontMatterWithAllFields tests when all fields are already present.
 func TestUseReadmeAsIndex_FrontMatterWithAllFields(t *testing.T) {
 	tmpDir := t.TempDir()
 	g := &Generator{
@@ -307,7 +307,7 @@ date: "2023-12-01T00:00:00Z"
 }
 
 // splitFrontMatter splits content into front matter and body
-// Returns [frontMatter, body] or empty slices if no front matter found
+// Returns [frontMatter, body] or empty slices if no front matter found.
 func splitFrontMatter(content string) []string {
 	if !hasFrontMatter(content) {
 		return []string{}
@@ -322,15 +322,15 @@ func splitFrontMatter(content string) []string {
 	return []string{parts[1], parts[2]}
 }
 
-// hasFrontMatter checks if content starts with front matter delimiter
+// hasFrontMatter checks if content starts with front matter delimiter.
 func hasFrontMatter(content string) bool {
 	return len(content) > 4 && content[:4] == "---\n"
 }
 
-// splitN is a helper that splits a string on a delimiter
+// splitN is a helper that splits a string on a delimiter.
 func splitN(s, sep string, n int) []string {
 	result := make([]string, 0, n)
-	for i := 0; i < n-1; i++ {
+	for range n - 1 {
 		idx := indexOf(s, sep)
 		if idx == -1 {
 			result = append(result, s)
@@ -343,7 +343,7 @@ func splitN(s, sep string, n int) []string {
 	return result
 }
 
-// indexOf returns the index of the first occurrence of sep in s, or -1
+// indexOf returns the index of the first occurrence of sep in s, or -1.
 func indexOf(s, sep string) int {
 	for i := 0; i <= len(s)-len(sep); i++ {
 		if s[i:i+len(sep)] == sep {

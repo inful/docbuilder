@@ -192,17 +192,20 @@ func (g *Generator) removeOldBackup(prev string) {
 		slog.Time("modified", stat.ModTime()))
 
 	// Try multiple times to remove previous backup (may be locked/in-use)
+	var lastErr error
 	for i := range 3 {
 		if err := os.RemoveAll(prev); err == nil {
 			slog.Debug("Successfully removed old backup",
 				slog.String("path", prev),
 				slog.Int("attempts", i+1))
 			return
+		} else {
+			lastErr = err
 		}
 		if i == 2 {
 			slog.Warn("Failed to remove old backup after retries",
 				slog.String("path", prev),
-				slog.String("error", err.Error()))
+				slog.String("error", lastErr.Error()))
 		}
 		if i < 2 {
 			time.Sleep(100 * time.Millisecond)

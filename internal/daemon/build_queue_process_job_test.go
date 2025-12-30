@@ -10,7 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
-// Mock event emitter for testing
+// Mock event emitter for testing.
 type mockEventEmitter struct {
 	buildStartedCalls   int
 	buildCompletedCalls int
@@ -42,7 +42,7 @@ func (m *mockEventEmitter) EmitBuildReport(ctx context.Context, buildID string, 
 	return m.emitReportErr
 }
 
-// Mock builder for processJob testing
+// Mock builder for processJob testing.
 type mockProcessJobBuilder struct {
 	buildErr    error
 	buildReport *hugo.BuildReport
@@ -52,7 +52,7 @@ func (m *mockProcessJobBuilder) Build(ctx context.Context, job *BuildJob) (*hugo
 	return m.buildReport, m.buildErr
 }
 
-// TestProcessJob_SuccessWithReport tests successful build with report
+// TestProcessJob_SuccessWithReport tests successful build with report.
 func TestProcessJob_SuccessWithReport(t *testing.T) {
 	emitter := &mockEventEmitter{}
 	builder := &mockProcessJobBuilder{
@@ -105,7 +105,7 @@ func TestProcessJob_SuccessWithReport(t *testing.T) {
 	}
 }
 
-// TestProcessJob_SuccessWithoutReport tests successful build without report
+// TestProcessJob_SuccessWithoutReport tests successful build without report.
 func TestProcessJob_SuccessWithoutReport(t *testing.T) {
 	emitter := &mockEventEmitter{}
 	builder := &mockProcessJobBuilder{
@@ -144,7 +144,7 @@ func TestProcessJob_SuccessWithoutReport(t *testing.T) {
 	}
 }
 
-// TestProcessJob_Failure tests build failure
+// TestProcessJob_Failure tests build failure.
 func TestProcessJob_Failure(t *testing.T) {
 	emitter := &mockEventEmitter{}
 	buildErr := errors.New("build failed")
@@ -187,7 +187,7 @@ func TestProcessJob_Failure(t *testing.T) {
 	}
 }
 
-// TestProcessJob_FailureWithReport tests build failure but with report
+// TestProcessJob_FailureWithReport tests build failure but with report.
 func TestProcessJob_FailureWithReport(t *testing.T) {
 	emitter := &mockEventEmitter{}
 	buildErr := errors.New("partial build failure")
@@ -231,7 +231,7 @@ func TestProcessJob_FailureWithReport(t *testing.T) {
 	}
 }
 
-// TestProcessJob_NoEventEmitter tests behavior when event emitter is nil
+// TestProcessJob_NoEventEmitter tests behavior when event emitter is nil.
 func TestProcessJob_NoEventEmitter(t *testing.T) {
 	builder := &mockProcessJobBuilder{
 		buildReport: &hugo.BuildReport{
@@ -263,7 +263,7 @@ func TestProcessJob_NoEventEmitter(t *testing.T) {
 	}
 }
 
-// TestProcessJob_EventEmitterErrors tests handling of event emission errors
+// TestProcessJob_EventEmitterErrors tests handling of event emission errors.
 func TestProcessJob_EventEmitterErrors(t *testing.T) {
 	emitter := &mockEventEmitter{
 		emitStartedErr:   errors.New("started emit error"),

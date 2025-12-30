@@ -116,7 +116,8 @@ func verifyAuthType(t *testing.T, tt struct {
 	expectNil   bool
 	expectError bool
 	description string
-}, auth transport.AuthMethod) {
+}, auth transport.AuthMethod,
+) {
 	t.Helper()
 
 	if tt.expectError || tt.expectNil {

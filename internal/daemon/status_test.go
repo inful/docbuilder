@@ -9,7 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 )
 
-// Helper function to create a minimal daemon for status testing
+// Helper function to create a minimal daemon for status testing.
 func newTestDaemon() *Daemon {
 	d := &Daemon{
 		config:          &config.Config{},
@@ -21,7 +21,7 @@ func newTestDaemon() *Daemon {
 	return d
 }
 
-// TestGenerateStatusData_BasicInfo tests basic daemon info generation
+// TestGenerateStatusData_BasicInfo tests basic daemon info generation.
 func TestGenerateStatusData_BasicInfo(t *testing.T) {
 	d := newTestDaemon()
 	d.startTime = time.Now().Add(-1 * time.Hour)
@@ -43,7 +43,7 @@ func TestGenerateStatusData_BasicInfo(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_NoStatusLoaded tests fallback when status not initialized
+// TestGenerateStatusData_NoStatusLoaded tests fallback when status not initialized.
 func TestGenerateStatusData_NoStatusLoaded(t *testing.T) {
 	d := newTestDaemon()
 	d.status = atomic.Value{} // Not initialized
@@ -58,7 +58,7 @@ func TestGenerateStatusData_NoStatusLoaded(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_NoConfigFile tests fallback for missing config file
+// TestGenerateStatusData_NoConfigFile tests fallback for missing config file.
 func TestGenerateStatusData_NoConfigFile(t *testing.T) {
 	d := newTestDaemon()
 	d.configFilePath = "" // Empty
@@ -73,7 +73,7 @@ func TestGenerateStatusData_NoConfigFile(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_WithBuildQueue tests with build queue present
+// TestGenerateStatusData_WithBuildQueue tests with build queue present.
 func TestGenerateStatusData_WithBuildQueue(t *testing.T) {
 	bq := &BuildQueue{
 		jobs:    make(chan *BuildJob, 5),
@@ -97,7 +97,7 @@ func TestGenerateStatusData_WithBuildQueue(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_NoBuildQueue tests without build queue
+// TestGenerateStatusData_NoBuildQueue tests without build queue.
 func TestGenerateStatusData_NoBuildQueue(t *testing.T) {
 	d := newTestDaemon()
 	d.buildQueue = nil
@@ -113,7 +113,7 @@ func TestGenerateStatusData_NoBuildQueue(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_WithBuildProjection tests with build projection data
+// TestGenerateStatusData_WithBuildProjection tests with build projection data.
 func TestGenerateStatusData_WithBuildProjection(t *testing.T) {
 	// Create event store and projection
 	store, err := eventstore.NewSQLiteStore(":memory:")
@@ -209,7 +209,7 @@ func TestGenerateStatusData_WithBuildProjection(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_NoBuildProjection tests without build projection
+// TestGenerateStatusData_NoBuildProjection tests without build projection.
 func TestGenerateStatusData_NoBuildProjection(t *testing.T) {
 	d := newTestDaemon()
 	d.buildProjection = nil
@@ -225,7 +225,7 @@ func TestGenerateStatusData_NoBuildProjection(t *testing.T) {
 	}
 }
 
-// TestGenerateStatusData_EmptyReportData tests with projection but no report data
+// TestGenerateStatusData_EmptyReportData tests with projection but no report data.
 func TestGenerateStatusData_EmptyReportData(t *testing.T) {
 	// Create projection with a build but no report data
 	store, err := eventstore.NewSQLiteStore(":memory:")
