@@ -1,6 +1,7 @@
 package eventstore
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestEventStoreAppendAndRetrieve(t *testing.T) {
 	if event.Type() != eventType {
 		t.Errorf("expected event_type %s, got %s", eventType, event.Type())
 	}
-	if string(event.Payload()) != string(payload) {
+	if !bytes.Equal(event.Payload(), payload) {
 		t.Errorf("expected payload %s, got %s", payload, event.Payload())
 	}
 	if event.Metadata()["key"] != "value" {
