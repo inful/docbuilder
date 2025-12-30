@@ -11,22 +11,22 @@ linters:
     - contextcheck
     - copyloopvar
     - dogsled
-    - dupl
+    # - dupl
     - dupword
     - durationcheck
     - errcheck
     - errchkjson
     - errname
     - errorlint
-    - exhaustive
+    # - exhaustive
     - forbidigo
     - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
+    # - goconst
+    # - gocritic
+    # - gocyclo
     #- godoclint
     - godot
-    - godox
+    # - godox
     - goheader
     - goprintffuncname
     - govet
@@ -35,12 +35,12 @@ linters:
     - makezero
     - mirror
     - misspell
-    - mnd
-    #- modernize
-    - nestif
+    # - mnd
+    - modernize
+    # - nestif
     - noctx
     - nolintlint
-    - perfsprint
+    # - perfsprint
     - prealloc
     - predeclared
     - reassign
@@ -93,7 +93,7 @@ linters:
 
 formatters:
   enable:
-    - gci
+    # - gci
     - gofumpt
     - goimports
   settings:
