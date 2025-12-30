@@ -104,28 +104,9 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 	}
 
 	// Validate webhook signature if configured
-	if h.webhookConfig != nil {
-		if whCfg, ok := h.webhookConfig[forgeName]; ok && whCfg != nil && whCfg.Secret != "" {
-			signature := r.Header.Get(signatureHeader)
-			if signature == "" && signatureHeader == "X-Gitlab-Token" {
-				// GitLab uses token in header directly
-				signature = r.Header.Get("X-Gitlab-Token")
-			}
-
-			if client, ok := h.forgeClients[forgeName]; ok && client != nil {
-				if !client.ValidateWebhook(body, signature, whCfg.Secret) {
-					slog.Warn("Webhook signature validation failed",
-						"forge", forgeName,
-						"event", r.Header.Get(eventHeader))
-					err := errors.ValidationError("webhook signature validation failed").
-						WithContext("forge", forgeName).
-						Build()
-					h.errorAdapter.WriteErrorResponse(w, r, err)
-					return
-				}
-				slog.Debug("Webhook signature validated", "forge", forgeName)
-			}
-		}
+	if err := h.validateWebhookSignature(forgeName, signatureHeader, body, r); err != nil {
+		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
 	}
 
 	// Parse webhook event
@@ -182,6 +163,42 @@ func (h *WebhookHandlers) handleForgeWebhookWithValidation(w http.ResponseWriter
 		h.errorAdapter.WriteErrorResponse(w, r, derr)
 		return
 	}
+}
+
+// validateWebhookSignature validates webhook signature if configured.
+// Returns nil if validation passes or is not configured, error otherwise.
+func (h *WebhookHandlers) validateWebhookSignature(forgeName, signatureHeader string, body []byte, r *http.Request) error {
+	if h.webhookConfig == nil {
+		return nil
+	}
+
+	whCfg, ok := h.webhookConfig[forgeName]
+	if !ok || whCfg == nil || whCfg.Secret == "" {
+		return nil
+	}
+
+	signature := r.Header.Get(signatureHeader)
+	if signature == "" && signatureHeader == "X-Gitlab-Token" {
+		// GitLab uses token in header directly
+		signature = r.Header.Get("X-Gitlab-Token")
+	}
+
+	client, ok := h.forgeClients[forgeName]
+	if !ok || client == nil {
+		return nil
+	}
+
+	if !client.ValidateWebhook(body, signature, whCfg.Secret) {
+		slog.Warn("Webhook signature validation failed",
+			"forge", forgeName,
+			"event", r.Header.Get("X-GitHub-Event"))
+		return errors.ValidationError("webhook signature validation failed").
+			WithContext("forge", forgeName).
+			Build()
+	}
+
+	slog.Debug("Webhook signature validated", "forge", forgeName)
+	return nil
 }
 
 // HandleGitHubWebhook handles GitHub webhooks.
