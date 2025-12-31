@@ -222,6 +222,7 @@ func TestServiceAdapterSaveTimestamp(t *testing.T) {
 	saved := adapter.LastSaved()
 	if saved == nil {
 		t.Fatal("LastSaved() should not be nil after Save()")
+		return
 	}
 	if saved.Before(before) || saved.After(after) {
 		t.Errorf("LastSaved() timestamp out of expected range")

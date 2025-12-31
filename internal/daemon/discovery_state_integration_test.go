@@ -79,6 +79,7 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	rs := sm.GetRepository(repository.URL)
 	if rs == nil {
 		t.Fatalf("expected repository state for %s", repository.URL)
+		return
 	}
 	if rs.DocumentCount != 1 {
 		t.Fatalf("expected document_count=1 got %d", rs.DocumentCount)

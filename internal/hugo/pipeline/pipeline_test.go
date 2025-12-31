@@ -37,6 +37,7 @@ func TestProcessor_New(t *testing.T) {
 	processor := NewProcessor(cfg)
 	if processor == nil {
 		t.Fatal("Expected processor to be created")
+		return
 	}
 
 	if processor.config != cfg {
