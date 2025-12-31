@@ -10,9 +10,15 @@ import (
 func TestEnhancedWebhookWorkflow(t *testing.T) {
 	t.Log("=== Enhanced Webhook Testing with Advanced Mock System ===")
 
-	// Test GitHub webhook workflow
-	t.Run("EnhancedGitHubWebhookWorkflow", func(t *testing.T) {
-		client := NewEnhancedGitHubMock("webhook-github").
+	t.Run("EnhancedGitHubWebhookWorkflow", testEnhancedGitHubWebhookWorkflow)
+	t.Run("EnhancedGitLabWebhookWorkflow", testEnhancedGitLabWebhookWorkflow)
+	t.Run("EnhancedMultiPlatformWebhookHandling", testEnhancedMultiPlatformWebhookHandling)
+	t.Run("EnhancedWebhookFailureScenarios", testEnhancedWebhookFailureScenarios)
+	t.Run("EnhancedWebhookValidationEdgeCases", testEnhancedWebhookValidationEdgeCases)
+}
+
+func testEnhancedGitHubWebhookWorkflow(t *testing.T) {
+	client := NewEnhancedGitHubMock("webhook-github").
 			WithWebhookSecret("github-webhook-secret")
 
 		ctx := context.Background()
@@ -74,11 +80,10 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced GitHub webhook workflow complete")
-	})
+}
 
-	// Test GitLab webhook workflow
-	t.Run("EnhancedGitLabWebhookWorkflow", func(t *testing.T) {
-		client := NewEnhancedGitLabMock("webhook-gitlab").
+func testEnhancedGitLabWebhookWorkflow(t *testing.T) {
+	client := NewEnhancedGitLabMock("webhook-gitlab").
 			WithWebhookSecret("gitlab-webhook-token")
 
 		ctx := context.Background()
@@ -128,11 +133,10 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced GitLab webhook workflow complete")
-	})
+}
 
-	// Test multi-platform webhook handling
-	t.Run("EnhancedMultiPlatformWebhookHandling", func(t *testing.T) {
-		// Create enhanced mocks for different platforms
+func testEnhancedMultiPlatformWebhookHandling(t *testing.T) {
+	// Create enhanced mocks for different platforms
 		github := NewEnhancedGitHubMock("multi-github").WithWebhookSecret("github-secret")
 		gitlab := NewEnhancedGitLabMock("multi-gitlab").WithWebhookSecret("gitlab-secret")
 		forgejo := NewEnhancedForgejoMock("multi-forgejo").WithWebhookSecret("forgejo-secret")
@@ -179,11 +183,10 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced multi-platform webhook handling complete")
-	})
+}
 
-	// Test webhook failure scenarios
-	t.Run("EnhancedWebhookFailureScenarios", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("failure-webhook", TypeGitHub).
+func testEnhancedWebhookFailureScenarios(t *testing.T) {
+	client := NewEnhancedMockForgeClient("failure-webhook", TypeGitHub).
 			WithWebhookSecret("test-secret")
 
 		ctx := context.Background()
@@ -230,11 +233,10 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced webhook failure scenarios complete")
-	})
+}
 
-	// Test webhook validation edge cases
-	t.Run("EnhancedWebhookValidationEdgeCases", func(t *testing.T) {
-		client := NewEnhancedMockForgeClient("validation-test", TypeGitHub).
+func testEnhancedWebhookValidationEdgeCases(t *testing.T) {
+	client := NewEnhancedMockForgeClient("validation-test", TypeGitHub).
 			WithWebhookSecret("validation-secret")
 
 		payload := []byte(`{"test": "validation"}`)
@@ -286,14 +288,4 @@ func TestEnhancedWebhookWorkflow(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced webhook validation edge cases complete")
-	})
-
-	t.Log("\n=== Enhanced Webhook Testing Summary ===")
-	t.Log("✓ Multi-platform webhook workflows (GitHub, GitLab, Forgejo)")
-	t.Log("✓ Platform-specific validation mechanisms")
-	t.Log("✓ Advanced failure scenarios (auth, network, rate limit)")
-	t.Log("✓ Error recovery and resilience testing")
-	t.Log("✓ Comprehensive validation edge cases")
-	t.Log("✓ Realistic webhook event parsing with metadata")
-	t.Log("→ Enhanced webhook testing infrastructure complete")
 }

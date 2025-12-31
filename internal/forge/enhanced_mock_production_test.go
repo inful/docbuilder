@@ -10,8 +10,18 @@ import (
 func TestEnhancedMockProductionSystem(t *testing.T) {
 	t.Log("=== Phase 3A: Production-Ready Enhanced Mock System Validation ===")
 
-	t.Run("ProductionEnhancedMockCreation", func(t *testing.T) {
-		// Test basic enhanced mock creation
+	t.Run("ProductionEnhancedMockCreation", testProductionEnhancedMockCreation)
+	t.Run("ProductionRepositoryFactory", testProductionRepositoryFactory)
+	t.Run("ProductionBuilderPattern", testProductionBuilderPattern)
+	t.Run("ProductionFailureSimulation", testProductionFailureSimulation)
+	t.Run("ProductionRealisticMocks", testProductionRealisticMocks)
+	t.Run("ProductionConfigGeneration", testProductionConfigGeneration)
+	t.Run("ProductionBulkRepositoryCreation", testProductionBulkRepositoryCreation)
+	t.Run("ForgeClientInterface", testForgeClientInterface)
+}
+
+func testProductionEnhancedMockCreation(t *testing.T) {
+	// Test basic enhanced mock creation
 		mock := NewEnhancedMockForgeClient("production-test", TypeGitHub)
 		if mock == nil {
 			t.Fatal("Failed to create enhanced mock")
@@ -26,10 +36,10 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production enhanced mock creation works")
-	})
+}
 
-	t.Run("ProductionRepositoryFactory", func(t *testing.T) {
-		// Test repository factory functions
+func testProductionRepositoryFactory(t *testing.T) {
+	// Test repository factory functions
 		githubRepo := CreateMockGitHubRepo("test-org", "test-repo", true, false, false, false)
 		if githubRepo.Name != "test-repo" {
 			t.Errorf("Expected repo name 'test-repo', got '%s'", githubRepo.Name)
@@ -49,10 +59,10 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production repository factory functions work")
-	})
+}
 
-	t.Run("ProductionBuilderPattern", func(t *testing.T) {
-		// Test fluent builder pattern
+func testProductionBuilderPattern(t *testing.T) {
+	// Test fluent builder pattern
 		mock := NewEnhancedMockBuilder("builder-test", TypeGitLab).
 			WithRepositories(
 				CreateMockGitLabRepo("company", "docs", true, false, false, false),
@@ -82,11 +92,11 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production builder pattern works")
-	})
+}
 
-	t.Run("ProductionFailureSimulation", func(t *testing.T) {
-		// Test failure simulation capabilities
-		mock := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
+func testProductionFailureSimulation(t *testing.T) {
+	// Test failure simulation capabilities
+	mock := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
 		ctx := context.Background()
 
 		// Test auth failure
@@ -116,11 +126,11 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production failure simulation works")
-	})
+}
 
-	t.Run("ProductionRealisticMocks", func(t *testing.T) {
-		// Test realistic mock creation
-		githubMock := CreateRealisticGitHubMock("realistic-github")
+func testProductionRealisticMocks(t *testing.T) {
+	// Test realistic mock generation
+	githubMock := CreateRealisticGitHubMock("realistic-github")
 		gitlabMock := CreateRealisticGitLabMock("realistic-gitlab")
 		forgejoMock := CreateRealisticForgejoMock("realistic-forgejo")
 
@@ -154,11 +164,11 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production realistic mocks work")
-	})
+}
 
-	t.Run("ProductionConfigGeneration", func(t *testing.T) {
-		// Test configuration generation
-		mock := NewEnhancedMockForgeClient("config-test", TypeGitHub)
+func testProductionConfigGeneration(t *testing.T) {
+	// Test configuration generation
+	mock := NewEnhancedMockForgeClient("config-test", TypeGitHub)
 		mock.AddOrganization(CreateMockGitHubOrg("test-org"))
 
 		config := mock.GenerateForgeConfig()
@@ -175,10 +185,10 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production configuration generation works")
-	})
+}
 
-	t.Run("ProductionBulkRepositoryCreation", func(t *testing.T) {
-		// Test bulk repository creation
+func testProductionBulkRepositoryCreation(t *testing.T) {
+	// Test bulk repository creation
 		repos := CreateMockRepositorySet(TypeGitHub, "bulk-org", 10)
 		if len(repos) != 10 {
 			t.Errorf("Expected 10 repositories, got %d", len(repos))
@@ -205,27 +215,17 @@ func TestEnhancedMockProductionSystem(t *testing.T) {
 		}
 
 		t.Log("✓ Production bulk repository creation works")
-	})
-
-	// Summary
-	t.Log("")
-	t.Log("=== Phase 3A Production Enhanced Mock System Summary ===")
-	t.Log("✓ Enhanced mock client creation and configuration")
-	t.Log("✓ Repository factory functions for all forge types")
-	t.Log("✓ Fluent builder pattern for complex mock setup")
-	t.Log("✓ Comprehensive failure simulation capabilities")
-	t.Log("✓ Realistic mock data generation")
-	t.Log("✓ Configuration generation for testing")
-	t.Log("✓ Bulk repository creation utilities")
-	t.Log("→ Phase 3A: Enhanced mock system successfully exported to production")
 }
 
 // TestEnhancedMockCompatibility validates that the production enhanced mocks are compatible.
 func TestEnhancedMockCompatibility(t *testing.T) {
 	t.Log("=== Enhanced Mock Compatibility Testing ===")
 
-	t.Run("ForgeClientInterface", func(t *testing.T) {
-		// Ensure enhanced mock implements ForgeClient interface
+	t.Run("ForgeClientInterface", testForgeClientInterface)
+}
+
+func testForgeClientInterface(t *testing.T) {
+	// Ensure enhanced mock implements ForgeClient interface
 		var client Client = NewEnhancedMockForgeClient("interface-test", TypeGitHub)
 
 		ctx := context.Background()
@@ -250,7 +250,4 @@ func TestEnhancedMockCompatibility(t *testing.T) {
 		}
 
 		t.Log("✓ Enhanced mock implements ForgeClient interface correctly")
-	})
-
-	t.Log("→ Enhanced mock system is fully compatible with existing interfaces")
 }
