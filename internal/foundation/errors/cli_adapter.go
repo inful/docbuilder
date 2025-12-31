@@ -48,6 +48,10 @@ func (a *CLIErrorAdapter) exitCodeFromClassified(err *ClassifiedError) int {
 		return 7 // Configuration error
 	case CategoryAuth:
 		return 5 // Permission/auth error
+	case CategoryNotFound:
+		return 1 // General error (resource not found)
+	case CategoryAlreadyExists:
+		return 1 // General error (conflict)
 	case CategoryNetwork, CategoryGit, CategoryForge:
 		return 8 // External system error
 	case CategoryBuild, CategoryHugo, CategoryFileSystem:

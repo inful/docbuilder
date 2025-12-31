@@ -36,6 +36,20 @@ func TestHTTPErrorAdapter_StatusCodeFor(t *testing.T) {
 			expected: http.StatusUnauthorized,
 		},
 		{
+			name: "classified not found error",
+			err: NewError(CategoryNotFound, "resource not found").
+				WithSeverity(SeverityError).
+				Build(),
+			expected: http.StatusNotFound,
+		},
+		{
+			name: "classified already exists error",
+			err: NewError(CategoryAlreadyExists, "resource already exists").
+				WithSeverity(SeverityError).
+				Build(),
+			expected: http.StatusConflict,
+		},
+		{
 			name:     "unclassified error",
 			err:      &customHTTPError{msg: "unknown error"},
 			expected: http.StatusInternalServerError,
@@ -161,4 +175,44 @@ type customHTTPError struct {
 
 func (e *customHTTPError) Error() string {
 	return e.msg
+}
+
+func TestHTTPErrorAdapter_slogLevelFromSeverity(t *testing.T) {
+	adapter := NewHTTPErrorAdapter(slog.Default())
+
+	tests := []struct {
+		name     string
+		severity ErrorSeverity
+		expected slog.Level
+	}{
+		{
+			name:     "SeverityInfo maps to LevelInfo",
+			severity: SeverityInfo,
+			expected: slog.LevelInfo,
+		},
+		{
+			name:     "SeverityWarning maps to LevelWarn",
+			severity: SeverityWarning,
+			expected: slog.LevelWarn,
+		},
+		{
+			name:     "SeverityError maps to LevelError",
+			severity: SeverityError,
+			expected: slog.LevelError,
+		},
+		{
+			name:     "SeverityFatal maps to LevelError",
+			severity: SeverityFatal,
+			expected: slog.LevelError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := adapter.slogLevelFromSeverity(tt.severity)
+			if got != tt.expected {
+				t.Errorf("slogLevelFromSeverity() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
 }
