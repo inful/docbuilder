@@ -202,6 +202,8 @@ func (s *Statistics) UpdateBuildStats(build *Build) {
 		s.SuccessfulBuilds++
 	case BuildStatusFailed:
 		s.FailedBuilds++
+	case BuildStatusPending, BuildStatusRunning, BuildStatusCanceled:
+		// These statuses don't update success/failure counters
 	}
 
 	// Update average build time if we have duration

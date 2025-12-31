@@ -19,12 +19,15 @@ func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 
 	strategy := StrategyDefaultOnly
 	switch v2Config.Versioning.Strategy {
-	case "branches":
+	case config.StrategyBranchesOnly:
 		strategy = StrategyBranches
-	case "tags":
+	case config.StrategyTagsOnly:
 		strategy = StrategyTags
-	case "branches_and_tags":
+	case config.StrategyBranchesAndTags:
 		strategy = StrategyBranchesAndTags
+	default:
+		// Unknown or empty strategy - default to StrategyDefaultOnly
+		strategy = StrategyDefaultOnly
 	}
 
 	return &VersionConfig{
