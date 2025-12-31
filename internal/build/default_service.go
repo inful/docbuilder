@@ -185,7 +185,11 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		if req.Incremental {
 			repoPath, err = gitClient.UpdateRepo(*repo)
 		} else {
-			repoPath, err = gitClient.CloneRepo(*repo)
+			var result git.CloneResult
+			result, err = gitClient.CloneRepoWithMetadata(*repo)
+			if err == nil {
+				repoPath = result.Path
+			}
 		}
 
 		if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
@@ -126,7 +127,11 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		if incrementalMode {
 			repoPath, err = gitClient.UpdateRepo(*repo)
 		} else {
-			repoPath, err = gitClient.CloneRepo(*repo)
+			var result git.CloneResult
+			result, err = gitClient.CloneRepoWithMetadata(*repo)
+			if err == nil {
+				repoPath = result.Path
+			}
 		}
 
 		if err != nil {
