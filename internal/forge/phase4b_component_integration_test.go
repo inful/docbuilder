@@ -12,420 +12,410 @@ import (
 func TestPhase4BComponentIntegration(t *testing.T) {
 	t.Log("=== Phase 4B: Component Integration Testing ===")
 
-	// Test 1: Service Orchestrator Integration
-	t.Run("ServiceOrchestratorIntegration", func(t *testing.T) {
-		t.Log("→ Testing service orchestrator with forge integration")
+	t.Run("ServiceOrchestratorIntegration", testServiceOrchestratorIntegration)
+	t.Run("DocsDiscoveryComponentIntegration", testDocsDiscoveryComponentIntegration)
+	t.Run("HugoGeneratorIntegrationSimulation", testHugoGeneratorIntegrationSimulation)
+	t.Run("CrossComponentWorkflowIntegration", testCrossComponentWorkflowIntegration)
+	t.Run("PerformanceIntegrationTesting", testPerformanceIntegrationTesting)
+	t.Run("ErrorHandlingIntegration", testErrorHandlingIntegration)
+	t.Run("MultiForgеConfigurationIntegration", testMultiForgeConfigurationIntegration)
+	t.Run("ComponentStateManagementIntegration", testComponentStateManagementIntegration)
+}
 
-		// Create enhanced forge clients for integration testing
-		github := NewEnhancedGitHubMock("service-github")
-		gitlab := NewEnhancedGitLabMock("service-gitlab")
+func testServiceOrchestratorIntegration(t *testing.T) {
+	t.Log("→ Testing service orchestrator with forge integration")
 
-		// Add organizations and repositories with diverse structures
-		github.AddOrganization(CreateMockGitHubOrg("enterprise"))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "core-platform", true, false, true, false))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "ui-components", true, true, false, false))
+	// Create enhanced forge clients for integration testing
+	github := NewEnhancedGitHubMock("service-github")
+	gitlab := NewEnhancedGitLabMock("service-gitlab")
 
-		gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
-		gitlab.AddRepository(CreateMockGitLabRepo("internal", "security-docs", true, true, false, true))
-		gitlab.AddRepository(CreateMockGitLabRepo("internal", "deployment-guides", true, false, true, false))
+	// Add organizations and repositories with diverse structures
+	github.AddOrganization(CreateMockGitHubOrg("enterprise"))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "core-platform", true, false, true, false))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "ui-components", true, true, false, false))
 
-		// Test service orchestration with multiple forges
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
+	gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
+	gitlab.AddRepository(CreateMockGitLabRepo("internal", "security-docs", true, true, false, true))
+	gitlab.AddRepository(CreateMockGitLabRepo("internal", "deployment-guides", true, false, true, false))
 
-		// Simulate coordinated discovery across forge clients
-		var totalRepos int
-		forgeClients := []Client{github, gitlab}
+	// Test service orchestration with multiple forges
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-		for _, client := range forgeClients {
-			repos, err := client.ListRepositories(ctx, []string{})
-			if err != nil {
-				t.Fatalf("Service orchestration failed for %s: %v", client.GetName(), err)
-			}
-			totalRepos += len(repos)
-			t.Logf("✓ Service %s discovered %d repositories", client.GetName(), len(repos))
-		}
+	// Simulate coordinated discovery across forge clients
+	var totalRepos int
+	forgeClients := []Client{github, gitlab}
 
-		if totalRepos < 4 {
-			t.Errorf("Expected at least 4 repositories from service orchestration, got %d", totalRepos)
-		}
-
-		t.Log("✓ Service orchestrator integration testing complete")
-	})
-
-	// Test 2: Docs Discovery Component Integration
-	t.Run("DocsDiscoveryComponentIntegration", func(t *testing.T) {
-		t.Log("→ Testing docs discovery with enhanced forge integration")
-
-		// Create comprehensive test environment
-		github := NewEnhancedGitHubMock("docs-github")
-		gitlab := NewEnhancedGitLabMock("docs-gitlab")
-		forgejo := NewEnhancedForgejoMock("docs-forgejo")
-
-		// Create docs discovery configuration
-		discoveryConfig := &config.FilteringConfig{
-			RequiredPaths:   []string{"docs", "documentation", "guides"},
-			IncludePatterns: []string{"*.md", "*.rst", "*.adoc"},
-			ExcludePatterns: []string{"*deprecated*", "*legacy*", "*old*"},
-		}
-
-		// Populate with realistic repository structures
-		github.AddOrganization(CreateMockGitHubOrg("enterprise"))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "platform-core", true, false, true, false))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "user-docs", true, true, false, false))
-
-		gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
-		gitlab.AddRepository(CreateMockGitLabRepo("internal", "deployment-automation", true, true, true, false))
-
-		forgejo.AddOrganization(CreateMockForgejoOrg("selfhosted"))
-		forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "infrastructure-docs", true, false, true, false))
-
-		// Test docs discovery across all forge types
-		ctx := context.Background()
-
-		forgeClients := map[string]Client{
-			"github":  github,
-			"gitlab":  gitlab,
-			"forgejo": forgejo,
-		}
-
-		var totalDocsFound int
-		for forgeName, client := range forgeClients {
-			repos, err := client.ListRepositories(ctx, []string{})
-			if err != nil {
-				t.Fatalf("Repository listing failed for %s: %v", forgeName, err)
-			}
-
-			for _, repo := range repos {
-				// Simulate docs discovery for each repository
-				if repo.HasDocs {
-					totalDocsFound++
-					t.Logf("✓ Docs discovered in %s (%s)", repo.FullName, forgeName)
-				}
-			}
-		}
-
-		if totalDocsFound == 0 {
-			t.Error("No documentation discovered across forge ecosystem")
-		}
-
-		// Test filtering integration
-		t.Logf("✓ Applied filtering: required=%v, include=%v, exclude=%v",
-			discoveryConfig.RequiredPaths,
-			discoveryConfig.IncludePatterns,
-			discoveryConfig.ExcludePatterns)
-
-		t.Log("✓ Docs discovery component integration testing complete")
-	})
-
-	// Test 3: Hugo Generator Integration Simulation
-	t.Run("HugoGeneratorIntegrationSimulation", func(t *testing.T) {
-		t.Log("→ Testing Hugo generator integration simulation with forge ecosystem")
-
-		// Create enhanced test environment with realistic content
-		github := NewEnhancedGitHubMock("hugo-github")
-
-		// Add test repositories
-		github.AddOrganization(CreateMockGitHubOrg("enterprise"))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "docs-site", true, false, false, false))
-
-		// Test Hugo configuration generation with forge integration
-		ctx := context.Background()
-		repos, err := github.ListRepositories(ctx, []string{})
+	for _, client := range forgeClients {
+		repos, err := client.ListRepositories(ctx, []string{})
 		if err != nil {
-			t.Fatalf("Failed to get repositories for Hugo integration: %v", err)
+			t.Fatalf("Service orchestration failed for %s: %v", client.GetName(), err)
+		}
+		totalRepos += len(repos)
+		t.Logf("✓ Service %s discovered %d repositories", client.GetName(), len(repos))
+	}
+
+	if totalRepos < 4 {
+		t.Errorf("Expected at least 4 repositories from service orchestration, got %d", totalRepos)
+	}
+
+	t.Log("✓ Service orchestrator integration testing complete")
+}
+
+func testDocsDiscoveryComponentIntegration(t *testing.T) {
+	t.Log("→ Testing docs discovery with enhanced forge integration")
+
+	// Create comprehensive test environment
+	github := NewEnhancedGitHubMock("docs-github")
+	gitlab := NewEnhancedGitLabMock("docs-gitlab")
+	forgejo := NewEnhancedForgejoMock("docs-forgejo")
+
+	// Create docs discovery configuration
+	discoveryConfig := &config.FilteringConfig{
+		RequiredPaths:   []string{"docs", "documentation", "guides"},
+		IncludePatterns: []string{"*.md", "*.rst", "*.adoc"},
+		ExcludePatterns: []string{"*deprecated*", "*legacy*", "*old*"},
+	}
+
+	// Populate with realistic repository structures
+	github.AddOrganization(CreateMockGitHubOrg("enterprise"))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "platform-core", true, false, true, false))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "user-docs", true, true, false, false))
+
+	gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
+	gitlab.AddRepository(CreateMockGitLabRepo("internal", "deployment-automation", true, true, true, false))
+
+	forgejo.AddOrganization(CreateMockForgejoOrg("selfhosted"))
+	forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "infrastructure-docs", true, false, true, false))
+
+	// Test docs discovery across all forge types
+	ctx := context.Background()
+
+	forgeClients := map[string]Client{
+		"github":  github,
+		"gitlab":  gitlab,
+		"forgejo": forgejo,
+	}
+
+	var totalDocsFound int
+	for forgeName, client := range forgeClients {
+		repos, err := client.ListRepositories(ctx, []string{})
+		if err != nil {
+			t.Fatalf("Repository listing failed for %s: %v", forgeName, err)
 		}
 
-		// Test forge integration with Hugo parameters
-		if len(repos) > 0 {
-			sampleRepo := repos[0]
-			t.Logf("✓ Hugo generator integrated with repository: %s", sampleRepo.FullName)
-		}
-
-		t.Log("✓ Hugo generator integration simulation complete")
-	})
-
-	// Test 4: Cross-Component Workflow Integration
-	t.Run("CrossComponentWorkflowIntegration", func(t *testing.T) {
-		t.Log("→ Testing end-to-end component workflow integration")
-
-		// Create comprehensive integration test environment
-		github := NewEnhancedGitHubMock("workflow-github")
-		gitlab := NewEnhancedGitLabMock("workflow-gitlab")
-		forgejo := NewEnhancedForgejoMock("workflow-forgejo")
-
-		// Populate with realistic repositories
-		github.AddOrganization(CreateMockGitHubOrg("enterprise"))
-		github.AddRepository(CreateMockGitHubRepo("enterprise", "platform-docs", true, false, true, false))
-
-		gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
-		gitlab.AddRepository(CreateMockGitLabRepo("internal", "api-docs", true, true, false, false))
-
-		forgejo.AddOrganization(CreateMockForgejoOrg("selfhosted"))
-		forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "admin-guides", true, false, false, false))
-
-		// Simulate complete workflow: Forge Discovery → Docs Discovery → Hugo Generation
-		ctx := context.Background()
-
-		// Phase 1: Forge Discovery Integration
-		allRepos := make([]*Repository, 0)
-
-		// Discover repositories from all forges
-		forgeClients := map[string]Client{
-			"github":  github,
-			"gitlab":  gitlab,
-			"forgejo": forgejo,
-		}
-
-		for forgeName, client := range forgeClients {
-			repos, err := client.ListRepositories(ctx, []string{})
-			if err != nil {
-				t.Fatalf("Cross-component workflow failed at forge discovery (%s): %v", forgeName, err)
-			}
-			allRepos = append(allRepos, repos...)
-			t.Logf("✓ Phase 1: Discovered %d repositories from %s", len(repos), forgeName)
-		}
-
-		// Phase 2: Docs Discovery Integration
-		var docsRepos []*Repository
-		for _, repo := range allRepos {
+		for _, repo := range repos {
+			// Simulate docs discovery for each repository
 			if repo.HasDocs {
-				docsRepos = append(docsRepos, repo)
+				totalDocsFound++
+				t.Logf("✓ Docs discovered in %s (%s)", repo.FullName, forgeName)
 			}
 		}
-		t.Logf("✓ Phase 2: Found documentation in %d repositories", len(docsRepos))
+	}
 
-		// Phase 3: Content Processing Integration
-		var processedContent int
-		for _, repo := range docsRepos {
-			// Simulate content processing
-			if repo.HasDocs {
-				processedContent++
-			}
-		}
-		t.Logf("✓ Phase 3: Processed documentation content from %d repositories", processedContent)
+	if totalDocsFound == 0 {
+		t.Error("No documentation discovered across forge ecosystem")
+	}
 
-		// Phase 4: Hugo Site Generation Integration Simulation
-		if len(docsRepos) > 0 {
-			// Simulate Hugo site generation with integrated content
-			hugoConfig := config.HugoConfig{
-				Title: "Integrated Documentation Site",
-				Params: map[string]any{
-					"source_repos": len(docsRepos),
-					"forge_types":  []string{"github", "gitlab", "forgejo"},
-				},
-			}
+	// Test filtering integration
+	t.Logf("✓ Applied filtering: required=%v, include=%v, exclude=%v",
+		discoveryConfig.RequiredPaths,
+		discoveryConfig.IncludePatterns,
+		discoveryConfig.ExcludePatterns)
 
-			if hugoConfig.Title != "" {
-				t.Log("✓ Phase 4: Hugo site generation configuration prepared")
-			}
-		}
+	t.Log("✓ Docs discovery component integration testing complete")
+}
 
-		// Validate end-to-end integration
-		if len(allRepos) > 0 && len(docsRepos) > 0 && processedContent > 0 {
-			t.Log("✓ End-to-end component workflow integration successful")
-		} else {
-			t.Error("Cross-component workflow integration incomplete")
-		}
+func testHugoGeneratorIntegrationSimulation(t *testing.T) {
+	t.Log("→ Testing Hugo generator integration simulation with forge ecosystem")
 
-		t.Log("✓ Cross-component workflow integration testing complete")
-	})
+	// Create enhanced test environment with realistic content
+	github := NewEnhancedGitHubMock("hugo-github")
 
-	// Test 5: Performance Integration Testing
-	t.Run("PerformanceIntegrationTesting", func(t *testing.T) {
-		t.Log("→ Testing component performance integration")
+	// Add test repositories
+	github.AddOrganization(CreateMockGitHubOrg("enterprise"))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "docs-site", true, false, false, false))
 
-		// Create large-scale test environment
-		github := NewEnhancedGitHubMock("perf-github")
+	// Test Hugo configuration generation with forge integration
+	ctx := context.Background()
+	repos, err := github.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Fatalf("Failed to get repositories for Hugo integration: %v", err)
+	}
 
-		// Create large dataset for performance testing
-		for i := range 5 {
-			orgName := "perf-org-" + string(rune('a'+i))
-			github.AddOrganization(CreateMockGitHubOrg(orgName))
+	// Test forge integration with Hugo parameters
+	if len(repos) > 0 {
+		sampleRepo := repos[0]
+		t.Logf("✓ Hugo generator integrated with repository: %s", sampleRepo.FullName)
+	}
 
-			// Add multiple repositories per organization
-			for j := range 20 {
-				repoName := "repo-" + string(rune('a'+j))
-				hasDoc := j%3 == 0 // Every third repo has docs
-				github.AddRepository(CreateMockGitHubRepo(orgName, repoName, hasDoc, false, false, false))
-			}
-		}
+	t.Log("✓ Hugo generator integration simulation complete")
+}
 
-		// Test performance with large dataset
-		start := time.Now()
-		ctx := context.Background()
+func testCrossComponentWorkflowIntegration(t *testing.T) {
+	t.Log("→ Testing end-to-end component workflow integration")
 
-		repos, err := github.ListRepositories(ctx, []string{})
+	// Create comprehensive integration test environment
+	github := NewEnhancedGitHubMock("workflow-github")
+	gitlab := NewEnhancedGitLabMock("workflow-gitlab")
+	forgejo := NewEnhancedForgejoMock("workflow-forgejo")
+
+	// Populate with realistic repositories
+	github.AddOrganization(CreateMockGitHubOrg("enterprise"))
+	github.AddRepository(CreateMockGitHubRepo("enterprise", "platform-docs", true, false, true, false))
+
+	gitlab.AddOrganization(CreateMockGitLabGroup("internal"))
+	gitlab.AddRepository(CreateMockGitLabRepo("internal", "api-docs", true, true, false, false))
+
+	forgejo.AddOrganization(CreateMockForgejoOrg("selfhosted"))
+	forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "admin-guides", true, false, false, false))
+
+	// Simulate complete workflow: Forge Discovery → Docs Discovery → Hugo Generation
+	ctx := context.Background()
+
+	// Phase 1: Forge Discovery Integration
+	allRepos := make([]*Repository, 0)
+
+	// Discover repositories from all forges
+	forgeClients := map[string]Client{
+		"github":  github,
+		"gitlab":  gitlab,
+		"forgejo": forgejo,
+	}
+
+	for forgeName, client := range forgeClients {
+		repos, err := client.ListRepositories(ctx, []string{})
 		if err != nil {
-			t.Fatalf("Performance integration test failed: %v", err)
+			t.Fatalf("Cross-component workflow failed at forge discovery (%s): %v", forgeName, err)
 		}
+		allRepos = append(allRepos, repos...)
+		t.Logf("✓ Phase 1: Discovered %d repositories from %s", len(repos), forgeName)
+	}
 
-		duration := time.Since(start)
-
-		// Validate performance metrics
-		expectedMinRepos := 100 // 5 orgs * 20 repos each
-		if len(repos) < expectedMinRepos {
-			t.Errorf("Expected at least %d repositories for performance test, got %d", expectedMinRepos, len(repos))
+	// Phase 2: Docs Discovery Integration
+	var docsRepos []*Repository
+	for _, repo := range allRepos {
+		if repo.HasDocs {
+			docsRepos = append(docsRepos, repo)
 		}
+	}
+	t.Logf("✓ Phase 2: Found documentation in %d repositories", len(docsRepos))
 
-		// Check performance threshold (should complete quickly with mocks)
-		maxDuration := 100 * time.Millisecond
-		if duration > maxDuration {
-			t.Errorf("Performance integration test took too long: %v (max: %v)", duration, maxDuration)
+	// Phase 3: Content Processing Integration
+	var processedContent int
+	for _, repo := range docsRepos {
+		// Simulate content processing
+		if repo.HasDocs {
+			processedContent++
 		}
+	}
+	t.Logf("✓ Phase 3: Processed documentation content from %d repositories", processedContent)
 
-		t.Logf("✓ Performance integration test: %d repositories processed in %v", len(repos), duration)
-		t.Log("✓ Performance integration testing complete")
-	})
-
-	// Test 6: Error Handling Integration
-	t.Run("ErrorHandlingIntegration", func(t *testing.T) {
-		t.Log("→ Testing error handling across component integration")
-
-		// Create test environment with error scenarios
-		github := NewEnhancedGitHubMock("error-github")
-		github.AddOrganization(CreateMockGitHubOrg("error-test-org"))
-
-		// Test network timeout simulation
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-		defer cancel()
-
-		_, err := github.ListRepositories(ctx, []string{})
-		if err != nil {
-			t.Log("✓ Error handling integration: Timeout error properly handled")
-		}
-
-		// Test rate limiting simulation
-		github.WithRateLimit(1, 100*time.Millisecond) // 1 request per 100ms
-
-		start := time.Now()
-		_, _ = github.ListRepositories(context.Background(), []string{})
-		duration := time.Since(start)
-
-		if duration >= 50*time.Millisecond {
-			t.Log("✓ Error handling integration: Rate limiting properly simulated")
-		}
-
-		t.Log("✓ Error handling integration testing complete")
-	})
-
-	// Test 7: Multi-Forge Configuration Integration
-	t.Run("MultiForgеConfigurationIntegration", func(t *testing.T) {
-		t.Log("→ Testing multi-forge configuration integration")
-
-		// Create enhanced forge clients with different configurations
-		github := NewEnhancedGitHubMock("config-github")
-		gitlab := NewEnhancedGitLabMock("config-gitlab")
-		forgejo := NewEnhancedForgejoMock("config-forgejo")
-
-		// Configure different authentication types
-		githubConfig := github.GenerateForgeConfig()
-		githubConfig.Auth.Type = "token"
-		githubConfig.Organizations = []string{"enterprise", "opensource"}
-
-		gitlabConfig := gitlab.GenerateForgeConfig()
-		gitlabConfig.Auth.Type = "token"
-		gitlabConfig.Groups = []string{"internal", "research"}
-
-		forgejoConfig := forgejo.GenerateForgeConfig()
-		forgejoConfig.Auth.Type = "basic"
-		forgejoConfig.Organizations = []string{"selfhosted"}
-
-		// Create comprehensive configuration
-		integrationConfig := &config.Config{
-			Version: "2.0",
-			Forges: []*config.ForgeConfig{
-				githubConfig,
-				gitlabConfig,
-				forgejoConfig,
-			},
-			Build: config.BuildConfig{
-				CloneConcurrency: 3,
-				MaxRetries:       2,
-			},
-			Filtering: &config.FilteringConfig{
-				RequiredPaths:   []string{"docs", "documentation"},
-				IncludePatterns: []string{"*.md", "*.rst"},
-				ExcludePatterns: []string{"*legacy*"},
-			},
-			Hugo: config.HugoConfig{
-				Title: "Multi-Forge Documentation Hub",
-				Params: map[string]any{
-					"multi_forge": true,
-					"forge_count": 3,
-				},
+	// Phase 4: Hugo Site Generation Integration Simulation
+	if len(docsRepos) > 0 {
+		// Simulate Hugo site generation with integrated content
+		hugoConfig := config.HugoConfig{
+			Title: "Integrated Documentation Site",
+			Params: map[string]any{
+				"source_repos": len(docsRepos),
+				"forge_types":  []string{"github", "gitlab", "forgejo"},
 			},
 		}
 
-		// Validate configuration integration
-		if len(integrationConfig.Forges) != 3 {
-			t.Errorf("Expected 3 forge configurations, got %d", len(integrationConfig.Forges))
+		if hugoConfig.Title != "" {
+			t.Log("✓ Phase 4: Hugo site generation configuration prepared")
 		}
+	}
 
-		if integrationConfig.Build.CloneConcurrency != 3 {
-			t.Errorf("Expected clone concurrency 3, got %d", integrationConfig.Build.CloneConcurrency)
+	// Validate end-to-end integration
+	if len(allRepos) > 0 && len(docsRepos) > 0 && processedContent > 0 {
+		t.Log("✓ End-to-end component workflow integration successful")
+	} else {
+		t.Error("Cross-component workflow integration incomplete")
+	}
+
+	t.Log("✓ Cross-component workflow integration testing complete")
+}
+
+func testPerformanceIntegrationTesting(t *testing.T) {
+	t.Log("→ Testing component performance integration")
+
+	// Create large-scale test environment
+	github := NewEnhancedGitHubMock("perf-github")
+
+	// Create large dataset for performance testing
+	for i := range 5 {
+		orgName := "perf-org-" + string(rune('a'+i))
+		github.AddOrganization(CreateMockGitHubOrg(orgName))
+
+		// Add multiple repositories per organization
+		for j := range 20 {
+			repoName := "repo-" + string(rune('a'+j))
+			hasDoc := j%3 == 0 // Every third repo has docs
+			github.AddRepository(CreateMockGitHubRepo(orgName, repoName, hasDoc, false, false, false))
 		}
+	}
 
-		t.Log("✓ Multi-forge configuration integration validated")
-		t.Log("✓ Multi-forge configuration integration testing complete")
-	})
+	// Test performance with large dataset
+	start := time.Now()
+	ctx := context.Background()
 
-	// Test 8: Component State Management Integration
-	t.Run("ComponentStateManagementIntegration", func(t *testing.T) {
-		t.Log("→ Testing component state management integration")
+	repos, err := github.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Fatalf("Performance integration test failed: %v", err)
+	}
 
-		// Create forge clients with state tracking
-		github := NewEnhancedGitHubMock("state-github")
-		gitlab := NewEnhancedGitLabMock("state-gitlab")
+	duration := time.Since(start)
 
-		// Add initial data
-		github.AddOrganization(CreateMockGitHubOrg("state-org"))
-		github.AddRepository(CreateMockGitHubRepo("state-org", "state-repo", true, false, false, false))
+	// Validate performance metrics
+	expectedMinRepos := 100 // 5 orgs * 20 repos each
+	if len(repos) < expectedMinRepos {
+		t.Errorf("Expected at least %d repositories for performance test, got %d", expectedMinRepos, len(repos))
+	}
 
-		gitlab.AddOrganization(CreateMockGitLabGroup("state-group"))
-		gitlab.AddRepository(CreateMockGitLabRepo("state-group", "state-project", true, true, false, false))
+	// Check performance threshold (should complete quickly with mocks)
+	maxDuration := 100 * time.Millisecond
+	if duration > maxDuration {
+		t.Errorf("Performance integration test took too long: %v (max: %v)", duration, maxDuration)
+	}
 
-		// Test initial state
-		ctx := context.Background()
+	t.Logf("✓ Performance integration test: %d repositories processed in %v", len(repos), duration)
+	t.Log("✓ Performance integration testing complete")
+}
 
-		githubRepos, err := github.ListRepositories(ctx, []string{})
-		if err != nil {
-			t.Fatalf("Failed to get initial GitHub repositories: %v", err)
-		}
+func testErrorHandlingIntegration(t *testing.T) {
+	t.Log("→ Testing error handling across component integration")
 
-		gitlabRepos, err := gitlab.ListRepositories(ctx, []string{})
-		if err != nil {
-			t.Fatalf("Failed to get initial GitLab repositories: %v", err)
-		}
+	// Create test environment with error scenarios
+	github := NewEnhancedGitHubMock("error-github")
+	github.AddOrganization(CreateMockGitHubOrg("error-test-org"))
 
-		initialRepoCount := len(githubRepos) + len(gitlabRepos)
-		t.Logf("✓ Initial state: %d repositories across forge clients", initialRepoCount)
+	// Test network timeout simulation
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
 
-		// Test state modification
-		github.AddRepository(CreateMockGitHubRepo("state-org", "new-state-repo", true, false, false, false))
+	_, err := github.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Log("✓ Error handling integration: Timeout error properly handled")
+	}
 
-		// Verify state change
-		updatedGithubRepos, err := github.ListRepositories(ctx, []string{})
-		if err != nil {
-			t.Fatalf("Failed to get updated GitHub repositories: %v", err)
-		}
+	// Test rate limiting simulation
+	github.WithRateLimit(1, 100*time.Millisecond) // 1 request per 100ms
 
-		if len(updatedGithubRepos) != len(githubRepos)+1 {
-			t.Errorf("Expected %d repositories after addition, got %d", len(githubRepos)+1, len(updatedGithubRepos))
-		}
+	start := time.Now()
+	_, _ = github.ListRepositories(context.Background(), []string{})
+	duration := time.Since(start)
 
-		t.Log("✓ State modification properly tracked")
-		t.Log("✓ Component state management integration testing complete")
-	})
+	if duration >= 50*time.Millisecond {
+		t.Log("✓ Error handling integration: Rate limiting properly simulated")
+	}
 
-	t.Log("=== Phase 4B: Component Integration Testing Summary ===")
-	t.Log("✓ Service orchestrator integration testing")
-	t.Log("✓ Docs discovery component integration testing")
-	t.Log("✓ Hugo generator integration simulation")
-	t.Log("✓ Cross-component workflow integration testing")
-	t.Log("✓ Performance integration testing")
-	t.Log("✓ Error handling integration testing")
-	t.Log("✓ Multi-forge configuration integration testing")
-	t.Log("✓ Component state management integration testing")
-	t.Log("→ Phase 4B: Component integration testing implementation complete")
+	t.Log("✓ Error handling integration testing complete")
+}
+
+func testMultiForgeConfigurationIntegration(t *testing.T) {
+	t.Log("→ Testing multi-forge configuration integration")
+
+	// Create enhanced forge clients with different configurations
+	github := NewEnhancedGitHubMock("config-github")
+	gitlab := NewEnhancedGitLabMock("config-gitlab")
+	forgejo := NewEnhancedForgejoMock("config-forgejo")
+
+	// Configure different authentication types
+	githubConfig := github.GenerateForgeConfig()
+	githubConfig.Auth.Type = "token"
+	githubConfig.Organizations = []string{"enterprise", "opensource"}
+
+	gitlabConfig := gitlab.GenerateForgeConfig()
+	gitlabConfig.Auth.Type = "token"
+	gitlabConfig.Groups = []string{"internal", "research"}
+
+	forgejoConfig := forgejo.GenerateForgeConfig()
+	forgejoConfig.Auth.Type = "basic"
+	forgejoConfig.Organizations = []string{"selfhosted"}
+
+	// Create comprehensive configuration
+	integrationConfig := &config.Config{
+		Version: "2.0",
+		Forges: []*config.ForgeConfig{
+			githubConfig,
+			gitlabConfig,
+			forgejoConfig,
+		},
+		Build: config.BuildConfig{
+			CloneConcurrency: 3,
+			MaxRetries:       2,
+		},
+		Filtering: &config.FilteringConfig{
+			RequiredPaths:   []string{"docs", "documentation"},
+			IncludePatterns: []string{"*.md", "*.rst"},
+			ExcludePatterns: []string{"*legacy*"},
+		},
+		Hugo: config.HugoConfig{
+			Title: "Multi-Forge Documentation Hub",
+			Params: map[string]any{
+				"multi_forge": true,
+				"forge_count": 3,
+			},
+		},
+	}
+
+	// Validate configuration integration
+	if len(integrationConfig.Forges) != 3 {
+		t.Errorf("Expected 3 forge configurations, got %d", len(integrationConfig.Forges))
+	}
+
+	if integrationConfig.Build.CloneConcurrency != 3 {
+		t.Errorf("Expected clone concurrency 3, got %d", integrationConfig.Build.CloneConcurrency)
+	}
+
+	t.Log("✓ Multi-forge configuration integration validated")
+	t.Log("✓ Multi-forge configuration integration testing complete")
+}
+
+func testComponentStateManagementIntegration(t *testing.T) {
+	t.Log("→ Testing component state management integration")
+
+	// Create forge clients with state tracking
+	github := NewEnhancedGitHubMock("state-github")
+	gitlab := NewEnhancedGitLabMock("state-gitlab")
+
+	// Add initial data
+	github.AddOrganization(CreateMockGitHubOrg("state-org"))
+	github.AddRepository(CreateMockGitHubRepo("state-org", "state-repo", true, false, false, false))
+
+	gitlab.AddOrganization(CreateMockGitLabGroup("state-group"))
+	gitlab.AddRepository(CreateMockGitLabRepo("state-group", "state-project", true, true, false, false))
+
+	// Test initial state
+	ctx := context.Background()
+
+	githubRepos, err := github.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Fatalf("Failed to get initial GitHub repositories: %v", err)
+	}
+
+	gitlabRepos, err := gitlab.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Fatalf("Failed to get initial GitLab repositories: %v", err)
+	}
+
+	initialRepoCount := len(githubRepos) + len(gitlabRepos)
+	t.Logf("✓ Initial state: %d repositories across forge clients", initialRepoCount)
+
+	// Test state modification
+	github.AddRepository(CreateMockGitHubRepo("state-org", "new-state-repo", true, false, false, false))
+
+	// Verify state change
+	updatedGithubRepos, err := github.ListRepositories(ctx, []string{})
+	if err != nil {
+		t.Fatalf("Failed to get updated GitHub repositories: %v", err)
+	}
+
+	if len(updatedGithubRepos) != len(githubRepos)+1 {
+		t.Errorf("Expected %d repositories after addition, got %d", len(githubRepos)+1, len(updatedGithubRepos))
+	}
+
+	t.Log("✓ State modification properly tracked")
+	t.Log("✓ Component state management integration testing complete")
 }
