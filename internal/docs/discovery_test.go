@@ -248,523 +248,528 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 }
 
 func TestDiscoveryWithTestForgeIntegration(t *testing.T) {
-	t.Run("LargeScaleRepositoryDiscovery", func(t *testing.T) {
-		// Test discovery performance with organization-scale repository volumes
-		forge := testforge.NewTestForge("large-scale-discovery", config.ForgeGitHub)
+	t.Run("LargeScaleRepositoryDiscovery", testLargeScaleRepositoryDiscovery)
+	t.Run("MultiPlatformDiscoveryValidation", testMultiPlatformDiscoveryValidation)
+	t.Run("DocumentationFilteringWithTestForge", testDocumentationFilteringWithTestForge)
+	t.Run("PerformanceValidationWithLargeDataset", testPerformanceValidationWithLargeDataset)
+}
 
-		// Add multiple test repositories to simulate a medium-sized organization
-		for i := range 50 {
-			repo := testforge.TestRepository{
-				ID:            fmt.Sprintf("repo-%d", i+1),
-				Name:          fmt.Sprintf("docs-repo-%d", i+1),
-				FullName:      fmt.Sprintf("test-org/docs-repo-%d", i+1),
-				CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/docs-repo-%d.git", i+1),
-				SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/docs-repo-%d.git", i+1),
-				DefaultBranch: "main",
-				Description:   fmt.Sprintf("Documentation repository %d for testing", i+1),
-				Topics:        []string{"docs", "testing", fmt.Sprintf("repo-%d", i+1)},
-				Language:      "Markdown",
-				Private:       false,
-				Archived:      false,
-				Fork:          false,
-				HasDocs:       true,
-				HasDocIgnore:  false,
+func testLargeScaleRepositoryDiscovery(t *testing.T) {
+	// Test discovery performance with organization-scale repository volumes
+	forge := testforge.NewTestForge("large-scale-discovery", config.ForgeGitHub)
+
+	// Add multiple test repositories to simulate a medium-sized organization
+	for i := range 50 {
+		repo := testforge.TestRepository{
+			ID:            fmt.Sprintf("repo-%d", i+1),
+			Name:          fmt.Sprintf("docs-repo-%d", i+1),
+			FullName:      fmt.Sprintf("test-org/docs-repo-%d", i+1),
+			CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/docs-repo-%d.git", i+1),
+			SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/docs-repo-%d.git", i+1),
+			DefaultBranch: "main",
+			Description:   fmt.Sprintf("Documentation repository %d for testing", i+1),
+			Topics:        []string{"docs", "testing", fmt.Sprintf("repo-%d", i+1)},
+			Language:      "Markdown",
+			Private:       false,
+			Archived:      false,
+			Fork:          false,
+			HasDocs:       true,
+			HasDocIgnore:  false,
+		}
+		forge.AddRepository(repo)
+	}
+
+	repositories := forge.ToConfigRepositories()
+
+	// Create temporary directories for all repositories
+	tempDir := t.TempDir()
+
+	repoPaths := make(map[string]string)
+	for _, repo := range repositories {
+		repoDir := filepath.Join(tempDir, repo.Name)
+		docsDir := filepath.Join(repoDir, "docs")
+
+		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
+			t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, mkdirErr)
+		}
+
+		// Create realistic documentation files
+		docFiles := map[string]string{
+			"docs/index.md":           "# " + repo.Name + " Documentation\n\nOverview of the project.",
+			"docs/api/endpoints.md":   "# API Endpoints\n\nAPI documentation for " + repo.Name,
+			"docs/guides/setup.md":    "# Setup Guide\n\nHow to set up " + repo.Name,
+			"docs/guides/examples.md": "# Examples\n\nUsage examples for " + repo.Name,
+		}
+
+		for path, content := range docFiles {
+			fullPath := filepath.Join(repoDir, path)
+			if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
+				t.Fatalf("Failed to create dir for %s: %v", fullPath, mkdirErr)
 			}
-			forge.AddRepository(repo)
-		}
-
-		repositories := forge.ToConfigRepositories()
-
-		// Create temporary directories for all repositories
-		tempDir := t.TempDir()
-
-		repoPaths := make(map[string]string)
-		for _, repo := range repositories {
-			repoDir := filepath.Join(tempDir, repo.Name)
-			docsDir := filepath.Join(repoDir, "docs")
-
-			if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
-				t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, mkdirErr)
-			}
-
-			// Create realistic documentation files
-			docFiles := map[string]string{
-				"docs/index.md":           "# " + repo.Name + " Documentation\n\nOverview of the project.",
-				"docs/api/endpoints.md":   "# API Endpoints\n\nAPI documentation for " + repo.Name,
-				"docs/guides/setup.md":    "# Setup Guide\n\nHow to set up " + repo.Name,
-				"docs/guides/examples.md": "# Examples\n\nUsage examples for " + repo.Name,
-			}
-
-			for path, content := range docFiles {
-				fullPath := filepath.Join(repoDir, path)
-				if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
-					t.Fatalf("Failed to create dir for %s: %v", fullPath, mkdirErr)
-				}
-				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
-					t.Fatalf("Failed to write file %s: %v", fullPath, writeFileErr)
-				}
-			}
-
-			repoPaths[repo.Name] = repoDir
-		}
-
-		// Create discovery instance with realistic configuration
-		discovery := NewDiscovery(repositories, &config.BuildConfig{
-			NamespaceForges: config.NamespacingAuto,
-		})
-
-		// Perform discovery
-		docFiles, err := discovery.DiscoverDocs(repoPaths)
-		if err != nil {
-			t.Fatalf("DiscoverDocs failed: %v", err)
-		}
-
-		// Validate results
-		expectedFilesPerRepo := 4 // index.md, endpoints.md, setup.md, examples.md
-		expectedTotalFiles := len(repositories) * expectedFilesPerRepo
-
-		if len(docFiles) != expectedTotalFiles {
-			t.Errorf("Expected %d total files, got %d (repos: %d, files per repo: %d)",
-				expectedTotalFiles, len(docFiles), len(repositories), expectedFilesPerRepo)
-		}
-
-		// Verify file grouping by repository
-		filesByRepo := discovery.GetDocFilesByRepository()
-		if len(filesByRepo) != len(repositories) {
-			t.Errorf("Expected %d repositories with docs, got %d", len(repositories), len(filesByRepo))
-		}
-
-		// Verify each repository has the expected number of files
-		for _, repo := range repositories {
-			repoFiles := filesByRepo[repo.Name]
-			if len(repoFiles) != expectedFilesPerRepo {
-				t.Errorf("Repository %s: expected %d files, got %d",
-					repo.Name, expectedFilesPerRepo, len(repoFiles))
+			if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
+				t.Fatalf("Failed to write file %s: %v", fullPath, writeFileErr)
 			}
 		}
 
-		t.Logf("✓ Large-scale discovery validated: %d repositories, %d total files",
-			len(repositories), len(docFiles))
+		repoPaths[repo.Name] = repoDir
+	}
+
+	// Create discovery instance with realistic configuration
+	discovery := NewDiscovery(repositories, &config.BuildConfig{
+		NamespaceForges: config.NamespacingAuto,
 	})
 
-	t.Run("MultiPlatformDiscoveryValidation", func(t *testing.T) {
-		// Test discovery across different forge platforms
-		factory := testforge.NewFactory()
+	// Perform discovery
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		t.Fatalf("DiscoverDocs failed: %v", err)
+	}
 
-		githubForge := factory.CreateGitHubTestForge("discovery-github")
-		gitlabForge := factory.CreateGitLabTestForge("discovery-gitlab")
-		forgejoForge := factory.CreateForgejoTestForge("discovery-forgejo")
+	// Validate results
+	expectedFilesPerRepo := 4 // index.md, endpoints.md, setup.md, examples.md
+	expectedTotalFiles := len(repositories) * expectedFilesPerRepo
 
-		// Add additional repositories to each forge for more comprehensive testing
-		githubForge.AddRepository(testforge.TestRepository{
-			Name:        "github-actions-docs",
-			FullName:    "github-org/github-actions-docs",
-			CloneURL:    "https://github.com/github-org/github-actions-docs.git",
-			Description: "GitHub Actions documentation",
-			Topics:      []string{"github-actions", "ci-cd"},
-			Language:    "Markdown",
-			Private:     false,
-			Archived:    false,
-			Fork:        false,
-		})
+	if len(docFiles) != expectedTotalFiles {
+		t.Errorf("Expected %d total files, got %d (repos: %d, files per repo: %d)",
+			expectedTotalFiles, len(docFiles), len(repositories), expectedFilesPerRepo)
+	}
 
-		gitlabForge.AddRepository(testforge.TestRepository{
-			Name:        "gitlab-ci-docs",
-			FullName:    "gitlab-group/gitlab-ci-docs",
-			CloneURL:    "https://gitlab.example.com/gitlab-group/gitlab-ci-docs.git",
-			Description: "GitLab CI documentation",
-			Topics:      []string{"gitlab-ci", "pipelines"},
-			Language:    "Markdown",
-			Private:     false,
-			Archived:    false,
-			Fork:        false,
-		})
+	// Verify file grouping by repository
+	filesByRepo := discovery.GetDocFilesByRepository()
+	if len(filesByRepo) != len(repositories) {
+		t.Errorf("Expected %d repositories with docs, got %d", len(repositories), len(filesByRepo))
+	}
 
-		forgejoForge.AddRepository(testforge.TestRepository{
-			Name:        "forgejo-setup-docs",
-			FullName:    "forgejo-org/forgejo-setup-docs",
-			CloneURL:    "https://forgejo.example.com/forgejo-org/forgejo-setup-docs.git",
-			Description: "Forgejo setup documentation",
-			Topics:      []string{"setup", "configuration"},
-			Language:    "Markdown",
-			Private:     false,
-			Archived:    false,
-			Fork:        false,
-		})
-
-		// Combine all repositories
-		allRepositories := append(
-			append(githubForge.ToConfigRepositories(), gitlabForge.ToConfigRepositories()...),
-			forgejoForge.ToConfigRepositories()...,
-		)
-
-		// Add forge type tags for proper namespacing
-		for i, repo := range allRepositories {
-			if repo.Tags == nil {
-				allRepositories[i].Tags = make(map[string]string)
-			}
-
-			switch {
-			case strings.Contains(repo.Name, "github"):
-				allRepositories[i].Tags["forge_type"] = "github"
-			case strings.Contains(repo.Name, "gitlab"):
-				allRepositories[i].Tags["forge_type"] = "gitlab"
-			case strings.Contains(repo.Name, "forgejo"):
-				allRepositories[i].Tags["forge_type"] = "forgejo"
-			}
+	// Verify each repository has the expected number of files
+	for _, repo := range repositories {
+		repoFiles := filesByRepo[repo.Name]
+		if len(repoFiles) != expectedFilesPerRepo {
+			t.Errorf("Repository %s: expected %d files, got %d",
+				repo.Name, expectedFilesPerRepo, len(repoFiles))
 		}
+	}
 
-		// Create temporary directories
-		tempDir := t.TempDir()
+	t.Logf("✓ Large-scale discovery validated: %d repositories, %d total files",
+		len(repositories), len(docFiles))
+}
 
-		repoPaths := make(map[string]string)
-		for _, repo := range allRepositories {
-			repoDir := filepath.Join(tempDir, repo.Name)
-			docsDir := filepath.Join(repoDir, "docs")
+func testMultiPlatformDiscoveryValidation(t *testing.T) {
+	// Test discovery across different forge platforms
+	factory := testforge.NewFactory()
 
-			if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
-				t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, mkdirErr)
-			}
+	githubForge := factory.CreateGitHubTestForge("discovery-github")
+	gitlabForge := factory.CreateGitLabTestForge("discovery-gitlab")
+	forgejoForge := factory.CreateForgejoTestForge("discovery-forgejo")
 
-			// Create platform-specific documentation patterns
-			var docFiles map[string]string
-			forgeType := repo.Tags["forge_type"]
-
-			switch forgeType {
-			case "github":
-				docFiles = map[string]string{
-					"docs/README.md":          "# " + repo.Name + " (GitHub)\n\nShould be ignored",
-					"docs/index.md":           "# " + repo.Name + " Documentation\n\nGitHub repository docs.",
-					"docs/actions/ci.md":      "# GitHub Actions\n\nCI/CD with GitHub Actions.",
-					"docs/security/policy.md": "# Security Policy\n\nSecurity guidelines.",
-				}
-			case "gitlab":
-				docFiles = map[string]string{
-					"docs/index.md":          "# " + repo.Name + " Documentation\n\nGitLab repository docs.",
-					"docs/cicd/pipelines.md": "# GitLab Pipelines\n\nCI/CD with GitLab.",
-					"docs/merge/requests.md": "# Merge Requests\n\nMR workflow guide.",
-				}
-			case "forgejo":
-				docFiles = map[string]string{
-					"docs/index.md":        "# " + repo.Name + " Documentation\n\nForgejo repository docs.",
-					"docs/git/workflow.md": "# Git Workflow\n\nForgejo git workflow.",
-					"docs/self-hosted.md":  "# Self-Hosted Setup\n\nSelf-hosting guide.",
-				}
-			default:
-				// Fallback for repositories without forge_type tag
-				docFiles = map[string]string{
-					"docs/index.md": "# " + repo.Name + " Documentation\n\nGeneric documentation.",
-					"docs/guide.md": "# Guide\n\nGeneral guide.",
-					"docs/api.md":   "# API\n\ndocumentation.",
-				}
-			}
-
-			for path, content := range docFiles {
-				fullPath := filepath.Join(repoDir, path)
-				if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
-					t.Fatalf("Failed to create dir for %s: %v", fullPath, mkdirErr)
-				}
-				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
-					t.Fatalf("Failed to write file %s: %v", fullPath, writeFileErr)
-				}
-			}
-
-			repoPaths[repo.Name] = repoDir
-		}
-
-		// Test with auto-namespacing (should namespace due to multiple forge types)
-		discovery := NewDiscovery(allRepositories, &config.BuildConfig{
-			NamespaceForges: config.NamespacingAuto,
-		})
-
-		docFiles, err := discovery.DiscoverDocs(repoPaths)
-		if err != nil {
-			t.Fatalf("DiscoverDocs failed: %v", err)
-		}
-
-		// Verify forge namespacing
-		forgeTypes := make(map[string]int)
-		for _, file := range docFiles {
-			if file.Forge != "" {
-				forgeTypes[file.Forge]++
-			}
-		}
-
-		// Should have files from all forge types
-		if len(forgeTypes) == 0 {
-			t.Error("Expected forge namespacing with multiple forge types")
-		}
-
-		// Verify file grouping
-		filesByRepo := discovery.GetDocFilesByRepository()
-
-		// Count files by forge type
-		githubRepoCount := 0
-		gitlabRepoCount := 0
-		forgejoRepoCount := 0
-
-		for repoName, files := range filesByRepo {
-			countForgeRepos(t, repoName, len(files), &githubRepoCount, &gitlabRepoCount, &forgejoRepoCount)
-		}
-
-		t.Logf("✓ Multi-platform discovery validated: GitHub(%d repos), GitLab(%d repos), Forgejo(%d repos)",
-			githubRepoCount, gitlabRepoCount, forgejoRepoCount)
+	// Add additional repositories to each forge for more comprehensive testing
+	githubForge.AddRepository(testforge.TestRepository{
+		Name:        "github-actions-docs",
+		FullName:    "github-org/github-actions-docs",
+		CloneURL:    "https://github.com/github-org/github-actions-docs.git",
+		Description: "GitHub Actions documentation",
+		Topics:      []string{"github-actions", "ci-cd"},
+		Language:    "Markdown",
+		Private:     false,
+		Archived:    false,
+		Fork:        false,
 	})
 
-	t.Run("DocumentationFilteringWithTestForge", func(t *testing.T) {
-		// Test advanced filtering logic with realistic repositories
-		forge := testforge.NewTestForge("filtering-test", config.ForgeGitHub)
-
-		// Add multiple repositories for comprehensive filtering testing
-		for i := range 5 {
-			repo := testforge.TestRepository{
-				ID:            fmt.Sprintf("filter-repo-%d", i+1),
-				Name:          fmt.Sprintf("filter-repo-%d", i+1),
-				FullName:      fmt.Sprintf("test-org/filter-repo-%d", i+1),
-				CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/filter-repo-%d.git", i+1),
-				SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/filter-repo-%d.git", i+1),
-				DefaultBranch: "main",
-				Description:   fmt.Sprintf("Repository %d for filtering tests", i+1),
-				Topics:        []string{"filtering", "testing"},
-				Language:      "Markdown",
-				Private:       false,
-				Archived:      false,
-				Fork:          false,
-				HasDocs:       true,
-				HasDocIgnore:  false,
-			}
-			forge.AddRepository(repo)
-		}
-
-		repositories := forge.ToConfigRepositories()
-
-		// Create comprehensive test scenarios with various file types
-		tempDir := t.TempDir()
-
-		repoPaths := make(map[string]string)
-		for _, repo := range repositories {
-			repoDir := filepath.Join(tempDir, repo.Name)
-			docsDir := filepath.Join(repoDir, "docs")
-
-			if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
-				t.Fatalf("Failed to create docs dir: %v", mkdirErr)
-			}
-
-			// Create a mix of files to test filtering
-			testFiles := map[string]string{
-				// Valid markdown files
-				"docs/index.md":             "# Index",
-				"docs/guide.markdown":       "# Guide",
-				"docs/api.mdown":            "# API",
-				"docs/reference.mkd":        "# Reference",
-				"docs/tutorial/basics.md":   "# Basics",
-				"docs/tutorial/advanced.md": "# Advanced",
-
-				// Files that should be ignored (except README.md which is used as repository index)
-				"docs/README.md":       "# README - used as repository index",
-				"docs/CONTRIBUTING.md": "# Contributing - should be ignored",
-				"docs/CHANGELOG.md":    "# Changelog - should be ignored",
-				"docs/LICENSE.md":      "# License - should be ignored",
-
-				// Non-markdown files that should be ignored
-				"docs/config.txt": "Configuration file",
-				"docs/image.png":  "Binary image data",
-				"docs/style.css":  "CSS styles",
-				"docs/script.js":  "JavaScript code",
-				"docs/data.json":  "JSON data",
-
-				// Files without extensions
-				"docs/INSTALL": "Installation instructions",
-				"docs/NOTES":   "Project notes",
-			}
-
-			for path, content := range testFiles {
-				fullPath := filepath.Join(repoDir, path)
-				if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
-					t.Fatalf("Failed to create dir: %v", mkdirErr)
-				}
-				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
-					t.Fatalf("Failed to write file: %v", writeFileErr)
-				}
-			}
-
-			repoPaths[repo.Name] = repoDir
-		}
-
-		// Perform discovery
-		discovery := NewDiscovery(repositories, &config.BuildConfig{
-			NamespaceForges: config.NamespacingNever,
-		})
-
-		docFiles, err := discovery.DiscoverDocs(repoPaths)
-		if err != nil {
-			t.Fatalf("DiscoverDocs failed: %v", err)
-		}
-
-		// Verify filtering results
-		expectedMarkdownFiles := 7 // index.md, README.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
-		expectedAssetFiles := 2    // data.json, image.png
-		expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
-
-		if len(docFiles) != expectedTotalFiles {
-			t.Errorf("Expected %d total files, got %d", expectedTotalFiles, len(docFiles))
-		}
-
-		// Count markdown and asset files
-		markdownCount := 0
-		assetCount := 0
-		for _, file := range docFiles {
-			if file.IsAsset {
-				assetCount++
-			} else {
-				markdownCount++
-			}
-		}
-
-		expectedMarkdownTotal := len(repositories) * expectedMarkdownFiles
-		expectedAssetTotal := len(repositories) * expectedAssetFiles
-		if markdownCount != expectedMarkdownTotal {
-			t.Errorf("Expected %d markdown files, got %d", expectedMarkdownTotal, markdownCount)
-		}
-		if assetCount != expectedAssetTotal {
-			t.Errorf("Expected %d asset files, got %d", expectedAssetTotal, assetCount)
-		}
-
-		// Verify no ignored markdown files are included
-		for _, file := range docFiles {
-			if file.IsAsset {
-				continue // Skip validation for asset files
-			}
-
-			filename := filepath.Base(file.RelativePath)
-
-			// Check for ignored markdown files (except README.md which is now kept at root level)
-			if isIgnoredFile(filename) && !strings.EqualFold(filename, "README.md") {
-				t.Errorf("Ignored file should not be included: %s", file.RelativePath)
-			}
-
-			// Verify markdown file extensions
-			validExtensions := []string{".md", ".markdown", ".mdown", ".mkd"}
-			hasValidExtension := false
-			for _, ext := range validExtensions {
-				if strings.HasSuffix(strings.ToLower(filename), ext) {
-					hasValidExtension = true
-					break
-				}
-			}
-			if !hasValidExtension {
-				t.Errorf("Markdown file with invalid extension: %s", file.RelativePath)
-			}
-		}
-
-		// Verify directory structure preservation
-		filesByRepo := discovery.GetDocFilesByRepository()
-		for repoName, files := range filesByRepo {
-			hasRootFiles := false
-			hasTutorialFiles := false
-
-			for _, file := range files {
-				if !strings.Contains(file.RelativePath, "/") {
-					hasRootFiles = true
-				}
-				if strings.Contains(file.RelativePath, "tutorial/") {
-					hasTutorialFiles = true
-				}
-			}
-
-			if !hasRootFiles {
-				t.Errorf("Repository %s should have root-level files", repoName)
-			}
-			if !hasTutorialFiles {
-				t.Errorf("Repository %s should have tutorial/ subdirectory files", repoName)
-			}
-		}
-
-		t.Logf("✓ Documentation filtering validated: %d repositories, %d filtered files",
-			len(repositories), len(docFiles))
+	gitlabForge.AddRepository(testforge.TestRepository{
+		Name:        "gitlab-ci-docs",
+		FullName:    "gitlab-group/gitlab-ci-docs",
+		CloneURL:    "https://gitlab.example.com/gitlab-group/gitlab-ci-docs.git",
+		Description: "GitLab CI documentation",
+		Topics:      []string{"gitlab-ci", "pipelines"},
+		Language:    "Markdown",
+		Private:     false,
+		Archived:    false,
+		Fork:        false,
 	})
 
-	t.Run("PerformanceValidationWithLargeDataset", func(t *testing.T) {
-		// Test discovery performance with larger datasets
-		forge := testforge.NewTestForge("performance-test", config.ForgeGitHub)
-
-		// Add 100 test repositories for large organization simulation
-		for i := range 100 {
-			repo := testforge.TestRepository{
-				ID:            fmt.Sprintf("perf-repo-%d", i+1),
-				Name:          fmt.Sprintf("perf-repo-%d", i+1),
-				FullName:      fmt.Sprintf("test-org/perf-repo-%d", i+1),
-				CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/perf-repo-%d.git", i+1),
-				SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/perf-repo-%d.git", i+1),
-				DefaultBranch: "main",
-				Description:   fmt.Sprintf("Performance test repository %d", i+1),
-				Topics:        []string{"performance", "testing"},
-				Language:      "Markdown",
-				Private:       false,
-				Archived:      false,
-				Fork:          false,
-				HasDocs:       true,
-				HasDocIgnore:  false,
-			}
-			forge.AddRepository(repo)
-		}
-
-		repositories := forge.ToConfigRepositories()
-
-		// Create minimal file structure for performance testing
-		tempDir := t.TempDir()
-
-		repoPaths := make(map[string]string)
-		for _, repo := range repositories {
-			repoDir := filepath.Join(tempDir, repo.Name)
-			docsDir := filepath.Join(repoDir, "docs")
-
-			if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
-				t.Fatalf("Failed to create docs dir: %v", mkdirErr)
-			}
-
-			// Create minimal documentation for performance testing
-			docFiles := map[string]string{
-				"docs/index.md": "# " + repo.Name,
-				"docs/api.md":   "# API",
-				"docs/guide.md": "# Guide",
-			}
-
-			for path, content := range docFiles {
-				fullPath := filepath.Join(repoDir, path)
-				if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
-					t.Fatalf("Failed to write file: %v", writeFileErr)
-				}
-			}
-
-			repoPaths[repo.Name] = repoDir
-		}
-
-		// Perform discovery and measure basic metrics
-		discovery := NewDiscovery(repositories, &config.BuildConfig{
-			NamespaceForges: config.NamespacingNever,
-		})
-
-		docFiles, err := discovery.DiscoverDocs(repoPaths)
-		if err != nil {
-			t.Fatalf("DiscoverDocs failed: %v", err)
-		}
-
-		// Validate results
-		expectedFiles := len(repositories) * 3 // 3 files per repository
-		if len(docFiles) != expectedFiles {
-			t.Errorf("Expected %d files for performance test, got %d", expectedFiles, len(docFiles))
-		}
-
-		// Verify repository distribution
-		filesByRepo := discovery.GetDocFilesByRepository()
-		if len(filesByRepo) != len(repositories) {
-			t.Errorf("Expected %d repositories, got %d", len(repositories), len(filesByRepo))
-		}
-
-		t.Logf("✓ Performance validation: %d repositories, %d files processed",
-			len(repositories), len(docFiles))
+	forgejoForge.AddRepository(testforge.TestRepository{
+		Name:        "forgejo-setup-docs",
+		FullName:    "forgejo-org/forgejo-setup-docs",
+		CloneURL:    "https://forgejo.example.com/forgejo-org/forgejo-setup-docs.git",
+		Description: "Forgejo setup documentation",
+		Topics:      []string{"setup", "configuration"},
+		Language:    "Markdown",
+		Private:     false,
+		Archived:    false,
+		Fork:        false,
 	})
+
+	// Combine all repositories
+	allRepositories := append(
+		append(githubForge.ToConfigRepositories(), gitlabForge.ToConfigRepositories()...),
+		forgejoForge.ToConfigRepositories()...,
+	)
+
+	// Add forge type tags for proper namespacing
+	for i, repo := range allRepositories {
+		if repo.Tags == nil {
+			allRepositories[i].Tags = make(map[string]string)
+		}
+
+		switch {
+		case strings.Contains(repo.Name, "github"):
+			allRepositories[i].Tags["forge_type"] = "github"
+		case strings.Contains(repo.Name, "gitlab"):
+			allRepositories[i].Tags["forge_type"] = "gitlab"
+		case strings.Contains(repo.Name, "forgejo"):
+			allRepositories[i].Tags["forge_type"] = "forgejo"
+		}
+	}
+
+	// Create temporary directories
+	tempDir := t.TempDir()
+
+	repoPaths := make(map[string]string)
+	for _, repo := range allRepositories {
+		repoDir := filepath.Join(tempDir, repo.Name)
+		docsDir := filepath.Join(repoDir, "docs")
+
+		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
+			t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, mkdirErr)
+		}
+
+		// Create platform-specific documentation patterns
+		var docFiles map[string]string
+		forgeType := repo.Tags["forge_type"]
+
+		switch forgeType {
+		case "github":
+			docFiles = map[string]string{
+				"docs/README.md":          "# " + repo.Name + " (GitHub)\n\nShould be ignored",
+				"docs/index.md":           "# " + repo.Name + " Documentation\n\nGitHub repository docs.",
+				"docs/actions/ci.md":      "# GitHub Actions\n\nCI/CD with GitHub Actions.",
+				"docs/security/policy.md": "# Security Policy\n\nSecurity guidelines.",
+			}
+		case "gitlab":
+			docFiles = map[string]string{
+				"docs/index.md":          "# " + repo.Name + " Documentation\n\nGitLab repository docs.",
+				"docs/cicd/pipelines.md": "# GitLab Pipelines\n\nCI/CD with GitLab.",
+				"docs/merge/requests.md": "# Merge Requests\n\nMR workflow guide.",
+			}
+		case "forgejo":
+			docFiles = map[string]string{
+				"docs/index.md":        "# " + repo.Name + " Documentation\n\nForgejo repository docs.",
+				"docs/git/workflow.md": "# Git Workflow\n\nForgejo git workflow.",
+				"docs/self-hosted.md":  "# Self-Hosted Setup\n\nSelf-hosting guide.",
+			}
+		default:
+			// Fallback for repositories without forge_type tag
+			docFiles = map[string]string{
+				"docs/index.md": "# " + repo.Name + " Documentation\n\nGeneric documentation.",
+				"docs/guide.md": "# Guide\n\nGeneral guide.",
+				"docs/api.md":   "# API\n\nAPI documentation.",
+			}
+		}
+
+		for path, content := range docFiles {
+			fullPath := filepath.Join(repoDir, path)
+			if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
+				t.Fatalf("Failed to create dir for %s: %v", fullPath, mkdirErr)
+			}
+			if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
+				t.Fatalf("Failed to write file %s: %v", fullPath, writeFileErr)
+			}
+		}
+
+		repoPaths[repo.Name] = repoDir
+	}
+
+	// Test with auto-namespacing (should namespace due to multiple forge types)
+	discovery := NewDiscovery(allRepositories, &config.BuildConfig{
+		NamespaceForges: config.NamespacingAuto,
+	})
+
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		t.Fatalf("DiscoverDocs failed: %v", err)
+	}
+
+	// Verify forge namespacing
+	forgeTypes := make(map[string]int)
+	for _, file := range docFiles {
+		if file.Forge != "" {
+			forgeTypes[file.Forge]++
+		}
+	}
+
+	// Should have files from all forge types
+	if len(forgeTypes) == 0 {
+		t.Error("Expected forge namespacing with multiple forge types")
+	}
+
+	// Verify file grouping
+	filesByRepo := discovery.GetDocFilesByRepository()
+
+	// Count files by forge type
+	githubRepoCount := 0
+	gitlabRepoCount := 0
+	forgejoRepoCount := 0
+
+	for repoName, files := range filesByRepo {
+		countForgeRepos(t, repoName, len(files), &githubRepoCount, &gitlabRepoCount, &forgejoRepoCount)
+	}
+
+	t.Logf("✓ Multi-platform discovery validated: GitHub(%d repos), GitLab(%d repos), Forgejo(%d repos)",
+		githubRepoCount, gitlabRepoCount, forgejoRepoCount)
+}
+
+func testDocumentationFilteringWithTestForge(t *testing.T) {
+	// Test advanced filtering logic with realistic repositories
+	forge := testforge.NewTestForge("filtering-test", config.ForgeGitHub)
+
+	// Add multiple repositories for comprehensive filtering testing
+	for i := range 5 {
+		repo := testforge.TestRepository{
+			ID:            fmt.Sprintf("filter-repo-%d", i+1),
+			Name:          fmt.Sprintf("filter-repo-%d", i+1),
+			FullName:      fmt.Sprintf("test-org/filter-repo-%d", i+1),
+			CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/filter-repo-%d.git", i+1),
+			SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/filter-repo-%d.git", i+1),
+			DefaultBranch: "main",
+			Description:   fmt.Sprintf("Repository %d for filtering tests", i+1),
+			Topics:        []string{"filtering", "testing"},
+			Language:      "Markdown",
+			Private:       false,
+			Archived:      false,
+			Fork:          false,
+			HasDocs:       true,
+			HasDocIgnore:  false,
+		}
+		forge.AddRepository(repo)
+	}
+
+	repositories := forge.ToConfigRepositories()
+
+	// Create comprehensive test scenarios with various file types
+	tempDir := t.TempDir()
+
+	repoPaths := make(map[string]string)
+	for _, repo := range repositories {
+		repoDir := filepath.Join(tempDir, repo.Name)
+		docsDir := filepath.Join(repoDir, "docs")
+
+		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
+			t.Fatalf("Failed to create docs dir: %v", mkdirErr)
+		}
+
+		// Create a mix of files to test filtering
+		testFiles := map[string]string{
+			// Valid markdown files
+			"docs/index.md":             "# Index",
+			"docs/guide.markdown":       "# Guide",
+			"docs/api.mdown":            "# API",
+			"docs/reference.mkd":        "# Reference",
+			"docs/tutorial/basics.md":   "# Basics",
+			"docs/tutorial/advanced.md": "# Advanced",
+
+			// Files that should be ignored (except README.md which is used as repository index)
+			"docs/README.md":       "# README - used as repository index",
+			"docs/CONTRIBUTING.md": "# Contributing - should be ignored",
+			"docs/CHANGELOG.md":    "# Changelog - should be ignored",
+			"docs/LICENSE.md":      "# License - should be ignored",
+
+			// Non-markdown files that should be ignored
+			"docs/config.txt": "Configuration file",
+			"docs/image.png":  "Binary image data",
+			"docs/style.css":  "CSS styles",
+			"docs/script.js":  "JavaScript code",
+			"docs/data.json":  "JSON data",
+
+			// Files without extensions
+			"docs/INSTALL": "Installation instructions",
+			"docs/NOTES":   "Project notes",
+		}
+
+		for path, content := range testFiles {
+			fullPath := filepath.Join(repoDir, path)
+			if mkdirErr := os.MkdirAll(filepath.Dir(fullPath), 0o750); mkdirErr != nil {
+				t.Fatalf("Failed to create dir: %v", mkdirErr)
+			}
+			if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
+				t.Fatalf("Failed to write file: %v", writeFileErr)
+			}
+		}
+
+		repoPaths[repo.Name] = repoDir
+	}
+
+	// Perform discovery
+	discovery := NewDiscovery(repositories, &config.BuildConfig{
+		NamespaceForges: config.NamespacingNever,
+	})
+
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		t.Fatalf("DiscoverDocs failed: %v", err)
+	}
+
+	// Verify filtering results
+	expectedMarkdownFiles := 7 // index.md, README.md, guide.markdown, api.mdown, reference.mkd, basics.md, advanced.md
+	expectedAssetFiles := 2    // data.json, image.png
+	expectedTotalFiles := len(repositories) * (expectedMarkdownFiles + expectedAssetFiles)
+
+	if len(docFiles) != expectedTotalFiles {
+		t.Errorf("Expected %d total files, got %d", expectedTotalFiles, len(docFiles))
+	}
+
+	// Count markdown and asset files
+	markdownCount := 0
+	assetCount := 0
+	for _, file := range docFiles {
+		if file.IsAsset {
+			assetCount++
+		} else {
+			markdownCount++
+		}
+	}
+
+	expectedMarkdownTotal := len(repositories) * expectedMarkdownFiles
+	expectedAssetTotal := len(repositories) * expectedAssetFiles
+	if markdownCount != expectedMarkdownTotal {
+		t.Errorf("Expected %d markdown files, got %d", expectedMarkdownTotal, markdownCount)
+	}
+	if assetCount != expectedAssetTotal {
+		t.Errorf("Expected %d asset files, got %d", expectedAssetTotal, assetCount)
+	}
+
+	// Verify no ignored markdown files are included
+	for _, file := range docFiles {
+		if file.IsAsset {
+			continue // Skip validation for asset files
+		}
+
+		filename := filepath.Base(file.RelativePath)
+
+		// Check for ignored markdown files (except README.md which is now kept at root level)
+		if isIgnoredFile(filename) && !strings.EqualFold(filename, "README.md") {
+			t.Errorf("Ignored file should not be included: %s", file.RelativePath)
+		}
+
+		// Verify markdown file extensions
+		validExtensions := []string{".md", ".markdown", ".mdown", ".mkd"}
+		hasValidExtension := false
+		for _, ext := range validExtensions {
+			if strings.HasSuffix(strings.ToLower(filename), ext) {
+				hasValidExtension = true
+				break
+			}
+		}
+		if !hasValidExtension {
+			t.Errorf("Markdown file with invalid extension: %s", file.RelativePath)
+		}
+	}
+
+	// Verify directory structure preservation
+	filesByRepo := discovery.GetDocFilesByRepository()
+	for repoName, files := range filesByRepo {
+		hasRootFiles := false
+		hasTutorialFiles := false
+
+		for _, file := range files {
+			if !strings.Contains(file.RelativePath, "/") {
+				hasRootFiles = true
+			}
+			if strings.Contains(file.RelativePath, "tutorial/") {
+				hasTutorialFiles = true
+			}
+		}
+
+		if !hasRootFiles {
+			t.Errorf("Repository %s should have root-level files", repoName)
+		}
+		if !hasTutorialFiles {
+			t.Errorf("Repository %s should have tutorial/ subdirectory files", repoName)
+		}
+	}
+
+	t.Logf("✓ Documentation filtering validated: %d repositories, %d filtered files",
+		len(repositories), len(docFiles))
+}
+
+func testPerformanceValidationWithLargeDataset(t *testing.T) {
+	// Test discovery performance with larger datasets
+	forge := testforge.NewTestForge("performance-test", config.ForgeGitHub)
+
+	// Add 100 test repositories for large organization simulation
+	for i := range 100 {
+		repo := testforge.TestRepository{
+			ID:            fmt.Sprintf("perf-repo-%d", i+1),
+			Name:          fmt.Sprintf("perf-repo-%d", i+1),
+			FullName:      fmt.Sprintf("test-org/perf-repo-%d", i+1),
+			CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/perf-repo-%d.git", i+1),
+			SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/perf-repo-%d.git", i+1),
+			DefaultBranch: "main",
+			Description:   fmt.Sprintf("Performance test repository %d", i+1),
+			Topics:        []string{"performance", "testing"},
+			Language:      "Markdown",
+			Private:       false,
+			Archived:      false,
+			Fork:          false,
+			HasDocs:       true,
+			HasDocIgnore:  false,
+		}
+		forge.AddRepository(repo)
+	}
+
+	repositories := forge.ToConfigRepositories()
+
+	// Create minimal file structure for performance testing
+	tempDir := t.TempDir()
+
+	repoPaths := make(map[string]string)
+	for _, repo := range repositories {
+		repoDir := filepath.Join(tempDir, repo.Name)
+		docsDir := filepath.Join(repoDir, "docs")
+
+		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
+			t.Fatalf("Failed to create docs dir: %v", mkdirErr)
+		}
+
+		// Create minimal documentation for performance testing
+		docFiles := map[string]string{
+			"docs/index.md": "# " + repo.Name,
+			"docs/api.md":   "# API",
+			"docs/guide.md": "# Guide",
+		}
+
+		for path, content := range docFiles {
+			fullPath := filepath.Join(repoDir, path)
+			if writeFileErr := os.WriteFile(fullPath, []byte(content), 0o600); writeFileErr != nil {
+				t.Fatalf("Failed to write file: %v", writeFileErr)
+			}
+		}
+
+		repoPaths[repo.Name] = repoDir
+	}
+
+	// Perform discovery and measure basic metrics
+	discovery := NewDiscovery(repositories, &config.BuildConfig{
+		NamespaceForges: config.NamespacingNever,
+	})
+
+	docFiles, err := discovery.DiscoverDocs(repoPaths)
+	if err != nil {
+		t.Fatalf("DiscoverDocs failed: %v", err)
+	}
+
+	// Validate results
+	expectedFiles := len(repositories) * 3 // 3 files per repository
+	if len(docFiles) != expectedFiles {
+		t.Errorf("Expected %d files for performance test, got %d", expectedFiles, len(docFiles))
+	}
+
+	// Verify repository distribution
+	filesByRepo := discovery.GetDocFilesByRepository()
+	if len(filesByRepo) != len(repositories) {
+		t.Errorf("Expected %d repositories, got %d", len(repositories), len(filesByRepo))
+	}
+
+	t.Logf("✓ Performance validation: %d repositories, %d files processed",
+		len(repositories), len(docFiles))
 }
 
 // TestPathCollisionDetection verifies that case-insensitive path collisions are detected.
