@@ -286,6 +286,14 @@ func (p *FrontMatterPatch) applyReplace(fm *FrontMatter) *FrontMatter {
 
 // applySetIfMissing applies the patch only for missing/empty values.
 func (p *FrontMatterPatch) applySetIfMissing(fm *FrontMatter) *FrontMatter {
+	p.applySimpleFieldsIfMissing(fm)
+	p.applyArrayFieldsIfMissing(fm)
+	p.applyCustomFieldsIfMissing(fm)
+	return fm
+}
+
+// applySimpleFieldsIfMissing sets simple scalar fields only if they are missing in the target.
+func (p *FrontMatterPatch) applySimpleFieldsIfMissing(fm *FrontMatter) {
 	if p.Title != nil && fm.Title == "" {
 		fm.Title = *p.Title
 	}
@@ -319,6 +327,10 @@ func (p *FrontMatterPatch) applySetIfMissing(fm *FrontMatter) *FrontMatter {
 	if p.Type != nil && fm.Type == "" {
 		fm.Type = *p.Type
 	}
+}
+
+// applyArrayFieldsIfMissing sets array fields only if they are empty in the target.
+func (p *FrontMatterPatch) applyArrayFieldsIfMissing(fm *FrontMatter) {
 	if p.Tags != nil && len(fm.Tags) == 0 {
 		fm.Tags = *p.Tags
 	}
@@ -328,15 +340,15 @@ func (p *FrontMatterPatch) applySetIfMissing(fm *FrontMatter) *FrontMatter {
 	if p.Keywords != nil && len(fm.Keywords) == 0 {
 		fm.Keywords = *p.Keywords
 	}
+}
 
-	// Set missing custom fields
+// applyCustomFieldsIfMissing sets custom fields only if they don't exist in the target.
+func (p *FrontMatterPatch) applyCustomFieldsIfMissing(fm *FrontMatter) {
 	for key, value := range p.Custom {
 		if _, exists := fm.GetCustom(key); !exists {
 			fm.SetCustom(key, value)
 		}
 	}
-
-	return fm
 }
 
 // applyDeep applies the patch with deep merging for arrays and maps.
