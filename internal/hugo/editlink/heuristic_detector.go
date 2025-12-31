@@ -128,6 +128,9 @@ func (d *HeuristicDetector) determineBaseURL(cloneURL string, forgeType config.F
 	case config.ForgeForgejo:
 		// For Forgejo/Gitea, use the clone URL as base
 		return cloneURL
+	case config.ForgeLocal:
+		// For local forges, return the clone URL as-is (it's the base)
+		return cloneURL
 	default:
 		return ""
 	}

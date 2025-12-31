@@ -73,6 +73,9 @@ func TestAutoDiscoverValidationWithTestForgeFactory(t *testing.T) {
 				forge = factory.CreateGitLabForge("scoped-test")
 			case ForgeForgejo:
 				forge = factory.CreateForgejoForge("scoped-test")
+			case ForgeLocal:
+				// Local forges are not included in this test (no auto-discovery)
+				continue
 			}
 
 			config := factory.CreateConfigWithForges([]*ForgeConfig{forge})
