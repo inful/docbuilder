@@ -1329,6 +1329,8 @@ func (fr *FixResult) Summary() string {
 		for _, broken := range fr.BrokenLinks {
 			linkTypeStr := "link"
 			switch broken.LinkType {
+			case LinkTypeInline:
+				linkTypeStr = "link"
 			case LinkTypeImage:
 				linkTypeStr = linkTypeImage
 			case LinkTypeReference:
@@ -1435,6 +1437,8 @@ func (fr *FixResult) DetailedPreview() string {
 		for i, broken := range fr.BrokenLinks {
 			linkTypeStr := "link"
 			switch broken.LinkType {
+			case LinkTypeInline:
+				linkTypeStr = "link"
 			case LinkTypeImage:
 				linkTypeStr = linkTypeImage
 			case LinkTypeReference:

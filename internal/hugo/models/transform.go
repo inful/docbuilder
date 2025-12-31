@@ -309,6 +309,8 @@ func (tr *TransformationResult) AddChange(changeType ChangeType, field string, o
 		tr.FrontMatterModified = true
 	case ChangeTypeMetadataAdded, ChangeTypeMetadataModified, ChangeTypeMetadataRemoved:
 		tr.MetadataModified = true
+	case ChangeTypeStructureModified:
+		// Structure modifications are tracked separately, no flag to set
 	}
 
 	return tr

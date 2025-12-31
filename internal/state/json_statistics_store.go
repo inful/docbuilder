@@ -53,6 +53,8 @@ func (ss *jsonStatisticsStore) RecordBuild(_ context.Context, build *Build) foun
 		ss.store.statistics.SuccessfulBuilds++
 	case BuildStatusFailed:
 		ss.store.statistics.FailedBuilds++
+	case BuildStatusPending, BuildStatusRunning, BuildStatusCanceled:
+		// These statuses don't update success/failure counters
 	}
 	ss.store.statistics.LastUpdated = time.Now()
 

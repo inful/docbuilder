@@ -129,6 +129,10 @@ func verifyAuthType(t *testing.T, tt struct {
 		verifyTokenAuth(t, auth, tt.authConfig.Token)
 	case config.AuthTypeBasic:
 		verifyBasicAuth(t, auth, tt.authConfig.Username, tt.authConfig.Password)
+	case config.AuthTypeNone:
+		// No auth verification needed for none type
+	case config.AuthTypeSSH:
+		// SSH auth verification would be different (not implemented in this test)
 	}
 }
 

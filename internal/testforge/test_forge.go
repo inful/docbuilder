@@ -184,6 +184,8 @@ func (tf *TestForge) simulate() error {
 	}
 
 	switch tf.failMode {
+	case FailModeNone:
+		return nil
 	case FailModeAuth:
 		return errors.New("authentication failed: invalid credentials")
 	case FailModeNetwork:

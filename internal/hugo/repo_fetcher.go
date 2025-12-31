@@ -67,6 +67,8 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 				preHead = h
 			}
 		}
+	case config.CloneStrategyFresh:
+		// Fresh clone - don't attempt update (attemptUpdate remains false)
 	}
 	var path string
 	var err error

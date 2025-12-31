@@ -307,6 +307,8 @@ Code block (should be ignored):
 			inlineCount++
 		case LinkTypeReference:
 			refCount++
+		case LinkTypeImage:
+			// Image links are not counted in either inline or reference
 		}
 	}
 
