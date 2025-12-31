@@ -42,6 +42,10 @@ func (a *HTTPErrorAdapter) StatusCodeFor(err error) int {
 			return http.StatusBadRequest
 		case CategoryAuth:
 			return http.StatusUnauthorized
+		case CategoryNotFound:
+			return http.StatusNotFound
+		case CategoryAlreadyExists:
+			return http.StatusConflict
 		case CategoryNetwork, CategoryGit, CategoryForge:
 			return http.StatusBadGateway
 		case CategoryBuild, CategoryHugo:
@@ -125,6 +129,10 @@ func (a *HTTPErrorAdapter) slogLevelFromSeverity(s ErrorSeverity) slog.Level {
 		return slog.LevelInfo
 	case SeverityWarning:
 		return slog.LevelWarn
+	case SeverityError:
+		return slog.LevelError
+	case SeverityFatal:
+		return slog.LevelError
 	default:
 		return slog.LevelError
 	}
