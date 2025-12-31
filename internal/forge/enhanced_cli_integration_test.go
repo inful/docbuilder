@@ -12,8 +12,13 @@ import (
 func TestEnhancedForgeCliIntegration(t *testing.T) {
 	t.Log("=== Enhanced Forge CLI Integration Testing ===")
 
-	// Test CLI-style configuration and discovery workflow
-	t.Run("EnhancedCliConfigurationWorkflow", func(t *testing.T) {
+	t.Run("EnhancedCliConfigurationWorkflow", testEnhancedCliConfigurationWorkflow)
+	t.Run("EnhancedCliFailureHandling", testEnhancedCliFailureHandling)
+	t.Run("EnhancedCliWebhookWorkflow", testEnhancedCliWebhookWorkflow)
+	t.Run("EnhancedCliMultiPlatformIntegration", testEnhancedCliMultiPlatformIntegration)
+}
+
+func testEnhancedCliConfigurationWorkflow(t *testing.T) {
 		// Create enhanced mocks that simulate a realistic CLI environment
 		github := NewEnhancedGitHubMock("cli-github")
 		gitlab := NewEnhancedGitLabMock("cli-gitlab")
@@ -96,10 +101,9 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		}
 
 		t.Logf("✓ CLI configuration workflow complete - found %d repos", len(result.Repositories))
-	})
+}
 
-	// Test CLI failure handling scenarios
-	t.Run("EnhancedCliFailureHandling", func(t *testing.T) {
+func testEnhancedCliFailureHandling(t *testing.T) {
 		// Create enhanced mocks with different failure scenarios
 		github := NewEnhancedMockForgeClient("cli-failure-github", TypeGitHub)
 		gitlab := NewEnhancedMockForgeClient("cli-failure-gitlab", TypeGitLab)
@@ -155,10 +159,9 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		}
 
 		t.Log("✓ CLI failure handling scenarios complete")
-	})
+}
 
-	// Test CLI webhook configuration workflow
-	t.Run("EnhancedCliWebhookWorkflow", func(t *testing.T) {
+func testEnhancedCliWebhookWorkflow(t *testing.T) {
 		// Create enhanced mocks with webhook capabilities
 		github := NewEnhancedGitHubMock("webhook-github")
 		gitlab := NewEnhancedGitLabMock("webhook-gitlab")
@@ -247,10 +250,9 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 		}
 
 		t.Log("✓ CLI webhook workflow complete")
-	})
+}
 
-	// Test CLI multi-platform integration scenario
-	t.Run("EnhancedCliMultiPlatformIntegration", func(t *testing.T) {
+func testEnhancedCliMultiPlatformIntegration(t *testing.T) {
 		// Create a realistic multi-platform CLI scenario
 		github := NewEnhancedGitHubMock("enterprise-github")
 		gitlab := NewEnhancedGitLabMock("internal-gitlab")
@@ -371,14 +373,4 @@ func TestEnhancedForgeCliIntegration(t *testing.T) {
 
 		t.Logf("✓ CLI multi-platform integration complete - %d platforms, %d repos",
 			len(platformRepos), len(result.Repositories))
-	})
-
-	t.Log("\n=== Enhanced Forge CLI Integration Summary ===")
-	t.Log("✓ CLI configuration workflow testing")
-	t.Log("✓ CLI failure handling scenarios")
-	t.Log("✓ CLI webhook setup workflows")
-	t.Log("✓ CLI multi-platform integration")
-	t.Log("✓ Realistic forge configuration validation")
-	t.Log("✓ Pattern-based repository filtering")
-	t.Log("→ Enhanced forge CLI integration testing complete")
 }
