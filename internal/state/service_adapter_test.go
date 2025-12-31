@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+const testRepoURL = "https://github.com/test/repo"
+
 func TestServiceAdapter(t *testing.T) {
 	// Create a temporary directory for the test
 	tmpDir := t.TempDir()
@@ -42,7 +44,7 @@ func TestServiceAdapter(t *testing.T) {
 	})
 
 	t.Run("RepositoryInitializer interface", func(t *testing.T) {
-		url := "https://github.com/test/repo"
+		url := testRepoURL
 		name := "test-repo"
 		branch := "main"
 
@@ -58,7 +60,7 @@ func TestServiceAdapter(t *testing.T) {
 	})
 
 	t.Run("RepositoryMetadataWriter interface", func(t *testing.T) {
-		url := "https://github.com/test/repo"
+		url := testRepoURL
 
 		// Set document count
 		adapter.SetRepoDocumentCount(url, 42)
@@ -74,7 +76,7 @@ func TestServiceAdapter(t *testing.T) {
 	})
 
 	t.Run("RepositoryMetadataStore interface", func(t *testing.T) {
-		url := "https://github.com/test/repo"
+		url := testRepoURL
 		paths := []string{"docs/index.md", "docs/guide.md", "docs/api.md"}
 
 		// Set doc file paths
@@ -93,7 +95,7 @@ func TestServiceAdapter(t *testing.T) {
 	})
 
 	t.Run("RepositoryCommitTracker interface", func(t *testing.T) {
-		url := "https://github.com/test/repo"
+		url := testRepoURL
 		commit := "abc123def456"
 
 		// Set last commit
@@ -107,7 +109,7 @@ func TestServiceAdapter(t *testing.T) {
 	})
 
 	t.Run("RepositoryBuildCounter interface", func(t *testing.T) {
-		url := "https://github.com/test/repo"
+		url := testRepoURL
 
 		// Increment build count (success)
 		adapter.IncrementRepoBuild(url, true)

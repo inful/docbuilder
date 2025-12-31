@@ -53,7 +53,7 @@ func (ss *Service) Start(ctx context.Context) error {
 			Build()
 	}
 
-	if health.Unwrap().Status != "healthy" {
+	if health.Unwrap().Status != healthyStatus {
 		return errors.InternalError("state store is unhealthy").
 			WithContext("status", health.Unwrap().Status).
 			WithContext("message", health.Unwrap().Message).

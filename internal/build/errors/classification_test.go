@@ -8,6 +8,11 @@ import (
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
+const (
+	errClassificationFilesystem = "filesystem"
+	errClassificationProcessing = "processing"
+)
+
 // TestTypedErrorClassification ensures discovery and generation typed errors
 // map to predictable issue classification for user-facing error messages.
 func TestTypedErrorClassification(t *testing.T) {
@@ -79,28 +84,28 @@ func classifyError(err error) string {
 	case errors.Is(err, derrors.ErrDocsPathNotFound):
 		return "configuration"
 	case errors.Is(err, derrors.ErrDocsDirWalkFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, derrors.ErrFileReadFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, derrors.ErrDocIgnoreCheckFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, derrors.ErrNoDocsFound):
 		return "content"
 	case errors.Is(err, derrors.ErrInvalidRelativePath):
-		return "filesystem"
+		return errClassificationFilesystem
 
 	case errors.Is(err, herrors.ErrContentTransformFailed):
-		return "processing"
+		return errClassificationProcessing
 	case errors.Is(err, herrors.ErrContentWriteFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, herrors.ErrIndexGenerationFailed):
 		return "processing"
 	case errors.Is(err, herrors.ErrLayoutCopyFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, herrors.ErrStagingFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, herrors.ErrReportPersistFailed):
-		return "filesystem"
+		return errClassificationFilesystem
 	case errors.Is(err, herrors.ErrHugoBinaryNotFound):
 		return "environment"
 	case errors.Is(err, herrors.ErrHugoExecutionFailed):

@@ -14,6 +14,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const markdownExtension = ".md"
+
 // DocFile represents a discovered documentation file or asset.
 type DocFile struct {
 	Path             string            // Absolute path to the file
@@ -255,7 +257,7 @@ func (df *DocFile) GetHugoPath() string {
 // isMarkdownFile checks if a file is a markdown file.
 func isMarkdownFile(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
-	return ext == ".md" || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
+	return ext == markdownExtension || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
 }
 
 // isAsset checks if a file is an asset (image, etc.)

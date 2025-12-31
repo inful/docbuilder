@@ -9,6 +9,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
+const documentationType = "docs"
+
 // FrontMatterInput bundles inputs required to build or augment front matter.
 type FrontMatterInput struct {
 	File     docs.DocFile
@@ -59,7 +61,7 @@ func BuildFrontMatter(in FrontMatterInput) map[string]any {
 
 	// Ensure type: docs for all themes (must come after metadata to override tags)
 	if in.Config != nil {
-		fm["type"] = "docs"
+		fm["type"] = documentationType
 	}
 
 	// Per-page edit URL if not already present – tests expect BuildFrontMatter to set it.

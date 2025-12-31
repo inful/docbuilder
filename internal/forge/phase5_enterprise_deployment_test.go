@@ -8,6 +8,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const authBasicType = "basic"
+
 // TestPhase5EnterpriseDeploymentPatterns demonstrates comprehensive enterprise deployment testing.
 func TestPhase5EnterpriseDeploymentPatterns(t *testing.T) {
 	t.Log("=== Phase 5: Enterprise Deployment Patterns ===")
@@ -251,7 +253,7 @@ func testSecurityAndAuthenticationTesting(t *testing.T) {
 
 	forgejoConfig := forgejo.GenerateForgeConfig()
 	forgejoConfig.Auth = &config.AuthConfig{
-		Type:     "basic",
+		Type:     authBasicType,
 		Username: "admin",
 		Password: "secure_password_789",
 	}
@@ -303,16 +305,16 @@ func testSecurityAndAuthenticationTesting(t *testing.T) {
 
 		// Validate authentication configuration
 		authType := forgeInfo.config.Auth.Type
-		if authType != "token" && authType != "basic" {
+		if authType != authTokenType && authType != authBasicType {
 			t.Errorf("Invalid authentication type for %s: %s", forgeName, authType)
 		}
 
 		// Validate token/credential presence
-		if authType == "token" && forgeInfo.config.Auth.Token == "" {
+		if authType == authTokenType && forgeInfo.config.Auth.Token == "" {
 			t.Errorf("Missing token for %s authentication", forgeName)
 		}
 
-		if authType == "basic" && (forgeInfo.config.Auth.Username == "" || forgeInfo.config.Auth.Password == "") {
+		if authType == authBasicType && (forgeInfo.config.Auth.Username == "" || forgeInfo.config.Auth.Password == "") {
 			t.Errorf("Missing credentials for %s basic authentication", forgeName)
 		}
 	}

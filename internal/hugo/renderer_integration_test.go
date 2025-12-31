@@ -11,6 +11,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
+const (
+	testExampleURL       = "https://example.test"
+	testRenderModeAlways = "always"
+	testSiteTitle        = "Test"
+)
+
 // TestBinaryRenderer_WhenHugoAvailable tests the real Hugo binary execution path.
 // This test is skipped if Hugo is not available in PATH (e.g., in CI without Hugo).
 // Note: This test may fail with warnings if Hugo can't render the minimal test site
@@ -25,11 +31,11 @@ func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{}
 	cfg.Hugo.Title = "Test Site"
-	cfg.Hugo.BaseURL = "https://example.test"
-	cfg.Build.RenderMode = "always"
+	cfg.Hugo.BaseURL = testExampleURL
+	cfg.Build.RenderMode = testRenderModeAlways
 
 	// Use BinaryRenderer explicitly (default when no custom renderer is set)
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, dir) // No WithRenderer() call = uses BinaryRenderer
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir) // No WithRenderer() call = uses BinaryRenderer
 
 	doc := docs.DocFile{
 		Repository:   "test-repo",
@@ -110,12 +116,12 @@ func TestBinaryRenderer_MissingHugoBinary(t *testing.T) {
 func TestRenderMode_Never_SkipsRendering(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{}
-	cfg.Hugo.Title = "Test"
-	cfg.Hugo.BaseURL = "https://example.test"
+	cfg.Hugo.Title = testSiteTitle
+	cfg.Hugo.BaseURL = testExampleURL
 	cfg.Build.RenderMode = "never" // Explicitly disable rendering
 
 	// Even with BinaryRenderer (no custom renderer), Hugo should not run
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, dir)
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir)
 
 	doc := docs.DocFile{
 		Repository:   "repo",
@@ -149,12 +155,12 @@ func TestRenderMode_Never_SkipsRendering(t *testing.T) {
 func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{}
-	cfg.Hugo.Title = "Test"
-	cfg.Hugo.BaseURL = "https://example.test"
-	cfg.Build.RenderMode = "always"
+	cfg.Hugo.Title = testSiteTitle
+	cfg.Hugo.BaseURL = testExampleURL
+	cfg.Build.RenderMode = testRenderModeAlways
 
 	// Inject NoopRenderer - should take precedence even with render_mode=always
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, dir).WithRenderer(&NoopRenderer{})
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir).WithRenderer(&NoopRenderer{})
 
 	doc := docs.DocFile{
 		Repository:   "repo",
@@ -191,11 +197,11 @@ func TestRenderMode_Auto_WithoutEnvVars(t *testing.T) {
 	t.Setenv("DOCBUILDER_SKIP_HUGO", "")
 	dir := t.TempDir()
 	cfg := &config.Config{}
-	cfg.Hugo.Title = "Test"
-	cfg.Hugo.BaseURL = "https://example.test"
+	cfg.Hugo.Title = testSiteTitle
+	cfg.Hugo.BaseURL = testExampleURL
 	cfg.Build.RenderMode = "auto" // Auto mode, no env vars
 
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, dir)
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir)
 
 	doc := docs.DocFile{
 		Repository:   "repo",
@@ -276,8 +282,8 @@ func TestRendererPrecedence(t *testing.T) {
 
 			dir := t.TempDir()
 			cfg := &config.Config{}
-			cfg.Hugo.Title = "Test"
-			cfg.Hugo.BaseURL = "https://example.test"
+			cfg.Hugo.Title = testSiteTitle
+			cfg.Hugo.BaseURL = testExampleURL
 			cfg.Build.RenderMode = tt.renderMode
 
 			if tt.envRunHugo != "" {

@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const buildReportRenderMode = "auto"
+
 // TestBuildReportStability compares a synthesized minimal successful build report against a golden
 // file on disk. Only stable, non-dynamic fields are asserted: we zero / normalize timestamps and
 // ignore duration numeric drift by clamping to milliseconds. The golden can be updated intentionally
@@ -23,7 +25,7 @@ func TestBuildReportStability(t *testing.T) {
 	r.deriveOutcome()
 	r.ConfigHash = "deadbeef" // deterministic stub
 	r.PipelineVersion = 1
-	r.EffectiveRenderMode = "auto"
+	r.EffectiveRenderMode = buildReportRenderMode
 	ser := r.sanitizedCopy()
 	// Populate optional fields to match golden defaults
 	if ser.DocFilesHash == "" {

@@ -15,7 +15,7 @@ import (
 // normalizeOutputDir normalizes and returns absolute path of output directory.
 func normalizeOutputDir(out string) string {
 	if out == "" {
-		out = "./site"
+		out = defaultSiteDir
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {

@@ -13,6 +13,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
 
+const (
+	transientTypeRateLimit      = "rate_limit"
+	transientTypeNetworkTimeout = "network_timeout"
+)
+
 // withRetry wraps an operation with retry logic based on build configuration.
 func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (string, error) {
 	if c.buildCfg == nil || c.buildCfg.MaxRetries <= 0 {
@@ -55,9 +60,9 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 		delay := pol.Delay(attempt + 1) // base delay
 		// Adjust delay for typed transient errors
 		switch classifyTransientType(err) {
-		case "rate_limit":
+		case transientTypeRateLimit:
 			delay = time.Duration(float64(delay) * multRateLimit)
-		case "network_timeout":
+		case transientTypeNetworkTimeout:
 			delay = time.Duration(float64(delay) * multNetworkTimeout)
 		}
 		time.Sleep(delay)

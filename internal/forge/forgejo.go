@@ -314,9 +314,9 @@ func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret
 // ParseWebhookEvent parses Forgejo webhook payload.
 func (c *ForgejoClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	switch eventType {
-	case "push":
+	case string(WebhookEventPush):
 		return c.parsePushEvent(payload)
-	case "repository":
+	case string(WebhookEventRepository):
 		return c.parseRepositoryEvent(payload)
 	default:
 		return nil, fmt.Errorf("unsupported event type: %s", eventType)

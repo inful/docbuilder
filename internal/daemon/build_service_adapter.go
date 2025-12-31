@@ -10,6 +10,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
+const defaultSiteDir = "./site"
+
 // BuildServiceAdapter adapts the daemon's Builder interface to build.BuildService.
 // This enables the daemon to use the canonical build pipeline while maintaining
 // compatibility with the existing job-based architecture.
@@ -48,7 +50,7 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 	// Extract output directory and combine with base_directory if set
 	outDir := cfg.Output.Directory
 	if outDir == "" {
-		outDir = "./site"
+		outDir = defaultSiteDir
 	}
 	// If base_directory is set and outDir is relative, combine them
 	if cfg.Output.BaseDirectory != "" && !filepath.IsAbs(outDir) {

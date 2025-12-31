@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const untitledDocTitle = "Untitled"
+
 // parseFrontMatter extracts YAML front matter from content.
 // Sets OriginalFrontMatter and removes front matter from Content.
 // Idempotent: if already parsed (OriginalFrontMatter is set), does nothing.
@@ -106,7 +108,7 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 			doc.FrontMatter["title"] = doc.Name
 		} else {
 			// Fallback to "Untitled" if name is empty
-			doc.FrontMatter["title"] = "Untitled"
+			doc.FrontMatter["title"] = untitledDocTitle
 		}
 	}
 

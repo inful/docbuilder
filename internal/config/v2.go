@@ -11,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const configVersion = "2.0"
+
 // Config represents the unified (v2) configuration format for DocBuilder, supporting both daemon and direct modes.
 type Config struct {
 	Version    string            `yaml:"version"`
@@ -166,7 +168,7 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Validate version
-	if config.Version != "2.0" {
+	if config.Version != configVersion {
 		return nil, fmt.Errorf("unsupported configuration version: %s (expected 2.0)", config.Version)
 	}
 

@@ -11,6 +11,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const (
+	mockFeatureBranch = "feature-branch"
+	mockTestSecret    = "test-secret"
+	mockGitHubAPIURL  = "https://api.github.com"
+)
+
 // EnhancedMockForgeClient provides advanced mock capabilities for testing forge integrations
 // This is the production-ready version of the enhanced mock system developed in Phase 1 & 2.
 type EnhancedMockForgeClient struct {
@@ -258,7 +264,7 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature, secret st
 		validSignature := signature == "sha256=valid-signature" || signature == "sha1=valid-signature"
 
 		// Use the configured webhook secret if available, otherwise use a default test secret
-		expectedSecret := "test-secret"
+		expectedSecret := mockTestSecret
 		if m.webhookSecret != "" {
 			expectedSecret = m.webhookSecret
 		}
@@ -306,9 +312,9 @@ func (m *EnhancedMockForgeClient) ParseWebhookEvent(_ []byte, eventType string) 
 
 	// Add event-specific data
 	switch eventType {
-	case "push":
+	case string(WebhookEventPush):
 		event.Type = WebhookEventPush
-		event.Branch = "main"
+		event.Branch = defaultMainBranch
 		// Add mock commits for push events
 		event.Commits = []WebhookCommit{
 			{
@@ -328,12 +334,12 @@ func (m *EnhancedMockForgeClient) ParseWebhookEvent(_ []byte, eventType string) 
 		}
 	case "pull_request":
 		event.Type = WebhookEventPush // Use available type
-		event.Branch = "feature-branch"
+		event.Branch = mockFeatureBranch
 		event.Action = "opened"
 		event.Metadata["pull_request_number"] = "42"
 	case "release":
 		event.Type = WebhookEventTag // Use available type
-		event.Branch = "main"
+		event.Branch = defaultMainBranch
 		event.Action = "published"
 		event.Metadata["tag"] = "v1.0.0"
 	}
@@ -382,7 +388,7 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 
 	switch m.forgeType {
 	case TypeGitHub:
-		apiURL = "https://api.github.com"
+		apiURL = mockGitHubAPIURL
 		baseURL = "https://github.com"
 	case TypeGitLab:
 		apiURL = "https://gitlab.com/api/v4"

@@ -8,6 +8,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
+const indexFileSuffix = "_index"
+
 // Document represents a file being processed through the content pipeline.
 // This is the new unified representation that replaces the Page + PageShim + PageAdapter pattern.
 type Document struct {
@@ -79,7 +81,7 @@ func NewDocumentFromDocFile(file docs.DocFile) *Document {
 // isIndexFileName checks if a file name represents an index file.
 func isIndexFileName(name string) bool {
 	lowerName := strings.ToLower(name)
-	return lowerName == "index" || lowerName == "readme" || lowerName == "_index"
+	return lowerName == "index" || lowerName == "readme" || lowerName == indexFileSuffix
 }
 
 // FileTransform modifies a document in the pipeline.

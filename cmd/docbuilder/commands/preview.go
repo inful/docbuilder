@@ -12,6 +12,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 )
 
+const configVersion = "2.0"
+
 // PreviewCmd starts a local server watching a docs directory without forge polling.
 type PreviewCmd struct {
 	DocsDir      string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory to watch."`
@@ -30,7 +32,7 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	defer cancel()
 	// Build a minimal in-memory config
 	cfg := &config.Config{}
-	cfg.Version = "2.0"
+	cfg.Version = configVersion
 
 	// Initialize monitoring config with defaults
 	cfg.Monitoring = &config.MonitoringConfig{

@@ -14,6 +14,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const autoVariant = "auto"
+
 // generateHugoConfig creates the Hugo configuration file with Relearn theme.
 func (g *Generator) generateHugoConfig() error {
 	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
@@ -258,7 +260,7 @@ func (g *Generator) collectVersionMetadata() map[string]any {
 func hasAutoVariant(themeVariant any) bool {
 	if variants, ok := themeVariant.([]any); ok {
 		for _, v := range variants {
-			if str, ok := v.(string); ok && str == "auto" {
+			if str, ok := v.(string); ok && str == autoVariant {
 				return true
 			}
 		}
@@ -266,7 +268,7 @@ func hasAutoVariant(themeVariant any) bool {
 	}
 
 	if str, ok := themeVariant.(string); ok {
-		return str == "auto"
+		return str == autoVariant
 	}
 
 	return false

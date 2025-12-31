@@ -14,6 +14,11 @@ import (
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const (
+	mainBranch   = "main"
+	masterBranch = "master"
+)
+
 // helper to create a commit (duplicate of logic in other tests but kept local to avoid accidental coupling).
 func addSimpleCommit(t *testing.T, repo *git.Repository, repoPath, name string) plumbing.Hash {
 	wt, err := repo.Worktree()
@@ -59,8 +64,8 @@ func TestResolveTargetBranchFromHead(t *testing.T) {
 	cfg := appcfg.Repository{Name: "r", URL: "https://example/repo.git"}
 	b := resolveTargetBranch(repo, cfg)
 	// initial branch name depends on git implementation (master/main). Accept either.
-	if b != "master" && b != "main" {
-		t.Fatalf("expected master or main got %s", b)
+	if b != masterBranch && b != mainBranch {
+		t.Fatalf("expected %s or %s got %s", masterBranch, mainBranch, b)
 	}
 }
 

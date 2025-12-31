@@ -8,6 +8,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const authTokenType = "token"
+
 // TestPhase4BComponentIntegration demonstrates comprehensive component integration testing.
 func TestPhase4BComponentIntegration(t *testing.T) {
 	t.Log("=== Phase 4B: Component Integration Testing ===")
@@ -323,11 +325,11 @@ func testMultiForgeConfigurationIntegration(t *testing.T) {
 
 	// Configure different authentication types
 	githubConfig := github.GenerateForgeConfig()
-	githubConfig.Auth.Type = "token"
+	githubConfig.Auth.Type = authTokenType
 	githubConfig.Organizations = []string{"enterprise", "opensource"}
 
 	gitlabConfig := gitlab.GenerateForgeConfig()
-	gitlabConfig.Auth.Type = "token"
+	gitlabConfig.Auth.Type = authTokenType
 	gitlabConfig.Groups = []string{"internal", "research"}
 
 	forgejoConfig := forgejo.GenerateForgeConfig()

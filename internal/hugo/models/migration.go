@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	mergeStrategyReplace = "replace"
+)
+
 // MigrationHelper provides utilities for migrating from the existing
 // map[string]any-based front matter system to the new strongly-typed system.
 type MigrationHelper struct{}
@@ -237,7 +241,7 @@ func (m *MigrationHelper) parseMergeMode(mode string) (MergeMode, error) {
 	switch mode {
 	case "deep":
 		return MergeModeDeep, nil
-	case "replace":
+	case mergeStrategyReplace:
 		return MergeModeReplace, nil
 	case "set_if_missing":
 		return MergeModeSetIfMissing, nil
@@ -253,7 +257,7 @@ func (m *MigrationHelper) parseArrayMergeStrategy(strategy string) (ArrayMergeSt
 		return ArrayMergeStrategyAppend, nil
 	case "union":
 		return ArrayMergeStrategyUnion, nil
-	case "replace":
+	case mergeStrategyReplace:
 		return ArrayMergeStrategyReplace, nil
 	default:
 		return ArrayMergeStrategyUnion, fmt.Errorf("unknown array merge strategy: %s", strategy)
