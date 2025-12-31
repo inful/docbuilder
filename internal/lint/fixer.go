@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	linkTypeInline    = "link"
 	linkTypeImage     = "image"
 	linkTypeReference = "reference"
 )
@@ -1327,10 +1328,10 @@ func (fr *FixResult) Summary() string {
 		b.WriteString(fmt.Sprintf("\nBroken links detected: %d\n", len(fr.BrokenLinks)))
 		b.WriteString("These links reference non-existent files:\n")
 		for _, broken := range fr.BrokenLinks {
-			linkTypeStr := "link"
+			linkTypeStr := linkTypeInline
 			switch broken.LinkType {
 			case LinkTypeInline:
-				linkTypeStr = "link"
+				linkTypeStr = linkTypeInline
 			case LinkTypeImage:
 				linkTypeStr = linkTypeImage
 			case LinkTypeReference:
@@ -1435,10 +1436,10 @@ func (fr *FixResult) DetailedPreview() string {
 	if len(fr.BrokenLinks) > 0 {
 		b.WriteString("[Broken Links Detected]\n")
 		for i, broken := range fr.BrokenLinks {
-			linkTypeStr := "link"
+			linkTypeStr := linkTypeInline
 			switch broken.LinkType {
 			case LinkTypeInline:
-				linkTypeStr = "link"
+				linkTypeStr = linkTypeInline
 			case LinkTypeImage:
 				linkTypeStr = linkTypeImage
 			case LinkTypeReference:
