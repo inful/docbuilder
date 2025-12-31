@@ -218,6 +218,10 @@ func AutoDiscoverRepositories(ctx context.Context, v2cfg *config.Config) ([]conf
 			client, err = forge.NewGitHubClient(f)
 		case config.ForgeGitLab:
 			client, err = forge.NewGitLabClient(f)
+		case config.ForgeLocal:
+			// Local forges don't support auto-discovery (no remote API)
+			slog.Warn("Local forge type does not support auto-discovery (skipping)", "name", f.Name)
+			continue
 		default:
 			slog.Warn("Unsupported forge type for auto-discovery (skipping)", "type", f.Type, "name", f.Name)
 			continue

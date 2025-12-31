@@ -11,7 +11,10 @@ func ResolveEffectiveRenderMode(cfg *Config) RenderMode {
 		return RenderModeAlways
 	case RenderModeNever:
 		return RenderModeNever
+	case RenderModeAuto:
+		return RenderModeAuto
 	default:
+		// Unknown or empty value - default to auto
 		return RenderModeAuto
 	}
 }
