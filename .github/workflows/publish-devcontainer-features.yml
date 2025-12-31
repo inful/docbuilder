@@ -1,0 +1,114 @@
+name: Publish DevContainer Features
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'features/**'
+      - '.versions'
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-features:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install devcontainer CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Sync feature versions
+        run: |
+          chmod +x scripts/sync-feature-versions.sh
+          ./scripts/sync-feature-versions.sh
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version tag
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            # Use release tag (e.g., v1.0.0)
+            VERSION="${{ github.event.release.tag_name }}"
+            echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          else
+            # Use commit SHA for non-release builds
+            VERSION="sha-$(git rev-parse --short=7 HEAD)"
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish features
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Publishing features with version: ${VERSION}"
+          
+          # Publish each feature
+          for feature_dir in features/*/; do
+            if [ -f "${feature_dir}devcontainer-feature.json" ]; then
+              feature_name=$(basename "$feature_dir")
+              echo "Publishing feature: ${feature_name}"
+              
+              devcontainer features publish \
+                --namespace inful \
+                --registry ghcr.io \
+                "${feature_dir}" \
+                --version "${VERSION}"
+            fi
+          done
+
+      - name: Update latest tag (release only)
+        if: github.event_name == 'release'
+        run: |
+          echo "Tagging as 'latest' for release"
+          # The devcontainer CLI automatically tags as latest for releases
+          # This step is informational only
+
+      - name: Generate feature documentation
+        if: github.event_name == 'release'
+        run: |
+          echo "## Published Features" > feature-release.md
+          echo "" >> feature-release.md
+          echo "Version: ${{ steps.version.outputs.version }}" >> feature-release.md
+          echo "" >> feature-release.md
+          echo "### Usage" >> feature-release.md
+          echo '```json' >> feature-release.md
+          echo '{' >> feature-release.md
+          echo '  "features": {' >> feature-release.md
+          
+          for feature_dir in features/*/; do
+            if [ -f "${feature_dir}devcontainer-feature.json" ]; then
+              feature_name=$(basename "$feature_dir")
+              echo "    \"ghcr.io/inful/devcontainer-features/${feature_name}:${{ steps.version.outputs.version }}\": {}" >> feature-release.md
+            fi
+          done
+          
+          echo '  }' >> feature-release.md
+          echo '}' >> feature-release.md
+          echo '```' >> feature-release.md
+
+      - name: Upload documentation artifact
+        if: github.event_name == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-documentation
+          path: feature-release.md
