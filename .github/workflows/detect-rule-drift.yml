@@ -39,6 +39,19 @@ jobs:
         run: |
           go install ./cmd/docbuilder
       
+      - name: Initialize test repository
+        run: |
+          TEST_REPO_DIR="$(mktemp -d)"
+          cp -r test/testdata/repos/lint-sync-test/* "$TEST_REPO_DIR/"
+          cd "$TEST_REPO_DIR"
+          git init
+          git config user.name "Test"
+          git config user.email "test@example.com"
+          git add .
+          git commit -m "Initial test commit"
+          git branch -M main
+          echo "TEST_REPO_DIR=$TEST_REPO_DIR" >> $GITHUB_ENV
+
       - name: Create test configuration
         run: |
           cat > drift-test-config.yaml <<EOF
@@ -46,7 +59,7 @@ jobs:
           
           repositories:
             - name: test-docs
-              url: ./test/testdata/repos/lint-sync-test
+              url: ${{ env.TEST_REPO_DIR }}
               branch: main
               paths:
                 - docs
