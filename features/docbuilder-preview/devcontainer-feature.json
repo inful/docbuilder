@@ -1,0 +1,24 @@
+{
+  "id": "docbuilder-preview",
+  "version": "1.0.0",
+  "name": "DocBuilder Preview",
+  "description": "Installs DocBuilder with bundled Hugo and starts automatic documentation preview",
+  "documentationURL": "https://github.com/YOUR_ORG/docbuilder",
+  "licenseURL": "https://github.com/YOUR_ORG/docbuilder/blob/main/LICENSE",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "DocBuilder version to install"
+    },
+    "previewPort": {
+      "type": "string",
+      "default": "1313",
+      "description": "Port for preview server"
+    }
+  },
+  "containerEnv": {
+    "DOCBUILDER_PREVIEW_PORT": "${previewPort}"
+  },
+  "postCreateCommand": "nohup docbuilder preview --port ${previewPort} > /tmp/docbuilder-preview.log 2>&1 &"
+}

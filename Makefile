@@ -48,6 +48,30 @@ fmt:
 lint:
 	golangci-lint run
 
+# Sync feature versions
+sync-feature-versions:
+	@echo "Syncing versions to devcontainer feature..."
+	@./scripts/sync-feature-versions.sh
+
+# Update Hugo version
+update-hugo-version:
+	@read -p "Enter new Hugo version: " version; \
+	sed -i "s/HUGO_VERSION=.*/HUGO_VERSION=$$version/" .versions
+	@$(MAKE) sync-feature-versions
+	@echo "✓ Hugo version updated to $$version"
+	@echo "Run 'git add .versions features/ && git commit' to commit changes"
+
+# Check versions
+check-versions:
+	@echo "Current versions:"
+	@cat .versions
+	@echo ""
+	@echo "Feature install.sh:"
+	@grep "HUGO_VERSION=" features/docbuilder-preview/install.sh || echo "Not found"
+	@echo ""
+	@echo "Dockerfile:"
+	@grep "HUGO_VERSION=" Dockerfile | head -1 || echo "Not found"
+
 # Development setup
 dev-setup:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
