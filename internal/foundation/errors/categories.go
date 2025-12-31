@@ -1,4 +1,3 @@
-// Package errors provides foundational, type-safe error primitives used across DocBuilder.
 package errors
 
 import "maps"

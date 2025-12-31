@@ -1,5 +1,3 @@
-// Package state provides domain models and interfaces for daemon state management.
-// This replaces the monolithic StateManager with focused, well-typed components.
 package state
 
 import (
