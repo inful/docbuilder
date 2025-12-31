@@ -173,39 +173,39 @@ func TestRewriteRelativeLinks_CatastrophicBacktracking(t *testing.T) {
 	}{
 		{
 			name: "many brackets without matching link",
-			content: strings.Repeat("[", 100) + "text" + strings.Repeat("]", 100) + 
+			content: strings.Repeat("[", 100) + "text" + strings.Repeat("]", 100) +
 				" [valid link](./path.md)",
 			expectedSubstr: "[valid link](",
 			maxDuration:    100 * time.Millisecond,
 		},
 		{
 			name: "many parentheses without matching link",
-			content: strings.Repeat("(", 100) + "text" + strings.Repeat(")", 100) + 
+			content: strings.Repeat("(", 100) + "text" + strings.Repeat(")", 100) +
 				" [valid link](./path.md)",
 			expectedSubstr: "[valid link](",
 			maxDuration:    100 * time.Millisecond,
 		},
 		{
-			name: "unmatched bracket in text followed by link",
-			content: "Some text [ with unmatched bracket\n\n[valid link](./path.md)",
+			name:           "unmatched bracket in text followed by link",
+			content:        "Some text [ with unmatched bracket\n\n[valid link](./path.md)",
 			expectedSubstr: "[valid link](",
 			maxDuration:    100 * time.Millisecond,
 		},
 		{
-			name: "code block with many brackets",
-			content: "```go\nfor i := range items {\n    process(items[i])\n}\n```\n[link](./doc.md)",
+			name:           "code block with many brackets",
+			content:        "```go\nfor i := range items {\n    process(items[i])\n}\n```\n[link](./doc.md)",
 			expectedSubstr: "[link](",
 			maxDuration:    100 * time.Millisecond,
 		},
 		{
-			name: "nested structures",
-			content: "[[nested]] [more [nested] stuff] (not a link)\n[real link](./file.md)",
+			name:           "nested structures",
+			content:        "[[nested]] [more [nested] stuff] (not a link)\n[real link](./file.md)",
 			expectedSubstr: "[real link](",
 			maxDuration:    100 * time.Millisecond,
 		},
 		{
-			name: "long text between brackets and parens",
-			content: "[text with " + strings.Repeat("very ", 200) + "long content](./path.md)",
+			name:           "long text between brackets and parens",
+			content:        "[text with " + strings.Repeat("very ", 200) + "long content](./path.md)",
 			expectedSubstr: "[text with",
 			maxDuration:    100 * time.Millisecond,
 		},
@@ -260,19 +260,12 @@ func TestRewriteRelativeLinks_RealWorldContent(t *testing.T) {
 		Content:    string(content),
 	}
 
-	// Should complete quickly (within 100ms)
-	done := make(chan bool)
-	go func() {
-		_, err := transform(doc)
-		assert.NoError(t, err)
-		done <- true
-	}()
+	// Measure the time directly
+	start := time.Now()
+	_, err = transform(doc)
+	duration := time.Since(start)
 
-	select {
-	case <-done:
-		// Success - the transform completed
-		t.Log("Transform completed successfully")
-	case <-time.After(100 * time.Millisecond):
-		t.Fatal("Transform took too long with real-world content - catastrophic backtracking detected")
-	}
+	assert.NoError(t, err)
+	assert.Less(t, duration.Milliseconds(), int64(100), "Transform should complete in under 100ms but took %v", duration)
+	t.Logf("Transform completed in %v", duration)
 }

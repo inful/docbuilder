@@ -11,49 +11,126 @@ import (
 // rewriteRelativeLinks rewrites relative markdown links to work with Hugo.
 func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
-		// Use a simple regex that cannot backtrack catastrophically
-		// Match markdown links: [text](path)
-		// Pattern: (!?)\[([^]]+)\]\(([^)]+)\)
-		// - (!?) - optional ! for images
-		// - \[ - literal opening bracket
-		// - ([^]]+) - one or more non-] characters (no backtracking possible)
-		// - \] - literal closing bracket
-		// - \( - literal opening paren
-		// - ([^)]+) - one or more non-) characters (no backtracking possible)
-		// - \) - literal closing paren
-		linkPattern := regexp.MustCompile(`(!?)\[([^]]+)\]\(([^)]+)\)`)
-
-		doc.Content = linkPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
-			submatches := linkPattern.FindStringSubmatch(match)
-			if len(submatches) < 4 {
-				return match
-			}
-
-			exclaim := submatches[1]
-			text := submatches[2]
-			path := submatches[3]
-
-			// Skip image links (those with !)
-			if exclaim == "!" {
-				return match
-			}
-
-			// Skip absolute URLs, anchors, mailto, etc.
-			if strings.HasPrefix(path, "http://") ||
-				strings.HasPrefix(path, "https://") ||
-				strings.HasPrefix(path, "#") ||
-				strings.HasPrefix(path, "mailto:") ||
-				strings.HasPrefix(path, "/") {
-				return match
-			}
-
-			// Rewrite relative link to Hugo-compatible path
-			newPath := rewriteLinkPath(path, doc.Repository, doc.Forge, doc.IsIndex, doc.Path)
-			return fmt.Sprintf("[%s](%s)", text, newPath)
-		})
-
+		// Use an iterative approach instead of regex to avoid catastrophic backtracking
+		// This processes the content character-by-character to find valid markdown links
+		doc.Content = rewriteLinksIterative(doc.Content, doc.Repository, doc.Forge, doc.IsIndex, doc.Path)
 		return nil, nil
 	}
+}
+
+// rewriteLinksIterative processes markdown content iteratively to avoid regex backtracking.
+func rewriteLinksIterative(content, repository, forge string, isIndex bool, docPath string) string {
+	var result strings.Builder
+	result.Grow(len(content))
+
+	i := 0
+	for i < len(content) {
+		// Check if we're at the start of a potential link
+		if i < len(content)-1 && content[i] == '[' {
+			// Try to process as a link; if successful, advance i and continue
+			if newI, processed := tryProcessLink(content, i, repository, forge, isIndex, docPath, &result); processed {
+				i = newI
+				continue
+			}
+		}
+
+		result.WriteByte(content[i])
+		i++
+	}
+
+	return result.String()
+}
+
+// tryProcessLink attempts to process a markdown link starting at position i.
+// Returns the new position and whether a link was successfully processed.
+func tryProcessLink(content string, i int, repository, forge string, isIndex bool, docPath string, result *strings.Builder) (int, bool) {
+	// Check if it's an image link (preceded by !)
+	isImage := i > 0 && content[i-1] == '!'
+
+	// Find the closing ]
+	closeBracket := findClosingBracket(content, i+1)
+	if closeBracket == -1 {
+		// No closing bracket, not a valid link
+		return 0, false
+	}
+
+	// Check if there's a ( immediately after ]
+	if closeBracket+1 >= len(content) || content[closeBracket+1] != '(' {
+		// Not a link, write the content
+		result.WriteString(content[i : closeBracket+1])
+		return closeBracket + 1, true
+	}
+
+	// Find the closing )
+	closeParen := findClosingParen(content, closeBracket+2)
+	if closeParen == -1 {
+		// No closing paren, write what we have
+		result.WriteString(content[i : closeBracket+2])
+		return closeBracket + 2, true
+	}
+
+	// Extract link components
+	text := content[i+1 : closeBracket]
+	path := content[closeBracket+2 : closeParen]
+
+	// If it's an image or absolute URL, write as-is
+	if isImage || isAbsoluteOrSpecialURL(path) {
+		result.WriteString(content[i : closeParen+1])
+		return closeParen + 1, true
+	}
+
+	// Rewrite the relative link
+	newPath := rewriteLinkPath(path, repository, forge, isIndex, docPath)
+	result.WriteByte('[')
+	result.WriteString(text)
+	result.WriteString("](")
+	result.WriteString(newPath)
+	result.WriteByte(')')
+	return closeParen + 1, true
+}
+
+// findClosingBracket finds the next unescaped ] character.
+func findClosingBracket(content string, start int) int {
+	for i := start; i < len(content); i++ {
+		if content[i] == ']' {
+			return i
+		}
+		// Skip newlines to avoid matching across paragraphs
+		if content[i] == '\n' {
+			// Allow one newline but not multiple (blank line)
+			if i+1 < len(content) && content[i+1] == '\n' {
+				return -1
+			}
+		}
+	}
+	return -1
+}
+
+// findClosingParen finds the next unescaped ) character.
+func findClosingParen(content string, start int) int {
+	for i := start; i < len(content); i++ {
+		if content[i] == ')' {
+			return i
+		}
+		// URLs shouldn't span multiple lines
+		if content[i] == '\n' {
+			return -1
+		}
+		// Stop at spaces in URLs (markdown links don't have spaces in URLs)
+		if content[i] == ' ' {
+			return -1
+		}
+	}
+	return -1
+}
+
+// isAbsoluteOrSpecialURL checks if a path is absolute or special (http, anchor, mailto, etc).
+func isAbsoluteOrSpecialURL(path string) bool {
+	return strings.HasPrefix(path, "http://") ||
+		strings.HasPrefix(path, "https://") ||
+		strings.HasPrefix(path, "#") ||
+		strings.HasPrefix(path, "mailto:") ||
+		strings.HasPrefix(path, "/")
 }
 
 // rewriteImageLinks rewrites image paths to work with Hugo.
@@ -146,8 +223,9 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	// Handle relative paths that navigate up directories (../)
 	if after, ok := strings.CutPrefix(path, "../"); ok {
 		// Strip all leading ../ sequences
+		path = after
 		for strings.HasPrefix(path, "../") {
-			path = after
+			path = strings.TrimPrefix(path, "../")
 		}
 
 		// Prepend repository path
