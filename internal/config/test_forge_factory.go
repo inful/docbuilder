@@ -85,6 +85,17 @@ func (f *TestForgeConfigFactory) CreateForgejoForge(name string) *ForgeConfig {
 	}
 }
 
+// CreateLocalForge creates a realistic local forge configuration.
+func (f *TestForgeConfigFactory) CreateLocalForge(name string) *ForgeConfig {
+	f.counter++
+	return &ForgeConfig{
+		Name: fmt.Sprintf("%s-local-%d", name, f.counter),
+		Type: ForgeLocal,
+		// Local forges don't have BaseURL, APIURL, organizations, groups, or webhooks
+		Auth: nil, // Local repos typically don't need auth in tests
+	}
+}
+
 // CreateForgeWithAutoDiscover creates a forge configuration with auto-discovery enabled.
 func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType, name string) *ForgeConfig {
 	var forge *ForgeConfig
@@ -96,14 +107,20 @@ func (f *TestForgeConfigFactory) CreateForgeWithAutoDiscover(forgeType ForgeType
 		forge = f.CreateGitLabForge(name)
 	case ForgeForgejo:
 		forge = f.CreateForgejoForge(name)
+	case ForgeLocal:
+		// Local forges don't support auto-discovery
+		forge = f.CreateLocalForge(name)
 	default:
 		forge = f.CreateGitHubForge(name) // Default to GitHub
 	}
 
 	// Clear organizations/groups and enable auto-discovery
-	forge.Organizations = nil
-	forge.Groups = nil
-	forge.AutoDiscover = true
+	// (skip for local forges as they don't support auto-discovery)
+	if forgeType != ForgeLocal {
+		forge.Organizations = nil
+		forge.Groups = nil
+		forge.AutoDiscover = true
+	}
 
 	return forge
 }
@@ -119,6 +136,8 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 		forge = f.CreateGitLabForge(name)
 	case ForgeForgejo:
 		forge = f.CreateForgejoForge(name)
+	case ForgeLocal:
+		forge = f.CreateLocalForge(name)
 	default:
 		forge = f.CreateGitHubForge(name)
 	}
