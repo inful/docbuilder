@@ -22,6 +22,7 @@ func TestGenerateSiteWithReportContextSetsDocFilesHash(t *testing.T) {
 	}
 	if report == nil {
 		t.Fatalf("expected report")
+		return
 	}
 	if report.DocFilesHash == "" {
 		t.Fatalf("expected non-empty DocFilesHash")

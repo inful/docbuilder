@@ -76,6 +76,7 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	rs := sm.GetRepository(repo.URL)
 	if rs == nil {
 		t.Fatalf("expected repository state created")
+		return
 	}
 	if rs.DocumentCount != 1 {
 		t.Fatalf("expected document count=1 got %d", rs.DocumentCount)

@@ -11,6 +11,7 @@ func TestCreateLocalForge(t *testing.T) {
 
 	if forge == nil {
 		t.Fatal("CreateLocalForge should not return nil")
+		return
 	}
 
 	if forge.Type != ForgeLocal {
@@ -68,6 +69,7 @@ func TestCreateForgeWithAutoDiscover_AllTypes(t *testing.T) {
 
 			if forge == nil {
 				t.Fatal("CreateForgeWithAutoDiscover should not return nil")
+				return
 			}
 
 			if forge.Type != tt.wantType {

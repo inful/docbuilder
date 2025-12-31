@@ -217,6 +217,7 @@ func TestBuildHistoryProjection_GetActiveBuild(t *testing.T) {
 	active = projection.GetActiveBuild()
 	if active == nil {
 		t.Fatal("Expected active build")
+		return
 	}
 	if active.BuildID != "active-build" {
 		t.Errorf("Expected build ID 'active-build', got %q", active.BuildID)

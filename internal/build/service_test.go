@@ -45,6 +45,7 @@ func TestNewBuildService(t *testing.T) {
 	svc := NewBuildService()
 	if svc == nil {
 		t.Fatal("NewBuildService() returned nil")
+		return
 	}
 	if svc.workspaceFactory == nil {
 		t.Error("workspaceFactory should be set")
