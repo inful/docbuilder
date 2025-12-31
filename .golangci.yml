@@ -24,7 +24,7 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    #- godoclint
+    - godoclint
     - godot
     #- godox
     - goheader
