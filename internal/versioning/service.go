@@ -17,7 +17,7 @@ func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 		}
 	}
 
-	strategy := StrategyDefaultOnly
+	var strategy VersionStrategy
 	switch v2Config.Versioning.Strategy {
 	case config.StrategyBranchesOnly:
 		strategy = StrategyBranches

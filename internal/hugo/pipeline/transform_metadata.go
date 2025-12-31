@@ -84,6 +84,9 @@ func generateEditURL(doc *Document) string {
 	case config.ForgeForgejo:
 		// Forgejo and Gitea both use /_edit/ pattern
 		return fmt.Sprintf("%s/_edit/%s/%s", baseURL, branch, filePath)
+	case config.ForgeLocal:
+		// Local forges don't have web UI edit URLs
+		return ""
 	default:
 		// Fallback to GitHub-style for unknown forges
 		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)

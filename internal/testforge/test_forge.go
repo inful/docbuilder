@@ -481,6 +481,10 @@ func (tf *TestForge) ToForgeConfig() *config.ForgeConfig {
 	case config.ForgeForgejo:
 		apiURL = "https://forgejo.example.com/api/v1"
 		baseURL = "https://forgejo.example.com"
+	case config.ForgeLocal:
+		// Local forges - use generic example URLs
+		apiURL = fmt.Sprintf("file://%s/api", tf.name)
+		baseURL = fmt.Sprintf("file://%s", tf.name)
 	default:
 		apiURL = fmt.Sprintf("https://api.%s.example.com", tf.name)
 		baseURL = fmt.Sprintf("https://%s.example.com", tf.name)

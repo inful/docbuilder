@@ -22,6 +22,9 @@ func GenerateEditURL(forgeType config.ForgeType, baseURL, fullName, branch, file
 		return fmt.Sprintf("%s/%s/-/edit/%s/%s", baseURL, fullName, branch, filePath)
 	case config.ForgeForgejo:
 		return fmt.Sprintf("%s/%s/_edit/%s/%s", baseURL, fullName, branch, filePath)
+	case config.ForgeLocal:
+		// Local forges don't have web UI edit URLs
+		return ""
 	default:
 		return ""
 	}
