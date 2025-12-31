@@ -29,10 +29,10 @@ fi
 install_docbuilder() {
     if [ "$VERSION" = "latest" ]; then
         echo "Fetching latest DocBuilder version..."
-        VERSION=$(curl -s https://api.github.com/repos/YOUR_ORG/docbuilder/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        VERSION=$(curl -s https://api.github.com/repos/inful/docbuilder/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
     fi
     
-    DOCBUILDER_URL="https://github.com/YOUR_ORG/docbuilder/releases/download/${VERSION}/docbuilder-${OS}-${ARCH}"
+    DOCBUILDER_URL="https://github.com/inful/docbuilder/releases/download/${VERSION}/docbuilder-${OS}-${ARCH}"
     
     echo "Downloading DocBuilder ${VERSION} from: $DOCBUILDER_URL"
     
