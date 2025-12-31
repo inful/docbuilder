@@ -55,10 +55,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	}
 
 	buildStat := &buildStatus{}
-	daemon, err := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
-	if err != nil {
-		return err
-	}
+	daemon := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
 
 	httpServer, err := startHTTPServer(ctx, cfg, daemon, port)
 	if err != nil {
@@ -97,7 +94,7 @@ func validateAndResolveDocsDir(cfg *config.Config) (string, error) {
 }
 
 // initializePreviewDaemon performs initial build and creates daemon instance.
-func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) (*Daemon, error) {
+func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) *Daemon {
 	// Initial build
 	if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
@@ -115,7 +112,7 @@ func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs st
 	}
 	daemon.status.Store(StatusRunning)
 	daemon.buildStatus = buildStat
-	return daemon, nil
+	return daemon
 }
 
 // startHTTPServer initializes and starts the HTTP server.
@@ -249,7 +246,7 @@ func handleShutdown(ctx context.Context, httpServer *HTTPServer, rebuildReq chan
 	slog.Info("Shutting down preview server...")
 
 	// Create a timeout context for graceful shutdown
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, shutdownCancel := context.WithTimeout(ctx, 5*time.Second)
 	defer shutdownCancel()
 
 	// Stop HTTP server

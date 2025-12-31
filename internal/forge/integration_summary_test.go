@@ -321,5 +321,4 @@ func testRepositoryConversion(t *testing.T) {
 	}
 
 	t.Log("✓ Repository conversion functionality works")
-
 }
