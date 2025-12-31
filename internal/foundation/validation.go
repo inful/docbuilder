@@ -32,7 +32,7 @@ func (fe FieldError) Error() string {
 	return fe.Message
 }
 
-// NewValidationResult creates a successful validation result.
+// Valid creates a successful validation result.
 func Valid() ValidationResult {
 	return ValidationResult{Valid: true}
 }

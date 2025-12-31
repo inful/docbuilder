@@ -1,4 +1,3 @@
-// Package handlers provides HTTP handlers for webhook endpoints across different forge providers.
 package handlers
 
 import (

@@ -1,5 +1,3 @@
-// Package build provides sentinel errors for classifying high-level pipeline failures in DocBuilder.
-// These errors are used for retry semantics and should be wrapped with context at the call site.
 package build
 
 import "errors"

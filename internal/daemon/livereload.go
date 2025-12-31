@@ -187,7 +187,7 @@ func (h *LiveReloadHub) Shutdown() {
 	}
 }
 
-// ScriptContent returns the JS snippet clients can include.
+// LiveReloadScript is the script content that returns the JS snippet clients can include.
 const LiveReloadScript = `(() => {
   if (window.__DOCBUILDER_LR__) return;
   window.__DOCBUILDER_LR__=true;

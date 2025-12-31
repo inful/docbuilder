@@ -192,7 +192,7 @@ func (ss *Service) Compact(ctx context.Context) foundation.Result[struct{}, erro
 	return foundation.Ok[struct{}, error](struct{}{})
 }
 
-// GetStats returns service-level statistics about the state system.
+// ServiceStats returns service-level statistics about the state system.
 type ServiceStats struct {
 	RepositoryCount int    `json:"repository_count"`
 	BuildCount      int    `json:"build_count"`

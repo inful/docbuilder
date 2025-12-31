@@ -1,4 +1,3 @@
-// Package git provides functions for updating, synchronizing, and managing Git repositories in DocBuilder.
 package git
 
 import (
