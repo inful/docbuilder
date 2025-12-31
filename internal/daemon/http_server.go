@@ -312,7 +312,7 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 func (s *HTTPServer) resolveAbsoluteOutputDir() string {
 	out := s.config.Output.Directory
 	if out == "" {
-		out = "./site"
+		out = defaultSiteDir
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {
@@ -467,7 +467,7 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 func (s *HTTPServer) resolveDocsRoot() string {
 	out := s.config.Output.Directory
 	if out == "" {
-		out = "./site"
+		out = defaultSiteDir
 	}
 	// Combine with base_directory if set and path is relative
 	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
@@ -670,7 +670,7 @@ func (s *HTTPServer) handleReadiness(w http.ResponseWriter, r *http.Request) {
 	}
 	out := s.config.Output.Directory
 	if out == "" {
-		out = "./site"
+		out = defaultSiteDir
 	}
 	// Combine with base_directory if set and path is relative
 	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {

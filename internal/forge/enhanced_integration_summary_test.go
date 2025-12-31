@@ -109,7 +109,7 @@ func testEnhancedMockForgeClientFailureModes(t *testing.T) {
 	if err == nil {
 		t.Error("Expected authentication failure, got nil")
 	}
-	if err.Error() != "authentication failed: invalid credentials" {
+	if err.Error() != authFailureMessage {
 		t.Errorf("Expected auth failure message, got: %s", err.Error())
 	}
 

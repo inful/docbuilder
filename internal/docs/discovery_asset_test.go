@@ -11,6 +11,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const testImageExtension = ".png"
+
 func TestAssetPathInSubdirectories(t *testing.T) {
 	// Create a temporary test repository
 	tmpDir := t.TempDir()
@@ -54,7 +56,7 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 		switch files[i].Extension {
 		case ".md":
 			mdFile = &files[i]
-		case ".png":
+		case testImageExtension:
 			imageFile = &files[i]
 		}
 	}

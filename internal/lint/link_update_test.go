@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testAPILink = "[API](./api-guide.md)"
+
 // TestApplyLinkUpdates_BasicUpdate tests updating a single link in a single file.
 func TestApplyLinkUpdates_BasicUpdate(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -139,8 +141,8 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 	source2 := filepath.Join(tmpDir, "guide2.md")
 
 	// Create source files
-	require.NoError(t, os.WriteFile(source1, []byte("[API](./api-guide.md)"), 0o644))
-	require.NoError(t, os.WriteFile(source2, []byte("[API](./api-guide.md)"), 0o644))
+	require.NoError(t, os.WriteFile(source1, []byte(testAPILink), 0o644))
+	require.NoError(t, os.WriteFile(source2, []byte(testAPILink), 0o644))
 
 	// Create link references from multiple files
 	links := []LinkReference{
@@ -300,11 +302,11 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 	source2 := filepath.Join(tmpDir, "source2.md")
 
 	// Create first source file (valid)
-	originalContent1 := "[API](./api-guide.md)"
+	originalContent1 := testAPILink
 	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
 
 	// Create second source file as read-only to trigger error
-	originalContent2 := "[API](./api-guide.md)"
+	originalContent2 := testAPILink
 	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o000)) // No write permission
 
 	// Create link references
@@ -571,11 +573,11 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 	source2 := filepath.Join(tmpDir, "source2.md")
 
 	// Create first source file
-	originalContent1 := "[API](./api-guide.md)"
+	originalContent1 := testAPILink
 	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
 
 	// Create second source file as read-only to trigger failure
-	originalContent2 := "[API](./api-guide.md)"
+	originalContent2 := testAPILink
 	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o644))
 	require.NoError(t, os.Chmod(source2, 0o444)) // Make it read-only
 	defer func() {

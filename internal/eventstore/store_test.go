@@ -16,7 +16,7 @@ func TestEventStoreAppendAndRetrieve(t *testing.T) {
 	defer func() { _ = store.Close() }()
 
 	ctx := context.Background()
-	buildID := "build-123"
+	buildID := testBuildID
 	eventType := "TestEvent"
 	payload := []byte(`{"test": "data"}`)
 	metadata := map[string]string{"key": "value"}

@@ -257,9 +257,9 @@ func (c *GitHubClient) ValidateWebhook(payload []byte, signature, secret string)
 // ParseWebhookEvent parses GitHub webhook payload.
 func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	switch eventType {
-	case "push":
+	case string(WebhookEventPush):
 		return c.parsePushEvent(payload)
-	case "repository":
+	case string(WebhookEventRepository):
 		return c.parseRepositoryEvent(payload)
 	default:
 		return nil, fmt.Errorf("unsupported event type: %s", eventType)

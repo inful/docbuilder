@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const authFailureMessage = "authentication failed: invalid credentials"
+
 // TestPhase3BIntegrationDemo demonstrates how the enhanced mock system integrates
 // with existing DocBuilder test patterns and provides backward compatibility.
 func TestPhase3BIntegrationDemo(t *testing.T) {
@@ -133,7 +135,7 @@ func testAdvancedFailureSimulation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected authentication failure, got nil")
 	}
-	if err.Error() != "authentication failed: invalid credentials" {
+	if err.Error() != authFailureMessage {
 		t.Errorf("Expected specific auth error, got: %s", err.Error())
 	}
 

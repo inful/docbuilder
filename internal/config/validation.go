@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const defaultOutputDir = "./site"
+
 // ValidateConfig validates the complete configuration structure using the new validation system.
 // This function is now implemented directly here to avoid import cycles.
 func ValidateConfig(cfg *Config) error {
@@ -259,7 +261,7 @@ func (cv *configurationValidator) validateMaxRetries() error {
 func (cv *configurationValidator) validatePaths() error {
 	out := cv.config.Output.Directory
 	if out == "" {
-		out = "./site" // default applied elsewhere, but keep guard for safety
+		out = defaultOutputDir // default applied elsewhere, but keep guard for safety
 	}
 	out = filepath.Clean(out)
 	if cv.config.Daemon != nil {

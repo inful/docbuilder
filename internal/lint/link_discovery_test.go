@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testDocGuidePath = "/docs/guide.md"
+
 func TestResolveRelativePath(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -19,7 +21,7 @@ func TestResolveRelativePath(t *testing.T) {
 	}{
 		{
 			name:       "same directory",
-			sourceFile: "/docs/guide.md",
+			sourceFile: testDocGuidePath,
 			linkTarget: "api.md",
 			want:       "/docs/api.md",
 		},
@@ -37,7 +39,7 @@ func TestResolveRelativePath(t *testing.T) {
 		},
 		{
 			name:       "with fragment",
-			sourceFile: "/docs/guide.md",
+			sourceFile: testDocGuidePath,
 			linkTarget: "api.md#section",
 			want:       "/docs/api.md",
 		},
@@ -67,7 +69,7 @@ func TestResolveRelativePath(t *testing.T) {
 }
 
 func TestFindInlineLinks(t *testing.T) {
-	sourceFile := "/docs/guide.md"
+	sourceFile := testDocGuidePath
 	targetPath := "/docs/api.md"
 
 	tests := []struct {
@@ -167,7 +169,7 @@ func testLinkFinder(
 }
 
 func TestFindReferenceLinks(t *testing.T) {
-	sourceFile := "/docs/guide.md"
+	sourceFile := testDocGuidePath
 	targetPath := "/docs/api.md"
 
 	tests := []linkFinderTestCase{
@@ -207,7 +209,7 @@ func TestFindReferenceLinks(t *testing.T) {
 }
 
 func TestFindImageLinks(t *testing.T) {
-	sourceFile := "/docs/guide.md"
+	sourceFile := testDocGuidePath
 	targetPath := "/docs/diagram.png"
 
 	tests := []linkFinderTestCase{

@@ -8,6 +8,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const immutableCacheControl = "public, max-age=31536000, immutable"
+
 // TestCacheControlHeaders verifies that appropriate Cache-Control headers are set for different asset types.
 func TestCacheControlHeaders(t *testing.T) {
 	tests := []struct {
@@ -15,14 +17,14 @@ func TestCacheControlHeaders(t *testing.T) {
 		expectedCache string
 	}{
 		// CSS and JavaScript - immutable, 1 year
-		{"/assets/main.css", "public, max-age=31536000, immutable"},
-		{"/js/bundle.js", "public, max-age=31536000, immutable"},
-		{"/static/app.min.js", "public, max-age=31536000, immutable"},
+		{"/assets/main.css", immutableCacheControl},
+		{"/js/bundle.js", immutableCacheControl},
+		{"/static/app.min.js", immutableCacheControl},
 
 		// Web fonts - immutable, 1 year
-		{"/fonts/roboto.woff2", "public, max-age=31536000, immutable"},
-		{"/fonts/icons.woff", "public, max-age=31536000, immutable"},
-		{"/static/font.ttf", "public, max-age=31536000, immutable"},
+		{"/fonts/roboto.woff2", immutableCacheControl},
+		{"/fonts/icons.woff", immutableCacheControl},
+		{"/static/font.ttf", immutableCacheControl},
 
 		// Images - 1 week
 		{"/images/logo.png", "public, max-age=604800"},
@@ -112,7 +114,7 @@ func TestCacheControlNoInterferenceWithLiveReload(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	// Verify both headers are present
-	if got := rec.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+	if got := rec.Header().Get("Cache-Control"); got != immutableCacheControl {
 		t.Errorf("expected Cache-Control header, got %q", got)
 	}
 	if got := rec.Header().Get("X-Test-Handler"); got != "called" {

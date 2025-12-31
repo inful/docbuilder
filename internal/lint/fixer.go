@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	linkTypeImage     = "image"
+	linkTypeReference = "reference"
+)
+
 // Fixer performs automatic fixes for linting issues.
 type Fixer struct {
 	linter      *Linter
@@ -1325,9 +1330,9 @@ func (fr *FixResult) Summary() string {
 			linkTypeStr := "link"
 			switch broken.LinkType {
 			case LinkTypeImage:
-				linkTypeStr = "image"
+				linkTypeStr = linkTypeImage
 			case LinkTypeReference:
-				linkTypeStr = "reference"
+				linkTypeStr = linkTypeReference
 			}
 			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s (broken %s)\n",
 				broken.SourceFile, broken.LineNumber, linkTypeStr, broken.Target, linkTypeStr))
@@ -1431,9 +1436,9 @@ func (fr *FixResult) DetailedPreview() string {
 			linkTypeStr := "link"
 			switch broken.LinkType {
 			case LinkTypeImage:
-				linkTypeStr = "image"
+				linkTypeStr = linkTypeImage
 			case LinkTypeReference:
-				linkTypeStr = "reference"
+				linkTypeStr = linkTypeReference
 			}
 			b.WriteString(fmt.Sprintf("%d. %s:%d (%s)\n", i+1, broken.SourceFile, broken.LineNumber, linkTypeStr))
 			b.WriteString(fmt.Sprintf("   Target: %s (file not found)\n\n", broken.Target))

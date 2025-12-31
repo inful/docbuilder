@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+const (
+	buildStatusRunning   = "running"
+	buildStatusCompleted = "completed"
+)
+
 // BuildSummary is a read model summarizing a completed or in-progress build.
 type BuildSummary struct {
 	BuildID      string            `json:"build_id"`
@@ -111,7 +116,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 	switch event.Type() {
 	case "BuildStarted":
 		summary.StartedAt = event.Timestamp()
-		summary.Status = "running"
+		summary.Status = buildStatusRunning
 		// Parse payload for tenant_id
 		var payload struct {
 			TenantID string `json:"tenant_id"`
@@ -135,7 +140,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 		now := event.Timestamp()
 		summary.CompletedAt = &now
 		summary.Duration = now.Sub(summary.StartedAt)
-		summary.Status = "completed"
+		summary.Status = buildStatusCompleted
 		var payload struct {
 			Status    string            `json:"status"`
 			Artifacts map[string]string `json:"artifacts"`

@@ -19,6 +19,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const rootSection = "root"
+
 // sortDocFiles sorts a slice of DocFile by path for deterministic ordering.
 func sortDocFiles(files []docs.DocFile) {
 	sort.Slice(files, func(i, j int) bool {
@@ -47,10 +49,10 @@ func makeSortedSections(sectionGroups map[string][]docs.DocFile) []sectionEntry 
 	}
 	sort.Slice(sections, func(i, j int) bool {
 		// "root" section always comes first, then alphabetical
-		if sections[i].Name == "root" {
+		if sections[i].Name == rootSection {
 			return true
 		}
-		if sections[j].Name == "root" {
+		if sections[j].Name == rootSection {
 			return false
 		}
 		return sections[i].Name < sections[j].Name

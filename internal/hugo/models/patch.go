@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const unknownMode = "unknown"
+
 // MergeMode defines how front matter patches should be applied.
 type MergeMode int
 
@@ -30,7 +32,7 @@ func (m MergeMode) String() string {
 	case MergeModeSetIfMissing:
 		return "set_if_missing"
 	default:
-		return "unknown"
+		return unknownMode
 	}
 }
 
@@ -56,7 +58,7 @@ func (s ArrayMergeStrategy) String() string {
 	case ArrayMergeStrategyReplace:
 		return "replace"
 	default:
-		return "unknown"
+		return unknownMode
 	}
 }
 

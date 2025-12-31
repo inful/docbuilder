@@ -6,8 +6,10 @@ import (
 	"time"
 )
 
+const testBuildID = "build-123"
+
 func TestEventSerialization(t *testing.T) {
-	buildID := "build-123"
+	buildID := testBuildID
 
 	tests := []struct {
 		name      string
@@ -106,7 +108,7 @@ func TestEventSerialization(t *testing.T) {
 }
 
 func TestBuildStartedFields(t *testing.T) {
-	buildID := "build-123"
+	buildID := testBuildID
 	meta := BuildStartedMeta{
 		TenantID: "tenant-1",
 		Type:     "manual",
@@ -131,7 +133,7 @@ func TestBuildStartedFields(t *testing.T) {
 }
 
 func TestRepositoryClonedFields(t *testing.T) {
-	buildID := "build-123"
+	buildID := testBuildID
 	repoName := "repo-1"
 	commit := "abc123"
 	path := "/path/to/repo"

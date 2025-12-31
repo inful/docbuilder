@@ -13,6 +13,13 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
+const (
+	repoAURL  = "https://example.com/org/repoA.git"
+	repoBURL  = "https://example.com/org/repoB.git"
+	repoAName = "repoA"
+	repoBName = "repoB"
+)
+
 func hashList(paths []string) string {
 	if len(paths) == 0 {
 		return ""
@@ -37,9 +44,9 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 	}
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
-	repoAURL, repoAName := "https://example.com/org/repoA.git", "repoA"
-	repoBURL, repoBName := "https://example.com/org/repoB.git", "repoB"
-	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
+	repoAURL, repoANameLocal := repoAURL, repoAName
+	repoBURL, repoBNameLocal := repoBURL, repoBName
+	repos := []cfg.Repository{{Name: repoANameLocal, URL: repoAURL}, {Name: repoBNameLocal, URL: repoBURL}}
 	sm.EnsureRepositoryState(repoAURL, repoAName, "")
 	sm.EnsureRepositoryState(repoBURL, repoBName, "")
 

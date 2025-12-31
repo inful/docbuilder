@@ -16,7 +16,7 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 	projection := NewBuildHistoryProjection(store, 10)
 
 	// Apply BuildStarted event
-	buildID := "build-123"
+	buildID := testBuildID
 	startEvent, err := NewBuildStarted(buildID, BuildStartedMeta{TenantID: "tenant-1", Type: "manual"})
 	if err != nil {
 		t.Fatalf("Failed to create event: %v", err)

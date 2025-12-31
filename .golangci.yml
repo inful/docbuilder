@@ -21,7 +21,7 @@ linters:
     # - exhaustive
     - forbidigo
     - gochecknoinits
-    # - goconst
+    - goconst
     - gocritic
     - gocyclo
     #- godoclint

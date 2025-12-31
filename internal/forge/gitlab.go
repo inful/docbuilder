@@ -15,6 +15,8 @@ import (
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const defaultMainBranch = "main"
+
 // GitLabClient implements ForgeClient for GitLab.
 type GitLabClient struct {
 	*BaseForge
@@ -229,14 +231,14 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	branch := repo.DefaultBranch
 	if branch == "" {
 		// Try common default branch names
-		branch = "main"
+		branch = defaultMainBranch
 	}
 
 	// Check for docs folder
 	hasDocs, err := c.checkPathExists(ctx, projectID, "docs", branch)
 	if err != nil {
 		// If main doesn't work, try master as fallback
-		if branch == "main" && repo.DefaultBranch == "" {
+		if branch == defaultMainBranch && repo.DefaultBranch == "" {
 			hasDocs, err = c.checkPathExists(ctx, projectID, "docs", "master")
 			if err != nil {
 				return fmt.Errorf("failed to check docs folder: %w", err)

@@ -15,6 +15,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
+const healthyStatus = "healthy"
+
 // JSONStore implements StateStore using JSON file persistence.
 // This demonstrates how to implement the state interfaces while maintaining
 // the same persistence format as the original StateManager.
@@ -161,7 +163,7 @@ func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, er
 	}
 
 	// Add storage size if we can calculate it
-	if health.Status == "healthy" {
+	if health.Status == healthyStatus {
 		if size, err := js.calculateStorageSize(); err == nil {
 			health.StorageSize = &size
 		}
