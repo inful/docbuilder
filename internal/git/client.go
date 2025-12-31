@@ -1,5 +1,3 @@
-// Package git provides a client for performing Git operations such as clone, update, and authentication handling
-// for DocBuilder's documentation pipeline.
 package git
 
 import (

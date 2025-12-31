@@ -1,4 +1,3 @@
-// Package handlers contains HTTP handlers for the DocBuilder HTTP API (status, build, monitoring, webhooks).
 package handlers
 
 import (

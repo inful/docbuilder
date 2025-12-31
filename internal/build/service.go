@@ -1,5 +1,3 @@
-// Package build provides the canonical build execution pipeline for DocBuilder.
-// All execution paths (CLI, daemon, tests) should route through BuildService.
 package build
 
 import (
