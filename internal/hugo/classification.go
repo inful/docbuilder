@@ -58,6 +58,9 @@ func (e *StageError) Transient() bool {
 		if isSentinel(build.ErrDiscovery) {
 			return e.Kind == StageErrorWarning
 		}
+	case StagePrepareOutput, StageGenerateConfig, StageLayouts, StageCopyContent, StageIndexes, StagePostProcess:
+		// These stages don't have known transient error conditions
+		return false
 	}
 	return false
 }
@@ -136,6 +139,9 @@ func classifyIssueCode(se *StageError, bs *BuildState) ReportIssueCode {
 		return classifyDiscoveryIssue(se, bs)
 	case StageRunHugo:
 		return classifyHugoIssue(se)
+	case StagePrepareOutput, StageGenerateConfig, StageLayouts, StageCopyContent, StageIndexes, StagePostProcess:
+		// These stages use generic issue codes
+		return IssueGenericStageError
 	default:
 		return IssueGenericStageError
 	}

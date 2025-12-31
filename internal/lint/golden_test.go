@@ -365,6 +365,8 @@ func compareBrokenLinksGolden(t *testing.T, brokenLinks []BrokenLink, goldenPath
 	for i, link := range brokenLinks {
 		linkTypeStr := "inline"
 		switch link.LinkType {
+		case LinkTypeInline:
+			linkTypeStr = "inline"
 		case LinkTypeImage:
 			linkTypeStr = "image"
 		case LinkTypeReference:

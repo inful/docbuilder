@@ -120,6 +120,9 @@ func (d *Daemon) checkDaemonHealth() HealthCheck {
 	case StatusStopping:
 		check.Status = HealthStatusDegraded
 		check.Message = "Daemon is shutting down"
+	case StatusStopped:
+		check.Status = HealthStatusUnhealthy
+		check.Message = "Daemon is stopped"
 	case StatusError:
 		check.Status = HealthStatusUnhealthy
 		check.Message = "Daemon is in error state"

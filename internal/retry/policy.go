@@ -61,7 +61,14 @@ func (p Policy) Delay(retryCount int) time.Duration {
 			return p.Max
 		}
 		return d
-	default: // linear
+	case config.RetryBackoffLinear:
+		d := time.Duration(retryCount) * p.Initial
+		if d > p.Max {
+			return p.Max
+		}
+		return d
+	default:
+		// Unknown mode - fallback to linear
 		d := time.Duration(retryCount) * p.Initial
 		if d > p.Max {
 			return p.Max
