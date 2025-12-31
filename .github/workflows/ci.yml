@@ -207,7 +207,7 @@ jobs:
           ./docbuilder generate \
             --docs-dir ./docs \
             --output ./public \
-            --theme hextra \
+            --theme relearn \
             --title "DocBuilder Documentation" \
             --base-url "https://${{ github.repository_owner }}.github.io/docbuilder" \
             --render
