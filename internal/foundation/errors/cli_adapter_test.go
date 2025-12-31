@@ -34,6 +34,20 @@ func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
 			expected: 5,
 		},
 		{
+			name: "classified not found error",
+			err: NewError(CategoryNotFound, "resource not found").
+				WithSeverity(SeverityError).
+				Build(),
+			expected: 1, // Should map to general error
+		},
+		{
+			name: "classified already exists error",
+			err: NewError(CategoryAlreadyExists, "resource already exists").
+				WithSeverity(SeverityError).
+				Build(),
+			expected: 1, // Should map to general error
+		},
+		{
 			name:     "unclassified error",
 			err:      &customError{msg: "unknown error"},
 			expected: 1,
