@@ -437,7 +437,7 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 		return fmt.Errorf("failed to marshal front matter: %w", err)
 	}
 
-	subsections := g.findImmediateChildSections(repoName, sectionName, allSections)
+	subsections := g.findImmediateChildSections(sectionName, allSections)
 	body, err := g.renderSectionTemplate(files, repoName, sectionName, subsections, frontMatter)
 	if err != nil {
 		return err
@@ -486,7 +486,7 @@ func (g *Generator) buildSectionFrontMatter(repoName, sectionName string) map[st
 }
 
 // findImmediateChildSections finds direct child sections of the given section.
-func (g *Generator) findImmediateChildSections(repoName, sectionName string, allSections map[string]bool) []string {
+func (g *Generator) findImmediateChildSections(sectionName string, allSections map[string]bool) []string {
 	var subsections []string
 	for otherSection := range allSections {
 		if after, ok := strings.CutPrefix(otherSection, sectionName+"/"); ok {

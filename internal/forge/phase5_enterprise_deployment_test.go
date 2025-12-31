@@ -340,7 +340,8 @@ func testLargeScaleEnterpriseDeploymentTesting(t *testing.T) {
 	t.Log("→ Testing large-scale enterprise deployment")
 
 	// Create enterprise-scale environment with multiple forge instances
-	var enterpriseForges []Client
+	enterpriseForgesToCreate := 3
+	enterpriseForges := make([]Client, 0, enterpriseForgesToCreate)
 	var totalRepos int
 
 	// Create multiple GitHub enterprise instances

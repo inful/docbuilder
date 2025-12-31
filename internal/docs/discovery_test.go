@@ -285,7 +285,8 @@ func testLargeScaleRepositoryDiscovery(t *testing.T) {
 	tempDir := t.TempDir()
 
 	repoPaths := make(map[string]string)
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		repoDir := filepath.Join(tempDir, repo.Name)
 		docsDir := filepath.Join(repoDir, "docs")
 
@@ -341,7 +342,8 @@ func testLargeScaleRepositoryDiscovery(t *testing.T) {
 	}
 
 	// Verify each repository has the expected number of files
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		repoFiles := filesByRepo[repo.Name]
 		if len(repoFiles) != expectedFilesPerRepo {
 			t.Errorf("Repository %s: expected %d files, got %d",
@@ -405,17 +407,17 @@ func testMultiPlatformDiscoveryValidation(t *testing.T) {
 	)
 
 	// Add forge type tags for proper namespacing
-	for i, repo := range allRepositories {
-		if repo.Tags == nil {
+	for i := range allRepositories {
+		if allRepositories[i].Tags == nil {
 			allRepositories[i].Tags = make(map[string]string)
 		}
 
 		switch {
-		case strings.Contains(repo.Name, "github"):
+		case strings.Contains(allRepositories[i].Name, "github"):
 			allRepositories[i].Tags["forge_type"] = "github"
-		case strings.Contains(repo.Name, "gitlab"):
+		case strings.Contains(allRepositories[i].Name, "gitlab"):
 			allRepositories[i].Tags["forge_type"] = "gitlab"
-		case strings.Contains(repo.Name, "forgejo"):
+		case strings.Contains(allRepositories[i].Name, "forgejo"):
 			allRepositories[i].Tags["forge_type"] = "forgejo"
 		}
 	}
@@ -424,7 +426,8 @@ func testMultiPlatformDiscoveryValidation(t *testing.T) {
 	tempDir := t.TempDir()
 
 	repoPaths := make(map[string]string)
-	for _, repo := range allRepositories {
+	for i := range allRepositories {
+		repo := &allRepositories[i]
 		repoDir := filepath.Join(tempDir, repo.Name)
 		docsDir := filepath.Join(repoDir, "docs")
 
@@ -461,7 +464,7 @@ func testMultiPlatformDiscoveryValidation(t *testing.T) {
 			docFiles = map[string]string{
 				"docs/index.md": "# " + repo.Name + " Documentation\n\nGeneric documentation.",
 				"docs/guide.md": "# Guide\n\nGeneral guide.",
-				"docs/api.md":   "# API\n\nAPI documentation.",
+				"docs/api.md":   "# API\n\ndocumentation.",
 			}
 		}
 
@@ -490,7 +493,8 @@ func testMultiPlatformDiscoveryValidation(t *testing.T) {
 
 	// Verify forge namespacing
 	forgeTypes := make(map[string]int)
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		if file.Forge != "" {
 			forgeTypes[file.Forge]++
 		}
@@ -548,7 +552,8 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 	tempDir := t.TempDir()
 
 	repoPaths := make(map[string]string)
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		repoDir := filepath.Join(tempDir, repo.Name)
 		docsDir := filepath.Join(repoDir, "docs")
 
@@ -619,7 +624,8 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 	// Count markdown and asset files
 	markdownCount := 0
 	assetCount := 0
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		if file.IsAsset {
 			assetCount++
 		} else {
@@ -637,7 +643,8 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 	}
 
 	// Verify no ignored markdown files are included
-	for _, file := range docFiles {
+	for i := range docFiles {
+		file := &docFiles[i]
 		if file.IsAsset {
 			continue // Skip validation for asset files
 		}
@@ -669,7 +676,8 @@ func testDocumentationFilteringWithTestForge(t *testing.T) {
 		hasRootFiles := false
 		hasTutorialFiles := false
 
-		for _, file := range files {
+		for i := range files {
+			file := &files[i]
 			if !strings.Contains(file.RelativePath, "/") {
 				hasRootFiles = true
 			}
@@ -721,7 +729,8 @@ func testPerformanceValidationWithLargeDataset(t *testing.T) {
 	tempDir := t.TempDir()
 
 	repoPaths := make(map[string]string)
-	for _, repo := range repositories {
+	for i := range repositories {
+		repo := &repositories[i]
 		repoDir := filepath.Join(tempDir, repo.Name)
 		docsDir := filepath.Join(repoDir, "docs")
 
