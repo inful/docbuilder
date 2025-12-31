@@ -1,9 +1,14 @@
 package pipeline
 
 import (
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 func TestRewriteLinkPath(t *testing.T) {
@@ -154,5 +159,120 @@ func TestExtractDirectory(t *testing.T) {
 			got := extractDirectory(tt.hugoPath)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+// TestRewriteRelativeLinks_CatastrophicBacktracking tests that the regex doesn't
+// suffer from catastrophic backtracking with edge cases that caused hangs.
+func TestRewriteRelativeLinks_CatastrophicBacktracking(t *testing.T) {
+	tests := []struct {
+		name           string
+		content        string
+		expectedSubstr string // substring that should appear in output
+		maxDuration    time.Duration
+	}{
+		{
+			name: "many brackets without matching link",
+			content: strings.Repeat("[", 100) + "text" + strings.Repeat("]", 100) + 
+				" [valid link](./path.md)",
+			expectedSubstr: "[valid link](",
+			maxDuration:    100 * time.Millisecond,
+		},
+		{
+			name: "many parentheses without matching link",
+			content: strings.Repeat("(", 100) + "text" + strings.Repeat(")", 100) + 
+				" [valid link](./path.md)",
+			expectedSubstr: "[valid link](",
+			maxDuration:    100 * time.Millisecond,
+		},
+		{
+			name: "unmatched bracket in text followed by link",
+			content: "Some text [ with unmatched bracket\n\n[valid link](./path.md)",
+			expectedSubstr: "[valid link](",
+			maxDuration:    100 * time.Millisecond,
+		},
+		{
+			name: "code block with many brackets",
+			content: "```go\nfor i := range items {\n    process(items[i])\n}\n```\n[link](./doc.md)",
+			expectedSubstr: "[link](",
+			maxDuration:    100 * time.Millisecond,
+		},
+		{
+			name: "nested structures",
+			content: "[[nested]] [more [nested] stuff] (not a link)\n[real link](./file.md)",
+			expectedSubstr: "[real link](",
+			maxDuration:    100 * time.Millisecond,
+		},
+		{
+			name: "long text between brackets and parens",
+			content: "[text with " + strings.Repeat("very ", 200) + "long content](./path.md)",
+			expectedSubstr: "[text with",
+			maxDuration:    100 * time.Millisecond,
+		},
+	}
+
+	cfg := &config.Config{}
+	transform := rewriteRelativeLinks(cfg)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			doc := &Document{
+				Path:       "content/docs/test.md",
+				Repository: "docs",
+				Content:    tt.content,
+			}
+
+			// Run with timeout to catch hangs
+			done := make(chan bool)
+			var resultDocs []*Document
+			var err error
+
+			go func() {
+				resultDocs, err = transform(doc)
+				done <- true
+			}()
+
+			select {
+			case <-done:
+				assert.NoError(t, err)
+				assert.Nil(t, resultDocs) // transform doesn't create new docs
+				assert.Contains(t, doc.Content, tt.expectedSubstr)
+			case <-time.After(tt.maxDuration):
+				t.Fatalf("Transform took longer than %v - likely catastrophic backtracking", tt.maxDuration)
+			}
+		})
+	}
+}
+
+// TestRewriteRelativeLinks_RealWorldContent tests with content similar to what caused hangs.
+func TestRewriteRelativeLinks_RealWorldContent(t *testing.T) {
+	// Load actual ADR-002 file that caused the hang
+	content, err := os.ReadFile("../../../docs/adr/adr-002-in-memory-content-pipeline.md")
+	assert.NoError(t, err)
+
+	cfg := &config.Config{}
+	transform := rewriteRelativeLinks(cfg)
+
+	doc := &Document{
+		Path:       "content/docs/adr/adr-002.md",
+		Repository: "docs",
+		Section:    "adr",
+		Content:    string(content),
+	}
+
+	// Should complete quickly (within 100ms)
+	done := make(chan bool)
+	go func() {
+		_, err := transform(doc)
+		assert.NoError(t, err)
+		done <- true
+	}()
+
+	select {
+	case <-done:
+		// Success - the transform completed
+		t.Log("Transform completed successfully")
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("Transform took too long with real-world content - catastrophic backtracking detected")
 	}
 }

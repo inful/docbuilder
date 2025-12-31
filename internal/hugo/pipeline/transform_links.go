@@ -11,24 +11,32 @@ import (
 // rewriteRelativeLinks rewrites relative markdown links to work with Hugo.
 func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
-		// Pattern to match markdown links: [text](path)
-		// Negative lookbehind would be ideal but Go doesn't support it,
-		// so we use ReplaceAllStringFunc and check for the ! prefix manually
-		linkPattern := regexp.MustCompile(`!?\[([^\]]+)\]\(([^)]+)\)`)
+		// Use a simple regex that cannot backtrack catastrophically
+		// Match markdown links: [text](path)
+		// Pattern: (!?)\[([^]]+)\]\(([^)]+)\)
+		// - (!?) - optional ! for images
+		// - \[ - literal opening bracket
+		// - ([^]]+) - one or more non-] characters (no backtracking possible)
+		// - \] - literal closing bracket
+		// - \( - literal opening paren
+		// - ([^)]+) - one or more non-) characters (no backtracking possible)
+		// - \) - literal closing paren
+		linkPattern := regexp.MustCompile(`(!?)\[([^]]+)\]\(([^)]+)\)`)
 
 		doc.Content = linkPattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
-			// Skip image links (those starting with !)
-			if strings.HasPrefix(match, "!") {
-				return match
-			}
-
 			submatches := linkPattern.FindStringSubmatch(match)
-			if len(submatches) < 3 {
+			if len(submatches) < 4 {
 				return match
 			}
 
-			text := submatches[1]
-			path := submatches[2]
+			exclaim := submatches[1]
+			text := submatches[2]
+			path := submatches[3]
+
+			// Skip image links (those with !)
+			if exclaim == "!" {
+				return match
+			}
 
 			// Skip absolute URLs, anchors, mailto, etc.
 			if strings.HasPrefix(path, "http://") ||
