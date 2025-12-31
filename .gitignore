@@ -324,6 +324,7 @@ coverage.html
 .forgejo-runner/
 integration-test-config.yaml
 dist/
+CHANGELOG.md
 
 # Test artifacts
 test-site

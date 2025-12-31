@@ -72,6 +72,37 @@ jobs:
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
           echo "🌿 Branch: $BRANCH"
 
+      - name: Generate CHANGELOG
+        run: |
+          echo "# Changelog" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "All notable changes to this project will be documented in this file." >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          
+          # Get recent tags (limit to last 20 for performance)
+          tags=$(git tag --sort=-version:refname | head -20)
+          
+          if [ -z "$tags" ]; then
+            echo "## Unreleased" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            git log --pretty=format:"- %s (%h)" --no-merges --max-count=100 >> CHANGELOG.md
+          else
+            # For each tag, show recent commits
+            for tag in $tags; do
+              tag_date=$(git log -1 --format=%ai "$tag" | cut -d' ' -f1)
+              echo "## [$tag] - $tag_date" >> CHANGELOG.md
+              echo "" >> CHANGELOG.md
+              
+              # Show commits for this tag (limited to avoid long changelogs)
+              git log "$tag" --pretty=format:"- %s (%h)" --no-merges --max-count=30 >> CHANGELOG.md
+              
+              echo "" >> CHANGELOG.md
+              echo "" >> CHANGELOG.md
+            done
+          fi
+          
+          echo "📝 Generated CHANGELOG.md with $(wc -l < CHANGELOG.md) lines"
+
       - name: Run GoReleaser (Release)
         if: steps.version.outputs.is_release == 'true'
         uses: goreleaser/goreleaser-action@v6
