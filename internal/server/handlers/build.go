@@ -1,4 +1,3 @@
-// Package handlers contains HTTP handlers for build and discovery operations.
 package handlers
 
 import (

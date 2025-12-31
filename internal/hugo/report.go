@@ -99,7 +99,7 @@ const (
 	IssueCanceled          ReportIssueCode = "BUILD_CANCELED"
 	IssueAllClonesFailed   ReportIssueCode = "ALL_CLONES_FAILED"
 	IssueGenericStageError ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
-	// New granular git-related permanent failure codes (non-transient) used when retry classification deems permanent.
+	// IssueAuthFailure is a new granular git-related permanent failure code (non-transient) used when retry classification deems permanent.
 	IssueAuthFailure      ReportIssueCode = "AUTH_FAILURE"
 	IssueRepoNotFound     ReportIssueCode = "REPO_NOT_FOUND"
 	IssueUnsupportedProto ReportIssueCode = "UNSUPPORTED_PROTOCOL"

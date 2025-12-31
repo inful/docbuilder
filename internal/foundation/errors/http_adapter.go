@@ -20,7 +20,7 @@ func NewHTTPErrorAdapter(logger *slog.Logger) *HTTPErrorAdapter {
 	return &HTTPErrorAdapter{logger: logger}
 }
 
-// errorResponse represents a standard JSON error payload.
+// HTTPErrorResponse represents a standard JSON error payload.
 type HTTPErrorResponse struct {
 	Error     string         `json:"error"`
 	Code      string         `json:"code,omitempty"`

@@ -68,7 +68,7 @@ func (o Option[T]) Match(onSome func(T), onNone func()) {
 	}
 }
 
-// Map transforms an Option[T] to Option[U] using the given function.
+// MapOption transforms an Option[T] to Option[U] using the given function.
 // If the Option is None, it returns None[U].
 func MapOption[T, U any](o Option[T], fn func(T) U) Option[U] {
 	if o.present {
@@ -77,7 +77,7 @@ func MapOption[T, U any](o Option[T], fn func(T) U) Option[U] {
 	return None[U]()
 }
 
-// FlatMap transforms an Option[T] to Option[U] using a function that returns Option[U].
+// FlatMapOption transforms an Option[T] to Option[U] using a function that returns Option[U].
 // This prevents Option[Option[U]].
 func FlatMapOption[T, U any](o Option[T], fn func(T) Option[U]) Option[U] {
 	if o.present {

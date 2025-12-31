@@ -1,4 +1,3 @@
-// Package git provides functions for Git operations, including authentication handling for DocBuilder.
 package git
 
 import (

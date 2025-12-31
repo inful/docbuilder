@@ -16,7 +16,6 @@ var (
 	// ErrConfigWriteFailed indicates writing the hugo.yaml file failed.
 	ErrConfigWriteFailed = errors.New("hugo config write failed")
 
-	// Generation stage errors
 	// ErrContentTransformFailed indicates a content transformer failed during pipeline execution.
 	ErrContentTransformFailed = errors.New("content transform failed")
 	// ErrContentWriteFailed indicates writing processed content to the Hugo content directory failed.

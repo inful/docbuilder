@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Base typed git errors enabling structured classification without string parsing upstream.
+// AuthError is a base typed git error enabling structured classification without string parsing upstream.
 type AuthError struct {
 	Op, URL string
 	Err     error
@@ -44,7 +44,7 @@ func (e *RemoteDivergedError) Error() string {
 }
 func (e *RemoteDivergedError) Unwrap() error { return e.Err }
 
-// Transient typed errors.
+// RateLimitError is a transient typed error.
 type RateLimitError struct {
 	Op, URL string
 	Err     error

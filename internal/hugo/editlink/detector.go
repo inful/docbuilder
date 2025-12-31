@@ -64,7 +64,7 @@ func (dc *DetectorChain) Detect(ctx DetectionContext) DetectionResult {
 	return DetectionResult{Found: false}
 }
 
-// BuildEditURL constructs the final edit URL from detection results.
+// EditURLBuilder constructs the final edit URL from detection results.
 type EditURLBuilder interface {
 	BuildURL(forgeType config.ForgeType, baseURL, fullName, branch, repoRel string) string
 }

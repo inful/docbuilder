@@ -1,4 +1,3 @@
-// Package handlers provides shared response helper functions for HTTP handlers.
 package handlers
 
 import (

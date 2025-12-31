@@ -29,7 +29,7 @@ type BuildConfig struct {
 	detectDeletionsSpecified bool `yaml:"-"`
 }
 
-// Custom unmarshal to detect if detect_deletions was explicitly set by user.
+// UnmarshalYAML is a custom unmarshal to detect if detect_deletions was explicitly set by user.
 func (b *BuildConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type raw BuildConfig
 	var aux raw

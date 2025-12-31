@@ -1,4 +1,3 @@
-// Package errors contains classified error types and helpers for robust error handling.
 package errors
 
 import (

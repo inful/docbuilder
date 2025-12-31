@@ -7,24 +7,24 @@ import "maps"
 type ErrorCategory string
 
 const (
-	// User-facing configuration and input errors.
+	// CategoryConfig represents user-facing configuration and input errors.
 	CategoryConfig        ErrorCategory = "config"
 	CategoryValidation    ErrorCategory = "validation"
 	CategoryAuth          ErrorCategory = "auth"
 	CategoryNotFound      ErrorCategory = "not_found"
 	CategoryAlreadyExists ErrorCategory = "already_exists"
 
-	// External system integration errors.
+	// CategoryNetwork represents external system integration errors.
 	CategoryNetwork ErrorCategory = "network"
 	CategoryGit     ErrorCategory = "git"
 	CategoryForge   ErrorCategory = "forge"
 
-	// Build and processing errors.
+	// CategoryBuild represents build and processing errors.
 	CategoryBuild      ErrorCategory = "build"
 	CategoryHugo       ErrorCategory = "hugo"
 	CategoryFileSystem ErrorCategory = "filesystem"
 
-	// Runtime and infrastructure errors.
+	// CategoryRuntime represents runtime and infrastructure errors.
 	CategoryRuntime  ErrorCategory = "runtime"
 	CategoryDaemon   ErrorCategory = "daemon"
 	CategoryInternal ErrorCategory = "internal"
