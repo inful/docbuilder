@@ -9,7 +9,7 @@ Add to your `.devcontainer/devcontainer.json`:
 ```json
 {
   "features": {
-    "ghcr.io/YOUR_ORG/devcontainer-features/docbuilder-preview:1": {
+    "ghcr.io/inful/devcontainer-features/docbuilder-preview:1": {
       "version": "latest",
       "previewPort": "1313"
     }
