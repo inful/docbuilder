@@ -7,6 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
 // DiscoverCmd implements the 'discover' command.
@@ -64,14 +65,14 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 		repo := &reposToProcess[i]
 		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
 
-		var repoPath string
-		repoPath, err = gitClient.CloneRepo(*repo)
+		var result git.CloneResult
+		result, err = gitClient.CloneRepoWithMetadata(*repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return err
 		}
 
-		repoPaths[repo.Name] = repoPath
+		repoPaths[repo.Name] = result.Path
 	}
 
 	// Discover documentation files
