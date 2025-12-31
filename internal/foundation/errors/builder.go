@@ -1,4 +1,3 @@
-// Package errors provides a fluent builder for constructing ClassifiedError values with context.
 package errors
 
 import "fmt"

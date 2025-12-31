@@ -1,4 +1,3 @@
-// Package handlers provides HTTP handlers for monitoring and health endpoints.
 package handlers
 
 import (

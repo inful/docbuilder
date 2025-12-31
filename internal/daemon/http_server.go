@@ -137,7 +137,7 @@ func (a *daemonAdapter) GetStartTime() time.Time {
 	return a.daemon.GetStartTime()
 }
 
-// Metrics bridge for MonitoringHandlers.
+// HTTPRequestsTotal is a metrics bridge for MonitoringHandlers.
 func (a *daemonAdapter) HTTPRequestsTotal() int {
 	if a.daemon == nil || a.daemon.metrics == nil {
 		return 0

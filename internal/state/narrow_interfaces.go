@@ -1,5 +1,3 @@
-// Package state provides interfaces and types for state management.
-// This file defines narrow, composable interfaces that bridge legacy and typed state implementations.
 package state
 
 import "time"
@@ -54,7 +52,7 @@ type RepositoryBuildCounter interface {
 	IncrementRepoBuild(url string, success bool)
 }
 
-// ConfigurationStore stores daemon configuration state (hashes, checksums).
+// ConfigurationStateStore stores daemon configuration state (hashes, checksums).
 type ConfigurationStateStore interface {
 	// SetLastConfigHash stores the hash of the last successful config.
 	SetLastConfigHash(hash string)

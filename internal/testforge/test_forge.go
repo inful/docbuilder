@@ -347,7 +347,7 @@ func (tff *Factory) CreateForgejoTestForge(name string) *TestForge {
 	return forge
 }
 
-// TestForgeConfig creates a test forge configuration.
+// CreateTestForgeConfig creates a test forge configuration.
 func CreateTestForgeConfig(name string, forgeType config.ForgeType, organizations []string) config.ForgeConfig {
 	return config.ForgeConfig{
 		Name:    name,
