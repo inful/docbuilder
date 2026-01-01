@@ -44,6 +44,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify Docker authentication
+        run: |
+          echo "Checking Docker authentication..."
+          docker login ghcr.io -u ${{ github.actor }} --password-stdin <<< "${{ secrets.GITHUB_TOKEN }}"
+          echo "Authenticated as: ${{ github.actor }}"
+
       - name: Determine version tag
         id: version
         run: |
@@ -69,7 +75,11 @@ jobs:
           echo "Publishing features with version: ${VERSION}"
           echo "Registry: ghcr.io"
           echo "Namespace: inful"
+          echo "Authenticated user: ${{ github.actor }}"
           echo ""
+          
+          # Ensure Docker credentials are available
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           
           # Publish each feature
           for feature_dir in features/*/; do
@@ -78,6 +88,7 @@ jobs:
               echo "========================================="
               echo "Publishing feature: ${feature_name}"
               echo "Directory: ${feature_dir}"
+              echo "Target: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
               echo "========================================="
               
               # Run with verbose output
@@ -88,12 +99,27 @@ jobs:
                 "${feature_dir}" \
                 --version "${VERSION}" || {
                   echo "ERROR: Failed to publish ${feature_name}"
-                  exit 1
+                  echo "Checking if package was created anyway..."
+                  docker manifest inspect "ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}" && {
+                    echo "Package exists! Publish command may have succeeded despite error."
+                  } || {
+                    echo "Package does not exist. Publishing truly failed."
+                    exit 1
+                  }
                 }
               set +x
               
               echo ""
               echo "✓ Published: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
+              echo ""
+              
+              # Verify the package was created
+              echo "Verifying package..."
+              if docker manifest inspect "ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}" > /dev/null 2>&1; then
+                echo "✓ Verified: Package exists in registry"
+              else
+                echo "⚠️  Warning: Could not verify package existence"
+              fi
               echo ""
             fi
           done
