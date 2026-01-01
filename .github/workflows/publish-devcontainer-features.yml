@@ -51,6 +51,10 @@ jobs:
             # Use release tag (e.g., v1.0.0)
             VERSION="${{ github.event.release.tag_name }}"
             echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          elif [[ $GITHUB_REF == refs/tags/v* ]]; then
+            # Tag push (e.g., v1.0.0)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
           else
             # Use commit SHA for non-release builds
             VERSION="sha-$(git rev-parse --short=7 HEAD)"
