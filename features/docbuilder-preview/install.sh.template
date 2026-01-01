@@ -93,6 +93,35 @@ install_hugo() {
 install_docbuilder
 install_hugo
 
+# Create startup script for preview
+cat > /usr/local/bin/docbuilder-preview-start.sh << 'PREVIEW_SCRIPT'
+#!/bin/bash
+# DocBuilder preview startup script
+
+DOCS_DIR="${DOCSDIR:-./docs}"
+PREVIEW_PORT="${PREVIEWPORT:-1316}"
+
+# Make docs directory relative to workspace
+if [ -n "$WORKSPACE_FOLDER" ]; then
+    DOCS_PATH="$WORKSPACE_FOLDER/$DOCS_DIR"
+else
+    DOCS_PATH="$DOCS_DIR"
+fi
+
+echo "Starting DocBuilder preview..."
+echo "Docs directory: $DOCS_PATH"
+echo "Port: $PREVIEW_PORT"
+
+# Ensure docs directory exists
+mkdir -p "$DOCS_PATH"
+
+# Start preview in background
+nohup docbuilder preview --docs-dir "$DOCS_PATH" --port "$PREVIEW_PORT" > /tmp/docbuilder-preview.log 2>&1 &
+echo "Preview started. View logs with: tail -f /tmp/docbuilder-preview.log"
+PREVIEW_SCRIPT
+
+chmod +x /usr/local/bin/docbuilder-preview-start.sh
+
 # Verify installations
 echo ""
 echo "✓ DocBuilder installed successfully!"
@@ -101,5 +130,6 @@ echo ""
 echo "✓ Hugo ${HUGO_VERSION} installed successfully!"
 hugo version
 echo ""
+echo "✓ Preview startup script created at /usr/local/bin/docbuilder-preview-start.sh"
 echo "Preview will start automatically on container creation"
 echo "View logs with: tail -f /tmp/docbuilder-preview.log"
