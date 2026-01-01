@@ -91,23 +91,39 @@ jobs:
               echo "Target: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
               echo "========================================="
               
-              # Run with verbose output
+              # Check what files exist
+              echo "Feature files:"
+              ls -la "${feature_dir}"
+              echo ""
+              
+              # Show what we're about to publish
+              echo "Feature metadata:"
+              cat "${feature_dir}devcontainer-feature.json"
+              echo ""
+              
+              # Run with verbose output and capture full output
               set -x
-              devcontainer features publish \
-                --namespace inful \
-                --registry ghcr.io \
+              output=$(devcontainer features publish \
                 "${feature_dir}" \
-                --version "${VERSION}" || {
+                --registry ghcr.io \
+                --namespace inful \
+                --version "${VERSION}" 2>&1) || {
                   echo "ERROR: Failed to publish ${feature_name}"
-                  echo "Checking if package was created anyway..."
-                  docker manifest inspect "ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}" && {
-                    echo "Package exists! Publish command may have succeeded despite error."
-                  } || {
-                    echo "Package does not exist. Publishing truly failed."
-                    exit 1
-                  }
+                  echo "Output: $output"
+                  exit 1
                 }
               set +x
+              
+              echo "Publish output:"
+              echo "$output"
+              
+              # Check if output contains any useful information
+              if echo "$output" | grep -qi "error\|fail\|denied"; then
+                echo "⚠️  Warning: Output contains error indicators"
+              fi
+              if echo "$output" | grep -qi "success\|pushed\|published"; then
+                echo "✓ Output contains success indicators"
+              fi
               
               echo ""
               echo "✓ Published: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
