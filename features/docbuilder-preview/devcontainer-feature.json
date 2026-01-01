@@ -13,12 +13,21 @@
     },
     "previewPort": {
       "type": "string",
-      "default": "1313",
+      "default": "1316",
       "description": "Port for preview server"
+    },
+    "docsDir": {
+      "type": "string",
+      "default": "./docs",
+      "description": "Path to docs directory to preview"
     }
   },
-  "containerEnv": {
-    "DOCBUILDER_PREVIEW_PORT": "${previewPort}"
+  "forwardPorts": [1316],
+  "portsAttributes": {
+    "1316": {
+      "label": "DocBuilder Preview",
+      "onAutoForward": "notify"
+    }
   },
-  "postCreateCommand": "nohup docbuilder preview --port ${previewPort} > /tmp/docbuilder-preview.log 2>&1 &"
+  "postCreateCommand": "mkdir -p ${containerWorkspaceFolder}/${docsDir} && nohup docbuilder preview --docs-dir ${containerWorkspaceFolder}/${docsDir} --port ${previewPort} > /tmp/docbuilder-preview.log 2>&1 &"
 }
