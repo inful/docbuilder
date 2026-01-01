@@ -82,6 +82,27 @@ jobs:
             fi
           done
 
+      - name: Make packages public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Making devcontainer feature packages public..."
+          for feature_dir in features/*/; do
+            if [ -f "${feature_dir}devcontainer-feature.json" ]; then
+              feature_name=$(basename "$feature_dir")
+              package_name="devcontainer-features%2F${feature_name}"
+              
+              echo "Setting visibility for: ${feature_name}"
+              curl -X PATCH \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/user/packages/container/${package_name}/visibility" \
+                -d '{"visibility":"public"}' \
+                || echo "Warning: Failed to set visibility for ${feature_name}"
+            fi
+          done
+
       - name: Update latest tag (release only)
         if: github.event_name == 'release'
         run: |
