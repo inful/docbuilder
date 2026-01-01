@@ -1,6 +1,6 @@
 {
   "id": "docbuilder-preview",
-  "version": "0.1.5",
+  "version": "0.1.41",
   "name": "DocBuilder Preview",
   "description": "Installs DocBuilder with bundled Hugo and starts automatic documentation preview",
   "documentationURL": "https://github.com/inful/docbuilder",
