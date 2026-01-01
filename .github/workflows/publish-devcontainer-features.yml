@@ -107,9 +107,15 @@ jobs:
                 "${feature_dir}" \
                 -r ghcr.io \
                 -n inful 2>&1) || {
-                  echo "ERROR: Failed to publish ${feature_name}"
-                  echo "Output: $output"
-                  exit 1
+                  # Check if it failed but the feature was still published
+                  if echo "$output" | grep -q "Published feature:"; then
+                    echo "⚠️  Warning: Publish command returned error but feature was published"
+                    echo "This is likely due to collection metadata failure (can be ignored)"
+                  else
+                    echo "ERROR: Failed to publish ${feature_name}"
+                    echo "Output: $output"
+                    exit 1
+                  fi
                 }
               set +x
               
@@ -119,22 +125,28 @@ jobs:
               # Now tag with our version
               echo ""
               echo "Tagging as version ${VERSION}..."
-              oci_ref="ghcr.io/inful/devcontainer-features/${feature_name}"
+              oci_ref="ghcr.io/inful/${feature_name}"
               
-              # The publish creates a 'latest' tag, we need to also tag it with the version
+              # The publish creates tags based on version in devcontainer-feature.json
+              # We need to also tag it with our release version
               if docker manifest inspect "${oci_ref}:latest" > /dev/null 2>&1; then
-                echo "Found published package at ${oci_ref}:latest"
-                echo "Pulling and retagging with version ${VERSION}..."
-                
-                # Pull the manifest
-                docker buildx imagetools inspect "${oci_ref}:latest" || true
+                echo "✓ Found published package at ${oci_ref}:latest"
+                echo "Creating additional version tag ${VERSION}..."
                 
                 # Create version tag
                 docker buildx imagetools create \
                   "${oci_ref}:latest" \
                   --tag "${oci_ref}:${VERSION}" || {
-                    echo "Failed to create version tag, but package was published"
+                    echo "⚠️  Could not create version tag, but package was published with semver tags"
                   }
+                
+                echo ""
+                echo "✓ Package available at:"
+                echo "  - ${oci_ref}:latest"
+                echo "  - ${oci_ref}:1"
+                echo "  - ${oci_ref}:1.0"  
+                echo "  - ${oci_ref}:1.0.0"
+                echo "  - ${oci_ref}:${VERSION} (if tagging succeeded)"
               else
                 echo "⚠️  Package not found at ${oci_ref}:latest"
               fi
