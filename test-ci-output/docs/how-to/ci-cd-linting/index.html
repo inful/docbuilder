@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="CI/CD Linting Integration This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.
+Overview CI/CD linting provides:
+Automated validation: Catch issues before merge Consistent enforcement: All PRs validated equally Visible feedback: Clear error messages in PR comments Quality gates: Block merges if docs fail validation Supported Platforms GitHub Actions GitLab CI Jenkins CircleCI Generic CI GitHub Actions Basic Workflow Create .github/workflows/lint-docs.yml:">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="How To: CI/CD Linting Integration :: Test">
+    <meta name="twitter:description" content="CI/CD Linting Integration This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.
+Overview CI/CD linting provides:
+Automated validation: Catch issues before merge Consistent enforcement: All PRs validated equally Visible feedback: Clear error messages in PR comments Quality gates: Block merges if docs fail validation Supported Platforms GitHub Actions GitLab CI Jenkins CircleCI Generic CI GitHub Actions Basic Workflow Create .github/workflows/lint-docs.yml:">
+    <meta property="og:url" content="http://test/docs/how-to/ci-cd-linting/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="How To: CI/CD Linting Integration :: Test">
+    <meta property="og:description" content="CI/CD Linting Integration This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.
+Overview CI/CD linting provides:
+Automated validation: Catch issues before merge Consistent enforcement: All PRs validated equally Visible feedback: Clear error messages in PR comments Quality gates: Block merges if docs fail validation Supported Platforms GitHub Actions GitLab CI Jenkins CircleCI Generic CI GitHub Actions Basic Workflow Create .github/workflows/lint-docs.yml:">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:tag" content="Ci-Cd">
+    <meta property="article:tag" content="Linting">
+    <meta property="article:tag" content="Automation">
+    <meta property="article:tag" content="Github-Actions">
+    <meta property="article:tag" content="Gitlab-Ci">
+    <meta itemprop="name" content="How To: CI/CD Linting Integration :: Test">
+    <meta itemprop="description" content="CI/CD Linting Integration This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.
+Overview CI/CD linting provides:
+Automated validation: Catch issues before merge Consistent enforcement: All PRs validated equally Visible feedback: Clear error messages in PR comments Quality gates: Block merges if docs fail validation Supported Platforms GitHub Actions GitLab CI Jenkins CircleCI Generic CI GitHub Actions Basic Workflow Create .github/workflows/lint-docs.yml:">
+    <meta itemprop="datePublished" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="wordCount" content="2500">
+    <meta itemprop="keywords" content="Ci-Cd,Linting,Automation,Github-Actions,Gitlab-Ci">
+    <title>How To: CI/CD Linting Integration :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/how-to\/ci-cd-linting\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/how-to/ci-cd-linting/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#supported-platforms">Supported Platforms</a></li>
+    <li><a href="#github-actions">GitHub Actions</a>
+      <ul>
+        <li><a href="#basic-workflow">Basic Workflow</a></li>
+        <li><a href="#advanced-pr-comments">Advanced: PR Comments</a></li>
+        <li><a href="#auto-fix-on-push">Auto-Fix on Push</a></li>
+        <li><a href="#lint-only-changed-files">Lint Only Changed Files</a></li>
+      </ul>
+    </li>
+    <li><a href="#gitlab-ci">GitLab CI</a>
+      <ul>
+        <li><a href="#basic-pipeline">Basic Pipeline</a></li>
+        <li><a href="#mr-comments-with-api">MR Comments with API</a></li>
+        <li><a href="#auto-fix-on-main">Auto-Fix on Main</a></li>
+      </ul>
+    </li>
+    <li><a href="#jenkins">Jenkins</a>
+      <ul>
+        <li><a href="#pipeline-configuration">Pipeline Configuration</a></li>
+      </ul>
+    </li>
+    <li><a href="#circleci">CircleCI</a>
+      <ul>
+        <li><a href="#configuration">Configuration</a></li>
+      </ul>
+    </li>
+    <li><a href="#generic-ci-systems">Generic CI Systems</a>
+      <ul>
+        <li><a href="#docker-based-approach">Docker-Based Approach</a></li>
+        <li><a href="#shell-script-approach">Shell Script Approach</a></li>
+      </ul>
+    </li>
+    <li><a href="#advanced-patterns">Advanced Patterns</a>
+      <ul>
+        <li><a href="#parallel-linting">Parallel Linting</a></li>
+        <li><a href="#conditional-enforcement">Conditional Enforcement</a></li>
+        <li><a href="#scheduled-deep-scans">Scheduled Deep Scans</a></li>
+      </ul>
+    </li>
+    <li><a href="#performance-optimization">Performance Optimization</a>
+      <ul>
+        <li><a href="#cache-dependencies">Cache Dependencies</a></li>
+        <li><a href="#incremental-linting">Incremental Linting</a></li>
+        <li><a href="#matrix-builds">Matrix Builds</a></li>
+      </ul>
+    </li>
+    <li><a href="#monitoring-and-metrics">Monitoring and Metrics</a>
+      <ul>
+        <li><a href="#track-lint-success-rate">Track Lint Success Rate</a></li>
+        <li><a href="#dashboard-integration">Dashboard Integration</a></li>
+      </ul>
+    </li>
+    <li><a href="#troubleshooting-ci">Troubleshooting CI</a>
+      <ul>
+        <li><a href="#issue-ci-timeout">Issue: CI Timeout</a></li>
+        <li><a href="#issue-false-positives-in-ci">Issue: False Positives in CI</a></li>
+        <li><a href="#issue-secrets-in-error-messages">Issue: Secrets in Error Messages</a></li>
+      </ul>
+    </li>
+    <li><a href="#best-practices">Best Practices</a></li>
+    <li><a href="#next-steps">Next Steps</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/how-to/index.html"><span itemprop="name">how-to</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">How To: CI/CD Linting Integration</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./how-to/ci-cd-linting.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/how-to/pr-comment-integration/index.html" title="pr-comment-integration (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/how-to/migrate-to-linting/index.html" title="How To: Migrate Existing Repository to Linting (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/automation/index.html">Automation</a></li>
+    <li><a class="term-link" href="/tags/ci-cd/index.html">Ci-Cd</a></li>
+    <li><a class="term-link" href="/tags/github-actions/index.html">Github-Actions</a></li>
+    <li><a class="term-link" href="/tags/gitlab-ci/index.html">Gitlab-Ci</a></li>
+    <li><a class="term-link" href="/tags/linting/index.html">Linting</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="how-to-cicd-linting-integration">How To: CI/CD Linting Integration</h1>
+
+<h1 id="cicd-linting-integration">CI/CD Linting Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<p>This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.</p>
+<h2 id="overview">Overview<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>CI/CD linting provides:</p>
+<ul>
+<li><strong>Automated validation</strong>: Catch issues before merge</li>
+<li><strong>Consistent enforcement</strong>: All PRs validated equally</li>
+<li><strong>Visible feedback</strong>: Clear error messages in PR comments</li>
+<li><strong>Quality gates</strong>: Block merges if docs fail validation</li>
+</ul>
+<h2 id="supported-platforms">Supported Platforms<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/how-to/ci-cd-linting/index.html#github-actions">GitHub Actions</a></li>
+<li><a href="/docs/how-to/ci-cd-linting/index.html#gitlab-ci">GitLab CI</a></li>
+<li><a href="/docs/how-to/ci-cd-linting/index.html#jenkins">Jenkins</a></li>
+<li><a href="/docs/how-to/ci-cd-linting/index.html#circleci">CircleCI</a></li>
+<li><a href="/docs/how-to/ci-cd-linting/index.html#generic-ci-systems">Generic CI</a></li>
+</ul>
+<hr>
+<h2 id="github-actions">GitHub Actions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="basic-workflow">Basic Workflow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Create <code>.github/workflows/lint-docs.yml</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;docs/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;**.md&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Checkout code</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-go@v5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">go-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1.21&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          go install github.com/your-org/docbuilder/cmd/docbuilder@latest
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;$(go env GOPATH)/bin&#34; &gt;&gt; $GITHUB_PATH</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          docbuilder lint --format=json &gt; lint-report.json
+</span></span></span><span class="line"><span class="cl"><span class="sd">          docbuilder lint  # Human-readable output</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Upload Lint Report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">always()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/upload-artifact@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">retention-days</span><span class="p">:</span><span class="w"> </span><span class="m">30</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Runs on PRs affecting docs</li>
+<li>✅ Installs DocBuilder from source</li>
+<li>✅ Generates both JSON and text reports</li>
+<li>✅ Uploads artifacts for later review</li>
+</ul>
+<h3 id="advanced-pr-comments">Advanced: PR Comments<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Post lint results directly on PR:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation with PR Comments</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;docs/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;**.md&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l">read</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">pull-requests</span><span class="p">:</span><span class="w"> </span><span class="l">write </span><span class="w"> </span><span class="c"># Required for PR comments</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-go@v5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">go-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1.21&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          go install github.com/your-org/docbuilder/cmd/docbuilder@latest
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;$(go env GOPATH)/bin&#34; &gt;&gt; $GITHUB_PATH</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          set +e  # Don&#39;t fail on linting errors
+</span></span></span><span class="line"><span class="cl"><span class="sd">          docbuilder lint --format=json &gt; lint-report.json
+</span></span></span><span class="line"><span class="cl"><span class="sd">          LINT_EXIT=$?
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;exit_code=$LINT_EXIT&#34; &gt;&gt; $GITHUB_OUTPUT
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          # Generate summary
+</span></span></span><span class="line"><span class="cl"><span class="sd">          ERROR_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;error&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">          WARNING_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;warning&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;errors=$ERROR_COUNT&#34; &gt;&gt; $GITHUB_OUTPUT
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;warnings=$WARNING_COUNT&#34; &gt;&gt; $GITHUB_OUTPUT
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          exit $LINT_EXIT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR - Success</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.lint.outputs.exit_code == &#39;0&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v6</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">              issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              body: &#39;✅ **Documentation linting passed!**\n\nAll files meet linting standards.&#39;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            })</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR - Warnings</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.lint.outputs.exit_code == &#39;1&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v6</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const warnings = ${{ steps.lint.outputs.warnings }};
+</span></span></span><span class="line"><span class="cl"><span class="sd">            github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">              issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              body: `⚠️ **Documentation has ${warnings} warning(s)**\n\nConsider fixing before merge. Run \`docbuilder lint --fix\` locally.`
+</span></span></span><span class="line"><span class="cl"><span class="sd">            })</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR - Errors</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.lint.outputs.exit_code == &#39;2&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v6</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const fs = require(&#39;fs&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;));
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            let comment = `❌ **Documentation linting failed with ${errors.length} error(s)**\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;### Errors\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            errors.slice(0, 10).forEach(issue =&gt; {
+</span></span></span><span class="line"><span class="cl"><span class="sd">              comment += `- **${issue.file}**\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">              comment += `  \`${issue.message}\`\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            });
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            if (errors.length &gt; 10) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">              comment += `\n_...and ${errors.length - 10} more errors. Download full report from artifacts._\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            }
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;\n**How to fix**:\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;```bash\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;docbuilder lint --fix\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;git add -A\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;git commit -m &#34;docs: fix linting issues&#34;\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;```&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">              issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">              body: comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">            })</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Upload Report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">always()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/upload-artifact@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Fail if errors</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.lint.outputs.exit_code == &#39;2&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">exit 1</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Features</strong>:</p>
+<ul>
+<li>✅ Posts summary comment on PR</li>
+<li>✅ Shows first 10 errors inline</li>
+<li>✅ Provides fix instructions</li>
+<li>✅ Fails workflow if errors found</li>
+<li>✅ Allows warnings without blocking</li>
+</ul>
+<h3 id="auto-fix-on-push">Auto-Fix on Push<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Automatically fix issues and commit:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Auto-Fix Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">push</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">branches</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;docs/**&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;**.md&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">auto-fix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l">write </span><span class="w"> </span><span class="c"># Required to push commits</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.GITHUB_TOKEN }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-go@v5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">go-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1.21&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          go install github.com/your-org/docbuilder/cmd/docbuilder@latest
+</span></span></span><span class="line"><span class="cl"><span class="sd">          echo &#34;$(go env GOPATH)/bin&#34; &gt;&gt; $GITHUB_PATH</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Auto-Fix Issues</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          docbuilder lint --fix --yes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Commit Fixes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          git config user.name &#34;docbuilder-bot&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          git config user.email &#34;bot@example.com&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          if [[ -n $(git status -s) ]]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">            git add -A
+</span></span></span><span class="line"><span class="cl"><span class="sd">            git commit -m &#34;docs: auto-fix linting issues [skip ci]&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            git push
+</span></span></span><span class="line"><span class="cl"><span class="sd">          else
+</span></span></span><span class="line"><span class="cl"><span class="sd">            echo &#34;No fixes needed&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          fi</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>⚠️ <strong>Warning</strong>: Auto-fix on push can create unexpected commits. Consider using only for specific branches or requiring review.</p>
+<h3 id="lint-only-changed-files">Lint Only Changed Files<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Optimize CI by linting only changed files:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Get Changed Files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">changed-files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    git fetch origin ${{ github.base_ref }}
+</span></span></span><span class="line"><span class="cl"><span class="sd">    CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E &#39;\.(md|markdown)$&#39; || echo &#34;&#34;)
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;files=$CHANGED&#34; &gt;&gt; $GITHUB_OUTPUT
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;$CHANGED&#34; &gt; changed_files.txt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Changed Files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.changed-files.outputs.files != &#39;&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    cat changed_files.txt | xargs docbuilder lint</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="gitlab-ci">GitLab CI<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="basic-pipeline">Basic Pipeline<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Add to <code>.gitlab-ci.yml</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">stages</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">golang:1.21</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">go install github.com/your-org/docbuilder/cmd/docbuilder@latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">export PATH=$PATH:$(go env GOPATH)/bin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">docbuilder lint --format=json | tee lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">docbuilder lint </span><span class="w"> </span><span class="c"># Human-readable output</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l">always</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">reports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">junit</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">expire_in</span><span class="p">:</span><span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="l">days</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">only</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">changes</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">docs/**</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="s1">&#39;**/*.md&#39;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="mr-comments-with-api">MR Comments with API<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Post lint results to merge request:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">lint-docs-with-comments</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">golang:1.21</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">go install github.com/your-org/docbuilder/cmd/docbuilder@latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">export PATH=$PATH:$(go env GOPATH)/bin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">apt-get update &amp;&amp; apt-get install -y jq curl</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      set +e
+</span></span></span><span class="line"><span class="cl"><span class="sd">      docbuilder lint --format=json &gt; lint-report.json
+</span></span></span><span class="line"><span class="cl"><span class="sd">      LINT_EXIT=$?
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ERROR_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;error&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      WARNING_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;warning&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [ &#34;$LINT_EXIT&#34; -eq 2 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        STATUS=&#34;❌ **Linting failed** with $ERROR_COUNT error(s)&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      elif [ &#34;$LINT_EXIT&#34; -eq 1 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        STATUS=&#34;⚠️ **Linting passed** with $WARNING_COUNT warning(s)&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      else
+</span></span></span><span class="line"><span class="cl"><span class="sd">        STATUS=&#34;✅ **Linting passed**&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;$STATUS\n\nRun \`docbuilder lint --fix\` to auto-fix issues.&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Post comment using GitLab API
+</span></span></span><span class="line"><span class="cl"><span class="sd">      curl --request POST \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;PRIVATE-TOKEN: $CI_JOB_TOKEN&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;Content-Type: application/json&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --data &#34;{\&#34;body\&#34;: \&#34;$COMMENT\&#34;}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        &#34;$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      exit $LINT_EXIT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l">always</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">only</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">merge_requests</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="auto-fix-on-main">Auto-Fix on Main<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">auto-fix-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">fix</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">golang:1.21</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">before_script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">go install github.com/your-org/docbuilder/cmd/docbuilder@latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">export PATH=$PATH:$(go env GOPATH)/bin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">git config user.name &#34;DocBuilder Bot&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">git config user.email &#34;bot@example.com&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">docbuilder lint --fix --yes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [[ -n $(git status -s) ]]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        git add -A
+</span></span></span><span class="line"><span class="cl"><span class="sd">        git commit -m &#34;docs: auto-fix linting issues [skip ci]&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        git push &#34;https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git&#34; HEAD:main
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">only</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">main</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l">on_success</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="jenkins">Jenkins<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="pipeline-configuration">Pipeline Configuration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Create <code>Jenkinsfile</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-groovy" data-lang="groovy"><span class="line"><span class="cl"><span class="n">pipeline</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">agent</span> <span class="n">any</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">environment</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">GOPATH</span> <span class="o">=</span> <span class="s2">&#34;${WORKSPACE}/go&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">PATH</span> <span class="o">=</span> <span class="s2">&#34;${PATH}:${GOPATH}/bin&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">stages</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">stage</span><span class="o">(</span><span class="s1">&#39;Setup&#39;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">steps</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">sh</span> <span class="s1">&#39;go install github.com/your-org/docbuilder/cmd/docbuilder@latest&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="n">stage</span><span class="o">(</span><span class="s1">&#39;Lint Documentation&#39;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">steps</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">script</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="kt">def</span> <span class="n">lintStatus</span> <span class="o">=</span> <span class="n">sh</span><span class="o">(</span>
+</span></span><span class="line"><span class="cl">                        <span class="nl">script:</span> <span class="s1">&#39;docbuilder lint --format=json &gt; lint-report.json &amp;&amp; docbuilder lint&#39;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                        <span class="nl">returnStatus:</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">)</span>
+</span></span><span class="line"><span class="cl">                    
+</span></span><span class="line"><span class="cl">                    <span class="n">archiveArtifacts</span> <span class="nl">artifacts:</span> <span class="s1">&#39;lint-report.json&#39;</span><span class="o">,</span> <span class="nl">allowEmptyArchive:</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">                    
+</span></span><span class="line"><span class="cl">                    <span class="k">if</span> <span class="o">(</span><span class="n">lintStatus</span> <span class="o">==</span> <span class="mi">2</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">error</span><span class="o">(</span><span class="s2">&#34;Documentation linting failed with errors&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">lintStatus</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">unstable</span><span class="o">(</span><span class="s2">&#34;Documentation has warnings&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">                <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">post</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">always</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">publishHTML</span><span class="o">([</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">allowMissing:</span> <span class="kc">false</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">alwaysLinkToLastBuild:</span> <span class="kc">true</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">keepAll:</span> <span class="kc">true</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">reportDir:</span> <span class="s1">&#39;.&#39;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">reportFiles:</span> <span class="s1">&#39;lint-report.json&#39;</span><span class="o">,</span>
+</span></span><span class="line"><span class="cl">                <span class="nl">reportName:</span> <span class="s1">&#39;Lint Report&#39;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">])</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="circleci">CircleCI<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="configuration">Configuration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Create <code>.circleci/config.yml</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="m">2.1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docker</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">cimg/go:1.21</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">checkout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">restore_cache</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">keys</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">go-mod-v1-{{ checksum &#34;go.sum&#34; }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            go install github.com/your-org/docbuilder/cmd/docbuilder@latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">save_cache</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">go-mod-v1-{{ checksum &#34;go.sum&#34; }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">paths</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="s2">&#34;/home/circleci/go/pkg/mod&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            docbuilder lint --format=json &gt; lint-report.json
+</span></span></span><span class="line"><span class="cl"><span class="sd">            docbuilder lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">store_artifacts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">destination</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">store_test_results</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">workflows</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="m">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">filters</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nt">branches</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">              </span><span class="nt">ignore</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span>- <span class="l">gh-pages</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="generic-ci-systems">Generic CI Systems<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="docker-based-approach">Docker-Based Approach<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>For any CI that supports Docker:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="c"># Dockerfile.lint</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">FROM</span><span class="w"> </span><span class="s">golang:1.21-alpine</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">RUN</span> apk add --no-cache git<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">RUN</span> go install github.com/your-org/docbuilder/cmd/docbuilder@latest<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/workspace</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">ENTRYPOINT</span> <span class="p">[</span><span class="s2">&#34;docbuilder&#34;</span><span class="p">,</span> <span class="s2">&#34;lint&#34;</span><span class="p">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Build image</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker build -f Dockerfile.lint -t docbuilder-lint:latest .</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Use in CI</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Generic CI script</span>
+</span></span><span class="line"><span class="cl">docker run --rm -v <span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>:/workspace docbuilder-lint:latest --format<span class="o">=</span>json &gt; lint-report.json</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="shell-script-approach">Shell Script Approach<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>For CI without Docker support:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1"># lint-docs.sh</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">set</span> -e
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Install Go if needed</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> ! <span class="nb">command</span> -v go <span class="p">&amp;</span>&gt; /dev/null<span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;Installing Go...&#34;</span>
+</span></span><span class="line"><span class="cl">    wget https://go.dev/dl/go1.21.0.linux-amd64.tar.gz
+</span></span><span class="line"><span class="cl">    tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+</span></span><span class="line"><span class="cl">    <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/usr/local/go/bin
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Install DocBuilder</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;Installing DocBuilder...&#34;</span>
+</span></span><span class="line"><span class="cl">go install github.com/your-org/docbuilder/cmd/docbuilder@latest
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="k">$(</span>go env GOPATH<span class="k">)</span>/bin
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Run linting</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;Linting documentation...&#34;</span>
+</span></span><span class="line"><span class="cl">docbuilder lint --format<span class="o">=</span>json &gt; lint-report.json
+</span></span><span class="line"><span class="cl">docbuilder lint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Check exit code</span>
+</span></span><span class="line"><span class="cl"><span class="nv">LINT_EXIT</span><span class="o">=</span><span class="nv">$?</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> <span class="nv">$LINT_EXIT</span> -eq <span class="m">2</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;❌ Linting failed with errors&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="k">elif</span> <span class="o">[</span> <span class="nv">$LINT_EXIT</span> -eq <span class="m">1</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;⚠️ Linting passed with warnings&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="k">else</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;✅ Linting passed&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="advanced-patterns">Advanced Patterns<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="parallel-linting">Parallel Linting<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Lint multiple directories in parallel:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># GitHub Actions</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint-api-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="c"># ... setup steps</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint docs/api/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint-guides</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="c"># ... setup steps</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint docs/guides/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint-reference</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="c"># ... setup steps</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint docs/reference/</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="conditional-enforcement">Conditional Enforcement<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Different rules for different branches:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint (Strict on Main)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.ref == &#39;refs/heads/main&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint </span><span class="w"> </span><span class="c"># Fail on any error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint (Relaxed on Feature Branches)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.ref != &#39;refs/heads/main&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint || true </span><span class="w"> </span><span class="c"># Don&#39;t block</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="scheduled-deep-scans">Scheduled Deep Scans<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Run comprehensive linting weekly:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Weekly Documentation Audit</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">cron</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;0 2 * * 0&#39;</span><span class="w">  </span><span class="c"># Sunday 2am</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">audit</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="c"># ... setup steps</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Full Lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          docbuilder lint --format=json &gt; weekly-audit.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Generate Report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          jq -r &#39;.issues[] | &#34;\(.severity): \(.file) - \(.message)&#34;&#39; weekly-audit.json &gt; weekly-report.txt</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Email Report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">dawidd6/action-send-mail@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server_address</span><span class="p">:</span><span class="w"> </span><span class="l">smtp.example.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">server_port</span><span class="p">:</span><span class="w"> </span><span class="m">465</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.MAIL_USERNAME }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l">${{ secrets.MAIL_PASSWORD }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="l">Weekly Documentation Audit</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l">docs-team@example.com</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l">CI Bot</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">attachments</span><span class="p">:</span><span class="w"> </span><span class="l">weekly-report.txt</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="performance-optimization">Performance Optimization<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="cache-dependencies">Cache Dependencies<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># GitHub Actions</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Cache Go modules</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/cache@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ~/.cache/go-build
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ~/go/pkg/mod</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l">${{ runner.os }}-go-${{ hashFiles(&#39;**/go.sum&#39;) }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">restore-keys</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ${{ runner.os }}-go-</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="incremental-linting">Incremental Linting<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Only lint changed files:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Get changed markdown files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">changed-files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">tj-actions/changed-files@v39</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">files</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      **/*.md
+</span></span></span><span class="line"><span class="cl"><span class="sd">      **/*.markdown</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint changed files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.changed-files.outputs.any_changed == &#39;true&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;${{ steps.changed-files.outputs.all_changed_files }}&#34; | xargs docbuilder lint</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="matrix-builds">Matrix Builds<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Test against multiple DocBuilder versions:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">matrix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">docbuilder-version</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;latest&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v1.0.0&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v1.1.0&#39;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder ${{ matrix.docbuilder-version }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          go install github.com/your-org/docbuilder/cmd/docbuilder@${{ matrix.docbuilder-version }}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="monitoring-and-metrics">Monitoring and Metrics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="track-lint-success-rate">Track Lint Success Rate<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Record Metrics</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">always()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    LINT_EXIT=$?
+</span></span></span><span class="line"><span class="cl"><span class="sd">    curl -X POST https://metrics.example.com/api/lint \
+</span></span></span><span class="line"><span class="cl"><span class="sd">      -H &#34;Content-Type: application/json&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">      -d &#34;{
+</span></span></span><span class="line"><span class="cl"><span class="sd">        \&#34;repo\&#34;: \&#34;${{ github.repository }}\&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        \&#34;pr\&#34;: \&#34;${{ github.event.pull_request.number }}\&#34;,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        \&#34;exit_code\&#34;: $LINT_EXIT,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        \&#34;timestamp\&#34;: \&#34;$(date -u +%Y-%m-%dT%H:%M:%SZ)\&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="dashboard-integration">Dashboard Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Export metrics to dashboard tools:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Export to DataDog</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">always()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    ERROR_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;error&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">    WARNING_COUNT=$(jq &#39;[.issues[] | select(.severity==&#34;warning&#34;)] | length&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">    
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;lint.errors:$ERROR_COUNT|g|#repo:${{ github.repository }}&#34; | nc -u -w1 datadog-agent 8125
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;lint.warnings:$WARNING_COUNT|g|#repo:${{ github.repository }}&#34; | nc -u -w1 datadog-agent 8125</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="troubleshooting-ci">Troubleshooting CI<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="issue-ci-timeout">Issue: CI Timeout<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Solution</strong>: Lint only changed files or increase timeout</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint with timeout</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">timeout-minutes</span><span class="p">:</span><span class="w"> </span><span class="m">10</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="issue-false-positives-in-ci">Issue: False Positives in CI<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Solution</strong>: Ensure consistent environment</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Normalize line endings</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">git config core.autocrlf false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="issue-secrets-in-error-messages">Issue: Secrets in Error Messages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Solution</strong>: Sanitize output</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    docbuilder lint 2&gt;&amp;1 | sed &#39;s/${{ secrets.TOKEN }}/***REDACTED***/g&#39;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="best-practices">Best Practices<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ol>
+<li><strong>Start permissive</strong>: Allow warnings initially, tighten later</li>
+<li><strong>Fast feedback</strong>: Lint only changed files in PRs</li>
+<li><strong>Clear messages</strong>: Use PR comments for actionable feedback</li>
+<li><strong>Auto-fix carefully</strong>: Only on trusted branches</li>
+<li><strong>Monitor trends</strong>: Track lint success rates over time</li>
+<li><strong>Document exceptions</strong>: Explain any <code>--no-verify</code> usage</li>
+<li><strong>Version pin</strong>: Use specific DocBuilder version in CI</li>
+</ol>
+<hr>
+<h2 id="next-steps">Next Steps<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Review <a href="/docs/reference/lint-rules/index.html">Lint Rules Reference</a> for complete rule list</li>
+<li>See <a href="/docs/how-to/setup-linting/index.html">Setup Linting</a> for local development</li>
+<li>See <a href="/docs/how-to/migrate-to-linting/index.html">Migration Guide</a> for adopting in existing repos</li>
+<li>Read <a href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005</a> for design decisions</li>
+</ul>
+<hr>
+<p><strong>CI Integration Checklist</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Basic workflow runs on PRs</li>
+<li><input disabled="" type="checkbox"> Artifacts uploaded for review</li>
+<li><input disabled="" type="checkbox"> PR comments provide feedback</li>
+<li><input disabled="" type="checkbox"> Failures block merge</li>
+<li><input disabled="" type="checkbox"> Warnings don&rsquo;t block (optional)</li>
+<li><input disabled="" type="checkbox"> Team notified of new checks</li>
+<li><input disabled="" type="checkbox"> Documentation updated</li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 29, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/how-to/index.html">How-To</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" checked><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

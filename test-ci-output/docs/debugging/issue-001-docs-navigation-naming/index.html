@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="ISSUE-001: “Docs” Appearing as Navigation Name Instead of Repository Names Status: ✅ RESOLVED
+Priority: High
+Created: 2025-12-19
+Last Updated: 2025-12-19
+Resolved: 2025-12-19 Additional Fix: 2025-12-19 (nested docs directories)
+Problem Statement The Hugo navigation sidebar shows “Docs” as the section name instead of the repository name. This creates confusing, nested “Docs &gt; Docs &gt; Docs” hierarchies instead of meaningful navigation like “Repository-Name &gt; Documentation”.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="issue-001-docs-navigation-naming :: Test">
+    <meta name="twitter:description" content="ISSUE-001: “Docs” Appearing as Navigation Name Instead of Repository Names Status: ✅ RESOLVED
+Priority: High
+Created: 2025-12-19
+Last Updated: 2025-12-19
+Resolved: 2025-12-19 Additional Fix: 2025-12-19 (nested docs directories)
+Problem Statement The Hugo navigation sidebar shows “Docs” as the section name instead of the repository name. This creates confusing, nested “Docs &gt; Docs &gt; Docs” hierarchies instead of meaningful navigation like “Repository-Name &gt; Documentation”.">
+    <meta property="og:url" content="http://test/docs/debugging/issue-001-docs-navigation-naming/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="issue-001-docs-navigation-naming :: Test">
+    <meta property="og:description" content="ISSUE-001: “Docs” Appearing as Navigation Name Instead of Repository Names Status: ✅ RESOLVED
+Priority: High
+Created: 2025-12-19
+Last Updated: 2025-12-19
+Resolved: 2025-12-19 Additional Fix: 2025-12-19 (nested docs directories)
+Problem Statement The Hugo navigation sidebar shows “Docs” as the section name instead of the repository name. This creates confusing, nested “Docs &gt; Docs &gt; Docs” hierarchies instead of meaningful navigation like “Repository-Name &gt; Documentation”.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-31T15:31:32+00:00">
+    <meta property="article:modified_time" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="name" content="issue-001-docs-navigation-naming :: Test">
+    <meta itemprop="description" content="ISSUE-001: “Docs” Appearing as Navigation Name Instead of Repository Names Status: ✅ RESOLVED
+Priority: High
+Created: 2025-12-19
+Last Updated: 2025-12-19
+Resolved: 2025-12-19 Additional Fix: 2025-12-19 (nested docs directories)
+Problem Statement The Hugo navigation sidebar shows “Docs” as the section name instead of the repository name. This creates confusing, nested “Docs &gt; Docs &gt; Docs” hierarchies instead of meaningful navigation like “Repository-Name &gt; Documentation”.">
+    <meta itemprop="datePublished" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="dateModified" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="wordCount" content="1619">
+    <title>issue-001-docs-navigation-naming :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/debugging\/issue-001-docs-navigation-naming\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/debugging/issue-001-docs-navigation-naming/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#problem-statement">Problem Statement</a>
+      <ul>
+        <li><a href="#visual-evidence">Visual Evidence</a></li>
+      </ul>
+    </li>
+    <li><a href="#root-cause-analysis-confirmed">Root Cause Analysis (CONFIRMED)</a>
+      <ul>
+        <li><a href="#the-problem">The Problem</a></li>
+        <li><a href="#root-cause">Root Cause</a></li>
+        <li><a href="#example-failure-case">Example Failure Case</a></li>
+      </ul>
+    </li>
+    <li><a href="#investigation-plan">Investigation Plan</a>
+      <ul>
+        <li><a href="#phase-1-trace-current-behavior--completed">Phase 1: Trace Current Behavior ✅ COMPLETED</a></li>
+        <li><a href="#phase-2-identify-title-source--completed">Phase 2: Identify Title Source ✅ COMPLETED</a></li>
+        <li><a href="#phase-3-fix-implementation--completed">Phase 3: Fix Implementation ✅ COMPLETED</a></li>
+        <li><a href="#phase-4-verification--completed">Phase 4: Verification ✅ COMPLETED</a></li>
+      </ul>
+    </li>
+    <li><a href="#code-locations">Code Locations</a>
+      <ul>
+        <li><a href="#primary-files-to-check">Primary Files to Check</a></li>
+        <li><a href="#test-files">Test Files</a></li>
+      </ul>
+    </li>
+    <li><a href="#previous-fix-attempts-document-history">Previous Fix Attempts (Document History)</a>
+      <ul>
+        <li><a href="#this-was-the-first-documented-attempt">This Was The First Documented Attempt</a></li>
+      </ul>
+    </li>
+    <li><a href="#solution-strategy">Solution Strategy</a>
+      <ul>
+        <li><a href="#the-fix-implemented-approach">The Fix (IMPLEMENTED APPROACH)</a></li>
+        <li><a href="#why-this-works">Why This Works</a></li>
+        <li><a href="#example-results">Example Results</a></li>
+      </ul>
+    </li>
+    <li><a href="#resolution-summary">Resolution Summary</a>
+      <ul>
+        <li><a href="#implementation-initial-fix">Implementation (Initial Fix)</a></li>
+        <li><a href="#additional-fix-nested-docs-directories">Additional Fix (Nested Docs Directories)</a></li>
+        <li><a href="#test-results">Test Results</a></li>
+        <li><a href="#before-vs-after">Before vs After</a></li>
+        <li><a href="#why-the-old-code-failed">Why The Old Code Failed</a></li>
+        <li><a href="#why-the-new-code-works">Why The New Code Works</a></li>
+      </ul>
+    </li>
+    <li><a href="#testing-checklist">Testing Checklist</a></li>
+    <li><a href="#existing-test-coverage">Existing Test Coverage</a></li>
+    <li><a href="#additional-test-coverage">Additional Test Coverage</a></li>
+    <li><a href="#success-criteria">Success Criteria</a></li>
+    <li><a href="#notes">Notes</a></li>
+    <li><a href="#related-files">Related Files</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/debugging/index.html"><span itemprop="name">debugging</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">issue-001-docs-navigation-naming</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./debugging/issue-001-docs-navigation-naming.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/debugging/index.html" title="debugging (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/how-to/index.html" title="how-to (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+  </header>
+
+<h1 id="issue-001-docs-navigation-naming">issue-001-docs-navigation-naming</h1>
+
+<h1 id="issue-001-docs-appearing-as-navigation-name-instead-of-repository-names">ISSUE-001: &ldquo;Docs&rdquo; Appearing as Navigation Name Instead of Repository Names<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<p><strong>Status:</strong> ✅ RESOLVED<br>
+<strong>Priority:</strong> High<br>
+<strong>Created:</strong> 2025-12-19<br>
+<strong>Last Updated:</strong> 2025-12-19<br>
+<strong>Resolved:</strong> 2025-12-19
+<strong>Additional Fix:</strong> 2025-12-19 (nested docs directories)</p>
+<h2 id="problem-statement">Problem Statement<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The Hugo navigation sidebar shows &ldquo;Docs&rdquo; as the section name instead of the repository name. This creates confusing, nested &ldquo;Docs &gt; Docs &gt; Docs&rdquo; hierarchies instead of meaningful navigation like &ldquo;Repository-Name &gt; Documentation&rdquo;.</p>
+<h3 id="visual-evidence">Visual Evidence<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Screenshot shows navigation structure:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; 555 Variant Interpretations
+  Human Varde
+  Data Structures Library
+  Documentation
+&gt; Docs
+  &gt; Docs
+    &gt; Docs
+      ARCHITECTURE
+  Docs</code></pre></div>
+<p>Expected structure:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; RepositoryName
+  ARCHITECTURE
+  [other docs]</code></pre></div>
+<h2 id="root-cause-analysis-confirmed">Root Cause Analysis (CONFIRMED)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="the-problem">The Problem<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>When a repository has a <code>docs/</code> directory configured as the documentation path, the content structure becomes:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>content/
+  repository-name/
+    docs/
+      _index.md    ← title: &#34;Docs&#34; (WRONG - should use repo name)
+      file1.md
+      file2.md</code></pre></div>
+<p>This causes Hugo navigation to show:</p>
+<ul>
+<li><strong>Docs</strong> (the docs folder becomes a section)
+<ul>
+<li>Docs (nested somehow by Hugo)
+<ul>
+<li>ARCHITECTURE</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="root-cause">Root Cause<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>File:</strong> <code>internal/hugo/pipeline/generators.go:generateSectionIndex()</code></p>
+<p>Lines 135-142:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Generate section index</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// If section is a docs base directory (e.g., &#34;docs&#34;), use repository name as title</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">title</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">if</span><span class="w"> </span><span class="nf">isDocsBaseSection</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">,</span><span class="w"> </span><span class="nx">docs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">repo</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>The logic has a <code>isDocsBaseSection()</code> check that SHOULD use the repo name when the section is &ldquo;docs&rdquo;, BUT there&rsquo;s a problem with how it works.</p>
+<p><strong>The Bug:</strong> <code>isDocsBaseSection()</code> checks if <strong>all documents have <code>DocsBase</code> matching the section name</strong>. But when docs are in subdirectories like <code>docs/architecture/file.md</code>, the section is <code>&quot;docs&quot;</code> but the docsBase might be different paths, causing the check to fail.</p>
+<h3 id="example-failure-case">Example Failure Case<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Repository: <code>franklin-hardpanel-mapper</code><br>
+Configured paths: <code>[&quot;docs&quot;]</code><br>
+Files discovered:</p>
+<ul>
+<li><code>docs/architecture.md</code> → section: &ldquo;docs&rdquo;, DocsBase: &ldquo;docs&rdquo; ✓</li>
+<li><code>docs/api/endpoint.md</code> → section: &ldquo;docs/api&rdquo;, DocsBase: &ldquo;docs&rdquo; ✗</li>
+</ul>
+<p>When generating section index for &ldquo;docs&rdquo;:</p>
+<ul>
+<li><code>isDocsBaseSection(&quot;docs&quot;, docs)</code> checks all docs</li>
+<li>Some docs have section &ldquo;docs/api&rdquo; not &ldquo;docs&rdquo;</li>
+<li>Check fails → uses <code>titleCase(&quot;docs&quot;)</code> → &ldquo;Docs&rdquo; instead of repo name</li>
+</ul>
+<h2 id="investigation-plan">Investigation Plan<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="phase-1-trace-current-behavior--completed">Phase 1: Trace Current Behavior ✅ COMPLETED<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Add debug logging to <code>generateSectionIndex()</code> to see what title is being used</li>
+<li><input checked="" disabled="" type="checkbox"> Check what <code>repoInfo.Name</code> contains when passed to processor</li>
+<li><input checked="" disabled="" type="checkbox"> Verify section index frontmatter in generated Hugo site</li>
+<li><input checked="" disabled="" type="checkbox"> Check if repository-level <code>_index.md</code> is being created vs directory-level ones</li>
+</ul>
+<p><strong>Findings:</strong> Section indexes were using <code>titleCase(filepath.Base(sectionName))</code> which converted &ldquo;docs&rdquo; → &ldquo;Docs&rdquo;. The <code>isDocsBaseSection()</code> check was failing for repositories with nested docs subdirectories.</p>
+<h3 id="phase-2-identify-title-source--completed">Phase 2: Identify Title Source ✅ COMPLETED<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Find where section index title is determined</li>
+<li><input checked="" disabled="" type="checkbox"> Check if it&rsquo;s using directory name vs repository name</li>
+<li><input checked="" disabled="" type="checkbox"> Verify <code>Document.RepositoryName</code> is populated correctly</li>
+<li><input checked="" disabled="" type="checkbox"> Check if path parsing is extracting correct segment</li>
+</ul>
+<p><strong>Findings:</strong> Title determined in <code>generators.go:generateSectionIndex()</code> at line 138. Was using <code>titleCase(repo)</code> instead of <code>repoMeta.Name</code>, and <code>isDocsBaseSection()</code> logic was flawed for nested directories.</p>
+<h3 id="phase-3-fix-implementation--completed">Phase 3: Fix Implementation ✅ COMPLETED<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Ensure repository-level <code>_index.md</code> uses <code>repo.Name</code> as title</li>
+<li><input checked="" disabled="" type="checkbox"> Ensure subdirectory <code>_index.md</code> files use meaningful names (not &ldquo;docs&rdquo;)</li>
+<li><input checked="" disabled="" type="checkbox"> Add test case for repository section title generation</li>
+<li><input checked="" disabled="" type="checkbox"> Update golden tests if output format changes</li>
+</ul>
+<p><strong>Actions Taken:</strong></p>
+<ul>
+<li>Added <code>DocsPaths</code> field to <code>RepositoryInfo</code></li>
+<li>Replaced <code>isDocsBaseSection()</code> with <code>isConfiguredDocsPath()</code></li>
+<li>Changed to use <code>repoMeta.Name</code> (preserves original capitalization)</li>
+<li>No golden test updates needed - existing tests validated the fix</li>
+</ul>
+<h3 id="phase-4-verification--completed">Phase 4: Verification ✅ COMPLETED<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Run local build and inspect generated <code>_index.md</code> files</li>
+<li><input checked="" disabled="" type="checkbox"> Check Hugo navigation in browser</li>
+<li><input checked="" disabled="" type="checkbox"> Run golden tests to ensure no regressions</li>
+<li><input checked="" disabled="" type="checkbox"> Document fix in this file</li>
+</ul>
+<p><strong>Results:</strong></p>
+<ul>
+<li>Manual test: <code>franklin-hardpanel-mapper/docs/_index.md</code> → title: &ldquo;Franklin Hardpanel Mapper&rdquo; ✅</li>
+<li>All 16 golden integration tests pass ✅</li>
+<li>Full test suite passes (44 packages) ✅</li>
+<li>Linter clean (0 issues) ✅</li>
+</ul>
+<h2 id="code-locations">Code Locations<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="primary-files-to-check">Primary Files to Check<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li>
+<p><strong>internal/hugo/pipeline/transform_section_indexes.go</strong></p>
+<ul>
+<li><code>Run()</code> method - orchestrates section index generation</li>
+<li><code>generateSectionIndex()</code> - creates individual <code>_index.md</code> files</li>
+<li>Title assignment logic</li>
+</ul>
+</li>
+<li>
+<p><strong>internal/hugo/pipeline/document.go</strong></p>
+<ul>
+<li><code>Document.RepositoryName</code> field</li>
+<li><code>RepositoryInfo</code> structure</li>
+</ul>
+</li>
+<li>
+<p><strong>internal/hugo/pipeline/processor.go</strong></p>
+<ul>
+<li>How <code>RepositoryInfo</code> is passed to transforms</li>
+<li>Context available to section index generator</li>
+</ul>
+</li>
+<li>
+<p><strong>internal/hugo/content_copy_pipeline.go</strong></p>
+<ul>
+<li><code>buildRepositoryMetadata()</code> - where repo.Name should be set</li>
+</ul>
+</li>
+</ol>
+<h3 id="test-files">Test Files<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li>
+<p><strong>test/integration/golden_test.go</strong></p>
+<ul>
+<li><code>TestGolden_TwoRepos</code> - multi-repo navigation</li>
+<li><code>TestGolden_SectionIndexes</code> - section index generation</li>
+</ul>
+</li>
+<li>
+<p><strong>test/testdata/golden/*/content-structure.golden.json</strong></p>
+<ul>
+<li>Expected frontmatter for <code>_index.md</code> files</li>
+</ul>
+</li>
+</ol>
+<h2 id="previous-fix-attempts-document-history">Previous Fix Attempts (Document History)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="this-was-the-first-documented-attempt">This Was The First Documented Attempt<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The issue was tracked and resolved systematically on 2025-12-19.</p>
+<p><strong>Previous undocumented attempts</strong> (inferred from code history):</p>
+<ul>
+<li>The <code>isDocsBaseSection()</code> function existed, suggesting at least one prior attempt to detect and handle docs directories</li>
+<li>The logic checked all documents&rsquo; <code>DocsBase</code> field, which was too fragile for nested directory structures</li>
+<li>No documentation existed tracking why this approach was chosen or why it failed in production</li>
+</ul>
+<h2 id="solution-strategy">Solution Strategy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="the-fix-implemented-approach">The Fix (IMPLEMENTED APPROACH)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Root Cause:</strong> The <code>isDocsBaseSection()</code> function fails when documents are nested in subdirectories under &ldquo;docs&rdquo;.</p>
+<p><strong>Solution:</strong> Simplify the logic - ANY section that is a top-level documentation directory (matching the configured <code>paths</code>) should use the repository name as the title.</p>
+<p><strong>Implementation:</strong></p>
+<ol>
+<li>Check if <code>sectionName</code> is in the repository&rsquo;s configured <code>paths</code> (e.g., &ldquo;docs&rdquo;, &ldquo;documentation&rdquo;)</li>
+<li>If yes → use repository name as title</li>
+<li>If no → use humanized directory name as title</li>
+</ol>
+<p><strong>Code Change Location:</strong> <code>internal/hugo/pipeline/generators.go:generateSectionIndex()</code></p>
+<p>Before:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">title</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">if</span><span class="w"> </span><span class="nf">isDocsBaseSection</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">,</span><span class="w"> </span><span class="nx">docs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">repo</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>After:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">title</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">if</span><span class="w"> </span><span class="nf">isConfiguredDocsPath</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">,</span><span class="w"> </span><span class="nx">repoMeta</span><span class="p">.</span><span class="nx">DocsPaths</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">title</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">repoMeta</span><span class="p">.</span><span class="nx">Name</span><span class="w">  </span><span class="c1">// Use actual repository name, not directory name</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>New helper function:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// isConfiguredDocsPath checks if the section matches a configured documentation path</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">isConfiguredDocsPath</span><span class="p">(</span><span class="nx">sectionName</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">docsPaths</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">docsPaths</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">sectionName</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nf">HasPrefix</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="o">+</span><span class="s">&#34;/&#34;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="why-this-works">Why This Works<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Clear Identification:</strong> We know which directories are &ldquo;docs roots&rdquo; from configuration</li>
+<li><strong>No Ambiguity:</strong> No need to inspect all documents&rsquo; metadata</li>
+<li><strong>Correct Titles:</strong> Top-level docs directory gets repository name</li>
+<li><strong>Nested Dirs:</strong> Subdirectories under docs/ get their own meaningful names</li>
+</ol>
+<h3 id="example-results">Example Results<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Repository: <code>franklin-hardpanel-mapper</code><br>
+Configured paths: <code>[&quot;docs&quot;]</code></p>
+<p>Generated sections:</p>
+<ul>
+<li><code>content/franklin-hardpanel-mapper/docs/_index.md</code> → title: &ldquo;Franklin Hardpanel Mapper&rdquo; ✅</li>
+<li><code>content/franklin-hardpanel-mapper/docs/api/_index.md</code> → title: &ldquo;API&rdquo; ✅</li>
+<li><code>content/franklin-hardpanel-mapper/docs/architecture/_index.md</code> → title: &ldquo;Architecture&rdquo; ✅</li>
+</ul>
+<p>Navigation shows:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; Franklin Hardpanel Mapper
+  API
+  Architecture</code></pre></div>
+<p>NOT:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; Docs
+  &gt; Docs
+    API
+    Architecture</code></pre></div>
+<h2 id="resolution-summary">Resolution Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>Date:</strong> 2025-12-19</p>
+<h3 id="implementation-initial-fix">Implementation (Initial Fix)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Modified 3 files:</p>
+<ol>
+<li>
+<p><strong>internal/hugo/pipeline/document.go</strong></p>
+<ul>
+<li>Added <code>DocsPaths []string</code> field to <code>RepositoryInfo</code></li>
+<li>Stores all configured documentation paths from repository config</li>
+</ul>
+</li>
+<li>
+<p><strong>internal/hugo/content_copy_pipeline.go</strong></p>
+<ul>
+<li>Populated <code>DocsPaths</code> with <code>repo.Paths</code> from configuration</li>
+<li>Default to <code>[]string{&quot;docs&quot;}</code> when no paths configured</li>
+</ul>
+</li>
+<li>
+<p><strong>internal/hugo/pipeline/generators.go</strong></p>
+<ul>
+<li>Replaced <code>isDocsBaseSection()</code> with <code>isConfiguredDocsPath()</code></li>
+<li>New function checks if section exactly matches a configured docs path</li>
+<li>When match found, uses <code>repoMeta.Name</code> (repository name) instead of <code>titleCase(repo)</code> or directory name</li>
+</ul>
+</li>
+</ol>
+<h3 id="additional-fix-nested-docs-directories">Additional Fix (Nested Docs Directories)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Problem Discovered:</strong> Repositories with nested directories matching the docs path name (e.g., <code>docs/docs/docs/</code>) still showed &ldquo;Docs&rdquo; in navigation.</p>
+<p><strong>Root Cause:</strong> The initial <code>isConfiguredDocsPath()</code> only checked for exact section match (e.g., &ldquo;docs&rdquo;), but didn&rsquo;t handle cases where the section was &ldquo;docs/docs&rdquo; or &ldquo;docs/docs/docs&rdquo;.</p>
+<p><strong>Solution:</strong> Extended <code>isConfiguredDocsPath()</code> to also check if the <strong>last segment</strong> of the section path matches a configured docs path name.</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">isConfiguredDocsPath</span><span class="p">(</span><span class="nx">sectionName</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">docsPaths</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">lastSegment</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">sectionName</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">docsPaths</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Exact match (e.g., section &#34;docs&#34; matches path &#34;docs&#34;)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">sectionName</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Last segment matches (e.g., section &#34;docs/docs&#34; has last segment &#34;docs&#34;)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">lastSegment</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Result:</strong> Any section ending with a docs path name uses the repository name as title.</p>
+<p>Examples:</p>
+<ul>
+<li>Section <code>docs</code> → title: &ldquo;Repository Name&rdquo; ✅</li>
+<li>Section <code>docs/docs</code> → title: &ldquo;Repository Name&rdquo; ✅</li>
+<li>Section <code>docs/docs/docs</code> → title: &ldquo;Repository Name&rdquo; ✅</li>
+<li>Section <code>docs/api</code> → title: &ldquo;API&rdquo; ✅</li>
+</ul>
+<h3 id="test-results">Test Results<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>✅ All 16 golden tests pass</li>
+<li>✅ Full test suite passes (44 packages)</li>
+<li>✅ Linter clean (0 issues)</li>
+<li>✅ Manual verification: <code>franklin-hardpanel-mapper/docs/</code> → title &ldquo;Franklin Hardpanel Mapper&rdquo;</li>
+<li>✅ Nested docs test: <code>docs/docs/docs/architecture.md</code> → all intermediate indexes use repository name</li>
+</ul>
+<h3 id="before-vs-after">Before vs After<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Before Fix:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; Docs              ← docs directory name
+  &gt; Docs            ← nested somehow
+    ARCHITECTURE
+    API</code></pre></div>
+<p><strong>After Fix:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>&gt; Franklin Hardpanel Mapper    ← repository name
+  ARCHITECTURE
+  API  </code></pre></div>
+<h3 id="why-the-old-code-failed">Why The Old Code Failed<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The previous <code>isDocsBaseSection()</code> function checked if <strong>all</strong> documents in a section had <code>DocsBase</code> matching the section name. This failed when:</p>
+<ul>
+<li>Documents were in subdirectories (e.g., <code>docs/architecture/file.md</code>)</li>
+<li>Some sections were <code>docs</code> while others were <code>docs/api</code></li>
+<li>The check required ALL docs to match, causing it to fail and fall back to using directory name &ldquo;Docs&rdquo;</li>
+</ul>
+<h3 id="why-the-new-code-works">Why The New Code Works<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The new <code>isConfiguredDocsPath()</code> function:</p>
+<ul>
+<li>Directly checks if section matches a configured path from <code>repositories[].paths</code></li>
+<li>No need to inspect document metadata</li>
+<li>Simple, reliable, and performant</li>
+<li>Uses actual repository name from <code>repoMeta.Name</code> (preserves capitalization and formatting)</li>
+</ul>
+<h2 id="testing-checklist">Testing Checklist<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Single repository builds correctly</li>
+<li><input checked="" disabled="" type="checkbox"> Multiple repositories each show distinct names</li>
+<li><input checked="" disabled="" type="checkbox"> Nested directories show meaningful names</li>
+<li><input checked="" disabled="" type="checkbox"> &ldquo;docs&rdquo; directory doesn&rsquo;t appear in navigation</li>
+<li><input checked="" disabled="" type="checkbox"> Golden tests pass</li>
+<li><input checked="" disabled="" type="checkbox"> Manual browser testing confirms navigation</li>
+</ul>
+<h2 id="existing-test-coverage">Existing Test Coverage<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>TestGolden_SectionIndexes</strong> provides coverage for this issue:</p>
+<ul>
+<li><strong>Test File:</strong> <code>test/integration/golden_test.go</code> (lines 170-219)</li>
+<li><strong>Config:</strong> <code>test/testdata/configs/section-indexes.yaml</code></li>
+<li><strong>Repository:</strong> <code>test/testdata/repos/transforms/section-indexes/</code></li>
+<li><strong>Verification:</strong> <code>test/testdata/golden/section-indexes/content-structure.golden.json</code></li>
+</ul>
+<p><strong>What It Tests:</strong></p>
+<ul>
+<li>Repository named <code>section-docs</code> with <code>paths: [&quot;docs&quot;]</code></li>
+<li>Files located in <code>docs/getting-started/</code> and <code>docs/advanced/</code></li>
+<li>Generated <code>content/section-docs/_index.md</code> has <code>title: &quot;Section Docs&quot;</code> (repository name)</li>
+<li>NOT <code>title: &quot;Docs&quot;</code> (directory name) ✅</li>
+</ul>
+<p><strong>Golden File Verification:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="s2">&#34;content/section-docs/_index.md&#34;</span><span class="err">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;frontmatter&#34;</span><span class="p">:</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;repository&#34;</span><span class="p">:</span> <span class="s2">&#34;section-docs&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;title&#34;</span><span class="p">:</span> <span class="s2">&#34;Section Docs&#34;</span><span class="p">,</span>  <span class="c1">// ← Repository name, not &#34;Docs&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nt">&#34;type&#34;</span><span class="p">:</span> <span class="s2">&#34;docs&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>This test verifies the fix is working correctly. The repository name is used as the title for the docs section, not the directory name.</p>
+<h2 id="additional-test-coverage">Additional Test Coverage<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>TestGolden_TwoRepos</strong> also indirectly tests this:</p>
+<ul>
+<li>Multi-repository build with separate navigation sections</li>
+<li>Each repository should show its own name, not &ldquo;Docs&rdquo;</li>
+<li>Verifies repository isolation and distinct naming</li>
+</ul>
+<h2 id="success-criteria">Success Criteria<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Navigation shows repository names at top level</li>
+<li><input checked="" disabled="" type="checkbox"> No &ldquo;Docs&rdquo; repeated entries in navigation</li>
+<li><input checked="" disabled="" type="checkbox"> Each repository&rsquo;s documentation is clearly separated</li>
+<li><input checked="" disabled="" type="checkbox"> Subdirectories use meaningful names</li>
+<li><input checked="" disabled="" type="checkbox"> All tests pass</li>
+</ul>
+<h2 id="notes">Notes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>This issue affects user experience significantly</li>
+<li>Navigation is critical for multi-repo documentation sites</li>
+<li>Solution must be robust and tested thoroughly</li>
+<li>✅ <strong>Test coverage provided by <code>TestGolden_SectionIndexes</code></strong> - verifies repository name used instead of &ldquo;Docs&rdquo;</li>
+<li>The golden file <code>section-indexes/content-structure.golden.json</code> ensures regression prevention</li>
+</ul>
+<h2 id="related-files">Related Files<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><code>internal/hugo/pipeline/transform_section_indexes.go</code> - Section generation</li>
+<li><code>internal/hugo/pipeline/document.go</code> - Document metadata</li>
+<li><code>internal/hugo/content_copy_pipeline.go</code> - Repository metadata</li>
+<li><code>test/integration/golden_test.go</code> - Integration tests</li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 31, 2025
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" checked><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="active " data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Content Transform Pipeline (DEPRECATED) ⚠️ DEPRECATED: This document describes the old registry-based transform system that was removed on December 16, 2025.
+For current pipeline documentation, see:
+ADR-003: Fixed Transform Pipeline Architecture Overview Implementation: internal/hugo/pipeline/ Historical Documentation This document explains DocBuilder’s old markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Content Transforms Reference (DEPRECATED) :: Test">
+    <meta name="twitter:description" content="Content Transform Pipeline (DEPRECATED) ⚠️ DEPRECATED: This document describes the old registry-based transform system that was removed on December 16, 2025.
+For current pipeline documentation, see:
+ADR-003: Fixed Transform Pipeline Architecture Overview Implementation: internal/hugo/pipeline/ Historical Documentation This document explains DocBuilder’s old markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.">
+    <meta property="og:url" content="http://test/docs/reference/content-transforms/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Content Transforms Reference (DEPRECATED) :: Test">
+    <meta property="og:description" content="Content Transform Pipeline (DEPRECATED) ⚠️ DEPRECATED: This document describes the old registry-based transform system that was removed on December 16, 2025.
+For current pipeline documentation, see:
+ADR-003: Fixed Transform Pipeline Architecture Overview Implementation: internal/hugo/pipeline/ Historical Documentation This document explains DocBuilder’s old markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:tag" content="Transforms">
+    <meta property="article:tag" content="Content-Processing">
+    <meta property="article:tag" content="Deprecated">
+    <meta itemprop="name" content="Content Transforms Reference (DEPRECATED) :: Test">
+    <meta itemprop="description" content="Content Transform Pipeline (DEPRECATED) ⚠️ DEPRECATED: This document describes the old registry-based transform system that was removed on December 16, 2025.
+For current pipeline documentation, see:
+ADR-003: Fixed Transform Pipeline Architecture Overview Implementation: internal/hugo/pipeline/ Historical Documentation This document explains DocBuilder’s old markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.">
+    <meta itemprop="datePublished" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="wordCount" content="1425">
+    <meta itemprop="keywords" content="Transforms,Content-Processing,Deprecated">
+    <title>Content Transforms Reference (DEPRECATED) :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/reference\/content-transforms\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/reference/content-transforms/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#historical-documentation">Historical Documentation</a></li>
+    <li><a href="#goals">Goals</a></li>
+    <li><a href="#high-level-flow">High-Level Flow</a></li>
+    <li><a href="#transform-coverage">Transform Coverage</a></li>
+    <li><a href="#capability-system">Capability System</a></li>
+    <li><a href="#registry--ordering">Registry &amp; Ordering</a>
+      <ul>
+        <li><a href="#current-transform-stages">Current Transform Stages</a></li>
+      </ul>
+    </li>
+    <li><a href="#pageshim--hooks">PageShim &amp; Hooks</a>
+      <ul>
+        <li><a href="#pagefacade-methods-current-stable-set">PageFacade Methods (Current Stable Set)</a></li>
+        <li><a href="#supporting-functions">Supporting Functions</a></li>
+      </ul>
+    </li>
+    <li><a href="#front-matter-patching-semantics">Front Matter Patching Semantics</a>
+      <ul>
+        <li><a href="#conflict-recording">Conflict Recording</a></li>
+      </ul>
+    </li>
+    <li><a href="#adding-a-new-transform">Adding a New Transform</a>
+      <ul>
+        <li><a href="#example-skeleton">Example Skeleton</a></li>
+      </ul>
+    </li>
+    <li><a href="#testing-strategy">Testing Strategy</a></li>
+    <li><a href="#future-enhancements">Future Enhancements</a></li>
+    <li><a href="#migration-notes">Migration Notes</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/reference/index.html"><span itemprop="name">reference</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Content Transforms Reference (DEPRECATED)</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./reference/content-transforms.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/configuration/index.html" title="Configuration Reference (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/pipeline-visualization/index.html" title="Pipeline Visualization (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/content-processing/index.html">Content-Processing</a></li>
+    <li><a class="term-link" href="/tags/deprecated/index.html">Deprecated</a></li>
+    <li><a class="term-link" href="/tags/transforms/index.html">Transforms</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="content-transforms-reference-deprecated">Content Transforms Reference (DEPRECATED)</h1>
+
+<h1 id="content-transform-pipeline-deprecated">Content Transform Pipeline (DEPRECATED)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<blockquote>
+<p><strong>⚠️ DEPRECATED:</strong> This document describes the old registry-based transform system that was removed on December 16, 2025.</p>
+<p>For current pipeline documentation, see:</p>
+<ul>
+<li><a href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline</a></li>
+<li><a href="/docs/explanation/architecture/index.html">Architecture Overview</a></li>
+<li>Implementation: <code>internal/hugo/pipeline/</code></li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="historical-documentation">Historical Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>This document explains DocBuilder&rsquo;s <strong>old</strong> markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.</p>
+<h2 id="goals">Goals<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Deterministic, ordered transformation of markdown files before writing to the Hugo <code>content/</code> tree.</li>
+<li>Extensibility: adding a new transform should not require editing existing ones.</li>
+<li>Behavioral parity with the legacy inline pipeline (now validated via parity + conflict tests).</li>
+<li>Safe front matter augmentation with explicit conflict reporting.</li>
+</ul>
+<h2 id="high-level-flow">High-Level Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ol>
+<li>Source markdown (optionally with YAML front matter) discovered.</li>
+<li>Registry pipeline executes transformers in ascending priority order.</li>
+<li>Each transformer mutates a <code>PageShim</code> (bridging to the internal <code>Page</code>).</li>
+<li>Front matter is parsed, patches are accumulated, merged, then content and merged front matter are serialized back to bytes.</li>
+</ol>
+<h2 id="transform-coverage">Transform Coverage<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>All transforms registered in the pipeline apply to <strong>all markdown files</strong> including:</p>
+<ul>
+<li>Regular documentation pages</li>
+<li>README.md files</li>
+<li>README.md files promoted to _index.md (repository/section indexes)</li>
+<li>Custom index pages</li>
+</ul>
+<p>The index generation stage uses already-transformed content via <code>DocFile.TransformedBytes</code>, ensuring transforms are never bypassed. Previously, the index stage would re-read source files and bypass the transform pipeline, but this has been fixed as of ADR-002 implementation.</p>
+<h2 id="capability-system">Capability System<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>Forge Capabilities</strong> (<code>internal/forge/capabilities.go</code>): Each forge type declares feature support flags:</p>
+<ul>
+<li><code>SupportsEditLinks</code> - whether the forge can generate web edit URLs</li>
+<li><code>SupportsWebhooks</code> - whether web hook integration is possible</li>
+<li><code>SupportsTopics</code> - whether repository topics/tags are supported</li>
+</ul>
+<p><strong>Theme Capabilities</strong> (<code>internal/hugo/theme/capabilities.go</code>): Each theme declares UI integration flags:</p>
+<ul>
+<li><code>WantsPerPageEditLinks</code> - whether theme UI expects <code>editURL</code> front matter</li>
+<li><code>SupportsSearchJSON</code> - whether theme can consume search index JSON</li>
+</ul>
+<p>These capability maps are snapshotted by golden tests to detect unintentional changes. Adding a new forge or theme requires updating the corresponding capability map and golden test expectations.</p>
+<h2 id="registry--ordering">Registry &amp; Ordering<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Transforms implement:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Transformer</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nf">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w">                        </span><span class="c1">// stable identifier, lowercase snake_case</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nf">Stage</span><span class="p">()</span><span class="w"> </span><span class="nx">TransformStage</span><span class="w">               </span><span class="c1">// execution stage (parse, build, enrich, etc.)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nf">Dependencies</span><span class="p">()</span><span class="w"> </span><span class="nx">TransformDependencies</span><span class="w"> </span><span class="c1">// explicit ordering constraints</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nf">Transform</span><span class="p">(</span><span class="nx">PageAdapter</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Registration occurs in <code>init()</code> via <code>transforms.Register(t)</code>. The registry produces an ordered slice by:</p>
+<ol>
+<li><strong>Stage order</strong> (parse → build → enrich → merge → transform → finalize → serialize)</li>
+<li><strong>Dependency resolution</strong> within each stage using topological sort</li>
+</ol>
+<h3 id="current-transform-stages">Current Transform Stages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Stage</th>
+          <th>Transforms</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>parse</td>
+          <td>front_matter_parser</td>
+          <td>Extract existing front matter &amp; strip it</td>
+      </tr>
+      <tr>
+          <td>build</td>
+          <td>front_matter_builder_v2</td>
+          <td>Generate baseline fields (title/date/repository/forge/section/metadata) (no editURL)</td>
+      </tr>
+      <tr>
+          <td>enrich</td>
+          <td>edit_link_injector_v2</td>
+          <td>Adds <code>editURL</code> with set-if-missing semantics using <strong>centralized resolver</strong> &amp; <strong>capability-gated</strong> theme detection</td>
+      </tr>
+      <tr>
+          <td>merge</td>
+          <td>front_matter_merge</td>
+          <td>Apply ordered patches into merged map</td>
+      </tr>
+      <tr>
+          <td>transform</td>
+          <td>relative_link_rewriter</td>
+          <td>Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md)</td>
+      </tr>
+      <tr>
+          <td>finalize</td>
+          <td>strip_first_heading, shortcode_escaper, hextra_type_enforcer</td>
+          <td>Post-process content</td>
+      </tr>
+      <tr>
+          <td>serialize</td>
+          <td>front_matter_serialize</td>
+          <td>Serialize merged front matter + body</td>
+      </tr>
+  </tbody>
+</table>
+<p>Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.<strong>Edit Link Generation (Post-Consolidation)</strong>: Edit links are now generated exclusively through <code>hugo.EditLinkResolver</code> which centralizes path normalization, forge type detection, and theme capability checking. The previous <code>fmcore.ResolveEditLink</code> function has been removed. This ensures consistent behavior and eliminates the risk of <code>docs/docs/</code> path duplication. Theme capability flags (<code>ThemeCapabilities.WantsPerPageEditLinks</code>) and forge capability flags (<code>ForgeCapabilities.SupportsEditLinks</code>) gate edit link injection at the transform level.</p>
+<p>Removed legacy transforms (<code>front_matter_builder</code>, <code>edit_link_injector</code>) under the greenfield policy (no backward compatibility shims maintained). If you had explicit allowlists containing them, replace with their V2 counterparts.</p>
+<h2 id="pageshim--hooks">PageShim &amp; Hooks<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><code>PageShim</code> (in <code>internal/hugo/transforms/defaults.go</code>) exposes only required fields + function hooks. The transform layer now operates via facade-style getters/setters and an adapter that allows future direct <code>PageFacade</code> implementations. Custom transformers MUST avoid reaching into unlisted struct fields; rely on the facade methods below. A golden test (<code>pipeline_golden_test.go</code>) locks baseline behavior.</p>
+<p>As of 2025-09-30 the shim gained a <code>BackingAddPatch</code> hook so facade patches registered by transforms propagate to the underlying concrete <code>Page</code> early (supporting conflict recording that previously happened only during final merge).</p>
+<h3 id="pagefacade-methods-current-stable-set">PageFacade Methods (Current Stable Set)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Method</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>GetContent()</code></td>
+          <td>Retrieve mutable markdown body (without serialized front matter).</td>
+      </tr>
+      <tr>
+          <td><code>SetContent(string)</code></td>
+          <td>Replace markdown body in-place.</td>
+      </tr>
+      <tr>
+          <td><code>GetOriginalFrontMatter()</code></td>
+          <td>Access parsed original front matter (immutable baseline).</td>
+      </tr>
+      <tr>
+          <td><code>SetOriginalFrontMatter(map[string]any, bool)</code></td>
+          <td>Set baseline front matter &amp; had-front-matter flag (used by parser).</td>
+      </tr>
+      <tr>
+          <td><code>AddPatch(FrontMatterPatch)</code></td>
+          <td>Append a pending front matter patch (also forwarded via <code>BackingAddPatch</code>).</td>
+      </tr>
+      <tr>
+          <td><code>ApplyPatches()</code></td>
+          <td>Merge pending patches into <code>MergedFrontMatter</code>.</td>
+      </tr>
+      <tr>
+          <td><code>HadOriginalFrontMatter()</code></td>
+          <td>Whether the source file originally contained front matter.</td>
+      </tr>
+      <tr>
+          <td><code>Serialize()</code></td>
+          <td>Serialize merged front matter + body (facade method; serializer transform delegates here).</td>
+      </tr>
+  </tbody>
+</table>
+<p>The stability test (<code>page_facade_stability_test.go</code>) enforces that this method set does not change without deliberate update. Treat additions as a versioned change—prefer helper functions if possible. <code>Serialize()</code> was promoted into the facade (2025-09-30) eliminating the special serializer closure path.</p>
+<h3 id="supporting-functions">Supporting Functions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The transform system uses these standalone functions to process pages:</p>
+<ul>
+<li><code>BuildFrontMatter(FrontMatterInput)</code> – Generates front matter from file metadata, config, and existing values (in <code>internal/hugo/frontmatter.go</code>). Used by <code>front_matter_builder_v2</code> transform.</li>
+<li><code>ApplyPatches()</code> – Merges pending patches into final front matter (facade method on <code>Page.applyPatches</code>).</li>
+</ul>
+<h2 id="front-matter-patching-semantics">Front Matter Patching Semantics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Patches (<code>FrontMatterPatch</code>) are applied in transform execution order (stage + dependencies); later patches win unless keys are protected.</p>
+<p>Merge modes:</p>
+<ul>
+<li><code>MergeDeep</code> – recursively merges maps, with array strategy heuristics.</li>
+<li><code>MergeReplace</code> – overwrites targeted keys entirely.</li>
+<li><code>MergeSetIfMissing</code> – sets keys only if absent (records <code>kept_original</code> conflicts otherwise).</li>
+</ul>
+<p>Array strategies (effective via <code>effectiveArrayStrategy</code>):</p>
+<ul>
+<li>Default heuristics:
+<ul>
+<li>Taxonomies (<code>tags</code>, <code>categories</code>, <code>keywords</code>) → union when existing.</li>
+<li><code>outputs</code> → union.</li>
+<li><code>resources</code> → append.</li>
+<li>Otherwise replace.</li>
+</ul>
+</li>
+<li>Explicit overrides via patch <code>ArrayStrategy</code> take precedence (<code>ArrayUnion</code>, <code>ArrayAppend</code>, <code>ArrayReplace</code>).</li>
+</ul>
+<h3 id="conflict-recording">Conflict Recording<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><code>FrontMatterConflict{Key, Original, Attempt, Source, Action}</code> actions:</p>
+<ul>
+<li><code>kept_original</code> – protected or set-if-missing existing key retained</li>
+<li><code>overwritten</code> – value replaced by later patch</li>
+<li><code>set_if_missing</code> – value added by set-if-missing patch</li>
+</ul>
+<p>Taxonomy unions and new-key additions without replacement do not generate conflicts.</p>
+<p>See <code>transform_conflicts_test.go</code> for locked expectations.</p>
+<h2 id="adding-a-new-transform">Adding a New Transform<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ol>
+<li>Select a stage (<code>StageParse</code>, <code>StageBuild</code>, <code>StageEnrich</code>, <code>StageMerge</code>, <code>StageTransform</code>, <code>StageFinalize</code>, or <code>StageSerialize</code>).</li>
+<li>Declare dependencies on other transforms using <code>MustRunAfter</code> and/or <code>MustRunBefore</code>.</li>
+<li>Implement a struct with <code>Name()</code>, <code>Stage()</code>, <code>Dependencies()</code>, <code>Transform(PageAdapter) error</code>.</li>
+<li>Register in <code>init()</code> inside a new file under <code>internal/hugo/transforms/</code> (keep single concern per file when possible).</li>
+<li>Access <code>PageShim</code> via type assertion (<code>shim, ok := p.(*PageShim)</code>); guard if absent.</li>
+<li>Mutate only <code>shim.Content</code> or attach front matter patches through hooks if you need to prepend/append modifications; avoid directly mutating internal maps outside merge stage unless you know the ordering implications.</li>
+<li>Add unit tests:
+<ul>
+<li>Ordering: confirm your transform appears at expected position relative to neighbors.</li>
+<li>Behavior: given sample content, assert expected modifications.</li>
+</ul>
+</li>
+<li>If transform alters front matter, add/update conflict tests if behavior touches protected keys.</li>
+</ol>
+<h3 id="example-skeleton">Example Skeleton<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">CodeBlockCounter</span><span class="w"> </span><span class="kd">struct</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="nx">CodeBlockCounter</span><span class="p">)</span><span class="w"> </span><span class="nf">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;code_block_counter&#34;</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="nx">CodeBlockCounter</span><span class="p">)</span><span class="w"> </span><span class="nf">Stage</span><span class="p">()</span><span class="w"> </span><span class="nx">TransformStage</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">StageTransform</span><span class="w"> </span><span class="c1">// Runs during content transformation stage</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="nx">CodeBlockCounter</span><span class="p">)</span><span class="w"> </span><span class="nf">Dependencies</span><span class="p">()</span><span class="w"> </span><span class="nx">TransformDependencies</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">TransformDependencies</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">MustRunAfter</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;relative_link_rewriter&#34;</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="nx">CodeBlockCounter</span><span class="p">)</span><span class="w"> </span><span class="nf">Transform</span><span class="p">(</span><span class="nx">p</span><span class="w"> </span><span class="nx">transforms</span><span class="p">.</span><span class="nx">PageAdapter</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">shim</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">p</span><span class="p">.(</span><span class="o">*</span><span class="nx">transforms</span><span class="p">.</span><span class="nx">PageShim</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">count</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nf">Count</span><span class="p">(</span><span class="nx">shim</span><span class="p">.</span><span class="nx">Content</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;```&#34;</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="c1">// Add patch with set-if-missing semantics</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nx">shim</span><span class="p">.</span><span class="nf">AddPatch</span><span class="p">(</span><span class="nx">fmcore</span><span class="p">.</span><span class="nx">FrontMatterPatch</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Key</span><span class="p">:</span><span class="w">   </span><span class="s">&#34;code_block_count&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Value</span><span class="p">:</span><span class="w"> </span><span class="nx">count</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Mode</span><span class="p">:</span><span class="w">  </span><span class="nx">fmcore</span><span class="p">.</span><span class="nx">MergeSetIfMissing</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">transforms</span><span class="p">.</span><span class="nf">Register</span><span class="p">(</span><span class="nx">CodeBlockCounter</span><span class="p">{})</span><span class="w"> </span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="testing-strategy">Testing Strategy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Current safety nets:</p>
+<ul>
+<li>Parity hash tests (extended scenarios) ensure registry mirrors legacy semantics.</li>
+<li>Conflict logging test locks merge outcome &amp; conflict classification.</li>
+<li>Front matter builder tests ensure time injection &amp; edit link logic stable.</li>
+<li>Ordering golden test ensures deterministic registry order.</li>
+<li>Capability golden tests snapshot forge and theme feature matrices.</li>
+<li>No-reflection guard test prevents accidental reflection usage in transforms.</li>
+<li>Path normalization tests ensure edit links handle multi-level docs bases correctly.</li>
+</ul>
+<p>Recommended for new transforms:</p>
+<ul>
+<li>Unit test its isolated mutation.</li>
+<li>A golden test if serialization changes (normalize volatile fields like timestamps).</li>
+</ul>
+<h2 id="future-enhancements">Future Enhancements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The project is intentionally and permanently self-contained. We will NOT introduce a dynamic external plugin / extension / runtime injection mechanism. All transforms and behavioral changes must land via normal code changes and review.</p>
+<p>Planned/possible incremental internal improvements (still in-repo only):</p>
+<ul>
+<li>Per-transform param injection sourced from config (extending existing enable/disable filtering).</li>
+<li>Evaluating parallelization for pure content transforms after merge but before serialization.</li>
+<li>Additional shared metrics dimensions (e.g., bytes processed, patch counts) leveraging existing duration/error counters.</li>
+<li>Continued pruning or consolidation of transforms if responsibilities shift (greenfield policy).</li>
+</ul>
+<h2 id="migration-notes">Migration Notes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Legacy inline transformer pipeline fully removed; registry is authoritative. The project charter forbids third‑party or dynamically loaded transformer plugins—this will not change. All runtime transformer code lives in-repo. Greenfield policy: we remove obsolete paths aggressively and accept minor backward incompatibilities during pre‑1.0 to keep surface area minimal.</p>
+<hr>
+<p>Questions or additions? Extend this doc as the pipeline evolves.</p>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 15, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/reference/index.html">Reference</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479" checked><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

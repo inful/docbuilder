@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Golden Test Implementation Summary Overview This document describes the comprehensive golden test framework for DocBuilder’s integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.
+Implementation Status ✅ Foundation (Complete) Infrastructure: Test helpers, golden config loading, build execution Files: test/integration/helpers.go (437 lines) - Core test utilities test/integration/golden_test.go (813 lines) - Test implementations test/testdata/golden/ (12 directories) - Golden file storage test/testdata/configs/ (14 files) - Test configurations Key Functions: loadGoldenConfig() - Load and validate test configs setupTestRepo() - Create temporary git repositories for testing verifyHugoConfig() - Compare Hugo YAML configuration verifyContentStructure() - Check content files and front matter parseFrontMatter() - Extract and validate YAML front matter ✅ Core Test Coverage (Complete - 16 tests) Content Transformation Tests TestGolden_FrontmatterInjection - Front matter generation with editURL TestGolden_ImagePaths - Image path transformation TestGolden_SectionIndexes - Section index page generation TestGolden_MenuGeneration - Automatic menu generation Repository Tests TestGolden_TwoRepos - Multi-repository aggregation TestGolden_ConflictingPaths - Path conflict resolution TestGolden_CrossRepoLinks - Cross-repository linking Edge Case Tests TestGolden_EmptyDocs - Repository with no markdown files TestGolden_OnlyReadme - Only README.md (should be skipped) TestGolden_MalformedFrontmatter - Invalid YAML front matter TestGolden_DeepNesting - Deep directory nesting (10&#43; levels) TestGolden_UnicodeNames - Unicode filenames and paths TestGolden_SpecialChars - Special characters in filenames Error Handling Tests TestGolden_Error_InvalidRepository - Invalid repository URL handling TestGolden_Error_InvalidConfig - Empty/minimal configuration TestGolden_Warning_NoGitCommit - Repository without commits Note: All tests use the Relearn theme. Error tests use relearn-basic.yaml as a base configuration.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Golden Test Implementation :: Test">
+    <meta name="twitter:description" content="Golden Test Implementation Summary Overview This document describes the comprehensive golden test framework for DocBuilder’s integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.
+Implementation Status ✅ Foundation (Complete) Infrastructure: Test helpers, golden config loading, build execution Files: test/integration/helpers.go (437 lines) - Core test utilities test/integration/golden_test.go (813 lines) - Test implementations test/testdata/golden/ (12 directories) - Golden file storage test/testdata/configs/ (14 files) - Test configurations Key Functions: loadGoldenConfig() - Load and validate test configs setupTestRepo() - Create temporary git repositories for testing verifyHugoConfig() - Compare Hugo YAML configuration verifyContentStructure() - Check content files and front matter parseFrontMatter() - Extract and validate YAML front matter ✅ Core Test Coverage (Complete - 16 tests) Content Transformation Tests TestGolden_FrontmatterInjection - Front matter generation with editURL TestGolden_ImagePaths - Image path transformation TestGolden_SectionIndexes - Section index page generation TestGolden_MenuGeneration - Automatic menu generation Repository Tests TestGolden_TwoRepos - Multi-repository aggregation TestGolden_ConflictingPaths - Path conflict resolution TestGolden_CrossRepoLinks - Cross-repository linking Edge Case Tests TestGolden_EmptyDocs - Repository with no markdown files TestGolden_OnlyReadme - Only README.md (should be skipped) TestGolden_MalformedFrontmatter - Invalid YAML front matter TestGolden_DeepNesting - Deep directory nesting (10&#43; levels) TestGolden_UnicodeNames - Unicode filenames and paths TestGolden_SpecialChars - Special characters in filenames Error Handling Tests TestGolden_Error_InvalidRepository - Invalid repository URL handling TestGolden_Error_InvalidConfig - Empty/minimal configuration TestGolden_Warning_NoGitCommit - Repository without commits Note: All tests use the Relearn theme. Error tests use relearn-basic.yaml as a base configuration.">
+    <meta property="og:url" content="http://test/docs/testing/golden-test-implementation/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Golden Test Implementation :: Test">
+    <meta property="og:description" content="Golden Test Implementation Summary Overview This document describes the comprehensive golden test framework for DocBuilder’s integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.
+Implementation Status ✅ Foundation (Complete) Infrastructure: Test helpers, golden config loading, build execution Files: test/integration/helpers.go (437 lines) - Core test utilities test/integration/golden_test.go (813 lines) - Test implementations test/testdata/golden/ (12 directories) - Golden file storage test/testdata/configs/ (14 files) - Test configurations Key Functions: loadGoldenConfig() - Load and validate test configs setupTestRepo() - Create temporary git repositories for testing verifyHugoConfig() - Compare Hugo YAML configuration verifyContentStructure() - Check content files and front matter parseFrontMatter() - Extract and validate YAML front matter ✅ Core Test Coverage (Complete - 16 tests) Content Transformation Tests TestGolden_FrontmatterInjection - Front matter generation with editURL TestGolden_ImagePaths - Image path transformation TestGolden_SectionIndexes - Section index page generation TestGolden_MenuGeneration - Automatic menu generation Repository Tests TestGolden_TwoRepos - Multi-repository aggregation TestGolden_ConflictingPaths - Path conflict resolution TestGolden_CrossRepoLinks - Cross-repository linking Edge Case Tests TestGolden_EmptyDocs - Repository with no markdown files TestGolden_OnlyReadme - Only README.md (should be skipped) TestGolden_MalformedFrontmatter - Invalid YAML front matter TestGolden_DeepNesting - Deep directory nesting (10&#43; levels) TestGolden_UnicodeNames - Unicode filenames and paths TestGolden_SpecialChars - Special characters in filenames Error Handling Tests TestGolden_Error_InvalidRepository - Invalid repository URL handling TestGolden_Error_InvalidConfig - Empty/minimal configuration TestGolden_Warning_NoGitCommit - Repository without commits Note: All tests use the Relearn theme. Error tests use relearn-basic.yaml as a base configuration.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:tag" content="Golden-Tests">
+    <meta property="article:tag" content="Implementation">
+    <meta property="article:tag" content="Testing-Strategy">
+    <meta itemprop="name" content="Golden Test Implementation :: Test">
+    <meta itemprop="description" content="Golden Test Implementation Summary Overview This document describes the comprehensive golden test framework for DocBuilder’s integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.
+Implementation Status ✅ Foundation (Complete) Infrastructure: Test helpers, golden config loading, build execution Files: test/integration/helpers.go (437 lines) - Core test utilities test/integration/golden_test.go (813 lines) - Test implementations test/testdata/golden/ (12 directories) - Golden file storage test/testdata/configs/ (14 files) - Test configurations Key Functions: loadGoldenConfig() - Load and validate test configs setupTestRepo() - Create temporary git repositories for testing verifyHugoConfig() - Compare Hugo YAML configuration verifyContentStructure() - Check content files and front matter parseFrontMatter() - Extract and validate YAML front matter ✅ Core Test Coverage (Complete - 16 tests) Content Transformation Tests TestGolden_FrontmatterInjection - Front matter generation with editURL TestGolden_ImagePaths - Image path transformation TestGolden_SectionIndexes - Section index page generation TestGolden_MenuGeneration - Automatic menu generation Repository Tests TestGolden_TwoRepos - Multi-repository aggregation TestGolden_ConflictingPaths - Path conflict resolution TestGolden_CrossRepoLinks - Cross-repository linking Edge Case Tests TestGolden_EmptyDocs - Repository with no markdown files TestGolden_OnlyReadme - Only README.md (should be skipped) TestGolden_MalformedFrontmatter - Invalid YAML front matter TestGolden_DeepNesting - Deep directory nesting (10&#43; levels) TestGolden_UnicodeNames - Unicode filenames and paths TestGolden_SpecialChars - Special characters in filenames Error Handling Tests TestGolden_Error_InvalidRepository - Invalid repository URL handling TestGolden_Error_InvalidConfig - Empty/minimal configuration TestGolden_Warning_NoGitCommit - Repository without commits Note: All tests use the Relearn theme. Error tests use relearn-basic.yaml as a base configuration.">
+    <meta itemprop="datePublished" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="wordCount" content="1204">
+    <meta itemprop="keywords" content="Golden-Tests,Implementation,Testing-Strategy">
+    <title>Golden Test Implementation :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/testing\/golden-test-implementation\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/testing/golden-test-implementation/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#implementation-status">Implementation Status</a>
+      <ul>
+        <li><a href="#-foundation-complete">✅ Foundation (Complete)</a></li>
+        <li><a href="#-core-test-coverage-complete---16-tests">✅ Core Test Coverage (Complete - 16 tests)</a></li>
+      </ul>
+    </li>
+    <li><a href="#test-results">Test Results</a></li>
+    <li><a href="#golden-file-structure">Golden File Structure</a>
+      <ul>
+        <li><a href="#available-golden-directories">Available Golden Directories</a></li>
+      </ul>
+    </li>
+    <li><a href="#key-technical-decisions">Key Technical Decisions</a>
+      <ul>
+        <li><a href="#1-build-service-integration">1. Build Service Integration</a></li>
+        <li><a href="#2-error-handling-philosophy">2. Error Handling Philosophy</a></li>
+        <li><a href="#3-golden-file-format">3. Golden File Format</a></li>
+        <li><a href="#4-test-organization">4. Test Organization</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#running-tests">Running Tests</a></li>
+        <li><a href="#adding-new-tests">Adding New Tests</a></li>
+      </ul>
+    </li>
+    <li><a href="#future-enhancements">Future Enhancements</a>
+      <ul>
+        <li><a href="#potential-additions">Potential Additions</a></li>
+        <li><a href="#ci-integration">CI Integration</a></li>
+      </ul>
+    </li>
+    <li><a href="#helper-functions-reference">Helper Functions Reference</a>
+      <ul>
+        <li><a href="#test-repository-setup">Test Repository Setup</a></li>
+        <li><a href="#configuration-loading">Configuration Loading</a></li>
+        <li><a href="#verification-functions">Verification Functions</a></li>
+        <li><a href="#build-execution">Build Execution</a></li>
+      </ul>
+    </li>
+    <li><a href="#related-documentation">Related Documentation</a></li>
+    <li><a href="#maintenance-notes">Maintenance Notes</a>
+      <ul>
+        <li><a href="#golden-file-review">Golden File Review</a></li>
+        <li><a href="#test-design-guidelines">Test Design Guidelines</a></li>
+        <li><a href="#file-organization">File Organization</a></li>
+        <li><a href="#common-pitfalls">Common Pitfalls</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/testing/index.html"><span itemprop="name">testing</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Golden Test Implementation</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./testing/golden-test-implementation.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/testing/index.html" title="testing (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/tutorials/index.html" title="tutorials (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/golden-tests/index.html">Golden-Tests</a></li>
+    <li><a class="term-link" href="/tags/implementation/index.html">Implementation</a></li>
+    <li><a class="term-link" href="/tags/testing-strategy/index.html">Testing-Strategy</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="golden-test-implementation">Golden Test Implementation</h1>
+
+<h1 id="golden-test-implementation-summary">Golden Test Implementation Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<h2 id="overview">Overview<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>This document describes the comprehensive golden test framework for DocBuilder&rsquo;s integration testing. The framework verifies end-to-end functionality including Git cloning, document discovery, Hugo generation, and configuration output.</p>
+<h2 id="implementation-status">Implementation Status<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="-foundation-complete">✅ Foundation (Complete)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Infrastructure</strong>: Test helpers, golden config loading, build execution</li>
+<li><strong>Files</strong>:
+<ul>
+<li><code>test/integration/helpers.go</code> (437 lines) - Core test utilities</li>
+<li><code>test/integration/golden_test.go</code> (813 lines) - Test implementations</li>
+<li><code>test/testdata/golden/</code> (12 directories) - Golden file storage</li>
+<li><code>test/testdata/configs/</code> (14 files) - Test configurations</li>
+</ul>
+</li>
+<li><strong>Key Functions</strong>:
+<ul>
+<li><code>loadGoldenConfig()</code> - Load and validate test configs</li>
+<li><code>setupTestRepo()</code> - Create temporary git repositories for testing</li>
+<li><code>verifyHugoConfig()</code> - Compare Hugo YAML configuration</li>
+<li><code>verifyContentStructure()</code> - Check content files and front matter</li>
+<li><code>parseFrontMatter()</code> - Extract and validate YAML front matter</li>
+</ul>
+</li>
+</ul>
+<h3 id="-core-test-coverage-complete---16-tests">✅ Core Test Coverage (Complete - 16 tests)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="content-transformation-tests">Content Transformation Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<ol>
+<li><strong>TestGolden_FrontmatterInjection</strong> - Front matter generation with editURL</li>
+<li><strong>TestGolden_ImagePaths</strong> - Image path transformation</li>
+<li><strong>TestGolden_SectionIndexes</strong> - Section index page generation</li>
+<li><strong>TestGolden_MenuGeneration</strong> - Automatic menu generation</li>
+</ol>
+<h4 id="repository-tests">Repository Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<ol start="5">
+<li><strong>TestGolden_TwoRepos</strong> - Multi-repository aggregation</li>
+<li><strong>TestGolden_ConflictingPaths</strong> - Path conflict resolution</li>
+<li><strong>TestGolden_CrossRepoLinks</strong> - Cross-repository linking</li>
+</ol>
+<h4 id="edge-case-tests">Edge Case Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<ol start="8">
+<li><strong>TestGolden_EmptyDocs</strong> - Repository with no markdown files</li>
+<li><strong>TestGolden_OnlyReadme</strong> - Only README.md (should be skipped)</li>
+<li><strong>TestGolden_MalformedFrontmatter</strong> - Invalid YAML front matter</li>
+<li><strong>TestGolden_DeepNesting</strong> - Deep directory nesting (10+ levels)</li>
+<li><strong>TestGolden_UnicodeNames</strong> - Unicode filenames and paths</li>
+<li><strong>TestGolden_SpecialChars</strong> - Special characters in filenames</li>
+</ol>
+<h4 id="error-handling-tests">Error Handling Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<ol start="14">
+<li><strong>TestGolden_Error_InvalidRepository</strong> - Invalid repository URL handling</li>
+<li><strong>TestGolden_Error_InvalidConfig</strong> - Empty/minimal configuration</li>
+<li><strong>TestGolden_Warning_NoGitCommit</strong> - Repository without commits</li>
+</ol>
+<blockquote>
+<p><strong>Note</strong>: All tests use the Relearn theme. Error tests use <code>relearn-basic.yaml</code> as a base configuration.</p>
+</blockquote>
+<h2 id="test-results">Test Results<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>Total Tests: 16
+Status: All Passing ✅
+
+Test Execution Time: ~1.1s (without Hugo rendering)
+Error Case Tests: 3 tests with graceful degradation verification
+Theme Support: Relearn only</code></pre></div>
+<h2 id="golden-file-structure">Golden File Structure<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Each golden directory contains verification artifacts:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>test/testdata/golden/&lt;test-name&gt;/
+├── hugo-config.golden.yaml           # Expected Hugo configuration
+├── content-structure.golden.json     # Content files and front matter
+└── rendered-samples.golden.json      # HTML verification samples (optional)</code></pre></div>
+<h3 id="available-golden-directories">Available Golden Directories<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>All golden directories are actively used for Relearn theme testing:</p>
+<ul>
+<li><code>conflicting-paths/</code> - Path conflict scenarios</li>
+<li><code>cross-repo-links/</code> - Inter-repository linking</li>
+<li><code>deep-nesting/</code> - Deep directory hierarchies</li>
+<li><code>empty-docs/</code> - Empty repository handling</li>
+<li><code>frontmatter-injection/</code> - Front matter generation</li>
+<li><code>image-paths/</code> - Image path transformation</li>
+<li><code>malformed-frontmatter/</code> - Invalid YAML handling</li>
+<li><code>menu-generation/</code> - Automatic menu creation</li>
+<li><code>only-readme/</code> - README-only repositories</li>
+<li><code>section-indexes/</code> - Section index pages</li>
+<li><code>special-chars/</code> - Special character filenames</li>
+<li><code>two-repos/</code> - Multi-repository builds</li>
+<li><code>unicode-names/</code> - Unicode filename support</li>
+</ul>
+<h2 id="key-technical-decisions">Key Technical Decisions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-build-service-integration">1. Build Service Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Choice</strong>: Use <code>build.BuildService</code> for test execution</li>
+<li><strong>Rationale</strong>: Tests verify the actual production pipeline, not mocked components</li>
+<li><strong>Implementation</strong>: Each test creates a BuildService with real HugoGenerator</li>
+</ul>
+<h3 id="2-error-handling-philosophy">2. Error Handling Philosophy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Choice</strong>: Verify graceful degradation, not hard failures</li>
+<li><strong>Rationale</strong>: Build service logs errors but continues when possible</li>
+<li><strong>Implementation</strong>: Check <code>RepositoriesSkipped</code> counter rather than expecting errors</li>
+</ul>
+<h3 id="3-golden-file-format">3. Golden File Format<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Hugo Config</strong>: YAML files with normalized timestamps</li>
+<li><strong>Content Structure</strong>: JSON with file paths, front matter, and content hashes</li>
+<li><strong>Rationale</strong>: Structured formats allow precise, diffable comparisons</li>
+</ul>
+<h3 id="4-test-organization">4. Test Organization<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Pattern</strong>: One test per scenario with descriptive names</li>
+<li><strong>Naming</strong>: <code>TestGolden_{Feature}</code> for discoverability</li>
+<li><strong>Isolation</strong>: Each test uses <code>t.TempDir()</code> for complete isolation</li>
+<li><strong>No HTML Rendering</strong>: Tests verify Hugo config/content, not rendered HTML (too slow)</li>
+</ul>
+<h2 id="usage">Usage<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="running-tests">Running Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Run all golden tests</span>
+</span></span><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -run<span class="o">=</span>TestGolden -v
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Run specific test</span>
+</span></span><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -run<span class="o">=</span>TestGolden_FrontmatterInjection -v
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Update golden files (when changes are expected)</span>
+</span></span><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -run<span class="o">=</span>TestGolden_FrontmatterInjection -update-golden
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Run in short mode (skips golden tests)</span>
+</span></span><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -short</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="adding-new-tests">Adding New Tests<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li>
+<p><strong>Create test repository structure</strong> in <code>test/testdata/repos/&lt;category&gt;/&lt;test-name&gt;/</code></p>
+<ul>
+<li>Add markdown files, images, and other assets</li>
+<li>Structure should reflect a real documentation repository</li>
+</ul>
+</li>
+<li>
+<p><strong>Create test configuration</strong> in <code>test/testdata/configs/&lt;test-name&gt;.yaml</code></p>
+<ul>
+<li>Define repository URLs (will be replaced by <code>setupTestRepo</code>)</li>
+<li>Configure Hugo with Relearn theme and parameters</li>
+<li>Set output directory (will be replaced by <code>t.TempDir()</code>)</li>
+</ul>
+</li>
+<li>
+<p><strong>Add test function</strong> to <code>test/integration/golden_test.go</code></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">TestGolden_YourFeature</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">testing</span><span class="p">.</span><span class="nf">Short</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">t</span><span class="p">.</span><span class="nf">Skip</span><span class="p">(</span><span class="s">&#34;Skipping golden test in short mode&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Setup test repo</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">repoPath</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">setupTestRepo</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;../../test/testdata/repos/&lt;path&gt;&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Load and configure</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">cfg</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">loadGoldenConfig</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;../../test/testdata/configs/your-feature.yaml&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">cfg</span><span class="p">.</span><span class="nx">Repositories</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">URL</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">repoPath</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">outputDir</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nf">TempDir</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">cfg</span><span class="p">.</span><span class="nx">Output</span><span class="p">.</span><span class="nx">Directory</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">outputDir</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Run build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">svc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nf">NewBuildService</span><span class="p">().</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nf">WithHugoGeneratorFactory</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">cfgAny</span><span class="w"> </span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="nx">outDir</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nx">HugoGenerator</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">hugo</span><span class="p">.</span><span class="nf">NewGenerator</span><span class="p">(</span><span class="nx">cfgAny</span><span class="p">.(</span><span class="o">*</span><span class="nx">config</span><span class="p">.</span><span class="nx">Config</span><span class="p">),</span><span class="w"> </span><span class="nx">outDir</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">svc</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nx">BuildRequest</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">Config</span><span class="p">:</span><span class="w">    </span><span class="nx">cfg</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">OutputDir</span><span class="p">:</span><span class="w"> </span><span class="nx">outputDir</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">require</span><span class="p">.</span><span class="nf">NoError</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">require</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nx">BuildStatusSuccess</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nx">Status</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Verify outputs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">goldenDir</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="s">&#34;../../test/testdata/golden/your-feature&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">verifyHugoConfig</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">outputDir</span><span class="p">,</span><span class="w"> </span><span class="nx">goldenDir</span><span class="o">+</span><span class="s">&#34;/hugo-config.golden.yaml&#34;</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="nx">updateGolden</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">verifyContentStructure</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">outputDir</span><span class="p">,</span><span class="w"> </span><span class="nx">goldenDir</span><span class="o">+</span><span class="s">&#34;/content-structure.golden.json&#34;</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="nx">updateGolden</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Generate golden files</strong> with <code>-update-golden</code> flag</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -run<span class="o">=</span>TestGolden_YourFeature -update-golden</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Review golden files</strong> - Don&rsquo;t blindly accept generated output</p>
+<ul>
+<li>Check <code>hugo-config.golden.yaml</code> for correct configuration</li>
+<li>Verify <code>content-structure.golden.json</code> has expected files and front matter</li>
+<li>Commit golden files with your test</li>
+</ul>
+</li>
+<li>
+<p><strong>Verify test passes</strong> without <code>-update-golden</code></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">go <span class="nb">test</span> ./test/integration -run<span class="o">=</span>TestGolden_YourFeature -v</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</li>
+</ol>
+<h2 id="future-enhancements">Future Enhancements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="potential-additions">Potential Additions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Relearn Theme Features</strong>: Tests for Relearn-specific features (tabs, attachments, shortcodes)</li>
+<li><strong>Performance Benchmarks</strong>: Track build time trends with <code>testing.B</code></li>
+<li><strong>Incremental Build Testing</strong>: Verify cache behavior and rebuild optimization</li>
+<li><strong>Plugin System Testing</strong>: Verify transform plugins work correctly</li>
+<li><strong>Build Report Validation</strong>: Parse and verify <code>build-report.json</code> accuracy</li>
+<li><strong>HTML Rendering Tests</strong>: Add optional Hugo build + HTML verification (currently skipped for speed)</li>
+</ul>
+<h3 id="ci-integration">CI Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Golden tests run on every PR</li>
+<li>Flag golden file changes for manual review</li>
+<li>Generate test coverage reports</li>
+<li>Detect regressions in test execution time</li>
+</ul>
+<h2 id="helper-functions-reference">Helper Functions Reference<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="test-repository-setup">Test Repository Setup<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong><code>setupTestRepo(t, path)</code></strong> - Creates temporary git repository from testdata
+<ul>
+<li>Copies files from source path</li>
+<li>Initializes git repository</li>
+<li>Creates initial commit</li>
+<li>Returns temporary directory path</li>
+</ul>
+</li>
+</ul>
+<h3 id="configuration-loading">Configuration Loading<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong><code>loadGoldenConfig(t, path)</code></strong> - Loads YAML test configuration
+<ul>
+<li>Validates required fields</li>
+<li>Returns <code>*config.Config</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="verification-functions">Verification Functions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>
+<p><strong><code>verifyHugoConfig(t, outputDir, goldenPath, update)</code></strong> - Compares Hugo YAML</p>
+<ul>
+<li>Normalizes dynamic fields (build_date, timestamps)</li>
+<li>Updates golden file if <code>update=true</code></li>
+<li>Asserts YAML equality</li>
+</ul>
+</li>
+<li>
+<p><strong><code>verifyContentStructure(t, outputDir, goldenPath, update)</code></strong> - Verifies content files</p>
+<ul>
+<li>Walks content directory</li>
+<li>Extracts front matter from each file</li>
+<li>Computes content hashes</li>
+<li>Compares structure and metadata</li>
+</ul>
+</li>
+<li>
+<p><strong><code>parseFrontMatter(data)</code></strong> - Extracts YAML front matter</p>
+<ul>
+<li>Returns front matter map and remaining content</li>
+<li>Handles files without front matter</li>
+</ul>
+</li>
+</ul>
+<h3 id="build-execution">Build Execution<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Tests use <code>build.BuildService</code> directly:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">svc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nf">NewBuildService</span><span class="p">().</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">WithHugoGeneratorFactory</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">cfgAny</span><span class="w"> </span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="nx">outDir</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nx">HugoGenerator</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">hugo</span><span class="p">.</span><span class="nf">NewGenerator</span><span class="p">(</span><span class="nx">cfgAny</span><span class="p">.(</span><span class="o">*</span><span class="nx">config</span><span class="p">.</span><span class="nx">Config</span><span class="p">),</span><span class="w"> </span><span class="nx">outDir</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">result</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">svc</span><span class="p">.</span><span class="nf">Run</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">(),</span><span class="w"> </span><span class="nx">build</span><span class="p">.</span><span class="nx">BuildRequest</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Config</span><span class="p">:</span><span class="w">    </span><span class="nx">cfg</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">OutputDir</span><span class="p">:</span><span class="w"> </span><span class="nx">outputDir</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">})</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="related-documentation">Related Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/explanation/renderer-testing/index.html">Test Architecture</a></li>
+<li><a href="/docs/ci-cd-setup/index.html">CI/CD Setup</a></li>
+<li><a href="/docs/reference/configuration/index.html">Configuration Reference</a></li>
+<li><a href="/docs/style_guide/index.html">Style Guide</a></li>
+</ul>
+<h2 id="maintenance-notes">Maintenance Notes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="golden-file-review">Golden File Review<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Never blindly regenerate</strong> golden files - always review changes</li>
+<li>Golden files represent expected behavior, not actual output</li>
+<li>Changes to golden files should be justified in PR descriptions</li>
+<li>Hugo config changes should be theme-compatible</li>
+</ul>
+<h3 id="test-design-guidelines">Test Design Guidelines<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Keep tests fast (target &lt; 2s for full suite)</li>
+<li>Don&rsquo;t run Hugo build in tests (too slow, config is sufficient)</li>
+<li>Use <code>t.TempDir()</code> for complete test isolation</li>
+<li>Test one scenario per test function</li>
+<li>Error tests should verify graceful degradation, not hard failures</li>
+</ul>
+<h3 id="file-organization">File Organization<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>test/
+├── integration/
+│   ├── golden_test.go          # Test implementations (813 lines)
+│   ├── helpers.go              # Test utilities (437 lines)
+│   └── README.md               # Integration test overview
+├── testdata/
+│   ├── configs/                # YAML test configurations (14 files)
+│   ├── golden/                 # Expected outputs (12 directories)
+│   └── repos/                  # Test repository structures
+│       ├── multi-repo/         # Multi-repository scenarios
+│       └── transforms/         # Content transformation tests</code></pre></div>
+<h3 id="common-pitfalls">Common Pitfalls<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Dynamic timestamps</strong>: Use <code>verifyHugoConfig</code> which normalizes <code>build_date</code></li>
+<li><strong>Absolute paths</strong>: Golden files should not contain temp directory paths</li>
+<li><strong>Git state</strong>: Use <code>setupTestRepo</code> to ensure consistent git history</li>
+<li><strong>Configuration placeholders</strong>: Test configs use <code>PLACEHOLDER</code> for dynamic values</li>
+</ol>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 29, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/testing/index.html">Testing</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" checked><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="active " data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

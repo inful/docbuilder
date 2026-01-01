@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Status Accepted - Implemented 2025-12-13
+Context Current Architecture (Mostly Correct) DocBuilder already implements an in-memory content pipeline with proper separation of concerns:
+Discovery Stage (stageDiscoverDocs): Reads files from source repositories into memory once Transform Stage (copyContentFiles): Loads content into memory (file.LoadContent()) Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.) Processes content entirely in memory via Page struct Writes final transformed output to disk once Index Stage (stageIndexes): Generates repository/section index pages Hugo Render (stageRunHugo): Runs Hugo on the prepared content tree The transform pipeline is already in-memory and works correctly with:">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ADR-002: Fix Index Stage Pipeline Bypass :: Test">
+    <meta name="twitter:description" content="Status Accepted - Implemented 2025-12-13
+Context Current Architecture (Mostly Correct) DocBuilder already implements an in-memory content pipeline with proper separation of concerns:
+Discovery Stage (stageDiscoverDocs): Reads files from source repositories into memory once Transform Stage (copyContentFiles): Loads content into memory (file.LoadContent()) Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.) Processes content entirely in memory via Page struct Writes final transformed output to disk once Index Stage (stageIndexes): Generates repository/section index pages Hugo Render (stageRunHugo): Runs Hugo on the prepared content tree The transform pipeline is already in-memory and works correctly with:">
+    <meta property="og:url" content="http://test/docs/adr/adr-002-in-memory-content-pipeline/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="ADR-002: Fix Index Stage Pipeline Bypass :: Test">
+    <meta property="og:description" content="Status Accepted - Implemented 2025-12-13
+Context Current Architecture (Mostly Correct) DocBuilder already implements an in-memory content pipeline with proper separation of concerns:
+Discovery Stage (stageDiscoverDocs): Reads files from source repositories into memory once Transform Stage (copyContentFiles): Loads content into memory (file.LoadContent()) Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.) Processes content entirely in memory via Page struct Writes final transformed output to disk once Index Stage (stageIndexes): Generates repository/section index pages Hugo Render (stageRunHugo): Runs Hugo on the prepared content tree The transform pipeline is already in-memory and works correctly with:">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-13T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-13T00:00:00+00:00">
+    <meta property="article:tag" content="Pipeline">
+    <meta property="article:tag" content="Content-Processing">
+    <meta property="article:tag" content="Architecture">
+    <meta property="article:tag" content="Performance">
+    <meta itemprop="name" content="ADR-002: Fix Index Stage Pipeline Bypass :: Test">
+    <meta itemprop="description" content="Status Accepted - Implemented 2025-12-13
+Context Current Architecture (Mostly Correct) DocBuilder already implements an in-memory content pipeline with proper separation of concerns:
+Discovery Stage (stageDiscoverDocs): Reads files from source repositories into memory once Transform Stage (copyContentFiles): Loads content into memory (file.LoadContent()) Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.) Processes content entirely in memory via Page struct Writes final transformed output to disk once Index Stage (stageIndexes): Generates repository/section index pages Hugo Render (stageRunHugo): Runs Hugo on the prepared content tree The transform pipeline is already in-memory and works correctly with:">
+    <meta itemprop="datePublished" content="2025-12-13T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-13T00:00:00+00:00">
+    <meta itemprop="wordCount" content="1454">
+    <meta itemprop="keywords" content="Pipeline,Content-Processing,Architecture,Performance">
+    <title>ADR-002: Fix Index Stage Pipeline Bypass :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/adr\/adr-002-in-memory-content-pipeline\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/adr/adr-002-in-memory-content-pipeline/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#status">Status</a></li>
+    <li><a href="#context">Context</a>
+      <ul>
+        <li><a href="#current-architecture-mostly-correct">Current Architecture (Mostly Correct)</a></li>
+        <li><a href="#the-actual-problem-index-stage-bypass">The Actual Problem: Index Stage Bypass</a></li>
+        <li><a href="#why-this-happened">Why This Happened</a></li>
+      </ul>
+    </li>
+    <li><a href="#decision">Decision</a>
+      <ul>
+        <li><a href="#core-insight">Core Insight</a></li>
+        <li><a href="#minimal-changes-required">Minimal Changes Required</a></li>
+        <li><a href="#architecture-after-fix">Architecture After Fix</a></li>
+      </ul>
+    </li>
+    <li><a href="#consequences">Consequences</a>
+      <ul>
+        <li><a href="#positive">Positive</a></li>
+        <li><a href="#negative">Negative</a></li>
+        <li><a href="#trade-offs-avoided">Trade-offs Avoided</a></li>
+      </ul>
+    </li>
+    <li><a href="#implementation-plan">Implementation Plan</a>
+      <ul>
+        <li><a href="#phase-1-foundation-day-1-2">Phase 1: Foundation (Day 1-2)</a></li>
+        <li><a href="#phase-2-capture-transformed-content-day-2-3">Phase 2: Capture Transformed Content (Day 2-3)</a></li>
+        <li><a href="#phase-3-fix-index-generation-day-3-5">Phase 3: Fix Index Generation (Day 3-5)</a></li>
+        <li><a href="#phase-4-integration-testing-day-5-7">Phase 4: Integration Testing (Day 5-7)</a></li>
+        <li><a href="#phase-5-documentation--cleanup-day-7-8">Phase 5: Documentation &amp; Cleanup (Day 7-8)</a></li>
+        <li><a href="#timeline-summary">Timeline Summary</a></li>
+        <li><a href="#rollback-plan">Rollback Plan</a></li>
+        <li><a href="#success-criteria">Success Criteria</a></li>
+      </ul>
+    </li>
+    <li><a href="#references">References</a></li>
+    <li><a href="#related-issues">Related Issues</a></li>
+    <li><a href="#notes">Notes</a>
+      <ul>
+        <li><a href="#discovery-process">Discovery Process</a></li>
+        <li><a href="#key-learnings">Key Learnings</a></li>
+        <li><a href="#future-enhancements">Future Enhancements</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/adr/index.html"><span itemprop="name">adr</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">ADR-002: Fix Index Stage Pipeline Bypass</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./adr/adr-002-in-memory-content-pipeline.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-001-golden-testing-strategy/index.html" title="ADR-001: Golden Testing Strategy for Output Verification (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-003-fixed-transform-pipeline/index.html" title="ADR-003: Fixed Transform Pipeline (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/architecture/index.html">Architecture</a></li>
+    <li><a class="term-link" href="/tags/content-processing/index.html">Content-Processing</a></li>
+    <li><a class="term-link" href="/tags/performance/index.html">Performance</a></li>
+    <li><a class="term-link" href="/tags/pipeline/index.html">Pipeline</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="adr-002-fix-index-stage-pipeline-bypass">ADR-002: Fix Index Stage Pipeline Bypass</h1>
+
+<h2 id="status">Status<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Accepted - Implemented 2025-12-13</p>
+<h2 id="context">Context<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="current-architecture-mostly-correct">Current Architecture (Mostly Correct)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>DocBuilder <strong>already implements</strong> an in-memory content pipeline with proper separation of concerns:</p>
+<ol>
+<li><strong>Discovery Stage</strong> (<code>stageDiscoverDocs</code>): Reads files from source repositories into memory once</li>
+<li><strong>Transform Stage</strong> (<code>copyContentFiles</code>):
+<ul>
+<li>Loads content into memory (<code>file.LoadContent()</code>)</li>
+<li>Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.)</li>
+<li>Processes content <strong>entirely in memory</strong> via <code>Page</code> struct</li>
+<li>Writes final transformed output to disk <strong>once</strong></li>
+</ul>
+</li>
+<li><strong>Index Stage</strong> (<code>stageIndexes</code>): Generates repository/section index pages</li>
+<li><strong>Hugo Render</strong> (<code>stageRunHugo</code>): Runs Hugo on the prepared content tree</li>
+</ol>
+<p><strong>The transform pipeline is already in-memory and works correctly</strong> with:</p>
+<ul>
+<li>✅ Single source read during discovery</li>
+<li>✅ In-memory transformation via <code>Page</code> struct</li>
+<li>✅ Dependency-based transform ordering</li>
+<li>✅ Single write after all transforms complete</li>
+<li>✅ Front matter patching and merging</li>
+<li>✅ Link rewriting through the pipeline</li>
+</ul>
+<h3 id="the-actual-problem-index-stage-bypass">The Actual Problem: Index Stage Bypass<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>One specific issue</strong> exists in <code>/internal/hugo/indexes.go</code> where README.md files are promoted to <code>_index.md</code>:</p>
+<p>The <code>useReadmeAsIndex</code> function:</p>
+<ol>
+<li><strong>Re-reads the source README.md file from disk</strong> (bypassing transformed content)</li>
+<li><strong>Manually parses and manipulates front matter</strong> (duplicating transform logic)</li>
+<li><strong>Overwrites the already-transformed file</strong> at the index location</li>
+</ol>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// indexes.go (current problematic code)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="nx">Generator</span><span class="p">)</span><span class="w"> </span><span class="nf">useReadmeAsIndex</span><span class="p">(</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ❌ Bypasses pipeline: re-reads source instead of using transformed content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">readmeContent</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nf">ReadFile</span><span class="p">(</span><span class="nx">readmeSourcePath</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ❌ Duplicates logic: manually parses front matter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">fm</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">parseFrontMatter</span><span class="p">(</span><span class="nx">readmeContent</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ❌ Loses transforms: overwrites pipeline output with source content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">os</span><span class="p">.</span><span class="nf">WriteFile</span><span class="p">(</span><span class="nx">indexPath</span><span class="p">,</span><span class="w"> </span><span class="nx">readmeContent</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Impact</strong>: When README.md is promoted to <code>_index.md</code>, transformations applied by the pipeline (especially link rewrites) are lost because the index stage writes the original untransformed content.</p>
+<h3 id="why-this-happened">Why This Happened<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The index stage was written before the transform pipeline was fully established. It predates the current dependency-based transform system and operates on the assumption that it needs to read source files directly.</p>
+<h2 id="decision">Decision<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>Fix the index stage to use already-transformed content</strong> instead of re-reading source files. This is a targeted fix that eliminates the pipeline bypass without requiring a full architectural refactor.</p>
+<h3 id="core-insight">Core Insight<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The existing architecture is <strong>already correct</strong> - we don&rsquo;t need to refactor the pipeline. We only need to:</p>
+<ol>
+<li>Capture transformed content after the pipeline runs</li>
+<li>Make it available to the index stage</li>
+<li>Stop re-reading source files in index generation</li>
+</ol>
+<h3 id="minimal-changes-required">Minimal Changes Required<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Change 1: Add field to track transformed content</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// internal/docs/discovery.go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">DocFile</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ... existing fields ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Content</span><span class="w">          </span><span class="p">[]</span><span class="kt">byte</span><span class="w">  </span><span class="c1">// Original source (already exists)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">TransformedBytes</span><span class="w"> </span><span class="p">[]</span><span class="kt">byte</span><span class="w">  </span><span class="c1">// NEW: After transform pipeline</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// ... existing fields ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Change 2: Capture transformed content in copyContentFiles</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// internal/hugo/content_copy.go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="nx">Generator</span><span class="p">)</span><span class="w"> </span><span class="nf">copyContentFiles</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">docFiles</span><span class="w"> </span><span class="p">[]</span><span class="nx">docs</span><span class="p">.</span><span class="nx">DocFile</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">docFiles</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// ... existing transform pipeline code ...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// NEW: Store transformed bytes for later use</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">docFiles</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">TransformedBytes</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Raw</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Existing: Write to disk</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">os</span><span class="p">.</span><span class="nf">WriteFile</span><span class="p">(</span><span class="nx">outputPath</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Raw</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Change 3: Fix index generation to use transformed content</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// internal/hugo/indexes.go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="nx">Generator</span><span class="p">)</span><span class="w"> </span><span class="nf">useReadmeAsIndex</span><span class="p">(</span><span class="nx">file</span><span class="w"> </span><span class="nx">docs</span><span class="p">.</span><span class="nx">DocFile</span><span class="p">,</span><span class="w"> </span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// BEFORE: rawContent, _ := os.ReadFile(readmeSourcePath)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// AFTER: Use already-transformed content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">file</span><span class="p">.</span><span class="nx">TransformedBytes</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;README not yet transformed: %s&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nx">Path</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// No need to re-parse or manipulate - just copy transformed content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">indexPath</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nf">buildRoot</span><span class="p">(),</span><span class="w"> </span><span class="s">&#34;content&#34;</span><span class="p">,</span><span class="w"> </span><span class="o">...</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">os</span><span class="p">.</span><span class="nf">WriteFile</span><span class="p">(</span><span class="nx">indexPath</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="p">.</span><span class="nx">TransformedBytes</span><span class="p">,</span><span class="w"> </span><span class="mo">0644</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="architecture-after-fix">Architecture After Fix<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>┌──────────────┐
+│  Discovery   │ Load source files once
+│              │ DocFile.Content populated
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│  Transform   │ Process through pipeline (in-memory)
+│  Pipeline    │ DocFile.TransformedBytes populated ← NEW
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│Content Write │ Write transformed content to disk
+│              │ (copyContentFiles)
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│Index Stage   │ Use DocFile.TransformedBytes ← FIXED
+│              │ (no re-reading source)
+└──────┬───────┘
+       │
+┌──────▼───────┐
+│ Hugo Render  │ Build final static site
+└──────────────┘</code></pre></div>
+<p><strong>Key principle</strong>: Transform pipeline remains authoritative. Index stage becomes a pure consumer of transformed content.</p>
+<h2 id="consequences">Consequences<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="positive">Positive<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Pipeline Integrity</strong>: All content flows through transform pipeline with no bypasses</li>
+<li><strong>Bug Fix</strong>: README.md → _index.md conversion preserves link rewrites and other transforms</li>
+<li><strong>Eliminates Duplicate Logic</strong>: Front matter parsing happens only in transform pipeline</li>
+<li><strong>Minimal Changes</strong>: ~15 lines of code vs. full refactor</li>
+<li><strong>Low Risk</strong>: Doesn&rsquo;t change core architecture, just fixes data flow</li>
+<li><strong>Better Testability</strong>: Can verify transformed content is used consistently</li>
+<li><strong>Future-Proof</strong>: Makes it easier to add new transforms knowing they&rsquo;ll apply everywhere</li>
+</ol>
+<h3 id="negative">Negative<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Minimal Memory Overhead</strong>: Adds <code>TransformedBytes</code> field to <code>DocFile</code>
+<ul>
+<li>Mitigation: Negligible impact (content already in memory during transform)</li>
+<li>Only populated for markdown files, not assets</li>
+</ul>
+</li>
+<li><strong>Pass-by-value consideration</strong>: <code>docFiles</code> slice must be passed by reference or returned
+<ul>
+<li>Current code already uses <code>[]docs.DocFile</code> slice which shares backing array</li>
+<li>May need to ensure mutations are visible across function boundaries</li>
+</ul>
+</li>
+</ol>
+<h3 id="trade-offs-avoided">Trade-offs Avoided<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>By <strong>not</strong> doing a full refactor, we avoid:</p>
+<ul>
+<li>❌ Rewriting working transform pipeline</li>
+<li>❌ Changing stage interfaces</li>
+<li>❌ Updating all transform implementations</li>
+<li>❌ Extensive test updates</li>
+<li>❌ Risk of introducing new bugs in working code</li>
+</ul>
+<h2 id="implementation-plan">Implementation Plan<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="phase-1-foundation-day-1-2">Phase 1: Foundation (Day 1-2)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Files Modified</strong>: 1 file, 2 lines</p>
+<ul>
+<li><input disabled="" type="checkbox"> Add <code>TransformedBytes []byte</code> field to <code>DocFile</code> struct in <code>internal/docs/discovery.go</code></li>
+<li><input disabled="" type="checkbox"> Add godoc comment explaining field purpose</li>
+<li><input disabled="" type="checkbox"> Run tests to ensure no breakage from schema change</li>
+</ul>
+<p><strong>Acceptance</strong>: Field compiles, tests pass</p>
+<hr>
+<h3 id="phase-2-capture-transformed-content-day-2-3">Phase 2: Capture Transformed Content (Day 2-3)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Files Modified</strong>: 1 file, ~3 lines</p>
+<ul>
+<li><input disabled="" type="checkbox"> In <code>internal/hugo/content_copy.go</code>, after transform pipeline completes:
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// After: shim.SerializeFn()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">docFiles</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">TransformedBytes</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">p</span><span class="p">.</span><span class="nx">Raw</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</li>
+<li><input disabled="" type="checkbox"> Ensure this happens inside the loop that processes each file</li>
+<li><input disabled="" type="checkbox"> Add debug logging to verify field is populated</li>
+</ul>
+<p><strong>Acceptance</strong>: <code>TransformedBytes</code> populated for markdown files after pipeline</p>
+<p><strong>Testing</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Add test to verify <code>TransformedBytes</code> matches <code>p.Raw</code></li>
+<li><input disabled="" type="checkbox"> Verify assets skip this (only markdown files)</li>
+</ul>
+<hr>
+<h3 id="phase-3-fix-index-generation-day-3-5">Phase 3: Fix Index Generation (Day 3-5)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Files Modified</strong>: 1 file, ~10-15 lines</p>
+<p><strong>3a. Modify <code>useReadmeAsIndex</code> function</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Replace <code>os.ReadFile(readmeSourcePath)</code> with <code>file.TransformedBytes</code></li>
+<li><input disabled="" type="checkbox"> Remove manual front matter parsing (already in transformed content)</li>
+<li><input disabled="" type="checkbox"> Add validation that <code>TransformedBytes</code> is populated</li>
+<li><input disabled="" type="checkbox"> Simplify logic - just copy transformed bytes to index location</li>
+</ul>
+<p><strong>3b. Update calling code</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Ensure <code>useReadmeAsIndex</code> receives <code>DocFile</code> with <code>TransformedBytes</code></li>
+<li><input disabled="" type="checkbox"> Pass full <code>DocFile</code> instead of just paths where needed</li>
+</ul>
+<p><strong>Acceptance</strong>: README.md promoted to _index.md preserves transforms</p>
+<p><strong>Testing</strong>:</p>
+<ul>
+<li><input disabled="" type="checkbox"> Test README.md with relative links becomes _index.md with rewritten links</li>
+<li><input disabled="" type="checkbox"> Test README.md with added front matter from pipeline is preserved</li>
+<li><input disabled="" type="checkbox"> Test multiple repositories with README files</li>
+</ul>
+<hr>
+<h3 id="phase-4-integration-testing-day-5-7">Phase 4: Integration Testing (Day 5-7)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Files Modified</strong>: Test files only</p>
+<ul>
+<li><input disabled="" type="checkbox"> Run existing <code>TestPipelineReadmeLinks</code> - should now pass</li>
+<li><input disabled="" type="checkbox"> Add test for front matter preservation in README → _index.md</li>
+<li><input disabled="" type="checkbox"> Test with Relearn theme configuration</li>
+<li><input disabled="" type="checkbox"> Test edge cases:
+<ul>
+<li>README without front matter</li>
+<li>README in subdirectories</li>
+<li>Repositories without README files</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Run full integration test suite</li>
+</ul>
+<p><strong>Acceptance</strong>: All existing tests pass, README transforms preserved</p>
+<hr>
+<h3 id="phase-5-documentation--cleanup-day-7-8">Phase 5: Documentation &amp; Cleanup (Day 7-8)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input disabled="" type="checkbox"> Update <code>CONTENT_TRANSFORMS.md</code> to document that transforms apply to all files including index promotions</li>
+<li><input disabled="" type="checkbox"> Add comments in <code>indexes.go</code> explaining why we use <code>TransformedBytes</code></li>
+<li><input disabled="" type="checkbox"> Update this ADR status to &ldquo;Accepted&rdquo;</li>
+<li><input disabled="" type="checkbox"> Add CHANGELOG entry for bug fix</li>
+</ul>
+<p><strong>Optional Cleanup</strong> (can be separate PR):</p>
+<ul>
+<li><input disabled="" type="checkbox"> Remove now-unused manual front matter parsing in index stage</li>
+<li><input disabled="" type="checkbox"> Consolidate duplicate path resolution logic</li>
+<li><input disabled="" type="checkbox"> Add metrics for transform pipeline coverage</li>
+</ul>
+<hr>
+<h3 id="timeline-summary">Timeline Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Total Effort</strong>: 1-2 weeks (with testing)</li>
+<li><strong>Code Changes</strong>: ~20 lines across 2 files</li>
+<li><strong>Test Changes</strong>: ~50-100 lines for comprehensive coverage</li>
+<li><strong>Risk Level</strong>: Low (targeted fix, no architectural changes)</li>
+</ul>
+<hr>
+<h3 id="rollback-plan">Rollback Plan<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>If issues discovered:</p>
+<ol>
+<li><strong>Immediate</strong>: Revert <code>useReadmeAsIndex</code> to read from disk (restore 1 function)</li>
+<li><strong>Short-term</strong>: Add feature flag to toggle between old/new behavior</li>
+<li><strong>Long-term</strong>: Keep <code>TransformedBytes</code> field for future use, fix bugs incrementally</li>
+</ol>
+<hr>
+<h3 id="success-criteria">Success Criteria<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li>✅ README.md files promoted to _index.md preserve all transforms</li>
+<li>✅ Links in README → _index.md are correctly rewritten</li>
+<li>✅ Front matter patches from pipeline are present in index files</li>
+<li>✅ No regression in existing functionality</li>
+<li>✅ All tests pass</li>
+<li>✅ No performance degradation</li>
+</ol>
+<h2 id="references">References<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/internal/hugo/content_copy.go">Transform pipeline implementation</a></li>
+<li><a href="/docs/internal/hugo/indexes.go">Index generation</a></li>
+<li><a href="/docs/internal/docs/discovery.go">DocFile struct</a></li>
+<li><a href="/docs/reference/content-transforms/index.html">Transform pipeline design</a></li>
+<li><a href="/docs/internal/hugo/build_state.go">BuildState architecture</a></li>
+</ul>
+<h2 id="related-issues">Related Issues<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>README.md link rewriting bypass when promoted to _index.md</li>
+<li>Front matter patches not applied to index files</li>
+<li>Duplicate front matter parsing logic in index stage</li>
+</ul>
+<h2 id="notes">Notes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="discovery-process">Discovery Process<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>This ADR was created after investigating why README.md files lost transform pipeline changes when promoted to <code>_index.md</code>. Initial analysis suggested the entire pipeline needed refactoring, but deeper investigation revealed:</p>
+<ol>
+<li><strong>The transform pipeline already works correctly</strong> - it processes content in-memory with proper dependency ordering</li>
+<li><strong>The bug is isolated</strong> - only the index generation stage bypasses the pipeline</li>
+<li><strong>The fix is minimal</strong> - capture and reuse transformed content instead of re-reading sources</li>
+</ol>
+<h3 id="key-learnings">Key Learnings<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Don&rsquo;t assume the architecture is broken</strong> - investigate thoroughly before proposing large refactors</li>
+<li><strong>The codebase already implements best practices</strong> - in-memory processing, dependency resolution, staged execution</li>
+<li><strong>Targeted fixes are often better</strong> - 20 lines beats rewriting thousands</li>
+</ul>
+<h3 id="future-enhancements">Future Enhancements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>This fix enables:</p>
+<ul>
+<li>Confidence that all transforms apply universally</li>
+<li>Easier debugging (single authoritative transformed content)</li>
+<li>Future optimization: avoid duplicate writes for README/index cases</li>
+</ul>
+<hr>
+<p><strong>Created</strong>: 2025-12-13<br>
+<strong>Updated</strong>: 2025-12-13 (revised after codebase analysis)<br>
+<strong>Author</strong>: Development Team<br>
+<strong>Decision</strong>: Proposed → Implementation Ready</p>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 13, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/architecture-decisions/index.html">Architecture-Decisions</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="parent " data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3" checked><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.
+Top-Level Structure 1 2 3 4 5 6 repositories: [] # List of repositories to aggregate build: {} # Performance &amp; workspace tuning daemon: {} # Daemon mode settings (link verification, sync, storage) versioning: {} # Multi-version documentation (optional) hugo: {} # Hugo site metadata &amp; theme output: {} # Output directory behavior Repositories Field Type Required Description url string yes Git clone URL. name string yes Unique repository name (used in content paths). branch string no Branch to checkout (default per remote). paths []string no Documentation root paths (default: [“docs”]). auth.type enum no Authentication mode: token, ssh, or basic. auth.token string conditional Required when type=token. auth.username string conditional Required when type=basic. auth.password string conditional Required when type=basic. auth.key_path string conditional SSH private key path when type=ssh. Build Section Field Type Default Description clone_concurrency int 4 Parallel clone/update workers (bounded to repo count). clone_strategy enum fresh Repository acquisition mode: fresh, update, or auto. shallow_depth int 0 If &gt;0 use shallow clones of that depth. prune_non_doc_paths bool false Remove non-doc top-level directories after clone. prune_allow []string [] Keep-listed directories/files (glob). prune_deny []string [] Force-remove directories/files (glob) except .git. hard_reset_on_diverge bool false Force align local branch to remote on divergence. clean_untracked bool false Remove untracked files after successful update. max_retries int 2 Retry attempts for transient clone/update failures. retry_backoff enum linear Backoff strategy: fixed, linear, or exponential. retry_initial_delay duration 1s First retry delay. retry_max_delay duration 30s Maximum backoff delay cap. workspace_dir string derived Explicit workspace override path. namespace_forges enum auto Forge prefixing: auto, always, or never. skip_if_unchanged bool daemon:true, CLI:false Skip builds when nothing changed (daemon only). Daemon Section Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Configuration Reference :: Test">
+    <meta name="twitter:description" content="This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.
+Top-Level Structure 1 2 3 4 5 6 repositories: [] # List of repositories to aggregate build: {} # Performance &amp; workspace tuning daemon: {} # Daemon mode settings (link verification, sync, storage) versioning: {} # Multi-version documentation (optional) hugo: {} # Hugo site metadata &amp; theme output: {} # Output directory behavior Repositories Field Type Required Description url string yes Git clone URL. name string yes Unique repository name (used in content paths). branch string no Branch to checkout (default per remote). paths []string no Documentation root paths (default: [“docs”]). auth.type enum no Authentication mode: token, ssh, or basic. auth.token string conditional Required when type=token. auth.username string conditional Required when type=basic. auth.password string conditional Required when type=basic. auth.key_path string conditional SSH private key path when type=ssh. Build Section Field Type Default Description clone_concurrency int 4 Parallel clone/update workers (bounded to repo count). clone_strategy enum fresh Repository acquisition mode: fresh, update, or auto. shallow_depth int 0 If &gt;0 use shallow clones of that depth. prune_non_doc_paths bool false Remove non-doc top-level directories after clone. prune_allow []string [] Keep-listed directories/files (glob). prune_deny []string [] Force-remove directories/files (glob) except .git. hard_reset_on_diverge bool false Force align local branch to remote on divergence. clean_untracked bool false Remove untracked files after successful update. max_retries int 2 Retry attempts for transient clone/update failures. retry_backoff enum linear Backoff strategy: fixed, linear, or exponential. retry_initial_delay duration 1s First retry delay. retry_max_delay duration 30s Maximum backoff delay cap. workspace_dir string derived Explicit workspace override path. namespace_forges enum auto Forge prefixing: auto, always, or never. skip_if_unchanged bool daemon:true, CLI:false Skip builds when nothing changed (daemon only). Daemon Section Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.">
+    <meta property="og:url" content="http://test/docs/reference/configuration/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Configuration Reference :: Test">
+    <meta property="og:description" content="This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.
+Top-Level Structure 1 2 3 4 5 6 repositories: [] # List of repositories to aggregate build: {} # Performance &amp; workspace tuning daemon: {} # Daemon mode settings (link verification, sync, storage) versioning: {} # Multi-version documentation (optional) hugo: {} # Hugo site metadata &amp; theme output: {} # Output directory behavior Repositories Field Type Required Description url string yes Git clone URL. name string yes Unique repository name (used in content paths). branch string no Branch to checkout (default per remote). paths []string no Documentation root paths (default: [“docs”]). auth.type enum no Authentication mode: token, ssh, or basic. auth.token string conditional Required when type=token. auth.username string conditional Required when type=basic. auth.password string conditional Required when type=basic. auth.key_path string conditional SSH private key path when type=ssh. Build Section Field Type Default Description clone_concurrency int 4 Parallel clone/update workers (bounded to repo count). clone_strategy enum fresh Repository acquisition mode: fresh, update, or auto. shallow_depth int 0 If &gt;0 use shallow clones of that depth. prune_non_doc_paths bool false Remove non-doc top-level directories after clone. prune_allow []string [] Keep-listed directories/files (glob). prune_deny []string [] Force-remove directories/files (glob) except .git. hard_reset_on_diverge bool false Force align local branch to remote on divergence. clean_untracked bool false Remove untracked files after successful update. max_retries int 2 Retry attempts for transient clone/update failures. retry_backoff enum linear Backoff strategy: fixed, linear, or exponential. retry_initial_delay duration 1s First retry delay. retry_max_delay duration 30s Maximum backoff delay cap. workspace_dir string derived Explicit workspace override path. namespace_forges enum auto Forge prefixing: auto, always, or never. skip_if_unchanged bool daemon:true, CLI:false Skip builds when nothing changed (daemon only). Daemon Section Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:tag" content="Configuration">
+    <meta property="article:tag" content="Yaml">
+    <meta property="article:tag" content="Settings">
+    <meta itemprop="name" content="Configuration Reference :: Test">
+    <meta itemprop="description" content="This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.
+Top-Level Structure 1 2 3 4 5 6 repositories: [] # List of repositories to aggregate build: {} # Performance &amp; workspace tuning daemon: {} # Daemon mode settings (link verification, sync, storage) versioning: {} # Multi-version documentation (optional) hugo: {} # Hugo site metadata &amp; theme output: {} # Output directory behavior Repositories Field Type Required Description url string yes Git clone URL. name string yes Unique repository name (used in content paths). branch string no Branch to checkout (default per remote). paths []string no Documentation root paths (default: [“docs”]). auth.type enum no Authentication mode: token, ssh, or basic. auth.token string conditional Required when type=token. auth.username string conditional Required when type=basic. auth.password string conditional Required when type=basic. auth.key_path string conditional SSH private key path when type=ssh. Build Section Field Type Default Description clone_concurrency int 4 Parallel clone/update workers (bounded to repo count). clone_strategy enum fresh Repository acquisition mode: fresh, update, or auto. shallow_depth int 0 If &gt;0 use shallow clones of that depth. prune_non_doc_paths bool false Remove non-doc top-level directories after clone. prune_allow []string [] Keep-listed directories/files (glob). prune_deny []string [] Force-remove directories/files (glob) except .git. hard_reset_on_diverge bool false Force align local branch to remote on divergence. clean_untracked bool false Remove untracked files after successful update. max_retries int 2 Retry attempts for transient clone/update failures. retry_backoff enum linear Backoff strategy: fixed, linear, or exponential. retry_initial_delay duration 1s First retry delay. retry_max_delay duration 30s Maximum backoff delay cap. workspace_dir string derived Explicit workspace override path. namespace_forges enum auto Forge prefixing: auto, always, or never. skip_if_unchanged bool daemon:true, CLI:false Skip builds when nothing changed (daemon only). Daemon Section Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.">
+    <meta itemprop="datePublished" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="wordCount" content="1610">
+    <meta itemprop="keywords" content="Configuration,Yaml,Settings">
+    <title>Configuration Reference :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/reference\/configuration\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/reference/configuration/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#top-level-structure">Top-Level Structure</a></li>
+    <li><a href="#repositories">Repositories</a></li>
+    <li><a href="#build-section">Build Section</a></li>
+    <li><a href="#daemon-section">Daemon Section</a>
+      <ul>
+        <li><a href="#link-verification">Link Verification</a></li>
+        <li><a href="#link-verification-examples">Link Verification Examples</a></li>
+        <li><a href="#nats-requirements">NATS Requirements</a></li>
+        <li><a href="#sync-configuration">Sync Configuration</a></li>
+        <li><a href="#storage-configuration">Storage Configuration</a></li>
+        <li><a href="#daemon-configuration-example">Daemon Configuration Example</a></li>
+      </ul>
+    </li>
+    <li><a href="#versioning-section">Versioning Section</a>
+      <ul>
+        <li><a href="#versioning-examples">Versioning Examples</a></li>
+      </ul>
+    </li>
+    <li><a href="#hugo-section">Hugo Section</a>
+      <ul>
+        <li><a href="#relearn-theme-parameters">Relearn Theme Parameters</a></li>
+        <li><a href="#taxonomies">Taxonomies</a></li>
+      </ul>
+    </li>
+    <li><a href="#output-section">Output Section</a>
+      <ul>
+        <li><a href="#output-directory-unification">Output Directory Unification</a></li>
+      </ul>
+    </li>
+    <li><a href="#build-report-fields-selected">Build Report Fields (Selected)</a></li>
+    <li><a href="#environment-variable-expansion">Environment Variable Expansion</a></li>
+    <li><a href="#health-and-readiness-endpoints">Health and Readiness Endpoints</a></li>
+    <li><a href="#kubernetes-probes">Kubernetes Probes</a></li>
+    <li><a href="#namespacing-behavior">Namespacing Behavior</a></li>
+    <li><a href="#skip-evaluation-daemon-mode">Skip Evaluation (Daemon Mode)</a></li>
+    <li><a href="#recommendations">Recommendations</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/reference/index.html"><span itemprop="name">reference</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Configuration Reference</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./reference/configuration.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/cli/index.html" title="CLI Reference (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/content-transforms/index.html" title="Content Transforms Reference (DEPRECATED) (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/configuration/index.html">Configuration</a></li>
+    <li><a class="term-link" href="/tags/settings/index.html">Settings</a></li>
+    <li><a class="term-link" href="/tags/yaml/index.html">Yaml</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="configuration-reference">Configuration Reference</h1>
+
+<p>This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.</p>
+<h2 id="top-level-structure">Top-Level Structure<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">repositories</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">    </span><span class="c"># List of repositories to aggregate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">build</span><span class="p">:</span><span class="w"> </span>{}<span class="w">           </span><span class="c"># Performance &amp; workspace tuning</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">daemon</span><span class="p">:</span><span class="w"> </span>{}<span class="w">          </span><span class="c"># Daemon mode settings (link verification, sync, storage)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">versioning</span><span class="p">:</span><span class="w"> </span>{}<span class="w">      </span><span class="c"># Multi-version documentation (optional)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">hugo</span><span class="p">:</span><span class="w"> </span>{}<span class="w">            </span><span class="c"># Hugo site metadata &amp; theme</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">output</span><span class="p">:</span><span class="w"> </span>{}<span class="w">          </span><span class="c"># Output directory behavior</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="repositories">Repositories<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Required</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>url</td>
+          <td>string</td>
+          <td>yes</td>
+          <td>Git clone URL.</td>
+      </tr>
+      <tr>
+          <td>name</td>
+          <td>string</td>
+          <td>yes</td>
+          <td>Unique repository name (used in content paths).</td>
+      </tr>
+      <tr>
+          <td>branch</td>
+          <td>string</td>
+          <td>no</td>
+          <td>Branch to checkout (default per remote).</td>
+      </tr>
+      <tr>
+          <td>paths</td>
+          <td>[]string</td>
+          <td>no</td>
+          <td>Documentation root paths (default: [&ldquo;docs&rdquo;]).</td>
+      </tr>
+      <tr>
+          <td>auth.type</td>
+          <td>enum</td>
+          <td>no</td>
+          <td>Authentication mode: <code>token</code>, <code>ssh</code>, or <code>basic</code>.</td>
+      </tr>
+      <tr>
+          <td>auth.token</td>
+          <td>string</td>
+          <td>conditional</td>
+          <td>Required when <code>type=token</code>.</td>
+      </tr>
+      <tr>
+          <td>auth.username</td>
+          <td>string</td>
+          <td>conditional</td>
+          <td>Required when <code>type=basic</code>.</td>
+      </tr>
+      <tr>
+          <td>auth.password</td>
+          <td>string</td>
+          <td>conditional</td>
+          <td>Required when <code>type=basic</code>.</td>
+      </tr>
+      <tr>
+          <td>auth.key_path</td>
+          <td>string</td>
+          <td>conditional</td>
+          <td>SSH private key path when <code>type=ssh</code>.</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="build-section">Build Section<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>clone_concurrency</td>
+          <td>int</td>
+          <td>4</td>
+          <td>Parallel clone/update workers (bounded to repo count).</td>
+      </tr>
+      <tr>
+          <td>clone_strategy</td>
+          <td>enum</td>
+          <td>fresh</td>
+          <td>Repository acquisition mode: <code>fresh</code>, <code>update</code>, or <code>auto</code>.</td>
+      </tr>
+      <tr>
+          <td>shallow_depth</td>
+          <td>int</td>
+          <td>0</td>
+          <td>If &gt;0 use shallow clones of that depth.</td>
+      </tr>
+      <tr>
+          <td>prune_non_doc_paths</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Remove non-doc top-level directories after clone.</td>
+      </tr>
+      <tr>
+          <td>prune_allow</td>
+          <td>[]string</td>
+          <td>[]</td>
+          <td>Keep-listed directories/files (glob).</td>
+      </tr>
+      <tr>
+          <td>prune_deny</td>
+          <td>[]string</td>
+          <td>[]</td>
+          <td>Force-remove directories/files (glob) except .git.</td>
+      </tr>
+      <tr>
+          <td>hard_reset_on_diverge</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Force align local branch to remote on divergence.</td>
+      </tr>
+      <tr>
+          <td>clean_untracked</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Remove untracked files after successful update.</td>
+      </tr>
+      <tr>
+          <td>max_retries</td>
+          <td>int</td>
+          <td>2</td>
+          <td>Retry attempts for transient clone/update failures.</td>
+      </tr>
+      <tr>
+          <td>retry_backoff</td>
+          <td>enum</td>
+          <td>linear</td>
+          <td>Backoff strategy: <code>fixed</code>, <code>linear</code>, or <code>exponential</code>.</td>
+      </tr>
+      <tr>
+          <td>retry_initial_delay</td>
+          <td>duration</td>
+          <td>1s</td>
+          <td>First retry delay.</td>
+      </tr>
+      <tr>
+          <td>retry_max_delay</td>
+          <td>duration</td>
+          <td>30s</td>
+          <td>Maximum backoff delay cap.</td>
+      </tr>
+      <tr>
+          <td>workspace_dir</td>
+          <td>string</td>
+          <td>derived</td>
+          <td>Explicit workspace override path.</td>
+      </tr>
+      <tr>
+          <td>namespace_forges</td>
+          <td>enum</td>
+          <td>auto</td>
+          <td>Forge prefixing: <code>auto</code>, <code>always</code>, or <code>never</code>.</td>
+      </tr>
+      <tr>
+          <td>skip_if_unchanged</td>
+          <td>bool</td>
+          <td>daemon:true, CLI:false</td>
+          <td>Skip builds when nothing changed (daemon only).</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="daemon-section">Daemon Section<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.</p>
+<h3 id="link-verification">Link Verification<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Automated link validation using NATS for caching and event publishing. Requires NATS server with JetStream enabled.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>enabled</td>
+          <td>bool</td>
+          <td>true</td>
+          <td>Enable automatic link verification after builds.</td>
+      </tr>
+      <tr>
+          <td>nats_url</td>
+          <td>string</td>
+          <td>nats://localhost:4222</td>
+          <td>NATS server connection URL (supports clustering).</td>
+      </tr>
+      <tr>
+          <td>subject</td>
+          <td>string</td>
+          <td>docbuilder.links.broken</td>
+          <td>NATS subject for publishing broken link events.</td>
+      </tr>
+      <tr>
+          <td>kv_bucket</td>
+          <td>string</td>
+          <td>docbuilder-link-cache</td>
+          <td>KV bucket name for caching link verification results.</td>
+      </tr>
+      <tr>
+          <td>cache_ttl</td>
+          <td>duration</td>
+          <td>24h</td>
+          <td>TTL for successful link checks in cache.</td>
+      </tr>
+      <tr>
+          <td>cache_ttl_failures</td>
+          <td>duration</td>
+          <td>1h</td>
+          <td>TTL for failed link checks in cache.</td>
+      </tr>
+      <tr>
+          <td>max_concurrent</td>
+          <td>int</td>
+          <td>10</td>
+          <td>Maximum concurrent link verification requests.</td>
+      </tr>
+      <tr>
+          <td>request_timeout</td>
+          <td>duration</td>
+          <td>10s</td>
+          <td>HTTP timeout for link verification requests.</td>
+      </tr>
+      <tr>
+          <td>rate_limit_delay</td>
+          <td>duration</td>
+          <td>100ms</td>
+          <td>Delay between link verification requests.</td>
+      </tr>
+      <tr>
+          <td>verify_external_only</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Verify only external links (skip internal links).</td>
+      </tr>
+      <tr>
+          <td>skip_edit_links</td>
+          <td>bool</td>
+          <td>true</td>
+          <td>Skip edit links that require authentication.</td>
+      </tr>
+      <tr>
+          <td>follow_redirects</td>
+          <td>bool</td>
+          <td>true</td>
+          <td>Follow HTTP redirects during verification.</td>
+      </tr>
+      <tr>
+          <td>max_redirects</td>
+          <td>int</td>
+          <td>3</td>
+          <td>Maximum number of redirects to follow.</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="link-verification-examples">Link Verification Examples<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Basic Configuration:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nats://localhost:4222&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Remote NATS with Authentication:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nats://username:password@nats.example.com:4222&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">subject</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;docbuilder.links.broken&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">kv_bucket</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;prod-link-cache&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>NATS Cluster Configuration:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nats://server1:4222,nats://server2:4222,nats://server3:4222&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>TLS/Secure Connection:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;tls://nats.example.com:4222&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Custom Verification Settings:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nats://localhost:4222&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">cache_ttl</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;48h&#34;</span><span class="w">              </span><span class="c"># Cache successful checks for 2 days</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">cache_ttl_failures</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;30m&#34;</span><span class="w">     </span><span class="c"># Recheck failures after 30 minutes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">max_concurrent</span><span class="p">:</span><span class="w"> </span><span class="m">20</span><span class="w">            </span><span class="c"># Increase parallelism</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">request_timeout</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;15s&#34;</span><span class="w">        </span><span class="c"># Longer timeout for slow sites</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">verify_external_only</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">    </span><span class="c"># Skip internal link checks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">skip_edit_links</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">         </span><span class="c"># Skip edit links (default, requires auth)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Include Edit Links in Verification:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">skip_edit_links</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">        </span><span class="c"># Verify edit links (will likely fail without auth)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Disable Link Verification:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="nats-requirements">NATS Requirements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Link verification requires <strong>NATS with JetStream</strong> enabled:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">nats-server -js
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">jetstream <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    store_dir: /var/lib/nats
+</span></span><span class="line"><span class="cl">    max_memory_store: 1GB
+</span></span><span class="line"><span class="cl">    max_file_store: 10GB
+</span></span><span class="line"><span class="cl"><span class="o">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="sync-configuration">Sync Configuration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>schedule</td>
+          <td>string</td>
+          <td>*/5 * * * *</td>
+          <td>Cron expression for periodic repository sync.</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="storage-configuration">Storage Configuration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>output_dir</td>
+          <td>string</td>
+          <td>./site</td>
+          <td>Output directory (must match <code>output.directory</code>).</td>
+      </tr>
+      <tr>
+          <td>repo_cache_dir</td>
+          <td>string</td>
+          <td>-</td>
+          <td>Persistent repository cache directory.</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="daemon-configuration-example">Daemon Configuration Example<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">link_verification</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">nats_url</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;nats://localhost:4222&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">cache_ttl</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;24h&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">sync</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;*/10 * * * *&#34;</span><span class="w">  </span><span class="c"># Sync every 10 minutes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">storage</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">repo_cache_dir</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;./daemon-data/repos&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="versioning-section">Versioning Section<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Enables multi-version documentation by discovering and building multiple branches/tags from each repository.</p>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>enabled</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Enable multi-version documentation.</td>
+      </tr>
+      <tr>
+          <td>strategy</td>
+          <td>enum</td>
+          <td>branches_and_tags</td>
+          <td>Version selection: <code>branches_and_tags</code>, <code>branches_only</code>, or <code>tags_only</code>.</td>
+      </tr>
+      <tr>
+          <td>default_branch_only</td>
+          <td>bool</td>
+          <td>false</td>
+          <td>Build only the default branch (overrides strategy).</td>
+      </tr>
+      <tr>
+          <td>branch_patterns</td>
+          <td>[]string</td>
+          <td>[&quot;*&quot;]</td>
+          <td>Branch name patterns to include (glob).</td>
+      </tr>
+      <tr>
+          <td>tag_patterns</td>
+          <td>[]string</td>
+          <td>[&quot;*&quot;]</td>
+          <td>Tag name patterns to include (glob).</td>
+      </tr>
+      <tr>
+          <td>max_versions_per_repo</td>
+          <td>int</td>
+          <td>10</td>
+          <td>Maximum versions to build per repository.</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="versioning-examples">Versioning Examples<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">versioning</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l">branches_and_tags</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">max_versions_per_repo</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">tag_patterns</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">\&#34;v*\&#34;          </span><span class="w"> </span><span class="c"># Match semantic versions</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">\&#34;[0-9]*\&#34;      </span><span class="w"> </span><span class="c"># Match numeric tags</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">branch_patterns</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">\&#34;main\&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">\&#34;develop\&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">\&#34;release/*\&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>With versioning enabled, DocBuilder:</p>
+<ul>
+<li>Discovers available branches/tags from each repository</li>
+<li>Expands each repository into multiple versioned builds</li>
+<li>Clones each version separately (branches use <code>refs/heads/</code>, tags use <code>refs/tags/</code>)</li>
+<li>Organizes content under repository-version paths</li>
+<li>Generates Hugo configuration with version metadata for version switchers</li>
+</ul>
+<h2 id="hugo-section">Hugo Section<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>title</td>
+          <td>string</td>
+          <td>Site title.</td>
+      </tr>
+      <tr>
+          <td>description</td>
+          <td>string</td>
+          <td>Site description.</td>
+      </tr>
+      <tr>
+          <td>base_url</td>
+          <td>string</td>
+          <td>Hugo BaseURL.</td>
+      </tr>
+      <tr>
+          <td>params</td>
+          <td>map[string]any</td>
+          <td>Relearn theme parameters (optional).</td>
+      </tr>
+      <tr>
+          <td>taxonomies</td>
+          <td>map[string]string</td>
+          <td>Custom taxonomy definitions (optional).</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Note:</strong> Theme selection has been removed. DocBuilder uses the Relearn theme exclusively.</p>
+<h3 id="relearn-theme-parameters">Relearn Theme Parameters<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Customize Relearn theme behavior via <code>hugo.params</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">hugo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">params</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">themeVariant</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;relearn-dark&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">disableSearch</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">collapsibleMenu</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">showVisitedLinks</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>See <a href="/docs/how-to/use-relearn-theme/index.html">Use Relearn Theme</a> for complete parameter reference.</p>
+<h3 id="taxonomies">Taxonomies<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Hugo taxonomies allow you to classify and organize content. DocBuilder automatically configures the default Hugo taxonomies (<code>tags</code> and <code>categories</code>) but you can customize or extend them.</p>
+<p><strong>Default Configuration:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">hugo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">taxonomies</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l">tags</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l">categories</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Custom Taxonomies:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">hugo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">taxonomies</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l">tags</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l">categories</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l">authors     </span><span class="w"> </span><span class="c"># Custom taxonomy</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l">topics       </span><span class="w"> </span><span class="c"># Custom taxonomy</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>The taxonomy key (e.g., <code>tag</code>, <code>author</code>) is the singular form used in Hugo&rsquo;s templates and URLs, while the value (e.g., <code>tags</code>, <code>authors</code>) is the plural form used for the collection.</p>
+<p><strong>Usage in Frontmatter:</strong></p>
+<p>Once configured, you can use taxonomies in your markdown frontmatter:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;My Documentation Page&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;api&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;golang&#34;</span><span class="p">,</span><span class="w"> </span><span class="s2">&#34;tutorial&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">categories</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;guides&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">authors</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;john-doe&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">topics</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&#34;backend-development&#34;</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>DocBuilder&rsquo;s FrontMatter model supports <code>tags</code>, <code>categories</code>, and <code>keywords</code> fields by default. Custom taxonomies can be added through the <code>Custom</code> field or by extending the FrontMatter structure.</p>
+<h2 id="output-section">Output Section<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>directory</td>
+          <td>string</td>
+          <td>./site</td>
+          <td>Output root.</td>
+      </tr>
+      <tr>
+          <td>clean</td>
+          <td>bool</td>
+          <td>true</td>
+          <td>Remove directory before build.</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="output-directory-unification">Output Directory Unification<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>DocBuilder treats <code>output.directory</code> as the canonical output root for both direct builds and daemon mode.</li>
+<li>In daemon mode, <code>daemon.storage.output_dir</code> must match <code>output.directory</code>. If not provided, it is derived from <code>output.directory</code>.</li>
+<li>A validation check enforces this equality (after path normalization). Mismatches cause configuration loading to fail.</li>
+<li>Recommendation: set only <code>output.directory</code>; avoid setting <code>daemon.storage.output_dir</code> unless absolutely necessary.</li>
+</ul>
+<h2 id="build-report-fields-selected">Build Report Fields (Selected)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>cloned_repositories</td>
+          <td>Successful clones/updates</td>
+      </tr>
+      <tr>
+          <td>failed_repositories</td>
+          <td>Failed clone/auth attempts</td>
+      </tr>
+      <tr>
+          <td>rendered_pages</td>
+          <td>Markdown pages written</td>
+      </tr>
+      <tr>
+          <td>static_rendered</td>
+          <td>Hugo run succeeded</td>
+      </tr>
+      <tr>
+          <td>doc_files_hash</td>
+          <td>Fingerprint of docs set</td>
+      </tr>
+      <tr>
+          <td>issues[]</td>
+          <td>Structured issue list</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="environment-variable-expansion">Environment Variable Expansion<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Values like <code>${GIT_ACCESS_TOKEN}</code> in YAML are expanded using the current process environment. <code>.env</code> and <code>.env.local</code> files are loaded automatically (last one wins on conflicts).</p>
+<h2 id="health-and-readiness-endpoints">Health and Readiness Endpoints<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Endpoints are exposed on both the docs port and the admin port.</li>
+<li><code>GET /health</code>: basic liveness endpoint; returns 200 when the server is responsive.</li>
+<li><code>GET /ready</code>: readiness endpoint tied to render state.
+<ul>
+<li>Returns 200 only when <code>&lt;output.directory&gt;/public</code> exists.</li>
+<li>Returns 503 before the first successful render or if the public folder is missing.</li>
+</ul>
+</li>
+<li>When serving on the docs port, if the site is not yet rendered and the request path is <code>/</code>, DocBuilder returns a short 503 HTML placeholder indicating that the documentation is being prepared. This switches automatically to the rendered site once available.</li>
+</ul>
+<h2 id="kubernetes-probes">Kubernetes Probes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Probe either the docs port or the admin port. Use <code>/ready</code> for readiness and <code>/health</code> for liveness.</li>
+<li>Prefer probing <code>/ready</code> instead of the docs root <code>/</code>, since the root may return a temporary 503 placeholder before the first render.</li>
+</ul>
+<p>Example: probe the docs port (8080)</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w"> </span><span class="c"># docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8081</span><span class="w"> </span><span class="c"># webhooks</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="m">8082</span><span class="w"> </span><span class="c"># admin</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/ready</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Example: probe the admin port (8082)</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">containers</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/ready</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8082</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="m">3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">httpGet</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/health</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="m">8082</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="m">5</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="m">10</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="namespacing-behavior">Namespacing Behavior<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>When <code>namespace_forges=auto</code> and more than one distinct forge is present across repositories, content paths are written under <code>content/&lt;forge&gt;/&lt;repo&gt;/...</code>. Otherwise they remain <code>content/&lt;repo&gt;/...</code>.</p>
+<h2 id="skip-evaluation-daemon-mode">Skip Evaluation (Daemon Mode)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>When running in daemon mode, builds are automatically skipped when nothing has changed:</p>
+<ol>
+<li><strong>State Tracking</strong>: Repository commits, config hash, and doc file hashes are saved after each successful build</li>
+<li><strong>Skip Rules</strong>: Validates version, config, repository commits, and content integrity</li>
+<li><strong>Automatic</strong>: Enabled by default in daemon mode (<code>skip_if_unchanged: true</code>)</li>
+<li><strong>CLI Mode</strong>: Not used - CLI builds always run when explicitly requested</li>
+</ol>
+<p>This prevents unnecessary rebuilds when daemon polls/watches for changes but repositories haven&rsquo;t been updated.</p>
+<p>For CLI mode, simply don&rsquo;t run <code>docbuilder build</code> if you don&rsquo;t want a build. No caching is needed.</p>
+<h2 id="recommendations">Recommendations<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Use <code>clone_strategy: auto</code> for most CI and daemon scenarios.</li>
+<li>Pin commit or module versions externally until v1.0.0 stability.</li>
+<li>Compare successive <code>doc_files_hash</code> values to drive conditional downstream jobs.</li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 15, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/reference/index.html">Reference</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479" checked><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

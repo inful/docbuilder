@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Date: 2025-12-29
+Status Proposed
+Context DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:
+Current Pain Points Late feedback: Filename issues (spaces, mixed-case) discovered during Hugo build Silent failures: Invalid frontmatter causes pages to render incorrectly or not at all Broken links: Cross-references break when files are renamed without updating links Path inconsistencies: Mixed naming conventions (README.md, api-guide.md, My Document.md) in same repository Asset orphans: Images referenced but not committed, or committed but never referenced Hugo quirks: Reserved filenames (_index.md vs index.md) behave differently but look similar Impact Developers commit documentation that fails to build CI/CD pipelines fail unexpectedly Manual inspection required to diagnose issues Inconsistent documentation quality across repositories Time wasted on avoidable build failures Hugo and DocBuilder Best Practices Hugo has specific expectations:">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ADR-005: Documentation Linting for Pre-Commit Validation :: Test">
+    <meta name="twitter:description" content="Date: 2025-12-29
+Status Proposed
+Context DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:
+Current Pain Points Late feedback: Filename issues (spaces, mixed-case) discovered during Hugo build Silent failures: Invalid frontmatter causes pages to render incorrectly or not at all Broken links: Cross-references break when files are renamed without updating links Path inconsistencies: Mixed naming conventions (README.md, api-guide.md, My Document.md) in same repository Asset orphans: Images referenced but not committed, or committed but never referenced Hugo quirks: Reserved filenames (_index.md vs index.md) behave differently but look similar Impact Developers commit documentation that fails to build CI/CD pipelines fail unexpectedly Manual inspection required to diagnose issues Inconsistent documentation quality across repositories Time wasted on avoidable build failures Hugo and DocBuilder Best Practices Hugo has specific expectations:">
+    <meta property="og:url" content="http://test/docs/adr/adr-005-documentation-linting/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="ADR-005: Documentation Linting for Pre-Commit Validation :: Test">
+    <meta property="og:description" content="Date: 2025-12-29
+Status Proposed
+Context DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:
+Current Pain Points Late feedback: Filename issues (spaces, mixed-case) discovered during Hugo build Silent failures: Invalid frontmatter causes pages to render incorrectly or not at all Broken links: Cross-references break when files are renamed without updating links Path inconsistencies: Mixed naming conventions (README.md, api-guide.md, My Document.md) in same repository Asset orphans: Images referenced but not committed, or committed but never referenced Hugo quirks: Reserved filenames (_index.md vs index.md) behave differently but look similar Impact Developers commit documentation that fails to build CI/CD pipelines fail unexpectedly Manual inspection required to diagnose issues Inconsistent documentation quality across repositories Time wasted on avoidable build failures Hugo and DocBuilder Best Practices Hugo has specific expectations:">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:tag" content="Linting">
+    <meta property="article:tag" content="Validation">
+    <meta property="article:tag" content="Documentation">
+    <meta property="article:tag" content="Developer-Experience">
+    <meta itemprop="name" content="ADR-005: Documentation Linting for Pre-Commit Validation :: Test">
+    <meta itemprop="description" content="Date: 2025-12-29
+Status Proposed
+Context DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:
+Current Pain Points Late feedback: Filename issues (spaces, mixed-case) discovered during Hugo build Silent failures: Invalid frontmatter causes pages to render incorrectly or not at all Broken links: Cross-references break when files are renamed without updating links Path inconsistencies: Mixed naming conventions (README.md, api-guide.md, My Document.md) in same repository Asset orphans: Images referenced but not committed, or committed but never referenced Hugo quirks: Reserved filenames (_index.md vs index.md) behave differently but look similar Impact Developers commit documentation that fails to build CI/CD pipelines fail unexpectedly Manual inspection required to diagnose issues Inconsistent documentation quality across repositories Time wasted on avoidable build failures Hugo and DocBuilder Best Practices Hugo has specific expectations:">
+    <meta itemprop="datePublished" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="wordCount" content="5262">
+    <meta itemprop="keywords" content="Linting,Validation,Documentation,Developer-Experience">
+    <title>ADR-005: Documentation Linting for Pre-Commit Validation :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/adr\/adr-005-documentation-linting\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/adr/adr-005-documentation-linting/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#status">Status</a></li>
+    <li><a href="#context">Context</a>
+      <ul>
+        <li><a href="#current-pain-points">Current Pain Points</a></li>
+        <li><a href="#impact">Impact</a></li>
+        <li><a href="#hugo-and-docbuilder-best-practices">Hugo and DocBuilder Best Practices</a></li>
+      </ul>
+    </li>
+    <li><a href="#decision">Decision</a>
+      <ul>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#linting-rules">Linting Rules</a></li>
+        <li><a href="#implementation-phases">Implementation Phases</a></li>
+        <li><a href="#lint-command-interface">Lint Command Interface</a></li>
+        <li><a href="#exit-codes">Exit Codes</a></li>
+        <li><a href="#output-format">Output Format</a></li>
+        <li><a href="#safety-guarantees-for-auto-fix">Safety Guarantees for Auto-Fix</a></li>
+        <li><a href="#default-path-detection">Default Path Detection</a></li>
+        <li><a href="#git-hooks-integration">Git Hooks Integration</a></li>
+        <li><a href="#cicd-integration">CI/CD Integration</a></li>
+      </ul>
+    </li>
+    <li><a href="#auto-fix-implementation-link-resolution">Auto-Fix Implementation: Link Resolution</a>
+      <ul>
+        <li><a href="#link-resolution-strategy">Link Resolution Strategy</a></li>
+        <li><a href="#edge-cases-and-safety">Edge Cases and Safety</a></li>
+        <li><a href="#user-confirmation-flow">User Confirmation Flow</a></li>
+        <li><a href="#dry-run-output">Dry-Run Output</a></li>
+        <li><a href="#implementation-phases-1">Implementation Phases</a></li>
+      </ul>
+    </li>
+    <li><a href="#testing-strategy">Testing Strategy</a></li>
+    <li><a href="#keeping-linting-rules-synchronized-with-docbuilder">Keeping Linting Rules Synchronized with DocBuilder</a>
+      <ul>
+        <li><a href="#synchronization-strategy">Synchronization Strategy</a></li>
+        <li><a href="#practical-example-adding-asset-transformation-support">Practical Example: Adding Asset Transformation Support</a></li>
+        <li><a href="#ownership-and-responsibility">Ownership and Responsibility</a></li>
+      </ul>
+    </li>
+    <li><a href="#consequences">Consequences</a>
+      <ul>
+        <li><a href="#positive">Positive</a></li>
+        <li><a href="#negative">Negative</a></li>
+        <li><a href="#mitigation">Mitigation</a></li>
+      </ul>
+    </li>
+    <li><a href="#migration-path">Migration Path</a>
+      <ul>
+        <li><a href="#week-1-soft-launch">Week 1: Soft Launch</a></li>
+        <li><a href="#week-2-team-testing">Week 2: Team Testing</a></li>
+        <li><a href="#week-3-git-hooks">Week 3: Git Hooks</a></li>
+        <li><a href="#month-2-ci-integration">Month 2: CI Integration</a></li>
+        <li><a href="#month-3-full-enforcement">Month 3: Full Enforcement</a></li>
+      </ul>
+    </li>
+    <li><a href="#future-enhancements">Future Enhancements</a>
+      <ul>
+        <li><a href="#content-linting-phase-5">Content Linting (Phase 5)</a></li>
+        <li><a href="#advanced-asset-handling">Advanced Asset Handling</a></li>
+        <li><a href="#ide-integration">IDE Integration</a></li>
+        <li><a href="#smart-fixes">Smart Fixes</a></li>
+      </ul>
+    </li>
+    <li><a href="#examples">Examples</a>
+      <ul>
+        <li><a href="#example-1-clean-repository-using-defaults">Example 1: Clean Repository (Using Defaults)</a></li>
+        <li><a href="#example-1b-no-docs-directory-found">Example 1b: No docs/ Directory Found</a></li>
+        <li><a href="#example-2-filename-issues">Example 2: Filename Issues</a></li>
+        <li><a href="#example-3-auto-fix-dry-run">Example 3: Auto-Fix Dry Run</a></li>
+        <li><a href="#example-4-lefthook-integration">Example 4: Lefthook Integration</a></li>
+      </ul>
+    </li>
+    <li><a href="#references">References</a></li>
+    <li><a href="#implementation-checklist">Implementation Checklist</a>
+      <ul>
+        <li><a href="#phase-1-core-linting-engine-">Phase 1: Core Linting Engine ✅</a></li>
+        <li><a href="#phase-2-cli-implementation-">Phase 2: CLI Implementation ✅</a></li>
+        <li><a href="#phase-3-auto-fix-capability-link-resolution">Phase 3: Auto-Fix Capability (Link Resolution)</a></li>
+        <li><a href="#phase-4-git-hooks-integration">Phase 4: Git Hooks Integration</a></li>
+        <li><a href="#phase-5-cicd-integration">Phase 5: CI/CD Integration</a></li>
+        <li><a href="#testing">Testing</a></li>
+        <li><a href="#documentation">Documentation</a></li>
+        <li><a href="#future-enhancements-1">Future Enhancements</a></li>
+      </ul>
+    </li>
+    <li><a href="#success-metrics">Success Metrics</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/adr/index.html"><span itemprop="name">adr</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">ADR-005: Documentation Linting for Pre-Commit Validation</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./adr/adr-005-documentation-linting.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-003-fixed-transform-pipeline/index.html" title="ADR-003: Fixed Transform Pipeline (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-004-forge-specific-markdown/index.html" title="ADR-004: Forge-Specific Markdown Support (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/developer-experience/index.html">Developer-Experience</a></li>
+    <li><a class="term-link" href="/tags/documentation/index.html">Documentation</a></li>
+    <li><a class="term-link" href="/tags/linting/index.html">Linting</a></li>
+    <li><a class="term-link" href="/tags/validation/index.html">Validation</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="adr-005-documentation-linting-for-pre-commit-validation">ADR-005: Documentation Linting for Pre-Commit Validation</h1>
+
+<p>Date: 2025-12-29</p>
+<h2 id="status">Status<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Proposed</p>
+<h2 id="context">Context<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:</p>
+<h3 id="current-pain-points">Current Pain Points<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Late feedback</strong>: Filename issues (spaces, mixed-case) discovered during Hugo build</li>
+<li><strong>Silent failures</strong>: Invalid frontmatter causes pages to render incorrectly or not at all</li>
+<li><strong>Broken links</strong>: Cross-references break when files are renamed without updating links</li>
+<li><strong>Path inconsistencies</strong>: Mixed naming conventions (<code>README.md</code>, <code>api-guide.md</code>, <code>My Document.md</code>) in same repository</li>
+<li><strong>Asset orphans</strong>: Images referenced but not committed, or committed but never referenced</li>
+<li><strong>Hugo quirks</strong>: Reserved filenames (<code>_index.md</code> vs <code>index.md</code>) behave differently but look similar</li>
+</ol>
+<h3 id="impact">Impact<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Developers commit documentation that fails to build</li>
+<li>CI/CD pipelines fail unexpectedly</li>
+<li>Manual inspection required to diagnose issues</li>
+<li>Inconsistent documentation quality across repositories</li>
+<li>Time wasted on avoidable build failures</li>
+</ul>
+<h3 id="hugo-and-docbuilder-best-practices">Hugo and DocBuilder Best Practices<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Hugo has specific expectations:</p>
+<ul>
+<li>Filenames become URL slugs: <code>My Document.md</code> → <code>/my%20document/</code> (problematic)</li>
+<li>Case sensitivity varies by OS: <code>README.md</code> vs <code>readme.md</code> causes issues</li>
+<li>Special files: <code>_index.md</code> (section landing), <code>index.md</code> (leaf bundle)</li>
+<li>Asset paths must match exactly (case-sensitive even on macOS/Windows during deployment)</li>
+</ul>
+<p>DocBuilder&rsquo;s discovery system (<code>internal/docs/</code>) walks repositories and expects:</p>
+<ul>
+<li>Lowercase filenames for predictable Hugo paths</li>
+<li>No spaces or special characters (except <code>-</code>, <code>_</code>, <code>.</code>)</li>
+<li>Valid UTF-8 frontmatter</li>
+<li>Relative paths for cross-document links</li>
+</ul>
+<h2 id="decision">Decision<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Implement a <strong>documentation linting system</strong> with multiple integration points:</p>
+<ol>
+<li><strong>CLI command</strong>: <code>docbuilder lint [path]</code> for manual validation</li>
+<li><strong>Git hooks</strong>: Traditional pre-commit hooks or lefthook for automatic checking</li>
+<li><strong>CI/CD integration</strong>: GitHub Actions / GitLab CI step for PR validation</li>
+</ol>
+<h3 id="architecture">Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>internal/
+  lint/
+    linter.go              # Core linting engine
+    rules.go               # Rule definitions and severity
+    formatters.go          # Human-readable output
+    fixer.go               # Automatic fix transformations
+    
+cmd/docbuilder/
+  commands/
+    lint.go                # CLI command implementation
+    
+scripts/
+  install-hooks.sh         # Traditional pre-commit hook installer
+  
+lefthook.yml               # Lefthook configuration (optional)
+  
+.github/
+  workflows/
+    lint-docs.yml          # CI validation workflow</code></pre></div>
+<h3 id="linting-rules">Linting Rules<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Rules are <strong>fixed and opinionated</strong> based on Hugo/DocBuilder best practices. No configuration override.</p>
+<h4 id="filename-rules-errors---block-build">Filename Rules (Errors - Block Build)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p><strong>Allowed pattern</strong>: <code>[a-z0-9-_.]</code> with exceptions for whitelisted double extensions:</p>
+<ul>
+<li><code>.drawio.png</code> - Draw.io embedded PNG diagrams</li>
+<li><code>.drawio.svg</code> - Draw.io embedded SVG diagrams</li>
+</ul>
+<table>
+  <thead>
+      <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Rationale</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Uppercase letters in filename</td>
+          <td>Error</td>
+          <td>Causes URL inconsistency, case-sensitivity issues</td>
+      </tr>
+      <tr>
+          <td>Spaces in filename</td>
+          <td>Error</td>
+          <td>Breaks Hugo URL generation, creates <code>%20</code> in paths</td>
+      </tr>
+      <tr>
+          <td>Special characters (not <code>[a-z0-9-_.]</code>)</td>
+          <td>Error</td>
+          <td>Unsupported by Hugo slugify, potential shell escaping issues</td>
+      </tr>
+      <tr>
+          <td>Leading/trailing hyphens or underscores</td>
+          <td>Error</td>
+          <td>Creates malformed URLs (<code>/-docs/</code> or <code>/_temp/</code>)</td>
+      </tr>
+      <tr>
+          <td>Double extensions (except whitelisted)</td>
+          <td>Error</td>
+          <td>Processed as markdown, causes build errors. Allowed: <code>.drawio.png</code>, <code>.drawio.svg</code> (embedded diagrams)</td>
+      </tr>
+      <tr>
+          <td>Reserved names without prefix (<code>tags.md</code>, <code>categories.md</code>)</td>
+          <td>Error</td>
+          <td>Conflicts with Hugo taxonomy URLs</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Error Message Example:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid filename detected
+  File: docs/API Guide.md
+  Issue: Contains space characters and uppercase letters
+  Fix: Rename to: docs/api-guide.md
+  
+  Spaces in filenames create problematic URLs (/api%20guide/) 
+  and may break cross-references. Hugo expects lowercase, 
+  hyphen-separated filenames.
+  
+  To fix automatically: docbuilder lint --fix docs/</code></pre></div>
+<h4 id="content-rules-errors---block-build">Content Rules (Errors - Block Build)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<table>
+  <thead>
+      <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Rationale</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Malformed frontmatter YAML</td>
+          <td>Error</td>
+          <td>Hugo fails to parse, page skipped silently</td>
+      </tr>
+      <tr>
+          <td>Missing closing <code>---</code> in frontmatter</td>
+          <td>Error</td>
+          <td>Entire file treated as frontmatter</td>
+      </tr>
+      <tr>
+          <td>Invalid frontmatter keys (duplicates)</td>
+          <td>Error</td>
+          <td>Undefined Hugo behavior</td>
+      </tr>
+      <tr>
+          <td>Broken internal links (<code>[text](/docs/adr/missing)</code>)</td>
+          <td>Error</td>
+          <td>404s in production, poor UX</td>
+      </tr>
+      <tr>
+          <td>Image references to non-existent files</td>
+          <td>Error</td>
+          <td>Missing images break layout</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Error Message Example:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid frontmatter detected
+  File: docs/installation.md
+  Line: 3
+  Issue: YAML parsing failed: mapping values are not allowed here
+  
+  ---
+  title: Installation Guide
+  date: 2025-12-29
+  invalid key without colon
+  ---
+  
+  Frontmatter must be valid YAML enclosed by --- markers.
+  Check for proper indentation and key: value format.</code></pre></div>
+<h4 id="structure-rules-warnings---allow-but-notify">Structure Rules (Warnings - Allow but Notify)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<table>
+  <thead>
+      <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Rationale</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Missing <code>_index.md</code> in directory with docs</td>
+          <td>Warning</td>
+          <td>Directory won&rsquo;t have landing page, appears empty in nav</td>
+      </tr>
+      <tr>
+          <td>Deeply nested structure (&gt;4 levels)</td>
+          <td>Warning</td>
+          <td>Poor navigation UX, consider flattening</td>
+      </tr>
+      <tr>
+          <td>Orphaned assets (unreferenced images)</td>
+          <td>Warning</td>
+          <td>Bloats repository, may be leftover from deletions</td>
+      </tr>
+      <tr>
+          <td>Mixed file naming styles in same directory</td>
+          <td>Warning</td>
+          <td>Inconsistent developer experience</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Warning Message Example:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Missing section index file
+  Directory: docs/api/
+  Issue: Contains 5 markdown files but no _index.md
+  Impact: Section will not appear in navigation sidebar
+  
+  Create _index.md to define this section:
+  
+  ---
+  title: &#34;API Documentation&#34;
+  weight: 2
+  ---
+  
+  This section contains API guides and references.</code></pre></div>
+<h4 id="asset-rules-warnings---allow-but-notify">Asset Rules (Warnings - Allow but Notify)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<table>
+  <thead>
+      <tr>
+          <th>Rule</th>
+          <th>Severity</th>
+          <th>Rationale</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Image filename with spaces/uppercase</td>
+          <td>Warning</td>
+          <td>Works but creates inconsistent URLs</td>
+      </tr>
+      <tr>
+          <td>Absolute URLs to internal assets</td>
+          <td>Warning</td>
+          <td>Breaks in local development, not portable</td>
+      </tr>
+      <tr>
+          <td>Large binary files (&gt;5MB)</td>
+          <td>Warning</td>
+          <td>Git performance, consider external hosting</td>
+      </tr>
+      <tr>
+          <td>Embedded diagram formats (<code>.drawio.png</code>, <code>.drawio.svg</code>)</td>
+          <td>Info</td>
+          <td>Valid double extension for editable diagrams, explicitly allowed</td>
+      </tr>
+  </tbody>
+</table>
+<h3 id="implementation-phases">Implementation Phases<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Phase 1: Core Linting Engine (Week 1)</strong></p>
+<ul>
+<li>Implement <code>internal/lint</code> package with rule engine</li>
+<li>Filename validation (errors only)</li>
+<li>Human-readable formatter</li>
+<li>Unit tests for each rule</li>
+</ul>
+<p><strong>Phase 2: CLI and Manual Workflow (Week 1-2)</strong></p>
+<ul>
+<li>Add <code>docbuilder lint</code> command</li>
+<li>Intelligent default path detection (<code>docs/</code> or <code>documentation/</code>)</li>
+<li>Support single file, directory, and recursive modes</li>
+<li>Exit codes: 0 (clean), 1 (warnings), 2 (errors)</li>
+<li>Colorized terminal output (red errors, yellow warnings)</li>
+</ul>
+<p><strong>Phase 3: Auto-Fix Capability (Week 2)</strong></p>
+<ul>
+<li>Implement safe file renaming with link resolution:
+<ul>
+<li>Rename files: <code>My Doc.md</code> → <code>my-doc.md</code></li>
+<li>Scan all markdown files for links to renamed files</li>
+<li>Update internal references preserving link style (relative/absolute)</li>
+<li>Handle image links, inline links, reference-style links</li>
+<li>Preserve anchor fragments (#section) in links</li>
+<li>Preserve Git history (using <code>git mv</code>)</li>
+</ul>
+</li>
+<li>Require <code>--fix</code> flag and confirmation prompt showing:
+<ul>
+<li>Files to be renamed</li>
+<li>Markdown files that will be updated</li>
+<li>Total number of links to be modified</li>
+</ul>
+</li>
+<li>Dry-run mode: <code>--fix --dry-run</code> shows all changes without applying</li>
+<li>Generate detailed fix report with before/after comparison</li>
+</ul>
+<p><strong>Phase 4: Integration Hooks (Week 3)</strong></p>
+<ul>
+<li>Traditional pre-commit hook script (<code>scripts/install-hooks.sh</code>)</li>
+<li>Lefthook configuration (<code>lefthook.yml</code>)</li>
+<li>GitHub Actions workflow example</li>
+<li>GitLab CI template</li>
+<li>Documentation in <code>docs/how-to/setup-linting.md</code></li>
+</ul>
+<p><strong>Phase 5: Content and Structure Rules (Future)</strong></p>
+<ul>
+<li>Frontmatter validation</li>
+<li>Link checking</li>
+<li>Orphaned asset detection</li>
+<li>Structure recommendations</li>
+</ul>
+<h3 id="lint-command-interface">Lint Command Interface<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Default Behavior:</strong>
+When run without arguments, <code>docbuilder lint</code> uses intelligent path detection:</p>
+<ol>
+<li>If <code>docs/</code> directory exists in current directory → lint <code>docs/</code></li>
+<li>If <code>documentation/</code> directory exists → lint <code>documentation/</code></li>
+<li>Otherwise → lint current directory (<code>.</code>)</li>
+</ol>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docbuilder lint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint .
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint ./docs
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --fix
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --fix --yes
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --fix --dry-run
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --quiet
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --format<span class="o">=</span>json
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">docbuilder lint --explain</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="exit-codes">Exit Codes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><code>0</code>: No issues found (clean)</li>
+<li><code>1</code>: Warnings present but no errors</li>
+<li><code>2</code>: Errors found (build would fail)</li>
+<li><code>3</code>: Lint execution error (filesystem access, etc.)</li>
+</ul>
+<h3 id="output-format">Output Format<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>Linting documentation in: ./docs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✗ docs/API Guide.md
+  ERROR: Invalid filename
+  └─ Contains uppercase letters and spaces
+  
+  Current:  docs/API Guide.md
+  Suggested: docs/api-guide.md
+  
+  Why: Spaces create %20 in URLs; uppercase causes 
+  case-sensitivity issues across platforms.
+  
+  Fix: docbuilder lint --fix docs/
+
+⚠ docs/api/_index.md
+  WARNING: Missing section title
+  └─ Frontmatter has no title field
+  
+  Add title to frontmatter:
+  ---
+  title: &#34;API Documentation&#34;
+  ---
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Results:
+  2 files scanned
+  1 error (blocks build)
+  1 warning (should fix)
+  
+Exit code: 2</code></pre></div>
+<h3 id="safety-guarantees-for-auto-fix">Safety Guarantees for Auto-Fix<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The <code>--fix</code> flag will <strong>only</strong> perform transformations that are provably safe:</p>
+<ol>
+<li><strong>Filename normalization</strong>: Lowercase + hyphenate, preserving whitelisted double extensions (reversible)</li>
+<li><strong>Link updates</strong>: Update relative links in same repo (validated before commit)</li>
+<li><strong>Git integration</strong>: Use <code>git mv</code> to preserve history</li>
+<li><strong>Atomic operations</strong>: All-or-nothing (rollback on any failure)</li>
+<li><strong>Backup prompt</strong>: Confirms user wants to proceed</li>
+<li><strong>Dry-run first</strong>: Shows changes before applying</li>
+</ol>
+<h3 id="default-path-detection">Default Path Detection<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>To minimize friction, <code>docbuilder lint</code> intelligently detects documentation directories:</p>
+<p><strong>Detection Order:</strong></p>
+<ol>
+<li>Check for <code>docs/</code> directory in current path</li>
+<li>Check for <code>documentation/</code> directory in current path</li>
+<li>Fallback to current directory (<code>.</code>)</li>
+</ol>
+<p><strong>Override Behavior:</strong></p>
+<ul>
+<li>Explicit path argument always takes precedence: <code>docbuilder lint ./custom-docs</code></li>
+<li>Use <code>docbuilder lint .</code> to explicitly lint current directory</li>
+</ul>
+<p><strong>Rationale:</strong></p>
+<ul>
+<li>Most projects use <code>docs/</code> or <code>documentation/</code> as standard convention</li>
+<li>Reduces cognitive load for developers (just run <code>docbuilder lint</code>)</li>
+<li>Follows principle of least surprise</li>
+<li>Works naturally in CI/CD where working directory is project root</li>
+</ul>
+<p><strong>Will NOT auto-fix:</strong></p>
+<ul>
+<li>Frontmatter structure (too complex, context-dependent)</li>
+<li>External links (can&rsquo;t validate without network)</li>
+<li>Content rewrites (subjective)</li>
+<li>Cross-repository links (affects multiple repos)</li>
+</ul>
+<h3 id="git-hooks-integration">Git Hooks Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="option-1-lefthook-recommended">Option 1: Lefthook (Recommended)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Lefthook is a fast, modern Git hooks manager. Add to <code>lefthook.yml</code> in repository root:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">pre-commit</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">parallel</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">commands</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">glob</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;*.{md,markdown,png,jpg,jpeg,gif,svg}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint {staged_files} --quiet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">stage_fixed</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c"># Auto-stage files fixed with --fix flag</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c"># Optional: auto-fix on commit</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">lint-docs-fix</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">glob</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;*.{md,markdown,png,jpg,jpeg,gif,svg}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint {staged_files} --fix --yes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">stage_fixed</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Installation:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">brew install lefthook  <span class="c1"># macOS</span>
+</span></span><span class="line"><span class="cl">go install github.com/evilmartians/lefthook@latest
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">lefthook install</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Fast parallel execution</li>
+<li>Easier to configure and maintain</li>
+<li>Portable configuration (checked into repo)</li>
+<li>Supports multiple hooks and commands</li>
+<li>Auto-staging of fixed files</li>
+</ul>
+<h4 id="option-2-traditional-pre-commit-hook">Option 2: Traditional Pre-Commit Hook<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Install via: <code>docbuilder lint install-hook</code></p>
+<p>Generated hook at <code>.git/hooks/pre-commit</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/sh
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="nv">STAGED_FILES</span><span class="o">=</span><span class="k">$(</span>git diff --cached --name-only --diff-filter<span class="o">=</span>ACM <span class="p">|</span> grep -E <span class="s1">&#39;\.(md|markdown|png|jpg|jpeg|gif|svg)$&#39;</span><span class="k">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="o">[</span> -n <span class="s2">&#34;</span><span class="nv">$STAGED_FILES</span><span class="s2">&#34;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Linting staged documentation files...&#34;</span>
+</span></span><span class="line"><span class="cl">  docbuilder lint <span class="nv">$STAGED_FILES</span> --quiet
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="nv">LINT_EXIT</span><span class="o">=</span><span class="nv">$?</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="o">[</span> <span class="nv">$LINT_EXIT</span> -eq <span class="m">2</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;❌ Lint errors found. Commit blocked.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;Fix errors or run: docbuilder lint --fix&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl">  <span class="k">elif</span> <span class="o">[</span> <span class="nv">$LINT_EXIT</span> -eq <span class="m">1</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;⚠️  Lint warnings present. Consider fixing before commit.&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">echo</span> <span class="s2">&#34;To auto-fix: docbuilder lint --fix&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1"># Allow commit but show warning</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">exit</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl">  <span class="k">fi</span>
+</span></span><span class="line"><span class="cl"><span class="k">fi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">exit</span> <span class="m">0</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="cicd-integration">CI/CD Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>GitHub Actions</strong> (<code>.github/workflows/lint-docs.yml</code>):</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">pull_request]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">lint</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install DocBuilder</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          curl -L https://github.com/org/docbuilder/releases/latest/download/docbuilder-linux-amd64 -o docbuilder
+</span></span></span><span class="line"><span class="cl"><span class="sd">          chmod +x docbuilder
+</span></span></span><span class="line"><span class="cl"><span class="sd">          sudo mv docbuilder /usr/local/bin/</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint ./docs --format=json &gt; lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Upload Report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">always()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/upload-artifact@v3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">failure()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v6</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const report = require(&#39;./lint-report.json&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">            // Post formatted comment with errors</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>GitLab CI</strong> (<code>.gitlab-ci.yml</code>):</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">test</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder:latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">docbuilder lint ./docs --format=json | tee lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">when</span><span class="p">:</span><span class="w"> </span><span class="l">always</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">reports</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">junit</span><span class="p">:</span><span class="w"> </span><span class="l">lint-report.json</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">allow_failure</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="auto-fix-implementation-link-resolution">Auto-Fix Implementation: Link Resolution<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>When the <code>--fix</code> flag is used, renaming files requires updating all internal markdown links that reference those files. This is critical to prevent broken documentation after auto-fixing filename issues.</p>
+<h3 id="link-resolution-strategy">Link Resolution Strategy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="supported-link-types">Supported Link Types<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>The fixer must handle all common markdown link patterns:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">&lt;!-- 1. Inline links (most common) --&gt;
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/adr/API_Guide</span>)
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/adr/API_Guide</span>)
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/docs/API_Guide</span>)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- 2. Absolute repository paths --&gt;
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/API_Guide.md</span>)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- 3. Reference-style links --&gt;
+</span></span><span class="line"><span class="cl">[API Guide][api-ref]
+</span></span><span class="line"><span class="cl">[api-ref]: API_Guide.md &#34;API Documentation&#34;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- 4. Image links --&gt;
+</span></span><span class="line"><span class="cl">![<span class="nt">Architecture</span>](<span class="na">/docs/adr/architecture_diagram.png</span>)
+</span></span><span class="line"><span class="cl">![<span class="nt">Logo</span>](<span class="na">/docs/adr/assets/company_logo.svg</span>)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- 5. Links with anchors (preserve fragment) --&gt;
+</span></span><span class="line"><span class="cl">[<span class="nt">Authentication</span>](<span class="na">/docs/adr/API_Guide.md#authentication</span>)
+</span></span><span class="line"><span class="cl">[<span class="nt">Overview</span>](<span class="na">/docs/adr/API_Guide.md#overview</span>)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- 6. Links in code blocks (ignore) --&gt;
+</span></span><span class="line"><span class="cl">```bash</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>#### Resolution Algorithm
+
+**Phase 1: Discover Links**
+```go
+type LinkReference struct {
+    SourceFile  string   // File containing the link
+    LineNumber  int      // Line number of link
+    LinkType    LinkType // Inline, Reference, Image
+    Target      string   // Link target (path)
+    Fragment    string   // Anchor fragment (#section)
+    FullMatch   string   // Complete original text for replacement
+}
+
+func (f *Fixer) findLinksToFile(targetPath string) ([]LinkReference, error) {
+    // 1. Walk all .md files in documentation directory
+    // 2. For each file, scan for links using regex patterns:
+    //    - Inline: \[([^\]]+)\]\(([^)]+)\)
+    //    - Reference: ^\[([^\]]+)\]:\s*(.+?)(?:\s+&#34;([^&#34;]*)&#34;)?$
+    //    - Image: !\[([^\]]*)\]\(([^)]+)\)
+    // 3. Parse link target to extract path and fragment
+    // 4. Resolve relative paths to absolute workspace paths
+    // 5. Compare resolved path with target file
+    // 6. Collect all matches as LinkReference structs
+}</code></pre></div>
+<p><strong>Phase 2: Path Resolution</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">resolveRelativePath</span><span class="p">(</span><span class="nx">sourceFile</span><span class="p">,</span><span class="w"> </span><span class="nx">linkTarget</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Given: sourceFile = &#34;docs/guides/tutorial.md&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//        linkTarget = &#34;../api/API_Guide.md&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 
+</span></span></span><span class="line"><span class="cl"><span class="c1">    // 1. Get directory of source file: &#34;docs/guides/&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 2. Join with link target: &#34;docs/guides/../api/API_Guide.md&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 3. Clean path: &#34;docs/api/API_Guide.md&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 4. Resolve to absolute workspace path</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 5. Return canonical path for comparison</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Phase 3: Generate Replacement</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">f</span><span class="w"> </span><span class="o">*</span><span class="nx">Fixer</span><span class="p">)</span><span class="w"> </span><span class="nf">updateLink</span><span class="p">(</span><span class="nx">ref</span><span class="w"> </span><span class="nx">LinkReference</span><span class="p">,</span><span class="w"> </span><span class="nx">oldPath</span><span class="p">,</span><span class="w"> </span><span class="nx">newPath</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Preserve link style (relative vs absolute)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Update filename while keeping directory structure</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Preserve anchor fragments</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Preserve reference link titles</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Example:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Original: [API](/docs/api/API_Guide.md#auth)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Old path: docs/api/API_Guide.md</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// New path: docs/api/api-guide.md</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Result:   [API](/docs/api/api-guide.md#auth)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Phase 4: Apply Updates</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">f</span><span class="w"> </span><span class="o">*</span><span class="nx">Fixer</span><span class="p">)</span><span class="w"> </span><span class="nf">applyLinkUpdates</span><span class="p">(</span><span class="nx">updates</span><span class="w"> </span><span class="p">[]</span><span class="nx">LinkUpdate</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 1. Group updates by source file</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 2. For each file, apply all updates atomically:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//    - Read file content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//    - Apply replacements (in reverse line order to preserve offsets)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">//    - Write updated content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 3. If any update fails, rollback all changes</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// 4. Generate fix report showing what was updated</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="edge-cases-and-safety">Edge Cases and Safety<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Case 1: External URLs</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">[<span class="nt">GitHub Docs</span>](<span class="na">https://github.com/docs/API_Guide.md</span>)</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> Skip. Only update links to local files. Detect by checking for protocol scheme (<code>http://</code>, <code>https://</code>).</p>
+<p><strong>Case 2: Broken Links</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">[<span class="nt">Old Guide</span>](<span class="na">/docs/adr/Deleted_File</span>)</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> If link target doesn&rsquo;t exist and matches old filename pattern, report separately as &ldquo;potential broken link&rdquo; but don&rsquo;t update.</p>
+<p><strong>Case 3: Multiple Files Same Name</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">docs/api/README.md
+</span></span><span class="line"><span class="cl">docs/guides/README.md</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> Use full path matching. Only update links that resolve to the specific file being renamed.</p>
+<p><strong>Case 4: Circular References</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">&lt;!-- File A.md --&gt;
+</span></span><span class="line"><span class="cl">[<span class="nt">See B</span>](<span class="na">/docs/adr/B</span>)
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- File B.md --&gt;
+</span></span><span class="line"><span class="cl">[<span class="nt">See A</span>](<span class="na">/docs/adr/A</span>)</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> No special handling needed. Each file rename updates its own references independently.</p>
+<p><strong>Case 5: Links in Code Blocks</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="s">```bash
+</span></span></span><span class="line"><span class="cl"><span class="s"></span>curl https://example.com/API_Guide.md
+</span></span><span class="line"><span class="cl"><span class="s">```</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> Don&rsquo;t update links inside code blocks. Use markdown parser to identify fenced code blocks and skip them.</p>
+<p><strong>Case 6: Case-Insensitive Filesystems</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">[<span class="nt">Guide</span>](<span class="na">/docs/adr/api_guide</span>)  # Links to API_Guide.md on macOS/Windows</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Resolution:</strong> Perform case-insensitive path comparison when checking if link targets the file being renamed.</p>
+<h3 id="user-confirmation-flow">User Confirmation Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>When <code>--fix</code> flag is used without <code>--yes</code>, show interactive confirmation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>Found 3 files with naming issues:
+
+Files to rename:
+  1. docs/API_Guide.md → docs/api-guide.md
+  2. docs/User Manual.md → docs/user-manual.md
+  3. images/Company_Logo.png → images/company-logo.png
+
+Links to update:
+  • docs/index.md (2 links)
+  • docs/guides/getting-started.md (1 link)
+  • docs/tutorials/quickstart.md (4 links)
+  
+Total: 7 links in 3 files will be updated
+
+This will:
+  ✓ Rename 3 files using git mv (preserves history)
+  ✓ Update 7 internal links in 3 markdown files
+  ✓ Create backup: .docbuilder-backup-20251229-143052/
+
+Proceed with fixes? [y/N]: _</code></pre></div>
+<h3 id="dry-run-output">Dry-Run Output<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><code>docbuilder lint --fix --dry-run</code> shows what would change without applying:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>DRY RUN: No changes will be applied
+
+[File Renames]
+  docs/API_Guide.md → docs/api-guide.md
+
+[Link Updates]
+  docs/index.md:12
+    Before: [API Guide](/docs/adr/API_Guide)
+    After:  [API Guide](/docs/adr/api-guide)
+  
+  docs/index.md:45
+    Before: ![Diagram](/docs/adr/../images/architecture_diagram.png)
+    After:  ![Diagram](/docs/adr/../images/architecture-diagram.png)
+  
+  docs/guides/getting-started.md:8
+    Before: See the [API Guide](/docs/API_Guide.md#authentication) for details.
+    After:  See the [API Guide](/docs/api-guide.md#authentication) for details.
+
+Summary:
+  3 files would be renamed
+  7 links would be updated across 3 files</code></pre></div>
+<h3 id="implementation-phases-1">Implementation Phases<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Phase 3a: Basic Renaming</strong></p>
+<ul>
+<li>File rename with <code>git mv</code> support</li>
+<li>Confirmation prompts</li>
+<li>Dry-run mode</li>
+</ul>
+<p><strong>Phase 3b: Link Discovery</strong></p>
+<ul>
+<li>Scan markdown files for links</li>
+<li>Parse inline, reference, and image links</li>
+<li>Resolve relative paths</li>
+</ul>
+<p><strong>Phase 3c: Link Updates</strong></p>
+<ul>
+<li>Generate replacement text</li>
+<li>Apply updates atomically</li>
+<li>Rollback on failure</li>
+</ul>
+<p><strong>Phase 3d: Edge Cases</strong></p>
+<ul>
+<li>Skip external URLs</li>
+<li>Handle code blocks</li>
+<li>Case-insensitive matching</li>
+</ul>
+<p><strong>Phase 3e: Reporting</strong></p>
+<ul>
+<li>Detailed fix report</li>
+<li>Dry-run preview</li>
+<li>Interactive confirmation</li>
+</ul>
+<h2 id="testing-strategy">Testing Strategy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Follow ADR-001 golden testing approach:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>test/
+  testdata/
+    lint/
+      valid/
+        correct-filenames/      # All lowercase, hyphens
+        proper-frontmatter/     # Valid YAML
+        correct-links/          # All internal links valid
+        whitelisted-extensions/ # .drawio.png, .drawio.svg
+      
+      invalid/
+        mixed-case/             # MixedCase.md files
+        spaces/                 # My Document.md
+        special-chars/          # file@name.md, file#tag.md
+        bad-frontmatter/        # Malformed YAML
+        broken-links/           # Links to non-existent files
+        invalid-double-ext/     # .md.backup, .markdown.old
+      
+      fix/
+        links/
+          # Test files for link resolution
+          before/
+            docs/
+              API_Guide.md            # File to be renamed
+              index.md                # Contains link to API_Guide.md
+              guides/
+                tutorial.md           # Contains relative link ../API_Guide.md
+            images/
+              Diagram.png             # Image to be renamed
+          after/
+            # Expected state after --fix applied
+            docs/
+              api-guide.md            # Renamed file
+              index.md                # Link updated to api-guide.md
+              guides/
+                tutorial.md           # Link updated to ../api-guide.md
+            images/
+              diagram.png             # Renamed image
+      
+    golden/
+      mixed-case.golden.json          # Expected error output
+      spaces.golden.json              # Expected error output
+      drawio-allowed.golden.json      # Verify .drawio.* passes
+      fix-with-links.golden.json      # Expected fix report with link updates
+      fix-dry-run.golden.txt          # Expected dry-run preview output</code></pre></div>
+<p><strong>Test Coverage:</strong></p>
+<ul>
+<li>Each rule has unit test with valid/invalid cases</li>
+<li>Integration tests run linter on test directories</li>
+<li>Golden files verify exact error messages</li>
+<li><strong>Auto-fix tests verify safe transformations</strong>
+<ul>
+<li>Test file renaming with git mv</li>
+<li>Test link discovery and resolution</li>
+<li>Test link updates preserve style (relative/absolute)</li>
+<li>Test anchor fragments are preserved</li>
+<li>Test external URLs are not modified</li>
+<li>Test links in code blocks are ignored</li>
+<li>Test rollback on failure</li>
+</ul>
+</li>
+<li>Pre-commit hook tested via Git test repository</li>
+<li>Default path detection tested (docs/, documentation/, fallback)</li>
+<li><strong>Link resolution tests:</strong>
+<ul>
+<li>Unit tests for path resolution (relative → absolute)</li>
+<li>Unit tests for link regex patterns (inline, reference, image)</li>
+<li>Integration tests with before/after directory structures</li>
+<li>Edge case tests (external URLs, code blocks, broken links)</li>
+<li>Case-insensitive filesystem tests</li>
+</ul>
+</li>
+</ul>
+<h2 id="keeping-linting-rules-synchronized-with-docbuilder">Keeping Linting Rules Synchronized with DocBuilder<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The linting system must stay synchronized with DocBuilder&rsquo;s actual behavior to remain useful. As DocBuilder evolves—adding new features or changing how it processes documentation—the linter must reflect these changes.</p>
+<h3 id="synchronization-strategy">Synchronization Strategy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>1. Shared Test Infrastructure</strong></p>
+<p>Linting rules should be validated against <strong>actual DocBuilder behavior</strong>, not assumptions:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Test that linter rejects what DocBuilder would fail to build</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">TestLintRejectsInvalidFiles</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">invalidFiles</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;My Document.md&#34;</span><span class="p">,</span><span class="w">      </span><span class="c1">// Spaces</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;API_Guide.md&#34;</span><span class="p">,</span><span class="w">        </span><span class="c1">// Uppercase</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;file@special.md&#34;</span><span class="p">,</span><span class="w">     </span><span class="c1">// Special chars</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">invalidFiles</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Verify linter catches it</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">result</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">linter</span><span class="p">.</span><span class="nf">LintFile</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">require</span><span class="p">.</span><span class="nf">True</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nf">HasErrors</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Verify DocBuilder would actually fail/warn</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">buildResult</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">docbuilder</span><span class="p">.</span><span class="nf">BuildWithFile</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">require</span><span class="p">.</span><span class="nf">False</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">buildResult</span><span class="p">.</span><span class="nf">Success</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>2. Integration Tests with Full Pipeline</strong></p>
+<p>Periodically run integration tests that:</p>
+<ul>
+<li>Create test repositories with various violations</li>
+<li>Run <code>docbuilder build</code> on them</li>
+<li>Verify linter warnings/errors match actual build issues</li>
+<li>Catch cases where linter is too strict or too lenient</li>
+</ul>
+<p>Example test structure:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>test/integration/
+  lint_docbuilder_sync_test.go  # Tests linter matches build behavior</code></pre></div>
+<p><strong>3. Version Alignment</strong></p>
+<p>Linting rules should evolve with DocBuilder versions:</p>
+<table>
+  <thead>
+      <tr>
+          <th>DocBuilder Version</th>
+          <th>Linter Rule Changes</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1.0 - 1.5</td>
+          <td>Basic filename and frontmatter rules</td>
+      </tr>
+      <tr>
+          <td>1.6+</td>
+          <td>Enhanced frontmatter schema validation</td>
+      </tr>
+      <tr>
+          <td>2.0+</td>
+          <td>Asset transformation and link validation</td>
+      </tr>
+      <tr>
+          <td>Future</td>
+          <td>Custom Hugo module support detection</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Version compatibility approach:</strong></p>
+<ul>
+<li>Linter reports its &ldquo;target DocBuilder version&rdquo;</li>
+<li>Warns if linting against much older/newer DocBuilder behavior</li>
+<li>Can optionally validate against multiple versions</li>
+</ul>
+<p><strong>4. Feature Detection</strong></p>
+<p>When DocBuilder adds new features, update linter rules accordingly:</p>
+<table>
+  <thead>
+      <tr>
+          <th>DocBuilder Feature</th>
+          <th>Linting Rule Update</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>New frontmatter field support</td>
+          <td>Add validation for new fields</td>
+      </tr>
+      <tr>
+          <td>Asset transformation (WebP)</td>
+          <td>Allow new file extensions</td>
+      </tr>
+      <tr>
+          <td>Custom shortcodes</td>
+          <td>Validate shortcode syntax</td>
+      </tr>
+      <tr>
+          <td>Multi-language support</td>
+          <td>Validate language-specific paths</td>
+      </tr>
+      <tr>
+          <td>Repository metadata injection</td>
+          <td>Validate editURL patterns</td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>5. Documentation Cross-References</strong></p>
+<p>Maintain bidirectional links between linter rules and DocBuilder documentation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">&lt;!-- In lint error message --&gt;
+</span></span><span class="line"><span class="cl">ERROR: Invalid filename contains uppercase letters
+</span></span><span class="line"><span class="cl">Learn more: https://docs.docbuilder.io/reference/filename-conventions
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;!-- In DocBuilder docs --&gt;
+</span></span><span class="line"><span class="cl"><span class="gu">## Filename Conventions
+</span></span></span><span class="line"><span class="cl"><span class="gu"></span>DocBuilder expects lowercase, hyphenated filenames.
+</span></span><span class="line"><span class="cl">Use <span class="sb">`docbuilder lint`</span> to validate: https://docs.docbuilder.io/how-to/setup-linting</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>6. Automated Sync Checks</strong></p>
+<p>Add CI checks to prevent drift:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Rules Sync Check</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="l">pull_request]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">verify-sync</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Run sync tests</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">go test ./test/integration/lint_docbuilder_sync_test.go -v</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Check for new DocBuilder features</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">          # Parse recent commits for new features
+</span></span></span><span class="line"><span class="cl"><span class="sd">          # Check if corresponding lint rules exist
+</span></span></span><span class="line"><span class="cl"><span class="sd">          ./scripts/check-lint-coverage.sh</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>7. Maintenance Workflow</strong></p>
+<p>When DocBuilder changes:</p>
+<ol>
+<li>
+<p><strong>Feature Addition</strong>:</p>
+<ul>
+<li>Update linter to recognize new valid patterns</li>
+<li>Add test cases for new feature</li>
+<li>Update <code>docs/reference/lint-rules.md</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Deprecation</strong>:</p>
+<ul>
+<li>Linter warns about deprecated patterns</li>
+<li>Provide migration suggestions</li>
+<li>Eventually promote warnings to errors</li>
+</ul>
+</li>
+<li>
+<p><strong>Bug Fixes</strong>:</p>
+<ul>
+<li>If DocBuilder now accepts something it previously rejected, update linter</li>
+<li>Add regression test</li>
+<li>Update golden test files</li>
+</ul>
+</li>
+</ol>
+<p><strong>8. Rule Evolution Process</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>DocBuilder Change → Update Lint Rule → Add Tests → Update Docs → Release Notes
+        ↓              ↓                  ↓            ↓             ↓
+   feat: support   Add .webp to      Golden test   Update rule   v1.7.0:
+   WebP images    allowed assets     for WebP      reference     WebP support</code></pre></div>
+<p><strong>9. Feedback Loop</strong></p>
+<p>Monitor false positives/negatives:</p>
+<ul>
+<li>Track GitHub issues tagged <code>linter-false-positive</code> or <code>linter-missed-issue</code></li>
+<li>Periodic review of linter vs actual build failures</li>
+<li>User feedback in success metrics (see Success Metrics section)</li>
+</ul>
+<p><strong>10. Living Documentation</strong></p>
+<p>Maintain a changelog specifically for linting rules:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gu">## v1.7.0 (2026-01-15)
+</span></span></span><span class="line"><span class="cl"><span class="gu"></span><span class="k">-</span> Added: Support for .webp images (DocBuilder v1.7.0)
+</span></span><span class="line"><span class="cl"><span class="k">-</span> Changed: .drawio.png now explicitly whitelisted (was implicitly allowed)
+</span></span><span class="line"><span class="cl"><span class="k">-</span> Fixed: False positive on _index.md in root directory
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="gu">## v1.6.0 (2025-12-29)
+</span></span></span><span class="line"><span class="cl"><span class="gu"></span>- Initial release: Filename and frontmatter validation</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="practical-example-adding-asset-transformation-support">Practical Example: Adding Asset Transformation Support<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Scenario</strong>: DocBuilder adds support for automatic WebP image conversion.</p>
+<p><strong>Synchronization steps:</strong></p>
+<ol>
+<li>
+<p><strong>Detect the change</strong>: PR adds WebP transformation to <code>internal/docs/assets.go</code></p>
+</li>
+<li>
+<p><strong>Update linter rules</strong>:</p>
+</li>
+</ol>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// internal/lint/asset_rules.go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">l</span><span class="w"> </span><span class="o">*</span><span class="nx">Linter</span><span class="p">)</span><span class="w"> </span><span class="nf">validateAssetFile</span><span class="p">(</span><span class="nx">file</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">[]</span><span class="nx">Issue</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">ext</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Ext</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">allowedExts</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;.png&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;.jpg&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;.jpeg&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;.gif&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;.svg&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;.webp&#34;</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nf">contains</span><span class="p">(</span><span class="nx">allowedExts</span><span class="p">,</span><span class="w"> </span><span class="nx">ext</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="nx">Issue</span><span class="p">{{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">Severity</span><span class="p">:</span><span class="w"> </span><span class="nx">Error</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">Message</span><span class="p">:</span><span class="w">  </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;Unsupported image format: %s&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">ext</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<ol start="3">
+<li><strong>Add tests</strong>:</li>
+</ol>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">TestWebPAssetValidation</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">testing</span><span class="p">.</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">linter</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">NewLinter</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">result</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">linter</span><span class="p">.</span><span class="nf">LintFile</span><span class="p">(</span><span class="s">&#34;diagram.webp&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">require</span><span class="p">.</span><span class="nf">False</span><span class="p">(</span><span class="nx">t</span><span class="p">,</span><span class="w"> </span><span class="nx">result</span><span class="p">.</span><span class="nf">HasErrors</span><span class="p">(),</span><span class="w"> </span><span class="s">&#34;WebP should be allowed&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<ol start="4">
+<li>
+<p><strong>Update documentation</strong>:</p>
+<ul>
+<li><code>docs/reference/lint-rules.md</code>: Add WebP to allowed asset formats</li>
+<li>Update asset rules table with WebP examples</li>
+</ul>
+</li>
+<li>
+<p><strong>Release together</strong>: Linter v1.8.0 released alongside DocBuilder v1.8.0</p>
+</li>
+</ol>
+<h3 id="ownership-and-responsibility">Ownership and Responsibility<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Core team</strong>: Maintains synchronization, reviews PRs for drift</li>
+<li><strong>Feature developers</strong>: Update linter rules when adding DocBuilder features</li>
+<li><strong>PR checklist</strong>: &ldquo;Have you updated linting rules if applicable?&rdquo;</li>
+<li><strong>Quarterly review</strong>: Check for accumulated drift, plan alignment work</li>
+</ul>
+<h2 id="consequences">Consequences<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="positive">Positive<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Early feedback</strong>: Developers catch issues before commit</li>
+<li><strong>Consistent quality</strong>: Opinionated rules enforce best practices</li>
+<li><strong>Better documentation</strong>: Improved structure and linking</li>
+<li><strong>Faster CI</strong>: Fewer build failures from preventable issues</li>
+<li><strong>Self-documenting</strong>: Error messages teach Hugo conventions</li>
+<li><strong>Safe automation</strong>: <code>--fix</code> flag reduces manual renaming work</li>
+<li><strong>Zero configuration</strong>: Intelligent defaults work out of the box (auto-detects <code>docs/</code>)</li>
+</ol>
+<h3 id="negative">Negative<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Initial friction</strong>: Existing repositories may have many violations</li>
+<li><strong>Migration effort</strong>: Teams must fix legacy documentation</li>
+<li><strong>Learning curve</strong>: Developers learn new rules</li>
+<li><strong>Hook conflicts</strong>: May conflict with other pre-commit tools</li>
+</ol>
+<h3 id="mitigation">Mitigation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Gradual rollout</strong>: Start with warnings, move to errors over time</li>
+<li><strong>Migration guide</strong>: Document bulk-fixing existing repositories</li>
+<li><strong>Rule documentation</strong>: Comprehensive explanation of each rule</li>
+<li><strong>Opt-in initially</strong>: Teams adopt voluntarily before enforcement</li>
+</ul>
+<h2 id="migration-path">Migration Path<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="week-1-soft-launch">Week 1: Soft Launch<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Release <code>docbuilder lint</code> command (warnings only)</li>
+<li>Documentation in <code>docs/how-to/</code></li>
+<li>Encourage voluntary adoption</li>
+</ul>
+<h3 id="week-2-team-testing">Week 2: Team Testing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Select 2-3 pilot repositories</li>
+<li>Run <code>docbuilder lint --fix</code> to clean up</li>
+<li>Gather feedback on rules and messages</li>
+</ul>
+<h3 id="week-3-git-hooks">Week 3: Git Hooks<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Publish traditional hook installer</li>
+<li>Add lefthook.yml to repository template</li>
+<li>Provide team-wide installation guide (both options)</li>
+<li>Keep as warnings (non-blocking)</li>
+</ul>
+<h3 id="month-2-ci-integration">Month 2: CI Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Add CI workflow to template repositories</li>
+<li>Start blocking PRs with errors (not warnings)</li>
+<li>Monitor false positives, adjust rules if needed</li>
+</ul>
+<h3 id="month-3-full-enforcement">Month 3: Full Enforcement<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>All repositories have lint checks</li>
+<li>Warnings promoted to errors where appropriate</li>
+<li>Legacy repositories cleaned up or exempted</li>
+</ul>
+<h2 id="future-enhancements">Future Enhancements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="content-linting-phase-5">Content Linting (Phase 5)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Spell checking (en-US by default, configurable)</li>
+<li>Markdown style consistency (headings, lists, code blocks)</li>
+<li>Accessibility checks (alt text, heading hierarchy)</li>
+<li>SEO recommendations (meta descriptions, keywords)</li>
+</ul>
+<h3 id="advanced-asset-handling">Advanced Asset Handling<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Accessibility score for images (alt text quality)</li>
+</ul>
+<h3 id="ide-integration">IDE Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>VS Code extension for real-time linting</li>
+<li>Language server protocol (LSP) for any editor</li>
+<li>Inline quick-fixes and refactorings</li>
+</ul>
+<h3 id="smart-fixes">Smart Fixes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Automatic frontmatter generation from content</li>
+<li>Link suggestion for orphaned sections</li>
+<li>Batch rename with preview</li>
+</ul>
+<h2 id="examples">Examples<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="example-1-clean-repository-using-defaults">Example 1: Clean Repository (Using Defaults)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docbuilder lint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Detected documentation directory: docs/
+</span></span><span class="line"><span class="cl">Linting documentation in: ./docs
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✓ docs/_index.md
+</span></span><span class="line"><span class="cl">✓ docs/getting-started.md
+</span></span><span class="line"><span class="cl">✓ docs/api/authentication.md
+</span></span><span class="line"><span class="cl">✓ docs/api/_index.md
+</span></span><span class="line"><span class="cl">✓ docs/images/architecture-diagram.drawio.png <span class="o">(</span>whitelisted double extension<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">Results:
+</span></span><span class="line"><span class="cl">  <span class="m">5</span> files scanned
+</span></span><span class="line"><span class="cl">  <span class="m">0</span> errors
+</span></span><span class="line"><span class="cl">  <span class="m">0</span> warnings
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">✨ All documentation passes linting!
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit code: <span class="m">0</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="example-1b-no-docs-directory-found">Example 1b: No docs/ Directory Found<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docbuilder lint
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">No documentation directory detected <span class="o">(</span>checked: docs/, documentation/<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Falling back to current directory: .
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Linting documentation in: .
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✓ README.md
+</span></span><span class="line"><span class="cl">✓ CONTRIBUTING.md
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">Results:
+</span></span><span class="line"><span class="cl">  <span class="m">2</span> files scanned
+</span></span><span class="line"><span class="cl">  <span class="m">0</span> errors
+</span></span><span class="line"><span class="cl">  <span class="m">0</span> warnings
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit code: <span class="m">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ docbuilder lint ./custom-docs</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="example-2-filename-issues">Example 2: Filename Issues<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docbuilder lint ./docs
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Linting documentation in: ./docs
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✗ docs/API Guide.md
+</span></span><span class="line"><span class="cl">  ERROR: Invalid filename
+</span></span><span class="line"><span class="cl">  └─ Contains uppercase letters <span class="o">(</span>A, P, I, G<span class="o">)</span> and space character
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Current:  docs/API Guide.md
+</span></span><span class="line"><span class="cl">  Suggested: docs/api-guide.md
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Why this matters:
+</span></span><span class="line"><span class="cl">    • Spaces become %20 in URLs: /docs/API%20Guide/
+</span></span><span class="line"><span class="cl">    • Mixed <span class="k">case</span> causes issues on <span class="k">case</span>-sensitive systems
+</span></span><span class="line"><span class="cl">    • Hugo expects lowercase, hyphenated slugs
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  How to fix:
+</span></span><span class="line"><span class="cl">    1. Manual: mv <span class="s2">&#34;docs/API Guide.md&#34;</span> docs/api-guide.md
+</span></span><span class="line"><span class="cl">    2. Automatic: docbuilder lint --fix docs/
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">  If this file is linked from other docs, those links 
+</span></span><span class="line"><span class="cl">  will be automatically updated when using --fix.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✗ docs/screenshots/Login Screen.png
+</span></span><span class="line"><span class="cl">  ERROR: Invalid filename
+</span></span><span class="line"><span class="cl">  └─ Contains uppercase letters and space character
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Current:  docs/screenshots/Login Screen.png
+</span></span><span class="line"><span class="cl">  Suggested: docs/screenshots/login-screen.png
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Asset files follow the same rules as markdown files.
+</span></span><span class="line"><span class="cl">  Image references in markdown will be updated automatically.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✗ docs/architecture.md.backup
+</span></span><span class="line"><span class="cl">  ERROR: Invalid double extension
+</span></span><span class="line"><span class="cl">  └─ Contains non-whitelisted double extension .md.backup
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Current:  docs/architecture.md.backup
+</span></span><span class="line"><span class="cl">  Issue: Hugo will attempt to process this as markdown
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  Whitelisted double extensions <span class="o">(</span>allowed<span class="o">)</span>:
+</span></span><span class="line"><span class="cl">    • .drawio.png <span class="o">(</span>Draw.io embedded PNG diagrams<span class="o">)</span>
+</span></span><span class="line"><span class="cl">    • .drawio.svg <span class="o">(</span>Draw.io embedded SVG diagrams<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  How to fix:
+</span></span><span class="line"><span class="cl">    1. Remove backup files from docs directory
+</span></span><span class="line"><span class="cl">    2. Use .git <span class="nb">history</span> or separate backup location
+</span></span><span class="line"><span class="cl">    3. Add to .gitignore: *.backup
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✓ docs/diagrams/system-flow.drawio.svg
+</span></span><span class="line"><span class="cl">  INFO: Whitelisted double extension
+</span></span><span class="line"><span class="cl">  └─ .drawio.svg is explicitly allowed <span class="k">for</span> embedded diagrams
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">Results:
+</span></span><span class="line"><span class="cl">  <span class="m">4</span> files scanned
+</span></span><span class="line"><span class="cl">  <span class="m">3</span> errors <span class="o">(</span>blocks build<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="m">0</span> warnings
+</span></span><span class="line"><span class="cl">  <span class="m">1</span> info <span class="o">(</span>explicitly allowed<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">❌ Documentation has errors that will prevent Hugo build.
+</span></span><span class="line"><span class="cl">   Run: docbuilder lint --fix docs/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit code: <span class="m">2</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="example-3-auto-fix-dry-run">Example 3: Auto-Fix Dry Run<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ docbuilder lint --fix --dry-run ./docs
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Linting documentation in: ./docs <span class="o">(</span>dry-run mode<span class="o">)</span>
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">The following changes would be made:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">FILE RENAMES:
+</span></span><span class="line"><span class="cl">  docs/API Guide.md → docs/api-guide.md
+</span></span><span class="line"><span class="cl">  docs/screenshots/Login Screen.png → docs/screenshots/login-screen.png
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">CONTENT UPDATES:
+</span></span><span class="line"><span class="cl">  docs/usage.md
+</span></span><span class="line"><span class="cl">    Line 15: !<span class="o">[</span>Screenshot<span class="o">](</span>/docs/adr/screenshots/login screen.png<span class="o">)</span>
+</span></span><span class="line"><span class="cl">         →   !<span class="o">[</span>Screenshot<span class="o">](</span>/docs/adr/screenshots/login-screen.png<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  docs/index.md
+</span></span><span class="line"><span class="cl">    Line 8: <span class="o">[</span>API Guide<span class="o">](</span>./API Guide.md<span class="o">)</span>
+</span></span><span class="line"><span class="cl">         →  <span class="o">[</span>API Guide<span class="o">](</span>/docs/adr/api-guide<span class="o">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">GIT OPERATIONS:
+</span></span><span class="line"><span class="cl">  git mv <span class="s2">&#34;docs/API Guide.md&#34;</span> <span class="s2">&#34;docs/api-guide.md&#34;</span>
+</span></span><span class="line"><span class="cl">  git mv <span class="s2">&#34;docs/screenshots/Login Screen.png&#34;</span> <span class="s2">&#34;docs/screenshots/login-screen.png&#34;</span>
+</span></span><span class="line"><span class="cl">  git add docs/usage.md docs/index.md
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">Summary:
+</span></span><span class="line"><span class="cl">  <span class="m">2</span> files would be renamed
+</span></span><span class="line"><span class="cl">  <span class="m">2</span> files would have content updated
+</span></span><span class="line"><span class="cl">  <span class="m">4</span> git operations would be performed
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">To apply these changes: docbuilder lint --fix ./docs
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Exit code: <span class="m">0</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="example-4-lefthook-integration">Example 4: Lefthook Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">pre-commit</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">parallel</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">commands</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">lint-docs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">glob</span><span class="p">:</span><span class="w"> </span><span class="l">\&#34;*.{md,markdown,png,jpg,jpeg,gif,svg}\&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">docbuilder lint {staged_files} --quiet</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">fail_text</span><span class="p">:</span><span class="w"> </span><span class="l">\&#34;Documentation linting failed. Run &#39;docbuilder lint --fix&#39; to auto-fix.\&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Usage:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ git add docs/API<span class="se">\ </span>Guide.md docs/getting-started.md
+</span></span><span class="line"><span class="cl">$ git commit -m <span class="s2">&#34;Add API documentation&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Lefthook &gt; pre-commit &gt; lint-docs:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Linting <span class="m">2</span> staged files...
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">✗ docs/API Guide.md
+</span></span><span class="line"><span class="cl">  ERROR: Invalid filename <span class="o">(</span>contains spaces and uppercase<span class="o">)</span>
+</span></span><span class="line"><span class="cl">  Suggested: docs/api-guide.md
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+</span></span><span class="line"><span class="cl">Results: <span class="m">1</span> error, <span class="m">1</span> passed
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Documentation linting failed. Run <span class="s1">&#39;docbuilder lint --fix&#39;</span> to auto-fix.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ docbuilder lint --fix docs/
+</span></span><span class="line"><span class="cl">Fixed: docs/API Guide.md → docs/api-guide.md
+</span></span><span class="line"><span class="cl">Updated <span class="m">2</span> references in other files
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">$ git add -A
+</span></span><span class="line"><span class="cl">$ git commit -m <span class="s2">&#34;Add API documentation&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Lefthook &gt; pre-commit &gt; lint-docs:
+</span></span><span class="line"><span class="cl">✓ All staged files pass linting
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>main a1b2c3d<span class="o">]</span> Add API documentation
+</span></span><span class="line"><span class="cl"> <span class="m">1</span> file changed, <span class="m">50</span> insertions<span class="o">(</span>+<span class="o">)</span>
+</span></span><span class="line"><span class="cl"> create mode <span class="m">100644</span> docs/api-guide.md</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="references">References<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="https://gohugo.io/content-management/urls/" rel="external">Hugo URL Management</a></li>
+<li><a href="https://gohugo.io/content-management/organization/" rel="external">Hugo Content Organization</a></li>
+<li><a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks" rel="external">Git Pre-Commit Hooks</a></li>
+<li><a href="https://github.com/evilmartians/lefthook" rel="external">Lefthook Documentation</a></li>
+<li><a href="https://www.markdownguide.org/basic-syntax/" rel="external">Markdown Best Practices</a></li>
+<li>ADR-001: Golden Testing Strategy (for test approach)</li>
+<li>ADR-000: Uniform Error Handling (for error reporting)</li>
+</ul>
+<h2 id="implementation-checklist">Implementation Checklist<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="phase-1-core-linting-engine-">Phase 1: Core Linting Engine ✅<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Create <code>internal/lint</code> package (5 files: types, rules, linter, formatter, tests)</li>
+<li><input checked="" disabled="" type="checkbox"> Implement filename rules with whitelisted extensions (.drawio.png, .drawio.svg)</li>
+<li><input checked="" disabled="" type="checkbox"> Human-readable text formatter with colorization and NO_COLOR support</li>
+<li><input checked="" disabled="" type="checkbox"> JSON formatter for CI/CD integration</li>
+<li><input checked="" disabled="" type="checkbox"> Unit tests for each rule (11 comprehensive test cases)</li>
+<li><input checked="" disabled="" type="checkbox"> Standard file filtering (README, CONTRIBUTING, CHANGELOG, etc.)</li>
+<li><input checked="" disabled="" type="checkbox"> Intelligent default path detection (<code>docs/</code>, <code>documentation/</code>, fallback to <code>.</code>)</li>
+</ul>
+<h3 id="phase-2-cli-implementation-">Phase 2: CLI Implementation ✅<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Add <code>docbuilder lint</code> CLI command with Kong integration</li>
+<li><input checked="" disabled="" type="checkbox"> Exit code handling (0=clean, 1=warnings, 2=errors, 3=execution error)</li>
+<li><input checked="" disabled="" type="checkbox"> Output format flags: <code>--format=text|json</code></li>
+<li><input checked="" disabled="" type="checkbox"> Verbosity control: <code>--quiet</code>, <code>--verbose</code></li>
+<li><input checked="" disabled="" type="checkbox"> Color detection with NO_COLOR environment variable</li>
+<li><input checked="" disabled="" type="checkbox"> Duplicate error prevention (consolidated uppercase/special char reporting)</li>
+</ul>
+<h3 id="phase-3-auto-fix-capability-link-resolution">Phase 3: Auto-Fix Capability (Link Resolution)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Comprehensive link resolution strategy documented in ADR</li>
+<li><input checked="" disabled="" type="checkbox"> Phase 3a: Basic file renaming with git mv support
+<ul>
+<li><input checked="" disabled="" type="checkbox"> File rename implementation</li>
+<li><input checked="" disabled="" type="checkbox"> Git mv integration for history preservation</li>
+<li><input checked="" disabled="" type="checkbox"> Dry-run mode (<code>--fix --dry-run</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> Force flag for overwriting existing files</li>
+<li><input checked="" disabled="" type="checkbox"> Comprehensive test coverage (8 tests)</li>
+<li><input disabled="" type="checkbox"> Interactive confirmation prompts (deferred to Phase 3e)</li>
+<li><input disabled="" type="checkbox"> Detailed preview of changes (deferred to Phase 3e)</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> Phase 3b: Link discovery and path resolution
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Regex patterns for inline, reference, image links</li>
+<li><input checked="" disabled="" type="checkbox"> Relative path resolution to absolute workspace paths</li>
+<li><input checked="" disabled="" type="checkbox"> Link reference tracking (source file, line number, type)</li>
+<li><input checked="" disabled="" type="checkbox"> External URL detection and exclusion</li>
+<li><input checked="" disabled="" type="checkbox"> Code block detection and exclusion</li>
+<li><input checked="" disabled="" type="checkbox"> Anchor fragment preservation</li>
+<li><input checked="" disabled="" type="checkbox"> Comprehensive test coverage (13 tests, 379 lines)</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> Phase 3c: Link updates with atomic operations
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Generate replacement text preserving style</li>
+<li><input checked="" disabled="" type="checkbox"> Atomic file updates with rollback on failure</li>
+<li><input checked="" disabled="" type="checkbox"> Preserve anchor fragments (#section) in updated links</li>
+<li><input checked="" disabled="" type="checkbox"> Test coverage for anchor fragment preservation</li>
+<li><input checked="" disabled="" type="checkbox"> Test coverage for rollback mechanism</li>
+</ul>
+</li>
+<li><input disabled="" type="checkbox"> Phase 3d: Edge case handling
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Skip external URLs (protocol detection) - already implemented in Phase 3b</li>
+<li><input checked="" disabled="" type="checkbox"> Ignore links in code blocks (markdown parser) - already implemented in Phase 3b</li>
+<li><input checked="" disabled="" type="checkbox"> Case-insensitive filesystem support</li>
+<li><input checked="" disabled="" type="checkbox"> Broken link detection and reporting</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> Phase 3e: Reporting and interactive confirmation
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Detailed fix report with statistics</li>
+<li><input checked="" disabled="" type="checkbox"> Interactive confirmation showing files + links affected</li>
+<li><input checked="" disabled="" type="checkbox"> Dry-run preview with before/after comparison</li>
+<li><input checked="" disabled="" type="checkbox"> Backup creation (.docbuilder-backup-{timestamp}/)</li>
+</ul>
+</li>
+</ul>
+<h3 id="phase-4-git-hooks-integration">Phase 4: Git Hooks Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Traditional pre-commit hook script (<code>scripts/install-hooks.sh</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> Hook installer command: <code>docbuilder lint install-hook</code></li>
+<li><input checked="" disabled="" type="checkbox"> Lefthook configuration example (<code>lefthook.yml</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> Test with staged files workflow</li>
+</ul>
+<h3 id="phase-5-cicd-integration">Phase 5: CI/CD Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> GitHub Actions workflow example (<code>.github/workflows/lint-docs.yml</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> GitLab CI template (<code>.gitlab-ci.yml</code>)</li>
+<li><input checked="" disabled="" type="checkbox"> JSON output schema documentation</li>
+<li><input checked="" disabled="" type="checkbox"> PR comment integration examples</li>
+</ul>
+<h3 id="testing">Testing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Integration tests with golden files for core lint functionality
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Valid scenarios: correct filenames, whitelisted extensions</li>
+<li><input checked="" disabled="" type="checkbox"> Invalid scenarios: mixed-case, spaces, special chars, double extensions</li>
+<li><input checked="" disabled="" type="checkbox"> Golden file generation with <code>-update-golden</code> flag</li>
+<li><input checked="" disabled="" type="checkbox"> Normalized path comparison for system-independence</li>
+<li><input checked="" disabled="" type="checkbox"> 6 comprehensive test cases covering all current rules</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> Integration golden tests for auto-fix functionality (Phase 3)
+<ul>
+<li><input checked="" disabled="" type="checkbox"> Before/after directory structures with realistic test data</li>
+<li><input checked="" disabled="" type="checkbox"> TestGoldenAutoFix_FileRenameWithLinkUpdates: Complete fix workflow</li>
+<li><input checked="" disabled="" type="checkbox"> TestGoldenAutoFix_DryRun: Dry-run mode output verification</li>
+<li><input checked="" disabled="" type="checkbox"> TestGoldenAutoFix_BrokenLinkDetection: Broken link reporting</li>
+<li><input checked="" disabled="" type="checkbox"> Sorted results for consistent comparison across runs</li>
+<li><input checked="" disabled="" type="checkbox"> Normalized paths (filenames only) for portability</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> Integration tests for lint-DocBuilder sync
+<ul>
+<li><input checked="" disabled="" type="checkbox"> TestLintDocBuilderSync: Full build pipeline → lint validation</li>
+<li><input checked="" disabled="" type="checkbox"> TestLintDocBuilderSync_FileNaming: Filename convention compliance</li>
+<li><input checked="" disabled="" type="checkbox"> Test repository with cross-reference links (./relative-link.md syntax)</li>
+<li><input checked="" disabled="" type="checkbox"> Link transformation bug fixes (strip ./ prefix in transform_links.go)</li>
+<li><input checked="" disabled="" type="checkbox"> Linter path resolution enhancements (Hugo site-absolute paths in fixer.go)</li>
+</ul>
+</li>
+<li><input checked="" disabled="" type="checkbox"> CI workflow to detect rule drift
+<ul>
+<li><input checked="" disabled="" type="checkbox"> GitHub Actions workflow: .github/workflows/detect-rule-drift.yml</li>
+<li><input checked="" disabled="" type="checkbox"> Weekly schedule (Sunday midnight) + manual dispatch</li>
+<li><input checked="" disabled="" type="checkbox"> Single theme testing (Relearn only)</li>
+<li><input checked="" disabled="" type="checkbox"> Artifact uploads (90-day retention)</li>
+<li><input checked="" disabled="" type="checkbox"> PR comment integration on drift detection</li>
+</ul>
+</li>
+</ul>
+<h3 id="documentation">Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> <code>docs/how-to/setup-linting.md</code> - Setup and usage guide (completed)</li>
+<li><input checked="" disabled="" type="checkbox"> <code>docs/reference/lint-rules.md</code> - Complete rule reference (completed)</li>
+<li><input checked="" disabled="" type="checkbox"> <code>docs/reference/lint-rules-changelog.md</code> - Rule version history (completed)</li>
+<li><input checked="" disabled="" type="checkbox"> <code>docs/how-to/migrate-to-linting.md</code> - Migration guide for existing repositories (completed)</li>
+<li><input checked="" disabled="" type="checkbox"> <code>docs/how-to/ci-cd-linting.md</code> - CI/CD integration examples (completed)</li>
+</ul>
+<h3 id="future-enhancements-1">Future Enhancements<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><input disabled="" type="checkbox"> VS Code extension for real-time linting</li>
+<li><input disabled="" type="checkbox"> Content linting rules (spell checking, style consistency)</li>
+<li><input disabled="" type="checkbox"> Advanced asset handling (accessibility checks)</li>
+</ul>
+<h2 id="success-metrics">Success Metrics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>After 3 months of deployment:</p>
+<ul>
+<li><input disabled="" type="checkbox"> 90%+ of commits pass linting without errors</li>
+<li><input disabled="" type="checkbox"> 50% reduction in documentation-related CI failures</li>
+<li><input disabled="" type="checkbox"> Positive developer feedback (survey)</li>
+<li><input disabled="" type="checkbox"> &lt;5% false positive rate on errors</li>
+<li><input disabled="" type="checkbox"> Active usage of <code>--fix</code> flag (telemetry)</li>
+</ul>
+<hr>
+<p><strong>Decision Owner</strong>: [To be assigned]<br>
+<strong>Stakeholders</strong>: Development team, documentation maintainers, DevOps<br>
+<strong>Review Date</strong>: 3 months after implementation</p>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 29, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/architecture-decisions/index.html">Architecture-Decisions</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="parent " data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3" checked><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

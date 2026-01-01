@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>adr :: Test</title>
+    <link>http://test/docs/adr/index.html</link>
+    <description>Documentation for adr</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 29 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://test/docs/adr/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>ADR-000: Uniform Error Handling</title>
+      <link>http://test/docs/adr/adr-000-uniform-error-handling/index.html</link>
+      <pubDate>Fri, 03 Oct 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-000-uniform-error-handling/index.html</guid>
+      <description>ADR-000: Uniform Error Handling Across DocBuilder Date: 2025-10-03&#xA;Updated: 2025-12-14&#xA;Status ✅ Implemented - Consolidated error systems completed December 2025&#xA;Context DocBuilder currently mixes error patterns: direct fmt.Errorf/errors.New, partial use of foundation.Result, and ad-hoc wrapping. This causes inconsistent user messages, logging, and exit/HTTP codes.</description>
+    </item>
+    <item>
+      <title>ADR-001: Golden Testing Strategy for Output Verification</title>
+      <link>http://test/docs/adr/adr-001-golden-testing-strategy/index.html</link>
+      <pubDate>Fri, 12 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-001-golden-testing-strategy/index.html</guid>
+      <description>Date: 2025-12-12&#xA;Status Proposed&#xA;Context DocBuilder’s core value is transforming documentation from Git repositories into Hugo-rendered sites. Currently, we lack comprehensive integration tests that verify the entire pipeline: repository retrieval → content discovery → Hugo generation → theme-specific transformations → final rendered output.</description>
+    </item>
+    <item>
+      <title>ADR-002: Fix Index Stage Pipeline Bypass</title>
+      <link>http://test/docs/adr/adr-002-in-memory-content-pipeline/index.html</link>
+      <pubDate>Sat, 13 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-002-in-memory-content-pipeline/index.html</guid>
+      <description>Status Accepted - Implemented 2025-12-13&#xA;Context Current Architecture (Mostly Correct) DocBuilder already implements an in-memory content pipeline with proper separation of concerns:&#xA;Discovery Stage (stageDiscoverDocs): Reads files from source repositories into memory once Transform Stage (copyContentFiles): Loads content into memory (file.LoadContent()) Runs dependency-ordered transform pipeline (front matter, link rewriting, etc.) Processes content entirely in memory via Page struct Writes final transformed output to disk once Index Stage (stageIndexes): Generates repository/section index pages Hugo Render (stageRunHugo): Runs Hugo on the prepared content tree The transform pipeline is already in-memory and works correctly with:</description>
+    </item>
+    <item>
+      <title>ADR-003: Fixed Transform Pipeline</title>
+      <link>http://test/docs/adr/adr-003-fixed-transform-pipeline/index.html</link>
+      <pubDate>Tue, 16 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-003-fixed-transform-pipeline/index.html</guid>
+      <description>Date: 2025-12-16&#xA;Status Implemented - December 16, 2025 (Now Default)&#xA;Implementation Summary The fixed transform pipeline is fully implemented and is now the default and only content processing system in DocBuilder.&#xA;Deliverables:&#xA;✅ New pipeline package (internal/hugo/pipeline/) ✅ Document type replacing Page/PageShim ✅ Generator and Transform function types ✅ 3 generators (main/repo/section indexes) ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize) ✅ Comprehensive unit tests (71 passing in internal/hugo) ✅ Old system removed - Transform registry, patch system, and all legacy code deleted Migration Complete (December 16, 2025):</description>
+    </item>
+    <item>
+      <title>ADR-005: Documentation Linting for Pre-Commit Validation</title>
+      <link>http://test/docs/adr/adr-005-documentation-linting/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-005-documentation-linting/index.html</guid>
+      <description>Date: 2025-12-29&#xA;Status Proposed&#xA;Context DocBuilder processes documentation from multiple Git repositories, transforming markdown files into Hugo-compatible sites. Currently, developers discover issues only after committing and running builds:&#xA;Current Pain Points Late feedback: Filename issues (spaces, mixed-case) discovered during Hugo build Silent failures: Invalid frontmatter causes pages to render incorrectly or not at all Broken links: Cross-references break when files are renamed without updating links Path inconsistencies: Mixed naming conventions (README.md, api-guide.md, My Document.md) in same repository Asset orphans: Images referenced but not committed, or committed but never referenced Hugo quirks: Reserved filenames (_index.md vs index.md) behave differently but look similar Impact Developers commit documentation that fails to build CI/CD pipelines fail unexpectedly Manual inspection required to diagnose issues Inconsistent documentation quality across repositories Time wasted on avoidable build failures Hugo and DocBuilder Best Practices Hugo has specific expectations:</description>
+    </item>
+    <item>
+      <title>ADR-004: Forge-Specific Markdown Support</title>
+      <link>http://test/docs/adr/adr-004-forge-specific-markdown/index.html</link>
+      <pubDate>Thu, 18 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/adr/adr-004-forge-specific-markdown/index.html</guid>
+      <description>Status PROPOSED - Draft for discussion&#xA;Context DocBuilder aims to enable markdown files to work seamlessly both in their source forge (GitHub, GitLab, Forgejo) and in the rendered Hugo documentation site. However, forges support forge-specific markdown extensions that create references to forge resources:</description>
+    </item>
+  </channel>
+</rss>

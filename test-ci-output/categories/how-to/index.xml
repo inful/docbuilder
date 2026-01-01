@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>How-To :: Category :: Test</title>
+    <link>http://test/categories/how-to/index.html</link>
+    <description></description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 29 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://test/categories/how-to/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>How To: CI/CD Linting Integration</title>
+      <link>http://test/docs/how-to/ci-cd-linting/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/ci-cd-linting/index.html</guid>
+      <description>CI/CD Linting Integration This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.&#xA;Overview CI/CD linting provides:&#xA;Automated validation: Catch issues before merge Consistent enforcement: All PRs validated equally Visible feedback: Clear error messages in PR comments Quality gates: Block merges if docs fail validation Supported Platforms GitHub Actions GitLab CI Jenkins CircleCI Generic CI GitHub Actions Basic Workflow Create .github/workflows/lint-docs.yml:</description>
+    </item>
+    <item>
+      <title>How To: Migrate Existing Repository to Linting</title>
+      <link>http://test/docs/how-to/migrate-to-linting/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/migrate-to-linting/index.html</guid>
+      <description>Migrate Existing Repository to Linting This guide walks you through adopting documentation linting in an existing repository with legacy content.&#xA;Overview Existing documentation repositories often have:&#xA;Mixed filename conventions (spaces, uppercase, underscores) Inconsistent directory structures Broken or stale links Orphaned assets This guide provides a step-by-step process to clean up existing content and adopt linting practices.</description>
+    </item>
+    <item>
+      <title>How To: Setup Documentation Linting</title>
+      <link>http://test/docs/how-to/setup-linting/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/setup-linting/index.html</guid>
+      <description>Setup Documentation Linting This guide explains how to set up documentation linting in your repository to catch issues before commit and during CI/CD.&#xA;Overview DocBuilder’s linting system validates documentation files against Hugo and DocBuilder best practices, catching common issues like:&#xA;Invalid filenames (spaces, uppercase, special characters) Malformed frontmatter Broken internal links Invalid double extensions (except whitelisted .drawio.png, .drawio.svg) Linting can run:</description>
+    </item>
+    <item>
+      <title>Configure Webhooks for Automatic Rebuilds</title>
+      <link>http://test/docs/how-to/configure-webhooks/index.html</link>
+      <pubDate>Wed, 17 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/configure-webhooks/index.html</guid>
+      <description>Webhooks allow DocBuilder to automatically rebuild documentation when changes are pushed to your repositories. This guide shows you how to configure webhooks for GitHub, GitLab, and Forgejo.&#xA;Overview When configured, DocBuilder:&#xA;Receives webhook events from your forge (GitHub/GitLab/Forgejo) Validates the webhook signature for security Parses the event to extract repository and branch information Triggers a targeted rebuild for only the affected repository Returns an acknowledgment with the build job ID Important: Webhook-triggered builds only refetch and rebuild the specific repository mentioned in the webhook event, not all configured repositories. This provides fast, efficient updates.</description>
+    </item>
+    <item>
+      <title>How To: Add Content Transforms</title>
+      <link>http://test/docs/how-to/add-content-transforms/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/add-content-transforms/index.html</guid>
+      <description>Add Content Transforms This guide shows you how to add custom transformations to markdown files before Hugo renders them.&#xA;Overview DocBuilder uses a pluggable transform pipeline that processes markdown files during the content copy stage. Each file goes through a series of transformers that can:</description>
+    </item>
+    <item>
+      <title>How To: Configure Forge Namespacing</title>
+      <link>http://test/docs/how-to/configure-forge-namespacing/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/configure-forge-namespacing/index.html</guid>
+      <description>Forge namespacing helps avoid repository name collisions when aggregating multiple hosting platforms (GitHub, GitLab, Forgejo, etc.).&#xA;Modes Configured via build.namespace_forges:&#xA;auto (default): Add &lt;forge&gt;/ prefix only if more than one distinct forge type is present. always: Always prefix with the forge type when known. never: Never add the prefix (legacy layout). Example Layouts Multiple forges (auto or always):</description>
+    </item>
+    <item>
+      <title>How To: Customize Index Pages</title>
+      <link>http://test/docs/how-to/customize-index-pages/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/customize-index-pages/index.html</guid>
+      <description>DocBuilder generates three index page kinds using template resolution with safe defaults. You can override any of them.&#xA;Kinds Kind Location Purpose main content/_index.md Global landing page repository content/&lt;repo&gt;/_index.md Per repository overview section content/&lt;repo&gt;/&lt;section&gt;/_index.md Section landing Override Search Order For &lt;kind&gt; = main | repository | section (first match wins):</description>
+    </item>
+    <item>
+      <title>How To: Enable Hugo Rendering</title>
+      <link>http://test/docs/how-to/enable-hugo-render/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/enable-hugo-render/index.html</guid>
+      <description>By default DocBuilder scaffolds a Hugo site (content + config) without running the hugo binary. Enable automatic rendering to prebuild public/.&#xA;Render Mode Precedence (highest first):&#xA;build.render_mode in config (never, auto, always). --render-mode CLI flag, which overrides config for a single run. Run With Rendering 1 ./bin/docbuilder build -c config.yaml --render-mode always Result: public/ under the output directory plus a build-report.json with static_rendered: true.</description>
+    </item>
+    <item>
+      <title>How To: Enable Multi-Version Documentation</title>
+      <link>http://test/docs/how-to/enable-multi-version-docs/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/enable-multi-version-docs/index.html</guid>
+      <description>How to Enable Multi-Version Documentation Build documentation from multiple branches and tags to provide version-specific documentation for your users.&#xA;Overview Multi-version documentation allows you to:&#xA;Build docs from multiple branches (e.g., main, develop, release-1.x) Build docs from version tags (e.g., v1.0.0, v2.0.0) Provide version switchers in your documentation site Maintain historical documentation alongside current docs Basic Setup Enable Versioning Add to your configuration:</description>
+    </item>
+    <item>
+      <title>How To: Enable Page Transitions</title>
+      <link>http://test/docs/how-to/enable-page-transitions/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/enable-page-transitions/index.html</guid>
+      <description>Enable Page Transitions This guide explains how to enable smooth page transitions using the View Transitions API in your Hugo-themed documentation site.&#xA;Overview Page transitions provide a smooth, animated navigation experience between pages in your documentation site. DocBuilder supports the View Transitions API for all supported themes (Hextra, Docsy, and Relearn), creating fluid animations when users navigate between documentation pages.</description>
+    </item>
+    <item>
+      <title>How To: Prune Workspace Size</title>
+      <link>http://test/docs/how-to/prune-workspace-size/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/prune-workspace-size/index.html</guid>
+      <description>Reduce disk usage by enabling top-level pruning of non‑documentation directories inside cloned repositories.&#xA;Enable Pruning 1 2 build: prune_non_doc_paths: true Control Allow / Deny Lists 1 2 3 build: prune_allow: [LICENSE*, README.*] prune_deny: [&#34;*.bak&#34;, test] Precedence (highest wins):</description>
+    </item>
+    <item>
+      <title>How To: Run Incremental Builds</title>
+      <link>http://test/docs/how-to/run-incremental-builds/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/run-incremental-builds/index.html</guid>
+      <description>Incremental builds avoid recloning repositories and only fetch updates, saving time and bandwidth.&#xA;Choose a Clone Strategy Set in build.clone_strategy:&#xA;fresh: Always reclone (slowest, cleanest). update: Always attempt fast-forward/hard reset existing clones. auto: (Recommended) Use update if the directory exists else fresh. Example:&#xA;1 2 3 build: clone_strategy: auto shallow_depth: 10 Persisting Workspaces To persist clones across runs, either:</description>
+    </item>
+    <item>
+      <title>How To: Use Relearn Theme</title>
+      <link>http://test/docs/how-to/use-relearn-theme/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/use-relearn-theme/index.html</guid>
+      <description>Hugo Relearn Theme Support DocBuilder includes built-in support for the Hugo Relearn theme, a documentation-focused theme with extensive features for technical documentation.&#xA;Features The Relearn theme integration provides:&#xA;Hugo Modules: Automatic theme installation via Hugo Modules (no manual theme setup required) Math Support: Built-in MathJax integration for mathematical and chemical formulae Mermaid Diagrams: Native support for Mermaid diagram rendering Search: Lunr.js-powered offline search Edit Links: Automatic “Edit this page” links to source repositories Customizable Appearance: Multiple color variants and dark mode support Responsive Design: Mobile-friendly layout Multilingual: Support for 20+ languages with RTL support Quick Start Basic Configuration 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 version: &#34;2.0&#34; repositories: - name: my-docs url: https://github.com/example/docs.git branch: main paths: - docs hugo: title: &#34;Documentation&#34; theme: &#34;relearn&#34; base_url: &#34;https://docs.example.com&#34; output: directory: &#34;./site&#34; Advanced Configuration 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 hugo: title: &#34;Technical Documentation&#34; theme: &#34;relearn&#34; base_url: &#34;https://docs.example.com&#34; params: # Theme appearance themeVariant: &#34;auto&#34; # auto, relearn-light, relearn-dark, learn, neon, blue, green, red # Navigation showVisitedLinks: true collapsibleMenu: true alwaysopen: false disableBreadcrumb: false # Search disableSearch: false # Features disableLandingPageButton: true disableShortcutsTitle: false disableTagHiddenPages: false # Footer disableGeneratorVersion: false # Edit links (automatically configured by DocBuilder) editURL: enable: true # Mermaid diagrams mermaid: enable: true # Math support math: enable: true Theme Variants Relearn includes multiple built-in color schemes that can be configured in simple or advanced modes.</description>
+    </item>
+    <item>
+      <title>How To: Write Cross-Document Links</title>
+      <link>http://test/docs/how-to/write-cross-document-links/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/how-to/write-cross-document-links/index.html</guid>
+      <description>How to Write Cross-Document Links When writing markdown documentation that will be processed by DocBuilder, you have three options for linking between documents.&#xA;Design Goal: Dual Compatibility DocBuilder’s link transformation system is designed so your documentation works in both contexts:&#xA;In the source forge (GitHub, GitLab, Forgejo) - Links work correctly when viewing files directly in the repository web interface In the generated Hugo site - The same links are transformed to work with Hugo’s URL structure This dual compatibility means you can write standard relative markdown links (like [guide](/docs/guide)) and they’ll work correctly when:</description>
+    </item>
+  </channel>
+</rss>

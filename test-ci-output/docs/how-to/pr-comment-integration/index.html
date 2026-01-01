@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="PR Comment Integration Examples This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.
+Table of Contents GitHub Actions GitLab CI BitBucket Pipelines Azure DevOps Generic Webhook GitHub Actions Basic Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 - name: Comment PR with Lint Results if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); let body = &#39;## 📝 Documentation Lint Report\n\n&#39;; body &#43;= `**Files scanned:** ${report.summary.total_files}\n`; body &#43;= `**Errors:** ${report.summary.errors}\n`; body &#43;= `**Warnings:** ${report.summary.warnings}\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: body }); Advanced Comment with Issue Details 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 - name: Advanced PR Comment if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); // Build detailed comment let comment = &#39;## 📝 Documentation Lint Report\n\n&#39;; // Summary with status emoji if (report.summary.errors === 0 &amp;&amp; report.summary.warnings === 0) { comment &#43;= &#39;✅ **All documentation passes linting!**\n\n&#39;; } else { if (report.summary.errors &gt; 0) { comment &#43;= `❌ **${report.summary.errors} error(s) found** - merge blocked\n`; } if (report.summary.warnings &gt; 0) { comment &#43;= `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`; } comment &#43;= &#39;\n&#39;; } comment &#43;= `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`; // Group issues by file if (report.issues &amp;&amp; report.issues.length &gt; 0) { comment &#43;= &#39;### Issues Found\n\n&#39;; const byFile = {}; for (const issue of report.issues) { if (!byFile[issue.file]) byFile[issue.file] = []; byFile[issue.file].push(issue); } // Show up to 10 files with most severe issues first const files = Object.keys(byFile) .sort((a, b) =&gt; { const aErrors = byFile[a].filter(i =&gt; i.severity === &#39;error&#39;).length; const bErrors = byFile[b].filter(i =&gt; i.severity === &#39;error&#39;).length; return bErrors - aErrors; }) .slice(0, 10); for (const file of files) { const issues = byFile[file]; const errorCount = issues.filter(i =&gt; i.severity === &#39;error&#39;).length; const warnCount = issues.filter(i =&gt; i.severity === &#39;warning&#39;).length; comment &#43;= `&lt;details&gt;\n`; comment &#43;= `&lt;summary&gt;&lt;code&gt;${file}&lt;/code&gt; - `; if (errorCount &gt; 0) comment &#43;= `${errorCount} error(s) `; if (warnCount &gt; 0) comment &#43;= `${warnCount} warning(s)`; comment &#43;= `&lt;/summary&gt;\n\n`; for (const issue of issues.slice(0, 5)) { const emoji = issue.severity === &#39;error&#39; ? &#39;❌&#39; : &#39;⚠️&#39;; const lineLink = issue.line &gt; 0 ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})` : &#39;File-level&#39;; comment &#43;= `${emoji} **${issue.rule}** (${lineLink})\n`; comment &#43;= `&gt; ${issue.message}\n`; if (issue.suggestion) { comment &#43;= `&gt; 💡 Suggestion: \`${issue.suggestion}\`\n`; } comment &#43;= &#39;\n&#39;; } if (issues.length &gt; 5) { comment &#43;= `... and ${issues.length - 5} more issue(s)\n`; } comment &#43;= `&lt;/details&gt;\n\n`; } if (Object.keys(byFile).length &gt; 10) { comment &#43;= `*... and ${Object.keys(byFile).length - 10} more file(s) with issues*\n\n`; } } // Broken links section if (report.broken_links &amp;&amp; report.broken_links.length &gt; 0) { comment &#43;= `### 🔗 Broken Links (${report.broken_links.length})\n\n`; for (const link of report.broken_links.slice(0, 10)) { const lineLink = `[${link.source_file}:${link.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${link.source_file}#L${link.line})`; comment &#43;= `- ${lineLink}: \`${link.target}\`\n`; comment &#43;= ` *${link.error}*\n`; } if (report.broken_links.length &gt; 10) { comment &#43;= `\n*... and ${report.broken_links.length - 10} more broken link(s)*\n`; } comment &#43;= &#39;\n&#39;; } // Instructions comment &#43;= &#39;---\n\n&#39;; comment &#43;= &#39;### How to Fix\n\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;# Review all issues\n&#39;; comment &#43;= &#39;docbuilder lint\n\n&#39;; comment &#43;= &#39;# Auto-fix where possible\n&#39;; comment &#43;= &#39;docbuilder lint --fix\n\n&#39;; comment &#43;= &#39;# Preview changes without applying\n&#39;; comment &#43;= &#39;docbuilder lint --fix --dry-run\n&#39;; comment &#43;= &#39;```\n\n&#39;; comment &#43;= &#39;*💡 Tip: The pre-commit hook will prevent future issues*\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;docbuilder lint install-hook\n&#39;; comment &#43;= &#39;```\n&#39;; // Post or update comment const { data: comments } = await github.rest.issues.listComments({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number }); const botComment = comments.find(c =&gt; c.user.type === &#39;Bot&#39; &amp;&amp; c.body.includes(&#39;Documentation Lint Report&#39;) ); if (botComment) { // Update existing comment await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: botComment.id, body: comment }); } else { // Create new comment await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); } Minimal Comment (Errors Only) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 - name: Minimal Error Comment if: github.event_name == &#39;pull_request&#39; &amp;&amp; steps.lint.outputs.exit_code == &#39;2&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;); let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`; for (const error of errors.slice(0, 5)) { comment &#43;= `- \`${error.file}\`: ${error.message}\n`; } if (errors.length &gt; 5) { comment &#43;= `\n*... and ${errors.length - 5} more error(s)*\n`; } comment &#43;= `\nRun \`docbuilder lint --fix\` to resolve automatically.\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); GitLab CI Basic MR Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) COMMENT=&#34;## 📝 Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}**Files scanned:** ${TOTAL}\n&#34; COMMENT=&#34;${COMMENT}**Errors:** ${ERRORS}\n&#34; COMMENT=&#34;${COMMENT}**Warnings:** ${WARNINGS}\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}\n❌ Linting failed - see details in pipeline artifacts&#34; else COMMENT=&#34;${COMMENT}\n✅ All documentation passes linting!&#34; fi # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: \&#34;${COMMENT}\&#34;}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true Detailed GitLab Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | # Build detailed comment with issue grouping COMMENT=$(cat &lt;&lt;&#39;EOF&#39; ## 📝 Documentation Lint Report EOF ) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;${COMMENT}**Summary:** ${TOTAL} files scanned\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n&#34; fi if [ &#34;${WARNINGS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n&#34; fi # Add top 5 issues ISSUES=$(jq -r &#39;.issues[:5] | .[] | &#34;- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)&#34;&#39; lint-report.json) if [ -n &#34;${ISSUES}&#34; ]; then COMMENT=&#34;${COMMENT}\n### Issues\n\n${ISSUES}\n&#34; fi COMMENT=&#34;${COMMENT}\n---\n**Fix:** \`docbuilder lint --fix\`\n&#34; # Escape for JSON COMMENT_ESCAPED=$(echo &#34;${COMMENT}&#34; | jq -Rs .) # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: ${COMMENT_ESCAPED}}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true BitBucket Pipelines 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 pipelines: pull-requests: &#39;**&#39;: - step: name: Lint Documentation image: golang:1.21 script: - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest - docbuilder lint --format=json &gt; lint-report.json || true # Parse results - ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) - WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) # Build comment - | COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ Linting failed\n&#34; fi # Post comment via API curl -X POST \ -u &#34;${BB_AUTH_STRING}&#34; \ -H &#34;Content-Type: application/json&#34; \ -d &#34;{\&#34;content\&#34;: {\&#34;raw\&#34;: \&#34;${COMMENT}\&#34;}}&#34; \ &#34;https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${BITBUCKET_PR_ID}/comments&#34; # Fail if errors found - test &#34;${ERRORS}&#34; -eq 0 artifacts: - lint-report.json Azure DevOps 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 - task: Bash@3 displayName: &#39;Lint Documentation&#39; inputs: targetType: &#39;inline&#39; script: | go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest docbuilder lint --format=json &gt; lint-report.json || true - task: Bash@3 displayName: &#39;Comment PR with Results&#39; condition: eq(variables[&#39;Build.Reason&#39;], &#39;PullRequest&#39;) inputs: targetType: &#39;inline&#39; script: | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n&#34; # Post to PR using Azure DevOps API az repos pr comment create \ --org &#34;$(System.TeamFoundationCollectionUri)&#34; \ --project &#34;$(System.TeamProject)&#34; \ --pull-request-id &#34;$(System.PullRequest.PullRequestId)&#34; \ --repository-id &#34;$(Build.Repository.ID)&#34; \ --content &#34;${COMMENT}&#34; env: AZURE_DEVOPS_EXT_PAT: $(System.AccessToken) Generic Webhook For platforms without native integrations, post results to a webhook:">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="pr-comment-integration :: Test">
+    <meta name="twitter:description" content="PR Comment Integration Examples This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.
+Table of Contents GitHub Actions GitLab CI BitBucket Pipelines Azure DevOps Generic Webhook GitHub Actions Basic Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 - name: Comment PR with Lint Results if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); let body = &#39;## 📝 Documentation Lint Report\n\n&#39;; body &#43;= `**Files scanned:** ${report.summary.total_files}\n`; body &#43;= `**Errors:** ${report.summary.errors}\n`; body &#43;= `**Warnings:** ${report.summary.warnings}\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: body }); Advanced Comment with Issue Details 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 - name: Advanced PR Comment if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); // Build detailed comment let comment = &#39;## 📝 Documentation Lint Report\n\n&#39;; // Summary with status emoji if (report.summary.errors === 0 &amp;&amp; report.summary.warnings === 0) { comment &#43;= &#39;✅ **All documentation passes linting!**\n\n&#39;; } else { if (report.summary.errors &gt; 0) { comment &#43;= `❌ **${report.summary.errors} error(s) found** - merge blocked\n`; } if (report.summary.warnings &gt; 0) { comment &#43;= `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`; } comment &#43;= &#39;\n&#39;; } comment &#43;= `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`; // Group issues by file if (report.issues &amp;&amp; report.issues.length &gt; 0) { comment &#43;= &#39;### Issues Found\n\n&#39;; const byFile = {}; for (const issue of report.issues) { if (!byFile[issue.file]) byFile[issue.file] = []; byFile[issue.file].push(issue); } // Show up to 10 files with most severe issues first const files = Object.keys(byFile) .sort((a, b) =&gt; { const aErrors = byFile[a].filter(i =&gt; i.severity === &#39;error&#39;).length; const bErrors = byFile[b].filter(i =&gt; i.severity === &#39;error&#39;).length; return bErrors - aErrors; }) .slice(0, 10); for (const file of files) { const issues = byFile[file]; const errorCount = issues.filter(i =&gt; i.severity === &#39;error&#39;).length; const warnCount = issues.filter(i =&gt; i.severity === &#39;warning&#39;).length; comment &#43;= `&lt;details&gt;\n`; comment &#43;= `&lt;summary&gt;&lt;code&gt;${file}&lt;/code&gt; - `; if (errorCount &gt; 0) comment &#43;= `${errorCount} error(s) `; if (warnCount &gt; 0) comment &#43;= `${warnCount} warning(s)`; comment &#43;= `&lt;/summary&gt;\n\n`; for (const issue of issues.slice(0, 5)) { const emoji = issue.severity === &#39;error&#39; ? &#39;❌&#39; : &#39;⚠️&#39;; const lineLink = issue.line &gt; 0 ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})` : &#39;File-level&#39;; comment &#43;= `${emoji} **${issue.rule}** (${lineLink})\n`; comment &#43;= `&gt; ${issue.message}\n`; if (issue.suggestion) { comment &#43;= `&gt; 💡 Suggestion: \`${issue.suggestion}\`\n`; } comment &#43;= &#39;\n&#39;; } if (issues.length &gt; 5) { comment &#43;= `... and ${issues.length - 5} more issue(s)\n`; } comment &#43;= `&lt;/details&gt;\n\n`; } if (Object.keys(byFile).length &gt; 10) { comment &#43;= `*... and ${Object.keys(byFile).length - 10} more file(s) with issues*\n\n`; } } // Broken links section if (report.broken_links &amp;&amp; report.broken_links.length &gt; 0) { comment &#43;= `### 🔗 Broken Links (${report.broken_links.length})\n\n`; for (const link of report.broken_links.slice(0, 10)) { const lineLink = `[${link.source_file}:${link.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${link.source_file}#L${link.line})`; comment &#43;= `- ${lineLink}: \`${link.target}\`\n`; comment &#43;= ` *${link.error}*\n`; } if (report.broken_links.length &gt; 10) { comment &#43;= `\n*... and ${report.broken_links.length - 10} more broken link(s)*\n`; } comment &#43;= &#39;\n&#39;; } // Instructions comment &#43;= &#39;---\n\n&#39;; comment &#43;= &#39;### How to Fix\n\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;# Review all issues\n&#39;; comment &#43;= &#39;docbuilder lint\n\n&#39;; comment &#43;= &#39;# Auto-fix where possible\n&#39;; comment &#43;= &#39;docbuilder lint --fix\n\n&#39;; comment &#43;= &#39;# Preview changes without applying\n&#39;; comment &#43;= &#39;docbuilder lint --fix --dry-run\n&#39;; comment &#43;= &#39;```\n\n&#39;; comment &#43;= &#39;*💡 Tip: The pre-commit hook will prevent future issues*\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;docbuilder lint install-hook\n&#39;; comment &#43;= &#39;```\n&#39;; // Post or update comment const { data: comments } = await github.rest.issues.listComments({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number }); const botComment = comments.find(c =&gt; c.user.type === &#39;Bot&#39; &amp;&amp; c.body.includes(&#39;Documentation Lint Report&#39;) ); if (botComment) { // Update existing comment await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: botComment.id, body: comment }); } else { // Create new comment await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); } Minimal Comment (Errors Only) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 - name: Minimal Error Comment if: github.event_name == &#39;pull_request&#39; &amp;&amp; steps.lint.outputs.exit_code == &#39;2&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;); let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`; for (const error of errors.slice(0, 5)) { comment &#43;= `- \`${error.file}\`: ${error.message}\n`; } if (errors.length &gt; 5) { comment &#43;= `\n*... and ${errors.length - 5} more error(s)*\n`; } comment &#43;= `\nRun \`docbuilder lint --fix\` to resolve automatically.\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); GitLab CI Basic MR Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) COMMENT=&#34;## 📝 Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}**Files scanned:** ${TOTAL}\n&#34; COMMENT=&#34;${COMMENT}**Errors:** ${ERRORS}\n&#34; COMMENT=&#34;${COMMENT}**Warnings:** ${WARNINGS}\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}\n❌ Linting failed - see details in pipeline artifacts&#34; else COMMENT=&#34;${COMMENT}\n✅ All documentation passes linting!&#34; fi # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: \&#34;${COMMENT}\&#34;}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true Detailed GitLab Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | # Build detailed comment with issue grouping COMMENT=$(cat &lt;&lt;&#39;EOF&#39; ## 📝 Documentation Lint Report EOF ) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;${COMMENT}**Summary:** ${TOTAL} files scanned\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n&#34; fi if [ &#34;${WARNINGS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n&#34; fi # Add top 5 issues ISSUES=$(jq -r &#39;.issues[:5] | .[] | &#34;- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)&#34;&#39; lint-report.json) if [ -n &#34;${ISSUES}&#34; ]; then COMMENT=&#34;${COMMENT}\n### Issues\n\n${ISSUES}\n&#34; fi COMMENT=&#34;${COMMENT}\n---\n**Fix:** \`docbuilder lint --fix\`\n&#34; # Escape for JSON COMMENT_ESCAPED=$(echo &#34;${COMMENT}&#34; | jq -Rs .) # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: ${COMMENT_ESCAPED}}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true BitBucket Pipelines 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 pipelines: pull-requests: &#39;**&#39;: - step: name: Lint Documentation image: golang:1.21 script: - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest - docbuilder lint --format=json &gt; lint-report.json || true # Parse results - ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) - WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) # Build comment - | COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ Linting failed\n&#34; fi # Post comment via API curl -X POST \ -u &#34;${BB_AUTH_STRING}&#34; \ -H &#34;Content-Type: application/json&#34; \ -d &#34;{\&#34;content\&#34;: {\&#34;raw\&#34;: \&#34;${COMMENT}\&#34;}}&#34; \ &#34;https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${BITBUCKET_PR_ID}/comments&#34; # Fail if errors found - test &#34;${ERRORS}&#34; -eq 0 artifacts: - lint-report.json Azure DevOps 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 - task: Bash@3 displayName: &#39;Lint Documentation&#39; inputs: targetType: &#39;inline&#39; script: | go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest docbuilder lint --format=json &gt; lint-report.json || true - task: Bash@3 displayName: &#39;Comment PR with Results&#39; condition: eq(variables[&#39;Build.Reason&#39;], &#39;PullRequest&#39;) inputs: targetType: &#39;inline&#39; script: | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n&#34; # Post to PR using Azure DevOps API az repos pr comment create \ --org &#34;$(System.TeamFoundationCollectionUri)&#34; \ --project &#34;$(System.TeamProject)&#34; \ --pull-request-id &#34;$(System.PullRequest.PullRequestId)&#34; \ --repository-id &#34;$(Build.Repository.ID)&#34; \ --content &#34;${COMMENT}&#34; env: AZURE_DEVOPS_EXT_PAT: $(System.AccessToken) Generic Webhook For platforms without native integrations, post results to a webhook:">
+    <meta property="og:url" content="http://test/docs/how-to/pr-comment-integration/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="pr-comment-integration :: Test">
+    <meta property="og:description" content="PR Comment Integration Examples This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.
+Table of Contents GitHub Actions GitLab CI BitBucket Pipelines Azure DevOps Generic Webhook GitHub Actions Basic Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 - name: Comment PR with Lint Results if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); let body = &#39;## 📝 Documentation Lint Report\n\n&#39;; body &#43;= `**Files scanned:** ${report.summary.total_files}\n`; body &#43;= `**Errors:** ${report.summary.errors}\n`; body &#43;= `**Warnings:** ${report.summary.warnings}\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: body }); Advanced Comment with Issue Details 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 - name: Advanced PR Comment if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); // Build detailed comment let comment = &#39;## 📝 Documentation Lint Report\n\n&#39;; // Summary with status emoji if (report.summary.errors === 0 &amp;&amp; report.summary.warnings === 0) { comment &#43;= &#39;✅ **All documentation passes linting!**\n\n&#39;; } else { if (report.summary.errors &gt; 0) { comment &#43;= `❌ **${report.summary.errors} error(s) found** - merge blocked\n`; } if (report.summary.warnings &gt; 0) { comment &#43;= `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`; } comment &#43;= &#39;\n&#39;; } comment &#43;= `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`; // Group issues by file if (report.issues &amp;&amp; report.issues.length &gt; 0) { comment &#43;= &#39;### Issues Found\n\n&#39;; const byFile = {}; for (const issue of report.issues) { if (!byFile[issue.file]) byFile[issue.file] = []; byFile[issue.file].push(issue); } // Show up to 10 files with most severe issues first const files = Object.keys(byFile) .sort((a, b) =&gt; { const aErrors = byFile[a].filter(i =&gt; i.severity === &#39;error&#39;).length; const bErrors = byFile[b].filter(i =&gt; i.severity === &#39;error&#39;).length; return bErrors - aErrors; }) .slice(0, 10); for (const file of files) { const issues = byFile[file]; const errorCount = issues.filter(i =&gt; i.severity === &#39;error&#39;).length; const warnCount = issues.filter(i =&gt; i.severity === &#39;warning&#39;).length; comment &#43;= `&lt;details&gt;\n`; comment &#43;= `&lt;summary&gt;&lt;code&gt;${file}&lt;/code&gt; - `; if (errorCount &gt; 0) comment &#43;= `${errorCount} error(s) `; if (warnCount &gt; 0) comment &#43;= `${warnCount} warning(s)`; comment &#43;= `&lt;/summary&gt;\n\n`; for (const issue of issues.slice(0, 5)) { const emoji = issue.severity === &#39;error&#39; ? &#39;❌&#39; : &#39;⚠️&#39;; const lineLink = issue.line &gt; 0 ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})` : &#39;File-level&#39;; comment &#43;= `${emoji} **${issue.rule}** (${lineLink})\n`; comment &#43;= `&gt; ${issue.message}\n`; if (issue.suggestion) { comment &#43;= `&gt; 💡 Suggestion: \`${issue.suggestion}\`\n`; } comment &#43;= &#39;\n&#39;; } if (issues.length &gt; 5) { comment &#43;= `... and ${issues.length - 5} more issue(s)\n`; } comment &#43;= `&lt;/details&gt;\n\n`; } if (Object.keys(byFile).length &gt; 10) { comment &#43;= `*... and ${Object.keys(byFile).length - 10} more file(s) with issues*\n\n`; } } // Broken links section if (report.broken_links &amp;&amp; report.broken_links.length &gt; 0) { comment &#43;= `### 🔗 Broken Links (${report.broken_links.length})\n\n`; for (const link of report.broken_links.slice(0, 10)) { const lineLink = `[${link.source_file}:${link.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${link.source_file}#L${link.line})`; comment &#43;= `- ${lineLink}: \`${link.target}\`\n`; comment &#43;= ` *${link.error}*\n`; } if (report.broken_links.length &gt; 10) { comment &#43;= `\n*... and ${report.broken_links.length - 10} more broken link(s)*\n`; } comment &#43;= &#39;\n&#39;; } // Instructions comment &#43;= &#39;---\n\n&#39;; comment &#43;= &#39;### How to Fix\n\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;# Review all issues\n&#39;; comment &#43;= &#39;docbuilder lint\n\n&#39;; comment &#43;= &#39;# Auto-fix where possible\n&#39;; comment &#43;= &#39;docbuilder lint --fix\n\n&#39;; comment &#43;= &#39;# Preview changes without applying\n&#39;; comment &#43;= &#39;docbuilder lint --fix --dry-run\n&#39;; comment &#43;= &#39;```\n\n&#39;; comment &#43;= &#39;*💡 Tip: The pre-commit hook will prevent future issues*\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;docbuilder lint install-hook\n&#39;; comment &#43;= &#39;```\n&#39;; // Post or update comment const { data: comments } = await github.rest.issues.listComments({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number }); const botComment = comments.find(c =&gt; c.user.type === &#39;Bot&#39; &amp;&amp; c.body.includes(&#39;Documentation Lint Report&#39;) ); if (botComment) { // Update existing comment await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: botComment.id, body: comment }); } else { // Create new comment await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); } Minimal Comment (Errors Only) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 - name: Minimal Error Comment if: github.event_name == &#39;pull_request&#39; &amp;&amp; steps.lint.outputs.exit_code == &#39;2&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;); let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`; for (const error of errors.slice(0, 5)) { comment &#43;= `- \`${error.file}\`: ${error.message}\n`; } if (errors.length &gt; 5) { comment &#43;= `\n*... and ${errors.length - 5} more error(s)*\n`; } comment &#43;= `\nRun \`docbuilder lint --fix\` to resolve automatically.\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); GitLab CI Basic MR Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) COMMENT=&#34;## 📝 Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}**Files scanned:** ${TOTAL}\n&#34; COMMENT=&#34;${COMMENT}**Errors:** ${ERRORS}\n&#34; COMMENT=&#34;${COMMENT}**Warnings:** ${WARNINGS}\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}\n❌ Linting failed - see details in pipeline artifacts&#34; else COMMENT=&#34;${COMMENT}\n✅ All documentation passes linting!&#34; fi # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: \&#34;${COMMENT}\&#34;}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true Detailed GitLab Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | # Build detailed comment with issue grouping COMMENT=$(cat &lt;&lt;&#39;EOF&#39; ## 📝 Documentation Lint Report EOF ) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;${COMMENT}**Summary:** ${TOTAL} files scanned\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n&#34; fi if [ &#34;${WARNINGS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n&#34; fi # Add top 5 issues ISSUES=$(jq -r &#39;.issues[:5] | .[] | &#34;- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)&#34;&#39; lint-report.json) if [ -n &#34;${ISSUES}&#34; ]; then COMMENT=&#34;${COMMENT}\n### Issues\n\n${ISSUES}\n&#34; fi COMMENT=&#34;${COMMENT}\n---\n**Fix:** \`docbuilder lint --fix\`\n&#34; # Escape for JSON COMMENT_ESCAPED=$(echo &#34;${COMMENT}&#34; | jq -Rs .) # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: ${COMMENT_ESCAPED}}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true BitBucket Pipelines 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 pipelines: pull-requests: &#39;**&#39;: - step: name: Lint Documentation image: golang:1.21 script: - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest - docbuilder lint --format=json &gt; lint-report.json || true # Parse results - ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) - WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) # Build comment - | COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ Linting failed\n&#34; fi # Post comment via API curl -X POST \ -u &#34;${BB_AUTH_STRING}&#34; \ -H &#34;Content-Type: application/json&#34; \ -d &#34;{\&#34;content\&#34;: {\&#34;raw\&#34;: \&#34;${COMMENT}\&#34;}}&#34; \ &#34;https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${BITBUCKET_PR_ID}/comments&#34; # Fail if errors found - test &#34;${ERRORS}&#34; -eq 0 artifacts: - lint-report.json Azure DevOps 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 - task: Bash@3 displayName: &#39;Lint Documentation&#39; inputs: targetType: &#39;inline&#39; script: | go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest docbuilder lint --format=json &gt; lint-report.json || true - task: Bash@3 displayName: &#39;Comment PR with Results&#39; condition: eq(variables[&#39;Build.Reason&#39;], &#39;PullRequest&#39;) inputs: targetType: &#39;inline&#39; script: | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n&#34; # Post to PR using Azure DevOps API az repos pr comment create \ --org &#34;$(System.TeamFoundationCollectionUri)&#34; \ --project &#34;$(System.TeamProject)&#34; \ --pull-request-id &#34;$(System.PullRequest.PullRequestId)&#34; \ --repository-id &#34;$(Build.Repository.ID)&#34; \ --content &#34;${COMMENT}&#34; env: AZURE_DEVOPS_EXT_PAT: $(System.AccessToken) Generic Webhook For platforms without native integrations, post results to a webhook:">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-31T15:31:32+00:00">
+    <meta property="article:modified_time" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="name" content="pr-comment-integration :: Test">
+    <meta itemprop="description" content="PR Comment Integration Examples This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.
+Table of Contents GitHub Actions GitLab CI BitBucket Pipelines Azure DevOps Generic Webhook GitHub Actions Basic Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 - name: Comment PR with Lint Results if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); let body = &#39;## 📝 Documentation Lint Report\n\n&#39;; body &#43;= `**Files scanned:** ${report.summary.total_files}\n`; body &#43;= `**Errors:** ${report.summary.errors}\n`; body &#43;= `**Warnings:** ${report.summary.warnings}\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: body }); Advanced Comment with Issue Details 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 - name: Advanced PR Comment if: github.event_name == &#39;pull_request&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); // Build detailed comment let comment = &#39;## 📝 Documentation Lint Report\n\n&#39;; // Summary with status emoji if (report.summary.errors === 0 &amp;&amp; report.summary.warnings === 0) { comment &#43;= &#39;✅ **All documentation passes linting!**\n\n&#39;; } else { if (report.summary.errors &gt; 0) { comment &#43;= `❌ **${report.summary.errors} error(s) found** - merge blocked\n`; } if (report.summary.warnings &gt; 0) { comment &#43;= `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`; } comment &#43;= &#39;\n&#39;; } comment &#43;= `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`; // Group issues by file if (report.issues &amp;&amp; report.issues.length &gt; 0) { comment &#43;= &#39;### Issues Found\n\n&#39;; const byFile = {}; for (const issue of report.issues) { if (!byFile[issue.file]) byFile[issue.file] = []; byFile[issue.file].push(issue); } // Show up to 10 files with most severe issues first const files = Object.keys(byFile) .sort((a, b) =&gt; { const aErrors = byFile[a].filter(i =&gt; i.severity === &#39;error&#39;).length; const bErrors = byFile[b].filter(i =&gt; i.severity === &#39;error&#39;).length; return bErrors - aErrors; }) .slice(0, 10); for (const file of files) { const issues = byFile[file]; const errorCount = issues.filter(i =&gt; i.severity === &#39;error&#39;).length; const warnCount = issues.filter(i =&gt; i.severity === &#39;warning&#39;).length; comment &#43;= `&lt;details&gt;\n`; comment &#43;= `&lt;summary&gt;&lt;code&gt;${file}&lt;/code&gt; - `; if (errorCount &gt; 0) comment &#43;= `${errorCount} error(s) `; if (warnCount &gt; 0) comment &#43;= `${warnCount} warning(s)`; comment &#43;= `&lt;/summary&gt;\n\n`; for (const issue of issues.slice(0, 5)) { const emoji = issue.severity === &#39;error&#39; ? &#39;❌&#39; : &#39;⚠️&#39;; const lineLink = issue.line &gt; 0 ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})` : &#39;File-level&#39;; comment &#43;= `${emoji} **${issue.rule}** (${lineLink})\n`; comment &#43;= `&gt; ${issue.message}\n`; if (issue.suggestion) { comment &#43;= `&gt; 💡 Suggestion: \`${issue.suggestion}\`\n`; } comment &#43;= &#39;\n&#39;; } if (issues.length &gt; 5) { comment &#43;= `... and ${issues.length - 5} more issue(s)\n`; } comment &#43;= `&lt;/details&gt;\n\n`; } if (Object.keys(byFile).length &gt; 10) { comment &#43;= `*... and ${Object.keys(byFile).length - 10} more file(s) with issues*\n\n`; } } // Broken links section if (report.broken_links &amp;&amp; report.broken_links.length &gt; 0) { comment &#43;= `### 🔗 Broken Links (${report.broken_links.length})\n\n`; for (const link of report.broken_links.slice(0, 10)) { const lineLink = `[${link.source_file}:${link.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${link.source_file}#L${link.line})`; comment &#43;= `- ${lineLink}: \`${link.target}\`\n`; comment &#43;= ` *${link.error}*\n`; } if (report.broken_links.length &gt; 10) { comment &#43;= `\n*... and ${report.broken_links.length - 10} more broken link(s)*\n`; } comment &#43;= &#39;\n&#39;; } // Instructions comment &#43;= &#39;---\n\n&#39;; comment &#43;= &#39;### How to Fix\n\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;# Review all issues\n&#39;; comment &#43;= &#39;docbuilder lint\n\n&#39;; comment &#43;= &#39;# Auto-fix where possible\n&#39;; comment &#43;= &#39;docbuilder lint --fix\n\n&#39;; comment &#43;= &#39;# Preview changes without applying\n&#39;; comment &#43;= &#39;docbuilder lint --fix --dry-run\n&#39;; comment &#43;= &#39;```\n\n&#39;; comment &#43;= &#39;*💡 Tip: The pre-commit hook will prevent future issues*\n&#39;; comment &#43;= &#39;```bash\n&#39;; comment &#43;= &#39;docbuilder lint install-hook\n&#39;; comment &#43;= &#39;```\n&#39;; // Post or update comment const { data: comments } = await github.rest.issues.listComments({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number }); const botComment = comments.find(c =&gt; c.user.type === &#39;Bot&#39; &amp;&amp; c.body.includes(&#39;Documentation Lint Report&#39;) ); if (botComment) { // Update existing comment await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: botComment.id, body: comment }); } else { // Create new comment await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); } Minimal Comment (Errors Only) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 - name: Minimal Error Comment if: github.event_name == &#39;pull_request&#39; &amp;&amp; steps.lint.outputs.exit_code == &#39;2&#39; uses: actions/github-script@v7 with: script: | const fs = require(&#39;fs&#39;); const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;)); const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;); let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`; for (const error of errors.slice(0, 5)) { comment &#43;= `- \`${error.file}\`: ${error.message}\n`; } if (errors.length &gt; 5) { comment &#43;= `\n*... and ${errors.length - 5} more error(s)*\n`; } comment &#43;= `\nRun \`docbuilder lint --fix\` to resolve automatically.\n`; await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body: comment }); GitLab CI Basic MR Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) COMMENT=&#34;## 📝 Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}**Files scanned:** ${TOTAL}\n&#34; COMMENT=&#34;${COMMENT}**Errors:** ${ERRORS}\n&#34; COMMENT=&#34;${COMMENT}**Warnings:** ${WARNINGS}\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}\n❌ Linting failed - see details in pipeline artifacts&#34; else COMMENT=&#34;${COMMENT}\n✅ All documentation passes linting!&#34; fi # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: \&#34;${COMMENT}\&#34;}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true Detailed GitLab Comment 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 lint:docs:comment: stage: lint image: alpine:latest needs: - job: lint:docs artifacts: true script: - apk add --no-cache curl jq - | # Build detailed comment with issue grouping COMMENT=$(cat &lt;&lt;&#39;EOF&#39; ## 📝 Documentation Lint Report EOF ) TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json) ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;${COMMENT}**Summary:** ${TOTAL} files scanned\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n&#34; fi if [ &#34;${WARNINGS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n&#34; fi # Add top 5 issues ISSUES=$(jq -r &#39;.issues[:5] | .[] | &#34;- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)&#34;&#39; lint-report.json) if [ -n &#34;${ISSUES}&#34; ]; then COMMENT=&#34;${COMMENT}\n### Issues\n\n${ISSUES}\n&#34; fi COMMENT=&#34;${COMMENT}\n---\n**Fix:** \`docbuilder lint --fix\`\n&#34; # Escape for JSON COMMENT_ESCAPED=$(echo &#34;${COMMENT}&#34; | jq -Rs .) # Post to MR curl --request POST \ --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \ --header &#34;Content-Type: application/json&#34; \ --data &#34;{\&#34;body\&#34;: ${COMMENT_ESCAPED}}&#34; \ &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34; rules: - if: $CI_PIPELINE_SOURCE == &#34;merge_request_event&#34; allow_failure: true BitBucket Pipelines 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 pipelines: pull-requests: &#39;**&#39;: - step: name: Lint Documentation image: golang:1.21 script: - go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest - docbuilder lint --format=json &gt; lint-report.json || true # Parse results - ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) - WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) # Build comment - | COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n&#34; if [ &#34;${ERRORS}&#34; -gt 0 ]; then COMMENT=&#34;${COMMENT}❌ Linting failed\n&#34; fi # Post comment via API curl -X POST \ -u &#34;${BB_AUTH_STRING}&#34; \ -H &#34;Content-Type: application/json&#34; \ -d &#34;{\&#34;content\&#34;: {\&#34;raw\&#34;: \&#34;${COMMENT}\&#34;}}&#34; \ &#34;https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${BITBUCKET_PR_ID}/comments&#34; # Fail if errors found - test &#34;${ERRORS}&#34; -eq 0 artifacts: - lint-report.json Azure DevOps 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 - task: Bash@3 displayName: &#39;Lint Documentation&#39; inputs: targetType: &#39;inline&#39; script: | go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest docbuilder lint --format=json &gt; lint-report.json || true - task: Bash@3 displayName: &#39;Comment PR with Results&#39; condition: eq(variables[&#39;Build.Reason&#39;], &#39;PullRequest&#39;) inputs: targetType: &#39;inline&#39; script: | ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json) WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json) COMMENT=&#34;## Documentation Lint Report\n\n&#34; COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n&#34; # Post to PR using Azure DevOps API az repos pr comment create \ --org &#34;$(System.TeamFoundationCollectionUri)&#34; \ --project &#34;$(System.TeamProject)&#34; \ --pull-request-id &#34;$(System.PullRequest.PullRequestId)&#34; \ --repository-id &#34;$(Build.Repository.ID)&#34; \ --content &#34;${COMMENT}&#34; env: AZURE_DEVOPS_EXT_PAT: $(System.AccessToken) Generic Webhook For platforms without native integrations, post results to a webhook:">
+    <meta itemprop="datePublished" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="dateModified" content="2025-12-31T15:31:32+00:00">
+    <meta itemprop="wordCount" content="1937">
+    <title>pr-comment-integration :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/how-to\/pr-comment-integration\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/how-to/pr-comment-integration/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#table-of-contents">Table of Contents</a></li>
+    <li><a href="#github-actions">GitHub Actions</a>
+      <ul>
+        <li><a href="#basic-comment">Basic Comment</a></li>
+        <li><a href="#advanced-comment-with-issue-details">Advanced Comment with Issue Details</a></li>
+        <li><a href="#minimal-comment-errors-only">Minimal Comment (Errors Only)</a></li>
+      </ul>
+    </li>
+    <li><a href="#gitlab-ci">GitLab CI</a>
+      <ul>
+        <li><a href="#basic-mr-comment">Basic MR Comment</a></li>
+        <li><a href="#detailed-gitlab-comment">Detailed GitLab Comment</a></li>
+      </ul>
+    </li>
+    <li><a href="#bitbucket-pipelines">BitBucket Pipelines</a></li>
+    <li><a href="#azure-devops">Azure DevOps</a></li>
+    <li><a href="#generic-webhook">Generic Webhook</a></li>
+    <li><a href="#best-practices">Best Practices</a>
+      <ul>
+        <li><a href="#1-update-instead-of-duplicate">1. Update Instead of Duplicate</a></li>
+        <li><a href="#2-collapsible-sections">2. Collapsible Sections</a></li>
+        <li><a href="#3-link-to-source">3. Link to Source</a></li>
+        <li><a href="#4-rate-limiting">4. Rate Limiting</a></li>
+        <li><a href="#5-conditional-posting">5. Conditional Posting</a></li>
+        <li><a href="#6-clear-remediation-steps">6. Clear Remediation Steps</a></li>
+      </ul>
+    </li>
+    <li><a href="#security-considerations">Security Considerations</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/how-to/index.html"><span itemprop="name">how-to</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">pr-comment-integration</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./how-to/pr-comment-integration.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/how-to/index.html" title="how-to (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/how-to/ci-cd-linting/index.html" title="How To: CI/CD Linting Integration (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+  </header>
+
+<h1 id="pr-comment-integration">pr-comment-integration</h1>
+
+<h1 id="pr-comment-integration-examples">PR Comment Integration Examples<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<p>This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.</p>
+<h2 id="table-of-contents">Table of Contents<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/how-to/pr-comment-integration/index.html#github-actions">GitHub Actions</a></li>
+<li><a href="/docs/how-to/pr-comment-integration/index.html#gitlab-ci">GitLab CI</a></li>
+<li><a href="/docs/how-to/pr-comment-integration/index.html#bitbucket-pipelines">BitBucket Pipelines</a></li>
+<li><a href="/docs/how-to/pr-comment-integration/index.html#azure-devops">Azure DevOps</a></li>
+<li><a href="/docs/how-to/pr-comment-integration/index.html#generic-webhook">Generic Webhook</a></li>
+</ul>
+<h2 id="github-actions">GitHub Actions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="basic-comment">Basic Comment<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR with Lint Results</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.event_name == &#39;pull_request&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const fs = require(&#39;fs&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;));
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      let body = &#39;## 📝 Documentation Lint Report\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      body += `**Files scanned:** ${report.summary.total_files}\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      body += `**Errors:** ${report.summary.errors}\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      body += `**Warnings:** ${report.summary.warnings}\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      await github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">        owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        body: body
+</span></span></span><span class="line"><span class="cl"><span class="sd">      });</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="advanced-comment-with-issue-details">Advanced Comment with Issue Details<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">  1
+</span><span class="lnt">  2
+</span><span class="lnt">  3
+</span><span class="lnt">  4
+</span><span class="lnt">  5
+</span><span class="lnt">  6
+</span><span class="lnt">  7
+</span><span class="lnt">  8
+</span><span class="lnt">  9
+</span><span class="lnt"> 10
+</span><span class="lnt"> 11
+</span><span class="lnt"> 12
+</span><span class="lnt"> 13
+</span><span class="lnt"> 14
+</span><span class="lnt"> 15
+</span><span class="lnt"> 16
+</span><span class="lnt"> 17
+</span><span class="lnt"> 18
+</span><span class="lnt"> 19
+</span><span class="lnt"> 20
+</span><span class="lnt"> 21
+</span><span class="lnt"> 22
+</span><span class="lnt"> 23
+</span><span class="lnt"> 24
+</span><span class="lnt"> 25
+</span><span class="lnt"> 26
+</span><span class="lnt"> 27
+</span><span class="lnt"> 28
+</span><span class="lnt"> 29
+</span><span class="lnt"> 30
+</span><span class="lnt"> 31
+</span><span class="lnt"> 32
+</span><span class="lnt"> 33
+</span><span class="lnt"> 34
+</span><span class="lnt"> 35
+</span><span class="lnt"> 36
+</span><span class="lnt"> 37
+</span><span class="lnt"> 38
+</span><span class="lnt"> 39
+</span><span class="lnt"> 40
+</span><span class="lnt"> 41
+</span><span class="lnt"> 42
+</span><span class="lnt"> 43
+</span><span class="lnt"> 44
+</span><span class="lnt"> 45
+</span><span class="lnt"> 46
+</span><span class="lnt"> 47
+</span><span class="lnt"> 48
+</span><span class="lnt"> 49
+</span><span class="lnt"> 50
+</span><span class="lnt"> 51
+</span><span class="lnt"> 52
+</span><span class="lnt"> 53
+</span><span class="lnt"> 54
+</span><span class="lnt"> 55
+</span><span class="lnt"> 56
+</span><span class="lnt"> 57
+</span><span class="lnt"> 58
+</span><span class="lnt"> 59
+</span><span class="lnt"> 60
+</span><span class="lnt"> 61
+</span><span class="lnt"> 62
+</span><span class="lnt"> 63
+</span><span class="lnt"> 64
+</span><span class="lnt"> 65
+</span><span class="lnt"> 66
+</span><span class="lnt"> 67
+</span><span class="lnt"> 68
+</span><span class="lnt"> 69
+</span><span class="lnt"> 70
+</span><span class="lnt"> 71
+</span><span class="lnt"> 72
+</span><span class="lnt"> 73
+</span><span class="lnt"> 74
+</span><span class="lnt"> 75
+</span><span class="lnt"> 76
+</span><span class="lnt"> 77
+</span><span class="lnt"> 78
+</span><span class="lnt"> 79
+</span><span class="lnt"> 80
+</span><span class="lnt"> 81
+</span><span class="lnt"> 82
+</span><span class="lnt"> 83
+</span><span class="lnt"> 84
+</span><span class="lnt"> 85
+</span><span class="lnt"> 86
+</span><span class="lnt"> 87
+</span><span class="lnt"> 88
+</span><span class="lnt"> 89
+</span><span class="lnt"> 90
+</span><span class="lnt"> 91
+</span><span class="lnt"> 92
+</span><span class="lnt"> 93
+</span><span class="lnt"> 94
+</span><span class="lnt"> 95
+</span><span class="lnt"> 96
+</span><span class="lnt"> 97
+</span><span class="lnt"> 98
+</span><span class="lnt"> 99
+</span><span class="lnt">100
+</span><span class="lnt">101
+</span><span class="lnt">102
+</span><span class="lnt">103
+</span><span class="lnt">104
+</span><span class="lnt">105
+</span><span class="lnt">106
+</span><span class="lnt">107
+</span><span class="lnt">108
+</span><span class="lnt">109
+</span><span class="lnt">110
+</span><span class="lnt">111
+</span><span class="lnt">112
+</span><span class="lnt">113
+</span><span class="lnt">114
+</span><span class="lnt">115
+</span><span class="lnt">116
+</span><span class="lnt">117
+</span><span class="lnt">118
+</span><span class="lnt">119
+</span><span class="lnt">120
+</span><span class="lnt">121
+</span><span class="lnt">122
+</span><span class="lnt">123
+</span><span class="lnt">124
+</span><span class="lnt">125
+</span><span class="lnt">126
+</span><span class="lnt">127
+</span><span class="lnt">128
+</span><span class="lnt">129
+</span><span class="lnt">130
+</span><span class="lnt">131
+</span><span class="lnt">132
+</span><span class="lnt">133
+</span><span class="lnt">134
+</span><span class="lnt">135
+</span><span class="lnt">136
+</span><span class="lnt">137
+</span><span class="lnt">138
+</span><span class="lnt">139
+</span><span class="lnt">140
+</span><span class="lnt">141
+</span><span class="lnt">142
+</span><span class="lnt">143
+</span><span class="lnt">144
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Advanced PR Comment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.event_name == &#39;pull_request&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const fs = require(&#39;fs&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;));
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Build detailed comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">      let comment = &#39;## 📝 Documentation Lint Report\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Summary with status emoji
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if (report.summary.errors === 0 &amp;&amp; report.summary.warnings === 0) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += &#39;✅ **All documentation passes linting!**\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      } else {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        if (report.summary.errors &gt; 0) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `❌ **${report.summary.errors} error(s) found** - merge blocked\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        if (report.summary.warnings &gt; 0) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += &#39;\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += `📊 **Summary:** ${report.summary.total_files} files scanned\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Group issues by file
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if (report.issues &amp;&amp; report.issues.length &gt; 0) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += &#39;### Issues Found\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        const byFile = {};
+</span></span></span><span class="line"><span class="cl"><span class="sd">        for (const issue of report.issues) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          if (!byFile[issue.file]) byFile[issue.file] = [];
+</span></span></span><span class="line"><span class="cl"><span class="sd">          byFile[issue.file].push(issue);
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        // Show up to 10 files with most severe issues first
+</span></span></span><span class="line"><span class="cl"><span class="sd">        const files = Object.keys(byFile)
+</span></span></span><span class="line"><span class="cl"><span class="sd">          .sort((a, b) =&gt; {
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const aErrors = byFile[a].filter(i =&gt; i.severity === &#39;error&#39;).length;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const bErrors = byFile[b].filter(i =&gt; i.severity === &#39;error&#39;).length;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            return bErrors - aErrors;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          })
+</span></span></span><span class="line"><span class="cl"><span class="sd">          .slice(0, 10);
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        for (const file of files) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          const issues = byFile[file];
+</span></span></span><span class="line"><span class="cl"><span class="sd">          const errorCount = issues.filter(i =&gt; i.severity === &#39;error&#39;).length;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          const warnCount = issues.filter(i =&gt; i.severity === &#39;warning&#39;).length;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `&lt;details&gt;\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `&lt;summary&gt;&lt;code&gt;${file}&lt;/code&gt; - `;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          if (errorCount &gt; 0) comment += `${errorCount} error(s) `;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          if (warnCount &gt; 0) comment += `${warnCount} warning(s)`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `&lt;/summary&gt;\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          for (const issue of issues.slice(0, 5)) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const emoji = issue.severity === &#39;error&#39; ? &#39;❌&#39; : &#39;⚠️&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            const lineLink = issue.line &gt; 0 
+</span></span></span><span class="line"><span class="cl"><span class="sd">              ? `[L${issue.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${issue.file}#L${issue.line})`
+</span></span></span><span class="line"><span class="cl"><span class="sd">              : &#39;File-level&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += `${emoji} **${issue.rule}** (${lineLink})\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += `&gt; ${issue.message}\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            
+</span></span></span><span class="line"><span class="cl"><span class="sd">            if (issue.suggestion) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">              comment += `&gt; 💡 Suggestion: \`${issue.suggestion}\`\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">            }
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += &#39;\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          }
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          if (issues.length &gt; 5) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">            comment += `... and ${issues.length - 5} more issue(s)\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          }
+</span></span></span><span class="line"><span class="cl"><span class="sd">          
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `&lt;/details&gt;\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        if (Object.keys(byFile).length &gt; 10) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `*... and ${Object.keys(byFile).length - 10} more file(s) with issues*\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Broken links section
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if (report.broken_links &amp;&amp; report.broken_links.length &gt; 0) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += `### 🔗 Broken Links (${report.broken_links.length})\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        for (const link of report.broken_links.slice(0, 10)) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          const lineLink = `[${link.source_file}:${link.line}](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${context.payload.pull_request.head.sha}/${link.source_file}#L${link.line})`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `- ${lineLink}: \`${link.target}\`\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `  *${link.error}*\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        
+</span></span></span><span class="line"><span class="cl"><span class="sd">        if (report.broken_links.length &gt; 10) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment += `\n*... and ${report.broken_links.length - 10} more broken link(s)*\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">        }
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += &#39;\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Instructions
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;---\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;### How to Fix\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;```bash\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;# Review all issues\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;docbuilder lint\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;# Auto-fix where possible\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;docbuilder lint --fix\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;# Preview changes without applying\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;docbuilder lint --fix --dry-run\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;```\n\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;*💡 Tip: The pre-commit hook will prevent future issues*\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;```bash\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;docbuilder lint install-hook\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += &#39;```\n&#39;;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      // Post or update comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const { data: comments } = await github.rest.issues.listComments({
+</span></span></span><span class="line"><span class="cl"><span class="sd">        owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        issue_number: context.issue.number
+</span></span></span><span class="line"><span class="cl"><span class="sd">      });
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const botComment = comments.find(c =&gt; 
+</span></span></span><span class="line"><span class="cl"><span class="sd">        c.user.type === &#39;Bot&#39; &amp;&amp; 
+</span></span></span><span class="line"><span class="cl"><span class="sd">        c.body.includes(&#39;Documentation Lint Report&#39;)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      );
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if (botComment) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        // Update existing comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">        await github.rest.issues.updateComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">          owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          comment_id: botComment.id,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          body: comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">        });
+</span></span></span><span class="line"><span class="cl"><span class="sd">      } else {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        // Create new comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">        await github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">          owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">          body: comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">        });
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="minimal-comment-errors-only">Minimal Comment (Errors Only)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Minimal Error Comment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">github.event_name == &#39;pull_request&#39; &amp;&amp; steps.lint.outputs.exit_code == &#39;2&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/github-script@v7</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">with</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const fs = require(&#39;fs&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const report = JSON.parse(fs.readFileSync(&#39;lint-report.json&#39;, &#39;utf8&#39;));
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      const errors = report.issues.filter(i =&gt; i.severity === &#39;error&#39;);
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      for (const error of errors.slice(0, 5)) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += `- \`${error.file}\`: ${error.message}\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if (errors.length &gt; 5) {
+</span></span></span><span class="line"><span class="cl"><span class="sd">        comment += `\n*... and ${errors.length - 5} more error(s)*\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      }
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      comment += `\nRun \`docbuilder lint --fix\` to resolve automatically.\n`;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      await github.rest.issues.createComment({
+</span></span></span><span class="line"><span class="cl"><span class="sd">        owner: context.repo.owner,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        repo: context.repo.repo,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        issue_number: context.issue.number,
+</span></span></span><span class="line"><span class="cl"><span class="sd">        body: comment
+</span></span></span><span class="line"><span class="cl"><span class="sd">      });</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="gitlab-ci">GitLab CI<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="basic-mr-comment">Basic MR Comment<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">lint:docs:comment</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">alpine:latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">needs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">job</span><span class="p">:</span><span class="w"> </span><span class="l">lint:docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">apk add --no-cache curl jq</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;## 📝 Documentation Lint Report\n\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}**Files scanned:** ${TOTAL}\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}**Errors:** ${ERRORS}\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}**Warnings:** ${WARNINGS}\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [ &#34;${ERRORS}&#34; -gt 0 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        COMMENT=&#34;${COMMENT}\n❌ Linting failed - see details in pipeline artifacts&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      else
+</span></span></span><span class="line"><span class="cl"><span class="sd">        COMMENT=&#34;${COMMENT}\n✅ All documentation passes linting!&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Post to MR
+</span></span></span><span class="line"><span class="cl"><span class="sd">      curl --request POST \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;Content-Type: application/json&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --data &#34;{\&#34;body\&#34;: \&#34;${COMMENT}\&#34;}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">$CI_PIPELINE_SOURCE == &#34;merge_request_event&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">allow_failure</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="detailed-gitlab-comment">Detailed GitLab Comment<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">lint:docs:comment</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">lint</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">alpine:latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">needs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">job</span><span class="p">:</span><span class="w"> </span><span class="l">lint:docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">artifacts</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">apk add --no-cache curl jq</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Build detailed comment with issue grouping
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=$(cat &lt;&lt;&#39;EOF&#39;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ## 📝 Documentation Lint Report
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      EOF
+</span></span></span><span class="line"><span class="cl"><span class="sd">      )
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      TOTAL=$(jq -r &#39;.summary.total_files&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}**Summary:** ${TOTAL} files scanned\n\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [ &#34;${ERRORS}&#34; -gt 0 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        COMMENT=&#34;${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [ &#34;${WARNINGS}&#34; -gt 0 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        COMMENT=&#34;${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Add top 5 issues
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ISSUES=$(jq -r &#39;.issues[:5] | .[] | 
+</span></span></span><span class="line"><span class="cl"><span class="sd">        &#34;- **\(.rule)** in `\(.file)` (L\(.line)): \(.message)&#34;&#39; 
+</span></span></span><span class="line"><span class="cl"><span class="sd">        lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      if [ -n &#34;${ISSUES}&#34; ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">        COMMENT=&#34;${COMMENT}\n### Issues\n\n${ISSUES}\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}\n---\n**Fix:** \`docbuilder lint --fix\`\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Escape for JSON
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT_ESCAPED=$(echo &#34;${COMMENT}&#34; | jq -Rs .)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Post to MR
+</span></span></span><span class="line"><span class="cl"><span class="sd">      curl --request POST \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;PRIVATE-TOKEN: ${GITLAB_API_TOKEN}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --header &#34;Content-Type: application/json&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --data &#34;{\&#34;body\&#34;: ${COMMENT_ESCAPED}}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        &#34;${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/merge_requests/${CI_MERGE_REQUEST_IID}/notes&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rules</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">$CI_PIPELINE_SOURCE == &#34;merge_request_event&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">allow_failure</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="bitbucket-pipelines">BitBucket Pipelines<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">pipelines</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">pull-requests</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">&#39;**&#39;</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">step</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Lint Documentation</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l">golang:1.21</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">script</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">docbuilder lint --format=json &gt; lint-report.json || true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c"># Parse results</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c"># Build comment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">              COMMENT=&#34;## Documentation Lint Report\n\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">              COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">              if [ &#34;${ERRORS}&#34; -gt 0 ]; then
+</span></span></span><span class="line"><span class="cl"><span class="sd">                COMMENT=&#34;${COMMENT}❌ Linting failed\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">              fi
+</span></span></span><span class="line"><span class="cl"><span class="sd">              
+</span></span></span><span class="line"><span class="cl"><span class="sd">              # Post comment via API
+</span></span></span><span class="line"><span class="cl"><span class="sd">              curl -X POST \
+</span></span></span><span class="line"><span class="cl"><span class="sd">                -u &#34;${BB_AUTH_STRING}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">                -H &#34;Content-Type: application/json&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">                -d &#34;{\&#34;content\&#34;: {\&#34;raw\&#34;: \&#34;${COMMENT}\&#34;}}&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">                &#34;https://api.bitbucket.org/2.0/repositories/${BITBUCKET_REPO_FULL_NAME}/pullrequests/${BITBUCKET_PR_ID}/comments&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c"># Fail if errors found</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">test &#34;${ERRORS}&#34; -eq 0</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">          
+</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">artifacts</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span>- <span class="l">lint-report.json</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="azure-devops">Azure DevOps<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l">Bash@3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">displayName</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Lint Documentation&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">inputs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetType</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;inline&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      go install git.home.luguber.info/inful/docbuilder/cmd/docbuilder@latest
+</span></span></span><span class="line"><span class="cl"><span class="sd">      docbuilder lint --format=json &gt; lint-report.json || true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l">Bash@3</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">displayName</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Comment PR with Results&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l">eq(variables[&#39;Build.Reason&#39;], &#39;PullRequest&#39;)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">inputs</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">targetType</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;inline&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">      ERRORS=$(jq -r &#39;.summary.errors&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      WARNINGS=$(jq -r &#39;.summary.warnings&#39; lint-report.json)
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;## Documentation Lint Report\n\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      COMMENT=&#34;${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n&#34;
+</span></span></span><span class="line"><span class="cl"><span class="sd">      
+</span></span></span><span class="line"><span class="cl"><span class="sd">      # Post to PR using Azure DevOps API
+</span></span></span><span class="line"><span class="cl"><span class="sd">      az repos pr comment create \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --org &#34;$(System.TeamFoundationCollectionUri)&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --project &#34;$(System.TeamProject)&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --pull-request-id &#34;$(System.PullRequest.PullRequestId)&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --repository-id &#34;$(Build.Repository.ID)&#34; \
+</span></span></span><span class="line"><span class="cl"><span class="sd">        --content &#34;${COMMENT}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">env</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">AZURE_DEVOPS_EXT_PAT</span><span class="p">:</span><span class="w"> </span><span class="l">$(System.AccessToken)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="generic-webhook">Generic Webhook<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>For platforms without native integrations, post results to a webhook:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Run linter</span>
+</span></span><span class="line"><span class="cl">docbuilder lint --format<span class="o">=</span>json &gt; lint-report.json
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Post to webhook</span>
+</span></span><span class="line"><span class="cl">curl -X POST https://your-webhook.example.com/lint-results <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -H <span class="s2">&#34;Content-Type: application/json&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -H <span class="s2">&#34;Authorization: Bearer </span><span class="si">${</span><span class="nv">WEBHOOK_TOKEN</span><span class="si">}</span><span class="s2">&#34;</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --data @lint-report.json</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="best-practices">Best Practices<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-update-instead-of-duplicate">1. Update Instead of Duplicate<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Always update existing comments instead of creating new ones:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">existingComment</span> <span class="o">=</span> <span class="nx">comments</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">c</span> <span class="p">=&gt;</span> 
+</span></span><span class="line"><span class="cl">  <span class="nx">c</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">&#39;Bot&#39;</span> <span class="o">&amp;&amp;</span> 
+</span></span><span class="line"><span class="cl">  <span class="nx">c</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">includes</span><span class="p">(</span><span class="s1">&#39;Documentation Lint Report&#39;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="nx">existingComment</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">await</span> <span class="nx">github</span><span class="p">.</span><span class="nx">rest</span><span class="p">.</span><span class="nx">issues</span><span class="p">.</span><span class="nx">updateComment</span><span class="p">({...});</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">await</span> <span class="nx">github</span><span class="p">.</span><span class="nx">rest</span><span class="p">.</span><span class="nx">issues</span><span class="p">.</span><span class="nx">createComment</span><span class="p">({...});</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="2-collapsible-sections">2. Collapsible Sections<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Use <code>&lt;details&gt;</code> tags for long issue lists:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">&lt;details&gt;
+</span></span><span class="line"><span class="cl">&lt;summary&gt;📄 docs/api-guide.md - 5 issues&lt;/summary&gt;
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">-</span> Error 1
+</span></span><span class="line"><span class="cl"><span class="k">-</span> Error 2
+</span></span><span class="line"><span class="cl">...
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">&lt;/details&gt;</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="3-link-to-source">3. Link to Source<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Link directly to the problematic lines:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-javascript" data-lang="javascript"><span class="line"><span class="cl"><span class="kr">const</span> <span class="nx">lineLink</span> <span class="o">=</span> <span class="sb">`[L</span><span class="si">${</span><span class="nx">issue</span><span class="p">.</span><span class="nx">line</span><span class="si">}</span><span class="sb">](https://github.com/</span><span class="si">${</span><span class="nx">owner</span><span class="si">}</span><span class="sb">/</span><span class="si">${</span><span class="nx">repo</span><span class="si">}</span><span class="sb">/blob/</span><span class="si">${</span><span class="nx">sha</span><span class="si">}</span><span class="sb">/</span><span class="si">${</span><span class="nx">file</span><span class="si">}</span><span class="sb">#L</span><span class="si">${</span><span class="nx">issue</span><span class="p">.</span><span class="nx">line</span><span class="si">}</span><span class="sb">)`</span><span class="p">;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="4-rate-limiting">4. Rate Limiting<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Avoid posting comments on every push to a PR:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Only comment once per PR</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Check for existing comment</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l">check</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
+</span></span></span><span class="line"><span class="cl"><span class="sd">    EXISTING=$(gh pr view ${{ github.event.pull_request.number }} \
+</span></span></span><span class="line"><span class="cl"><span class="sd">      --json comments --jq &#39;.comments[] | select(.body | contains(&#34;Documentation Lint Report&#34;))&#39;)
+</span></span></span><span class="line"><span class="cl"><span class="sd">    echo &#34;has_comment=$([[ -n &#34;$EXISTING&#34; ]] &amp;&amp; echo true || echo false)&#34; &gt;&gt; $GITHUB_OUTPUT</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.check.outputs.has_comment == &#39;false&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="5-conditional-posting">5. Conditional Posting<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Only post when there are issues:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl">- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Comment PR</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l">steps.parse.outputs.errors != &#39;0&#39; || steps.parse.outputs.warnings != &#39;0&#39;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="l">...</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="6-clear-remediation-steps">6. Clear Remediation Steps<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Always include actionable instructions:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl"><span class="gu">### How to Fix
+</span></span></span><span class="line"><span class="cl"><span class="gu"></span>
+</span></span><span class="line"><span class="cl"><span class="k">1.</span> Run locally: <span class="sb">`docbuilder lint`</span>
+</span></span><span class="line"><span class="cl"><span class="k">2.</span> Auto-fix: <span class="sb">`docbuilder lint --fix`</span>
+</span></span><span class="line"><span class="cl"><span class="k">3.</span> Review changes and commit
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Or install the pre-commit hook:
+</span></span><span class="line"><span class="cl">```bash
+</span></span><span class="line"><span class="cl">docbuilder lint install-hook</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>### 7. Status Emojis
+
+Use consistent emojis for quick visual scanning:
+- ✅ Success
+- ❌ Errors (blocking)
+- ⚠️ Warnings (non-blocking)
+- 🔗 Broken links
+- 💡 Suggestions
+- 📊 Summary stats
+
+## Testing Comments
+
+Test your comment formatting locally before deploying:
+
+```bash
+# Generate test report
+docbuilder lint --format=json &gt; test-report.json
+
+# Test comment generation
+node test-comment-script.js
+
+# Validate markdown
+npx markdownlint comment.md</code></pre></div>
+<h2 id="security-considerations">Security Considerations<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ol>
+<li>
+<p><strong>Token Permissions</strong>: Use minimal required permissions</p>
+<ul>
+<li>GitHub: <code>pull-requests: write</code> only</li>
+<li>GitLab: <code>api</code> scope with project access</li>
+</ul>
+</li>
+<li>
+<p><strong>Sensitive Data</strong>: Never include secrets in comments</p>
+<ul>
+<li>Sanitize file paths if they contain usernames</li>
+<li>Don&rsquo;t expose internal URLs</li>
+</ul>
+</li>
+<li>
+<p><strong>Rate Limits</strong>: Respect platform API rate limits</p>
+<ul>
+<li>Cache comment existence checks</li>
+<li>Batch operations when possible</li>
+</ul>
+</li>
+<li>
+<p><strong>Spam Prevention</strong>: Limit comment size and frequency</p>
+<ul>
+<li>Cap issue display (e.g., max 10 files, 5 issues per file)</li>
+<li>Update existing comments instead of creating new ones</li>
+</ul>
+</li>
+</ol>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 31, 2025
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" checked><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="active " data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

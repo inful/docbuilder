@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>refactoring :: Test</title>
+    <link>http://test/docs/refactoring/index.html</link>
+    <description>Documentation for refactoring</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 30 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://test/docs/refactoring/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Nested Complexity Reduction Plan</title>
+      <link>http://test/docs/refactoring/nestif-complexity-reduction/index.html</link>
+      <pubDate>Tue, 30 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/refactoring/nestif-complexity-reduction/index.html</guid>
+      <description>Overview The nestif linter has identified 42 instances of complex nested blocks across the codebase. This document outlines a systematic plan to reduce this complexity through refactoring.&#xA;Complexity Distribution Critical (≥15): 3 instances High (10-14): 9 instances Medium (7-9): 13 instances Low (5-6): 17 instances Priority Areas for Refactoring Priority 1: Critical Complexity (≥15) 1. internal/hugo/modules.go:33 (complexity: 20) Function: Module initialization logic Issue: Deep nesting in module setup and Go module management Refactoring Strategy:</description>
+    </item>
+  </channel>
+</rss>

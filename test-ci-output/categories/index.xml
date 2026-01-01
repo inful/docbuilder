@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Categories :: Test</title>
+    <link>http://test/categories/index.html</link>
+    <description></description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 30 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://test/categories/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Category :: Code-Quality</title>
+      <link>http://test/categories/code-quality/index.html</link>
+      <pubDate>Tue, 30 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/code-quality/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Refactoring</title>
+      <link>http://test/categories/refactoring/index.html</link>
+      <pubDate>Tue, 30 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/refactoring/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Architecture-Decisions</title>
+      <link>http://test/categories/architecture-decisions/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/architecture-decisions/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: How-To</title>
+      <link>http://test/categories/how-to/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/how-to/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Reference</title>
+      <link>http://test/categories/reference/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/reference/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Testing</title>
+      <link>http://test/categories/testing/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/testing/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Architecture</title>
+      <link>http://test/categories/architecture/index.html</link>
+      <pubDate>Thu, 18 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/architecture/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Explanation</title>
+      <link>http://test/categories/explanation/index.html</link>
+      <pubDate>Wed, 17 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/explanation/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Ci-Cd</title>
+      <link>http://test/categories/ci-cd/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/ci-cd/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Development</title>
+      <link>http://test/categories/development/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/development/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Documentation</title>
+      <link>http://test/categories/documentation/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/documentation/index.html</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Category :: Tutorials</title>
+      <link>http://test/categories/tutorials/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/categories/tutorials/index.html</guid>
+      <description></description>
+    </item>
+  </channel>
+</rss>

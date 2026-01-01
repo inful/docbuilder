@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.
+Architecture: Multi-Server Design DocBuilder uses a defense-in-depth approach with multiple isolated HTTP servers:
+┌─────────────────────────────────────────────────────────┐ │ DocBuilder Daemon │ ├─────────────────────────────────────────────────────────┤ │ │ │ ┌────────────────┐ ┌────────────────┐ │ │ │ Docs Server │ │ Webhook Server │ │ │ │ Port: 8080 │ │ Port: 8081 │ │ │ ├────────────────┤ ├────────────────┤ │ │ │ GET / │ │ POST /webhooks/│ │ │ │ GET /docs/* │ │ github │ │ │ │ GET /search/ │ │ POST /webhooks/│ │ │ │ index.json│ │ gitlab │ │ │ └────────────────┘ │ POST /webhooks/│ │ │ │ forgejo │ │ │ ┌────────────────┐ └────────────────┘ │ │ │ Admin Server │ │ │ │ Port: 8082 │ ┌────────────────┐ │ │ ├────────────────┤ │ LiveReload │ │ │ │ GET /health │ │ Port: 8083 │ │ │ │ GET /ready │ │ (optional) │ │ │ │ GET /metrics │ ├────────────────┤ │ │ │ POST /api/ │ │ GET /sse │ │ │ │ build/ │ └────────────────┘ │ │ │ trigger │ │ │ └────────────────┘ │ └─────────────────────────────────────────────────────────┘ Port Allocation Server Default Port Purpose Collision Risk Docs 8080 Serves Hugo-generated documentation ❌ None - separate server Webhook 8081 Receives forge webhooks ❌ None - separate server Admin 8082 Administrative API, health checks ❌ None - separate server LiveReload 8083 Server-Sent Events for live reload ❌ None - separate server Defense-in-Depth Layers Layer 1: Port Isolation (Primary Defense) Each server runs on a separate TCP port with its own http.Server instance and request multiplexer (http.ServeMux). This provides complete isolation:">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Webhook and Documentation Isolation Strategy :: Test">
+    <meta name="twitter:description" content="This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.
+Architecture: Multi-Server Design DocBuilder uses a defense-in-depth approach with multiple isolated HTTP servers:
+┌─────────────────────────────────────────────────────────┐ │ DocBuilder Daemon │ ├─────────────────────────────────────────────────────────┤ │ │ │ ┌────────────────┐ ┌────────────────┐ │ │ │ Docs Server │ │ Webhook Server │ │ │ │ Port: 8080 │ │ Port: 8081 │ │ │ ├────────────────┤ ├────────────────┤ │ │ │ GET / │ │ POST /webhooks/│ │ │ │ GET /docs/* │ │ github │ │ │ │ GET /search/ │ │ POST /webhooks/│ │ │ │ index.json│ │ gitlab │ │ │ └────────────────┘ │ POST /webhooks/│ │ │ │ forgejo │ │ │ ┌────────────────┐ └────────────────┘ │ │ │ Admin Server │ │ │ │ Port: 8082 │ ┌────────────────┐ │ │ ├────────────────┤ │ LiveReload │ │ │ │ GET /health │ │ Port: 8083 │ │ │ │ GET /ready │ │ (optional) │ │ │ │ GET /metrics │ ├────────────────┤ │ │ │ POST /api/ │ │ GET /sse │ │ │ │ build/ │ └────────────────┘ │ │ │ trigger │ │ │ └────────────────┘ │ └─────────────────────────────────────────────────────────┘ Port Allocation Server Default Port Purpose Collision Risk Docs 8080 Serves Hugo-generated documentation ❌ None - separate server Webhook 8081 Receives forge webhooks ❌ None - separate server Admin 8082 Administrative API, health checks ❌ None - separate server LiveReload 8083 Server-Sent Events for live reload ❌ None - separate server Defense-in-Depth Layers Layer 1: Port Isolation (Primary Defense) Each server runs on a separate TCP port with its own http.Server instance and request multiplexer (http.ServeMux). This provides complete isolation:">
+    <meta property="og:url" content="http://test/docs/explanation/webhook-documentation-isolation/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Webhook and Documentation Isolation Strategy :: Test">
+    <meta property="og:description" content="This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.
+Architecture: Multi-Server Design DocBuilder uses a defense-in-depth approach with multiple isolated HTTP servers:
+┌─────────────────────────────────────────────────────────┐ │ DocBuilder Daemon │ ├─────────────────────────────────────────────────────────┤ │ │ │ ┌────────────────┐ ┌────────────────┐ │ │ │ Docs Server │ │ Webhook Server │ │ │ │ Port: 8080 │ │ Port: 8081 │ │ │ ├────────────────┤ ├────────────────┤ │ │ │ GET / │ │ POST /webhooks/│ │ │ │ GET /docs/* │ │ github │ │ │ │ GET /search/ │ │ POST /webhooks/│ │ │ │ index.json│ │ gitlab │ │ │ └────────────────┘ │ POST /webhooks/│ │ │ │ forgejo │ │ │ ┌────────────────┐ └────────────────┘ │ │ │ Admin Server │ │ │ │ Port: 8082 │ ┌────────────────┐ │ │ ├────────────────┤ │ LiveReload │ │ │ │ GET /health │ │ Port: 8083 │ │ │ │ GET /ready │ │ (optional) │ │ │ │ GET /metrics │ ├────────────────┤ │ │ │ POST /api/ │ │ GET /sse │ │ │ │ build/ │ └────────────────┘ │ │ │ trigger │ │ │ └────────────────┘ │ └─────────────────────────────────────────────────────────┘ Port Allocation Server Default Port Purpose Collision Risk Docs 8080 Serves Hugo-generated documentation ❌ None - separate server Webhook 8081 Receives forge webhooks ❌ None - separate server Admin 8082 Administrative API, health checks ❌ None - separate server LiveReload 8083 Server-Sent Events for live reload ❌ None - separate server Defense-in-Depth Layers Layer 1: Port Isolation (Primary Defense) Each server runs on a separate TCP port with its own http.Server instance and request multiplexer (http.ServeMux). This provides complete isolation:">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-17T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-17T00:00:00+00:00">
+    <meta property="article:tag" content="Architecture">
+    <meta property="article:tag" content="Webhooks">
+    <meta property="article:tag" content="Security">
+    <meta itemprop="name" content="Webhook and Documentation Isolation Strategy :: Test">
+    <meta itemprop="description" content="This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.
+Architecture: Multi-Server Design DocBuilder uses a defense-in-depth approach with multiple isolated HTTP servers:
+┌─────────────────────────────────────────────────────────┐ │ DocBuilder Daemon │ ├─────────────────────────────────────────────────────────┤ │ │ │ ┌────────────────┐ ┌────────────────┐ │ │ │ Docs Server │ │ Webhook Server │ │ │ │ Port: 8080 │ │ Port: 8081 │ │ │ ├────────────────┤ ├────────────────┤ │ │ │ GET / │ │ POST /webhooks/│ │ │ │ GET /docs/* │ │ github │ │ │ │ GET /search/ │ │ POST /webhooks/│ │ │ │ index.json│ │ gitlab │ │ │ └────────────────┘ │ POST /webhooks/│ │ │ │ forgejo │ │ │ ┌────────────────┐ └────────────────┘ │ │ │ Admin Server │ │ │ │ Port: 8082 │ ┌────────────────┐ │ │ ├────────────────┤ │ LiveReload │ │ │ │ GET /health │ │ Port: 8083 │ │ │ │ GET /ready │ │ (optional) │ │ │ │ GET /metrics │ ├────────────────┤ │ │ │ POST /api/ │ │ GET /sse │ │ │ │ build/ │ └────────────────┘ │ │ │ trigger │ │ │ └────────────────┘ │ └─────────────────────────────────────────────────────────┘ Port Allocation Server Default Port Purpose Collision Risk Docs 8080 Serves Hugo-generated documentation ❌ None - separate server Webhook 8081 Receives forge webhooks ❌ None - separate server Admin 8082 Administrative API, health checks ❌ None - separate server LiveReload 8083 Server-Sent Events for live reload ❌ None - separate server Defense-in-Depth Layers Layer 1: Port Isolation (Primary Defense) Each server runs on a separate TCP port with its own http.Server instance and request multiplexer (http.ServeMux). This provides complete isolation:">
+    <meta itemprop="datePublished" content="2025-12-17T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-17T00:00:00+00:00">
+    <meta itemprop="wordCount" content="1400">
+    <meta itemprop="keywords" content="Architecture,Webhooks,Security">
+    <title>Webhook and Documentation Isolation Strategy :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/explanation\/webhook-documentation-isolation\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/explanation/webhook-documentation-isolation/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#architecture-multi-server-design">Architecture: Multi-Server Design</a>
+      <ul>
+        <li><a href="#port-allocation">Port Allocation</a></li>
+      </ul>
+    </li>
+    <li><a href="#defense-in-depth-layers">Defense-in-Depth Layers</a>
+      <ul>
+        <li><a href="#layer-1-port-isolation-primary-defense">Layer 1: Port Isolation (Primary Defense)</a></li>
+        <li><a href="#layer-2-path-prefixing-secondary-defense">Layer 2: Path Prefixing (Secondary Defense)</a></li>
+        <li><a href="#layer-3-http-method-filtering-tertiary-defense">Layer 3: HTTP Method Filtering (Tertiary Defense)</a></li>
+        <li><a href="#layer-4-configuration-validation-preventive">Layer 4: Configuration Validation (Preventive)</a></li>
+      </ul>
+    </li>
+    <li><a href="#additional-safeguards">Additional Safeguards</a>
+      <ul>
+        <li><a href="#1-port-conflict-detection">1. Port Conflict Detection</a></li>
+        <li><a href="#2-firewall-recommendations">2. Firewall Recommendations</a></li>
+        <li><a href="#3-reverse-proxy-path-segregation">3. Reverse Proxy Path Segregation</a></li>
+        <li><a href="#4-content-security-policy">4. Content Security Policy</a></li>
+      </ul>
+    </li>
+    <li><a href="#attack-vectors-and-why-theyre-mitigated">Attack Vectors (and Why They&rsquo;re Mitigated)</a>
+      <ul>
+        <li><a href="#-path-traversal-attack">❌ Path Traversal Attack</a></li>
+        <li><a href="#-documentation-collision">❌ Documentation Collision</a></li>
+        <li><a href="#-port-confusion">❌ Port Confusion</a></li>
+        <li><a href="#-webhook-forgery-via-docs">❌ Webhook Forgery via Docs</a></li>
+      </ul>
+    </li>
+    <li><a href="#testing-collision-prevention">Testing Collision Prevention</a>
+      <ul>
+        <li><a href="#manual-testing">Manual Testing</a></li>
+        <li><a href="#port-conflict-testing">Port Conflict Testing</a></li>
+      </ul>
+    </li>
+    <li><a href="#configuration-best-practices">Configuration Best Practices</a>
+      <ul>
+        <li><a href="#-recommended-default-ports">✅ Recommended: Default Ports</a></li>
+        <li><a href="#-recommended-custom-ports-with-separation">✅ Recommended: Custom Ports with Separation</a></li>
+        <li><a href="#-never-same-ports">❌ Never: Same Ports</a></li>
+        <li><a href="#-caution-non-sequential-ports">⚠️ Caution: Non-Sequential Ports</a></li>
+      </ul>
+    </li>
+    <li><a href="#monitoring-and-validation">Monitoring and Validation</a>
+      <ul>
+        <li><a href="#startup-validation">Startup Validation</a></li>
+        <li><a href="#runtime-health-checks">Runtime Health Checks</a></li>
+      </ul>
+    </li>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#related-documentation">Related Documentation</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/explanation/index.html"><span itemprop="name">Explanation Documentation</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Webhook and Documentation Isolation Strategy</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./explanation/webhook-documentation-isolation.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/explanation/index.html" title="Explanation Documentation (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/explanation/architecture-diagrams/index.html" title="Architecture Diagrams (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/architecture/index.html">Architecture</a></li>
+    <li><a class="term-link" href="/tags/security/index.html">Security</a></li>
+    <li><a class="term-link" href="/tags/webhooks/index.html">Webhooks</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="webhook-and-documentation-isolation-strategy">Webhook and Documentation Isolation Strategy</h1>
+
+<p>This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.</p>
+<h2 id="architecture-multi-server-design">Architecture: Multi-Server Design<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>DocBuilder uses a <strong>defense-in-depth approach</strong> with multiple isolated HTTP servers:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>┌─────────────────────────────────────────────────────────┐
+│                  DocBuilder Daemon                      │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  ┌────────────────┐  ┌────────────────┐                │
+│  │  Docs Server   │  │ Webhook Server │                │
+│  │  Port: 8080    │  │  Port: 8081    │                │
+│  ├────────────────┤  ├────────────────┤                │
+│  │ GET  /         │  │ POST /webhooks/│                │
+│  │ GET  /docs/*   │  │      github    │                │
+│  │ GET  /search/  │  │ POST /webhooks/│                │
+│  │      index.json│  │      gitlab    │                │
+│  └────────────────┘  │ POST /webhooks/│                │
+│                      │      forgejo   │                │
+│  ┌────────────────┐  └────────────────┘                │
+│  │  Admin Server  │                                    │
+│  │  Port: 8082    │  ┌────────────────┐                │
+│  ├────────────────┤  │ LiveReload     │                │
+│  │ GET  /health   │  │  Port: 8083    │                │
+│  │ GET  /ready    │  │  (optional)    │                │
+│  │ GET  /metrics  │  ├────────────────┤                │
+│  │ POST /api/     │  │ GET  /sse      │                │
+│  │      build/    │  └────────────────┘                │
+│  │      trigger   │                                    │
+│  └────────────────┘                                    │
+└─────────────────────────────────────────────────────────┘</code></pre></div>
+<h3 id="port-allocation">Port Allocation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<table>
+  <thead>
+      <tr>
+          <th>Server</th>
+          <th>Default Port</th>
+          <th>Purpose</th>
+          <th>Collision Risk</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Docs</strong></td>
+          <td>8080</td>
+          <td>Serves Hugo-generated documentation</td>
+          <td>❌ None - separate server</td>
+      </tr>
+      <tr>
+          <td><strong>Webhook</strong></td>
+          <td>8081</td>
+          <td>Receives forge webhooks</td>
+          <td>❌ None - separate server</td>
+      </tr>
+      <tr>
+          <td><strong>Admin</strong></td>
+          <td>8082</td>
+          <td>Administrative API, health checks</td>
+          <td>❌ None - separate server</td>
+      </tr>
+      <tr>
+          <td><strong>LiveReload</strong></td>
+          <td>8083</td>
+          <td>Server-Sent Events for live reload</td>
+          <td>❌ None - separate server</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="defense-in-depth-layers">Defense-in-Depth Layers<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="layer-1-port-isolation-primary-defense">Layer 1: Port Isolation (Primary Defense)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Each server runs on a <strong>separate TCP port</strong> with its own <code>http.Server</code> instance and request multiplexer (<code>http.ServeMux</code>). This provides complete isolation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// In internal/daemon/http_server.go</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">HTTPServer</span><span class="p">)</span><span class="w"> </span><span class="nf">Start</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Bind separate ports</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">docsListener</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;:8080&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">webhookListener</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;:8081&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">adminListener</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;:8082&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Start independent servers</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">s</span><span class="p">.</span><span class="nx">docsServer</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span><span class="nx">Handler</span><span class="p">:</span><span class="w"> </span><span class="nx">docsHandler</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">s</span><span class="p">.</span><span class="nx">webhookServer</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span><span class="nx">Handler</span><span class="p">:</span><span class="w"> </span><span class="nx">webhookHandler</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">s</span><span class="p">.</span><span class="nx">adminServer</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">http</span><span class="p">.</span><span class="nx">Server</span><span class="p">{</span><span class="nx">Handler</span><span class="p">:</span><span class="w"> </span><span class="nx">adminHandler</span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">go</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">docsServer</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">docsListener</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">go</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">webhookServer</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">webhookListener</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">go</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">adminServer</span><span class="p">.</span><span class="nf">Serve</span><span class="p">(</span><span class="nx">adminListener</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Collision Probability</strong>: 0% - Requests to different ports go to completely different HTTP servers.</p>
+<h3 id="layer-2-path-prefixing-secondary-defense">Layer 2: Path Prefixing (Secondary Defense)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Even if servers were combined (they&rsquo;re not), webhook paths use reserved prefixes:</p>
+<ul>
+<li><code>/webhooks/github</code></li>
+<li><code>/webhooks/gitlab</code></li>
+<li><code>/webhooks/forgejo</code></li>
+<li><code>/webhook</code> (generic)</li>
+</ul>
+<p>These paths are unlikely to exist in Hugo documentation because:</p>
+<ul>
+<li>Hugo content typically lives in <code>/docs/</code>, <code>/blog/</code>, etc.</li>
+<li>The <code>/webhooks/</code> prefix is API-specific, not documentation content</li>
+<li>Hugo wouldn&rsquo;t generate these exact paths without explicit configuration</li>
+</ul>
+<h3 id="layer-3-http-method-filtering-tertiary-defense">Layer 3: HTTP Method Filtering (Tertiary Defense)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Webhook handlers <strong>only accept POST requests</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">h</span><span class="w"> </span><span class="o">*</span><span class="nx">WebhookHandlers</span><span class="p">)</span><span class="w"> </span><span class="nf">HandleGitHubWebhook</span><span class="p">(</span><span class="nx">w</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span><span class="w"> </span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">r</span><span class="p">.</span><span class="nx">Method</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">MethodPost</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Return 405 Method Not Allowed</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Process webhook...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Documentation requests use <strong>GET</strong>, so even if a collision occurred:</p>
+<ul>
+<li><code>GET /webhooks/github</code> → Documentation server (404 or docs file)</li>
+<li><code>POST /webhooks/github</code> → Webhook server (webhook handler)</li>
+</ul>
+<h3 id="layer-4-configuration-validation-preventive">Layer 4: Configuration Validation (Preventive)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Port binding validation happens at startup:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// Pre-bind all ports before starting any servers</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">binds</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="nx">preBind</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;docs&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">port</span><span class="p">:</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">Daemon</span><span class="p">.</span><span class="nx">HTTP</span><span class="p">.</span><span class="nx">DocsPort</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;webhook&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">port</span><span class="p">:</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">Daemon</span><span class="p">.</span><span class="nx">HTTP</span><span class="p">.</span><span class="nx">WebhookPort</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#34;admin&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">port</span><span class="p">:</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">Daemon</span><span class="p">.</span><span class="nx">HTTP</span><span class="p">.</span><span class="nx">AdminPort</span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">bind</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">binds</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">ln</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">net</span><span class="p">.</span><span class="nf">Listen</span><span class="p">(</span><span class="s">&#34;tcp&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;:%d&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">bind</span><span class="p">.</span><span class="nx">port</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;%s port %d: %w&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">bind</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">bind</span><span class="p">.</span><span class="nx">port</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">bind</span><span class="p">.</span><span class="nx">ln</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">ln</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>If any port is already in use or if two services try to use the same port, <strong>the daemon fails to start</strong> with a clear error message.</p>
+<h2 id="additional-safeguards">Additional Safeguards<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-port-conflict-detection">1. Port Conflict Detection<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>DocBuilder validates that all configured ports are unique:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docs_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">webhook_port</span><span class="p">:</span><span class="w"> </span><span class="m">8081</span><span class="w">    </span><span class="c"># Must differ from docs_port</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">admin_port</span><span class="p">:</span><span class="w"> </span><span class="m">8082</span><span class="w">      </span><span class="c"># Must differ from both above</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">livereload_port</span><span class="p">:</span><span class="w"> </span><span class="m">8083</span><span class="w"> </span><span class="c"># Must differ from all above</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>If you accidentally configure the same port twice, the daemon will fail to start.</p>
+<h3 id="2-firewall-recommendations">2. Firewall Recommendations<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>For production deployments, use firewall rules to restrict access:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8080</span> -j ACCEPT
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8081</span> -s 140.82.112.0/20 -j ACCEPT  <span class="c1"># GitHub</span>
+</span></span><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8081</span> -s 192.30.252.0/22 -j ACCEPT  <span class="c1"># GitHub</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8082</span> -s 10.0.0.0/8 -j ACCEPT
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8081</span> -j DROP
+</span></span><span class="line"><span class="cl">iptables -A INPUT -p tcp --dport <span class="m">8082</span> -j DROP</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="3-reverse-proxy-path-segregation">3. Reverse Proxy Path Segregation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>When using a reverse proxy (nginx, Traefik, Caddy), use different subdomains or paths:</p>
+<p><strong>Option A: Subdomain Separation</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-nginx" data-lang="nginx"><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">docs.example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8080</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">webhooks.example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8081</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">admin.example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">allow</span> <span class="n">10.0.0.0</span><span class="s">/8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">deny</span> <span class="s">all</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8082</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Option B: Path Separation</strong> (Less Recommended)</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-nginx" data-lang="nginx"><span class="line"><span class="cl"><span class="k">server</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kn">server_name</span> <span class="s">example.com</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Documentation at root
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8080</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Webhooks at /api/webhooks
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kn">location</span> <span class="s">/api/webhooks/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8081/webhooks/</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1"># Admin at /api/admin
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kn">location</span> <span class="s">/api/admin/</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">allow</span> <span class="n">10.0.0.0</span><span class="s">/8</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">deny</span> <span class="s">all</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kn">proxy_pass</span> <span class="s">http://localhost:8082/api/</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="4-content-security-policy">4. Content Security Policy<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>For defense in depth, the docs server could set CSP headers to prevent accidental form submissions to webhook paths:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-http" data-lang="http"><span class="line"><span class="cl"><span class="err">Content-Security-Policy: form-action &#39;self&#39;; frame-ancestors &#39;none&#39;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>This prevents JavaScript on the docs site from submitting forms to webhook endpoints.</p>
+<h2 id="attack-vectors-and-why-theyre-mitigated">Attack Vectors (and Why They&rsquo;re Mitigated)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="-path-traversal-attack">❌ Path Traversal Attack<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Scenario</strong>: Attacker tries <code>GET /webhooks/../../../etc/passwd</code></p>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>HTTP path normalization happens before routing</li>
+<li>Webhook server only handles <code>/webhooks/*</code>, not arbitrary paths</li>
+<li>Different port means request wouldn&rsquo;t reach docs server anyway</li>
+</ul>
+<h3 id="-documentation-collision">❌ Documentation Collision<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Scenario</strong>: Hugo generates a page at <code>/webhooks/github.html</code></p>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>Webhook server is on port 8081, docs on 8080</li>
+<li>Even if page exists on docs server, webhook POST goes to webhook server</li>
+<li>HTTP method differs (GET vs POST)</li>
+</ul>
+<h3 id="-port-confusion">❌ Port Confusion<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Scenario</strong>: User configures same port for docs and webhooks</p>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>Startup validation fails with clear error</li>
+<li>Daemon refuses to start</li>
+<li>Operator must fix configuration</li>
+</ul>
+<h3 id="-webhook-forgery-via-docs">❌ Webhook Forgery via Docs<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Scenario</strong>: Attacker embeds JavaScript in docs to forge webhooks</p>
+<p><strong>Mitigation</strong>:</p>
+<ul>
+<li>Different origins (port 8080 vs 8081) trigger CORS</li>
+<li>Webhook signature validation prevents unsigned requests</li>
+<li>Same-origin policy blocks cross-port requests</li>
+</ul>
+<h2 id="testing-collision-prevention">Testing Collision Prevention<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="manual-testing">Manual Testing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">./docbuilder daemon
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl http://localhost:8080/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl http://localhost:8081/webhooks/github
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -X POST http://localhost:8081/webhooks/github
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -X POST http://localhost:8080/webhooks/github</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="port-conflict-testing">Port Conflict Testing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">nc -l <span class="m">8081</span> <span class="p">&amp;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">./docbuilder daemon</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="configuration-best-practices">Configuration Best Practices<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="-recommended-default-ports">✅ Recommended: Default Ports<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docs_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">       </span><span class="c"># Standard HTTP alternative port</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">webhook_port</span><span class="p">:</span><span class="w"> </span><span class="m">8081</span><span class="w">    </span><span class="c"># Sequential, clearly webhook-related</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">admin_port</span><span class="p">:</span><span class="w"> </span><span class="m">8082</span><span class="w">      </span><span class="c"># Sequential, clearly admin-related</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">livereload_port</span><span class="p">:</span><span class="w"> </span><span class="m">8083</span><span class="w"> </span><span class="c"># Sequential, optional feature</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="-recommended-custom-ports-with-separation">✅ Recommended: Custom Ports with Separation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docs_port</span><span class="p">:</span><span class="w"> </span><span class="m">3000</span><span class="w">       </span><span class="c"># Custom docs port</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">webhook_port</span><span class="p">:</span><span class="w"> </span><span class="m">3001</span><span class="w">    </span><span class="c"># Different from docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">admin_port</span><span class="p">:</span><span class="w"> </span><span class="m">3002</span><span class="w">      </span><span class="c"># Different from both</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">livereload_port</span><span class="p">:</span><span class="w"> </span><span class="m">3003</span><span class="w"> </span><span class="c"># Different from all</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="-never-same-ports">❌ Never: Same Ports<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docs_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">webhook_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">    </span><span class="c"># ❌ WILL FAIL TO START</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">admin_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">      </span><span class="c"># ❌ WILL FAIL TO START</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="-caution-non-sequential-ports">⚠️ Caution: Non-Sequential Ports<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">daemon</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">http</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">docs_port</span><span class="p">:</span><span class="w"> </span><span class="m">8080</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">webhook_port</span><span class="p">:</span><span class="w"> </span><span class="m">9443</span><span class="w">    </span><span class="c"># ⚠️ Works but non-obvious relationship</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">admin_port</span><span class="p">:</span><span class="w"> </span><span class="m">3000</span><span class="w">      </span><span class="c"># ⚠️ Works but confusing</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="monitoring-and-validation">Monitoring and Validation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="startup-validation">Startup Validation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Watch daemon logs for port binding confirmation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>INFO HTTP servers binding to ports docs_port=8080 webhook_port=8081 admin_port=8082
+INFO Documentation server started on :8080
+INFO Webhook server started on :8081
+INFO Admin server started on :8082</code></pre></div>
+<p>If you see errors:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR http startup failed: webhook port 8081: address already in use</code></pre></div>
+<p>This indicates a port conflict that must be resolved before the daemon can start.</p>
+<h3 id="runtime-health-checks">Runtime Health Checks<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">curl -f http://localhost:8080/health  <span class="c1"># Docs server</span>
+</span></span><span class="line"><span class="cl">curl -f http://localhost:8082/health  <span class="c1"># Admin server</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">netstat -an <span class="p">|</span> grep :8081</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h2 id="summary">Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>DocBuilder prevents webhook/documentation collisions through:</p>
+<ol>
+<li>✅ <strong>Port Isolation</strong> - Separate HTTP servers on different ports (primary defense)</li>
+<li>✅ <strong>Path Prefixing</strong> - Reserved <code>/webhooks/*</code> prefix (secondary defense)</li>
+<li>✅ <strong>Method Filtering</strong> - POST-only webhooks vs GET documentation (tertiary defense)</li>
+<li>✅ <strong>Startup Validation</strong> - Fail fast if ports conflict (preventive)</li>
+<li>✅ <strong>Firewall Rules</strong> - Network-level access control (optional)</li>
+<li>✅ <strong>Reverse Proxy</strong> - Subdomain/path segregation (optional)</li>
+</ol>
+<p><strong>Collision Risk</strong>: Effectively 0% with default configuration.</p>
+<h2 id="related-documentation">Related Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks</a> - Webhook setup guide</li>
+<li><a href="/docs/tutorials/getting-started/index.html">Getting Started</a> - Introduction to DocBuilder</li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 17, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/explanation/index.html">Explanation</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="parent " data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2" checked><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="active " data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>
