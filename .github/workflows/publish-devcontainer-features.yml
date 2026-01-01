@@ -2,6 +2,8 @@ name: Publish DevContainer Features
 
 on:
   push:
+    tags:
+      - 'v*.*.*'
     branches:
       - main
     paths:
