@@ -67,61 +67,41 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "Publishing features with version: ${VERSION}"
+          echo "Registry: ghcr.io"
+          echo "Namespace: inful"
+          echo ""
           
           # Publish each feature
           for feature_dir in features/*/; do
             if [ -f "${feature_dir}devcontainer-feature.json" ]; then
               feature_name=$(basename "$feature_dir")
+              echo "========================================="
               echo "Publishing feature: ${feature_name}"
+              echo "Directory: ${feature_dir}"
+              echo "========================================="
               
+              # Run with verbose output
+              set -x
               devcontainer features publish \
                 --namespace inful \
                 --registry ghcr.io \
                 "${feature_dir}" \
-                --version "${VERSION}"
-            fi
-          done
-
-      - name: Make packages public
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Making devcontainer feature packages public..."
-          
-          # Wait a moment for packages to be fully registered
-          sleep 5
-          
-          for feature_dir in features/*/; do
-            if [ -f "${feature_dir}devcontainer-feature.json" ]; then
-              feature_name=$(basename "$feature_dir")
+                --version "${VERSION}" || {
+                  echo "ERROR: Failed to publish ${feature_name}"
+                  exit 1
+                }
+              set +x
               
-              # Try different package name formats
-              for pkg_format in \
-                "devcontainer-features_${feature_name}" \
-                "devcontainer-features-${feature_name}" \
-                "${feature_name}"; do
-                
-                echo "Attempting to set visibility for: ${pkg_format}"
-                
-                response=$(curl -s -w "\n%{http_code}" -X PATCH \
-                  -H "Accept: application/vnd.github+json" \
-                  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-                  -H "X-GitHub-Api-Version: 2022-11-28" \
-                  "https://api.github.com/user/packages/container/${pkg_format}/visibility" \
-                  -d '{"visibility":"public"}')
-                
-                http_code=$(echo "$response" | tail -n1)
-                body=$(echo "$response" | head -n-1)
-                
-                if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
-                  echo "✓ Successfully set visibility for: ${pkg_format}"
-                  break
-                else
-                  echo "✗ Failed (${http_code}): ${body}"
-                fi
-              done
+              echo ""
+              echo "✓ Published: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
+              echo ""
             fi
           done
+          
+          echo ""
+          echo "========================================="
+          echo "All features published successfully!"
+          echo "========================================="
 
       - name: Update latest tag (release only)
         if: github.event_name == 'release'
