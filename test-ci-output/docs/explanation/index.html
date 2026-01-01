@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Architecture Documentation Index This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.
+Documentation Structure High-Level Overview Architecture Overview (architecture.md)">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Explanation Documentation :: Test">
+    <meta name="twitter:description" content="Architecture Documentation Index This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.
+Documentation Structure High-Level Overview Architecture Overview (architecture.md)">
+    <meta property="og:url" content="http://test/docs/explanation/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Explanation Documentation :: Test">
+    <meta property="og:description" content="Architecture Documentation Index This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.
+Documentation Structure High-Level Overview Architecture Overview (architecture.md)">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="website">
+    <meta itemprop="name" content="Explanation Documentation :: Test">
+    <meta itemprop="description" content="Architecture Documentation Index This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.
+Documentation Structure High-Level Overview Architecture Overview (architecture.md)">
+    <meta itemprop="datePublished" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="wordCount" content="624">
+    <meta itemprop="keywords" content="Documentation">
+    <title>Explanation Documentation :: Test</title>
+    <link href="/docs/explanation/index.xml" rel="alternate" type="application/rss+xml" title="Explanation Documentation :: Test">
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/explanation\/index.html';
+      window.relearn.relBasePath='..\/..';
+      window.relearn.relBaseUri='..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/explanation/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#documentation-structure">Documentation Structure</a>
+      <ul>
+        <li><a href="#high-level-overview">High-Level Overview</a></li>
+        <li><a href="#comprehensive-documentation">Comprehensive Documentation</a></li>
+        <li><a href="#specialized-topics">Specialized Topics</a></li>
+      </ul>
+    </li>
+    <li><a href="#quick-navigation">Quick Navigation</a>
+      <ul>
+        <li><a href="#by-role">By Role</a></li>
+        <li><a href="#by-topic">By Topic</a></li>
+      </ul>
+    </li>
+    <li><a href="#architecture-evolution">Architecture Evolution</a></li>
+    <li><a href="#architecture-decision-records-adrs">Architecture Decision Records (ADRs)</a></li>
+    <li><a href="#visual-reference">Visual Reference</a>
+      <ul>
+        <li><a href="#system-layers">System Layers</a></li>
+        <li><a href="#pipeline-stages">Pipeline Stages</a></li>
+        <li><a href="#key-principles">Key Principles</a></li>
+      </ul>
+    </li>
+    <li><a href="#contributing-to-architecture">Contributing to Architecture</a></li>
+    <li><a href="#questions-and-feedback">Questions and Feedback</a></li>
+    <li><a href="#related-documentation">Related Documentation</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Explanation Documentation</span><meta itemprop="position" content="3"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./explanation/README.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/ci-cd-setup/index.html" title="CI/CD Setup Guide (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/explanation/webhook-documentation-isolation/index.html" title="Webhook and Documentation Isolation Strategy (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/documentation/index.html">Documentation</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="explanation-documentation">Explanation Documentation</h1>
+
+<h1 id="architecture-documentation-index">Architecture Documentation Index<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<p>This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.</p>
+<h2 id="documentation-structure">Documentation Structure<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="high-level-overview">High-Level Overview<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong><a href="/docs/explanation/architecture/index.html">Architecture Overview (architecture.md)</a></strong></p>
+<ul>
+<li>Quick reference for the staged pipeline</li>
+<li>Key components and responsibilities</li>
+<li>Namespacing and idempotence strategies</li>
+<li>Design rationale highlights</li>
+<li><strong>Audience:</strong> New developers, product managers, technical leads</li>
+</ul>
+<h3 id="comprehensive-documentation">Comprehensive Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong><a href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture (comprehensive-architecture.md)</a></strong></p>
+<ul>
+<li>Complete system architecture with all layers</li>
+<li>Core principles (clean architecture, event sourcing, typed state)</li>
+<li>Detailed package structure and responsibilities</li>
+<li>Data flow diagrams and sequences</li>
+<li>Key subsystems deep dive (Relearn configuration, forges, change detection)</li>
+<li>Extension points and operational considerations</li>
+<li>Migration status summary</li>
+<li><strong>Audience:</strong> Senior engineers, architects, contributors</li>
+</ul>
+<p><strong><a href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams (architecture-diagrams.md)</a></strong></p>
+<ul>
+<li>Visual representations using ASCII and Mermaid</li>
+<li>System architecture diagrams</li>
+<li>Pipeline flow visualizations</li>
+<li>Package dependency graphs</li>
+<li>Component interaction sequences</li>
+<li>State machine diagrams</li>
+<li>Deployment architectures</li>
+<li><strong>Audience:</strong> Visual learners, architects, documentation reviewers</li>
+</ul>
+<p><strong><a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide (package-architecture.md)</a></strong></p>
+<ul>
+<li>Detailed package-by-package documentation</li>
+<li>Key types and interfaces for each package</li>
+<li>Usage patterns and code examples</li>
+<li>Design rationale for architectural decisions</li>
+<li>Dependency rules and import matrix</li>
+<li>Testing support infrastructure</li>
+<li><strong>Audience:</strong> Contributors, maintainers, package users</li>
+</ul>
+<h3 id="specialized-topics">Specialized Topics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong><a href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale (namespacing-rationale.md)</a></strong></p>
+<ul>
+<li>Forge-level namespacing design</li>
+<li>Collision prevention strategies</li>
+<li>Configuration options</li>
+<li><strong>Audience:</strong> Users configuring multi-forge setups</li>
+</ul>
+<p><strong><a href="/docs/explanation/renderer-testing/index.html">Renderer Testing (renderer-testing.md)</a></strong></p>
+<ul>
+<li>Hugo rendering test strategies</li>
+<li>Golden test patterns</li>
+<li><strong>Audience:</strong> Contributors working on Hugo integration</li>
+</ul>
+<h2 id="quick-navigation">Quick Navigation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="by-role">By Role<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>New Developer Getting Started:</strong></p>
+<ol>
+<li>Start with <a href="/docs/explanation/architecture/index.html">Architecture Overview</a></li>
+<li>Review <a href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams</a> for visual understanding</li>
+<li>Deep dive into <a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide</a> for code structure</li>
+</ol>
+<p><strong>Contributing to Core Pipeline:</strong></p>
+<ol>
+<li>Read <a href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture</a> - Pipeline Flow section</li>
+<li>Study <a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide</a> - Pipeline section</li>
+<li>Review <a href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams</a> - Pipeline Flow</li>
+</ol>
+<p><strong>Adding New Theme Support:</strong></p>
+<ol>
+<li>Read <a href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture</a> - Theme System</li>
+<li>Review <a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide</a> - internal/hugo section</li>
+<li>Follow <a href="/docs/how-to/add-theme-support">How-To Guide</a></li>
+</ol>
+<p><strong>Implementing Forge Integration:</strong></p>
+<ol>
+<li>Read <a href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture</a> - Forge Integration</li>
+<li>Study <a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide</a> - internal/forge section</li>
+<li>Review <a href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale</a></li>
+</ol>
+<p><strong>Understanding State Management:</strong></p>
+<ol>
+<li>Review <a href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture</a> - State Management</li>
+<li>Study <a href="/docs/explanation/package-architecture/index.html">Package Architecture Guide</a> - internal/state section</li>
+<li>Check <a href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams</a> - State Persistence Flow</li>
+</ol>
+<h3 id="by-topic">By Topic<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Configuration System:</strong></p>
+<ul>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#configuration--state">Comprehensive Architecture</a></li>
+<li><a href="/docs/explanation/package-architecture/index.html#internalconfig">Package Architecture Guide</a></li>
+<li><a href="/docs/reference/configuration/index.html">Configuration Reference</a></li>
+</ul>
+<p><strong>Pipeline Stages:</strong></p>
+<ul>
+<li><a href="/docs/explanation/architecture/index.html#pipeline-flow">Architecture Overview</a></li>
+<li><a href="/docs/explanation/architecture-diagrams/index.html#pipeline-flow">Architecture Diagrams</a></li>
+<li><a href="/docs/explanation/package-architecture/index.html#internalpipeline">Package Architecture Guide</a></li>
+</ul>
+<p><strong>Event Sourcing:</strong></p>
+<ul>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#2-event-sourcing">Comprehensive Architecture</a></li>
+<li><a href="/docs/explanation/package-architecture/index.html#internaleventstore">Package Architecture Guide</a></li>
+</ul>
+<p><strong>Error Handling:</strong></p>
+<ul>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#4-unified-error-handling">Comprehensive Architecture</a></li>
+<li><a href="/docs/explanation/package-architecture/index.html#internalfoundationerrors">Package Architecture Guide</a></li>
+<li><a href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling</a></li>
+</ul>
+<p><strong>Relearn Configuration:</strong></p>
+<ul>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#1-relearn-theme-configuration">Comprehensive Architecture</a></li>
+<li><a href="/docs/explanation/architecture-diagrams/index.html#relearn-theme-configuration">Architecture Diagrams</a></li>
+<li><a href="/docs/how-to/use-relearn-theme/index.html">How-To: Use Relearn Theme</a></li>
+</ul>
+<p><strong>Change Detection:</strong></p>
+<ul>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#3-change-detection">Comprehensive Architecture</a></li>
+<li><a href="/docs/explanation/architecture-diagrams/index.html#change-detection">Architecture Diagrams</a></li>
+<li><a href="/docs/explanation/package-architecture/index.html#internalincremental">Package Architecture Guide</a></li>
+</ul>
+<p><strong>Testing Infrastructure:</strong></p>
+<ul>
+<li><a href="/docs/explanation/package-architecture/index.html#testing-support">Package Architecture Guide</a></li>
+<li><a href="/docs/explanation/renderer-testing/index.html">Renderer Testing</a></li>
+</ul>
+<h2 id="architecture-evolution">Architecture Evolution<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The architecture has undergone significant evolution documented in:</p>
+<ul>
+<li><strong><a href="/docs/ARCHITECTURE_MIGRATION_PLAN">Architecture Migration Plan</a></strong>
+<ul>
+<li>19 completed phases (A-M, O-P, R-S-T-U)</li>
+<li>2 deferred phases (Q, J)</li>
+<li>~1,290 lines eliminated</li>
+<li>Zero breaking changes</li>
+</ul>
+</li>
+</ul>
+<h2 id="architecture-decision-records-adrs">Architecture Decision Records (ADRs)<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>For detailed architectural decisions, see the <a href="/docs/adr/index.html">ADR directory</a>:</p>
+<ul>
+<li><a href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling</a></li>
+<li><a href="/docs/plan/adr-001-forge-integration-daemon">ADR-001: Forge Integration Daemon</a></li>
+</ul>
+<h2 id="visual-reference">Visual Reference<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="system-layers">System Layers<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>┌─────────────────────────┐
+│   Presentation Layer    │  cmd/docbuilder/commands, server/
+├─────────────────────────┤
+│   Application Layer     │  build/, services/, daemon/
+├─────────────────────────┤
+│     Domain Layer        │  config/, state/, docs/, hugo/, forge/
+├─────────────────────────┤
+│  Infrastructure Layer   │  git/, workspace/, eventstore/, auth/
+├─────────────────────────┤
+│   Foundation Layer      │  foundation/errors, logfields/, metrics/
+└─────────────────────────┘</code></pre></div>
+<h3 id="pipeline-stages">Pipeline Stages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig →
+Layouts → CopyContent → Indexes → RunHugo (optional)</code></pre></div>
+<h3 id="key-principles">Key Principles<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Clean Architecture</strong> - Clear dependency direction</li>
+<li><strong>Event Sourcing</strong> - Immutable event log</li>
+<li><strong>Typed State</strong> - No <code>map[string]any</code> in primary paths</li>
+<li><strong>Unified Errors</strong> - Single error type system</li>
+<li><strong>Observable</strong> - Logging, metrics, tracing</li>
+</ol>
+<h2 id="contributing-to-architecture">Contributing to Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>When making architectural changes:</p>
+<ol>
+<li><strong>Update relevant documentation</strong> in this directory</li>
+<li><strong>Add ADR</strong> for significant decisions</li>
+<li><strong>Update diagrams</strong> if structure changes</li>
+<li><strong>Update migration plan</strong> if part of migration</li>
+<li><strong>Update package guide</strong> for API changes</li>
+</ol>
+<h2 id="questions-and-feedback">Questions and Feedback<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>For questions about the architecture:</p>
+<ul>
+<li>Check existing documentation first</li>
+<li>Review ADRs for historical context</li>
+<li>Open discussion in GitHub issues</li>
+<li>Tag architecture-related PRs with <code>architecture</code> label</li>
+</ul>
+<h2 id="related-documentation">Related Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial</a></li>
+<li><a href="/docs/how-to/index.html">How-To Guides</a></li>
+<li><a href="/docs/reference/index.html">Reference Documentation</a></li>
+<li><a href="/docs/CONTRIBUTING">Contributing Guide</a></li>
+<li><a href="/docs/CHANGELOG">Changelog</a></li>
+</ul>
+<hr>
+<p><strong>Last Updated:</strong> December 2025</p>
+<p><strong>Architecture Status:</strong> Migration complete (19 phases), production-ready</p>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 15, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/explanation/index.html">Explanation</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active parent " data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2" checked><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

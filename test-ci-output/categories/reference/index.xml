@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Reference :: Category :: Test</title>
+    <link>http://test/categories/reference/index.html</link>
+    <description></description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <lastBuildDate>Mon, 29 Dec 2025 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://test/categories/reference/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Lint Rules Changelog</title>
+      <link>http://test/docs/reference/lint-rules-changelog/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/lint-rules-changelog/index.html</guid>
+      <description>This document tracks changes to linting rules across DocBuilder versions, helping teams understand when rules were added, changed, or deprecated.&#xA;Version History v1.0.0 (2025-12-29) - Initial Release Initial linting implementation with core validation rules.&#xA;Filename Rules (Errors) Added:</description>
+    </item>
+    <item>
+      <title>Lint Rules Reference</title>
+      <link>http://test/docs/reference/lint-rules/index.html</link>
+      <pubDate>Mon, 29 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/lint-rules/index.html</guid>
+      <description>Complete reference for all documentation linting rules enforced by DocBuilder.&#xA;Overview DocBuilder’s linter enforces opinionated, non-configurable rules based on Hugo and DocBuilder best practices. Rules are classified by severity:&#xA;Severity Impact Build Behavior Error Blocks build Exit code 2, CI fails Warning Should fix Exit code 1, CI passes Info Informational Exit code 0, CI passes Rule Categories Filename Rules (Errors) Content Rules (Errors) Structure Rules (Warnings) Asset Rules (Warnings/Info) Filename Rules All filename rules are Errors that block the build.</description>
+    </item>
+    <item>
+      <title>Build Reports Reference</title>
+      <link>http://test/docs/reference/report/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/report/index.html</guid>
+      <description>Build Report Reference DocBuilder writes a machine-readable build-report.json and a summary build-report.txt after each build.&#xA;Lifecycle Report initialized at pipeline start. Stages record durations, outcomes, issue codes. On early exit (no changes) outcome and timestamps are still finalized. Report persisted atomically (temp file then rename). JSON Fields Reference Core Metadata Field Type Description schema_version int Schema contract version (currently 1). doc_builder_version string DocBuilder version that generated the report. hugo_version string Hugo version detected during build. start time Build start timestamp (UTC). end time Build completion timestamp (UTC). outcome string Final build status: success, warning, failed, or canceled. Repository Statistics Field Type Description repositories int Count of repositories with at least one doc file. files int Count of discovered documentation files. cloned_repositories int Successful clone/update count. failed_repositories int Failed clone attempts. skipped_repositories int Repositories filtered out pre-clone. clone_stage_skipped bool Whether clone stage was skipped (incremental builds). Build Results Field Type Description rendered_pages int Markdown pages written to content directory. static_rendered bool Hugo build executed successfully. effective_render_mode string Actual render mode used: always, auto, or never. Stage Information Field Type Description stage_durations object Map of stage name → duration (nanoseconds, human-readable when pretty printed). stage_error_kinds object Map of stage name → error kind (fatal, warning, canceled). stage_counts object Detailed per-stage counts (success, skipped, failed). Error Tracking Field Type Description errors []string Fatal error messages that caused build abortion. warnings []string Non-fatal warning messages. issues []Issue Structured issue list (see Issues Array section). retries int Aggregate retry attempts across all stages. retries_exhausted bool True if any stage exhausted its retry budget. Incremental Build Fields Field Type Description doc_files_hash string Stable SHA‑256 hex of sorted Hugo content paths. config_hash string Configuration hash for change detection. delta_decision string Decision made for incremental build: full_rebuild, incremental, skip. delta_changed_repos []string List of repositories that changed (incremental builds). delta_repo_reasons object Map of repository name → change reason (quick_hash_diff, assumed_changed, unknown). skip_reason string Reason for early exit (e.g., no_changes, no_repositories). Template Information Field Type Description index_templates object Map of template kind → template info (source, exists, custom). pipeline_version int Content processing pipeline version number. Issues Array Each issue item:</description>
+    </item>
+    <item>
+      <title>CLI Reference</title>
+      <link>http://test/docs/reference/cli/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/cli/index.html</guid>
+      <description>Primary commands (Kong-based CLI):&#xA;Command Description build Run full pipeline (clone → discover → generate config → copy content → indexes → (optional) Hugo run). init Create an example configuration file. discover (If present) Run discovery only (debug content paths). daemon Run long-lived service (if implemented in current codebase). Global Flags (Common) Flag Purpose -c, --config Path to YAML config file. -v Verbose logging. --version Print version/build info. Environment Variables (Behavior Modifiers) Variable Effect --render-mode always Force running Hugo after scaffolding. --render-mode never Force skipping Hugo even when enabled in config. Build Report Outputs Generated in output directory:</description>
+    </item>
+    <item>
+      <title>Configuration Reference</title>
+      <link>http://test/docs/reference/configuration/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/configuration/index.html</guid>
+      <description>This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.&#xA;Top-Level Structure 1 2 3 4 5 6 repositories: [] # List of repositories to aggregate build: {} # Performance &amp; workspace tuning daemon: {} # Daemon mode settings (link verification, sync, storage) versioning: {} # Multi-version documentation (optional) hugo: {} # Hugo site metadata &amp; theme output: {} # Output directory behavior Repositories Field Type Required Description url string yes Git clone URL. name string yes Unique repository name (used in content paths). branch string no Branch to checkout (default per remote). paths []string no Documentation root paths (default: [“docs”]). auth.type enum no Authentication mode: token, ssh, or basic. auth.token string conditional Required when type=token. auth.username string conditional Required when type=basic. auth.password string conditional Required when type=basic. auth.key_path string conditional SSH private key path when type=ssh. Build Section Field Type Default Description clone_concurrency int 4 Parallel clone/update workers (bounded to repo count). clone_strategy enum fresh Repository acquisition mode: fresh, update, or auto. shallow_depth int 0 If &gt;0 use shallow clones of that depth. prune_non_doc_paths bool false Remove non-doc top-level directories after clone. prune_allow []string [] Keep-listed directories/files (glob). prune_deny []string [] Force-remove directories/files (glob) except .git. hard_reset_on_diverge bool false Force align local branch to remote on divergence. clean_untracked bool false Remove untracked files after successful update. max_retries int 2 Retry attempts for transient clone/update failures. retry_backoff enum linear Backoff strategy: fixed, linear, or exponential. retry_initial_delay duration 1s First retry delay. retry_max_delay duration 30s Maximum backoff delay cap. workspace_dir string derived Explicit workspace override path. namespace_forges enum auto Forge prefixing: auto, always, or never. skip_if_unchanged bool daemon:true, CLI:false Skip builds when nothing changed (daemon only). Daemon Section Configuration for daemon mode operation, including link verification, sync scheduling, and storage paths.</description>
+    </item>
+    <item>
+      <title>Content Transforms Reference (DEPRECATED)</title>
+      <link>http://test/docs/reference/content-transforms/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/content-transforms/index.html</guid>
+      <description>Content Transform Pipeline (DEPRECATED) ⚠️ DEPRECATED: This document describes the old registry-based transform system that was removed on December 16, 2025.&#xA;For current pipeline documentation, see:&#xA;ADR-003: Fixed Transform Pipeline Architecture Overview Implementation: internal/hugo/pipeline/ Historical Documentation This document explains DocBuilder’s old markdown content transform architecture: how the registry worked, built‑in transforms, and the merge semantics for front matter.</description>
+    </item>
+    <item>
+      <title>Pipeline Visualization</title>
+      <link>http://test/docs/reference/pipeline-visualization/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/pipeline-visualization/index.html</guid>
+      <description>The docbuilder visualize command provides multiple ways to visualize the transform pipeline, making it easy to understand execution order, stage grouping, and dependency relationships.&#xA;Quick Start 1 2 3 4 5 6 7 8 9 10 docbuilder visualize docbuilder visualize -f mermaid &gt; docs/pipeline.md docbuilder visualize -f dot -o pipeline.dot dot -Tpng pipeline.dot -o pipeline.png docbuilder visualize -f json -o pipeline.json docbuilder visualize --list Output Formats Text (Default) Human-readable ASCII art with boxes, arrows, and dependency indicators.</description>
+    </item>
+    <item>
+      <title>Transform Validation Reference (DEPRECATED)</title>
+      <link>http://test/docs/reference/transform-validation/index.html</link>
+      <pubDate>Mon, 15 Dec 2025 00:00:00 +0000</pubDate>
+      <guid>http://test/docs/reference/transform-validation/index.html</guid>
+      <description>Transform Pipeline Validation (DEPRECATED) ⚠️ DEPRECATED: This document describes validation for the old registry-based transform system that was removed on December 16, 2025.&#xA;The new fixed transform pipeline uses explicit ordering and does not require dependency validation. See ADR-003: Fixed Transform Pipeline for current architecture.&#xA;Historical Documentation Validation Features 1. Missing Dependency Detection The validator checks that all transforms referenced in MustRunAfter and MustRunBefore declarations actually exist in the registry.</description>
+    </item>
+  </channel>
+</rss>

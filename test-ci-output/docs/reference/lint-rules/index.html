@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Complete reference for all documentation linting rules enforced by DocBuilder.
+Overview DocBuilder’s linter enforces opinionated, non-configurable rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+Severity Impact Build Behavior Error Blocks build Exit code 2, CI fails Warning Should fix Exit code 1, CI passes Info Informational Exit code 0, CI passes Rule Categories Filename Rules (Errors) Content Rules (Errors) Structure Rules (Warnings) Asset Rules (Warnings/Info) Filename Rules All filename rules are Errors that block the build.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Lint Rules Reference :: Test">
+    <meta name="twitter:description" content="Complete reference for all documentation linting rules enforced by DocBuilder.
+Overview DocBuilder’s linter enforces opinionated, non-configurable rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+Severity Impact Build Behavior Error Blocks build Exit code 2, CI fails Warning Should fix Exit code 1, CI passes Info Informational Exit code 0, CI passes Rule Categories Filename Rules (Errors) Content Rules (Errors) Structure Rules (Warnings) Asset Rules (Warnings/Info) Filename Rules All filename rules are Errors that block the build.">
+    <meta property="og:url" content="http://test/docs/reference/lint-rules/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Lint Rules Reference :: Test">
+    <meta property="og:description" content="Complete reference for all documentation linting rules enforced by DocBuilder.
+Overview DocBuilder’s linter enforces opinionated, non-configurable rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+Severity Impact Build Behavior Error Blocks build Exit code 2, CI fails Warning Should fix Exit code 1, CI passes Info Informational Exit code 0, CI passes Rule Categories Filename Rules (Errors) Content Rules (Errors) Structure Rules (Warnings) Asset Rules (Warnings/Info) Filename Rules All filename rules are Errors that block the build.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-29T00:00:00+00:00">
+    <meta property="article:tag" content="Linting">
+    <meta property="article:tag" content="Validation">
+    <meta property="article:tag" content="Rules">
+    <meta itemprop="name" content="Lint Rules Reference :: Test">
+    <meta itemprop="description" content="Complete reference for all documentation linting rules enforced by DocBuilder.
+Overview DocBuilder’s linter enforces opinionated, non-configurable rules based on Hugo and DocBuilder best practices. Rules are classified by severity:
+Severity Impact Build Behavior Error Blocks build Exit code 2, CI fails Warning Should fix Exit code 1, CI passes Info Informational Exit code 0, CI passes Rule Categories Filename Rules (Errors) Content Rules (Errors) Structure Rules (Warnings) Asset Rules (Warnings/Info) Filename Rules All filename rules are Errors that block the build.">
+    <meta itemprop="datePublished" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-29T00:00:00+00:00">
+    <meta itemprop="wordCount" content="2021">
+    <meta itemprop="keywords" content="Linting,Validation,Rules">
+    <title>Lint Rules Reference :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/reference\/lint-rules\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/reference/lint-rules/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#rule-categories">Rule Categories</a></li>
+    <li><a href="#filename-rules">Filename Rules</a>
+      <ul>
+        <li><a href="#rule-uppercase-letters">Rule: Uppercase Letters</a></li>
+        <li><a href="#rule-spaces-in-filename">Rule: Spaces in Filename</a></li>
+        <li><a href="#rule-special-characters">Rule: Special Characters</a></li>
+        <li><a href="#rule-leadingtrailing-hyphens-or-underscores">Rule: Leading/Trailing Hyphens or Underscores</a></li>
+        <li><a href="#rule-invalid-double-extensions">Rule: Invalid Double Extensions</a></li>
+        <li><a href="#rule-reserved-names">Rule: Reserved Names</a></li>
+      </ul>
+    </li>
+    <li><a href="#content-rules">Content Rules</a>
+      <ul>
+        <li><a href="#rule-malformed-frontmatter-yaml">Rule: Malformed Frontmatter YAML</a></li>
+        <li><a href="#rule-missing-frontmatter-closing">Rule: Missing Frontmatter Closing</a></li>
+        <li><a href="#rule-broken-internal-links">Rule: Broken Internal Links</a></li>
+      </ul>
+    </li>
+    <li><a href="#structure-rules">Structure Rules</a>
+      <ul>
+        <li><a href="#rule-missing-section-index">Rule: Missing Section Index</a></li>
+        <li><a href="#rule-deep-nesting">Rule: Deep Nesting</a></li>
+        <li><a href="#rule-orphaned-assets">Rule: Orphaned Assets</a></li>
+        <li><a href="#rule-mixed-naming-styles">Rule: Mixed Naming Styles</a></li>
+      </ul>
+    </li>
+    <li><a href="#asset-rules">Asset Rules</a>
+      <ul>
+        <li><a href="#rule-image-filename-issues">Rule: Image Filename Issues</a></li>
+        <li><a href="#rule-whitelisted-double-extensions">Rule: Whitelisted Double Extensions</a></li>
+        <li><a href="#rule-absolute-urls-to-internal-assets">Rule: Absolute URLs to Internal Assets</a></li>
+        <li><a href="#rule-large-binary-files">Rule: Large Binary Files</a></li>
+      </ul>
+    </li>
+    <li><a href="#standard-file-exclusions">Standard File Exclusions</a></li>
+    <li><a href="#rule-evolution">Rule Evolution</a></li>
+    <li><a href="#exit-codes-summary">Exit Codes Summary</a></li>
+    <li><a href="#auto-fix-capabilities">Auto-Fix Capabilities</a></li>
+    <li><a href="#see-also">See Also</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/reference/index.html"><span itemprop="name">reference</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Lint Rules Reference</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./reference/lint-rules.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/lint-rules-changelog/index.html" title="Lint Rules Changelog (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/reference/report/index.html" title="Build Reports Reference (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/linting/index.html">Linting</a></li>
+    <li><a class="term-link" href="/tags/rules/index.html">Rules</a></li>
+    <li><a class="term-link" href="/tags/validation/index.html">Validation</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="lint-rules-reference">Lint Rules Reference</h1>
+
+<p>Complete reference for all documentation linting rules enforced by DocBuilder.</p>
+<h2 id="overview">Overview<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>DocBuilder&rsquo;s linter enforces <strong>opinionated, non-configurable</strong> rules based on Hugo and DocBuilder best practices. Rules are classified by severity:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Severity</th>
+          <th>Impact</th>
+          <th>Build Behavior</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Error</strong></td>
+          <td>Blocks build</td>
+          <td>Exit code 2, CI fails</td>
+      </tr>
+      <tr>
+          <td><strong>Warning</strong></td>
+          <td>Should fix</td>
+          <td>Exit code 1, CI passes</td>
+      </tr>
+      <tr>
+          <td><strong>Info</strong></td>
+          <td>Informational</td>
+          <td>Exit code 0, CI passes</td>
+      </tr>
+  </tbody>
+</table>
+<h2 id="rule-categories">Rule Categories<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/reference/lint-rules/index.html#filename-rules">Filename Rules</a> (Errors)</li>
+<li><a href="/docs/reference/lint-rules/index.html#content-rules">Content Rules</a> (Errors)</li>
+<li><a href="/docs/reference/lint-rules/index.html#structure-rules">Structure Rules</a> (Warnings)</li>
+<li><a href="/docs/reference/lint-rules/index.html#asset-rules">Asset Rules</a> (Warnings/Info)</li>
+</ul>
+<hr>
+<h2 id="filename-rules">Filename Rules<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>All filename rules are <strong>Errors</strong> that block the build.</p>
+<h3 id="rule-uppercase-letters">Rule: Uppercase Letters<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: <code>[A-Z]</code> in filename</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Filenames become URL slugs in Hugo</li>
+<li>Uppercase causes case-sensitivity issues across platforms (macOS/Windows case-insensitive, Linux case-sensitive)</li>
+<li>Creates inconsistent URLs: <code>API-Guide.md</code> → <code>/API-Guide/</code> vs expected <code>/api-guide/</code></li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  API-Guide.md
+  MyDocument.md
+  UserManual.md
+  README_FIRST.md
+
+✅ Valid:
+  api-guide.md
+  my-document.md
+  user-manual.md
+  readme-first.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Converts to lowercase: <code>API-Guide.md</code> → <code>api-guide.md</code></p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid filename
+  File: docs/API-Guide.md
+  Issue: Contains uppercase letters (A, P, I, G)
+  
+  Current:  docs/API-Guide.md
+  Suggested: docs/api-guide.md
+  
+  Why: Uppercase letters cause case-sensitivity issues 
+  across platforms and create inconsistent URLs.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h3 id="rule-spaces-in-filename">Rule: Spaces in Filename<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: <code>[ ]</code> (space character) in filename</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Spaces become <code>%20</code> in URLs: <code>My Doc.md</code> → <code>/my%20doc/</code></li>
+<li>Breaks some link parsers and shell commands</li>
+<li>Poor user experience with encoded URLs</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  My Document.md
+  API Guide.md
+  User Manual v2.md
+  Architecture Diagram.png
+
+✅ Valid:
+  my-document.md
+  api-guide.md
+  user-manual-v2.md
+  architecture-diagram.png</code></pre></div>
+<p><strong>Auto-fix</strong>: Replaces spaces with hyphens: <code>My Document.md</code> → <code>my-document.md</code></p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid filename
+  File: docs/My Document.md
+  Issue: Contains space characters
+  
+  Current:  docs/My Document.md
+  Suggested: docs/my-document.md
+  
+  Why: Spaces create problematic URLs (/my%20document/) 
+  and may break cross-references.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h3 id="rule-special-characters">Rule: Special Characters<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Any character not in <code>[a-z0-9-_.]</code></p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Special characters unsupported by Hugo&rsquo;s URL generation</li>
+<li>May require shell escaping in commands</li>
+<li>Can break on different filesystems</li>
+</ul>
+<p><strong>Invalid Characters</strong>: <code>@</code>, <code>#</code>, <code>$</code>, <code>%</code>, <code>&amp;</code>, <code>*</code>, <code>(</code>, <code>)</code>, <code>[</code>, <code>]</code>, <code>{</code>, <code>}</code>, <code>;</code>, <code>:</code>, <code>'</code>, <code>&quot;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>?</code>, <code>|</code>, <code>\</code>, <code>/</code>, <code>~</code>, <code>`</code></p>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  file@name.md
+  doc#tag.md
+  guide(final).md
+  config[prod].md
+  notes&amp;ideas.md
+
+✅ Valid:
+  file-name.md
+  doc-tag.md
+  guide-final.md
+  config-prod.md
+  notes-ideas.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Replaces special characters with hyphens: <code>file@name.md</code> → <code>file-name.md</code></p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid filename
+  File: docs/config[prod].md
+  Issue: Contains special characters: [ ]
+  
+  Current:  docs/config[prod].md
+  Suggested: docs/config-prod.md
+  
+  Why: Special characters are unsupported by Hugo and 
+  may cause issues on different filesystems.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h3 id="rule-leadingtrailing-hyphens-or-underscores">Rule: Leading/Trailing Hyphens or Underscores<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Filename starts or ends with <code>-</code> or <code>_</code></p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Creates malformed URLs: <code>/-docs/</code> or <code>/_temp/</code></li>
+<li>May be interpreted as hidden files on Unix systems</li>
+<li>Poor aesthetics and confusing navigation</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  -draft.md
+  _temporary.md
+  config-.md
+  notes_.md
+
+✅ Valid:
+  draft.md
+  temporary.md
+  config.md
+  notes.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Strips leading/trailing hyphens and underscores: <code>-draft.md</code> → <code>draft.md</code></p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid filename
+  File: docs/-draft.md
+  Issue: Leading hyphen
+  
+  Current:  docs/-draft.md
+  Suggested: docs/draft.md
+  
+  Why: Leading/trailing hyphens create malformed URLs 
+  and may be interpreted as hidden files.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h3 id="rule-invalid-double-extensions">Rule: Invalid Double Extensions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Multiple file extensions (e.g., <code>.md.backup</code>, <code>.markdown.old</code>)</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Hugo attempts to process files with <code>.md</code> or <code>.markdown</code> anywhere in the extension</li>
+<li>Backup files, temp files cause build errors</li>
+<li>Whitelisted exceptions exist for embedded diagram formats</li>
+</ul>
+<p><strong>Whitelisted Double Extensions</strong>:</p>
+<ul>
+<li><code>.drawio.png</code> - Draw.io embedded PNG diagrams (editable)</li>
+<li><code>.drawio.svg</code> - Draw.io embedded SVG diagrams (editable)</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  api-guide.md.backup
+  notes.markdown.old
+  config.md.txt
+  draft.md.2024-12-29
+
+✅ Valid (single extension):
+  api-guide.md
+  notes.markdown
+  config.txt
+  draft.md
+
+✅ Valid (whitelisted):
+  architecture.drawio.png
+  flowchart.drawio.svg</code></pre></div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (requires manual intervention)</p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid double extension
+  File: docs/api-guide.md.backup
+  Issue: Contains non-whitelisted double extension .md.backup
+  
+  Current:  docs/api-guide.md.backup
+  
+  Hugo will attempt to process this as markdown, 
+  causing build errors.
+  
+  Whitelisted double extensions (allowed):
+    • .drawio.png (Draw.io embedded PNG diagrams)
+    • .drawio.svg (Draw.io embedded SVG diagrams)
+  
+  How to fix:
+    1. Remove backup files from docs directory
+    2. Use Git history or separate backup location
+    3. Add to .gitignore: *.backup</code></pre></div>
+<hr>
+<h3 id="rule-reserved-names">Rule: Reserved Names<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Filenames that conflict with Hugo taxonomy URLs</p>
+<p><strong>Reserved Names</strong>: <code>tags.md</code>, <code>categories.md</code> (without namespace prefix)</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Hugo reserves <code>/tags/</code> and <code>/categories/</code> URLs for taxonomy listings</li>
+<li>Direct files cause URL conflicts and build errors</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Invalid:
+  tags.md
+  categories.md
+
+✅ Valid (with prefix):
+  content-tags.md
+  doc-categories.md
+  using-tags.md
+  about-categories.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Adds prefix: <code>tags.md</code> → <code>content-tags.md</code></p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Reserved filename
+  File: docs/tags.md
+  Issue: Conflicts with Hugo taxonomy URL
+  
+  Current:  docs/tags.md
+  Suggested: docs/content-tags.md
+  
+  Why: Hugo reserves /tags/ for taxonomy listings.
+  Using tags.md creates URL conflicts.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h2 id="content-rules">Content Rules<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Content rules validate the internal structure of markdown files.</p>
+<h3 id="rule-malformed-frontmatter-yaml">Rule: Malformed Frontmatter YAML<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Invalid YAML syntax in frontmatter block</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Hugo silently skips pages with invalid frontmatter</li>
+<li>Page won&rsquo;t render but no error is shown</li>
+<li>Causes missing documentation without obvious cause</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">❌ Invalid</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">API Guide</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2025-12-29</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="l">invalid key without colon</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">❌ Invalid (indentation)</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">API Guide</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2025-12-29</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">❌ Invalid (missing closing)</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l">API Guide</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2025-12-29</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">✅ Valid</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;API Guide&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">date</span><span class="p">:</span><span class="w"> </span><span class="ld">2025-12-29</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">tags</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">api</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span>- <span class="l">reference</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nn">---</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (requires manual correction)</p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Invalid frontmatter
+  File: docs/api-guide.md
+  Line: 4
+  Issue: YAML parsing failed: mapping values are not allowed here
+  
+  ---
+  title: API Guide
+  date: 2025-12-29
+  invalid key without colon
+  ---
+  
+  Frontmatter must be valid YAML enclosed by --- markers.
+  Check for proper indentation and key: value format.</code></pre></div>
+<hr>
+<h3 id="rule-missing-frontmatter-closing">Rule: Missing Frontmatter Closing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Frontmatter starts with <code>---</code> but missing closing <code>---</code></p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Hugo treats entire file as frontmatter</li>
+<li>No content rendered</li>
+<li>Page appears blank</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">❌ Invalid:
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">title: API Guide
+</span></span><span class="line"><span class="cl">date: 2025-12-29
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">This is the content...</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">✅ Valid:
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">title: API Guide
+</span></span><span class="line"><span class="cl">date: 2025-12-29
+</span></span><span class="line"><span class="cl">---
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">This is the content...</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (ambiguous where frontmatter should end)</p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Incomplete frontmatter
+  File: docs/api-guide.md
+  Issue: Missing closing --- marker
+  
+  Frontmatter started at line 1 but never closed.
+  Hugo will treat the entire file as frontmatter,
+  resulting in a blank page.
+  
+  Add --- after frontmatter block before content.</code></pre></div>
+<hr>
+<h3 id="rule-broken-internal-links">Rule: Broken Internal Links<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Link to non-existent local file</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Broken links lead to 404 errors in production</li>
+<li>Poor user experience</li>
+<li>Indicates stale or incorrect documentation</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">❌ Invalid:
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/reference/api-guide</span>)  # File doesn&#39;t exist
+</span></span><span class="line"><span class="cl">[<span class="nt">Configuration</span>](<span class="na">/docs/config/settings</span>)  # File doesn&#39;t exist
+</span></span><span class="line"><span class="cl">![<span class="nt">Diagram</span>](<span class="na">/docs/reference/images/flow.png</span>)  # Image doesn&#39;t exist</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-markdown" data-lang="markdown"><span class="line"><span class="cl">✅ Valid:
+</span></span><span class="line"><span class="cl">[<span class="nt">API Guide</span>](<span class="na">/docs/reference/getting-started</span>)  # File exists
+</span></span><span class="line"><span class="cl">[<span class="nt">Configuration</span>](<span class="na">/docs/config/</span>)  # File exists
+</span></span><span class="line"><span class="cl">![<span class="nt">Diagram</span>](<span class="na">/docs/reference/images/architecture.png</span>)  # Image exists</span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (can&rsquo;t determine intent)</p>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>ERROR: Broken internal link
+  File: docs/index.md
+  Line: 15
+  Issue: Link target does not exist
+  
+  [API Guide](/docs/reference/api-guide)
+              ^^^^^^^^^^^^^^^^^
+  
+  Target file not found: docs/api-guide.md
+  
+  Possible fixes:
+    • Create the missing file
+    • Update link to correct path
+    • Remove broken link</code></pre></div>
+<hr>
+<h2 id="structure-rules">Structure Rules<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Structure rules are <strong>Warnings</strong> that don&rsquo;t block builds but should be addressed.</p>
+<h3 id="rule-missing-section-index">Rule: Missing Section Index<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Directory contains <code>.md</code> files but no <code>_index.md</code></p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Section won&rsquo;t appear in navigation sidebar</li>
+<li>Directory appears empty in site structure</li>
+<li>No landing page for the section</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Missing _index.md:
+docs/
+  api/
+    authentication.md
+    authorization.md
+    # No _index.md
+
+✅ Has _index.md:
+docs/
+  api/
+    _index.md          ← Section landing page
+    authentication.md
+    authorization.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Can generate basic <code>_index.md</code> with <code>--fix --generate-indexes</code></p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Missing section index
+  Directory: docs/api/
+  Issue: Contains 5 markdown files but no _index.md
+  Impact: Section will not appear in navigation sidebar
+  
+  Create _index.md to define this section:
+  
+  ---
+  title: &#34;API Documentation&#34;
+  weight: 2
+  ---
+  
+  This section contains API guides and references.</code></pre></div>
+<hr>
+<h3 id="rule-deep-nesting">Rule: Deep Nesting<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Directory structure exceeds 4 levels deep</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Poor navigation UX (too many clicks)</li>
+<li>Overly complex information architecture</li>
+<li>Consider flattening or reorganizing</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Too deep (5 levels):
+docs/guides/advanced/api/rest/authentication.md
+
+⚠️ Consider flattening:
+docs/guides/api-rest-authentication.md
+docs/api/rest-authentication.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (requires architectural decision)</p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Deep directory nesting
+  File: docs/guides/advanced/api/rest/authentication.md
+  Depth: 5 levels
+  
+  Consider flattening directory structure for better UX.
+  Deep nesting makes navigation difficult.
+  
+  Suggested: docs/api/rest-authentication.md</code></pre></div>
+<hr>
+<h3 id="rule-orphaned-assets">Rule: Orphaned Assets<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Image file not referenced by any markdown file</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Bloats repository size</li>
+<li>May be leftover from deletions</li>
+<li>Indicates maintenance needed</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Orphaned:
+docs/
+  images/
+    old-screenshot.png  # Not referenced anywhere</code></pre></div>
+<p><strong>Auto-fix</strong>: Can list orphans with <code>--fix --remove-orphans</code> (prompts for confirmation)</p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Orphaned asset
+  File: docs/images/old-screenshot.png
+  Issue: Not referenced by any markdown file
+  Size: 2.4 MB
+  
+  This file may be unused and safe to remove.
+  
+  To remove: docbuilder lint --fix --remove-orphans</code></pre></div>
+<hr>
+<h3 id="rule-mixed-naming-styles">Rule: Mixed Naming Styles<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Pattern</strong>: Same directory has different naming conventions</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Inconsistent developer experience</li>
+<li>Harder to remember filenames</li>
+<li>Looks unprofessional</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Mixed styles:
+docs/
+  getting_started.md    # snake_case
+  api-guide.md          # kebab-case
+  UserManual.md         # PascalCase
+  CHANGELOG.md          # SCREAMING_CASE
+
+✅ Consistent:
+docs/
+  getting-started.md
+  api-guide.md
+  user-manual.md
+  changelog.md</code></pre></div>
+<p><strong>Auto-fix</strong>: Normalizes to kebab-case: <code>getting_started.md</code> → <code>getting-started.md</code></p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Mixed filename styles
+  Directory: docs/
+  Issue: Files use different naming conventions
+  
+  Files:
+    • getting_started.md (snake_case)
+    • api-guide.md (kebab-case)
+    • UserManual.md (PascalCase)
+  
+  Recommended: Use consistent kebab-case naming
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h2 id="asset-rules">Asset Rules<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Asset rules apply to images and other non-markdown files.</p>
+<h3 id="rule-image-filename-issues">Rule: Image Filename Issues<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Severity</strong>: Warning</p>
+<p><strong>Pattern</strong>: Same filename rules as markdown (spaces, uppercase, special chars)</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Same URL and filesystem concerns as markdown</li>
+<li>Image paths must be exact matches (case-sensitive)</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Warning:
+  Screenshot 2024.png
+  Company_Logo.svg
+  Diagram(final).png
+
+✅ Valid:
+  screenshot-2024.png
+  company-logo.svg
+  diagram-final.png</code></pre></div>
+<p><strong>Auto-fix</strong>: Applies same transformations as markdown files</p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Invalid image filename
+  File: docs/images/Screenshot 2024.png
+  Issue: Contains spaces and uppercase letters
+  
+  Current:  docs/images/Screenshot 2024.png
+  Suggested: docs/images/screenshot-2024.png
+  
+  Asset files follow the same rules as markdown files.
+  Image references in markdown will be updated automatically.
+  
+  Fix: docbuilder lint --fix docs/</code></pre></div>
+<hr>
+<h3 id="rule-whitelisted-double-extensions">Rule: Whitelisted Double Extensions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Severity</strong>: Info (explicitly allowed)</p>
+<p><strong>Pattern</strong>: <code>.drawio.png</code> or <code>.drawio.svg</code> files</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Draw.io exports editable diagrams as embedded format</li>
+<li>PNG/SVG contains both image and diagram source data</li>
+<li>Allows round-trip editing without separate source files</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>✅ Explicitly allowed:
+  architecture.drawio.png
+  flowchart.drawio.svg
+  system-design.drawio.png</code></pre></div>
+<p><strong>Info Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>INFO: Whitelisted double extension
+  File: docs/diagrams/architecture.drawio.png
+  
+  This double extension is explicitly whitelisted for 
+  Draw.io embedded diagrams (editable format).</code></pre></div>
+<hr>
+<h3 id="rule-absolute-urls-to-internal-assets">Rule: Absolute URLs to Internal Assets<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Severity</strong>: Warning</p>
+<p><strong>Pattern</strong>: <code>![](https://your-domain.com/images/logo.png)</code> pointing to same repository</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Breaks in local development</li>
+<li>Not portable across deployments</li>
+<li>Should use relative paths</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>❌ Absolute (internal):
+![Logo](https://docs.example.com/images/logo.png)
+
+✅ Relative:
+![Logo](/docs/reference/images/logo.png)
+![Logo](/docs/reference/../assets/logo.png)</code></pre></div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (requires manual verification)</p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Absolute URL to internal asset
+  File: docs/index.md
+  Line: 8
+  Issue: Using absolute URL for same-repository asset
+  
+  ![Logo](https://docs.example.com/images/logo.png)
+  
+  This breaks in local development and isn&#39;t portable.
+  
+  Use relative path instead:
+  ![Logo](/docs/reference/images/logo.png)</code></pre></div>
+<hr>
+<h3 id="rule-large-binary-files">Rule: Large Binary Files<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Severity</strong>: Warning</p>
+<p><strong>Pattern</strong>: Image/asset file exceeds 5 MB</p>
+<p><strong>Rationale</strong>:</p>
+<ul>
+<li>Slows Git operations (clone, fetch, pull)</li>
+<li>Poor repository performance</li>
+<li>Consider external hosting or optimization</li>
+</ul>
+<p><strong>Examples</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>⚠️ Large files:
+  screenshot-4k.png (12 MB)
+  demo-video.gif (25 MB)
+  presentation.pdf (18 MB)</code></pre></div>
+<p><strong>Auto-fix</strong>: Not automatically fixable (requires manual optimization)</p>
+<p><strong>Warning Message</strong>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>WARNING: Large binary file
+  File: docs/images/screenshot-4k.png
+  Size: 12.4 MB
+  
+  Large files slow Git performance and bloat repository.
+  
+  Consider:
+    • Optimize/compress image (use tools like tinypng.com)
+    • Host externally (CDN, cloud storage)
+    • Split into multiple smaller images
+    • Use thumbnail with link to full size</code></pre></div>
+<hr>
+<h2 id="standard-file-exclusions">Standard File Exclusions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>These files are <strong>automatically excluded</strong> from linting (never reported as errors):</p>
+<ul>
+<li><code>README.md</code> (root or in subdirectories)</li>
+<li><code>CONTRIBUTING.md</code></li>
+<li><code>CHANGELOG.md</code></li>
+<li><code>LICENSE.md</code></li>
+<li><code>CODE_OF_CONDUCT.md</code></li>
+<li>Files in <code>.git/</code> directory</li>
+<li>Files matching <code>.gitignore</code> patterns</li>
+</ul>
+<p><strong>Rationale</strong>: These are standard repository files, not documentation content processed by Hugo.</p>
+<hr>
+<h2 id="rule-evolution">Rule Evolution<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Linting rules evolve with DocBuilder versions. See <a href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog</a> for version history.</p>
+<table>
+  <thead>
+      <tr>
+          <th>DocBuilder Version</th>
+          <th>Rule Changes</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>1.0 - 1.5</td>
+          <td>Initial filename and frontmatter rules</td>
+      </tr>
+      <tr>
+          <td>1.6+</td>
+          <td>Enhanced frontmatter schema validation (future)</td>
+      </tr>
+      <tr>
+          <td>2.0+</td>
+          <td>Asset transformation rules (future)</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="exit-codes-summary">Exit Codes Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Code</th>
+          <th>Meaning</th>
+          <th>Condition</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>0</code></td>
+          <td>Success</td>
+          <td>No issues found (clean)</td>
+      </tr>
+      <tr>
+          <td><code>1</code></td>
+          <td>Warnings</td>
+          <td>Warnings present, no errors</td>
+      </tr>
+      <tr>
+          <td><code>2</code></td>
+          <td>Errors</td>
+          <td>Errors found (blocks build)</td>
+      </tr>
+      <tr>
+          <td><code>3</code></td>
+          <td>Failure</td>
+          <td>Linter execution error</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="auto-fix-capabilities">Auto-Fix Capabilities<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<table>
+  <thead>
+      <tr>
+          <th>Rule</th>
+          <th>Auto-Fixable</th>
+          <th>Method</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>Uppercase letters</td>
+          <td>✅ Yes</td>
+          <td>Convert to lowercase</td>
+      </tr>
+      <tr>
+          <td>Spaces</td>
+          <td>✅ Yes</td>
+          <td>Replace with hyphens</td>
+      </tr>
+      <tr>
+          <td>Special characters</td>
+          <td>✅ Yes</td>
+          <td>Replace with hyphens</td>
+      </tr>
+      <tr>
+          <td>Leading/trailing hyphens</td>
+          <td>✅ Yes</td>
+          <td>Strip</td>
+      </tr>
+      <tr>
+          <td>Double extensions</td>
+          <td>❌ No</td>
+          <td>Manual removal</td>
+      </tr>
+      <tr>
+          <td>Reserved names</td>
+          <td>✅ Yes</td>
+          <td>Add prefix</td>
+      </tr>
+      <tr>
+          <td>Malformed frontmatter</td>
+          <td>❌ No</td>
+          <td>Manual correction</td>
+      </tr>
+      <tr>
+          <td>Broken links</td>
+          <td>❌ No*</td>
+          <td>Manual fix (*Can detect only)</td>
+      </tr>
+      <tr>
+          <td>Missing section index</td>
+          <td>⚠️ Partial</td>
+          <td>Generate basic <code>_index.md</code></td>
+      </tr>
+      <tr>
+          <td>Mixed naming styles</td>
+          <td>✅ Yes</td>
+          <td>Normalize to kebab-case</td>
+      </tr>
+      <tr>
+          <td>Image filename issues</td>
+          <td>✅ Yes</td>
+          <td>Same as markdown files</td>
+      </tr>
+      <tr>
+          <td>Large binary files</td>
+          <td>❌ No</td>
+          <td>Manual optimization</td>
+      </tr>
+  </tbody>
+</table>
+<hr>
+<h2 id="see-also">See Also<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/how-to/setup-linting/index.html">Setup Linting</a> - Installation and usage guide</li>
+<li><a href="/docs/how-to/ci-cd-linting/index.html">CI/CD Integration</a> - Automated validation</li>
+<li><a href="/docs/how-to/migrate-to-linting/index.html">Migration Guide</a> - Cleaning up existing repositories</li>
+<li><a href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting</a> - Architecture decision</li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 29, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/reference/index.html">Reference</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="parent " data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479" checked><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

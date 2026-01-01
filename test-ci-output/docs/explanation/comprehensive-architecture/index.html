@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Comprehensive Architecture Documentation Table of Contents Overview Core Principles System Architecture Package Structure Data Flow Key Subsystems Extension Points Operational Considerations Overview DocBuilder is a Go CLI tool and daemon that aggregates documentation from multiple Git repositories into a unified Hugo static site. It implements a staged pipeline architecture with event sourcing, typed configuration/state management, and comprehensive observability.">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Comprehensive Architecture :: Test">
+    <meta name="twitter:description" content="Comprehensive Architecture Documentation Table of Contents Overview Core Principles System Architecture Package Structure Data Flow Key Subsystems Extension Points Operational Considerations Overview DocBuilder is a Go CLI tool and daemon that aggregates documentation from multiple Git repositories into a unified Hugo static site. It implements a staged pipeline architecture with event sourcing, typed configuration/state management, and comprehensive observability.">
+    <meta property="og:url" content="http://test/docs/explanation/comprehensive-architecture/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="Comprehensive Architecture :: Test">
+    <meta property="og:description" content="Comprehensive Architecture Documentation Table of Contents Overview Core Principles System Architecture Package Structure Data Flow Key Subsystems Extension Points Operational Considerations Overview DocBuilder is a Go CLI tool and daemon that aggregates documentation from multiple Git repositories into a unified Hugo static site. It implements a staged pipeline architecture with event sourcing, typed configuration/state management, and comprehensive observability.">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-15T00:00:00+00:00">
+    <meta property="article:tag" content="Architecture">
+    <meta property="article:tag" content="Design">
+    <meta property="article:tag" content="Deep-Dive">
+    <meta itemprop="name" content="Comprehensive Architecture :: Test">
+    <meta itemprop="description" content="Comprehensive Architecture Documentation Table of Contents Overview Core Principles System Architecture Package Structure Data Flow Key Subsystems Extension Points Operational Considerations Overview DocBuilder is a Go CLI tool and daemon that aggregates documentation from multiple Git repositories into a unified Hugo static site. It implements a staged pipeline architecture with event sourcing, typed configuration/state management, and comprehensive observability.">
+    <meta itemprop="datePublished" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-15T00:00:00+00:00">
+    <meta itemprop="wordCount" content="2541">
+    <meta itemprop="keywords" content="Architecture,Design,Deep-Dive">
+    <title>Comprehensive Architecture :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/explanation\/comprehensive-architecture\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/explanation/comprehensive-architecture/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#table-of-contents">Table of Contents</a></li>
+    <li><a href="#overview">Overview</a>
+      <ul>
+        <li><a href="#key-characteristics">Key Characteristics</a></li>
+      </ul>
+    </li>
+    <li><a href="#core-principles">Core Principles</a>
+      <ul>
+        <li><a href="#1-clean-architecture">1. Clean Architecture</a></li>
+        <li><a href="#2-event-sourcing">2. Event Sourcing</a></li>
+        <li><a href="#3-typed-state-management">3. Typed State Management</a></li>
+        <li><a href="#4-unified-error-handling">4. Unified Error Handling</a></li>
+      </ul>
+    </li>
+    <li><a href="#system-architecture">System Architecture</a>
+      <ul>
+        <li><a href="#high-level-components">High-Level Components</a></li>
+        <li><a href="#pipeline-stages">Pipeline Stages</a></li>
+      </ul>
+    </li>
+    <li><a href="#package-structure">Package Structure</a>
+      <ul>
+        <li><a href="#foundation-packages">Foundation Packages</a></li>
+        <li><a href="#core-domain-packages">Core Domain Packages</a></li>
+        <li><a href="#infrastructure-packages">Infrastructure Packages</a></li>
+        <li><a href="#application-packages">Application Packages</a></li>
+        <li><a href="#presentation-packages">Presentation Packages</a></li>
+        <li><a href="#testing-packages">Testing Packages</a></li>
+      </ul>
+    </li>
+    <li><a href="#data-flow">Data Flow</a>
+      <ul>
+        <li><a href="#build-flow">Build Flow</a></li>
+        <li><a href="#configuration-loading-flow">Configuration Loading Flow</a></li>
+        <li><a href="#state-persistence-flow">State Persistence Flow</a></li>
+        <li><a href="#event-flow">Event Flow</a></li>
+      </ul>
+    </li>
+    <li><a href="#key-subsystems">Key Subsystems</a>
+      <ul>
+        <li><a href="#1-relearn-theme-configuration">1. Relearn Theme Configuration</a></li>
+        <li><a href="#2-forge-integration">2. Forge Integration</a></li>
+        <li><a href="#3-change-detection">3. Change Detection</a></li>
+        <li><a href="#4-content-transform-pipeline">4. Content Transform Pipeline</a></li>
+        <li><a href="#5-observability-stack">5. Observability Stack</a></li>
+      </ul>
+    </li>
+    <li><a href="#extension-points">Extension Points</a>
+      <ul>
+        <li><a href="#1-custom-stages">1. Custom Stages</a></li>
+        <li><a href="#2-custom-transformers">2. Custom Transformers</a></li>
+        <li><a href="#3-custom-stores">3. Custom Stores</a></li>
+        <li><a href="#4-event-handlers">4. Event Handlers</a></li>
+      </ul>
+    </li>
+    <li><a href="#operational-considerations">Operational Considerations</a>
+      <ul>
+        <li><a href="#performance">Performance</a></li>
+        <li><a href="#scalability">Scalability</a></li>
+        <li><a href="#reliability">Reliability</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#maintenance">Maintenance</a></li>
+      </ul>
+    </li>
+    <li><a href="#architecture-decision-records">Architecture Decision Records</a></li>
+    <li><a href="#migration-status">Migration Status</a></li>
+    <li><a href="#references">References</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/explanation/index.html"><span itemprop="name">Explanation Documentation</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">Comprehensive Architecture</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./explanation/comprehensive-architecture.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/explanation/architecture/index.html" title="Architecture Overview (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/explanation/namespacing-rationale/index.html" title="Namespacing Rationale (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/architecture/index.html">Architecture</a></li>
+    <li><a class="term-link" href="/tags/deep-dive/index.html">Deep-Dive</a></li>
+    <li><a class="term-link" href="/tags/design/index.html">Design</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="comprehensive-architecture">Comprehensive Architecture</h1>
+
+<h1 id="comprehensive-architecture-documentation">Comprehensive Architecture Documentation<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h1>
+<h2 id="table-of-contents">Table of Contents<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ol>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#overview">Overview</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#core-principles">Core Principles</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#system-architecture">System Architecture</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#package-structure">Package Structure</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#data-flow">Data Flow</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#key-subsystems">Key Subsystems</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#extension-points">Extension Points</a></li>
+<li><a href="/docs/explanation/comprehensive-architecture/index.html#operational-considerations">Operational Considerations</a></li>
+</ol>
+<hr>
+<h2 id="overview">Overview<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>DocBuilder is a Go CLI tool and daemon that aggregates documentation from multiple Git repositories into a unified Hugo static site. It implements a staged pipeline architecture with event sourcing, typed configuration/state management, and comprehensive observability.</p>
+<h3 id="key-characteristics">Key Characteristics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li><strong>Event-Driven</strong>: Build lifecycle modeled as events in an event store</li>
+<li><strong>Type-Safe</strong>: Strongly typed configuration and state (no <code>map[string]any</code> in primary paths)</li>
+<li><strong>Observable</strong>: Unified error system, structured logging, metrics, and tracing</li>
+<li><strong>Incremental</strong>: Change detection and partial rebuilds for performance</li>
+<li><strong>Multi-Tenant</strong>: Supports forge namespacing and per-repository configuration</li>
+<li><strong>Theme-Aware</strong>: Hugo theme integration via modules (Relearn only)</li>
+</ul>
+<hr>
+<h2 id="core-principles">Core Principles<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-clean-architecture">1. Clean Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The codebase follows clean architecture principles with clear dependency direction:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>presentation → application → domain → infrastructure
+     ↓              ↓           ↓            ↓
+   cmd/        services/    forge/       git/
+   cli/        pipeline/    config/      storage/
+   server/                  state/       workspace/</code></pre></div>
+<p><strong>Dependency Rules:</strong></p>
+<ul>
+<li>Inner layers never depend on outer layers</li>
+<li>Domain logic has no infrastructure dependencies</li>
+<li>Infrastructure adapters implement domain interfaces</li>
+</ul>
+<h3 id="2-event-sourcing">2. Event Sourcing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Build lifecycle is captured as events in an immutable event store:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Event</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">ID</span><span class="w">        </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Timestamp</span><span class="w"> </span><span class="nx">time</span><span class="p">.</span><span class="nx">Time</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Type</span><span class="w">      </span><span class="nx">EventType</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Data</span><span class="w">      </span><span class="nx">json</span><span class="p">.</span><span class="nx">RawMessage</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Event Types:</strong></p>
+<ul>
+<li><code>BuildStarted</code>, <code>BuildCompleted</code>, <code>BuildFailed</code></li>
+<li><code>RepositoryCloned</code>, <code>RepositoryUpdated</code></li>
+<li><code>DocumentationDiscovered</code></li>
+<li><code>HugoSiteGenerated</code></li>
+</ul>
+<h3 id="3-typed-state-management">3. Typed State Management<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>State is decomposed into focused sub-states:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">BuildState</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Git</span><span class="w">      </span><span class="o">*</span><span class="nx">GitState</span><span class="w">      </span><span class="c1">// Repository management</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Docs</span><span class="w">     </span><span class="o">*</span><span class="nx">DocsState</span><span class="w">     </span><span class="c1">// Documentation discovery</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Pipeline</span><span class="w"> </span><span class="o">*</span><span class="nx">PipelineState</span><span class="w"> </span><span class="c1">// Execution metadata</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Each sub-state has:</p>
+<ul>
+<li>Clear ownership boundaries</li>
+<li>Validation methods</li>
+<li>JSON serialization</li>
+<li>Test builders</li>
+</ul>
+<h3 id="4-unified-error-handling">4. Unified Error Handling<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>All errors use <code>internal/foundation/errors.ClassifiedError</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">ClassifiedError</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">category</span><span class="w"> </span><span class="nx">ErrorCategory</span><span class="w">  </span><span class="c1">// Type-safe category enum</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">severity</span><span class="w"> </span><span class="nx">ErrorSeverity</span><span class="w">  </span><span class="c1">// Fatal, Error, Warning, Info</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">retry</span><span class="w">    </span><span class="nx">RetryStrategy</span><span class="w">  </span><span class="c1">// Never, Immediate, Backoff, RateLimit, User</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">message</span><span class="w">  </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">cause</span><span class="w">    </span><span class="kt">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">context</span><span class="w">  </span><span class="nx">ErrorContext</span><span class="w">   </span><span class="c1">// map[string]any</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Error Categories:</strong></p>
+<ul>
+<li><code>CategoryConfig</code>, <code>CategoryValidation</code> (non-retryable, user-facing)</li>
+<li><code>CategoryNetwork</code>, <code>CategoryGit</code> (retryable with backoff)</li>
+<li><code>CategoryFileSystem</code> (transient, retry immediate)</li>
+<li><code>CategoryAuth</code>, <code>CategoryNotFound</code> (non-retryable)</li>
+</ul>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li>Type-safe categories and severity levels</li>
+<li>Built-in retry semantics</li>
+<li>HTTP/CLI adapters for boundary translation</li>
+<li>Fluent builder API for error construction</li>
+<li>Structured context via <code>WithContext(key, value)</code></li>
+</ul>
+<hr>
+<h2 id="system-architecture">System Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="high-level-components">High-Level Components<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>┌───────────────────────────────────────────────────────────┐
+│                     Presentation Layer                    │
+│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌──────────┐  │
+│  │   CLI    │  │  Daemon  │  │  Server   │  │  Tests   │  │
+│  └─────┬────┘  └─────┬────┘  └─────┬─────┘  └─────┬────┘  │
+└────────┼─────────────┼─────────────┼──────────────┼───────┘
+         │             │             │              │
+         └─────────────┴─────────────┴──────────────┘
+                       │
+         ┌─────────────▼─────────────┐
+         │    Service Layer          │
+         │  ┌─────────────────────┐  │
+         │  │  BuildService       │  │
+         │  │  PreviewService     │  │
+         │  │  DiscoveryService   │  │
+         │  └──────────┬──────────┘  │
+         └─────────────┼─────────────┘
+                       │
+         ┌─────────────▼─────────────┐
+         │   Pipeline Layer          │
+         │  ┌─────────────────────┐  │
+         │  │  StageExecutor      │◄─┤ PrepareOutput
+         │  │  PipelineRunner     │◄─┤ CloneRepos
+         │  │  ChangeDetector     │◄─┤ DiscoverDocs
+         │  └─────────┬───────────┘◄─┤ GenerateConfig
+         └────────────┼──────────────┤ Layouts
+                      │              ┤ CopyContent
+         ┌────────────▼──────────────┤ Indexes
+         │   Domain Layer            ┤ RunHugo
+         │  ┌─────────────────────┐  │
+         │  │  Config             │  │
+         │  │  State              │  │
+         │  │  DocFile            │  │
+         │  │  Repository         │  │
+         │  └─────────┬───────────┘  │
+         └────────────┼──────────────┘
+                      │
+         ┌────────────▼──────────────┐
+         │  Infrastructure Layer     │
+         │  ┌─────────────────────┐  │
+         │  │  Git Client         │  │
+         │  │  Forge Clients      │  │
+         │  │  Storage            │  │
+         │  │  Workspace Manager  │  │
+         │  │  Event Store        │  │
+         │  └─────────────────────┘  │
+         └───────────────────────────┘</code></pre></div>
+<h3 id="pipeline-stages">Pipeline Stages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The build process executes 8 sequential stages:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>1. PrepareOutput    → Initialize directories
+2. CloneRepos       → Git operations
+3. DiscoverDocs     → Find markdown files
+4. GenerateConfig   → Create hugo.yaml
+5. Layouts          → Copy theme templates
+6. CopyContent      → Process markdown with transforms
+7. Indexes          → Generate index pages
+8. RunHugo          → Render static site (optional)</code></pre></div>
+<p>Each stage:</p>
+<ul>
+<li>Implements <code>StageExecutor</code> interface</li>
+<li>Records duration and outcome</li>
+<li>Emits events to event store</li>
+<li>Returns typed errors</li>
+</ul>
+<hr>
+<h2 id="package-structure">Package Structure<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="foundation-packages">Foundation Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="internalfoundation"><code>internal/foundation/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Core types used across all layers:</p>
+<ul>
+<li><strong>errors/</strong> - Unified error system (<code>DocBuilderError</code>)</li>
+<li><strong>validation/</strong> - Validation result types</li>
+<li><strong>logging/</strong> - Structured logging setup</li>
+</ul>
+<h4 id="internalconfig"><code>internal/config/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Configuration management:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>config/
+├── v2.go              # YAML loading with env expansion
+├── validation.go      # Top-level validation orchestration
+├── typed/             # Domain-specific config structs
+│   ├── hugo_config.go
+│   ├── daemon_config.go
+│   └── forge_config.go
+└── normalize.go       # Configuration normalization</code></pre></div>
+<p><strong>Key Types:</strong></p>
+<ul>
+<li><code>Config</code> - Root configuration</li>
+<li><code>RepositoryConfig</code> - Per-repo settings</li>
+<li><code>HugoConfig</code> - Hugo site configuration</li>
+<li><code>BuildConfig</code> - Build behavior settings</li>
+</ul>
+<h4 id="internalstate"><code>internal/state/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>State management:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>state/
+├── build_state.go     # Root build state
+├── git_state.go       # Repository state
+├── docs_state.go      # Documentation discovery state
+├── pipeline_state.go  # Execution metadata
+└── store/             # State persistence
+    ├── json_*.go      # JSON-based stores
+    └── helpers.go     # Common store utilities</code></pre></div>
+<h3 id="core-domain-packages">Core Domain Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="internalforge"><code>internal/forge/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Git hosting platform abstraction:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>forge/
+├── base_forge.go      # Common HTTP operations
+├── github.go          # GitHub implementation
+├── gitlab.go          # GitLab implementation
+├── forgejo.go         # Forgejo/Gitea implementation
+└── capabilities.go    # Feature detection</code></pre></div>
+<p><strong>Key Abstractions:</strong></p>
+<ul>
+<li><code>Forge</code> interface - Platform operations</li>
+<li><code>BaseForge</code> - Shared HTTP client</li>
+<li><code>Capabilities</code> - Feature flags (webhooks, tokens, etc.)</li>
+</ul>
+<h4 id="internalgit"><code>internal/git/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Git operations:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>git/
+├── git.go             # Client implementation
+├── auth.go            # Authentication strategies
+├── workspace.go       # Workspace management
+└── head.go            # HEAD reference reading</code></pre></div>
+<p><strong>Auth Methods:</strong></p>
+<ul>
+<li>SSH keys</li>
+<li>Personal access tokens</li>
+<li>Basic username/password</li>
+</ul>
+<h4 id="internaldocs"><code>internal/docs/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Documentation discovery:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>docs/
+├── discovery.go       # File discovery logic
+├── doc_file.go        # DocFile model
+└── filters.go         # Ignore patterns</code></pre></div>
+<p><strong>Discovery Rules:</strong></p>
+<ul>
+<li>Walk configured paths</li>
+<li>Filter <code>.md</code> and <code>.markdown</code> files</li>
+<li>Ignore <code>README.md</code>, <code>CONTRIBUTING.md</code>, etc.</li>
+<li>Respect <code>.docignore</code> files</li>
+</ul>
+<h4 id="internalhugo"><code>internal/hugo/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Hugo site generation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>hugo/
+├── generator.go       # Main generator
+├── config.go          # hugo.yaml generation
+├── content_copy.go    # Content processing
+├── index.go           # Index page generation
+├── runner.go          # Hugo binary execution
+├── models/            # Data models
+│   ├── frontmatter.go
+│   ├── editlink.go
+│   └── config.go
+└── pipeline/          # Fixed transform pipeline (ADR-003)
+    ├── transforms.go  # All 11 transforms
+    └── generators.go  # Document generators</code></pre></div>
+<p><strong>Content Pipeline:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>Parse Front Matter
+    ↓
+Build Front Matter (metadata injection)
+    ↓
+Edit Link Injection
+    ↓
+Merge Front Matter
+    ↓
+Apply Transforms
+    ↓
+Serialize Front Matter</code></pre></div>
+<h3 id="infrastructure-packages">Infrastructure Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="internalworkspace"><code>internal/workspace/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Temporary directory management:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Manager</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">basePath</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">Manager</span><span class="p">)</span><span class="w"> </span><span class="nf">Create</span><span class="p">()</span><span class="w"> </span><span class="p">(</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">m</span><span class="w"> </span><span class="o">*</span><span class="nx">Manager</span><span class="p">)</span><span class="w"> </span><span class="nf">Cleanup</span><span class="p">()</span><span class="w"> </span><span class="kt">error</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Lifecycle:</strong></p>
+<ul>
+<li>Creates timestamped temp directories</li>
+<li>Tracks creation for cleanup</li>
+<li>Safe concurrent operations</li>
+</ul>
+<h4 id="internalstorage-removed"><code>internal/storage/</code> <em>(Removed)</em><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p><strong>Note:</strong> This package was removed to simplify CLI build complexity. The daemon&rsquo;s skip evaluation uses <code>internal/state</code> instead.</p>
+<p><strong>Historical Purpose:</strong> Content-addressed storage for CLI incremental builds with hash-based object paths, Put/Get/Delete/List operations, and garbage collection.</p>
+<h4 id="internaleventstore"><code>internal/eventstore/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Event persistence:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>eventstore/
+├── store.go           # Event store interface
+├── memory.go          # In-memory implementation
+└── file.go            # File-based implementation</code></pre></div>
+<p><strong>Operations:</strong></p>
+<ul>
+<li>Append events (immutable)</li>
+<li>Query by type, time range, correlation ID</li>
+<li>Projections for state reconstruction</li>
+</ul>
+<h3 id="application-packages">Application Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="internalservices"><code>internal/services/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Service interfaces for lifecycle management:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>services/
+└── interfaces.go          # ManagedService, StateManager interfaces</code></pre></div>
+<p>Defines contracts for service lifecycle (Start, Stop, Health) and state persistence (Load, Save).</p>
+<h4 id="internalbuild"><code>internal/build/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Sequential pipeline for documentation generation:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>build/
+├── service.go             # BuildService interface  
+├── default_service.go     # Default pipeline executor
+├── stages.go              # Stage definitions
+└── report.go              # Build reporting</code></pre></div>
+<p>Executes pipeline stages (PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig → Layouts → CopyContent → Indexes → RunHugo).</p>
+<h4 id="internalincremental-removed"><code>internal/incremental/</code> <em>(Removed)</em><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p><strong>Note:</strong> This package was removed to simplify CLI build complexity. It overlapped with the daemon&rsquo;s skip evaluation system (which uses <code>internal/state</code> with rule-based validation).</p>
+<p><strong>Historical Purpose:</strong> Change detection for CLI incremental builds. Compared repository HEAD refs, hashed discovered documentation files, and cached signatures to skip unchanged repositories.</p>
+<h3 id="presentation-packages">Presentation Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="cmddocbuildercommands"><code>cmd/docbuilder/commands</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Command-line interface:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>cmd/docbuilder/
+├── main.go            # CLI entry point
+└── commands/
+    ├── build.go       # Build command
+    ├── init.go        # Init command  
+    ├── discover.go    # Discovery command
+    ├── daemon.go      # Daemon command
+    ├── preview.go     # Preview command
+    ├── generate.go    # Generate command
+    ├── visualize.go   # Visualize command
+    └── common.go      # Shared helpers</code></pre></div>
+<p>Uses <a href="https://github.com/alecthomas/kong" rel="external">Kong</a> for argument parsing.
+Error handling via <code>internal/foundation/errors</code> CLI adapter.</p>
+<h4 id="internalserver"><code>internal/server/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>HTTP server:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>server/
+├── server.go          # Server setup
+├── handlers/          # Request handlers
+│   ├── webhook.go
+│   ├── build.go
+│   ├── status.go
+│   └── metrics.go
+├── middleware/        # Middleware
+│   ├── logging.go
+│   ├── auth.go
+│   └── recovery.go
+└── responses/         # Response types</code></pre></div>
+<h3 id="testing-packages">Testing Packages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="internaltesting"><code>internal/testing/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Test utilities:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>testing/
+├── config_builder.go      # Fluent config builders
+├── file_assertions.go     # File/directory assertions
+├── cli_runner.go          # CLI integration testing
+└── fixtures.go            # Test data</code></pre></div>
+<h4 id="internaltestforge"><code>internal/testforge/</code><span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Forge test doubles:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>testforge/
+├── mock_forge.go          # Mock forge implementation
+└── README.md</code></pre></div>
+<hr>
+<h2 id="data-flow">Data Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="build-flow">Build Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>User invokes CLI/API
+    ↓
+BuildService.Build(config)
+    ↓
+PipelineRunner.Run(stages)
+    ↓
+┌─────────────────────────────────┐
+│ Stage 1: PrepareOutput          │
+│  - Create/clean output dirs     │
+│  - Initialize staging           │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 2: CloneRepos             │
+│  - Authenticate with forges     │
+│  - Clone/update repositories    │
+│  - Detect changes               │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 3: DiscoverDocs           │
+│  - Walk documentation paths     │
+│  - Filter markdown files        │
+│  - Build DocFile list           │
+│  - Compute doc set hash         │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 4: GenerateConfig         │
+│  - Load theme capabilities      │
+│  - Apply theme params           │
+│  - Merge user config            │
+│  - Write hugo.yaml              │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 5: Layouts                │
+│  - Copy custom layouts          │
+│  - Set up index templates       │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 6: CopyContent            │
+│  - Parse front matter           │
+│  - Inject metadata              │
+│  - Add edit links               │
+│  - Apply transforms             │
+│  - Write to content/            │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 7: Indexes                │
+│  - Generate _index.md files     │
+│  - Repository indexes           │
+│  - Section indexes              │
+└────────────┬────────────────────┘
+             ↓
+┌─────────────────────────────────┐
+│ Stage 8: RunHugo (optional)     │
+│  - Execute hugo build           │
+│  - Generate public/             │
+└────────────┬────────────────────┘
+             ↓
+BuildReport generated
+    ↓
+Events persisted
+    ↓
+Metrics updated
+    ↓
+Return to caller</code></pre></div>
+<h3 id="configuration-loading-flow">Configuration Loading Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>1. Load YAML file
+    ↓
+2. Expand ${ENV_VAR} references
+    ↓
+3. Parse into Config struct
+    ↓
+4. Apply defaults
+    ↓
+5. Normalize (fill implicit values)
+    ↓
+6. Validate (orchestration)
+    ├→ ValidateHugoConfig()
+    ├→ ValidateDaemonConfig()
+    ├→ ValidateForgeConfig()
+    └→ ValidateRepositories()
+    ↓
+7. Return validated Config</code></pre></div>
+<h3 id="state-persistence-flow">State Persistence Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>In-Memory State (BuildState)
+    ↓
+Sub-State Updates
+    ├→ GitState.Update()
+    ├→ DocsState.AddDocFile()
+    └→ PipelineState.RecordStage()
+    ↓
+State Store Operations
+    ├→ DaemonInfoStore.Save()
+    ├→ StatisticsStore.Save()
+    └→ JSONStore.Save()
+    ↓
+Filesystem Persistence
+    └→ .docbuilder/state.json</code></pre></div>
+<h3 id="event-flow">Event Flow<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>Pipeline Stage Execution
+    ↓
+Emit Event(s)
+    ├→ BuildStarted
+    ├→ RepositoryCloned
+    ├→ DocumentationDiscovered
+    └→ BuildCompleted
+    ↓
+Event Store Append
+    ↓
+Event Handlers (async)
+    ├→ Metrics Update
+    ├→ Webhook Notification
+    └→ Log Aggregation</code></pre></div>
+<hr>
+<h2 id="key-subsystems">Key Subsystems<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-relearn-theme-configuration">1. Relearn Theme Configuration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>DocBuilder is now hardcoded to use the Relearn theme exclusively. Theme configuration is applied directly in the Hugo generator without a plugin system or theme registry.</p>
+<p><strong>Configuration Location:</strong> <code>internal/hugo/config_writer.go</code></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="nx">Generator</span><span class="p">)</span><span class="w"> </span><span class="nf">applyRelearnThemeDefaults</span><span class="p">(</span><span class="nx">params</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Set Relearn-specific defaults</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// - themeVariant</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// - disableSearch</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// - disableLandingPageButton</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// etc.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Hugo Config Generation:</strong></p>
+<ol>
+<li>Core defaults (title, baseURL, markup)</li>
+<li>Relearn-specific defaults (via <code>applyRelearnThemeDefaults</code>)</li>
+<li>User param deep-merge (user values override)</li>
+<li>Dynamic fields (build_date)</li>
+<li>Hardcoded module import: <code>github.com/McShelby/hugo-theme-relearn</code></li>
+<li>Language configuration for i18n</li>
+</ol>
+<p><strong>No Theme Abstraction:</strong></p>
+<ul>
+<li>Previous multi-theme system removed</li>
+<li>No theme registry or plugin system</li>
+<li>Relearn configuration is hardcoded</li>
+<li>Simplifies codebase and maintenance</li>
+</ul>
+<h3 id="2-forge-integration">2. Forge Integration<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Forges implement the <code>Forge</code> interface:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Forge</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">Type</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">GetRepository</span><span class="p">(</span><span class="nx">owner</span><span class="p">,</span><span class="w"> </span><span class="nx">repo</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">Repository</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">GetFileContent</span><span class="p">(</span><span class="nx">owner</span><span class="p">,</span><span class="w"> </span><span class="nx">repo</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">ref</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">ListRepositories</span><span class="p">(</span><span class="nx">org</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Repository</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">Capabilities</span><span class="p">()</span><span class="w"> </span><span class="nx">Capabilities</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>HTTP Consolidation:</strong>
+All forge clients use <code>BaseForge</code> for common operations:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">BaseForge</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">client</span><span class="w">      </span><span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Client</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">baseURL</span><span class="w">     </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">authHeader</span><span class="w">  </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">customHeaders</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Auth Methods:</strong></p>
+<ul>
+<li>GitHub: Bearer token + custom headers</li>
+<li>GitLab: Bearer token</li>
+<li>Forgejo: Token prefix + dual event headers</li>
+</ul>
+<h3 id="3-change-detection">3. Change Detection<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>The incremental system uses multiple strategies:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">ChangeDetector</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">DetectChanges</span><span class="p">(</span><span class="nx">repos</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">RepositoryConfig</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="nx">ChangeSet</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Detection Levels:</strong></p>
+<ol>
+<li><strong>Repository HEAD</strong> - Git ref comparison</li>
+<li><strong>Quick Hash</strong> - Fast directory tree hashing</li>
+<li><strong>Doc Files Hash</strong> - SHA-256 of sorted Hugo paths</li>
+<li><strong>Deletion Detection</strong> - Optional file removal tracking</li>
+</ol>
+<p><strong>Skip Conditions:</strong></p>
+<ul>
+<li>Unchanged HEAD ref</li>
+<li>Identical doc set hash</li>
+<li>No deletions detected (if enabled)</li>
+</ul>
+<h3 id="4-content-transform-pipeline">4. Content Transform Pipeline<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Content processing uses a pipeline pattern:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">Transformer</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">Transform</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="o">*</span><span class="nx">DocFile</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Built-in Transformers:</strong></p>
+<ul>
+<li><code>FrontMatterParser</code> - Extract YAML headers</li>
+<li><code>FrontMatterBuilder</code> - Add metadata</li>
+<li><code>EditLinkInjector</code> - Generate edit URLs</li>
+<li><code>FrontMatterMerger</code> - Combine metadata</li>
+<li><code>FrontMatterSerializer</code> - Write YAML</li>
+</ul>
+<p><strong>Custom Transformers:</strong>
+Users can add custom transforms in config:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">hugo</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">content_transforms</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l">replace</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;{{OLD}}&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">      </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s2">&#34;{{NEW}}&#34;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="5-observability-stack">5. Observability Stack<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<h4 id="logging">Logging<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Structured logging with <code>slog</code>:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">logger</span><span class="p">.</span><span class="nf">Info</span><span class="p">(</span><span class="s">&#34;Documentation discovered&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;repository&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">repoName</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;files&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">fileCount</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="metrics">Metrics<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Prometheus-compatible metrics:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">buildDuration</span><span class="p">.</span><span class="nf">Observe</span><span class="p">(</span><span class="nx">duration</span><span class="p">.</span><span class="nf">Seconds</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">buildsTotal</span><span class="p">.</span><span class="nf">WithLabelValues</span><span class="p">(</span><span class="s">&#34;success&#34;</span><span class="p">).</span><span class="nf">Inc</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nx">reposProcessed</span><span class="p">.</span><span class="nf">WithLabelValues</span><span class="p">(</span><span class="nx">repoName</span><span class="p">).</span><span class="nf">Inc</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="tracing">Tracing<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>Context-based distributed tracing:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">span</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">tracer</span><span class="p">.</span><span class="nf">Start</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;clone-repository&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">defer</span><span class="w"> </span><span class="nx">span</span><span class="p">.</span><span class="nf">End</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h4 id="error-handling">Error Handling<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h4>
+<p>All errors use unified type:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="k">return</span><span class="w"> </span><span class="nx">foundation</span><span class="p">.</span><span class="nf">NewDocBuilderError</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">foundation</span><span class="p">.</span><span class="nx">ErrCodeGitClone</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="s">&#34;failed to clone repository&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">err</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">foundation</span><span class="p">.</span><span class="nf">WithContext</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;repository&#34;</span><span class="p">:</span><span class="w"> </span><span class="nx">repoURL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="s">&#34;branch&#34;</span><span class="p">:</span><span class="w"> </span><span class="nx">branch</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">foundation</span><span class="p">.</span><span class="nf">WithRetryable</span><span class="p">(</span><span class="kc">true</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<hr>
+<h2 id="extension-points">Extension Points<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-custom-stages">1. Custom Stages<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Add new pipeline stages:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">CustomStage</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">config</span><span class="w"> </span><span class="o">*</span><span class="nx">config</span><span class="p">.</span><span class="nx">Config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomStage</span><span class="p">)</span><span class="w"> </span><span class="nf">Execute</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">state</span><span class="w"> </span><span class="o">*</span><span class="nx">state</span><span class="p">.</span><span class="nx">BuildState</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Custom logic</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomStage</span><span class="p">)</span><span class="w"> </span><span class="nf">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;custom&#34;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Register in pipeline configuration.</p>
+<h3 id="2-custom-transformers">2. Custom Transformers<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Implement transformer interface:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">CustomTransformer</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomTransformer</span><span class="p">)</span><span class="w"> </span><span class="nf">Transform</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="o">*</span><span class="nx">docs</span><span class="p">.</span><span class="nx">DocFile</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Modify doc.Content or doc.FrontMatter</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Register in content copy stage.</p>
+<h3 id="3-custom-stores">3. Custom Stores<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Implement state store interface:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">CustomStore</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomStore</span><span class="p">)</span><span class="w"> </span><span class="nf">Save</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="kt">any</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Custom persistence</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">s</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomStore</span><span class="p">)</span><span class="w"> </span><span class="nf">Load</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">any</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Custom retrieval</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Register in state management.</p>
+<h3 id="4-event-handlers">4. Event Handlers<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>Subscribe to build events:</p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span><span class="w"> </span><span class="nx">CustomHandler</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">h</span><span class="w"> </span><span class="o">*</span><span class="nx">CustomHandler</span><span class="p">)</span><span class="w"> </span><span class="nf">Handle</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span><span class="w"> </span><span class="nx">event</span><span class="w"> </span><span class="o">*</span><span class="nx">eventstore</span><span class="p">.</span><span class="nx">Event</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// React to events</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p>Register with event store.</p>
+<hr>
+<h2 id="operational-considerations">Operational Considerations<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="performance">Performance<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Incremental Builds:</strong></p>
+<ul>
+<li>Enable with <code>build.incremental: true</code></li>
+<li>Typically 10-100x faster for unchanged repos</li>
+<li>Requires persistent workspace</li>
+</ul>
+<p><strong>Pruning:</strong></p>
+<ul>
+<li>Enable with <code>pruning.enabled: true</code></li>
+<li>Removes non-doc directories</li>
+<li>Reduces workspace size by 50-90%</li>
+</ul>
+<p><strong>Shallow Clones:</strong></p>
+<ul>
+<li>Enable with <code>git.shallow: true</code></li>
+<li>Depth 1 clones</li>
+<li>Faster for large repositories</li>
+</ul>
+<h3 id="scalability">Scalability<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Multi-Tenancy:</strong></p>
+<ul>
+<li>Per-tenant configuration</li>
+<li>Isolated workspaces</li>
+<li>Resource quotas</li>
+</ul>
+<p><strong>Horizontal Scaling:</strong></p>
+<ul>
+<li>Stateless build workers</li>
+<li>Shared event store</li>
+<li>Load balancer distribution</li>
+</ul>
+<p><strong>Resource Limits:</strong></p>
+<ul>
+<li>Memory: ~100MB base + 10MB per repo</li>
+<li>CPU: 1-2 cores for typical builds</li>
+<li>Disk: 500MB workspace + output size</li>
+</ul>
+<h3 id="reliability">Reliability<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Error Recovery:</strong></p>
+<ul>
+<li>Retryable errors auto-retry (3x default)</li>
+<li>Partial build state preserved</li>
+<li>Atomic staging promotion</li>
+</ul>
+<p><strong>Health Checks:</strong></p>
+<ul>
+<li><code>/health</code> endpoint</li>
+<li>Workspace availability</li>
+<li>Git connectivity</li>
+<li>Hugo binary presence</li>
+</ul>
+<p><strong>Monitoring:</strong></p>
+<ul>
+<li>Build success/failure rates</li>
+<li>Stage durations</li>
+<li>Repository update lag</li>
+<li>Disk usage</li>
+</ul>
+<h3 id="security">Security<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Authentication:</strong></p>
+<ul>
+<li>Token-based API auth</li>
+<li>SSH key management</li>
+<li>Credential encryption at rest</li>
+</ul>
+<p><strong>Authorization:</strong></p>
+<ul>
+<li>Repository access control</li>
+<li>API endpoint permissions</li>
+<li>Webhook signature verification</li>
+</ul>
+<p><strong>Secrets Management:</strong></p>
+<ul>
+<li>Environment variable expansion</li>
+<li><code>.env</code> file support</li>
+<li>External secret stores (planned)</li>
+</ul>
+<h3 id="maintenance">Maintenance<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Configuration Updates:</strong></p>
+<ul>
+<li>Restart daemon to apply new configuration</li>
+<li>Validate before restart</li>
+</ul>
+<p><strong>State Management:</strong></p>
+<ul>
+<li>State stored in <code>.docbuilder/</code></li>
+<li>JSON format for portability</li>
+<li>Manual cleanup supported</li>
+</ul>
+<p><strong>Dependency Management:</strong></p>
+<ul>
+<li>Go modules for dependencies</li>
+<li>Hugo binary external</li>
+<li>Theme modules auto-fetched</li>
+</ul>
+<hr>
+<h2 id="architecture-decision-records">Architecture Decision Records<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>See <code>docs/adr/</code> for detailed architectural decisions:</p>
+<ul>
+<li><a href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling</a></li>
+<li><a href="/docs/plan/adr-001-forge-integration-daemon">ADR-001: Forge Integration Daemon</a></li>
+</ul>
+<hr>
+<h2 id="migration-status">Migration Status<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The architecture has undergone significant evolution. See <code>ARCHITECTURE_MIGRATION_PLAN.md</code> for:</p>
+<ul>
+<li>19 completed phases (A-M, O-P, R-S-T-U)</li>
+<li>2 deferred phases (Q, J)</li>
+<li>~1,290 lines eliminated</li>
+<li>Zero breaking changes</li>
+</ul>
+<p><strong>Current State:</strong> Architecture migration complete. Codebase follows:</p>
+<ul>
+<li>Event-driven patterns</li>
+<li>Typed configuration/state</li>
+<li>Unified observability</li>
+<li>Single execution pipeline</li>
+<li>Clean domain boundaries</li>
+</ul>
+<hr>
+<h2 id="references">References<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li><a href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial</a></li>
+<li><a href="/docs/reference/cli/index.html">CLI Reference</a></li>
+<li><a href="/docs/reference/configuration/index.html">Configuration Reference</a></li>
+<li><a href="/docs/reference/report/index.html">Build Report Reference</a></li>
+<li><a href="/docs/how-to/configure-forge-namespacing/index.html">Forge Integration</a></li>
+</ul>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 15, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/explanation/index.html">Explanation</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3"><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="parent " data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2" checked><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>

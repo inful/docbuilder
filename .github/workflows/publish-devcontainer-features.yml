@@ -107,10 +107,9 @@ jobs:
                 "${feature_dir}" \
                 -r ghcr.io \
                 -n inful 2>&1) || {
-                  # Check if it failed but the feature was still published
-                  if echo "$output" | grep -q "Published feature:"; then
-                    echo "⚠️  Warning: Publish command returned error but feature was published"
-                    echo "This is likely due to collection metadata failure (can be ignored)"
+                  # Check if it failed but the feature was still published or already exists
+                  if echo "$output" | grep -qE "Published feature:|already exists, skipping"; then
+                    echo "✓ Feature is published (new or already exists)"
                   else
                     echo "ERROR: Failed to publish ${feature_name}"
                     echo "Output: $output"

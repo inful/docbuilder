@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html id="R-html" lang="en" dir="ltr" itemscope itemtype="http://schema.org/Article" data-r-output-format="html">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="height=device-height, width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <meta name="generator" content="Hugo 0.152.2">
+    <meta name="generator" content="Relearn 9.0.1+33e135659ec8cb98af355c4244cb76e5bb11a882">
+    <meta name="description" content="Date: 2025-12-16
+Status Implemented - December 16, 2025 (Now Default)
+Implementation Summary The fixed transform pipeline is fully implemented and is now the default and only content processing system in DocBuilder.
+Deliverables:
+✅ New pipeline package (internal/hugo/pipeline/) ✅ Document type replacing Page/PageShim ✅ Generator and Transform function types ✅ 3 generators (main/repo/section indexes) ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize) ✅ Comprehensive unit tests (71 passing in internal/hugo) ✅ Old system removed - Transform registry, patch system, and all legacy code deleted Migration Complete (December 16, 2025):">
+    <meta name="author" content="">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ADR-003: Fixed Transform Pipeline :: Test">
+    <meta name="twitter:description" content="Date: 2025-12-16
+Status Implemented - December 16, 2025 (Now Default)
+Implementation Summary The fixed transform pipeline is fully implemented and is now the default and only content processing system in DocBuilder.
+Deliverables:
+✅ New pipeline package (internal/hugo/pipeline/) ✅ Document type replacing Page/PageShim ✅ Generator and Transform function types ✅ 3 generators (main/repo/section indexes) ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize) ✅ Comprehensive unit tests (71 passing in internal/hugo) ✅ Old system removed - Transform registry, patch system, and all legacy code deleted Migration Complete (December 16, 2025):">
+    <meta property="og:url" content="http://test/docs/adr/adr-003-fixed-transform-pipeline/index.html">
+    <meta property="og:site_name" content="Test">
+    <meta property="og:title" content="ADR-003: Fixed Transform Pipeline :: Test">
+    <meta property="og:description" content="Date: 2025-12-16
+Status Implemented - December 16, 2025 (Now Default)
+Implementation Summary The fixed transform pipeline is fully implemented and is now the default and only content processing system in DocBuilder.
+Deliverables:
+✅ New pipeline package (internal/hugo/pipeline/) ✅ Document type replacing Page/PageShim ✅ Generator and Transform function types ✅ 3 generators (main/repo/section indexes) ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize) ✅ Comprehensive unit tests (71 passing in internal/hugo) ✅ Old system removed - Transform registry, patch system, and all legacy code deleted Migration Complete (December 16, 2025):">
+    <meta property="og:locale" content="en">
+    <meta property="og:type" content="article">
+    <meta property="article:section" content="DocBuilder Documentation">
+    <meta property="article:published_time" content="2025-12-16T00:00:00+00:00">
+    <meta property="article:modified_time" content="2025-12-16T00:00:00+00:00">
+    <meta property="article:tag" content="Pipeline">
+    <meta property="article:tag" content="Transforms">
+    <meta property="article:tag" content="Architecture">
+    <meta property="article:tag" content="Simplification">
+    <meta itemprop="name" content="ADR-003: Fixed Transform Pipeline :: Test">
+    <meta itemprop="description" content="Date: 2025-12-16
+Status Implemented - December 16, 2025 (Now Default)
+Implementation Summary The fixed transform pipeline is fully implemented and is now the default and only content processing system in DocBuilder.
+Deliverables:
+✅ New pipeline package (internal/hugo/pipeline/) ✅ Document type replacing Page/PageShim ✅ Generator and Transform function types ✅ 3 generators (main/repo/section indexes) ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize) ✅ Comprehensive unit tests (71 passing in internal/hugo) ✅ Old system removed - Transform registry, patch system, and all legacy code deleted Migration Complete (December 16, 2025):">
+    <meta itemprop="datePublished" content="2025-12-16T00:00:00+00:00">
+    <meta itemprop="dateModified" content="2025-12-16T00:00:00+00:00">
+    <meta itemprop="wordCount" content="2408">
+    <meta itemprop="keywords" content="Pipeline,Transforms,Architecture,Simplification">
+    <title>ADR-003: Fixed Transform Pipeline :: Test</title>
+    <link href="/css/auto-complete/auto-complete.min.css?1767195092" rel="stylesheet">
+    <script src="/js/auto-complete/auto-complete.min.js?1767195092" defer></script>
+    <script src="/js/search-lunr.min.js?1767195092" defer></script>
+    <script src="/js/search.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.index_js_url="/searchindex.en.js?1767195092";
+    </script>
+    <script src="/js/lunr/lunr.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.stemmer.support.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.multi.min.js?1767195092" defer></script>
+    <script src="/js/lunr/lunr.en.min.js?1767195092" defer></script>
+    <script>
+      window.relearn = window.relearn || {};
+      window.relearn.contentLangs=['en'];
+    </script>
+    <link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet" media="print" onload="this.media='all';this.onload=null;"><noscript><link href="/fonts/fontawesome/css/all.min.css?1767195092" rel="stylesheet"></noscript>
+    <link href="/css/perfect-scrollbar/perfect-scrollbar.min.css?1767195092" rel="stylesheet">
+    <link href="/css/theme.min.css?1767195092" rel="stylesheet">
+    <link href="/css/format-html.min.css?1767195092" rel="stylesheet" id="R-format-style">
+    <script>
+      window.relearn = window.relearn || {};
+      // configuration
+      window.relearn.min = `.min`;
+      window.relearn.path='\/docs\/adr\/adr-003-fixed-transform-pipeline\/index.html';
+      window.relearn.relBasePath='..\/..\/..';
+      window.relearn.relBaseUri='..\/..\/..';
+      window.relearn.absBaseUri='http:\/\/test';
+      window.relearn.disableInlineCopyToClipboard=false;
+      window.relearn.enableBlockCodeWrap=true;
+      // translations
+      window.T_Copy_to_clipboard = `Copy text to clipboard`;
+      window.T_Copied_to_clipboard = `Text copied to clipboard!`;
+      window.T_Link_copied_to_clipboard = `Link copied to clipboard!`;
+      window.T_Reset_view = `Reset view`;
+      window.T_View_reset = `View reset!`;
+      window.T_No_results_found = `No results found for "{0}"`;
+      window.T_N_results_found = `{1} results found for "{0}"`;
+      window.T_Browser_unsupported_feature = `This browser doesn't support this feature`;
+      // variant stuff
+      window.relearn.themevariants = [ 'auto', 'zen-light', 'zen-dark' ];
+      window.relearn.customvariantprefix = "my-custom-";
+      window.relearn.changeVariant = function(variant) {
+        var oldVariant = document.documentElement.dataset.rThemeVariant;
+        window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        document.documentElement.dataset.rThemeVariant = variant;
+        if (oldVariant != variant) {
+          document.dispatchEvent( new CustomEvent('themeVariantLoaded', { detail: { variant, oldVariant } }) );
+          window.relearn.markVariant();
+        }
+      }
+      window.relearn.markVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant");
+        document.querySelectorAll(".R-variantswitcher select").forEach((select) => {select.value = variant;});
+      }
+      window.relearn.initVariant = function() {
+        var variant = window.localStorage.getItem(window.relearn.absBaseUri + "/variant") ?? "";
+        if( !variant ||
+            (!variant.startsWith(window.relearn.customvariantprefix) && !window.relearn.themevariants.includes(variant)) ||
+            (variant.startsWith(window.relearn.customvariantprefix) && !window.localStorage.getItem(window.relearn.absBaseUri + "/variantstylesheet-" + variant)) ){
+          variant = window.relearn.themevariants[0];
+          window.localStorage.setItem(window.relearn.absBaseUri + "/variant", variant);
+        }
+        document.documentElement.dataset.rThemeVariant = variant;
+      }
+      window.relearn.initVariant();
+      window.relearn.markVariant();
+    </script>
+  </head>
+  <body class="mobile-support html" data-origin="/docs/adr/adr-003-fixed-transform-pipeline/index.html">
+    <div id="R-body" class="default-animation">
+      <div id="R-body-overlay"></div>
+      <nav id="R-topbar" class="default-animation">
+        <div class="topbar-wrapper default-animation">
+          <div class="topbar-sidebar-divider default-animation"></div>
+          <div class="topbar-area topbar-area-start" data-area="start">
+            <div class="topbar-button topbar-button-sidebar default-animation" data-content-empty="disable" data-width-s="show" data-width-m="hide" data-width-l="hide">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleNav()" type="button" title="Menu (CTRL&#43;ALT&#43;n)"><i class="fa-fw fas fa-bars"></i></button></span>
+            </div>
+            <div class="topbar-button topbar-button-toc default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="Table of Contents (CTRL&#43;ALT&#43;t)"><i class="fa-fw fas fa-table-list"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+<nav class="TableOfContents">
+  <ul>
+    <li><a href="#status">Status</a></li>
+    <li><a href="#implementation-summary">Implementation Summary</a></li>
+    <li><a href="#context">Context</a>
+      <ul>
+        <li><a href="#current-architecture">Current Architecture</a></li>
+        <li><a href="#problems-with-current-architecture">Problems with Current Architecture</a></li>
+        <li><a href="#key-insight">Key Insight</a></li>
+      </ul>
+    </li>
+    <li><a href="#decision">Decision</a>
+      <ul>
+        <li><a href="#core-principles">Core Principles</a></li>
+        <li><a href="#new-architecture">New Architecture</a></li>
+        <li><a href="#migration-path">Migration Path</a></li>
+      </ul>
+    </li>
+    <li><a href="#consequences">Consequences</a>
+      <ul>
+        <li><a href="#positive">Positive</a></li>
+        <li><a href="#negative">Negative</a></li>
+        <li><a href="#neutral">Neutral</a></li>
+      </ul>
+    </li>
+    <li><a href="#alternatives-considered">Alternatives Considered</a>
+      <ul>
+        <li><a href="#1-keep-current-system-fix-bugs">1. Keep Current System, Fix Bugs</a></li>
+        <li><a href="#2-plugin-architecture">2. Plugin Architecture</a></li>
+        <li><a href="#3-middleware-pattern">3. Middleware Pattern</a></li>
+      </ul>
+    </li>
+    <li><a href="#implementation-plan">Implementation Plan</a></li>
+    <li><a href="#implementation-details">Implementation Details</a>
+      <ul>
+        <li><a href="#file-structure">File Structure</a></li>
+        <li><a href="#key-design-decisions">Key Design Decisions</a></li>
+      </ul>
+    </li>
+    <li><a href="#open-questions">Open Questions</a></li>
+    <li><a href="#references">References</a></li>
+    <li><a href="#decision-makers">Decision Makers</a></li>
+    <li><a href="#notes">Notes</a></li>
+  </ul>
+</nav>
+                </div>
+              </div>
+            </div>
+          </div>
+          <ol class="topbar-breadcrumbs breadcrumbs highlightable" itemscope itemtype="http://schema.org/BreadcrumbList"><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/index.html"><span itemprop="name">Test</span></a><meta itemprop="position" content="1">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/index.html"><span itemprop="name">DocBuilder Documentation</span></a><meta itemprop="position" content="2">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><a itemprop="item" href="/docs/adr/index.html"><span itemprop="name">adr</span></a><meta itemprop="position" content="3">&nbsp;>&nbsp;</li><li itemscope itemtype="https://schema.org/ListItem" itemprop="itemListElement" class=""><span itemprop="name">ADR-003: Fixed Transform Pipeline</span><meta itemprop="position" content="4"></li>
+          </ol>
+          <div class="topbar-area topbar-area-end" data-area="end">
+            <div class="topbar-button topbar-button-edit default-animation" data-content-empty="disable" data-width-s="area-more" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="./docs/_edit/main/./adr/adr-003-fixed-transform-pipeline.md" title="Edit (CTRL+ALT+w)"><i class="fa-fw fas fa-pen"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-prev default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-002-in-memory-content-pipeline/index.html" title="ADR-002: Fix Index Stage Pipeline Bypass (🡐)"><i class="fa-fw fas fa-chevron-left"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-next default-animation" data-content-empty="disable" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><a href="/docs/adr/adr-005-documentation-linting/index.html" title="ADR-005: Documentation Linting for Pre-Commit Validation (🡒)"><i class="fa-fw fas fa-chevron-right"></i></a></span>
+            </div>
+            <div class="topbar-button topbar-button-more default-animation" data-content-empty="hide" data-width-s="show" data-width-m="show" data-width-l="show">
+<span class="btn cstyle button link noborder notitle interactive"><button onclick="toggleTopbarFlyout(this)" type="button" title="More"><i class="fa-fw fas fa-ellipsis-v"></i></button></span>
+              <div class="topbar-content">
+                <div class="topbar-content-wrapper">
+                  <div class="topbar-area topbar-area-more" data-area="more">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <div id="R-main-overlay"></div>
+      <main id="R-body-inner" class="highlightable docs" tabindex="-1">
+        <div class="flex-block-wrapper">
+<article class="default">
+  <header class="headline">
+<div class="R-taxonomy taxonomy-tags cstyle tags" title="Tags" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/tags/architecture/index.html">Architecture</a></li>
+    <li><a class="term-link" href="/tags/pipeline/index.html">Pipeline</a></li>
+    <li><a class="term-link" href="/tags/simplification/index.html">Simplification</a></li>
+    <li><a class="term-link" href="/tags/transforms/index.html">Transforms</a></li>
+  </ul>
+</div>
+  </header>
+
+<h1 id="adr-003-fixed-transform-pipeline">ADR-003: Fixed Transform Pipeline</h1>
+
+<p>Date: 2025-12-16</p>
+<h2 id="status">Status<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p><strong>Implemented</strong> - December 16, 2025 (Now Default)</p>
+<h2 id="implementation-summary">Implementation Summary<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>The fixed transform pipeline is fully implemented and is now the <strong>default and only</strong> content processing system in DocBuilder.</p>
+<p><strong>Deliverables:</strong></p>
+<ul>
+<li>✅ New pipeline package (<code>internal/hugo/pipeline/</code>)</li>
+<li>✅ Document type replacing Page/PageShim</li>
+<li>✅ Generator and Transform function types</li>
+<li>✅ 3 generators (main/repo/section indexes)</li>
+<li>✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)</li>
+<li>✅ Comprehensive unit tests (71 passing in internal/hugo)</li>
+<li>✅ <strong>Old system removed</strong> - Transform registry, patch system, and all legacy code deleted</li>
+</ul>
+<p><strong>Migration Complete (December 16, 2025):</strong></p>
+<ul>
+<li>Removed <code>internal/hugo/transforms/</code> directory (24 files, registry-based system)</li>
+<li>Removed <code>internal/hugo/fmcore/</code> directory (3 files, patch merge system)</li>
+<li>Removed visualize command and Page/PageShim abstractions</li>
+<li>Simplified integration code (content_copy.go: 216→13 lines)</li>
+<li>Net code reduction: -6,233 lines (-88%)</li>
+</ul>
+<p><strong>Test Status:</strong></p>
+<ul>
+<li>Pipeline unit tests: PASS (6 test functions, 12 sub-tests)</li>
+<li>Hugo package tests: PASS (71 tests)</li>
+<li>Full short test suite: PASS (all packages)</li>
+<li>golangci-lint: 0 issues</li>
+</ul>
+<h2 id="context">Context<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="current-architecture">Current Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>DocBuilder&rsquo;s content transformation system uses a <strong>registry-based, dependency-ordered pipeline</strong> with a <strong>front matter patching system</strong>:</p>
+<p><strong>Components:</strong></p>
+<ul>
+<li><code>TransformRegistry</code>: Global registry where transforms register themselves via <code>init()</code></li>
+<li><code>Transform</code> interface: Requires <code>Name()</code>, <code>Priority()</code>, <code>DependsOn()</code>, and <code>Apply(page *Page) Patch</code></li>
+<li>Dependency resolution: Topological sort based on <code>DependsOn()</code> declarations</li>
+<li>Patch system: Three merge modes (<code>MergeDeep</code>, <code>MergeReplace</code>, <code>MergeSetIfMissing</code>) with priority-based ordering</li>
+<li>Protected keys: Reserved front matter fields that block <code>MergeDeep</code> patches</li>
+</ul>
+<p><strong>Current transforms:</strong></p>
+<ol>
+<li><code>front_matter_builder_v2</code> (priority 50): Initializes base front matter</li>
+<li><code>extract_index_title</code> (priority 55): Extracts H1 from README/index files</li>
+<li><code>strip_heading</code>: Removes first H1 from content</li>
+<li><code>relative_link_rewriter</code>: Fixes relative markdown links</li>
+<li><code>image_link_rewriter</code>: Fixes image paths</li>
+<li>Various metadata injectors (repo info, edit links, etc.)</li>
+</ol>
+<p><strong>Example transform:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span><span class="w"> </span><span class="nf">init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nf">RegisterTransform</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ExtractIndexTitle</span><span class="p">{})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">ExtractIndexTitle</span><span class="w"> </span><span class="kd">struct</span><span class="p">{}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">ExtractIndexTitle</span><span class="p">)</span><span class="w"> </span><span class="nf">Name</span><span class="p">()</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="s">&#34;extract_index_title&#34;</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">ExtractIndexTitle</span><span class="p">)</span><span class="w"> </span><span class="nf">Priority</span><span class="p">()</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">55</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">ExtractIndexTitle</span><span class="p">)</span><span class="w"> </span><span class="nf">DependsOn</span><span class="p">()</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="s">&#34;front_matter_builder_v2&#34;</span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="o">*</span><span class="nx">ExtractIndexTitle</span><span class="p">)</span><span class="w"> </span><span class="nf">Apply</span><span class="p">(</span><span class="nx">pg</span><span class="w"> </span><span class="o">*</span><span class="nx">Page</span><span class="p">)</span><span class="w"> </span><span class="nx">Patch</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Extract title from H1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">Patch</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">Mode</span><span class="p">:</span><span class="w">     </span><span class="nx">fmcore</span><span class="p">.</span><span class="nx">MergeReplace</span><span class="p">,</span><span class="w">  </span><span class="c1">// Required to override protected &#34;title&#34; key</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">Priority</span><span class="p">:</span><span class="w"> </span><span class="mi">55</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">FrontMatterUpdates</span><span class="p">:</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="s">&#34;title&#34;</span><span class="p">:</span><span class="w"> </span><span class="nx">extractedTitle</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="problems-with-current-architecture">Problems with Current Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li>
+<p><strong>Hidden complexity</strong>: Dependencies and execution order are not obvious from reading the code</p>
+</li>
+<li>
+<p><strong>Non-local reasoning</strong>: Understanding transform behavior requires checking:</p>
+<ul>
+<li>Registration order in <code>init()</code></li>
+<li>Declared dependencies in <code>DependsOn()</code></li>
+<li>Priority values across multiple transforms</li>
+<li>Protected key system in patching logic</li>
+<li>Merge mode semantics (MergeDeep vs MergeReplace)</li>
+</ul>
+</li>
+<li>
+<p><strong>Debugging difficulty</strong>:</p>
+<ul>
+<li>Recent bug: <code>extract_index_title</code> extracted correct title but was silently blocked by protected keys</li>
+<li>Required temporary debug logging to discover the issue</li>
+<li>Solution was non-obvious: change <code>MergeDeep</code> to <code>MergeReplace</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Indirection overhead</strong>:</p>
+<ul>
+<li>Registry pattern adds abstraction without benefit</li>
+<li>Topological sort runs on every build</li>
+<li>Patch merging adds cognitive overhead</li>
+</ul>
+</li>
+<li>
+<p><strong>False flexibility</strong>:</p>
+<ul>
+<li>Users <strong>cannot</strong> configure transforms dynamically</li>
+<li>Registry/dependency system suggests extensibility we don&rsquo;t support</li>
+<li>Added complexity without delivering value</li>
+</ul>
+</li>
+<li>
+<p><strong>Maintenance burden</strong>:</p>
+<ul>
+<li>Adding transforms requires understanding registration, priorities, dependencies, and patch semantics</li>
+<li>Easy to introduce subtle bugs (wrong merge mode, missing dependency, priority conflicts)</li>
+</ul>
+</li>
+</ol>
+<h3 id="key-insight">Key Insight<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>DocBuilder is greenfield and we control the pipeline.</strong> We don&rsquo;t need dynamic transform registration or user-configurable pipelines. We need a <strong>solid, predictable pipeline</strong> for our specific use case.</p>
+<h2 id="decision">Decision<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>Replace the registry-based, patch-driven pipeline with a <strong>fixed, explicit transform pipeline</strong>.</p>
+<h3 id="core-principles">Core Principles<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Fixed execution order</strong>: Transforms are called in explicit sequence defined in code</li>
+<li><strong>Direct mutation</strong>: Transforms modify <code>Document</code> directly (no patching)</li>
+<li><strong>No dynamic registration</strong>: No <code>init()</code> registry, no dependency declarations</li>
+<li><strong>Simple interfaces</strong>: Transform = function that modifies a document</li>
+<li><strong>Transparent behavior</strong>: Reading the pipeline code shows exact execution order</li>
+</ol>
+<h3 id="new-architecture">New Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Core Interfaces:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// FileTransform modifies a document in the pipeline.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Can optionally return new documents to inject into the pipeline.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// New documents will be queued and processed through ALL transforms from the beginning.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">FileTransform</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">doc</span><span class="w"> </span><span class="o">*</span><span class="nx">Document</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// FileGenerator creates new documents based on analysis of discovered documents.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Generators run before transforms to create missing files (e.g., _index.md).</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">FileGenerator</span><span class="w"> </span><span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">GenerationContext</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// GenerationContext provides access to discovered files for analysis.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">GenerationContext</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Discovered</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Document</span><span class="w">  </span><span class="c1">// All discovered files from repositories</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Config</span><span class="w">     </span><span class="o">*</span><span class="nx">config</span><span class="p">.</span><span class="nx">Config</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Document represents a file being processed through the pipeline.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">type</span><span class="w"> </span><span class="nx">Document</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Content is the markdown body (transformed in-place)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Content</span><span class="w"> </span><span class="kt">string</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// FrontMatter is the YAML front matter (modified directly)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">FrontMatter</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Metadata for transforms to use</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Path</span><span class="w">         </span><span class="kt">string</span><span class="w">  </span><span class="c1">// Hugo content path (e.g., &#34;repo-name/section/file.md&#34;)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">IsIndex</span><span class="w">      </span><span class="kt">bool</span><span class="w">    </span><span class="c1">// True if this is _index.md or README.md</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Repository</span><span class="w">   </span><span class="kt">string</span><span class="w">  </span><span class="c1">// Source repository name</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">SourceCommit</span><span class="w"> </span><span class="kt">string</span><span class="w">  </span><span class="c1">// Git commit SHA</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">SourceURL</span><span class="w">    </span><span class="kt">string</span><span class="w">  </span><span class="c1">// Repository URL for edit links</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">Generated</span><span class="w">    </span><span class="kt">bool</span><span class="w">    </span><span class="c1">// True if this was generated (not discovered)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Pipeline Execution:</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// processContent runs the complete content processing pipeline.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="nx">Generator</span><span class="p">)</span><span class="w"> </span><span class="nf">processContent</span><span class="p">(</span><span class="nx">discovered</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Document</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Phase 1: Generation - Create missing files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">generators</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="nx">FileGenerator</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">generateMainIndex</span><span class="p">,</span><span class="w">           </span><span class="c1">// 1. Create site _index.md</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">generateRepositoryIndexes</span><span class="p">,</span><span class="w">   </span><span class="c1">// 2. Create repo _index.md files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">generateSectionIndexes</span><span class="p">,</span><span class="w">      </span><span class="c1">// 3. Create section _index.md files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">ctx</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">GenerationContext</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">Discovered</span><span class="p">:</span><span class="w"> </span><span class="nx">discovered</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="nx">g</span><span class="p">.</span><span class="nx">config</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nx">generated</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">generator</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">generators</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">docs</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">generator</span><span class="p">(</span><span class="nx">ctx</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;generation failed: %w&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">generated</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">generated</span><span class="p">,</span><span class="w"> </span><span class="nx">docs</span><span class="o">...</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Combine discovered + generated</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">allDocs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">discovered</span><span class="p">,</span><span class="w"> </span><span class="nx">generated</span><span class="o">...</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Phase 2: Transformation - Process all documents</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">transforms</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="p">[]</span><span class="nx">FileTransform</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">computeBaseFrontMatter</span><span class="p">,</span><span class="w">      </span><span class="c1">// 1. Initialize FrontMatter from file</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">extractIndexTitle</span><span class="p">,</span><span class="w">           </span><span class="c1">// 2. Extract H1 title from index files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">stripHeading</span><span class="p">,</span><span class="w">                </span><span class="c1">// 3. Strip H1 if appropriate</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">rewriteRelativeLinks</span><span class="p">,</span><span class="w">        </span><span class="c1">// 4. Fix markdown links</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">rewriteImageLinks</span><span class="p">,</span><span class="w">           </span><span class="c1">// 5. Fix image paths</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">generateFromKeywords</span><span class="p">,</span><span class="w">        </span><span class="c1">// 6. Create new files based on keywords (e.g., )</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">addRepositoryMetadata</span><span class="p">,</span><span class="w">       </span><span class="c1">// 7. Add repo/commit/source metadata</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">addEditLink</span><span class="p">,</span><span class="w">                 </span><span class="c1">// 8. Generate edit URL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Process documents iteratively - newly generated docs go through all transforms</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">processedDocs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">make</span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">allDocs</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">queue</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">append</span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">{},</span><span class="w"> </span><span class="nx">allDocs</span><span class="o">...</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">queue</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">doc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">queue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">queue</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">queue</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Run all transforms on this document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">transform</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">transforms</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">newDocs</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="nx">doc</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;transform failed for %s: %w&#34;</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Path</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Prevent generated documents from creating new documents</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">newDocs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Generated</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;generated document %s attempted to create new documents (transforms should not generate from generated docs)&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Path</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Queue new documents for full transform pipeline</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">newDocs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">queue</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">queue</span><span class="p">,</span><span class="w"> </span><span class="nx">newDocs</span><span class="o">...</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">processedDocs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">processedDocs</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">processedDocs</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Example Generator (Creates New Files):</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// generateSectionIndexes creates _index.md for sections that don&#39;t have one.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">generateSectionIndexes</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="o">*</span><span class="nx">GenerationContext</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Group discovered files by section</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">sections</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">][]</span><span class="o">*</span><span class="nx">Document</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">ctx</span><span class="p">.</span><span class="nx">Discovered</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">section</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Dir</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Path</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">sections</span><span class="p">[</span><span class="nx">section</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">sections</span><span class="p">[</span><span class="nx">section</span><span class="p">],</span><span class="w"> </span><span class="nx">doc</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nx">generated</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">section</span><span class="p">,</span><span class="w"> </span><span class="nx">docs</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">sections</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Check if index already exists</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">hasIndex</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">docs</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nx">doc</span><span class="p">.</span><span class="nx">IsIndex</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">hasIndex</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="k">break</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">hasIndex</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Generate missing index</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">indexDoc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Document</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Path</span><span class="p">:</span><span class="w">        </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">section</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;_index.md&#34;</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">IsIndex</span><span class="p">:</span><span class="w">     </span><span class="kc">true</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Generated</span><span class="p">:</span><span class="w">   </span><span class="kc">true</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Content</span><span class="p">:</span><span class="w">     </span><span class="nf">generateIndexContent</span><span class="p">(</span><span class="nx">section</span><span class="p">,</span><span class="w"> </span><span class="nx">docs</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">FrontMatter</span><span class="p">:</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;title&#34;</span><span class="p">:</span><span class="w"> </span><span class="nf">titleCase</span><span class="p">(</span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Base</span><span class="p">(</span><span class="nx">section</span><span class="p">)),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;type&#34;</span><span class="p">:</span><span class="w">  </span><span class="s">&#34;docs&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">generated</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">generated</span><span class="p">,</span><span class="w"> </span><span class="nx">indexDoc</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">generated</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Example Transform (Modifies Existing Files):</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// extractIndexTitle extracts the first H1 heading as the title for index files.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Only applies if no text exists before the H1.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">extractIndexTitle</span><span class="p">(</span><span class="nx">doc</span><span class="w"> </span><span class="o">*</span><span class="nx">Document</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">!</span><span class="nx">doc</span><span class="p">.</span><span class="nx">IsIndex</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">// Only process index files, no new docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">h1Pattern</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">regexp</span><span class="p">.</span><span class="nf">MustCompile</span><span class="p">(</span><span class="s">`(?m)^# (.+)$`</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">loc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">h1Pattern</span><span class="p">.</span><span class="nf">FindStringIndex</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">loc</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">// No H1 found, no new docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Check for text before H1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">textBeforeH1</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nf">TrimSpace</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">[:</span><span class="nx">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">textBeforeH1</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">// Use filename as title, no new docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Extract title and set directly</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">matches</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">h1Pattern</span><span class="p">.</span><span class="nf">FindStringSubmatch</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nx">doc</span><span class="p">.</span><span class="nx">FrontMatter</span><span class="p">[</span><span class="s">&#34;title&#34;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">matches</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">// Modified doc in-place, no new docs</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<p><strong>Example Transform (Generates New Files Based on Keywords):</strong></p>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// generateFromKeywords scans for special keywords and generates related files.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// Example:  tag creates a glossary page from all terms.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// 
+</span></span></span><span class="line"><span class="cl"><span class="c1">// If this transform returns new documents while processing a Generated document,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c1">// the pipeline will return an error automatically - no need to check here.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="kd">func</span><span class="w"> </span><span class="nf">generateFromKeywords</span><span class="p">(</span><span class="nx">doc</span><span class="w"> </span><span class="o">*</span><span class="nx">Document</span><span class="p">)</span><span class="w"> </span><span class="p">([]</span><span class="o">*</span><span class="nx">Document</span><span class="p">,</span><span class="w"> </span><span class="kt">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nx">newDocs</span><span class="w"> </span><span class="p">[]</span><span class="o">*</span><span class="nx">Document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Check for  marker</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nf">Contains</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Extract all glossary terms from this document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">terms</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nf">extractGlossaryTerms</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">terms</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// Generate glossary document</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// This will go through ALL transforms: front matter, link rewriting, etc.</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">glossaryDoc</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">Document</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Path</span><span class="p">:</span><span class="w">        </span><span class="nx">filepath</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Repository</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;glossary.md&#34;</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">IsIndex</span><span class="p">:</span><span class="w">     </span><span class="kc">false</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Generated</span><span class="p">:</span><span class="w">   </span><span class="kc">true</span><span class="p">,</span><span class="w">  </span><span class="c1">// Mark as generated</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Content</span><span class="p">:</span><span class="w">     </span><span class="nf">renderGlossary</span><span class="p">(</span><span class="nx">terms</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">FrontMatter</span><span class="p">:</span><span class="w"> </span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">any</span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;title&#34;</span><span class="p">:</span><span class="w">      </span><span class="s">&#34;Glossary&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;type&#34;</span><span class="p">:</span><span class="w">       </span><span class="s">&#34;docs&#34;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;generated&#34;</span><span class="p">:</span><span class="w">  </span><span class="kc">true</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                    </span><span class="s">&#34;source_doc&#34;</span><span class="p">:</span><span class="w"> </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Path</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="p">},</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">Repository</span><span class="p">:</span><span class="w">   </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Repository</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">SourceCommit</span><span class="p">:</span><span class="w"> </span><span class="nx">doc</span><span class="p">.</span><span class="nx">SourceCommit</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">                </span><span class="nx">SourceURL</span><span class="p">:</span><span class="w">    </span><span class="nx">doc</span><span class="p">.</span><span class="nx">SourceURL</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="nx">newDocs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">append</span><span class="p">(</span><span class="nx">newDocs</span><span class="p">,</span><span class="w"> </span><span class="nx">glossaryDoc</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="c1">// Remove  marker from original content</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nf">ReplaceAll</span><span class="p">(</span><span class="nx">doc</span><span class="p">.</span><span class="nx">Content</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="p">,</span><span class="w"> </span><span class="s">&#34;&#34;</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// Check for other keywords...</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="c1">// if strings.Contains(doc.Content, &#34;@api-reference&#34;) { ... }</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">newDocs</span><span class="p">,</span><span class="w"> </span><span class="kc">nil</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+<h3 id="migration-path">Migration Path<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Phase 1: Create New Pipeline (Parallel)</strong></p>
+<ol>
+<li>Define <code>Document</code>, <code>FileTransform</code>, <code>FileGenerator</code>, <code>GenerationContext</code> types</li>
+<li>Create <code>processContent()</code> with generation + transform phases</li>
+<li>Convert existing index generation logic to generators</li>
+<li>Convert existing transforms to new interface (one by one)</li>
+<li>Add comprehensive tests for new pipeline</li>
+</ol>
+<p><strong>Phase 2: Switch Over</strong></p>
+<ol>
+<li>Update <code>copyContentFiles()</code> to use new pipeline</li>
+<li>Run integration tests to verify behavior</li>
+<li>Fix any discrepancies</li>
+</ol>
+<p><strong>Phase 3: Cleanup</strong></p>
+<ol>
+<li>Remove old <code>Transform</code> interface</li>
+<li>Remove <code>TransformRegistry</code></li>
+<li>Remove topological sort logic</li>
+<li>Remove patch system (<code>Patch</code>, <code>MergeMode</code>, protected keys)</li>
+<li>Remove old transform files</li>
+</ol>
+<p><strong>Phase 4: Documentation</strong></p>
+<ol>
+<li>Update copilot instructions</li>
+<li>Document transform pipeline in architecture docs</li>
+<li>Add examples for adding new transforms</li>
+</ol>
+<h2 id="consequences">Consequences<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="positive">Positive<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>✅ <strong>Predictable</strong>: Execution order is explicit in code<br>
+✅ <strong>Debuggable</strong>: Set breakpoint in pipeline, step through transforms sequentially<br>
+✅ <strong>Testable</strong>: Test individual transforms/generators or full pipeline easily<br>
+✅ <strong>Maintainable</strong>: No magic, no hidden dependencies, no indirection<br>
+✅ <strong>Fast</strong>: No registry lookups, no topological sorting, no patch merging<br>
+✅ <strong>Simple onboarding</strong>: New developers see exact transform order immediately<br>
+✅ <strong>Reliable</strong>: Fixed pipeline means consistent, reproducible behavior<br>
+✅ <strong>Separation of concerns</strong>: Generation (creating files) separate from transformation (modifying files)<br>
+✅ <strong>Dynamic generation</strong>: Transforms can create new files based on content analysis (keywords, patterns, etc.)<br>
+✅ <strong>Composable</strong>: New documents flow through remaining transforms automatically</p>
+<h3 id="negative">Negative<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p>⚠️ <strong>Less flexible</strong>: Cannot dynamically add/remove transforms (but we don&rsquo;t need this)<br>
+⚠️ <strong>Migration effort</strong>: Need to convert all existing transforms</p>
+<h3 id="neutral">Neutral<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ul>
+<li>Pipeline is now <strong>explicitly ordered</strong> instead of dependency-ordered</li>
+<li>Transforms <strong>mutate directly</strong> instead of returning patches</li>
+<li><strong>Code location</strong> becomes important (pipeline defined in <code>generator.go</code>)</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives Considered<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="1-keep-current-system-fix-bugs">1. Keep Current System, Fix Bugs<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Description</strong>: Continue using registry + patches, improve documentation</p>
+<p><strong>Rejected because</strong>:</p>
+<ul>
+<li>Doesn&rsquo;t address root cause (unnecessary complexity)</li>
+<li>Bug was symptom of overly complex system</li>
+<li>Future maintainers will face same issues</li>
+</ul>
+<h3 id="2-plugin-architecture">2. Plugin Architecture<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Description</strong>: Make transforms truly pluggable with user configuration</p>
+<p><strong>Rejected because</strong>:</p>
+<ul>
+<li>Massive scope increase</li>
+<li>Users don&rsquo;t need this flexibility</li>
+<li>Introduces security/stability risks</li>
+<li>Not aligned with project goals</li>
+</ul>
+<h3 id="3-middleware-pattern">3. Middleware Pattern<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<p><strong>Description</strong>: Chain of responsibility with explicit next() calls</p>
+<p><strong>Rejected because</strong>:</p>
+<ul>
+<li>More complex than simple function list</li>
+<li>Doesn&rsquo;t add value for our use case</li>
+<li>Makes testing harder (mocking next())</li>
+</ul>
+<h2 id="implementation-plan">Implementation Plan<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>✅ <strong>Completed December 16, 2025</strong></p>
+<p><strong>Phase 1: Core Pipeline (Completed)</strong></p>
+<ul>
+<li>Created <code>internal/hugo/pipeline/</code> package</li>
+<li>Implemented <code>Document</code> type with front matter and content fields</li>
+<li>Built <code>Processor</code> with two-phase execution (generators → transforms)</li>
+<li>Added queue-based processing for dynamic document generation</li>
+</ul>
+<p><strong>Phase 2: Transforms Migration (Completed)</strong></p>
+<ul>
+<li>Converted all 10 essential transforms to <code>FileTransform</code> functions</li>
+<li>Implemented 3 generators for index file creation</li>
+<li>Removed dependency on registry, patches, and Page abstraction</li>
+<li>All transforms use direct mutation pattern</li>
+</ul>
+<p><strong>Phase 3: Integration (Completed)</strong></p>
+<ul>
+<li>Created <code>copyContentFilesPipeline()</code> integration function</li>
+<li>Added environment variable feature flag (<code>DOCBUILDER_NEW_PIPELINE=1</code>)</li>
+<li>Maintained backward compatibility with old system</li>
+<li>Updated copilot instructions</li>
+</ul>
+<p><strong>Phase 4: Testing &amp; Validation (Completed)</strong></p>
+<ul>
+<li>Unit tests for all generators and transforms</li>
+<li>Edge case coverage (empty FM, no FM, malformed FM)</li>
+<li>Integration via feature flag tested</li>
+<li>All tests passing, linter clean</li>
+</ul>
+<p><strong>Remaining Work</strong> (Separate from this ADR):</p>
+<ul>
+<li>Remove old registry/patch system</li>
+<li>Update golden test expectations (theme system issue)</li>
+<li>Make new pipeline the default</li>
+<li>Documentation updates</li>
+</ul>
+<p><strong>Actual effort</strong>: 1 day (vs estimated 3-5 days)</p>
+<h2 id="implementation-details">Implementation Details<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<h3 id="file-structure">File Structure<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<div class="highlight actionbar-wrapper wrap-code" dir="auto"><pre tabindex="0"><code>internal/hugo/pipeline/
+├── document.go          # Document type, NewDocumentFromDocFile
+├── processor.go         # Processor with ProcessContent
+├── generators.go        # generateMainIndex, generateRepositoryIndex, generateSectionIndex
+├── transforms.go        # All 10 transforms
+└── pipeline_test.go     # Comprehensive unit tests</code></pre></div>
+<h3 id="key-design-decisions">Key Design Decisions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h3>
+<ol>
+<li><strong>Direct Mutation</strong>: Documents are modified in-place, no patch merging</li>
+<li><strong>Type Safety</strong>: Compile-time verification of transform signatures</li>
+<li><strong>Queue-Based</strong>: Generators can add new documents during processing</li>
+<li><strong>Stateless Transforms</strong>: Pure functions with no global state</li>
+<li><strong>Feature Flag</strong>: Environment variable enables new pipeline without code changes</li>
+</ol>
+<h2 id="open-questions">Open Questions<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>All questions resolved during implementation:</p>
+<ol>
+<li><strong>Error handling</strong>: ✅ Transforms return errors, pipeline fails fast</li>
+<li><strong>Transform state</strong>: ✅ Pass context via RepositoryMetadata parameter</li>
+<li><strong>Partial failures</strong>: ✅ Fail fast on first error (single-pass pipeline)</li>
+<li><strong>Testing strategy</strong>: ✅ Both unit tests per transform and integration tests</li>
+<li><strong>Front matter parsing</strong>: ✅ Handle edge cases (empty FM, no FM, malformed FM)</li>
+<li><strong>Generator ordering</strong>: ✅ All generators run before any transforms</li>
+</ol>
+<h2 id="references">References<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>Issue: &ldquo;README H1 duplicate headers&rdquo; (revealed patch system complexity)</li>
+<li>ADR-002: In-Memory Content Pipeline (established single-pass architecture)</li>
+<li>Copilot Instructions: Transform pipeline section (needs update)</li>
+<li>Style Guide: Function naming conventions (already compatible)</li>
+</ul>
+<h2 id="decision-makers">Decision Makers<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<ul>
+<li>@inful (Lead Developer)</li>
+</ul>
+<h2 id="notes">Notes<span class="btn cstyle anchor copyanchor scrollanchor link noborder notitle interactive"><button type="button" title="Copy link to clipboard"><i class="fa-fw fas fa-link fa-lg"></i></button></span></h2>
+<p>This refactor aligns with DocBuilder&rsquo;s greenfield status and aggressive refactoring posture. We&rsquo;re optimizing for <strong>clarity and maintainability</strong> over theoretical flexibility we don&rsquo;t need.</p>
+
+  <footer class="footline">
+              <i class='fa-fw fas fa-calendar'></i> Dec 16, 2025
+<div class="R-taxonomy taxonomy-categories cstyle" title="Categories" style="--VARIABLE-TAGS-BG-color: var(--INTERNAL-TAG-BG-color);">
+  <i class="fa-fw fas fa-layer-group"></i>
+  <ul>
+    <li><a class="term-link" href="/categories/architecture-decisions/index.html">Architecture-Decisions</a></li>
+  </ul>
+</div>
+  </footer>
+</article>
+        </div>
+      </main>
+    </div>
+    <aside id="R-sidebar" class="default-animation">
+      <div id="R-header-topbar" class="default-animation"></div>
+      <div id="R-header-wrapper" class="default-animation">
+        <a id="R-logo" class="R-default direction-row" href="/index.html">
+          <span class="logo-title default-animation">Test</span>
+        </a>
+        <search><form action="/search/index.html" method="get">
+          <div class="searchbox default-animation">
+            <button class="search-detail" type="submit" title="Search (CTRL+ALT+f)"><i class="fas fa-fw fa-search"></i></button>
+            <label class="a11y-only" for="R-search-by">Search</label>
+            <input data-search-input id="R-search-by" name="search-by" class="search-by" type="search" placeholder="Search...">
+            <button class="search-clear" type="button" data-search-clear="" title="Clear search"><i class="fas fa-fw fa-times" title="Clear search"></i></button>
+          </div>
+        </form></search>
+      </div>
+      <div id="R-homelinks" class="default-animation">
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-homelinks default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-headercontrols default-animation">
+          <ul class="">
+          </ul>
+        </div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+      </div>
+      <div id="R-content-wrapper" class="highlightable">
+        <div class="R-sidebarmenu R-shortcutmenu-main default-animation">
+          <ul class="enlarge morespace collapsible-menu">
+            <li class="parent " data-nav-id="/docs/index.html"><input type="checkbox" id="R-section-b5fa667da3c6d162416dac7e8c63bf8a" aria-controls="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" checked><label for="R-section-b5fa667da3c6d162416dac7e8c63bf8a"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu DocBuilder Documentation</span></label><a class="padding default-animation" href="/docs/index.html">DocBuilder Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-b5fa667da3c6d162416dac7e8c63bf8a" class="collapsible-menu">
+            <li class="parent " data-nav-id="/docs/adr/index.html"><input type="checkbox" id="R-section-eb249477945dd1091e00721cd98f2bb3" aria-controls="R-subsections-eb249477945dd1091e00721cd98f2bb3" checked><label for="R-section-eb249477945dd1091e00721cd98f2bb3"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu adr</span></label><a class="padding default-animation" href="/docs/adr/index.html">adr<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-eb249477945dd1091e00721cd98f2bb3" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/adr/adr-000-uniform-error-handling/index.html"><a class="padding" href="/docs/adr/adr-000-uniform-error-handling/index.html">ADR-000: Uniform Error Handling<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-001-golden-testing-strategy/index.html"><a class="padding" href="/docs/adr/adr-001-golden-testing-strategy/index.html">ADR-001: Golden Testing Strategy for Output Verification<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-002-in-memory-content-pipeline/index.html"><a class="padding" href="/docs/adr/adr-002-in-memory-content-pipeline/index.html">ADR-002: Fix Index Stage Pipeline Bypass<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="active " data-nav-id="/docs/adr/adr-003-fixed-transform-pipeline/index.html"><a class="padding" href="/docs/adr/adr-003-fixed-transform-pipeline/index.html">ADR-003: Fixed Transform Pipeline<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-005-documentation-linting/index.html"><a class="padding" href="/docs/adr/adr-005-documentation-linting/index.html">ADR-005: Documentation Linting for Pre-Commit Validation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/adr/adr-004-forge-specific-markdown/index.html"><a class="padding" href="/docs/adr/adr-004-forge-specific-markdown/index.html">ADR-004: Forge-Specific Markdown Support<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/debugging/index.html"><input type="checkbox" id="R-section-074abb89e994f93a5c2b6e91c0a76d87" aria-controls="R-subsections-074abb89e994f93a5c2b6e91c0a76d87"><label for="R-section-074abb89e994f93a5c2b6e91c0a76d87"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu debugging</span></label><a class="padding default-animation" href="/docs/debugging/index.html">debugging<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-074abb89e994f93a5c2b6e91c0a76d87" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/debugging/issue-001-docs-navigation-naming/index.html"><a class="padding" href="/docs/debugging/issue-001-docs-navigation-naming/index.html">issue-001-docs-navigation-naming<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/how-to/index.html"><input type="checkbox" id="R-section-816fa9c68a5e0b65c6adadae7dee3943" aria-controls="R-subsections-816fa9c68a5e0b65c6adadae7dee3943"><label for="R-section-816fa9c68a5e0b65c6adadae7dee3943"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu how-to</span></label><a class="padding default-animation" href="/docs/how-to/index.html">how-to<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-816fa9c68a5e0b65c6adadae7dee3943" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/how-to/pr-comment-integration/index.html"><a class="padding" href="/docs/how-to/pr-comment-integration/index.html">pr-comment-integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/ci-cd-linting/index.html"><a class="padding" href="/docs/how-to/ci-cd-linting/index.html">How To: CI/CD Linting Integration<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/migrate-to-linting/index.html"><a class="padding" href="/docs/how-to/migrate-to-linting/index.html">How To: Migrate Existing Repository to Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/setup-linting/index.html"><a class="padding" href="/docs/how-to/setup-linting/index.html">How To: Setup Documentation Linting<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-webhooks/index.html"><a class="padding" href="/docs/how-to/configure-webhooks/index.html">Configure Webhooks for Automatic Rebuilds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/add-content-transforms/index.html"><a class="padding" href="/docs/how-to/add-content-transforms/index.html">How To: Add Content Transforms<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/configure-forge-namespacing/index.html"><a class="padding" href="/docs/how-to/configure-forge-namespacing/index.html">How To: Configure Forge Namespacing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/customize-index-pages/index.html"><a class="padding" href="/docs/how-to/customize-index-pages/index.html">How To: Customize Index Pages<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-hugo-render/index.html"><a class="padding" href="/docs/how-to/enable-hugo-render/index.html">How To: Enable Hugo Rendering<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-multi-version-docs/index.html"><a class="padding" href="/docs/how-to/enable-multi-version-docs/index.html">How To: Enable Multi-Version Documentation<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/enable-page-transitions/index.html"><a class="padding" href="/docs/how-to/enable-page-transitions/index.html">How To: Enable Page Transitions<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/prune-workspace-size/index.html"><a class="padding" href="/docs/how-to/prune-workspace-size/index.html">How To: Prune Workspace Size<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/run-incremental-builds/index.html"><a class="padding" href="/docs/how-to/run-incremental-builds/index.html">How To: Run Incremental Builds<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/use-relearn-theme/index.html"><a class="padding" href="/docs/how-to/use-relearn-theme/index.html">How To: Use Relearn Theme<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/how-to/write-cross-document-links/index.html"><a class="padding" href="/docs/how-to/write-cross-document-links/index.html">How To: Write Cross-Document Links<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/refactoring/index.html"><input type="checkbox" id="R-section-052111b19865c39b759df952c283ee8d" aria-controls="R-subsections-052111b19865c39b759df952c283ee8d"><label for="R-section-052111b19865c39b759df952c283ee8d"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu refactoring</span></label><a class="padding default-animation" href="/docs/refactoring/index.html">refactoring<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-052111b19865c39b759df952c283ee8d" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/refactoring/nestif-complexity-reduction/index.html"><a class="padding" href="/docs/refactoring/nestif-complexity-reduction/index.html">Nested Complexity Reduction Plan<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/reference/index.html"><input type="checkbox" id="R-section-ed53feda5bacec73fdf65d35bda5c479" aria-controls="R-subsections-ed53feda5bacec73fdf65d35bda5c479"><label for="R-section-ed53feda5bacec73fdf65d35bda5c479"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu reference</span></label><a class="padding default-animation" href="/docs/reference/index.html">reference<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-ed53feda5bacec73fdf65d35bda5c479" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/reference/index-files/index.html"><a class="padding" href="/docs/reference/index-files/index.html">index-files<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-json-schema/index.html"><a class="padding" href="/docs/reference/lint-json-schema/index.html">lint-json-schema<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules-changelog/index.html"><a class="padding" href="/docs/reference/lint-rules-changelog/index.html">Lint Rules Changelog<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/lint-rules/index.html"><a class="padding" href="/docs/reference/lint-rules/index.html">Lint Rules Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/report/index.html"><a class="padding" href="/docs/reference/report/index.html">Build Reports Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/cli/index.html"><a class="padding" href="/docs/reference/cli/index.html">CLI Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/configuration/index.html"><a class="padding" href="/docs/reference/configuration/index.html">Configuration Reference<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/content-transforms/index.html"><a class="padding" href="/docs/reference/content-transforms/index.html">Content Transforms Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/pipeline-visualization/index.html"><a class="padding" href="/docs/reference/pipeline-visualization/index.html">Pipeline Visualization<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/reference/transform-validation/index.html"><a class="padding" href="/docs/reference/transform-validation/index.html">Transform Validation Reference (DEPRECATED)<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/testing/index.html"><input type="checkbox" id="R-section-a2b6f2e8c080b8619f4023bd7003b7ed" aria-controls="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed"><label for="R-section-a2b6f2e8c080b8619f4023bd7003b7ed"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu testing</span></label><a class="padding default-animation" href="/docs/testing/index.html">testing<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-a2b6f2e8c080b8619f4023bd7003b7ed" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/testing/golden-test-implementation/index.html"><a class="padding" href="/docs/testing/golden-test-implementation/index.html">Golden Test Implementation<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/tutorials/index.html"><input type="checkbox" id="R-section-07180028894b25824d0806e8fa591d66" aria-controls="R-subsections-07180028894b25824d0806e8fa591d66"><label for="R-section-07180028894b25824d0806e8fa591d66"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu tutorials</span></label><a class="padding default-animation" href="/docs/tutorials/index.html">tutorials<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-07180028894b25824d0806e8fa591d66" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/tutorials/getting-started/index.html"><a class="padding" href="/docs/tutorials/getting-started/index.html">Getting Started Tutorial<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/ci-architecture-detection/index.html"><a class="padding" href="/docs/ci-architecture-detection/index.html">CI Architecture Detection<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/ci-cd-setup/index.html"><a class="padding" href="/docs/ci-cd-setup/index.html">CI/CD Setup Guide<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/index.html"><input type="checkbox" id="R-section-db26f542389517033cda1be23c4bdbb2" aria-controls="R-subsections-db26f542389517033cda1be23c4bdbb2"><label for="R-section-db26f542389517033cda1be23c4bdbb2"><i class="fa-fw fas fa-chevron-right"></i><span class="a11y-only">Submenu Explanation Documentation</span></label><a class="padding default-animation" href="/docs/explanation/index.html">Explanation Documentation<i class="fa-fw fas fa-check read-icon"></i></a><ul id="R-subsections-db26f542389517033cda1be23c4bdbb2" class="collapsible-menu">
+            <li class="" data-nav-id="/docs/explanation/webhook-documentation-isolation/index.html"><a class="padding" href="/docs/explanation/webhook-documentation-isolation/index.html">Webhook and Documentation Isolation Strategy<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture-diagrams/index.html"><a class="padding" href="/docs/explanation/architecture-diagrams/index.html">Architecture Diagrams<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/architecture/index.html"><a class="padding" href="/docs/explanation/architecture/index.html">Architecture Overview<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/comprehensive-architecture/index.html"><a class="padding" href="/docs/explanation/comprehensive-architecture/index.html">Comprehensive Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/namespacing-rationale/index.html"><a class="padding" href="/docs/explanation/namespacing-rationale/index.html">Namespacing Rationale<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/package-architecture/index.html"><a class="padding" href="/docs/explanation/package-architecture/index.html">Package Architecture<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/renderer-testing/index.html"><a class="padding" href="/docs/explanation/renderer-testing/index.html">Renderer Testing<i class="fa-fw fas fa-check read-icon"></i></a></li>
+            <li class="" data-nav-id="/docs/explanation/skip-evaluation/index.html"><a class="padding" href="/docs/explanation/skip-evaluation/index.html">Skip Evaluation Logic<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+            <li class="" data-nav-id="/docs/style_guide/index.html"><a class="padding" href="/docs/style_guide/index.html">Go Style Guide<i class="fa-fw fas fa-check read-icon"></i></a></li></ul></li>
+          </ul>
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-shortcuts default-animation">
+          <ul class="space collapsible-menu">
+          </ul>
+        </div>
+        <div id="R-footer-margin" class="default-animation"></div>
+        <div class="R-menu-divider default-animation">
+          <hr class="padding default-animation">
+        </div>
+        <div class="R-sidebarmenu R-shortcutmenu-footercontrols default-animation">
+          <ul class="">
+            <li class="R-variantswitcher">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-paint-brush"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <label class="a11y-only" for="R-select-variant">Theme</label>
+                  <select id="R-select-variant">
+                    <option id="R-select-variant-auto" value="auto" selected>Auto</option>
+                    <option id="R-select-variant-zen-light" value="zen-light">Zen Light</option>
+                    <option id="R-select-variant-zen-dark" value="zen-dark">Zen Dark</option>
+                  </select>
+                </div>
+                <div class="clear"></div>
+              </div>
+              <script>window.relearn.markVariant();</script>
+            </li>
+            <li class="R-historyclearer">
+              <div class="padding menu-control">
+                <i class="fa-fw fas fa-history"></i>
+                <span>&nbsp;</span>
+                <div class="control-style">
+                  <button>Clear History</button>
+                </div>
+                <div class="clear"></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+<div id="R-footer" class="default-animation"><p>Built with <a href="https://github.com/McShelby/hugo-theme-relearn" title="love"><i class="fas fa-heart"></i></a> by <a href="https://gohugo.io/">Hugo</a></p></div>
+      </div>
+    </aside>
+    <script src="/js/perfect-scrollbar/perfect-scrollbar.min.js?1767195092" defer></script>
+    <script src="/js/theme.min.js?1767195092" defer></script>
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="false"></div>
+  </body>
+</html>
