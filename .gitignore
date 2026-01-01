@@ -346,4 +346,4 @@ internal/hugo/content/myrepo/readme.md
 staging.yaml
 public/
 
-testdocs/*
+testdocs/*test-ci-output/
