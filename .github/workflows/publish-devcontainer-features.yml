@@ -113,12 +113,31 @@ jobs:
               echo "✓ Published: ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}"
               echo ""
               
-              # Verify the package was created
+              # Verify the package was created - try multiple possible locations
               echo "Verifying package..."
-              if docker manifest inspect "ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}" > /dev/null 2>&1; then
-                echo "✓ Verified: Package exists in registry"
-              else
-                echo "⚠️  Warning: Could not verify package existence"
+              sleep 2  # Give registry time to register the package
+              
+              found=false
+              for pkg_path in \
+                "ghcr.io/inful/devcontainer-features/${feature_name}:${VERSION}" \
+                "ghcr.io/inful/features/${feature_name}:${VERSION}" \
+                "ghcr.io/inful/${feature_name}:${VERSION}"; do
+                
+                echo "Checking: ${pkg_path}"
+                if docker manifest inspect "${pkg_path}" > /dev/null 2>&1; then
+                  echo "✓ Found package at: ${pkg_path}"
+                  found=true
+                  break
+                fi
+              done
+              
+              if [ "$found" = false ]; then
+                echo "⚠️  Warning: Could not verify package in any expected location"
+                echo "Attempting to list packages via API..."
+                curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                  "https://api.github.com/users/inful/packages?package_type=container" | \
+                  jq -r 'if type == "array" then .[].name else "Error: \(.message // "Unknown error")" end' | \
+                  grep -i "devcontainer\|docbuilder" || echo "No matching packages found"
               fi
               echo ""
             fi
