@@ -45,27 +45,33 @@ install_docbuilder() {
         echo "Latest version: ${VERSION}"
     fi
     
-    DOCBUILDER_URL="https://github.com/inful/docbuilder/releases/download/${VERSION}/docbuilder_${OS}_${ARCH}"
+    DOCBUILDER_FILE="docbuilder_${OS}_${ARCH}.tar.gz"
+    DOCBUILDER_URL="https://github.com/inful/docbuilder/releases/download/${VERSION}/${DOCBUILDER_FILE}"
     
     echo "Downloading DocBuilder ${VERSION}..."
     echo "URL: $DOCBUILDER_URL"
     
     if command -v wget &> /dev/null; then
-        if ! wget -q "$DOCBUILDER_URL" -O /usr/local/bin/docbuilder; then
+        if ! wget -q "$DOCBUILDER_URL" -O /tmp/docbuilder.tar.gz; then
             echo "Error: Failed to download DocBuilder from ${DOCBUILDER_URL}"
             echo "The release may not have binaries for ${OS}-${ARCH}"
             exit 1
         fi
     else
-        if ! curl -fsSL "$DOCBUILDER_URL" -o /usr/local/bin/docbuilder; then
+        if ! curl -fsSL "$DOCBUILDER_URL" -o /tmp/docbuilder.tar.gz; then
             echo "Error: Failed to download DocBuilder from ${DOCBUILDER_URL}"
             echo "The release may not have binaries for ${OS}-${ARCH}"
             exit 1
         fi
     fi
     
+    # Extract docbuilder binary
+    echo "Extracting DocBuilder..."
+    tar -xzf /tmp/docbuilder.tar.gz -C /tmp docbuilder
+    mv /tmp/docbuilder /usr/local/bin/docbuilder
     chmod +x /usr/local/bin/docbuilder
-    echo "✓ DocBuilder binary downloaded and made executable"
+    rm /tmp/docbuilder.tar.gz
+    echo "✓ DocBuilder installed successfully"
 }
 
 # Download Hugo Extended (must match Dockerfile version)
