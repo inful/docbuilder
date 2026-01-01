@@ -12,7 +12,7 @@ Installs DocBuilder with bundled Hugo and automatically starts a documentation p
 ```json
 {
   "features": {
-    "ghcr.io/inful/devcontainer-features/docbuilder-preview:1": {}
+    "ghcr.io/inful/docbuilder-preview:1": {}
   }
 }
 ```
