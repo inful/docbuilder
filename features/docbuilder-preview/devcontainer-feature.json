@@ -1,6 +1,6 @@
 {
   "id": "docbuilder-preview",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "name": "DocBuilder Preview",
   "description": "Installs DocBuilder with bundled Hugo and starts automatic documentation preview",
   "documentationURL": "https://github.com/inful/docbuilder",
@@ -19,8 +19,13 @@
     "docsDir": {
       "type": "string",
       "default": "./docs",
-      "description": "Path to docs directory to preview"
+      "description": "Path to docs directory to preview (relative to workspace)"
     }
+  },
+  "containerEnv": {
+    "PREVIEWPORT": "${previewPort}",
+    "DOCSDIR": "${docsDir}",
+    "WORKSPACE_FOLDER": "${containerWorkspaceFolder}"
   },
   "forwardPorts": [1316],
   "portsAttributes": {
@@ -29,5 +34,5 @@
       "onAutoForward": "notify"
     }
   },
-  "postCreateCommand": "mkdir -p ${containerWorkspaceFolder}/${docsDir} && nohup docbuilder preview --docs-dir ${containerWorkspaceFolder}/${docsDir} --port ${previewPort} > /tmp/docbuilder-preview.log 2>&1 &"
+  "postCreateCommand": "/usr/local/bin/docbuilder-preview-start.sh"
 }
