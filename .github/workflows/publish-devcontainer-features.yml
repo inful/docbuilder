@@ -105,9 +105,8 @@ jobs:
               set -x
               output=$(devcontainer features publish \
                 "${feature_dir}" \
-                --registry ghcr.io \
-                --namespace inful \
-                --version "${VERSION}" 2>&1) || {
+                -r ghcr.io \
+                -n inful 2>&1) || {
                   echo "ERROR: Failed to publish ${feature_name}"
                   echo "Output: $output"
                   exit 1
@@ -116,6 +115,29 @@ jobs:
               
               echo "Publish output:"
               echo "$output"
+              
+              # Now tag with our version
+              echo ""
+              echo "Tagging as version ${VERSION}..."
+              oci_ref="ghcr.io/inful/devcontainer-features/${feature_name}"
+              
+              # The publish creates a 'latest' tag, we need to also tag it with the version
+              if docker manifest inspect "${oci_ref}:latest" > /dev/null 2>&1; then
+                echo "Found published package at ${oci_ref}:latest"
+                echo "Pulling and retagging with version ${VERSION}..."
+                
+                # Pull the manifest
+                docker buildx imagetools inspect "${oci_ref}:latest" || true
+                
+                # Create version tag
+                docker buildx imagetools create \
+                  "${oci_ref}:latest" \
+                  --tag "${oci_ref}:${VERSION}" || {
+                    echo "Failed to create version tag, but package was published"
+                  }
+              else
+                echo "⚠️  Package not found at ${oci_ref}:latest"
+              fi
               
               # Check if output contains any useful information
               if echo "$output" | grep -qi "error\|fail\|denied"; then
