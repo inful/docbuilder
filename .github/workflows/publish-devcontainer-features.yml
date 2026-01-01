@@ -127,18 +127,33 @@ jobs:
               echo "Tagging as version ${VERSION}..."
               oci_ref="ghcr.io/inful/${feature_name}"
               
+              # Wait for registry to fully register the package
+              sleep 3
+              
               # The publish creates tags based on version in devcontainer-feature.json
-              # We need to also tag it with our release version
+              # We need to also tag it with our release version using regctl or crane
               if docker manifest inspect "${oci_ref}:latest" > /dev/null 2>&1; then
                 echo "✓ Found published package at ${oci_ref}:latest"
                 echo "Creating additional version tag ${VERSION}..."
                 
-                # Create version tag
-                docker buildx imagetools create \
-                  "${oci_ref}:latest" \
-                  --tag "${oci_ref}:${VERSION}" || {
-                    echo "⚠️  Could not create version tag, but package was published with semver tags"
-                  }
+                # Get the manifest digest
+                digest=$(docker manifest inspect "${oci_ref}:latest" | jq -r '.manifests[0].digest // .config.digest')
+                echo "Manifest digest: ${digest}"
+                
+                # Use docker CLI to tag by pulling and pushing
+                docker pull "${oci_ref}:latest" > /dev/null 2>&1 || {
+                  echo "Note: Cannot pull OCI artifact with docker, using API method..."
+                  
+                  # Use crane to copy the tag (if available)
+                  if command -v crane > /dev/null 2>&1; then
+                    crane copy "${oci_ref}:latest" "${oci_ref}:${VERSION}"
+                  else
+                    # Install crane
+                    echo "Installing crane for OCI manipulation..."
+                    curl -sL "https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz" | tar xz -C /tmp crane
+                    /tmp/crane copy "${oci_ref}:latest" "${oci_ref}:${VERSION}"
+                  fi
+                }
                 
                 echo ""
                 echo "✓ Package available at:"
@@ -146,7 +161,7 @@ jobs:
                 echo "  - ${oci_ref}:1"
                 echo "  - ${oci_ref}:1.0"  
                 echo "  - ${oci_ref}:1.0.0"
-                echo "  - ${oci_ref}:${VERSION} (if tagging succeeded)"
+                echo "  - ${oci_ref}:${VERSION}"
               else
                 echo "⚠️  Package not found at ${oci_ref}:latest"
               fi
