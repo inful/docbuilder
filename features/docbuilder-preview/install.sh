@@ -1,4 +1,5 @@
 #!/bin/bash
+# v0.1.3 - Corrected tar.gz archive handling
 set -e
 
 VERSION="${VERSION:-latest}"
