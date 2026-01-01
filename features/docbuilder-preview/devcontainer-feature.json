@@ -27,7 +27,9 @@
     "DOCSDIR": "${docsDir}",
     "WORKSPACE_FOLDER": "${containerWorkspaceFolder}"
   },
-  "forwardPorts": [1316],
+  "forwardPorts": [
+    1316
+  ],
   "portsAttributes": {
     "1316": {
       "label": "DocBuilder Preview",
