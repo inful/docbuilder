@@ -296,7 +296,7 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 
 	cfg.Hugo.Title = b.Title
 	cfg.Hugo.Description = "Documentation built with DocBuilder"
-	cfg.Hugo.BaseURL = "/"
+	cfg.Hugo.BaseURL = "http://localhost:1316/" // Match preview's default baseURL
 
 	cfg.Build.RenderMode = config.RenderModeAlways
 
