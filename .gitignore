@@ -347,4 +347,3 @@ staging.yaml
 public/
 
 testdocs/*test-ci-output/
-features/*/install.sh
