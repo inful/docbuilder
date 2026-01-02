@@ -75,11 +75,18 @@ RUN /out/docbuilder --version && \
 ############################
 # Final runtime image
 ############################
-FROM gcr.io/distroless/cc-debian12:nonroot AS runtime-minimal
+FROM debian:bookworm-slim AS runtime-minimal
 ARG HUGO_VERSION="0.152.2"
 
-USER nonroot:nonroot
 WORKDIR /data
+
+# Install minimal runtime dependencies (ca-certificates for HTTPS, bash for script execution)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create nonroot user
+RUN useradd -m -u 65532 nonroot
 
 # Copy pre-built binaries
 COPY --from=binary /out/docbuilder /usr/local/bin/docbuilder
@@ -88,6 +95,11 @@ COPY --from=downloader /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-cert
 
 # Copy Go runtime (required for Hugo modules)
 COPY --from=downloader /usr/local/go /usr/local/go
+
+# Set permissions for nonroot user
+RUN chown -R nonroot:nonroot /data /usr/local/bin/docbuilder /usr/local/bin/hugo
+
+USER nonroot:nonroot
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV HUGO_ENV=production
