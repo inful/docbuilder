@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	// expectedLinkRegexMatches is the expected number of matches from the markdown link regex.
+	// This includes: [0] full match, [1] link text, [2] link URL.
+	expectedLinkRegexMatches = 3
+)
+
 // RewriteRelativeMarkdownLinks rewrites relative markdown links that end with .md/.markdown
 // to their extensionless form with trailing slashes for Hugo's pretty URLs. Anchors are preserved.
 // Rules:
@@ -20,7 +26,7 @@ func RewriteRelativeMarkdownLinks(content string, repositoryName string, forgeNa
 	linkRe := regexp.MustCompile(`\[(?P<text>[^\]]+)\]\((?P<link>[^)]+)\)`)
 	return linkRe.ReplaceAllStringFunc(content, func(m string) string {
 		matches := linkRe.FindStringSubmatch(m)
-		if len(matches) != 3 {
+		if len(matches) != expectedLinkRegexMatches {
 			return m
 		}
 		text := matches[1]

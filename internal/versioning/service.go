@@ -4,6 +4,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const (
+	// defaultMaxVersions is the default maximum number of versions to keep per repository
+	// when no versioning configuration is provided.
+	defaultMaxVersions = 5
+)
+
 // GetVersioningConfig creates a VersionConfig from V2Config.
 func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 	if v2Config.Versioning == nil {
@@ -13,7 +19,7 @@ func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 			DefaultBranchOnly: true,
 			BranchPatterns:    []string{"main", "master"},
 			TagPatterns:       []string{},
-			MaxVersions:       5,
+			MaxVersions:       defaultMaxVersions,
 		}
 	}
 

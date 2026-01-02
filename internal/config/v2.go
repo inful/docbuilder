@@ -13,6 +13,37 @@ import (
 
 const configVersion = "2.0"
 
+const (
+	// Default configuration values for example/initial config generation
+
+	// defaultCloneConcurrency is the default number of concurrent repository clones.
+	defaultCloneConcurrency = 4
+
+	// Default port numbers for daemon services
+	defaultDocsPort       = 8080
+	defaultWebhookPort    = 8081
+	defaultAdminPort      = 8082
+	defaultLiveReloadPort = 8083
+
+	// defaultConcurrentBuilds is the default number of concurrent builds in the sync queue.
+	defaultConcurrentBuilds = 3
+
+	// defaultQueueSize is the default size of the build queue.
+	defaultQueueSize = 100
+
+	// defaultMaxConcurrentLinks is the default maximum concurrent link verification operations.
+	defaultMaxConcurrentLinks = 10
+
+	// defaultMaxRedirects is the default maximum number of HTTP redirects to follow.
+	defaultMaxRedirects = 3
+
+	// defaultMaxVersionsPerRepo is the default maximum versions to keep per repository.
+	defaultMaxVersionsPerRepo = 10
+
+	// defaultConfigFileMode is the default file permission mode for configuration files.
+	defaultConfigFileMode = 0o644
+)
+
 // Config represents the unified (v2) configuration format for DocBuilder, supporting both daemon and direct modes.
 type Config struct {
 	Version    string            `yaml:"version"`
@@ -212,18 +243,18 @@ func Init(configPath string, force bool) error {
 
 	exampleConfig := Config{
 		Version: "2.0",
-		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
+		Build:   BuildConfig{CloneConcurrency: defaultCloneConcurrency, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
-				DocsPort:       8080,
-				WebhookPort:    8081,
-				AdminPort:      8082,
-				LiveReloadPort: 8083,
+				DocsPort:       defaultDocsPort,
+				WebhookPort:    defaultWebhookPort,
+				AdminPort:      defaultAdminPort,
+				LiveReloadPort: defaultLiveReloadPort,
 			},
 			Sync: SyncConfig{
 				Schedule:         "0 */4 * * *",
-				ConcurrentBuilds: 3,
-				QueueSize:        100,
+				ConcurrentBuilds: defaultConcurrentBuilds,
+				QueueSize:        defaultQueueSize,
 			},
 			Storage: StorageConfig{
 				StateFile:    "./docbuilder-state.json",
@@ -237,13 +268,13 @@ func Init(configPath string, force bool) error {
 				KVBucket:           "docbuilder-link-cache",
 				CacheTTL:           "24h",
 				CacheTTLFailures:   "1h",
-				MaxConcurrent:      10,
+				MaxConcurrent:      defaultMaxConcurrentLinks,
 				RequestTimeout:     "10s",
 				RateLimitDelay:     "100ms",
 				VerifyExternalOnly: false,
 				SkipEditLinks:      true,
 				FollowRedirects:    true,
-				MaxRedirects:       3,
+				MaxRedirects:       defaultMaxRedirects,
 			},
 		},
 		Forges: []*ForgeConfig{
@@ -273,7 +304,7 @@ func Init(configPath string, force bool) error {
 			DefaultBranchOnly:  false,
 			BranchPatterns:     []string{"main", "master", "develop"},
 			TagPatterns:        []string{"v*.*.*"},
-			MaxVersionsPerRepo: 10,
+			MaxVersionsPerRepo: defaultMaxVersionsPerRepo,
 		},
 		Hugo: HugoConfig{
 			Title:       "Company Documentation Portal",
@@ -314,7 +345,7 @@ func Init(configPath string, force bool) error {
 	}
 
 	// #nosec G306 -- example config file for documentation purposes
-	if err := os.WriteFile(configPath, data, 0o644); err != nil {
+	if err := os.WriteFile(configPath, data, defaultConfigFileMode); err != nil {
 		return fmt.Errorf("failed to write v2 config file: %w", err)
 	}
 
