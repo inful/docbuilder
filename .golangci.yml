@@ -1,5 +1,3 @@
-version: "2"
-
 linters:
   default: none
   enable:
@@ -24,7 +22,6 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - godoclint
     - godot
     #- godox
     - goheader
@@ -35,8 +32,7 @@ linters:
     - makezero
     - mirror
     - misspell
-    # - mnd
-    - modernize
+    - mnd
     - nestif
     - noctx
     - nolintlint
@@ -47,7 +43,6 @@ linters:
     - revive
     - staticcheck
     - tagalign
-    - usetesting
     - unconvert
     - unparam
     - unused
