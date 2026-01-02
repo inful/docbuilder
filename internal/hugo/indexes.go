@@ -341,8 +341,12 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 		return fmt.Errorf("failed to write repository index from README: %w", err)
 	}
 
-	// Remove the original readme.md file since we've promoted it to _index.md
-	transformedPath := filepath.Join(g.buildRoot(), readmeFile.GetHugoPath())
+	// Remove the original readme.md file since we've promoted to _index.md
+	// We construct the path directly here since this function doesn't have access to
+	// BuildState.IsSingleRepo. The file was written by copyContentFiles at this exact path.
+	// Note: Repository is always in the path for README files, even in single-repo mode,
+	// because they're used for repository-level indexes (content/{repo}/_index.md).
+	transformedPath := filepath.Join(g.buildRoot(), "content", readmeFile.Repository, strings.ToLower(readmeFile.Name+readmeFile.Extension))
 	if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
 		slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
 	}

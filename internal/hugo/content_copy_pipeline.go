@@ -17,6 +17,19 @@ import (
 func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error {
 	slog.Info("Using new fixed transform pipeline for content processing")
 
+	// Compute isSingleRepo flag
+	var isSingleRepo bool
+	if bs != nil {
+		isSingleRepo = bs.Docs.IsSingleRepo
+	} else {
+		// Fallback: compute from docFiles when BuildState is nil (e.g., in tests)
+		repoSet := make(map[string]struct{})
+		for i := range docFiles {
+			repoSet[docFiles[i].Repository] = struct{}{}
+		}
+		isSingleRepo = len(repoSet) == 1
+	}
+
 	// Separate markdown files from assets
 	var markdownFiles []docs.DocFile
 	var assetFiles []docs.DocFile
@@ -39,7 +52,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		default:
 		}
 
-		if err := g.copyAssetFile(*file); err != nil {
+		if err := g.copyAssetFile(*file, isSingleRepo); err != nil {
 			return fmt.Errorf("failed to copy asset %s: %w", file.Path, err)
 		}
 	}
@@ -55,7 +68,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		// Convert to pipeline Document
-		doc := pipeline.NewDocumentFromDocFile(*file)
+		doc := pipeline.NewDocumentFromDocFile(*file, isSingleRepo)
 		discovered = append(discovered, doc)
 	}
 
@@ -215,7 +228,7 @@ func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.
 }
 
 // copyAssetFile copies an asset file (image, etc.) to Hugo content directory without processing.
-func (g *Generator) copyAssetFile(file docs.DocFile) error {
+func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 	// Read the asset file
 	content, err := os.ReadFile(file.Path)
 	if err != nil {
@@ -224,7 +237,7 @@ func (g *Generator) copyAssetFile(file docs.DocFile) error {
 	}
 
 	// Calculate output path - assets go in same location as markdown files
-	outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath())
+	outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath(isSingleRepo))
 
 	// Create directory if needed
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
@@ -241,7 +254,7 @@ func (g *Generator) copyAssetFile(file docs.DocFile) error {
 
 	slog.Debug("Copied asset file",
 		slog.String("source", file.RelativePath),
-		slog.String("destination", file.GetHugoPath()),
+		slog.String("destination", file.GetHugoPath(isSingleRepo)),
 		slog.String("type", file.Extension))
 
 	return nil

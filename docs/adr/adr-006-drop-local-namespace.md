@@ -1,4 +1,4 @@
-# ADR-002: Drop "local" Namespace for Single-Project Preview and Build
+# ADR-006: Drop "local" Namespace for Single-Project Preview and Build
 
 **Status**: Proposed  
 **Date**: 2026-01-02  
@@ -30,7 +30,7 @@ The "local" namespace creates:
 
 ## Decision
 
-We will **drop the "local" repository namespace** for single-project preview and build commands, producing cleaner content structures:
+We will **drop repository namespacing for single-repository builds**, producing cleaner content structures:
 
 ```
 content/api/guide.md
@@ -38,29 +38,31 @@ content/getting-started.md
 content/adr/index.html
 ```
 
-This simplification will be achieved by treating "local" as a special case in the path generation logic rather than modifying command-level code.
+This simplification will be achieved by detecting single-repository builds and skipping namespace generation, rather than relying on magic strings.
 
 ## Implementation Details
 
-### Solution: Conditional Namespace in GetHugoPath()
+### Solution: Detect Single-Repository Builds
 
-Modify the `GetHugoPath()` function in `internal/docs/discovery.go` to skip the repository name when it equals "local":
+Instead of using "local" as a magic string, detect when there's only one repository in the entire build:
 
 ```go
 // GetHugoPath returns the Hugo-compatible path for this documentation file.
-func (df *DocFile) GetHugoPath() string {
-    // Path shape:
-    //   Single forge (no namespace):     content/{repository}/{section}/{name}.md
+func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
+    // Path shapes:
+    //   Single repository:                content/{section}/{name}.md
+    //   Multiple repos, single forge:     content/{repository}/{section}/{name}.md
     //   Multiple forges:                  content/{forge}/{repository}/{section}/{name}.md
-    //   Local (single-project):           content/{section}/{name}.md  (skips "local")
+    
     parts := []string{"content"}
     
+    // Only add forge namespace if multiple forges exist
     if df.Forge != "" {
         parts = append(parts, strings.ToLower(df.Forge))
     }
     
-    // Skip "local" repository namespace (used for preview/build single projects)
-    if df.Repository != "local" {
+    // Skip repository namespace for single-repository builds
+    if !isSingleRepo {
         parts = append(parts, strings.ToLower(df.Repository))
     }
     
@@ -73,34 +75,58 @@ func (df *DocFile) GetHugoPath() string {
 }
 ```
 
+The `isSingleRepo` flag is computed at discovery time:
+```go
+isSingleRepo := len(uniqueRepositories) == 1
+```
+
 ### Why This Approach
 
 **Pros:**
-- ✅ Minimal code change (single location, single conditional)
-- ✅ Backward compatible (existing multi-repo builds unaffected)
-- ✅ Semantically clear ("local" has explicit special meaning)
-- ✅ No public API changes
-- ✅ No command-level changes required
-- ✅ Scales to future single-project scenarios
+- ✅ No magic strings or special cases
+- ✅ Works for ANY single-repository scenario (not just "local")
+- ✅ Semantically correct (namespace exists only when needed for disambiguation)
+- ✅ User can have a config with one repository and get clean paths
+- ✅ No conflict with "local" forge type
+- ✅ Future-proof for single-repo configs
 
 **Cons:**
-- ⚠️ "local" becomes a reserved repository name (acceptable trade-off given its use is internal-only)
+- ⚠️ Requires passing context (`isSingleRepo`) through discovery pipeline
+- ⚠️ Slightly more complex than string comparison
+
+### Previous "local" Magic String Approach (Rejected)
+
+Initial proposal was to check `if df.Repository != "local"`, but this is problematic because:
+
+1. **"local" is a forge type** (`ForgeLocal`), not a repository naming convention
+   - Defined in `internal/config/forge.go` as `ForgeLocal ForgeType = "local"`
+   - Has dedicated client: `internal/forge/local.go` (`LocalClient`)
+   - Used for development environments where docs are in current working directory
+2. **Conflates concepts**: Forge type vs. repository name are different architectural layers
+3. **Fragile**: What if user names their actual repository "local"?
+4. **Arbitrary**: Preview/build commands hardcode `Name: "local"` with no semantic reason
+   - See `cmd/docbuilder/commands/preview.go:88` and `build.go:306`
+5. **Doesn't generalize**: Won't help users with single-repo configs using other names
+
+Using single-repository detection is architecturally sound and works for all cases.
 
 ### Impact Analysis
 
 **Files affected:**
-- `internal/docs/discovery.go`: GetHugoPath() modification
+- `internal/docs/discovery.go`: GetHugoPath() signature change (add `isSingleRepo bool` parameter)
+- `internal/docs/discoverer.go`: Compute `isSingleRepo` flag during discovery
 - Integration golden tests: Content structure paths change (auto-regenerated)
 - No changes to command-line interfaces or configuration format
 
 **Repositories affected:**
-- Preview command (local mode): Uses "local" repo name
-- Build command (local mode): Uses "local" repo name
-- Multi-repository builds: Unaffected (use actual repo names)
+- Preview command: Single repo → no namespace
+- Build command (local mode): Single repo → no namespace
+- Single-repo configs: No namespace
+- Multi-repository builds: Namespaced (unchanged)
 
 **Tests updated:**
 - Golden tests regenerated to expect new path structure
-- Unit test added to verify "local" namespace skipping
+- Unit test added to verify single-repo path generation
 
 ## Consequences
 
@@ -113,23 +139,29 @@ func (df *DocFile) GetHugoPath() string {
 ### Risks and Mitigation
 1. **Breaking change for users with custom Hugo templates**: Low risk since preview/build are primarily for development
    - *Mitigation*: Document in release notes
-2. **Confusion about "local" keyword**: "local" is never exposed in config or CLI
-   - *Mitigation*: Internal implementation detail only
+2. **API signature change**: GetHugoPath() gains parameter
+   - *Mitigation*: Internal API only, no external consumers
 3. **Test maintenance**: Golden files need regeneration
    - *Mitigation*: Automated via `go test -update-golden`
 
 ## Testing Strategy
 
-1. **Unit Test**: Verify GetHugoPath() behavior
+1. **Unit Test**: Verify GetHugoPath() behavior with single/multi repo flag
    ```go
-   func TestGetHugoPath_Local_SkipsNamespace(t *testing.T) {
+   func TestGetHugoPath_SingleRepo_SkipsNamespace(t *testing.T) {
        df := &DocFile{
-           Repository: "local",
+           Repository: "my-docs",
            Section:    "api",
            FileName:   "guide.md",
        }
-       expected := "content/api/guide.md"
-       assert.Equal(t, expected, df.GetHugoPath())
+       
+       // Single repo: no namespace
+       got := df.GetHugoPath(true)
+       assert.Equal(t, "content/api/guide.md", got)
+       
+       // Multi repo: include namespace
+       got = df.GetHugoPath(false)
+       assert.Equal(t, "content/my-docs/api/guide.md", got)
    }
    ```
 

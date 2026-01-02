@@ -184,8 +184,8 @@ func TestForgeNamespacingModes(t *testing.T) {
 		}
 		// GetHugoPath lowercases components for URL compatibility
 		expectedSegment := strings.ToLower(f.Forge) + string(filepath.Separator) + strings.ToLower(f.Repository)
-		if !strings.Contains(f.GetHugoPath(), expectedSegment) {
-			t.Fatalf("hugo path missing forge segment: %s (expected %s)", f.GetHugoPath(), expectedSegment)
+		if !strings.Contains(f.GetHugoPath(false), expectedSegment) {
+			t.Fatalf("hugo path missing forge segment: %s (expected %s)", f.GetHugoPath(false), expectedSegment)
 		}
 	}
 
@@ -203,8 +203,8 @@ func TestForgeNamespacingModes(t *testing.T) {
 		if f.Forge != "" {
 			t.Fatalf("expected no forge in never mode")
 		}
-		if strings.Contains(f.GetHugoPath(), "github") || strings.Contains(f.GetHugoPath(), "gitlab") {
-			t.Fatalf("path should not contain forge in never mode: %s", f.GetHugoPath())
+		if strings.Contains(f.GetHugoPath(false), "github") || strings.Contains(f.GetHugoPath(false), "gitlab") {
+			t.Fatalf("path should not contain forge in never mode: %s", f.GetHugoPath(false))
 		}
 	}
 }
@@ -241,8 +241,8 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 		if f.Forge != "" {
 			t.Fatalf("expected empty forge for single-forge auto mode, got %q", f.Forge)
 		}
-		if strings.Contains(f.GetHugoPath(), "github") {
-			t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath())
+		if strings.Contains(f.GetHugoPath(false), "github") {
+			t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath(false))
 		}
 	}
 }

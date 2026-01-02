@@ -57,6 +57,7 @@ type DocsState struct {
 	Files          []docs.DocFile            // discovered documentation files
 	FilesByRepo    map[string][]docs.DocFile // files grouped by repository (computed lazily)
 	FilesBySection map[string][]docs.DocFile // files grouped by section (computed lazily)
+	IsSingleRepo   bool                      // true when building a single repository (skip repo namespace in paths)
 }
 
 // BuildIndexes populates the repository and section indexes.
@@ -107,11 +108,20 @@ type BuildState struct {
 // newBuildState constructs a BuildState with sub-state initialization.
 func newBuildState(g *Generator, docFiles []docs.DocFile, report *BuildReport) *BuildState {
 	startTime := time.Now()
+
+	// Compute isSingleRepo from docFiles
+	repoSet := make(map[string]struct{})
+	for i := range docFiles {
+		repoSet[docFiles[i].Repository] = struct{}{}
+	}
+	isSingleRepo := len(repoSet) == 1
+
 	bs := &BuildState{
 		Generator: g,
 		Report:    report,
 		Docs: DocsState{
-			Files: docFiles,
+			Files:        docFiles,
+			IsSingleRepo: isSingleRepo,
 		},
 		Pipeline: PipelineState{
 			StartTime: startTime,

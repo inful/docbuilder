@@ -51,7 +51,7 @@ type Document struct {
 }
 
 // NewDocumentFromDocFile creates a Document from a discovered DocFile.
-func NewDocumentFromDocFile(file docs.DocFile) *Document {
+func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool) *Document {
 	// Determine if this is an index file
 	isIndex := isIndexFileName(file.Name)
 
@@ -60,7 +60,7 @@ func NewDocumentFromDocFile(file docs.DocFile) *Document {
 		FrontMatter:         make(map[string]any),
 		OriginalFrontMatter: nil, // Will be populated by front matter parser
 		HadFrontMatter:      false,
-		Path:                file.GetHugoPath(),
+		Path:                file.GetHugoPath(isSingleRepo),
 		IsIndex:             isIndex,
 		Repository:          file.Repository,
 		Forge:               file.Forge,

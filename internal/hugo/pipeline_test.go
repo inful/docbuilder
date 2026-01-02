@@ -18,7 +18,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("first copy: %v", err)
 	}
-	outPath := gen.buildRoot() + "/" + file.GetHugoPath()
+	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
 	data, err := os.ReadFile(outPath)
 	if err != nil {
 		t.Fatalf("read: %v", err)
@@ -49,7 +49,7 @@ func TestPipeline_Order(t *testing.T) {
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
-	outPath := gen.buildRoot() + "/" + file.GetHugoPath()
+	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
 	data, _ := os.ReadFile(outPath)
 	out := string(data)
 	if !strings.Contains(out, "custom: val") {
@@ -68,7 +68,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
-	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath())
+	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath(true))
 	if !strings.Contains(string(data), "title:") {
 		t.Fatalf("expected generated title, got %s", string(data))
 	}
@@ -81,7 +81,7 @@ func TestDateConsistency(t *testing.T) {
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
-	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath())
+	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath(true))
 	if !strings.Contains(string(data), "date:") {
 		t.Fatalf("expected date in front matter, got %s", string(data))
 	}

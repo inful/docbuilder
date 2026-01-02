@@ -73,8 +73,8 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 	assert.Equal(t, "guides/images", imageFile.Section, "Image should preserve full path as section")
 
 	// Check Hugo paths
-	mdHugoPath := mdFile.GetHugoPath()
-	imageHugoPath := imageFile.GetHugoPath()
+	mdHugoPath := mdFile.GetHugoPath(false)
+	imageHugoPath := imageFile.GetHugoPath(false)
 
 	t.Logf("Markdown HugoPath: %s", mdHugoPath)
 	t.Logf("Image HugoPath: %s", imageHugoPath)
@@ -137,11 +137,11 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 
 	// Markdown at root has empty section
 	assert.Equal(t, "", mdFile.Section)
-	assert.Equal(t, filepath.Join("content", "test-repo", "_index.md"), mdFile.GetHugoPath())
+	assert.Equal(t, filepath.Join("content", "test-repo", "_index.md"), mdFile.GetHugoPath(false))
 
 	// Image should be in images subdirectory
 	assert.Equal(t, "images", imageFile.Section)
-	assert.Equal(t, filepath.Join("content", "test-repo", "images", "logo.png"), imageFile.GetHugoPath(),
+	assert.Equal(t, filepath.Join("content", "test-repo", "images", "logo.png"), imageFile.GetHugoPath(false),
 		"Image should preserve images/ subdirectory")
 }
 
@@ -191,7 +191,7 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 	require.NotNil(t, imageFile)
 
 	// Image filename should be normalized to lowercase
-	hugoPath := imageFile.GetHugoPath()
+	hugoPath := imageFile.GetHugoPath(false)
 	expectedPath := filepath.Join("content", "test-repo", "images", "6_3_approve_mr.png")
 
 	t.Logf("Image Hugo Path: %s", hugoPath)
