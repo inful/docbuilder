@@ -49,13 +49,13 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	// Initialize daemon config
 	liveReloadPort := p.LiveReloadPort
 	if liveReloadPort == 0 {
-		liveReloadPort = p.Port + 3
+		liveReloadPort = p.Port + liveReloadPortOffset
 	}
 	cfg.Daemon = &config.DaemonConfig{
 		HTTP: config.HTTPConfig{
 			DocsPort:       p.Port,
-			WebhookPort:    p.Port + 1,
-			AdminPort:      p.Port + 2,
+			WebhookPort:    p.Port + webhookPortOffset,
+			AdminPort:      p.Port + adminPortOffset,
 			LiveReloadPort: liveReloadPort,
 		},
 	}

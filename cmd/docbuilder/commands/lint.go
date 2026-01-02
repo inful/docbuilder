@@ -92,7 +92,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// Determine exit code based on results
 	if result.HasErrors() {
-		os.Exit(2) // Errors found (blocks build)
+		os.Exit(exitCodeErrors) // Errors found (blocks build)
 	} else if result.HasWarnings() && !parent.Quiet {
 		os.Exit(1) // Warnings present
 	}
@@ -161,7 +161,7 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 
 	// Exit with error if fixes failed
 	if fixResult.HasErrors() {
-		os.Exit(2)
+		os.Exit(exitCodeErrors)
 	}
 
 	if !dryRun {

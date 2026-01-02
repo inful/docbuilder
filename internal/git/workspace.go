@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) EnsureWorkspace() error {
-	if err := os.MkdirAll(c.workspaceDir, 0o750); err != nil {
+	if err := os.MkdirAll(c.workspaceDir, workspacePermissions); err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 	return nil

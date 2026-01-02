@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kong"
 
@@ -15,6 +16,35 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
+)
+
+const (
+	// File permission constants for directory and file creation
+
+	// dirPermissions is the standard permission mode for creating directories.
+	dirPermissions = 0o755
+
+	// execFilePermissions is the permission mode for executable files (e.g., git hooks).
+	execFilePermissions = 0o755
+
+	// Timeout and port offset constants
+
+	// shutdownTimeout is the maximum duration to wait for graceful daemon shutdown.
+	shutdownTimeout = 30 * time.Second
+
+	// liveReloadPortOffset is the offset added to the main port to calculate the LiveReload port.
+	liveReloadPortOffset = 3
+
+	// webhookPortOffset is the offset added to the main port to calculate the webhook port.
+	webhookPortOffset = 1
+
+	// adminPortOffset is the offset added to the main port to calculate the admin port.
+	adminPortOffset = 2
+
+	// Exit code constants
+
+	// exitCodeErrors is the exit code when errors are found in linting.
+	exitCodeErrors = 2
 )
 
 // Global context passed to subcommands if we need to share global state later.

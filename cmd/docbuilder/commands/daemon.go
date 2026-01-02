@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
@@ -57,7 +56,7 @@ func RunDaemon(cfg *config.Config, dataDir, configPath string) error {
 	}
 
 	// Stop daemon gracefully
-	stopCtx, stopCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer stopCancel()
 
 	if err := d.Stop(stopCtx); err != nil {

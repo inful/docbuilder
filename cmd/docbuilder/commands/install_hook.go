@@ -29,7 +29,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	hookPath := filepath.Join(hooksDir, "pre-commit")
 
 	// Create hooks directory if it doesn't exist
-	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
+	if err := os.MkdirAll(hooksDir, dirPermissions); err != nil {
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
@@ -43,7 +43,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 			return fmt.Errorf("failed to read existing hook: %w", err)
 		}
 
-		if err := os.WriteFile(backupPath, content, 0o755); err != nil {
+		if err := os.WriteFile(backupPath, content, execFilePermissions); err != nil {
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
 	}
@@ -106,7 +106,7 @@ else
 fi
 `
 
-	if err := os.WriteFile(hookPath, []byte(hookContent), 0o755); err != nil {
+	if err := os.WriteFile(hookPath, []byte(hookContent), execFilePermissions); err != nil {
 		return fmt.Errorf("failed to write hook file: %w", err)
 	}
 

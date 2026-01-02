@@ -155,7 +155,7 @@ func (g *GenerateCmd) renderAndCopyPublicDir(hugoProjectDir string) error {
 	}
 
 	// Create parent directory if needed
-	if err := os.MkdirAll(filepath.Dir(g.Output), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(g.Output), dirPermissions); err != nil {
 		return fmt.Errorf("failed to create output parent directory: %w", err)
 	}
 

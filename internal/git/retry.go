@@ -25,11 +25,11 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 	}
 	initial, _ := time.ParseDuration(c.buildCfg.RetryInitialDelay)
 	if initial <= 0 {
-		initial = 500 * time.Millisecond
+		initial = defaultRetryInitialDelay
 	}
 	maxDelay, _ := time.ParseDuration(c.buildCfg.RetryMaxDelay)
 	if maxDelay <= 0 {
-		maxDelay = 10 * time.Second
+		maxDelay = defaultRetryMaxDelay
 	}
 	pol := retry.NewPolicy(appcfg.RetryBackoffMode(strings.ToLower(string(c.buildCfg.RetryBackoff))), initial, maxDelay, c.buildCfg.MaxRetries)
 
@@ -77,11 +77,11 @@ func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, 
 	}
 	initial, _ := time.ParseDuration(c.buildCfg.RetryInitialDelay)
 	if initial <= 0 {
-		initial = 500 * time.Millisecond
+		initial = defaultRetryInitialDelay
 	}
 	maxDelay, _ := time.ParseDuration(c.buildCfg.RetryMaxDelay)
 	if maxDelay <= 0 {
-		maxDelay = 10 * time.Second
+		maxDelay = defaultRetryMaxDelay
 	}
 	pol := retry.NewPolicy(appcfg.RetryBackoffMode(strings.ToLower(string(c.buildCfg.RetryBackoff))), initial, maxDelay, c.buildCfg.MaxRetries)
 

@@ -15,6 +15,27 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const (
+	// File permission constants
+
+	// dirPermissions is the standard permission mode for creating directories.
+	dirPermissions = 0o755
+
+	// workspacePermissions is the permission mode for git workspace directories.
+	workspacePermissions = 0o750
+
+	// filePermissions is the standard permission mode for creating files.
+	filePermissions = 0o644
+
+	// Retry timing constants
+
+	// defaultRetryInitialDelay is the default initial delay for retry backoff.
+	defaultRetryInitialDelay = 500 * time.Millisecond
+
+	// defaultRetryMaxDelay is the default maximum delay for retry backoff.
+	defaultRetryMaxDelay = 10 * time.Second
+)
+
 // Client handles Git operations for DocBuilder, including clone, update, and authentication.
 type Client struct {
 	workspaceDir    string
