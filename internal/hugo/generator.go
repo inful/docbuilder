@@ -194,10 +194,17 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	// Compute doc files hash (direct generation path bypasses discovery stage where this normally occurs)
 	if report.DocFilesHash == "" && len(docFiles) > 0 {
+		// Compute isSingleRepo from docFiles
+		repoSet := make(map[string]struct{})
+		for i := range docFiles {
+			repoSet[docFiles[i].Repository] = struct{}{}
+		}
+		isSingleRepo := len(repoSet) == 1
+
 		paths := make([]string, 0, len(docFiles))
 		for i := range docFiles {
 			f := &docFiles[i]
-			paths = append(paths, f.GetHugoPath())
+			paths = append(paths, f.GetHugoPath(isSingleRepo))
 		}
 		// Simple insertion sort to avoid importing sort (small slice typical for tests)
 		for i := 1; i < len(paths); i++ {

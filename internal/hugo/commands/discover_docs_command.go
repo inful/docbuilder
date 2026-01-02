@@ -61,7 +61,7 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	bs.Docs.BuildIndexes() // Update indexes after changing files
 
 	// Detect if documentation files have changed
-	if hugo.DetectDocumentChanges(prevFiles, docFiles) || !bs.Git.AllReposUnchanged {
+	if hugo.DetectDocumentChanges(prevFiles, docFiles, bs.Docs.IsSingleRepo) || !bs.Git.AllReposUnchanged {
 		// Files or repos changed - continue with build
 	} else if prevCount > 0 {
 		slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
@@ -93,7 +93,7 @@ func (c *DiscoverDocsCommand) updateReportHash(bs *hugo.BuildState, docFiles []d
 	paths := make([]string, 0, len(docFiles))
 	for i := range docFiles {
 		f := &docFiles[i]
-		paths = append(paths, f.GetHugoPath())
+		paths = append(paths, f.GetHugoPath(bs.Docs.IsSingleRepo))
 	}
 	sort.Strings(paths)
 

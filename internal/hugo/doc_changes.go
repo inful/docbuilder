@@ -3,7 +3,7 @@ package hugo
 import "git.home.luguber.info/inful/docbuilder/internal/docs"
 
 // DetectDocumentChanges checks if documentation files have changed between builds.
-func DetectDocumentChanges(prevFiles, newFiles []docs.DocFile) bool {
+func DetectDocumentChanges(prevFiles, newFiles []docs.DocFile, isSingleRepo bool) bool {
 	prevCount := len(prevFiles)
 	if prevCount == 0 {
 		return false
@@ -15,8 +15,8 @@ func DetectDocumentChanges(prevFiles, newFiles []docs.DocFile) bool {
 	}
 
 	// Build sets for comparison
-	prevSet := buildFilePathSet(prevFiles)
-	nowSet := buildFilePathSet(newFiles)
+	prevSet := buildFilePathSet(prevFiles, isSingleRepo)
+	nowSet := buildFilePathSet(newFiles, isSingleRepo)
 
 	// Check for new files
 	if hasNewFiles(nowSet, prevSet) {
@@ -28,11 +28,11 @@ func DetectDocumentChanges(prevFiles, newFiles []docs.DocFile) bool {
 }
 
 // buildFilePathSet creates a set of Hugo paths from doc files.
-func buildFilePathSet(files []docs.DocFile) map[string]struct{} {
+func buildFilePathSet(files []docs.DocFile, isSingleRepo bool) map[string]struct{} {
 	set := make(map[string]struct{}, len(files))
 	for i := range files {
 		f := &files[i]
-		set[f.GetHugoPath()] = struct{}{}
+		set[f.GetHugoPath(isSingleRepo)] = struct{}{}
 	}
 	return set
 }

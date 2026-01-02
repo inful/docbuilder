@@ -85,6 +85,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 	// Print discovery results
 	slog.Info("Discovery completed", "total_files", len(docFiles))
 
+	isSingleRepo := discovery.IsSingleRepo()
 	filesByRepo := discovery.GetDocFilesByRepository()
 	for repoName, files := range filesByRepo {
 		slog.Info("Repository files", "repository", repoName, "count", len(files))
@@ -93,7 +94,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 			slog.Info("  File discovered",
 				"path", file.RelativePath,
 				"section", file.Section,
-				"hugo_path", file.GetHugoPath())
+				"hugo_path", file.GetHugoPath(isSingleRepo))
 		}
 	}
 

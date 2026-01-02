@@ -30,10 +30,11 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	prevFiles := bs.Docs.Files
 
 	bs.Docs.Files = docFiles
-	bs.Docs.BuildIndexes() // Update indexes after changing files
+	bs.Docs.IsSingleRepo = discovery.IsSingleRepo() // Set single-repo flag from discovery
+	bs.Docs.BuildIndexes()                          // Update indexes after changing files
 
 	// Detect if documentation files have changed
-	if DetectDocumentChanges(prevFiles, docFiles) || !bs.Git.AllReposUnchanged {
+	if DetectDocumentChanges(prevFiles, docFiles, bs.Docs.IsSingleRepo) || !bs.Git.AllReposUnchanged {
 		// Files or repos changed - continue with build
 	} else if prevCount > 0 {
 		slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
@@ -50,7 +51,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 		repoPaths := make(map[string][]string)
 		for i := range docFiles {
 			f := &docFiles[i]
-			p := f.GetHugoPath()
+			p := f.GetHugoPath(bs.Docs.IsSingleRepo)
 			repoPaths[f.Repository] = append(repoPaths[f.Repository], p)
 		}
 		for repoName, paths := range repoPaths {
@@ -83,7 +84,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 		paths := make([]string, 0, len(docFiles))
 		for i := range docFiles {
 			f := &docFiles[i]
-			paths = append(paths, f.GetHugoPath())
+			paths = append(paths, f.GetHugoPath(bs.Docs.IsSingleRepo))
 		}
 		sort.Strings(paths)
 		h := sha256.New()

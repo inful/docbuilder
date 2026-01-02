@@ -37,6 +37,7 @@ type Discovery struct {
 	repositories map[string]config.Repository
 	docFiles     []DocFile
 	buildConfig  *config.BuildConfig
+	isSingleRepo bool // True when building a single repository (skip repo namespace)
 }
 
 // NewDiscovery creates a new documentation discovery instance.
@@ -57,6 +58,9 @@ func NewDiscovery(repositories []config.Repository, buildCfg *config.BuildConfig
 // DiscoverDocs finds all documentation files in the specified repositories.
 func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error) {
 	d.docFiles = make([]DocFile, 0)
+
+	// Determine if this is a single-repository build
+	d.isSingleRepo = len(repoPaths) == 1
 
 	// Determine forge namespacing policy using global build config.
 	mode := config.NamespacingAuto
@@ -229,15 +233,20 @@ func (df *DocFile) LoadContent() error {
 }
 
 // GetHugoPath returns the Hugo-compatible path for this documentation file.
-func (df *DocFile) GetHugoPath() string {
-	// Path shape:
-	//   Single forge (no namespace): content/{repository}/{section}/{name}.md
+func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
+	// Path shapes:
+	//   Single repository:           content/{section}/{name}.md
+	//   Multiple repos, single forge: content/{repository}/{section}/{name}.md
 	//   Multiple forges:             content/{forge}/{repository}/{section}/{name}.md
 	parts := []string{"content"}
 	if df.Forge != "" {
 		parts = append(parts, strings.ToLower(df.Forge))
 	}
-	parts = append(parts, strings.ToLower(df.Repository))
+
+	// Skip repository namespace for single-repository builds
+	if !isSingleRepo {
+		parts = append(parts, strings.ToLower(df.Repository))
+	}
 
 	if df.Section != "" {
 		parts = append(parts, strings.ToLower(df.Section))
@@ -365,7 +374,7 @@ func (d *Discovery) detectPathCollisions() error {
 
 	for i := range d.docFiles {
 		file := &d.docFiles[i]
-		hugoPath := file.GetHugoPath()
+		hugoPath := file.GetHugoPath(d.isSingleRepo)
 		sourcePath := filepath.Join(file.Repository, file.RelativePath)
 		seen[hugoPath] = append(seen[hugoPath], sourcePath)
 	}
@@ -405,4 +414,10 @@ func (d *Discovery) detectPathCollisions() error {
 	}
 
 	return nil
+}
+
+// IsSingleRepo returns true if this discovery was for a single repository build.
+// Used by Hugo generator to determine if repository namespace should be skipped in paths.
+func (d *Discovery) IsSingleRepo() bool {
+	return d.isSingleRepo
 }

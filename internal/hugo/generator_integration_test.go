@@ -44,8 +44,9 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	}
 
 	// Assert expected content files exist
-	introPath := filepath.Join(outDir, "content", testRepo.Name, "intro.md")
-	guidePath := filepath.Join(outDir, "content", testRepo.Name, "guide.md")
+	// Single-repo build: paths should not include repository namespace (ADR-006)
+	introPath := filepath.Join(outDir, "content", "intro.md")
+	guidePath := filepath.Join(outDir, "content", "guide.md")
 	if _, err := os.Stat(introPath); err != nil {
 		t.Fatalf("intro file missing: %v", err)
 	}
@@ -90,7 +91,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	// TestForge integration validation
 	t.Logf("✓ TestForge integration: Successfully generated site for repository %s", testRepo.Name)
 	t.Logf("✓ Repository URL: %s", testRepo.URL)
-	t.Logf("✓ Content files generated in: content/%s/", testRepo.Name)
+	t.Logf("✓ Content files generated in: content/ (single-repo build, no namespace)")
 }
 
 // TestGenerateSite_TestForgeRealisticWorkflow demonstrates end-to-end Hugo generation with TestForge.

@@ -33,7 +33,8 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	if err := gen.GenerateSite(filesV1); err != nil {
 		t.Fatalf("first build failed: %v", err)
 	}
-	target := filepath.Join(outDir, "content", "repo", "page.md")
+	// Single-repo build: path should not include repository namespace (ADR-006)
+	target := filepath.Join(outDir, "content", "page.md")
 	v1 := mustRead(t, target)
 	if !strings.Contains(v1, "repository: repo") {
 		t.Fatalf("expected v1 content with repo frontmatter, got %s", v1)
@@ -78,7 +79,8 @@ func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	if err := gen.GenerateSite(filesV1); err != nil {
 		t.Fatalf("initial build failed: %v", err)
 	}
-	target := filepath.Join(outDir, "content", "repo", "page.md")
+	// Single-repo build: path should not include repository namespace (ADR-006)
+	target := filepath.Join(outDir, "content", "page.md")
 	stable := mustRead(t, target)
 	if !strings.Contains(stable, "repository: repo") {
 		t.Fatalf("expected stable content with repo frontmatter, got %s", stable)
