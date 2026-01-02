@@ -22,6 +22,7 @@ type BuildCmd struct {
 	RenderMode    string `name:"render-mode" help:"Override build.render_mode (auto|always|never). Precedence: --render-mode > env vars (skip/run) > config."`
 	DocsDir       string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory (used when no config file provided)"`
 	Title         string `name:"title" default:"Documentation" help:"Site title when no config provided"`
+	BaseURL       string `name:"base-url" help:"Override hugo.base_url from config"`
 	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
 
@@ -53,6 +54,12 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 		} else {
 			slog.Warn("Ignoring invalid --render-mode value", "value", b.RenderMode)
 		}
+	}
+
+	// Apply CLI base-url override if provided
+	if b.BaseURL != "" {
+		cfg.Hugo.BaseURL = b.BaseURL
+		slog.Info("Base URL overridden via CLI flag", "base_url", b.BaseURL)
 	}
 
 	// Resolve output directory with base_directory support
