@@ -7,6 +7,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const (
+	// defaultRetryMaxDelay is the default maximum delay for retry backoff.
+	defaultRetryMaxDelay = 30 * time.Second
+)
+
 // Policy encapsulates retry/backoff settings for transient failures.
 // It is immutable after construction.
 type Policy struct {
@@ -18,7 +23,7 @@ type Policy struct {
 
 // DefaultPolicy returns a sensible default policy (linear, 1s initial, 30s cap, 2 retries).
 func DefaultPolicy() Policy {
-	return Policy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 30 * time.Second, MaxRetries: 2}
+	return Policy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: defaultRetryMaxDelay, MaxRetries: 2}
 }
 
 // NewPolicy builds a policy from raw config fields; zero/invalid values fall back to defaults.

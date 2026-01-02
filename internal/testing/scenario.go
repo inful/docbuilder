@@ -53,7 +53,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
-	if err := os.MkdirAll(outputDir, 0o750); err != nil {
+	if err := os.MkdirAll(outputDir, testDirPermissions); err != nil {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 

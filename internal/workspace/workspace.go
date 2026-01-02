@@ -10,6 +10,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const (
+	// workspacePermissions is the permission mode for workspace directories.
+	workspacePermissions = 0o750
+)
+
 // Manager handles workspace operations (both temporary and persistent).
 type Manager struct {
 	baseDir    string
@@ -50,7 +55,7 @@ func NewPersistentManager(baseDir, subdirName string) *Manager {
 func (m *Manager) Create() error {
 	if m.persistent {
 		// Persistent mode: use fixed directory
-		if err := os.MkdirAll(m.tempDir, 0o750); err != nil {
+		if err := os.MkdirAll(m.tempDir, workspacePermissions); err != nil {
 			return fmt.Errorf("failed to create persistent workspace directory: %w", err)
 		}
 		slog.Info("Using persistent workspace", logfields.Path(m.tempDir))
@@ -61,7 +66,7 @@ func (m *Manager) Create() error {
 	timestamp := time.Now().Format("20060102-150405")
 	tempDir := filepath.Join(m.baseDir, fmt.Sprintf("docbuilder-%s", timestamp))
 
-	if err := os.MkdirAll(tempDir, 0o750); err != nil {
+	if err := os.MkdirAll(tempDir, workspacePermissions); err != nil {
 		return fmt.Errorf("failed to create workspace directory: %w", err)
 	}
 

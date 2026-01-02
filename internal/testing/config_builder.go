@@ -135,7 +135,7 @@ func (cb *ConfigBuilder) WithDaemon(docsPort, webhookPort, adminPort int) *Confi
 		},
 		Sync: config.SyncConfig{
 			Schedule:         "0 */6 * * *", // Every 6 hours
-			ConcurrentBuilds: 2,
+			ConcurrentBuilds: testDefaultConcurrency,
 			QueueSize:        testDefaultRetries,
 		},
 	}
