@@ -23,6 +23,7 @@ type BuildCmd struct {
 	DocsDir       string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory (used when no config file provided)"`
 	Title         string `name:"title" default:"Documentation" help:"Site title when no config provided"`
 	BaseURL       string `name:"base-url" help:"Override hugo.base_url from config"`
+	Relocatable   bool   `name:"relocatable" help:"Generate fully relocatable site with relative links (sets base_url to empty string)"`
 	KeepWorkspace bool   `name:"keep-workspace" help:"Keep workspace and staging directories for debugging (do not clean up on exit)"`
 }
 
@@ -60,6 +61,12 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	if b.BaseURL != "" {
 		cfg.Hugo.BaseURL = b.BaseURL
 		slog.Info("Base URL overridden via CLI flag", "base_url", b.BaseURL)
+	}
+
+	// Apply relocatable flag (generates relative links for portability)
+	if b.Relocatable {
+		cfg.Hugo.BaseURL = ""
+		slog.Info("Generating fully relocatable site with relative links (base_url set to empty)")
 	}
 
 	// Resolve output directory with base_directory support
