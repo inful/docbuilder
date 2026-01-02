@@ -24,6 +24,16 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
+const (
+	// File permission constants for integration tests
+
+	// integrationDirPermissions is the permission mode for creating test directories.
+	integrationDirPermissions = 0o755
+
+	// integrationFilePermissions is the permission mode for creating test files.
+	integrationFilePermissions = 0o644
+)
+
 // ContentStructure represents the structure of generated content for golden testing.
 type ContentStructure struct {
 	Files     map[string]ContentFile `json:"files"`
@@ -168,10 +178,10 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 		data, err = yaml.Marshal(actual)
 		require.NoError(t, err, "failed to marshal golden config")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), integrationDirPermissions)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0o644)
+		err = os.WriteFile(goldenPath, data, integrationFilePermissions)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
@@ -293,10 +303,10 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		data, err = json.MarshalIndent(actual, "", "  ")
 		require.NoError(t, err, "failed to marshal content structure")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), integrationDirPermissions)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0o644)
+		err = os.WriteFile(goldenPath, data, integrationFilePermissions)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)

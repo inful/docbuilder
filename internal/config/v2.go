@@ -19,6 +19,9 @@ const (
 	// defaultCloneConcurrency is the default number of concurrent repository clones.
 	defaultCloneConcurrency = 4
 
+	// defaultMaxRetries is the default maximum number of retries for failed operations.
+	defaultMaxRetries = 2
+
 	// Default port numbers for daemon services
 	defaultDocsPort       = 8080
 	defaultWebhookPort    = 8081
@@ -243,7 +246,7 @@ func Init(configPath string, force bool) error {
 
 	exampleConfig := Config{
 		Version: "2.0",
-		Build:   BuildConfig{CloneConcurrency: defaultCloneConcurrency, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
+		Build:   BuildConfig{CloneConcurrency: defaultCloneConcurrency, MaxRetries: defaultMaxRetries, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
 				DocsPort:       defaultDocsPort,

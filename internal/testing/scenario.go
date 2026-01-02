@@ -49,7 +49,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 	configDir := filepath.Join(tempDir, "config")
 	outputDir := filepath.Join(tempDir, "output")
 
-	if err := os.MkdirAll(configDir, 0o750); err != nil {
+	if err := os.MkdirAll(configDir, testDirPermissions); err != nil {
 		t.Fatalf("Failed to create config directory: %v", err)
 	}
 
@@ -57,7 +57,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	_, cancel := context.WithTimeout(context.Background(), testDefaultTimeout*time.Second)
 
 	return &TestEnvironment{
 		t:         t,

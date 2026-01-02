@@ -26,7 +26,7 @@ func NewCLITestRunner(t *testing.T, binaryPath string) *CLITestRunner {
 	return &CLITestRunner{
 		t:          t,
 		binaryPath: binaryPath,
-		timeout:    30 * time.Second,
+		timeout:    testDefaultTimeout * time.Second,
 	}
 }
 
@@ -178,7 +178,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 	}
 
 	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(absPath), 0o750); err != nil {
+	if err := os.MkdirAll(filepath.Dir(absPath), testDirPermissions); err != nil {
 		env.t.Logf("Failed to create parent dir for binary %s: %v", absPath, err)
 		env.runner.binaryPath = absPath
 		return env

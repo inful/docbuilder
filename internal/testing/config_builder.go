@@ -28,7 +28,7 @@ func NewConfigBuilder(t *testing.T) *ConfigBuilder {
 				Directory: filepath.Join(os.TempDir(), "docbuilder-test-output"),
 			},
 			Build: config.BuildConfig{
-				CloneConcurrency: 2,
+				CloneConcurrency: testDefaultConcurrency,
 				RenderMode:       config.RenderModeAuto,
 				NamespaceForges:  config.NamespacingAuto,
 				CloneStrategy:    config.CloneStrategyFresh,
@@ -136,7 +136,7 @@ func (cb *ConfigBuilder) WithDaemon(docsPort, webhookPort, adminPort int) *Confi
 		Sync: config.SyncConfig{
 			Schedule:         "0 */6 * * *", // Every 6 hours
 			ConcurrentBuilds: 2,
-			QueueSize:        10,
+			QueueSize:        testDefaultRetries,
 		},
 	}
 	return cb
@@ -182,7 +182,7 @@ func (cb *ConfigBuilder) BuildAndSave(filePath string) *config.Config {
 	}
 
 	// Write to file with tighter permissions
-	if err := os.WriteFile(filePath, data, 0o600); err != nil {
+	if err := os.WriteFile(filePath, data, testFilePermissions); err != nil {
 		cb.t.Fatalf("Failed to save config to %s: %v", filePath, err)
 	}
 	return cb.config
@@ -218,7 +218,7 @@ func (cf *ConfigFactory) MultiForgeConfig() *config.Config {
 func (cf *ConfigFactory) DaemonConfig() *config.Config {
 	return NewConfigBuilder(cf.t).
 		WithGitHubForge("github", "github-token", "github-org").
-		WithDaemon(8080, 8081, 8082).
+		WithDaemon(testDefaultPort, testDefaultPort+1, testDefaultPort+2).
 		WithMonitoring(true).
 		WithVersioning(config.StrategyBranchesAndTags).
 		Build()

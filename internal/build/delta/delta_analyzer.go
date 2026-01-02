@@ -18,8 +18,15 @@ type DeltaDecision int
 const (
 	// DeltaDecisionFull indicates a full rebuild of all repositories is required.
 	DeltaDecisionFull DeltaDecision = iota
+	// DeltaDecisionIncremental indicates only changed repositories need rebuilding.
+	DeltaDecisionIncremental
 	// DeltaDecisionPartial indicates a partial rebuild (subset of repos / docs) is possible.
 	DeltaDecisionPartial
+)
+
+const (
+	// initialPathCapacity is the initial capacity for file path slices during hash computation.
+	initialPathCapacity = 32
 )
 
 // DeltaPlan is the output of DeltaAnalyzer.Analyze.
@@ -78,7 +85,7 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 		return ""
 	}
 	docRoots := []string{"docs", "documentation"}
-	paths := make([]string, 0, 32)
+	paths := make([]string, 0, initialPathCapacity)
 	for _, docRoot := range docRoots {
 		base := filepath.Join(root, docRoot)
 		if fi, err := os.Stat(base); err == nil && fi.IsDir() {

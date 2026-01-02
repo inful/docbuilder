@@ -4,6 +4,16 @@ import (
 	"fmt"
 )
 
+const (
+	// Test configuration defaults
+
+	// testCloneConcurrency is the default concurrency for tests.
+	testCloneConcurrency = 2
+
+	// testMaxRetries is the default max retries for tests.
+	testMaxRetries = 3
+)
+
 // TestForgeConfigFactory provides realistic forge configurations for testing.
 type TestForgeConfigFactory struct {
 	counter int
@@ -162,8 +172,8 @@ func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *
 		Hugo:    HugoConfig{Title: "TestForge Documentation"},
 		Output:  OutputConfig{Directory: "./test-output", Clean: true},
 		Build: BuildConfig{
-			CloneConcurrency:  2,
-			MaxRetries:        3,
+			CloneConcurrency:  testCloneConcurrency,
+			MaxRetries:        testMaxRetries,
 			RetryBackoff:      RetryBackoffLinear,
 			RetryInitialDelay: "1s",
 			RetryMaxDelay:     "10s",
