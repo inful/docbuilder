@@ -34,7 +34,6 @@ type CLI struct {
 	Lint     LintCmd     `cmd:"" help:"Lint documentation files for errors and style issues"`
 	Daemon   DaemonCmd   `cmd:"" help:"Start daemon mode for continuous documentation updates"`
 	Preview  PreviewCmd  `cmd:"" help:"Preview local docs with live reload (no git polling)"`
-	Generate GenerateCmd `cmd:"" help:"Generate static site from local docs directory (for CI/CD)"`
 }
 
 // AfterApply runs after flag parsing; setup logging once.

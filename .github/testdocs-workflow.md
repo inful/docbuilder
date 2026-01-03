@@ -31,9 +31,9 @@ Clearly articulate what's wrong with the current output:
 - Expected HTML output behavior
 
 ### 2. Verify the Issue
-Run the generate command to see current behavior:
+Run the build command to see current behavior:
 ```bash
-go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout
+go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout
 ```
 
 Inspect the generated HTML:
@@ -54,9 +54,9 @@ Make code changes in the relevant modules:
 - Other relevant modules
 
 ### 4. Re-test the Fix
-Re-run the generate command:
+Re-run the build command:
 ```bash
-go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout
+go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout
 ```
 
 Verify the fix by inspecting the updated HTML output.
@@ -74,7 +74,7 @@ Once the fix is working:
 
 ### Generate from testdocs
 ```bash
-go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout
+go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout
 ```
 
 ### Inspect specific HTML file
@@ -97,11 +97,11 @@ rm -rf /tmp/testout
 
 1. **Focus on One Issue**: Fix one problem at a time using this workflow
 2. **Incremental Changes**: Make small, focused code changes
-3. **Verify Each Step**: Always re-run generate after each change
+3. **Verify Each Step**: Always re-run build after each change
 4. **Compare HTML**: Use `diff` to compare before/after HTML output
 5. **Check Logs**: Run with `-v` for verbose output if needed:
    ```bash
-   go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout -v
+   go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout -v
    ```
 
 ## Adding New Test Cases
@@ -117,14 +117,14 @@ When adding new test cases to `testdocs/`:
 
 ```bash
 # 1. Verify issue exists
-go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout
+go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout
 cat /tmp/testout/docs/sub1/inasub/index.html | grep -A5 "HEADING"
 
 # 2. Make code changes
 # (edit files in internal/)
 
 # 3. Re-test
-go run ./cmd/docbuilder generate -d ./testdocs -o /tmp/testout
+go run ./cmd/docbuilder build -d ./testdocs -o /tmp/testout
 cat /tmp/testout/docs/sub1/inasub/index.html | grep -A5 "HEADING"
 
 # 4. Verify fix works

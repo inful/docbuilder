@@ -31,7 +31,7 @@ Thank you for your interest in contributing to DocBuilder! This guide will help 
 
 DocBuilder uses a pipeline-based architecture with three main extension points:
 
-- **Pipeline Stages**: Sequential build steps (clone, discover, generate, etc.)
+- **Pipeline Stages**: Sequential build steps (clone, discover, Hugo site generation, etc.)
 - **Content Transforms**: Processing steps for markdown files
 - **Hugo Themes**: Theme-specific configuration and capabilities
 

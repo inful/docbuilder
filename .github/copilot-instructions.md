@@ -17,7 +17,7 @@ Key data flow: `Config → Git Clone → Doc Discovery → Hugo Site Generation`
 
 ### Command Structure
 The CLI uses [Kong](https://github.com/alecthomas/kong) for command parsing. Main commands in `cmd/docbuilder/main.go`:
-- `build` - Full pipeline execution (clone → discover → generate)
+- `build` - Full pipeline execution (clone → discover → generate Hugo site)
 - `init` - Creates example configuration
 - `discover` - Discovery-only mode for testing/debugging
 
