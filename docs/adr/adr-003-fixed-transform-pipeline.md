@@ -24,13 +24,13 @@ Date: 2025-12-16
 The fixed transform pipeline is fully implemented and is now the **default and only** content processing system in DocBuilder.
 
 **Deliverables:**
-- ✅ New pipeline package (`internal/hugo/pipeline/`)
-- ✅ Document type replacing Page/PageShim  
-- ✅ Generator and Transform function types
-- ✅ 3 generators (main/repo/section indexes)
-- ✅ 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)
-- ✅ Comprehensive unit tests (71 passing in internal/hugo)
-- ✅ **Old system removed** - Transform registry, patch system, and all legacy code deleted
+- - New pipeline package (`internal/hugo/pipeline/`)
+- - Document type replacing Page/PageShim  
+- - Generator and Transform function types
+- - 3 generators (main/repo/section indexes)
+- - 11 transforms (parse FM, normalize indexes, build FM, extract title, strip heading, rewrite links/images, keywords, metadata, edit link, serialize)
+- - Comprehensive unit tests (71 passing in internal/hugo)
+- - **Old system removed** - Transform registry, patch system, and all legacy code deleted
 
 **Migration Complete (December 16, 2025):**
 - Removed `internal/hugo/transforms/` directory (24 files, registry-based system)
@@ -397,21 +397,21 @@ func generateFromKeywords(doc *Document) ([]*Document, error) {
 
 ### Positive
 
-✅ **Predictable**: Execution order is explicit in code  
-✅ **Debuggable**: Set breakpoint in pipeline, step through transforms sequentially  
-✅ **Testable**: Test individual transforms/generators or full pipeline easily  
-✅ **Maintainable**: No magic, no hidden dependencies, no indirection  
-✅ **Fast**: No registry lookups, no topological sorting, no patch merging  
-✅ **Simple onboarding**: New developers see exact transform order immediately  
-✅ **Reliable**: Fixed pipeline means consistent, reproducible behavior  
-✅ **Separation of concerns**: Generation (creating files) separate from transformation (modifying files)  
-✅ **Dynamic generation**: Transforms can create new files based on content analysis (keywords, patterns, etc.)  
-✅ **Composable**: New documents flow through remaining transforms automatically  
+- **Predictable**: Execution order is explicit in code  
+- **Debuggable**: Set breakpoint in pipeline, step through transforms sequentially  
+- **Testable**: Test individual transforms/generators or full pipeline easily  
+- **Maintainable**: No magic, no hidden dependencies, no indirection  
+- **Fast**: No registry lookups, no topological sorting, no patch merging  
+- **Simple onboarding**: New developers see exact transform order immediately  
+- **Reliable**: Fixed pipeline means consistent, reproducible behavior  
+- **Separation of concerns**: Generation (creating files) separate from transformation (modifying files)  
+- **Dynamic generation**: Transforms can create new files based on content analysis (keywords, patterns, etc.)  
+- **Composable**: New documents flow through remaining transforms automatically  
 
 ### Negative
 
-⚠️ **Less flexible**: Cannot dynamically add/remove transforms (but we don't need this)  
-⚠️ **Migration effort**: Need to convert all existing transforms  
+WARNING: **Less flexible**: Cannot dynamically add/remove transforms (but we don't need this)  
+WARNING: **Migration effort**: Need to convert all existing transforms  
 
 ### Neutral
 
@@ -451,7 +451,7 @@ func generateFromKeywords(doc *Document) ([]*Document, error) {
 
 ## Implementation Plan
 
-✅ **Completed December 16, 2025**
+- **Completed December 16, 2025**
 
 **Phase 1: Core Pipeline (Completed)**
 - Created `internal/hugo/pipeline/` package
@@ -510,12 +510,12 @@ internal/hugo/pipeline/
 
 All questions resolved during implementation:
 
-1. **Error handling**: ✅ Transforms return errors, pipeline fails fast
-2. **Transform state**: ✅ Pass context via RepositoryMetadata parameter
-3. **Partial failures**: ✅ Fail fast on first error (single-pass pipeline)
-4. **Testing strategy**: ✅ Both unit tests per transform and integration tests
-5. **Front matter parsing**: ✅ Handle edge cases (empty FM, no FM, malformed FM)
-6. **Generator ordering**: ✅ All generators run before any transforms
+1. **Error handling**: - Transforms return errors, pipeline fails fast
+2. **Transform state**: - Pass context via RepositoryMetadata parameter
+3. **Partial failures**: - Fail fast on first error (single-pass pipeline)
+4. **Testing strategy**: - Both unit tests per transform and integration tests
+5. **Front matter parsing**: - Handle edge cases (empty FM, no FM, malformed FM)
+6. **Generator ordering**: - All generators run before any transforms
 
 ## References
 

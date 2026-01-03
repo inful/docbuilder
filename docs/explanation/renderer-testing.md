@@ -189,18 +189,18 @@ modes := []config.RenderMode{
 ## Debugging Test Failures
 
 ### "Hugo binary not found" in CI
-✅ **Expected** - Use NoopRenderer for CI tests
+- **Expected** - Use NoopRenderer for CI tests
 
 ### "StaticRendered=false" with BinaryRenderer  
-✅ **Expected** - Hugo may fail without proper theme setup  
+- **Expected** - Hugo may fail without proper theme setup  
 Check logs for "Renderer execution failed"
 
 ### "public/ directory exists but StaticRendered=false"
-✅ **Expected** - Hugo creates public/ before failing  
+- **Expected** - Hugo creates public/ before failing  
 This is normal for partial renders
 
 ### Custom renderer not being used
-❌ **Problem** - Check that `WithRenderer()` is called  
+ERROR: **Problem** - Check that `WithRenderer()` is called  
 Verify render_mode is not "never"
 
 ## Best Practices

@@ -1139,13 +1139,13 @@ repo, err := client.GetRepository("test-owner", "test-repo")
 
 **Dependency Rules:**
 
-✅ **Allowed:**
+- **Allowed:**
 - Lower layers → Foundation
 - Application → Domain
 - Domain → Infrastructure (via interfaces)
 - Presentation → Application
 
-❌ **Prohibited:**
+ERROR: **Prohibited:**
 - Foundation → Any application package
 - Domain → Application
 - Infrastructure → Presentation

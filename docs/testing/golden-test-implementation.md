@@ -17,7 +17,7 @@ This document describes the comprehensive golden test framework for DocBuilder's
 
 ## Implementation Status
 
-### ✅ Foundation (Complete)
+### - Foundation (Complete)
 - **Infrastructure**: Test helpers, golden config loading, build execution
 - **Files**:
   - `test/integration/helpers.go` (437 lines) - Core test utilities
@@ -31,7 +31,7 @@ This document describes the comprehensive golden test framework for DocBuilder's
   - `verifyContentStructure()` - Check content files and front matter
   - `parseFrontMatter()` - Extract and validate YAML front matter
 
-### ✅ Core Test Coverage (Complete - 16 tests)
+### - Core Test Coverage (Complete - 16 tests)
 
 #### Content Transformation Tests
 1. **TestGolden_FrontmatterInjection** - Front matter generation with editURL

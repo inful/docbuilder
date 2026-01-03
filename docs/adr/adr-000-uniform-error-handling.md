@@ -18,7 +18,7 @@ Updated: 2025-12-14
 
 ## Status
 
-✅ **Implemented** - Consolidated error systems completed December 2025
+- **Implemented** - Consolidated error systems completed December 2025
 
 ## Context
 
@@ -100,22 +100,22 @@ HTTP: `status := httperrors.HTTPStatusFor(err)` and return JSON problem response
 The error system was successfully consolidated using `internal/foundation/errors/` as the single source of truth:
 
 **What Was Implemented:**
-- ✅ Type-safe `ErrorCategory` enum (replaces string-based `ErrorCode`)
-- ✅ Fluent builder API with `WithContext()`, `WithSeverity()`, `WithRetry()`
-- ✅ HTTP adapter (`internal/foundation/errors/http_adapter.go`)
-- ✅ CLI adapter (`internal/foundation/errors/cli_adapter.go`)
-- ✅ Retry semantics built into error classification
-- ✅ Structured context via `ErrorContext` map
-- ✅ Convenience constructors: `ValidationError()`, `NotFoundError()`, etc.
+- - Type-safe `ErrorCategory` enum (replaces string-based `ErrorCode`)
+- - Fluent builder API with `WithContext()`, `WithSeverity()`, `WithRetry()`
+- - HTTP adapter (`internal/foundation/errors/http_adapter.go`)
+- - CLI adapter (`internal/foundation/errors/cli_adapter.go`)
+- - Retry semantics built into error classification
+- - Structured context via `ErrorContext` map
+- - Convenience constructors: `ValidationError()`, `NotFoundError()`, etc.
 
 **Migration Completed:**
-- ✅ Removed duplicate `internal/foundation/errors.go` (240 lines)
-- ✅ Migrated `internal/state/` package (12 files)
-- ✅ Migrated `internal/services/` package (2 files)
-- ✅ Migrated `internal/config/` package (4 files)
-- ✅ Updated all tests to use new API
-- ✅ All 43 packages passing tests
-- ✅ Zero linting issues
+- - Removed duplicate `internal/foundation/errors.go` (240 lines)
+- - Migrated `internal/state/` package (12 files)
+- - Migrated `internal/services/` package (2 files)
+- - Migrated `internal/config/` package (4 files)
+- - Updated all tests to use new API
+- - All 43 packages passing tests
+- - Zero linting issues
 
 **Key Pattern Changes:**
 - `foundation.ValidationError()` → `errors.ValidationError()`

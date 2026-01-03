@@ -401,12 +401,12 @@ if [ -n "$STAGED_FILES" ]; then
   
   if [ $LINT_EXIT -eq 2 ]; then
     echo ""
-    echo "❌ Lint errors found. Commit blocked."
+    echo "ERROR: Lint errors found. Commit blocked."
     echo "Fix errors or run: docbuilder lint --fix"
     exit 1
   elif [ $LINT_EXIT -eq 1 ]; then
     echo ""
-    echo "⚠️  Lint warnings present. Consider fixing before commit."
+    echo "WARNING:  Lint warnings present. Consider fixing before commit."
     echo "To auto-fix: docbuilder lint --fix"
     # Allow commit but show warning
     exit 0
@@ -1184,7 +1184,7 @@ Results:
   0 warnings
   1 info (explicitly allowed)
   
-❌ Documentation has errors that will prevent Hugo build.
+ERROR: Documentation has errors that will prevent Hugo build.
    Run: docbuilder lint --fix docs/
 
 Exit code: 2

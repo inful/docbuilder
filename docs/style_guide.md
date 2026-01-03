@@ -68,19 +68,19 @@ Use consistent abbreviations throughout the codebase:
 **Examples:**
 
 ```go
-// ✅ Good
+// - Good
 func (c *Client) CloneRepo(repo appcfg.Repository) (string, error)
 func (c *Client) getAuth(authCfg *appcfg.AuthConfig) (transport.AuthMethod, error)
 buildCfg := &appcfg.BuildConfig{}
 
-// ❌ Bad - inconsistent abbreviation
+// ERROR: Bad - inconsistent abbreviation
 func (c *Client) CloneRepository(repo appcfg.Repository) (string, error)
 func (c *Client) getAuthentication(authConfig *appcfg.AuthConfig)
 ```
 
 **Exception:** When using external library types, use the library's naming:
 ```go
-// ✅ Correct - go-git uses "repository" in type name
+// - Correct - go-git uses "repository" in type name
 repository, err := git.PlainOpen(repoPath)
 var gitRepo *git.Repository
 ```
@@ -114,14 +114,14 @@ var gitRepo *git.Repository
 - Be **consistent** throughout a type's methods
 
 ```go
-// ✅ Good
+// - Good
 func (c *Client) CloneRepo(...)
 func (c *Client) UpdateRepo(...)
 
-// ✅ Good for multi-word types
+// - Good for multi-word types
 func (rhc *RemoteHeadCache) Get(...)
 
-// ❌ Bad - inconsistent
+// ERROR: Bad - inconsistent
 func (client *Client) CloneRepo(...)
 func (c *Client) UpdateRepo(...)
 ```
@@ -131,18 +131,18 @@ func (c *Client) UpdateRepo(...)
 Always suffix with `Cfg` or `Config` depending on context:
 
 ```go
-// ✅ Good - struct fields use abbreviated suffix
+// - Good - struct fields use abbreviated suffix
 type Client struct {
     buildCfg *appcfg.BuildConfig
 }
 
-// ✅ Good - function parameters use abbreviated suffix
+// - Good - function parameters use abbreviated suffix
 func NewGenerator(cfg *config.Config, outputDir string) *Generator
 
-// ✅ Good - package-level uses full name for clarity
+// - Good - package-level uses full name for clarity
 var DefaultConfig = &config.Config{...}
 
-// ❌ Bad - no suffix
+// ERROR: Bad - no suffix
 type Client struct {
     build *appcfg.BuildConfig
 }
@@ -153,14 +153,14 @@ type Client struct {
 Prefix with `is`, `has`, `should`, `can`, or `enable`:
 
 ```go
-// ✅ Good
+// - Good
 isValid := true
 hasAuth := repo.Auth != nil
 shouldRetry := attempt < maxRetries
 canFastForward := true
 enableCache := cfg.EnableCache
 
-// ❌ Bad
+// ERROR: Bad
 valid := true
 auth := repo.Auth != nil
 retry := attempt < maxRetries
@@ -171,11 +171,11 @@ retry := attempt < maxRetries
 ### Private vs Public Functions
 
 ```go
-// ✅ Public - descriptive, full words
+// - Public - descriptive, full words
 func (c *Client) CloneRepo(repo appcfg.Repository) error
 func ComputeRepoHash(repoPath string, commit string) (string, error)
 
-// ✅ Private - can use abbreviations
+// - Private - can use abbreviations
 func (c *Client) getAuth(authCfg *appcfg.AuthConfig) error
 func classifyError(err error) error
 func (c *Client) fetchOrigin(repo *git.Repository) error
@@ -186,11 +186,11 @@ func (c *Client) fetchOrigin(repo *git.Repository) error
 Go doesn't use `Get`/`Set` prefixes for simple accessors:
 
 ```go
-// ✅ Good
+// - Good
 func (c *Client) WorkspaceDir() string { return c.workspaceDir }
 func (c *Client) SetWorkspaceDir(dir string) { c.workspaceDir = dir }
 
-// ❌ Bad
+// ERROR: Bad
 func (c *Client) GetWorkspaceDir() string
 func (c *Client) SetWorkspaceDir(dir string)
 ```
@@ -198,10 +198,10 @@ func (c *Client) SetWorkspaceDir(dir string)
 **Exception:** Use `Get` when fetching requires computation or I/O:
 
 ```go
-// ✅ Correct - involves network I/O
+// - Correct - involves network I/O
 func (c *Client) GetRemoteHead(repo appcfg.Repository) (string, error)
 
-// ✅ Correct - involves cache lookup
+// - Correct - involves cache lookup
 func (c *RemoteHeadCache) Get(url, branch string) *RemoteHeadEntry
 ```
 
@@ -230,12 +230,12 @@ Use clear action verbs that describe what the function does:
 Functions returning `bool` should read like questions:
 
 ```go
-// ✅ Good
+// - Good
 func (c *Client) IsAncestor(a, b plumbing.Hash) (bool, error)
 func HasAuth(repo appcfg.Repository) bool
 func ShouldRetry(err error) bool
 
-// ❌ Bad
+// ERROR: Bad
 func (c *Client) Ancestor(a, b plumbing.Hash) (bool, error)
 func Auth(repo appcfg.Repository) bool
 ```
@@ -245,15 +245,15 @@ func Auth(repo appcfg.Repository) bool
 Use consistent patterns for error classification:
 
 ```go
-// ✅ Good - consistent "classify" pattern
+// - Good - consistent "classify" pattern
 func classifyFetchError(url string, err error) error
 func classifyCloneError(url string, err error) error
 
-// ✅ Good - consistent "is" pattern for boolean checks
+// - Good - consistent "is" pattern for boolean checks
 func isPermanentGitError(err error) bool
 func isTransientError(err error) bool
 
-// ❌ Bad - mixing patterns
+// ERROR: Bad - mixing patterns
 func classifyFetchError(url string, err error) error
 func isPermanentGitError(err error) bool
 func classifyTransientType(err error) string  // Different return type
@@ -262,11 +262,11 @@ func classifyTransientType(err error) string  // Different return type
 ### Constructor Functions
 
 ```go
-// ✅ Standard pattern
+// - Standard pattern
 func NewClient(workspaceDir string) *Client
 func NewRemoteHeadCache(cacheDir string) (*RemoteHeadCache, error)
 
-// ✅ Builder pattern - use "With" prefix
+// - Builder pattern - use "With" prefix
 func (c *Client) WithBuildConfig(cfg *appcfg.BuildConfig) *Client
 func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client
 ```
@@ -280,12 +280,12 @@ When function names contain multiple actions, order verbs to reflect execution f
 Place validation verbs first when they guard the main operation:
 
 ```go
-// ✅ Good - validation happens first
+// - Good - validation happens first
 func ValidateAndCreate(cfg *Config) error
 func CheckAndUpdate(repo Repository) error
 func EnsureAndClone(dir string) error
 
-// ❌ Bad - suggests action happens before validation
+// ERROR: Bad - suggests action happens before validation
 func CreateAndValidate(cfg *Config) error
 func UpdateAndCheck(repo Repository) error
 ```
@@ -295,12 +295,12 @@ func UpdateAndCheck(repo Repository) error
 Preparation verbs come before execution verbs:
 
 ```go
-// ✅ Good - setup before main operation
+// - Good - setup before main operation
 func PrepareAndExecute(cmd Command) error
 func InitializeAndRun(service Service) error
 func LoadAndProcess(file string) error
 
-// ❌ Bad - execution before preparation
+// ERROR: Bad - execution before preparation
 func ExecuteAndPrepare(cmd Command) error
 func RunAndInitialize(service Service) error
 ```
@@ -310,12 +310,12 @@ func RunAndInitialize(service Service) error
 When combining a main operation with a side effect, lead with the primary action:
 
 ```go
-// ✅ Good - primary action leads
+// - Good - primary action leads
 func CreateWithNotification(resource Resource) error
 func UpdateWithLogging(entity Entity) error
 func DeleteWithCleanup(path string) error
 
-// ✅ Also acceptable - "And" pattern for equal importance
+// - Also acceptable - "And" pattern for equal importance
 func CreateAndNotify(resource Resource) error
 func UpdateAndLog(entity Entity) error
 ```
@@ -325,7 +325,7 @@ func UpdateAndLog(entity Entity) error
 When implementing multiple CRUD operations, follow this conventional order:
 
 ```go
-// ✅ Good - conventional CRUD order
+// - Good - conventional CRUD order
 func Create(...)
 func Get(...) or Read(...)
 func Update(...)
@@ -343,7 +343,7 @@ func DeleteBatch(...)
 Builder pattern methods should follow logical construction sequence:
 
 ```go
-// ✅ Good - logical build sequence
+// - Good - logical build sequence
 client := NewClient().
     WithAuth(auth).
     WithConfig(cfg).
@@ -358,12 +358,12 @@ client := NewClient().
 Cleanup operations should be explicit in compound names:
 
 ```go
-// ✅ Good - clear cleanup semantics
+// - Good - clear cleanup semantics
 func CloseAndCleanup() error
 func StopAndRemove() error
 func CompleteAndArchive() error
 
-// ❌ Bad - ambiguous cleanup timing
+// ERROR: Bad - ambiguous cleanup timing
 func CleanupAndClose() error  // Does cleanup happen before closing?
 ```
 
@@ -374,12 +374,12 @@ func CleanupAndClose() error  // Does cleanup happen before closing?
 Use clear, descriptive names without abbreviations:
 
 ```go
-// ✅ Good
+// - Good
 type RemoteHeadCache struct { ... }
 type RemoteHeadEntry struct { ... }
 type BuildConfig struct { ... }
 
-// ❌ Bad
+// ERROR: Bad
 type RHCache struct { ... }
 type RHEntry struct { ... }
 type BldCfg struct { ... }
@@ -390,7 +390,7 @@ type BldCfg struct { ... }
 Prefer single-method interfaces with `-er` suffix:
 
 ```go
-// ✅ Good
+// - Good
 type Cloner interface {
     Clone(repo Repository) error
 }
@@ -399,7 +399,7 @@ type Generator interface {
     Generate() error
 }
 
-// ✅ Good - multi-method interface
+// - Good - multi-method interface
 type GitClient interface {
     CloneRepo(repo Repository) error
     UpdateRepo(repo Repository) error
@@ -411,12 +411,12 @@ type GitClient interface {
 Suffix all error types with `Error`:
 
 ```go
-// ✅ Good
+// - Good
 type AuthError struct { ... }
 type NotFoundError struct { ... }
 type NetworkTimeoutError struct { ... }
 
-// ❌ Bad
+// ERROR: Bad
 type AuthFailure struct { ... }
 type NotFound struct { ... }
 ```
@@ -425,12 +425,12 @@ type NotFound struct { ... }
 
 ```go
 type Client struct {
-    // ✅ Private fields - use abbreviated suffixes
+    // - Private fields - use abbreviated suffixes
     workspaceDir    string
     buildCfg        *appcfg.BuildConfig
     remoteHeadCache *RemoteHeadCache
     
-    // ✅ Exported fields - full words for clarity
+    // - Exported fields - full words for clarity
     Name        string
     Description string
     Repository  appcfg.Repository
@@ -446,13 +446,13 @@ type Client struct {
 - Name should describe package purpose
 
 ```go
-// ✅ Good
+// - Good
 package git
 package config
 package hugo
 package docs
 
-// ❌ Bad
+// ERROR: Bad
 package gitOperations
 package config_manager
 package hugoSiteGenerator
@@ -463,13 +463,13 @@ package hugoSiteGenerator
 Use consistent aliases when avoiding conflicts:
 
 ```go
-// ✅ Good - descriptive prefix
+// - Good - descriptive prefix
 import (
     appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
     ggitcfg "github.com/go-git/go-git/v5/config"
 )
 
-// ❌ Bad - unclear abbreviation
+// ERROR: Bad - unclear abbreviation
 import (
     cfg1 "git.home.luguber.info/inful/docbuilder/internal/config"
     cfg2 "github.com/go-git/go-git/v5/config"
@@ -491,14 +491,14 @@ DocBuilder uses `internal/foundation/errors` package for all error handling. Thi
 Prefix package-level sentinel errors with `Err`:
 
 ```go
-// ✅ Good
+// - Good
 var (
     ErrNotFound      = errors.New(errors.CategoryNotFound, "repository not found").Build()
     ErrUnauthorized  = errors.New(errors.CategoryAuth, "authentication failed").Build()
     ErrInvalidConfig = errors.ValidationError("invalid configuration").Build()
 )
 
-// ❌ Bad
+// ERROR: Bad
 var (
     NotFoundError = errors.New("repository not found") // No category
     Unauthorized  = errors.New("authentication failed") // No category
@@ -510,19 +510,19 @@ var (
 Use the fluent builder API:
 
 ```go
-// ✅ Good - validation error with context
+// - Good - validation error with context
 return errors.ValidationError("invalid forge type").
     WithContext("input", forgeType).
     WithContext("valid_values", []string{"github", "gitlab"}).
     Build()
 
-// ✅ Good - wrapping errors
+// - Good - wrapping errors
 return errors.WrapError(err, errors.CategoryGit, "failed to clone repository").
     WithContext("url", repo.URL).
     WithContext("branch", repo.Branch).
     Build()
 
-// ❌ Bad - raw errors
+// ERROR: Bad - raw errors
 return fmt.Errorf("failed to clone: %w", err) // No category or context
 ```
 
@@ -544,19 +544,19 @@ Available categories in `internal/foundation/errors/categories.go`:
 ### Error Detection
 
 ```go
-// ✅ Good - extract classified error
+// - Good - extract classified error
 if classified, ok := errors.AsClassified(err); ok {
     if classified.Category() == errors.CategoryValidation {
         // Handle validation error
     }
 }
 
-// ✅ Good - check category using helper
+// - Good - check category using helper
 if errors.HasCategory(err, errors.CategoryAuth) {
     // Handle auth error
 }
 
-// ❌ Bad - old pattern
+// ERROR: Bad - old pattern
 var classified *foundation.ClassifiedError
 if foundation.AsClassified(err, &classified) {
     // Old API - no longer exists
@@ -568,7 +568,7 @@ if foundation.AsClassified(err, &classified) {
 For package-specific errors, use the builder:
 
 ```go
-// ✅ Good - use builder for custom errors
+// - Good - use builder for custom errors
 func NewAuthError(op, url string, cause error) error {
     return errors.WrapError(cause, errors.CategoryAuth, "authentication failed").
         WithContext("operation", op).
@@ -610,12 +610,12 @@ func (c *Client) CloneRepo(repo appcfg.Repository) (string, error)
 - Explain **why**, not just **what** for complex logic
 
 ```go
-// ✅ Good
+// - Good
 // ComputeRepoHash computes a deterministic hash for a repository tree.
 // The hash is based on the commit SHA and the tree structure of configured paths,
 // enabling content-addressable caching where same commit + same paths = same hash.
 
-// ❌ Bad
+// ERROR: Bad
 // computes hash
 // This function hashes repos
 ```
@@ -637,12 +637,12 @@ Include context and optionally an issue number:
 - Match primary type or functionality
 
 ```go
-// ✅ Good
+// - Good
 remote_cache.go      // Contains RemoteHeadCache
 typed_errors.go      // Contains error types
 client.go            // Contains Client type
 
-// ❌ Bad
+// ERROR: Bad
 RemoteCache.go       // Wrong case
 remote-cache.go      // Use underscore, not hyphen
 remotecache.go       // Hard to read

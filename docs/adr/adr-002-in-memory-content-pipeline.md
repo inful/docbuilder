@@ -33,12 +33,12 @@ DocBuilder **already implements** an in-memory content pipeline with proper sepa
 4. **Hugo Render** (`stageRunHugo`): Runs Hugo on the prepared content tree
 
 **The transform pipeline is already in-memory and works correctly** with:
-- ✅ Single source read during discovery
-- ✅ In-memory transformation via `Page` struct
-- ✅ Dependency-based transform ordering
-- ✅ Single write after all transforms complete
-- ✅ Front matter patching and merging
-- ✅ Link rewriting through the pipeline
+- - Single source read during discovery
+- - In-memory transformation via `Page` struct
+- - Dependency-based transform ordering
+- - Single write after all transforms complete
+- - Front matter patching and merging
+- - Link rewriting through the pipeline
 
 ### The Actual Problem: Index Stage Bypass
 
@@ -52,13 +52,13 @@ The `useReadmeAsIndex` function:
 ```go
 // indexes.go (current problematic code)
 func (g *Generator) useReadmeAsIndex(...) {
-    // ❌ Bypasses pipeline: re-reads source instead of using transformed content
+    // ERROR: Bypasses pipeline: re-reads source instead of using transformed content
     readmeContent, _ := os.ReadFile(readmeSourcePath)
     
-    // ❌ Duplicates logic: manually parses front matter
+    // ERROR: Duplicates logic: manually parses front matter
     fm := parseFrontMatter(readmeContent)
     
-    // ❌ Loses transforms: overwrites pipeline output with source content
+    // ERROR: Loses transforms: overwrites pipeline output with source content
     os.WriteFile(indexPath, readmeContent, 0644)
 }
 ```
@@ -182,11 +182,11 @@ func (g *Generator) useReadmeAsIndex(file docs.DocFile, ...) error {
 ### Trade-offs Avoided
 
 By **not** doing a full refactor, we avoid:
-- ❌ Rewriting working transform pipeline
-- ❌ Changing stage interfaces
-- ❌ Updating all transform implementations
-- ❌ Extensive test updates
-- ❌ Risk of introducing new bugs in working code
+- ERROR: Rewriting working transform pipeline
+- ERROR: Changing stage interfaces
+- ERROR: Updating all transform implementations
+- ERROR: Extensive test updates
+- ERROR: Risk of introducing new bugs in working code
 
 ## Implementation Plan
 
@@ -294,12 +294,12 @@ If issues discovered:
 
 ### Success Criteria
 
-1. ✅ README.md files promoted to _index.md preserve all transforms
-2. ✅ Links in README → _index.md are correctly rewritten
-3. ✅ Front matter patches from pipeline are present in index files
-4. ✅ No regression in existing functionality
-5. ✅ All tests pass
-6. ✅ No performance degradation
+1. - README.md files promoted to _index.md preserve all transforms
+2. - Links in README → _index.md are correctly rewritten
+3. - Front matter patches from pipeline are present in index files
+4. - No regression in existing functionality
+5. - All tests pass
+6. - No performance degradation
 
 ## References
 

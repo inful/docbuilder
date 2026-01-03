@@ -1,6 +1,6 @@
 # ISSUE-001: "Docs" Appearing as Navigation Name Instead of Repository Names
 
-**Status:** ✅ RESOLVED  
+**Status:** - RESOLVED  
 **Priority:** High  
 **Created:** 2025-12-19  
 **Last Updated:** 2025-12-19  
@@ -86,7 +86,7 @@ When generating section index for "docs":
 
 ## Investigation Plan
 
-### Phase 1: Trace Current Behavior ✅ COMPLETED
+### Phase 1: Trace Current Behavior - COMPLETED
 
 - [x] Add debug logging to `generateSectionIndex()` to see what title is being used
 - [x] Check what `repoInfo.Name` contains when passed to processor
@@ -95,7 +95,7 @@ When generating section index for "docs":
 
 **Findings:** Section indexes were using `titleCase(filepath.Base(sectionName))` which converted "docs" → "Docs". The `isDocsBaseSection()` check was failing for repositories with nested docs subdirectories.
 
-### Phase 2: Identify Title Source ✅ COMPLETED
+### Phase 2: Identify Title Source - COMPLETED
 
 - [x] Find where section index title is determined
 - [x] Check if it's using directory name vs repository name
@@ -104,7 +104,7 @@ When generating section index for "docs":
 
 **Findings:** Title determined in `generators.go:generateSectionIndex()` at line 138. Was using `titleCase(repo)` instead of `repoMeta.Name`, and `isDocsBaseSection()` logic was flawed for nested directories.
 
-### Phase 3: Fix Implementation ✅ COMPLETED
+### Phase 3: Fix Implementation - COMPLETED
 
 - [x] Ensure repository-level `_index.md` uses `repo.Name` as title
 - [x] Ensure subdirectory `_index.md` files use meaningful names (not "docs")
@@ -117,7 +117,7 @@ When generating section index for "docs":
 - Changed to use `repoMeta.Name` (preserves original capitalization)
 - No golden test updates needed - existing tests validated the fix
 
-### Phase 4: Verification ✅ COMPLETED
+### Phase 4: Verification - COMPLETED
 
 - [x] Run local build and inspect generated `_index.md` files
 - [x] Check Hugo navigation in browser
@@ -227,7 +227,7 @@ Configured paths: `["docs"]`
 
 Generated sections:
 - `content/franklin-hardpanel-mapper/docs/_index.md` → title: "Franklin Hardpanel Mapper" ✅
-- `content/franklin-hardpanel-mapper/docs/api/_index.md` → title: "API" ✅  
+- `content/franklin-hardpanel-mapper/docs/api/_index.md` → title: "API" -  
 - `content/franklin-hardpanel-mapper/docs/architecture/_index.md` → title: "Architecture" ✅
 
 Navigation shows:
@@ -302,11 +302,11 @@ Examples:
 
 ### Test Results
 
-- ✅ All 16 golden tests pass
-- ✅ Full test suite passes (44 packages)
-- ✅ Linter clean (0 issues)
-- ✅ Manual verification: `franklin-hardpanel-mapper/docs/` → title "Franklin Hardpanel Mapper"
-- ✅ Nested docs test: `docs/docs/docs/architecture.md` → all intermediate indexes use repository name
+- - All 16 golden tests pass
+- - Full test suite passes (44 packages)
+- - Linter clean (0 issues)
+- - Manual verification: `franklin-hardpanel-mapper/docs/` → title "Franklin Hardpanel Mapper"
+- - Nested docs test: `docs/docs/docs/architecture.md` → all intermediate indexes use repository name
 
 ### Before vs After
 
@@ -397,7 +397,7 @@ This test verifies the fix is working correctly. The repository name is used as 
 - This issue affects user experience significantly
 - Navigation is critical for multi-repo documentation sites
 - Solution must be robust and tested thoroughly
-- ✅ **Test coverage provided by `TestGolden_SectionIndexes`** - verifies repository name used instead of "Docs"
+- - **Test coverage provided by `TestGolden_SectionIndexes`** - verifies repository name used instead of "Docs"
 - The golden file `section-indexes/content-structure.golden.json` ensures regression prevention
 
 ## Related Files

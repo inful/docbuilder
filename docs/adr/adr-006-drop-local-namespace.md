@@ -83,16 +83,16 @@ isSingleRepo := len(uniqueRepositories) == 1
 ### Why This Approach
 
 **Pros:**
-- ✅ No magic strings or special cases
-- ✅ Works for ANY single-repository scenario (not just "local")
-- ✅ Semantically correct (namespace exists only when needed for disambiguation)
-- ✅ User can have a config with one repository and get clean paths
-- ✅ No conflict with "local" forge type
-- ✅ Future-proof for single-repo configs
+- - No magic strings or special cases
+- - Works for ANY single-repository scenario (not just "local")
+- - Semantically correct (namespace exists only when needed for disambiguation)
+- - User can have a config with one repository and get clean paths
+- - No conflict with "local" forge type
+- - Future-proof for single-repo configs
 
 **Cons:**
-- ⚠️ Requires passing context (`isSingleRepo`) through discovery pipeline
-- ⚠️ Slightly more complex than string comparison
+- WARNING: Requires passing context (`isSingleRepo`) through discovery pipeline
+- WARNING: Slightly more complex than string comparison
 
 ### Previous "local" Magic String Approach (Rejected)
 

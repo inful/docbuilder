@@ -50,10 +50,10 @@ DocBuilder uses a **defense-in-depth approach** with multiple isolated HTTP serv
 
 | Server | Default Port | Purpose | Collision Risk |
 |--------|-------------|---------|----------------|
-| **Docs** | 8080 | Serves Hugo-generated documentation | ❌ None - separate server |
-| **Webhook** | 8081 | Receives forge webhooks | ❌ None - separate server |
-| **Admin** | 8082 | Administrative API, health checks | ❌ None - separate server |
-| **LiveReload** | 8083 | Server-Sent Events for live reload | ❌ None - separate server |
+| **Docs** | 8080 | Serves Hugo-generated documentation | ERROR: None - separate server |
+| **Webhook** | 8081 | Receives forge webhooks | ERROR: None - separate server |
+| **Admin** | 8082 | Administrative API, health checks | ERROR: None - separate server |
+| **LiveReload** | 8083 | Server-Sent Events for live reload | ERROR: None - separate server |
 
 ## Defense-in-Depth Layers
 
@@ -244,7 +244,7 @@ This prevents JavaScript on the docs site from submitting forms to webhook endpo
 
 ## Attack Vectors (and Why They're Mitigated)
 
-### ❌ Path Traversal Attack
+### ERROR: Path Traversal Attack
 **Scenario**: Attacker tries `GET /webhooks/../../../etc/passwd`
 
 **Mitigation**: 
@@ -252,7 +252,7 @@ This prevents JavaScript on the docs site from submitting forms to webhook endpo
 - Webhook server only handles `/webhooks/*`, not arbitrary paths
 - Different port means request wouldn't reach docs server anyway
 
-### ❌ Documentation Collision
+### ERROR: Documentation Collision
 **Scenario**: Hugo generates a page at `/webhooks/github.html`
 
 **Mitigation**:
@@ -260,7 +260,7 @@ This prevents JavaScript on the docs site from submitting forms to webhook endpo
 - Even if page exists on docs server, webhook POST goes to webhook server
 - HTTP method differs (GET vs POST)
 
-### ❌ Port Confusion
+### ERROR: Port Confusion
 **Scenario**: User configures same port for docs and webhooks
 
 **Mitigation**:
@@ -268,7 +268,7 @@ This prevents JavaScript on the docs site from submitting forms to webhook endpo
 - Daemon refuses to start
 - Operator must fix configuration
 
-### ❌ Webhook Forgery via Docs
+### ERROR: Webhook Forgery via Docs
 **Scenario**: Attacker embeds JavaScript in docs to forge webhooks
 
 **Mitigation**:
@@ -313,7 +313,7 @@ nc -l 8081 &
 
 ## Configuration Best Practices
 
-### ✅ Recommended: Default Ports
+### - Recommended: Default Ports
 
 ```yaml
 daemon:
@@ -324,7 +324,7 @@ daemon:
     livereload_port: 8083 # Sequential, optional feature
 ```
 
-### ✅ Recommended: Custom Ports with Separation
+### - Recommended: Custom Ports with Separation
 
 ```yaml
 daemon:
@@ -335,24 +335,24 @@ daemon:
     livereload_port: 3003 # Different from all
 ```
 
-### ❌ Never: Same Ports
+### ERROR: Never: Same Ports
 
 ```yaml
 daemon:
   http:
     docs_port: 8080
-    webhook_port: 8080    # ❌ WILL FAIL TO START
-    admin_port: 8080      # ❌ WILL FAIL TO START
+    webhook_port: 8080    # ERROR: WILL FAIL TO START
+    admin_port: 8080      # ERROR: WILL FAIL TO START
 ```
 
-### ⚠️ Caution: Non-Sequential Ports
+### WARNING: Caution: Non-Sequential Ports
 
 ```yaml
 daemon:
   http:
     docs_port: 8080
-    webhook_port: 9443    # ⚠️ Works but non-obvious relationship
-    admin_port: 3000      # ⚠️ Works but confusing
+    webhook_port: 9443    # WARNING: Works but non-obvious relationship
+    admin_port: 3000      # WARNING: Works but confusing
 ```
 
 ## Monitoring and Validation
@@ -393,12 +393,12 @@ netstat -an | grep :8081
 
 DocBuilder prevents webhook/documentation collisions through:
 
-1. ✅ **Port Isolation** - Separate HTTP servers on different ports (primary defense)
-2. ✅ **Path Prefixing** - Reserved `/webhooks/*` prefix (secondary defense)
-3. ✅ **Method Filtering** - POST-only webhooks vs GET documentation (tertiary defense)
-4. ✅ **Startup Validation** - Fail fast if ports conflict (preventive)
-5. ✅ **Firewall Rules** - Network-level access control (optional)
-6. ✅ **Reverse Proxy** - Subdomain/path segregation (optional)
+1. - **Port Isolation** - Separate HTTP servers on different ports (primary defense)
+2. - **Path Prefixing** - Reserved `/webhooks/*` prefix (secondary defense)
+3. - **Method Filtering** - POST-only webhooks vs GET documentation (tertiary defense)
+4. - **Startup Validation** - Fail fast if ports conflict (preventive)
+5. - **Firewall Rules** - Network-level access control (optional)
+6. - **Reverse Proxy** - Subdomain/path segregation (optional)
 
 **Collision Risk**: Effectively 0% with default configuration.
 

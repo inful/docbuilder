@@ -53,11 +53,11 @@ The CI uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) for contain
 
 **Kaniko Advantages:**
 
-- ✅ No Docker daemon required
-- ✅ Works in any container environment  
-- ✅ Simpler security model
-- ✅ Built-in registry authentication
-- ✅ Eliminates Docker-in-Docker complexity
+- No Docker daemon required
+- Works in any container environment  
+- Simpler security model
+- Built-in registry authentication
+- Eliminates Docker-in-Docker complexity
 
 ### Implementation
 
