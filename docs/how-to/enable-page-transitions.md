@@ -77,11 +77,11 @@ When enabled, DocBuilder:
 
 The View Transitions API is supported in:
 
-- ✅ Chrome 126+
-- ✅ Edge 126+
-- ✅ Safari 18.2+
-- ✅ Opera 112+
-- ⚠️ Firefox (in review)
+- - Chrome 126+
+- - Edge 126+
+- - Safari 18.2+
+- - Opera 112+
+- - Firefox (in review)
 
 For browsers without View Transitions support, the site will function normally without animations (graceful degradation).
 

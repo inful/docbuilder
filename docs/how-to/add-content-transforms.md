@@ -456,7 +456,7 @@ func (t Transform) Transform(p PageAdapter) error {
 // Bad: Compile regex every time
 func (t Transform) Transform(p PageAdapter) error {
     pg := p.(*PageShim)
-    re := regexp.MustCompile(`pattern`) // ❌ Slow!
+    re := regexp.MustCompile(`pattern`) // - Slow!
     pg.Content = re.ReplaceAllString(pg.Content, "replacement")
     return nil
 }
@@ -574,8 +574,8 @@ func (t MyTransform) Dependencies() TransformDependencies {
 
 **Check you're modifying the right field:**
 ```go
-pg.Content = newContent  // ✅ Correct
-pg.Raw = newContent      // ❌ Wrong - overwritten by serializer
+pg.Content = newContent  // - Correct
+pg.Raw = newContent      // - Wrong - overwritten by serializer
 ```
 
 **Ensure serializer runs after:**
@@ -585,10 +585,10 @@ Your priority must be < 90 (serializer priority).
 
 **Use patches, not direct modification:**
 ```go
-// ✅ Correct
+// - Correct
 pg.AddPatch(fmcore.FrontMatterPatch{Key: "field", Value: "value"})
 
-// ❌ Wrong - overwritten by merge
+// - Wrong - overwritten by merge
 pg.OriginalFrontMatter["field"] = "value"
 ```
 

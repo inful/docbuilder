@@ -101,10 +101,10 @@ daemon:
 ```
 
 **Port Separation Benefits:**
-- ✅ Webhooks cannot interfere with documentation serving
-- ✅ Different firewall rules for each service
-- ✅ Separate access controls (public docs, restricted webhooks)
-- ✅ Independent scaling and monitoring
+- - Webhooks cannot interfere with documentation serving
+- - Different firewall rules for each service
+- - Separate access controls (public docs, restricted webhooks)
+- - Independent scaling and monitoring
 
 **Port Configuration Rules:**
 - All ports must be unique (daemon fails to start if duplicates detected)

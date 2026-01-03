@@ -48,13 +48,13 @@ All filename rules are **Errors** that block the build.
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   API-Guide.md
   MyDocument.md
   UserManual.md
   README_FIRST.md
 
-✅ Valid:
+- Valid:
   api-guide.md
   my-document.md
   user-manual.md
@@ -92,13 +92,13 @@ ERROR: Invalid filename
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   My Document.md
   API Guide.md
   User Manual v2.md
   Architecture Diagram.png
 
-✅ Valid:
+- Valid:
   my-document.md
   api-guide.md
   user-manual-v2.md
@@ -138,14 +138,14 @@ ERROR: Invalid filename
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   file@name.md
   doc#tag.md
   guide(final).md
   config[prod].md
   notes&ideas.md
 
-✅ Valid:
+- Valid:
   file-name.md
   doc-tag.md
   guide-final.md
@@ -184,13 +184,13 @@ ERROR: Invalid filename
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   -draft.md
   _temporary.md
   config-.md
   notes_.md
 
-✅ Valid:
+- Valid:
   draft.md
   temporary.md
   config.md
@@ -232,19 +232,19 @@ ERROR: Invalid filename
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   api-guide.md.backup
   notes.markdown.old
   config.md.txt
   draft.md.2024-12-29
 
-✅ Valid (single extension):
+- Valid (single extension):
   api-guide.md
   notes.markdown
   config.txt
   draft.md
 
-✅ Valid (whitelisted):
+- Valid (whitelisted):
   architecture.drawio.png
   flowchart.drawio.svg
 ```
@@ -287,11 +287,11 @@ ERROR: Invalid double extension
 **Examples**:
 
 ```
-❌ Invalid:
+ERROR: Invalid:
   tags.md
   categories.md
 
-✅ Valid (with prefix):
+- Valid (with prefix):
   content-tags.md
   doc-categories.md
   using-tags.md
@@ -333,20 +333,20 @@ Content rules validate the internal structure of markdown files.
 **Examples**:
 
 ```yaml
-❌ Invalid:
+ERROR: Invalid:
 ---
 title: API Guide
 date: 2025-12-29
 invalid key without colon
 ---
 
-❌ Invalid (indentation):
+ERROR: Invalid (indentation):
 ---
 title: API Guide
   date: 2025-12-29
 ---
 
-❌ Invalid (missing closing):
+ERROR: Invalid (missing closing):
 ---
 title: API Guide
 date: 2025-12-29
@@ -355,7 +355,7 @@ date: 2025-12-29
 ```
 
 ```yaml
-✅ Valid:
+- Valid:
 ---
 title: "API Guide"
 date: 2025-12-29
@@ -398,7 +398,7 @@ ERROR: Invalid frontmatter
 **Examples**:
 
 ```markdown
-❌ Invalid:
+ERROR: Invalid:
 ---
 title: API Guide
 date: 2025-12-29
@@ -409,7 +409,7 @@ This is the content...
 ```
 
 ```markdown
-✅ Valid:
+- Valid:
 ---
 title: API Guide
 date: 2025-12-29
@@ -449,14 +449,14 @@ ERROR: Incomplete frontmatter
 **Examples**:
 
 ```markdown
-❌ Invalid:
+ERROR: Invalid:
 [API Guide](./api-guide.md)  # File doesn't exist
 [Configuration](../config/settings.md)  # File doesn't exist
 ![Diagram](./images/flow.png)  # Image doesn't exist
 ```
 
 ```markdown
-✅ Valid:
+- Valid:
 [API Guide](./getting-started.md)  # File exists
 [Configuration](../config/readme.md)  # File exists
 ![Diagram](./images/architecture.png)  # Image exists
@@ -500,14 +500,14 @@ Structure rules are **Warnings** that don't block builds but should be addressed
 **Examples**:
 
 ```
-❌ Missing _index.md:
+ERROR: Missing _index.md:
 docs/
   api/
     authentication.md
     authorization.md
     # No _index.md
 
-✅ Has _index.md:
+- Has _index.md:
 docs/
   api/
     _index.md          ← Section landing page
@@ -548,10 +548,10 @@ WARNING: Missing section index
 **Examples**:
 
 ```
-❌ Too deep (5 levels):
+ERROR: Too deep (5 levels):
 docs/guides/advanced/api/rest/authentication.md
 
-⚠️ Consider flattening:
+WARNING: Consider flattening:
 docs/guides/api-rest-authentication.md
 # or
 docs/api/rest-authentication.md
@@ -585,7 +585,7 @@ WARNING: Deep directory nesting
 **Examples**:
 
 ```
-❌ Orphaned:
+ERROR: Orphaned:
 docs/
   images/
     old-screenshot.png  # Not referenced anywhere
@@ -619,14 +619,14 @@ WARNING: Orphaned asset
 **Examples**:
 
 ```
-❌ Mixed styles:
+ERROR: Mixed styles:
 docs/
   getting_started.md    # snake_case
   api-guide.md          # kebab-case
   UserManual.md         # PascalCase
   CHANGELOG.md          # SCREAMING_CASE
 
-✅ Consistent:
+- Consistent:
 docs/
   getting-started.md
   api-guide.md
@@ -671,12 +671,12 @@ Asset rules apply to images and other non-markdown files.
 **Examples**:
 
 ```
-❌ Warning:
+ERROR: Warning:
   Screenshot 2024.png
   Company_Logo.svg
   Diagram(final).png
 
-✅ Valid:
+- Valid:
   screenshot-2024.png
   company-logo.svg
   diagram-final.png
@@ -715,7 +715,7 @@ WARNING: Invalid image filename
 **Examples**:
 
 ```
-✅ Explicitly allowed:
+- Explicitly allowed:
   architecture.drawio.png
   flowchart.drawio.svg
   system-design.drawio.png
@@ -746,10 +746,10 @@ INFO: Whitelisted double extension
 **Examples**:
 
 ```
-❌ Absolute (internal):
+ERROR: Absolute (internal):
 ![Logo](https://docs.example.com/images/logo.png)
 
-✅ Relative:
+- Relative:
 ![Logo](./images/logo.png)
 ![Logo](../assets/logo.png)
 ```
@@ -787,7 +787,7 @@ WARNING: Absolute URL to internal asset
 **Examples**:
 
 ```
-⚠️ Large files:
+WARNING: Large files:
   screenshot-4k.png (12 MB)
   demo-video.gif (25 MB)
   presentation.pdf (18 MB)
@@ -855,18 +855,18 @@ Linting rules evolve with DocBuilder versions. See [Lint Rules Changelog](./lint
 
 | Rule | Auto-Fixable | Method |
 |------|--------------|--------|
-| Uppercase letters | ✅ Yes | Convert to lowercase |
-| Spaces | ✅ Yes | Replace with hyphens |
-| Special characters | ✅ Yes | Replace with hyphens |
-| Leading/trailing hyphens | ✅ Yes | Strip |
-| Double extensions | ❌ No | Manual removal |
-| Reserved names | ✅ Yes | Add prefix |
-| Malformed frontmatter | ❌ No | Manual correction |
-| Broken links | ❌ No* | Manual fix (*Can detect only) |
-| Missing section index | ⚠️ Partial | Generate basic `_index.md` |
-| Mixed naming styles | ✅ Yes | Normalize to kebab-case |
-| Image filename issues | ✅ Yes | Same as markdown files |
-| Large binary files | ❌ No | Manual optimization |
+| Uppercase letters | - Yes | Convert to lowercase |
+| Spaces | - Yes | Replace with hyphens |
+| Special characters | - Yes | Replace with hyphens |
+| Leading/trailing hyphens | - Yes | Strip |
+| Double extensions | ERROR: No | Manual removal |
+| Reserved names | - Yes | Add prefix |
+| Malformed frontmatter | ERROR: No | Manual correction |
+| Broken links | ERROR: No* | Manual fix (*Can detect only) |
+| Missing section index | WARNING: Partial | Generate basic `_index.md` |
+| Mixed naming styles | - Yes | Normalize to kebab-case |
+| Image filename issues | - Yes | Same as markdown files |
+| Large binary files | ERROR: No | Manual optimization |
 
 ---
 

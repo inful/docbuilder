@@ -84,10 +84,10 @@ jobs:
 ```
 
 **Features**:
-- ✅ Runs on PRs affecting docs
-- ✅ Installs DocBuilder from source
-- ✅ Generates both JSON and text reports
-- ✅ Uploads artifacts for later review
+- - Runs on PRs affecting docs
+- - Installs DocBuilder from source
+- - Generates both JSON and text reports
+- - Uploads artifacts for later review
 
 ### Advanced: PR Comments
 
@@ -148,7 +148,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ **Documentation linting passed!**\n\nAll files meet linting standards.'
+              body: '- **Documentation linting passed!**\n\nAll files meet linting standards.'
             })
       
       - name: Comment PR - Warnings
@@ -161,7 +161,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `⚠️ **Documentation has ${warnings} warning(s)**\n\nConsider fixing before merge. Run \`docbuilder lint --fix\` locally.`
+              body: `- **Documentation has ${warnings} warning(s)**\n\nConsider fixing before merge. Run \`docbuilder lint --fix\` locally.`
             })
       
       - name: Comment PR - Errors
@@ -173,7 +173,7 @@ jobs:
             const report = JSON.parse(fs.readFileSync('lint-report.json', 'utf8'));
             const errors = report.issues.filter(i => i.severity === 'error');
             
-            let comment = `❌ **Documentation linting failed with ${errors.length} error(s)**\n\n`;
+            let comment = `- **Documentation linting failed with ${errors.length} error(s)**\n\n`;
             comment += '### Errors\n\n';
             
             errors.slice(0, 10).forEach(issue => {
@@ -212,11 +212,11 @@ jobs:
 ```
 
 **Features**:
-- ✅ Posts summary comment on PR
-- ✅ Shows first 10 errors inline
-- ✅ Provides fix instructions
-- ✅ Fails workflow if errors found
-- ✅ Allows warnings without blocking
+- - Posts summary comment on PR
+- - Shows first 10 errors inline
+- - Provides fix instructions
+- - Fails workflow if errors found
+- - Allows warnings without blocking
 
 ### Auto-Fix on Push
 
@@ -272,7 +272,7 @@ jobs:
           fi
 ```
 
-⚠️ **Warning**: Auto-fix on push can create unexpected commits. Consider using only for specific branches or requiring review.
+- **Warning**: Auto-fix on push can create unexpected commits. Consider using only for specific branches or requiring review.
 
 ### Lint Only Changed Files
 
@@ -355,11 +355,11 @@ lint-docs-with-comments:
       WARNING_COUNT=$(jq '[.issues[] | select(.severity=="warning")] | length' lint-report.json)
       
       if [ "$LINT_EXIT" -eq 2 ]; then
-        STATUS="❌ **Linting failed** with $ERROR_COUNT error(s)"
+        STATUS="- **Linting failed** with $ERROR_COUNT error(s)"
       elif [ "$LINT_EXIT" -eq 1 ]; then
-        STATUS="⚠️ **Linting passed** with $WARNING_COUNT warning(s)"
+        STATUS="- **Linting passed** with $WARNING_COUNT warning(s)"
       else
-        STATUS="✅ **Linting passed**"
+        STATUS="- **Linting passed**"
       fi
       
       COMMENT="$STATUS\n\nRun \`docbuilder lint --fix\` to auto-fix issues."
@@ -589,13 +589,13 @@ docbuilder lint
 # Check exit code
 LINT_EXIT=$?
 if [ $LINT_EXIT -eq 2 ]; then
-    echo "❌ Linting failed with errors"
+    echo "- Linting failed with errors"
     exit 1
 elif [ $LINT_EXIT -eq 1 ]; then
-    echo "⚠️ Linting passed with warnings"
+    echo "- Linting passed with warnings"
     exit 0
 else
-    echo "✅ Linting passed"
+    echo "- Linting passed"
     exit 0
 fi
 ```

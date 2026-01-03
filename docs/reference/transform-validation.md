@@ -12,7 +12,7 @@ tags:
 
 # Transform Pipeline Validation (DEPRECATED)
 
-> **⚠️ DEPRECATED:** This document describes validation for the old registry-based transform system that was removed on December 16, 2025.
+> **WARNING: DEPRECATED:** This document describes validation for the old registry-based transform system that was removed on December 16, 2025.
 > 
 > The new fixed transform pipeline uses explicit ordering and does not require dependency validation.
 > See [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md) for current architecture.

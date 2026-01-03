@@ -91,25 +91,25 @@ docbuilder lint --format=json | jq '.summary.errors'
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `file` | string | ✅ | Relative path to the file with the issue |
-| `line` | integer | ✅ | Line number (0 for file-level issues) |
-| `column` | integer | ✅ | Column number (0 for file-level issues) |
-| `severity` | string | ✅ | `"error"` or `"warning"` |
-| `rule` | string | ✅ | Rule identifier (e.g., `"filename-convention"`) |
-| `message` | string | ✅ | Human-readable error message |
-| `suggestion` | string | ❌ | Suggested fix (if applicable) |
-| `context` | object | ❌ | Additional context about the issue |
+| `file` | string | - | Relative path to the file with the issue |
+| `line` | integer | - | Line number (0 for file-level issues) |
+| `column` | integer | - | Column number (0 for file-level issues) |
+| `severity` | string | - | `"error"` or `"warning"` |
+| `rule` | string | - | Rule identifier (e.g., `"filename-convention"`) |
+| `message` | string | - | Human-readable error message |
+| `suggestion` | string | ERROR: | Suggested fix (if applicable) |
+| `context` | object | ERROR: | Additional context about the issue |
 
 ### Broken Link Object
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `source_file` | string | ✅ | File containing the broken link |
-| `line` | integer | ✅ | Line number where link appears |
-| `link_text` | string | ✅ | Display text of the link |
-| `target` | string | ✅ | Target URL/path that is broken |
-| `link_type` | string | ✅ | Type: `"inline"`, `"reference"`, `"image"` |
-| `error` | string | ✅ | Description of why link is broken |
+| `source_file` | string | - | File containing the broken link |
+| `line` | integer | - | Line number where link appears |
+| `link_text` | string | - | Display text of the link |
+| `target` | string | - | Target URL/path that is broken |
+| `link_type` | string | - | Type: `"inline"`, `"reference"`, `"image"` |
+| `error` | string | - | Description of why link is broken |
 
 ## Rule Identifiers
 
@@ -227,7 +227,7 @@ with open('lint-report.json') as f:
 
 # Check for errors
 if report['summary']['errors'] > 0:
-    print(f"❌ {report['summary']['errors']} errors found")
+    print(f"ERROR: {report['summary']['errors']} errors found")
     for issue in report['issues']:
         if issue['severity'] == 'error':
             print(f"  {issue['file']}:{issue['line']} - {issue['message']}")
@@ -258,7 +258,7 @@ let comment = `## Documentation Lint Results\n\n`;
 comment += `📊 ${report.summary.total_files} files scanned\n\n`;
 
 if (errors.length > 0) {
-    comment += `### ❌ Errors (${errors.length})\n\n`;
+    comment += `### ERROR: Errors (${errors.length})\n\n`;
     errors.slice(0, 5).forEach(error => {
         comment += `- **${error.file}**: ${error.message}\n`;
     });

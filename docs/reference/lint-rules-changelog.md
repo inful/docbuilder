@@ -22,97 +22,97 @@ This document tracks changes to linting rules across DocBuilder versions, helpin
 #### Filename Rules (Errors)
 
 **Added:**
-- ✅ Uppercase letter detection
-- ✅ Space character detection
-- ✅ Special character detection (not `[a-z0-9-_.]`)
-- ✅ Leading/trailing hyphen and underscore detection
-- ✅ Invalid double extension detection
-- ✅ Reserved filename detection (`tags.md`, `categories.md`)
+- - Uppercase letter detection
+- - Space character detection
+- - Special character detection (not `[a-z0-9-_.]`)
+- - Leading/trailing hyphen and underscore detection
+- - Invalid double extension detection
+- - Reserved filename detection (`tags.md`, `categories.md`)
 
 **Whitelisted Extensions:**
-- ✅ `.drawio.png` - Draw.io embedded PNG diagrams
-- ✅ `.drawio.svg` - Draw.io embedded SVG diagrams
+- - `.drawio.png` - Draw.io embedded PNG diagrams
+- - `.drawio.svg` - Draw.io embedded SVG diagrams
 
 **Standard File Exclusions:**
-- ✅ `README.md`
-- ✅ `CONTRIBUTING.md`
-- ✅ `CHANGELOG.md`
-- ✅ `LICENSE.md`
-- ✅ `CODE_OF_CONDUCT.md`
+- - `README.md`
+- - `CONTRIBUTING.md`
+- - `CHANGELOG.md`
+- - `LICENSE.md`
+- - `CODE_OF_CONDUCT.md`
 
 #### Auto-Fix Capabilities
 
 **Added:**
-- ✅ File renaming with `git mv` support
-- ✅ Lowercase conversion
-- ✅ Space to hyphen replacement
-- ✅ Special character to hyphen replacement
-- ✅ Leading/trailing character stripping
-- ✅ Internal link resolution and updates
-- ✅ Anchor fragment preservation in links
-- ✅ Reference-style link updates
-- ✅ Image link updates
-- ✅ Dry-run mode (`--fix --dry-run`)
-- ✅ Interactive confirmation prompts
-- ✅ Detailed fix reports
+- - File renaming with `git mv` support
+- - Lowercase conversion
+- - Space to hyphen replacement
+- - Special character to hyphen replacement
+- - Leading/trailing character stripping
+- - Internal link resolution and updates
+- - Anchor fragment preservation in links
+- - Reference-style link updates
+- - Image link updates
+- - Dry-run mode (`--fix --dry-run`)
+- - Interactive confirmation prompts
+- - Detailed fix reports
 
 #### Link Resolution
 
 **Added:**
-- ✅ Relative path resolution (e.g., `./file.md`, `../dir/file.md`)
-- ✅ Hugo site-absolute path support (e.g., `/docs/file`)
-- ✅ Inline link detection and updates
-- ✅ Reference-style link detection and updates
-- ✅ Image link detection and updates
-- ✅ Anchor fragment preservation (`#section`)
-- ✅ External URL exclusion (don't modify `https://...`)
-- ✅ Code block exclusion (don't modify links in code)
-- ✅ Broken link detection and reporting
+- - Relative path resolution (e.g., `./file.md`, `../dir/file.md`)
+- - Hugo site-absolute path support (e.g., `/docs/file`)
+- - Inline link detection and updates
+- - Reference-style link detection and updates
+- - Image link detection and updates
+- - Anchor fragment preservation (`#section`)
+- - External URL exclusion (don't modify `https://...`)
+- - Code block exclusion (don't modify links in code)
+- - Broken link detection and reporting
 
 #### CLI Features
 
 **Added:**
-- ✅ `docbuilder lint [path]` command
-- ✅ Intelligent path detection (`docs/`, `documentation/`, fallback to `.`)
-- ✅ Exit codes: 0 (clean), 1 (warnings), 2 (errors), 3 (failure)
-- ✅ Output formats: `--format=text|json`
-- ✅ Verbosity: `--quiet`, `--verbose`
-- ✅ Color support with `NO_COLOR` detection
-- ✅ `--fix` flag for auto-fixing
-- ✅ `--fix --dry-run` for preview
-- ✅ `--fix --yes` for non-interactive mode
+- - `docbuilder lint [path]` command
+- - Intelligent path detection (`docs/`, `documentation/`, fallback to `.`)
+- - Exit codes: 0 (clean), 1 (warnings), 2 (errors), 3 (failure)
+- - Output formats: `--format=text|json`
+- - Verbosity: `--quiet`, `--verbose`
+- - Color support with `NO_COLOR` detection
+- - `--fix` flag for auto-fixing
+- - `--fix --dry-run` for preview
+- - `--fix --yes` for non-interactive mode
 
 #### Git Hooks
 
 **Added:**
-- ✅ Traditional pre-commit hook script
-- ✅ `docbuilder lint install-hook` command
-- ✅ Lefthook configuration example
-- ✅ Staged file filtering
+- - Traditional pre-commit hook script
+- - `docbuilder lint install-hook` command
+- - Lefthook configuration example
+- - Staged file filtering
 
 #### CI/CD Integration
 
 **Added:**
-- ✅ GitHub Actions workflow example
-- ✅ GitLab CI template
-- ✅ JSON output schema
-- ✅ PR comment integration examples
+- - GitHub Actions workflow example
+- - GitLab CI template
+- - JSON output schema
+- - PR comment integration examples
 
 #### Testing
 
 **Added:**
-- ✅ Golden test framework for lint validation
-- ✅ Auto-fix integration tests
-- ✅ Link resolution test suite
-- ✅ Lint-DocBuilder sync tests
-- ✅ Rule drift detection CI workflow
+- - Golden test framework for lint validation
+- - Auto-fix integration tests
+- - Link resolution test suite
+- - Lint-DocBuilder sync tests
+- - Rule drift detection CI workflow
 
 #### Bug Fixes
 
 **Fixed:**
-- ✅ Link transformation preserves `./` prefix (Issue: `./file.md` became `/repo/./file`)
-- ✅ Linter now resolves Hugo site-absolute paths (`/docs/file`)
-- ✅ Linter tries `.md` and `.markdown` extensions when validating links
+- - Link transformation preserves `./` prefix (Issue: `./file.md` became `/repo/./file`)
+- - Linter now resolves Hugo site-absolute paths (`/docs/file`)
+- - Linter tries `.md` and `.markdown` extensions when validating links
 
 ---
 

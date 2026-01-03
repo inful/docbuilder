@@ -239,12 +239,12 @@ if [ -n "$STAGED_FILES" ]; then
   
   if [ $LINT_EXIT -eq 2 ]; then
     echo ""
-    echo "❌ Lint errors found. Commit blocked."
+    echo "- Lint errors found. Commit blocked."
     echo "Fix errors or run: docbuilder lint --fix"
     exit 1
   elif [ $LINT_EXIT -eq 1 ]; then
     echo ""
-    echo "⚠️  Lint warnings present. Consider fixing before commit."
+    echo "-  Lint warnings present. Consider fixing before commit."
     echo "To auto-fix: docbuilder lint --fix"
     # Allow commit but show warning
     exit 0
@@ -285,7 +285,7 @@ git commit --no-verify -m "Emergency hotfix"
 LEFTHOOK_EXCLUDE=lint-docs git commit -m "Skip linting"
 ```
 
-⚠️ **Warning**: Skipping linting may cause CI failures. Use sparingly.
+- **Warning**: Skipping linting may cause CI failures. Use sparingly.
 
 ## Team Adoption
 

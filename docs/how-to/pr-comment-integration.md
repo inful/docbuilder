@@ -52,13 +52,13 @@ This document provides examples for integrating DocBuilder lint results into pul
       
       // Summary with status emoji
       if (report.summary.errors === 0 && report.summary.warnings === 0) {
-        comment += '✅ **All documentation passes linting!**\n\n';
+        comment += '- **All documentation passes linting!**\n\n';
       } else {
         if (report.summary.errors > 0) {
-          comment += `❌ **${report.summary.errors} error(s) found** - merge blocked\n`;
+          comment += `- **${report.summary.errors} error(s) found** - merge blocked\n`;
         }
         if (report.summary.warnings > 0) {
-          comment += `⚠️ **${report.summary.warnings} warning(s) found** - should fix\n`;
+          comment += `- **${report.summary.warnings} warning(s) found** - should fix\n`;
         }
         comment += '\n';
       }
@@ -105,7 +105,7 @@ This document provides examples for integrating DocBuilder lint results into pul
             comment += `> ${issue.message}\n`;
             
             if (issue.suggestion) {
-              comment += `> 💡 Suggestion: \`${issue.suggestion}\`\n`;
+              comment += `> Note: Suggestion: \`${issue.suggestion}\`\n`;
             }
             comment += '\n';
           }
@@ -149,7 +149,7 @@ This document provides examples for integrating DocBuilder lint results into pul
       comment += '# Preview changes without applying\n';
       comment += 'docbuilder lint --fix --dry-run\n';
       comment += '```\n\n';
-      comment += '*💡 Tip: The pre-commit hook will prevent future issues*\n';
+      comment += '*Note: Tip: The pre-commit hook will prevent future issues*\n';
       comment += '```bash\n';
       comment += 'docbuilder lint install-hook\n';
       comment += '```\n';
@@ -198,7 +198,7 @@ This document provides examples for integrating DocBuilder lint results into pul
       
       const errors = report.issues.filter(i => i.severity === 'error');
       
-      let comment = `❌ **Documentation linting failed** - ${errors.length} error(s) found\n\n`;
+      let comment = `- **Documentation linting failed** - ${errors.length} error(s) found\n\n`;
       
       for (const error of errors.slice(0, 5)) {
         comment += `- \`${error.file}\`: ${error.message}\n`;
@@ -243,9 +243,9 @@ lint:docs:comment:
       COMMENT="${COMMENT}**Warnings:** ${WARNINGS}\n"
       
       if [ "${ERRORS}" -gt 0 ]; then
-        COMMENT="${COMMENT}\n❌ Linting failed - see details in pipeline artifacts"
+        COMMENT="${COMMENT}\n- Linting failed - see details in pipeline artifacts"
       else
-        COMMENT="${COMMENT}\n✅ All documentation passes linting!"
+        COMMENT="${COMMENT}\n- All documentation passes linting!"
       fi
       
       # Post to MR
@@ -288,11 +288,11 @@ lint:docs:comment:
       COMMENT="${COMMENT}**Summary:** ${TOTAL} files scanned\n\n"
       
       if [ "${ERRORS}" -gt 0 ]; then
-        COMMENT="${COMMENT}❌ **${ERRORS} error(s)** - merge blocked\n"
+        COMMENT="${COMMENT}- **${ERRORS} error(s)** - merge blocked\n"
       fi
       
       if [ "${WARNINGS}" -gt 0 ]; then
-        COMMENT="${COMMENT}⚠️ **${WARNINGS} warning(s)** - should fix\n"
+        COMMENT="${COMMENT}- **${WARNINGS} warning(s)** - should fix\n"
       fi
       
       # Add top 5 issues
@@ -344,7 +344,7 @@ pipelines:
               COMMENT="## Documentation Lint Report\n\n"
               COMMENT="${COMMENT}Errors: ${ERRORS}, Warnings: ${WARNINGS}\n\n"
               if [ "${ERRORS}" -gt 0 ]; then
-                COMMENT="${COMMENT}❌ Linting failed\n"
+                COMMENT="${COMMENT}- Linting failed\n"
               fi
               
               # Post comment via API
@@ -502,11 +502,11 @@ docbuilder lint install-hook
 ### 7. Status Emojis
 
 Use consistent emojis for quick visual scanning:
-- ✅ Success
-- ❌ Errors (blocking)
-- ⚠️ Warnings (non-blocking)
+- - Success
+- - Errors (blocking)
+- - Warnings (non-blocking)
 - 🔗 Broken links
-- 💡 Suggestions
+- Note: Suggestions
 - 📊 Summary stats
 
 ## Testing Comments

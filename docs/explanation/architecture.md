@@ -35,7 +35,7 @@ Each stage records duration, outcome, and issues for observability.
 | Discovery | Walk configured doc paths, filter markdown, build `DocFile` list. | `internal/docs/` |
 | Hugo Generator | Emit `hugo.yaml`, content tree, index pages, theme params. | `internal/hugo/` |
 | Transform Pipeline | Fixed-order content processing pipeline with direct mutation. | `internal/hugo/pipeline/` |
-| Relearn Theme | Single hardcoded theme with specific parameter defaults (not extensible). | `internal/hugo/` (config_writer.go) |
+| Theme System | Relearn theme with specific parameter defaults. | `internal/hugo/` |
 | Daemon Service | Long-running HTTP service for incremental builds and monitoring. | `internal/daemon/` |
 | Forge Integration | GitHub/GitLab/Forgejo API clients. | `internal/forge/` |
 | Error Foundation | Classified error system with retry strategies. | `internal/foundation/errors/` |
@@ -155,7 +155,7 @@ DocBuilder can run as a long-running HTTP service for incremental builds and con
 
 - **Add new transform**: Create function in `internal/hugo/pipeline/transforms.go` and add to `defaultTransforms()` list
 - **Add new generator**: Create function in `internal/hugo/pipeline/generators.go` and add to `defaultGenerators()` list  
-- **Theme customization**: Relearn is hardcoded; customize via `params` in config or override templates in `layouts/` (see [use-relearn-theme.md](../how-to/use-relearn-theme.md))
+- **Theme customization**: Relearn is the primary theme; customize via `params` in config or override templates in `layouts/` (see [use-relearn-theme.md](../how-to/use-relearn-theme.md))
 - **Additional issue codes**: Augment taxonomy without breaking consumers
 - **Future caching**: Leverage `doc_files_hash` for selective downstream regeneration
 - **Daemon endpoints**: Add new HTTP handlers in `internal/daemon/` for custom workflows

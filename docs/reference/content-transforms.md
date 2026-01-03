@@ -11,7 +11,7 @@ tags:
 
 # Content Transform Pipeline (DEPRECATED)
 
-> **⚠️ DEPRECATED:** This document describes the old registry-based transform system that was removed on December 16, 2025.
+> **WARNING: DEPRECATED:** This document describes the old registry-based transform system that was removed on December 16, 2025.
 > 
 > For current pipeline documentation, see:
 > - [ADR-003: Fixed Transform Pipeline](../adr/ADR-003-fixed-transform-pipeline.md)

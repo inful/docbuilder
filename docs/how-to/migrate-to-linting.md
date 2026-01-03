@@ -174,10 +174,10 @@ cd docs && hugo server
 ```
 
 Visit http://localhost:1313 and verify:
-- ✅ All pages render correctly
-- ✅ Navigation works
-- ✅ Links work
-- ✅ Images display
+- - All pages render correctly
+- - Navigation works
+- - Links work
+- - Images display
 
 #### Step 5: Commit Automated Fixes
 
@@ -413,14 +413,14 @@ Thanks!
 
 ### Filename Rules
 
-✅ **Do**: Use lowercase with hyphens
+- **Do**: Use lowercase with hyphens
 ```
 api-guide.md
 getting-started.md
 user-manual.md
 ```
 
-❌ **Don't**: Use spaces, uppercase, or special characters
+- **Don't**: Use spaces, uppercase, or special characters
 ```
 API Guide.md          # Uppercase
 getting_started.md    # Underscore
@@ -724,9 +724,9 @@ Track these metrics over 30 days:
 
 After successful migration:
 
-1. ✅ All error-level issues resolved
-2. ✅ Team has hooks installed
-3. ✅ CI/CD enforcing linting
+1. - All error-level issues resolved
+2. - Team has hooks installed
+3. - CI/CD enforcing linting
 4. 📖 Review [Lint Rules Reference](../reference/lint-rules.md)
 5. 📖 Consider [CI/CD Integration](./ci-cd-linting.md) enhancements
 6. 📊 Track metrics and iterate
