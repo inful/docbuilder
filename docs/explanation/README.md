@@ -1,214 +1,139 @@
----
-title: "Explanation Documentation"
-date: 2025-12-15
-categories:
-  - explanation
-tags:
-  - documentation
----
+# Architecture Documentation
 
-# Architecture Documentation Index
+Comprehensive architecture documentation for DocBuilder organized by topic and detail level.
 
-This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.
+## Core Architecture Documents
 
-## Documentation Structure
+### [Architecture Overview](architecture-overview.md)
+High-level system architecture covering:
+- System layers and components
+- Build pipeline stages
+- Content transform pipeline
+- Key design patterns
+- Configuration management
+- Observability
 
-### High-Level Overview
+**Audience:** New developers, technical leads, product managers
 
-**[Architecture Overview (architecture.md)](architecture.md)**
-- Quick reference for the staged pipeline
-- Key components and responsibilities
-- Namespacing and idempotence strategies
-- Design rationale highlights
-- **Audience:** New developers, product managers, technical leads
+### [Pipeline Architecture](pipeline-architecture.md)
+Detailed pipeline stage documentation:
+- Eight sequential build stages
+- Stage operations and responsibilities
+- Error handling and retries
+- Incremental build mechanics
+- Stage metrics and observability
 
-### Comprehensive Documentation
+**Audience:** Contributors, pipeline developers
 
-**[Comprehensive Architecture (comprehensive-architecture.md)](comprehensive-architecture.md)**
-- Complete system architecture with all layers
+### [Package Dependencies](package-dependencies.md)
+Package structure and relationships:
+- Package organization by layer
+- Dependency rules and direction
+- Key interfaces and exports
+- Testing strategy
+
+**Audience:** Contributors, maintainers
+
+### [Data Flow](data-flow.md)
+Data flow through the system:
+- Configuration to rendered site
+- Build request processing
+- Content transformation steps
+- Incremental build flow
+- Event and metrics flow
+
+**Audience:** Contributors, architects
+
+### [Comprehensive Architecture](comprehensive-architecture.md)
+Complete system design:
 - Core principles (clean architecture, event sourcing, typed state)
-- Detailed package structure and responsibilities
-- Data flow diagrams and sequences
-- Key subsystems deep dive (Relearn configuration, forges, change detection)
-- Extension points and operational considerations
-- Migration status summary
-- **Audience:** Senior engineers, architects, contributors
+- All subsystems and components
+- Extension points
+- Operational considerations
 
-**[Architecture Diagrams (architecture-diagrams.md)](architecture-diagrams.md)**
-- Visual representations using ASCII and Mermaid
-- System architecture diagrams
-- Pipeline flow visualizations
-- Package dependency graphs
-- Component interaction sequences
-- State machine diagrams
-- Deployment architectures
-- **Audience:** Visual learners, architects, documentation reviewers
+**Audience:** Senior engineers, architects
 
-**[Package Architecture Guide (package-architecture.md)](package-architecture.md)**
-- Detailed package-by-package documentation
-- Key types and interfaces for each package
-- Usage patterns and code examples
-- Design rationale for architectural decisions
-- Dependency rules and import matrix
-- Testing support infrastructure
-- **Audience:** Contributors, maintainers, package users
+### [Package Architecture](package-architecture.md)
+Detailed package documentation:
+- Package-by-package descriptions
+- Key types and interfaces
+- Usage patterns and examples
+- Design rationale
 
-### Specialized Topics
+**Audience:** Contributors, package users
 
-**[Namespacing Rationale (namespacing-rationale.md)](namespacing-rationale.md)**
-- Forge-level namespacing design
-- Collision prevention strategies
-- Configuration options
-- **Audience:** Users configuring multi-forge setups
+## Specialized Topics
 
-**[Renderer Testing (renderer-testing.md)](renderer-testing.md)**
-- Hugo rendering test strategies
-- Golden test patterns
-- **Audience:** Contributors working on Hugo integration
+### [Namespacing Rationale](namespacing-rationale.md)
+Forge-level namespacing design for multi-forge setups.
+
+### [Renderer Testing](renderer-testing.md)
+Hugo rendering test strategies and golden test patterns.
+
+### [Skip Evaluation](skip-evaluation.md)
+Incremental build and change detection logic.
+
+### [Webhook Documentation Isolation](webhook-documentation-isolation.md)
+Webhook handling and event processing.
+
+## Architecture Decision Records
+
+Significant architectural decisions:
+- [ADR-000: Uniform Error Handling](../adr/adr-000-uniform-error-handling.md)
+- [ADR-001: Golden Testing Strategy](../adr/adr-001-golden-testing-strategy.md)
+- [ADR-002: In-Memory Content Pipeline](../adr/adr-002-in-memory-content-pipeline.md)
+- [ADR-003: Fixed Transform Pipeline](../adr/adr-003-fixed-transform-pipeline.md)
+- [ADR-004: Forge-Specific Markdown](../adr/adr-004-forge-specific-markdown.md)
+- [ADR-005: Documentation Linting](../adr/adr-005-documentation-linting.md)
+- [ADR-006: Drop Local Namespace](../adr/adr-006-drop-local-namespace.md)
 
 ## Quick Navigation
 
-### By Role
+### New Developers
+1. [Architecture Overview](architecture-overview.md)
+2. [Pipeline Architecture](pipeline-architecture.md)
+3. [Package Dependencies](package-dependencies.md)
 
-**New Developer Getting Started:**
-1. Start with [Architecture Overview](architecture.md)
-2. Review [Architecture Diagrams](architecture-diagrams.md) for visual understanding
-3. Deep dive into [Package Architecture Guide](package-architecture.md) for code structure
+### Contributing to Pipeline
+1. [Pipeline Architecture](pipeline-architecture.md)
+2. [Data Flow](data-flow.md)
+3. [Comprehensive Architecture](comprehensive-architecture.md)
 
-**Contributing to Core Pipeline:**
-1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Pipeline Flow section
-2. Study [Package Architecture Guide](package-architecture.md) - Pipeline section
-3. Review [Architecture Diagrams](architecture-diagrams.md) - Pipeline Flow
+### Understanding State Management
+1. [Data Flow](data-flow.md)
+2. [Comprehensive Architecture](comprehensive-architecture.md)
+3. [Package Architecture](package-architecture.md)
 
-**Adding New Theme Support:**
-1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Theme System
-2. Review [Package Architecture Guide](package-architecture.md) - internal/hugo section
-3. Follow [How-To Guide](../how-to/add-theme-support.md)
-
-**Implementing Forge Integration:**
-1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Forge Integration
-2. Study [Package Architecture Guide](package-architecture.md) - internal/forge section
-3. Review [Namespacing Rationale](namespacing-rationale.md)
-
-**Understanding State Management:**
-1. Review [Comprehensive Architecture](comprehensive-architecture.md) - State Management
-2. Study [Package Architecture Guide](package-architecture.md) - internal/state section
-3. Check [Architecture Diagrams](architecture-diagrams.md) - State Persistence Flow
-
-### By Topic
-
-**Configuration System:**
-- [Comprehensive Architecture](comprehensive-architecture.md#configuration--state)
-- [Package Architecture Guide](package-architecture.md#internalconfig)
-- [Configuration Reference](../reference/configuration.md)
-
-**Pipeline Stages:**
-- [Architecture Overview](architecture.md#pipeline-flow)
-- [Architecture Diagrams](architecture-diagrams.md#pipeline-flow)
-- [Package Architecture Guide](package-architecture.md#internalpipeline)
-
-**Event Sourcing:**
-- [Comprehensive Architecture](comprehensive-architecture.md#2-event-sourcing)
-- [Package Architecture Guide](package-architecture.md#internaleventstore)
-
-**Error Handling:**
-- [Comprehensive Architecture](comprehensive-architecture.md#4-unified-error-handling)
-- [Package Architecture Guide](package-architecture.md#internalfoundationerrors)
-- [ADR-000: Uniform Error Handling](../adr/ADR-000-uniform-error-handling.md)
-
-**Relearn Configuration:**
-- [Comprehensive Architecture](comprehensive-architecture.md#1-relearn-theme-configuration)
-- [Architecture Diagrams](architecture-diagrams.md#relearn-theme-configuration)
-- [How-To: Use Relearn Theme](../how-to/use-relearn-theme.md)
-
-**Change Detection:**
-- [Comprehensive Architecture](comprehensive-architecture.md#3-change-detection)
-- [Architecture Diagrams](architecture-diagrams.md#change-detection)
-- [Package Architecture Guide](package-architecture.md#internalincremental)
-
-**Testing Infrastructure:**
-- [Package Architecture Guide](package-architecture.md#testing-support)
-- [Renderer Testing](renderer-testing.md)
-
-## Architecture Evolution
-
-The architecture has undergone significant evolution documented in:
-
-- **[Architecture Migration Plan](../../ARCHITECTURE_MIGRATION_PLAN.md)**
-  - 19 completed phases (A-M, O-P, R-S-T-U)
-  - 2 deferred phases (Q, J)
-  - ~1,290 lines eliminated
-  - Zero breaking changes
-
-## Architecture Decision Records (ADRs)
-
-For detailed architectural decisions, see the [ADR directory](../adr/):
-
-- [ADR-000: Uniform Error Handling](../adr/ADR-000-uniform-error-handling.md)
-- [ADR-001: Forge Integration Daemon](../../plan/adr-001-forge-integration-daemon.md)
-
-## Visual Reference
-
-### System Layers
+## System Layers
 
 ```
 ┌─────────────────────────┐
-│   Presentation Layer    │  cmd/docbuilder/commands, server/
+│   Command Layer         │  cmd/docbuilder/commands
 ├─────────────────────────┤
-│   Application Layer     │  build/, services/, daemon/
+│   Service Layer         │  internal/build, internal/daemon
 ├─────────────────────────┤
-│     Domain Layer        │  config/, state/, docs/, hugo/, forge/
+│   Processing Layer      │  internal/hugo, internal/docs
 ├─────────────────────────┤
-│  Infrastructure Layer   │  git/, workspace/, eventstore/, auth/
+│   Domain Layer          │  internal/config, internal/state
 ├─────────────────────────┤
-│   Foundation Layer      │  foundation/errors, logfields/, metrics/
+│   Infrastructure Layer  │  internal/git, internal/forge
+├─────────────────────────┤
+│   Foundation Layer      │  internal/foundation
 └─────────────────────────┘
 ```
 
-### Pipeline Stages
+## Key Principles
 
-```
-PrepareOutput → CloneRepos → DiscoverDocs → GenerateConfig →
-Layouts → CopyContent → Indexes → RunHugo (optional)
-```
-
-### Key Principles
-
-1. **Clean Architecture** - Clear dependency direction
-2. **Event Sourcing** - Immutable event log
-3. **Typed State** - No `map[string]any` in primary paths
-4. **Unified Errors** - Single error type system
-5. **Observable** - Logging, metrics, tracing
-
-## Contributing to Architecture
-
-When making architectural changes:
-
-1. **Update relevant documentation** in this directory
-2. **Add ADR** for significant decisions
-3. **Update diagrams** if structure changes
-4. **Update migration plan** if part of migration
-5. **Update package guide** for API changes
-
-## Questions and Feedback
-
-For questions about the architecture:
-
-- Check existing documentation first
-- Review ADRs for historical context
-- Open discussion in GitHub issues
-- Tag architecture-related PRs with `architecture` label
+1. **Clean Architecture** - Clear dependency direction (inward only)
+2. **Event Sourcing** - Immutable event log for build lifecycle
+3. **Typed State** - Strong typing, no `map[string]any` in core paths
+4. **Unified Errors** - Classified errors with categories
+5. **Observable** - Structured logging, Prometheus metrics, build reports
 
 ## Related Documentation
 
 - [Getting Started Tutorial](../tutorials/getting-started.md)
+- [Configuration Reference](../reference/configuration.md)
+- [CLI Reference](../reference/cli.md)
 - [How-To Guides](../how-to/)
-- [Reference Documentation](../reference/)
 - [Contributing Guide](../../CONTRIBUTING.md)
-- [Changelog](../../CHANGELOG.md)
-
----
-
-**Last Updated:** December 2025
-
-**Architecture Status:** Migration complete (19 phases), production-ready
