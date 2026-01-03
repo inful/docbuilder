@@ -1,197 +1,97 @@
----
-title: "DocBuilder Documentation"
-date: 2025-12-15
-categories:
-  - documentation
-tags:
-  - overview
-  - getting-started
----
-
 # DocBuilder Documentation
 
-Welcome to the DocBuilder documentation! This documentation follows the [Diátaxis](https://diataxis.fr/) framework, organizing content by user needs.
+Documentation organized by the [Diátaxis](https://diataxis.fr/) framework to help you find what you need.
 
 ## Documentation Structure
 
-### 📚 [Tutorials](tutorials/)
-**Learning-oriented** - Step-by-step lessons to get you started.
+### Tutorials
+
+Learning-oriented guides for getting started.
 
 - [Getting Started](tutorials/getting-started.md) - Your first DocBuilder project
-- [Multi-Repository Setup](tutorials/multi-repo-setup.md) - Aggregate docs from multiple repos
-- [Theme Customization](tutorials/theme-customization.md) - Customize your Hugo theme
 
-**Best for:** First-time users, learning the basics
+### How-To Guides
 
-### 🛠️ [How-To Guides](how-to/)
-**Task-oriented** - Practical guides for specific tasks.
+Task-oriented guides for specific objectives.
 
 - [Add Content Transforms](how-to/add-content-transforms.md) - Create custom markdown transformations
-- [Add Theme Support](how-to/add-theme-support.md) - Integrate a new Hugo theme
 - [Configure Forge Namespacing](how-to/configure-forge-namespacing.md) - Set up multi-forge projects
 - [Customize Index Pages](how-to/customize-index-pages.md) - Tailor index page generation
 - [Enable Hugo Render](how-to/enable-hugo-render.md) - Configure Hugo rendering
+- [Enable Multi-Version Docs](how-to/enable-multi-version-docs.md) - Build from multiple branches/tags
+- [Enable Page Transitions](how-to/enable-page-transitions.md) - Add View Transitions API
 - [Prune Workspace Size](how-to/prune-workspace-size.md) - Optimize disk usage
 - [Run Incremental Builds](how-to/run-incremental-builds.md) - Speed up builds
+- [Setup Linting](how-to/setup-linting.md) - Configure documentation linting
+- [Use Relearn Theme](how-to/use-relearn-theme.md) - Configure Relearn theme
+- [Write Cross-Document Links](how-to/write-cross-document-links.md) - Link between documents
 
-**Best for:** Users with specific goals, solving problems
+### Reference
 
-### 📖 [Reference](reference/)
-**Information-oriented** - Technical specifications and API documentation.
+Technical specifications and API documentation.
 
-- [CLI Reference](reference/cli.md) - Command-line interface documentation
-- [Configuration Reference](reference/configuration.md) - Complete config file specification
-- [Index File Handling](reference/index-files.md) - How index files are processed and precedence rules
+- [CLI Reference](reference/cli.md) - Command-line interface
+- [Configuration Reference](reference/configuration.md) - Complete config specification
+- [Content Transforms](reference/content-transforms.md) - Available transformations
+- [Index File Handling](reference/index-files.md) - Index file processing and precedence
 - [Build Report Reference](reference/report.md) - Build report format and fields
+- [Lint Rules](reference/lint-rules.md) - Documentation linting rules
 
-**Best for:** Looking up specific information, API details
+### Explanation
 
-### 💡 [Explanation](explanation/)
-**Understanding-oriented** - Conceptual documentation and design rationale.
+Conceptual documentation and design rationale.
 
-#### Architecture Documentation
+- [Architecture Overview](explanation/architecture.md) - System architecture summary
+- [Comprehensive Architecture](explanation/comprehensive-architecture.md) - Detailed system design
+- [Package Architecture](explanation/package-architecture.md) - Package-level documentation
+- [Namespacing Rationale](explanation/namespacing-rationale.md) - Forge namespacing design
 
-- **[Architecture Documentation Index](explanation/README.md)** - Start here for architecture overview
-- **[Comprehensive Architecture](explanation/comprehensive-architecture.md)** - Complete system design
-- **[Architecture Diagrams](explanation/architecture-diagrams.md)** - Visual system representations
-- **[Package Architecture Guide](explanation/package-architecture.md)** - Detailed package documentation
-- **[Architecture Overview](explanation/architecture.md)** - Quick reference guide
-- **[Namespacing Rationale](explanation/namespacing-rationale.md)** - Forge namespacing design
-- **[Renderer Testing](explanation/renderer-testing.md)** - Hugo rendering tests
+See [Architecture Documentation](explanation/README.md) for complete architecture guides.
 
-#### Architecture Decision Records (ADRs)
+### Architecture Decision Records
 
-- [ADR-000: Uniform Error Handling](adr/ADR-000-uniform-error-handling.md)
-- [ADR-001: Forge Integration Daemon](../plan/adr-001-forge-integration-daemon.md)
+- [ADR-000: Uniform Error Handling](adr/adr-000-uniform-error-handling.md)
+- [ADR-001: Golden Testing Strategy](adr/adr-001-golden-testing-strategy.md)
+- [ADR-002: In-Memory Content Pipeline](adr/adr-002-in-memory-content-pipeline.md)
+- [ADR-003: Fixed Transform Pipeline](adr/adr-003-fixed-transform-pipeline.md)
+- [ADR-004: Forge-Specific Markdown](adr/adr-004-forge-specific-markdown.md)
+- [ADR-005: Documentation Linting](adr/adr-005-documentation-linting.md)
+- [ADR-006: Drop Local Namespace](adr/adr-006-drop-local-namespace.md)
 
-**Best for:** Understanding why things work the way they do, architectural decisions
-
-## Quick Start Guide
+## Quick Navigation
 
 ### New Users
 
-1. Start with [Getting Started Tutorial](tutorials/getting-started.md)
-2. Review [CLI Reference](reference/cli.md) for commands
-3. Check [Configuration Reference](reference/configuration.md) for options
+1. Start with [Getting Started](tutorials/getting-started.md)
+2. Review [CLI Reference](reference/cli.md)
+3. Check [Configuration Reference](reference/configuration.md)
 
 ### Developers/Contributors
 
-1. Read [Architecture Documentation Index](explanation/README.md)
-2. Study [Comprehensive Architecture](explanation/comprehensive-architecture.md)
-3. Review [Package Architecture Guide](explanation/package-architecture.md)
-4. Check [Contributing Guide](../CONTRIBUTING.md)
+1. Read [Architecture Overview](explanation/architecture.md)
+2. Review [Package Architecture](explanation/package-architecture.md)
+3. Check [Contributing Guide](../CONTRIBUTING.md)
 
 ### Operations/DevOps
 
-1. Review [Getting Started Tutorial](tutorials/getting-started.md)
-2. Check [How-To: Run Incremental Builds](how-to/run-incremental-builds.md)
+1. Review [Getting Started](tutorials/getting-started.md)
+2. Check [Run Incremental Builds](how-to/run-incremental-builds.md)
 3. Review [Build Report Reference](reference/report.md)
-4. Study operational considerations in [Comprehensive Architecture](explanation/comprehensive-architecture.md#operational-considerations)
 
-## Documentation by Feature
+## Contributing
 
-### Basic Usage
-
-- [Getting Started Tutorial](tutorials/getting-started.md)
-- [CLI Reference](reference/cli.md)
-- [Configuration Reference](reference/configuration.md)
-
-### Multi-Repository Aggregation
-
-- [Multi-Repository Setup Tutorial](tutorials/multi-repo-setup.md)
-- [Configure Forge Namespacing](how-to/configure-forge-namespacing.md)
-- [Namespacing Rationale](explanation/namespacing-rationale.md)
-
-### Theme Integration
-
-- [Theme Customization Tutorial](tutorials/theme-customization.md)
-- [Add Theme Support](how-to/add-theme-support.md)
-- [Relearn Theme Configuration](explanation/comprehensive-architecture.md#1-relearn-theme-configuration)
-
-### Performance Optimization
-
-- [Run Incremental Builds](how-to/run-incremental-builds.md)
-- [Prune Workspace Size](how-to/prune-workspace-size.md)
-- [Change Detection](explanation/comprehensive-architecture.md#3-change-detection)
-
-### Customization
-
-- [Add Content Transforms](how-to/add-content-transforms.md)
-- [Customize Index Pages](how-to/customize-index-pages.md)
-- [Index File Handling](reference/index-files.md)
-- [Theme Customization Tutorial](tutorials/theme-customization.md)
-- [Configuration Reference](reference/configuration.md)
-
-### Advanced Topics
-
-- [Comprehensive Architecture](explanation/comprehensive-architecture.md)
-- [Package Architecture Guide](explanation/package-architecture.md)
-- [Architecture Diagrams](explanation/architecture-diagrams.md)
-
-## Additional Resources
-
-### Project Documentation
-
-- [README](../README.md) - Project overview and quick reference
-- [CHANGELOG](../CHANGELOG.md) - Version history and changes
-- [CONTRIBUTING](../CONTRIBUTING.md) - Contribution guidelines
-- [LICENSE](../LICENSE) - Project license
-
-### Architecture & Planning
-
-- [Architecture Migration Plan](../ARCHITECTURE_MIGRATION_PLAN.md) - Migration status
-- [Plan Directory](../plan/) - Feature plans and ADRs
-- [Docs Archive](archive/) - Historical documentation
-
-### Examples
-
-- [Examples Directory](../examples/) - Sample configurations and tools
-- [Example Configs](../examples/configs/) - Ready-to-use configurations
-
-## Documentation Principles
-
-This documentation follows these principles:
-
-1. **User-Centric** - Organized by what users want to achieve
-2. **Progressive Disclosure** - Start simple, add complexity as needed
-3. **Searchable** - Clear structure, consistent terminology
-4. **Maintained** - Updated with code changes
-5. **Tested** - Examples are verified to work
-
-## Contributing to Documentation
-
-We welcome documentation contributions! When contributing:
+When contributing documentation:
 
 1. Follow the Diátaxis framework structure
 2. Use clear, concise language
-3. Include code examples where applicable
-4. Test all commands and configurations
-5. Update index files when adding new documents
+3. Include tested code examples
+4. Update index files when adding documents
 
 See [Contributing Guide](../CONTRIBUTING.md) for details.
 
 ## Getting Help
 
-- **Questions:** Open a GitHub Discussion
-- **Issues:** Report bugs or feature requests via GitHub Issues
-- **Architecture Questions:** Review [Architecture Documentation](explanation/README.md) first
-- **Usage Help:** Start with [Tutorials](tutorials/) and [How-To Guides](how-to/)
-
-## Documentation Status
-
-**Last Major Update:** December 2025
-
-**Coverage:**
-- ✅ Getting Started Tutorial
-- ✅ CLI Reference
-- ✅ Configuration Reference
-- ✅ Build Report Reference
-- ✅ Comprehensive Architecture Documentation
-- ✅ Package-Level Documentation
-- ✅ Visual Architecture Diagrams
-- ✅ How-To Guides
-- ⏳ Additional tutorials (in progress)
-
-**Feedback:** Documentation feedback is highly appreciated! Please open an issue if you find areas that need improvement.
-
----
+- Questions: Open a GitHub Discussion
+- Issues: Report bugs or feature requests via GitHub Issues
+- Architecture: Review [Architecture Documentation](explanation/README.md)
+- Usage: Start with [Tutorials](tutorials/) and [How-To Guides](how-to/)
