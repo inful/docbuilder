@@ -32,6 +32,7 @@ type Document struct {
 	Repository   string    // Source repository name
 	Forge        string    // Optional forge namespace
 	Section      string    // Documentation section
+	IsSingleRepo bool      // True if this is a single-repository build (skip repo namespace in links)
 	SourceCommit string    // Git commit SHA
 	CommitDate   time.Time // Git commit date
 	SourceURL    string    // Repository URL for edit links
@@ -65,6 +66,7 @@ func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool) *Document {
 		Repository:          file.Repository,
 		Forge:               file.Forge,
 		Section:             file.Section,
+		IsSingleRepo:        isSingleRepo,
 		SourceCommit:        "", // Will be set by repository metadata injector
 		SourceURL:           "", // Will be set by repository metadata injector
 		SourceBranch:        "", // Will be set by repository metadata injector

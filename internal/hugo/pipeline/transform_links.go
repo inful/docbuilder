@@ -13,13 +13,13 @@ func rewriteRelativeLinks(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
 		// Use an iterative approach instead of regex to avoid catastrophic backtracking
 		// This processes the content character-by-character to find valid markdown links
-		doc.Content = rewriteLinksIterative(doc.Content, doc.Repository, doc.Forge, doc.IsIndex, doc.Path)
+		doc.Content = rewriteLinksIterative(doc.Content, doc.Repository, doc.Forge, doc.IsIndex, doc.Path, doc.IsSingleRepo)
 		return nil, nil
 	}
 }
 
 // rewriteLinksIterative processes markdown content iteratively to avoid regex backtracking.
-func rewriteLinksIterative(content, repository, forge string, isIndex bool, docPath string) string {
+func rewriteLinksIterative(content, repository, forge string, isIndex bool, docPath string, isSingleRepo bool) string {
 	var result strings.Builder
 	result.Grow(len(content))
 
@@ -28,7 +28,7 @@ func rewriteLinksIterative(content, repository, forge string, isIndex bool, docP
 		// Check if we're at the start of a potential link
 		if i < len(content)-1 && content[i] == '[' {
 			// Try to process as a link; if successful, advance i and continue
-			if newI, processed := tryProcessLink(content, i, repository, forge, isIndex, docPath, &result); processed {
+			if newI, processed := tryProcessLink(content, i, repository, forge, isIndex, docPath, isSingleRepo, &result); processed {
 				i = newI
 				continue
 			}
@@ -43,7 +43,7 @@ func rewriteLinksIterative(content, repository, forge string, isIndex bool, docP
 
 // tryProcessLink attempts to process a markdown link starting at position i.
 // Returns the new position and whether a link was successfully processed.
-func tryProcessLink(content string, i int, repository, forge string, isIndex bool, docPath string, result *strings.Builder) (int, bool) {
+func tryProcessLink(content string, i int, repository, forge string, isIndex bool, docPath string, isSingleRepo bool, result *strings.Builder) (int, bool) {
 	// Check if it's an image link (preceded by !)
 	isImage := i > 0 && content[i-1] == '!'
 
@@ -80,7 +80,7 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	}
 
 	// Rewrite the relative link
-	newPath := rewriteLinkPath(path, repository, forge, isIndex, docPath)
+	newPath := rewriteLinkPath(path, repository, forge, isIndex, docPath, isSingleRepo)
 	result.WriteByte('[')
 	result.WriteString(text)
 	result.WriteString("](")
@@ -188,7 +188,7 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 }
 
 // rewriteLinkPath rewrites a link path based on the document's context.
-func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath string) string {
+func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath string, isSingleRepo bool) string {
 	// Strip leading ./ from relative paths (e.g., ./api-guide.md -> api-guide.md)
 	path = strings.TrimPrefix(path, "./")
 
@@ -228,12 +228,17 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 			path = strings.TrimPrefix(path, "../")
 		}
 
-		// Prepend repository path
-		if repository != "" {
+		// Prepend repository path (skip if single-repo build)
+		if !isSingleRepo && repository != "" {
 			if forge != "" {
 				path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
 			} else {
 				path = fmt.Sprintf("/%s/%s", repository, path)
+			}
+		} else {
+			// Single-repo mode: ensure leading slash
+			if !strings.HasPrefix(path, "/") {
+				path = "/" + path
 			}
 		}
 		return path + anchor
@@ -242,15 +247,20 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	// For index files, preserve relative links within the same directory
 	if isIndex {
 		// Extract directory from document path
-		docDir := extractDirectory(docPath)
+		docDir := extractDirectory(docPath, isSingleRepo)
 
 		// If link doesn't navigate up (..), keep it relative to current section
 		if !strings.HasPrefix(path, "/") && docDir != "" {
 			// Link is relative to current directory - prepend directory
-			if forge != "" {
-				path = fmt.Sprintf("/%s/%s/%s", forge, repository, docDir+"/"+path)
+			if !isSingleRepo {
+				if forge != "" {
+					path = fmt.Sprintf("/%s/%s/%s", forge, repository, docDir+"/"+path)
+				} else {
+					path = fmt.Sprintf("/%s/%s", repository, docDir+"/"+path)
+				}
 			} else {
-				path = fmt.Sprintf("/%s/%s", repository, docDir+"/"+path)
+				// Single-repo mode: skip repository namespace
+				path = fmt.Sprintf("/%s/%s", docDir, path)
 			}
 			return path + anchor
 		}
@@ -259,8 +269,17 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	// For regular files or absolute paths from index root, prepend repository path
 	if !strings.HasPrefix(path, "/") && repository != "" {
 		// Extract directory from document path for relative link context
-		docDir := extractDirectory(docPath)
-		path = buildFullPath(forge, repository, docDir, path)
+		docDir := extractDirectory(docPath, isSingleRepo)
+		if !isSingleRepo {
+			path = buildFullPath(forge, repository, docDir, path)
+		} else {
+			// Single-repo mode: skip repository namespace
+			if docDir != "" {
+				path = "/" + docDir + "/" + path
+			} else {
+				path = "/" + path
+			}
+		}
 	}
 
 	return path + anchor
@@ -269,7 +288,10 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 // extractDirectory extracts the directory part of a Hugo path.
 // For "repo/section/file.md" returns "section".
 // For "forge/repo/section/file.md" returns "section".
-func extractDirectory(hugoPath string) string {
+// extractDirectory extracts the section/directory path from a Hugo document path.
+// For single-repo builds, all segments except the filename are returned.
+// For multi-repo builds, the repository (and optional forge) segments are stripped first.
+func extractDirectory(hugoPath string, isSingleRepo bool) string {
 	// Remove leading slash if present
 	hugoPath = strings.TrimPrefix(hugoPath, "/")
 
@@ -285,6 +307,11 @@ func extractDirectory(hugoPath string) string {
 
 	// Remove filename (last segment)
 	segments = segments[:len(segments)-1]
+
+	// For single-repo builds, return all remaining segments (no repo/forge to strip)
+	if isSingleRepo {
+		return strings.Join(segments, "/")
+	}
 
 	// Detect forge namespace pattern
 	// Common forge names: gitlab, github, forgejo, gitea (all <= 8 chars)
