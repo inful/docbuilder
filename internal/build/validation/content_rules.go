@@ -23,7 +23,7 @@ func (r ContentIntegrityRule) Validate(ctx context.Context, vctx Context) Result
 	// Check if content directory exists and is a directory
 	contentStat, err := os.Stat(contentDir)
 	if err != nil {
-		return Failure("content directory missing") //nolint:nilerr // convert error into rule failure result
+		return Failure("content directory missing")
 	}
 	if !contentStat.IsDir() {
 		return Failure("content path is not a directory")
@@ -32,7 +32,10 @@ func (r ContentIntegrityRule) Validate(ctx context.Context, vctx Context) Result
 	// Probe for at least one markdown file
 	foundMD := false
 	if werr := filepath.Walk(contentDir, func(_ string, info os.FileInfo, err error) error {
-		if err != nil || foundMD || info == nil {
+		if err != nil {
+			return err
+		}
+		if foundMD || info == nil {
 			return nil
 		}
 		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".md") {
@@ -40,7 +43,7 @@ func (r ContentIntegrityRule) Validate(ctx context.Context, vctx Context) Result
 		}
 		return nil
 	}); werr != nil {
-		return Failure("error scanning content directory: " + werr.Error()) //nolint:nilerr // Convert error to Failure result intentionally
+		return Failure("error scanning content directory: " + werr.Error())
 	}
 
 	if !foundMD {

@@ -141,7 +141,10 @@ func (dm *deltaManager) scanForDeletions(repo config.Repository, workspace strin
 		}
 
 		err := filepath.WalkDir(base, func(p string, d os.DirEntry, werr error) error {
-			if werr != nil || d == nil || d.IsDir() {
+			if werr != nil {
+				return werr
+			}
+			if d == nil || d.IsDir() {
 				return nil
 			}
 

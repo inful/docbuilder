@@ -286,7 +286,7 @@ func handleFileEvent(watcher *fsnotify.Watcher, ev fsnotify.Event, trigger func(
 func addDirsRecursive(w *fsnotify.Watcher, root string) error {
 	return filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if d.IsDir() {
 			if err := w.Add(path); err != nil {

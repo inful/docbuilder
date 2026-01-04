@@ -78,7 +78,10 @@ func computeQuickHash(t *testing.T, repoRoot string) string {
 			continue
 		}
 		if werr := filepath.WalkDir(base, func(p string, d os.DirEntry, err error) error {
-			if err != nil || d == nil || d.IsDir() {
+			if err != nil {
+				return err
+			}
+			if d == nil || d.IsDir() {
 				return nil
 			}
 			name := strings.ToLower(d.Name())
