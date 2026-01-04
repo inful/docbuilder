@@ -152,6 +152,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 			slog.Error("Failed to process repository", "name", repo.Name, "error", err)
 			// Continue with remaining repositories instead of failing
 			repositoriesSkipped++
+
 			continue
 		}
 
