@@ -7,6 +7,42 @@
       },
       "contentHash": "sha256:1990848bd13b3d56"
     },
+    "content/advanced/plugins.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "Plugin System",
+        "type": "docs",
+        "weight": 2
+      },
+      "contentHash": "sha256:e2084f73028fdcf0"
+    },
+    "content/advanced/themes.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "Custom Themes",
+        "type": "docs",
+        "weight": 1
+      },
+      "contentHash": "sha256:e278346a5d790faa"
+    },
+    "content/getting-started/configuration.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "Configuration",
+        "type": "docs",
+        "weight": 2
+      },
+      "contentHash": "sha256:f94b078e68d540a4"
+    },
+    "content/getting-started/installation.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "Installation",
+        "type": "docs",
+        "weight": 1
+      },
+      "contentHash": "sha256:a5a9a6de89e0e05a"
+    },
     "content/section-docs/_index.md": {
       "frontmatter": {
         "repository": "section-docs",
@@ -23,24 +59,6 @@
       },
       "contentHash": "sha256:5092f9dabda898c1"
     },
-    "content/section-docs/advanced/plugins.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "Plugin System",
-        "type": "docs",
-        "weight": 2
-      },
-      "contentHash": "sha256:e2084f73028fdcf0"
-    },
-    "content/section-docs/advanced/themes.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "Custom Themes",
-        "type": "docs",
-        "weight": 1
-      },
-      "contentHash": "sha256:e278346a5d790faa"
-    },
     "content/section-docs/getting-started/_index.md": {
       "frontmatter": {
         "repository": "section-docs",
@@ -48,39 +66,25 @@
         "type": "docs"
       },
       "contentHash": "sha256:4b71e029b87cf014"
-    },
-    "content/section-docs/getting-started/configuration.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "Configuration",
-        "type": "docs",
-        "weight": 2
-      },
-      "contentHash": "sha256:f94b078e68d540a4"
-    },
-    "content/section-docs/getting-started/installation.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "Installation",
-        "type": "docs",
-        "weight": 1
-      },
-      "contentHash": "sha256:a5a9a6de89e0e05a"
     }
   },
   "structure": {
     "_index.md": {},
+    "advanced": {
+      "plugins.md": {},
+      "themes.md": {}
+    },
+    "getting-started": {
+      "configuration.md": {},
+      "installation.md": {}
+    },
     "section-docs": {
       "_index.md": {},
       "advanced": {
-        "_index.md": {},
-        "plugins.md": {},
-        "themes.md": {}
+        "_index.md": {}
       },
       "getting-started": {
-        "_index.md": {},
-        "configuration.md": {},
-        "installation.md": {}
+        "_index.md": {}
       }
     }
   }

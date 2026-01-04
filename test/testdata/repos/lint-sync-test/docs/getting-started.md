@@ -16,5 +16,5 @@ This is a test documentation file to verify that DocBuilder-generated content pa
 
 ## Related Documentation
 
-- See the [API Guide](./api-guide.md) for API reference
-- Check [Configuration](./configuration.md) for setup instructions
+- See the [API Guide](/api-guide) for API reference
+- Check [Configuration](/configuration) for setup instructions

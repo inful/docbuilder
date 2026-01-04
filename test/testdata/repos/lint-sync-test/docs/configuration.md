@@ -23,5 +23,5 @@ DocBuilder generates Hugo sites with appropriate themes.
 
 ## Next Steps
 
-- Start with [Getting Started](./getting-started.md)
-- Explore the [API Guide](./api-guide.md) for integration
+- Start with [Getting Started](/getting-started)
+- Explore the [API Guide](/api-guide) for integration
