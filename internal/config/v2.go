@@ -341,7 +341,7 @@ func IsConfigVersion(configPath string) (bool, error) {
 		Version string `yaml:"version"`
 	}
 
-	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil { //nolint:nilerr // treat parse errors as non-v2 (assume v1) for backward compatibility
+	if err := yaml.Unmarshal([]byte(expandedData), &versionCheck); err != nil {
 		// If it fails to parse, assume v1
 		return false, nil //nolint:nilerr // intentionally swallow parse errors to detect non-v2 configs
 	}

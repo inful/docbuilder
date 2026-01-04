@@ -39,6 +39,7 @@ linters:
     # - mnd
     - modernize
     - nestif
+    - nilerr
     - nilnil
     - noctx
     - nolintlint

@@ -84,7 +84,7 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
 		doc.FrontMatter = make(map[string]any)
-		return nil, nil
+		return nil, nil //nolint:nilerr // Intentionally suppressing YAML parse error to gracefully handle malformed frontmatter
 	}
 
 	doc.HadFrontMatter = true

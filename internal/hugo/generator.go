@@ -91,18 +91,21 @@ func (g *Generator) existingSiteValidForSkip() bool {
 	}
 	publicDir := filepath.Join(g.outputDir, "public")
 	if fi, err := os.Stat(publicDir); err != nil || !fi.IsDir() {
-		return false //nolint:nilerr // readiness treats missing dir as not ready
+		return false
 	}
 	if entries, err := os.ReadDir(publicDir); err != nil || len(entries) == 0 {
-		return false //nolint:nilerr // readiness treats read errors as not ready
+		return false
 	}
 	contentDir := filepath.Join(g.outputDir, "content")
 	if fi, err := os.Stat(contentDir); err != nil || !fi.IsDir() {
-		return false //nolint:nilerr // readiness treats missing content as not ready
+		return false
 	}
 	found := false
 	if werr := filepath.WalkDir(contentDir, func(_ string, d fs.DirEntry, err error) error {
-		if err != nil || found {
+		if err != nil {
+			return err
+		}
+		if found {
 			return nil
 		}
 		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
@@ -110,7 +113,7 @@ func (g *Generator) existingSiteValidForSkip() bool {
 		}
 		return nil
 	}); werr != nil {
-		return false //nolint:nilerr // treat traversal errors as not found for readiness probe
+		return false
 	}
 	return found
 }
