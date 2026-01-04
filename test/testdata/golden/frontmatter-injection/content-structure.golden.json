@@ -7,15 +7,7 @@
       },
       "contentHash": "sha256:c929e1ef4ddd3faf"
     },
-    "content/test-repo/_index.md": {
-      "frontmatter": {
-        "repository": "test-repo",
-        "title": "Test Repo",
-        "type": "docs"
-      },
-      "contentHash": "sha256:014c1ca979f93fb5"
-    },
-    "content/test-repo/metadata.md": {
+    "content/metadata.md": {
       "frontmatter": {
         "description": "Testing repository metadata injection",
         "repository": "test-repo",
@@ -25,7 +17,7 @@
       },
       "contentHash": "sha256:c5ff8a3cd81efe39"
     },
-    "content/test-repo/no-editurl.md": {
+    "content/no-editurl.md": {
       "frontmatter": {
         "description": "This page has no editURL in source front matter",
         "repository": "test-repo",
@@ -33,14 +25,22 @@
         "type": "docs"
       },
       "contentHash": "sha256:52f5f06e661990cf"
+    },
+    "content/test-repo/_index.md": {
+      "frontmatter": {
+        "repository": "test-repo",
+        "title": "Test Repo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:014c1ca979f93fb5"
     }
   },
   "structure": {
     "_index.md": {},
+    "metadata.md": {},
+    "no-editurl.md": {},
     "test-repo": {
-      "_index.md": {},
-      "metadata.md": {},
-      "no-editurl.md": {}
+      "_index.md": {}
     }
   }
 }

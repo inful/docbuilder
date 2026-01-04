@@ -7,15 +7,7 @@
       },
       "contentHash": "sha256:c7e9db45990045b5"
     },
-    "content/unicode-names/_index.md": {
-      "frontmatter": {
-        "repository": "unicode-names",
-        "title": "Unicode Names",
-        "type": "docs"
-      },
-      "contentHash": "sha256:3b97336ff394c3fe"
-    },
-    "content/unicode-names/español.md": {
+    "content/español.md": {
       "frontmatter": {
         "repository": "unicode-names",
         "title": "Documento en Español",
@@ -24,7 +16,15 @@
       },
       "contentHash": "sha256:634a691e06e24834"
     },
-    "content/unicode-names/русский.md": {
+    "content/unicode-names/_index.md": {
+      "frontmatter": {
+        "repository": "unicode-names",
+        "title": "Unicode Names",
+        "type": "docs"
+      },
+      "contentHash": "sha256:3b97336ff394c3fe"
+    },
+    "content/русский.md": {
       "frontmatter": {
         "repository": "unicode-names",
         "title": "Cyrillic Documentation",
@@ -33,7 +33,7 @@
       },
       "contentHash": "sha256:853a6e6a90f8e968"
     },
-    "content/unicode-names/中文.md": {
+    "content/中文.md": {
       "frontmatter": {
         "repository": "unicode-names",
         "title": "Chinese Documentation",
@@ -45,11 +45,11 @@
   },
   "structure": {
     "_index.md": {},
+    "español.md": {},
     "unicode-names": {
-      "_index.md": {},
-      "español.md": {},
-      "русский.md": {},
-      "中文.md": {}
-    }
+      "_index.md": {}
+    },
+    "русский.md": {},
+    "中文.md": {}
   }
 }

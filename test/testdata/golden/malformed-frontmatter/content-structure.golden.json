@@ -7,6 +7,14 @@
       },
       "contentHash": "sha256:2cab0b95e957f0cc"
     },
+    "content/invalid-yaml.md": {
+      "frontmatter": {
+        "repository": "malformed-frontmatter",
+        "title": "invalid-yaml",
+        "type": "docs"
+      },
+      "contentHash": "sha256:b3e5693672701cf9"
+    },
     "content/malformed-frontmatter/_index.md": {
       "frontmatter": {
         "repository": "malformed-frontmatter",
@@ -15,15 +23,7 @@
       },
       "contentHash": "sha256:883cc69c7b6f5722"
     },
-    "content/malformed-frontmatter/invalid-yaml.md": {
-      "frontmatter": {
-        "repository": "malformed-frontmatter",
-        "title": "invalid-yaml",
-        "type": "docs"
-      },
-      "contentHash": "sha256:b3e5693672701cf9"
-    },
-    "content/malformed-frontmatter/valid.md": {
+    "content/valid.md": {
       "frontmatter": {
         "repository": "malformed-frontmatter",
         "title": "Valid Document",
@@ -35,10 +35,10 @@
   },
   "structure": {
     "_index.md": {},
+    "invalid-yaml.md": {},
     "malformed-frontmatter": {
-      "_index.md": {},
-      "invalid-yaml.md": {},
-      "valid.md": {}
-    }
+      "_index.md": {}
+    },
+    "valid.md": {}
   }
 }

@@ -15,7 +15,7 @@
       },
       "contentHash": "sha256:e5a9d59069791d96"
     },
-    "content/image-docs/images-guide.md": {
+    "content/images-guide.md": {
       "frontmatter": {
         "repository": "image-docs",
         "title": "Image Examples",
@@ -28,12 +28,12 @@
   "structure": {
     "_index.md": {},
     "image-docs": {
-      "_index.md": {},
-      "images": {
-        "architecture.svg": {},
-        "logo.png": {}
-      },
-      "images-guide.md": {}
-    }
+      "_index.md": {}
+    },
+    "images": {
+      "architecture.svg": {},
+      "logo.png": {}
+    },
+    "images-guide.md": {}
   }
 }

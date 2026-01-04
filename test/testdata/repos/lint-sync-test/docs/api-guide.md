@@ -18,5 +18,5 @@ The API uses REST principles and returns JSON responses.
 
 ## See Also
 
-- [Getting Started](./getting-started.md) for initial setup
-- [Configuration](./configuration.md) for advanced options
+- [Getting Started](/getting-started) for initial setup
+- [Configuration](/configuration) for advanced options

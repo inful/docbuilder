@@ -6,20 +6,9 @@
         "type": "docs"
       },
       "contentHash": "sha256:7cb57d7d0cde7013"
-    },
-    "content/only-readme/_index.md": {
-      "frontmatter": {
-        "repository": "only-readme",
-        "title": "Only Readme",
-        "type": "docs"
-      },
-      "contentHash": "sha256:050f0dee1d7b2e1c"
     }
   },
   "structure": {
-    "_index.md": {},
-    "only-readme": {
-      "_index.md": {}
-    }
+    "_index.md": {}
   }
 }
