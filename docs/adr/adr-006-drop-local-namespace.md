@@ -188,7 +188,7 @@ Using single-repository detection is architecturally sound and works for all cas
 
 ## References
 
-- [GetHugoPath Implementation](internal/docs/discovery.go)
-- [Preview Command](cmd/docbuilder/commands/preview.go)
-- [Build Command](cmd/docbuilder/commands/build.go)
-- [Golden Test Framework](test/integration/helpers.go)
+- GetHugoPath Implementation: `internal/docs/discovery.go`
+- Preview Command: `cmd/docbuilder/commands/preview.go`
+- Build Command: `cmd/docbuilder/commands/build.go`
+- Golden Test Framework: `test/integration/helpers.go`

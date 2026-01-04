@@ -729,4 +729,4 @@ stateDiagram-v2
 - [Comprehensive Architecture](comprehensive-architecture.md)
 - [Architecture Overview](architecture.md)
 - [Namespacing Rationale](namespacing-rationale.md)
-- [Architecture Migration Plan](../../ARCHITECTURE_MIGRATION_PLAN.md)
+- [Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md) - Completed

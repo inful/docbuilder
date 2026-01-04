@@ -139,7 +139,7 @@ Welcome to the DocBuilder documentation! This documentation follows the [Diátax
 
 ### Architecture & Planning
 
-- [Architecture Migration Plan](../ARCHITECTURE_MIGRATION_PLAN.md) - Migration status
+- [Architecture Migration Plan (2025)](archive/architecture-migration-plan-2025.md) - Completed migration history
 - [Plan Directory](../plan/) - Feature plans and ADRs
 - [Docs Archive](archive/) - Historical documentation
 

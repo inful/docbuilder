@@ -940,14 +940,14 @@ Register with event store.
 
 See `docs/adr/` for detailed architectural decisions:
 
-- [ADR-000: Uniform Error Handling](../adr/ADR-000-uniform-error-handling.md)
+- [ADR-000: Uniform Error Handling](../adr/adr-000-uniform-error-handling.md)
 - [ADR-001: Forge Integration Daemon](../../plan/adr-001-forge-integration-daemon.md)
 
 ---
 
 ## Migration Status
 
-The architecture has undergone significant evolution. See `ARCHITECTURE_MIGRATION_PLAN.md` for:
+The architecture has undergone significant evolution. See [Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md) for historical details:
 
 - 19 completed phases (A-M, O-P, R-S-T-U)
 - 2 deferred phases (Q, J)
