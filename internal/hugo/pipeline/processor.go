@@ -35,7 +35,7 @@ func NewProcessor(cfg *config.Config) *Processor {
 // 2. Transformation - Process all documents (discovered + generated)
 //
 // Returns processed documents ready for Hugo site generation.
-func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[string]RepositoryInfo) ([]*Document, error) {
+func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[string]RepositoryInfo, isSingleRepo bool) ([]*Document, error) {
 	// Inject repository metadata (URL, commit) into discovered documents
 	// This must happen before generation/transformation so edit links work correctly
 	for _, doc := range documents {
@@ -56,6 +56,7 @@ func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[strin
 		Discovered:         documents,
 		Config:             p.config,
 		RepositoryMetadata: repoMetadata,
+		IsSingleRepo:       isSingleRepo,
 	}
 
 	var generated []*Document

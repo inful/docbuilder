@@ -81,7 +81,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 
 	// Create and run pipeline processor
 	processor := pipeline.NewProcessor(g.config)
-	processedDocs, err := processor.ProcessContent(discovered, repoMetadata)
+	processedDocs, err := processor.ProcessContent(discovered, repoMetadata, isSingleRepo)
 	if err != nil {
 		return fmt.Errorf("%w: pipeline processing failed: %w",
 			herrors.ErrContentTransformFailed, err)

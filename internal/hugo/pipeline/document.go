@@ -117,6 +117,10 @@ type GenerationContext struct {
 	// RepositoryMetadata maps repository name to metadata (commit, URL, etc.)
 	// Populated during discovery phase
 	RepositoryMetadata map[string]RepositoryInfo
+
+	// IsSingleRepo indicates if this is a single-repository build
+	// When true, repository namespaces are omitted from paths
+	IsSingleRepo bool
 }
 
 // RepositoryInfo contains metadata about a repository for use in generation.
