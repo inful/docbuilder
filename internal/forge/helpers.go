@@ -12,7 +12,7 @@ import (
 
 // newHTTPClient30s returns a shared HTTP client with a 30s timeout.
 // The client respects HTTP_PROXY, HTTPS_PROXY, and NO_PROXY environment variables.
-func newHTTPClient30s() *http.Client { //nolint:ireturn // returning concrete *http.Client is intentional; callers need full API
+func newHTTPClient30s() *http.Client {
 	return &http.Client{
 		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
