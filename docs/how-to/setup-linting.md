@@ -1,5 +1,4 @@
 ---
-title: "How To: Setup Documentation Linting"
 date: 2025-12-29
 categories:
   - how-to

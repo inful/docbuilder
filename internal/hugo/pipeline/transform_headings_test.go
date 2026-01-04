@@ -295,7 +295,7 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		assert.NotContains(t, doc.Content, "# Welcome")
 	})
 
-	t.Run("preserves H1 when no match", func(t *testing.T) {
+	t.Run("strips H1 when title exists (regardless of match)", func(t *testing.T) {
 		doc := &Document{
 			Content: "# Different\n\nContent here.",
 			FrontMatter: map[string]any{
@@ -306,11 +306,12 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		_, err := stripHeading(doc)
 		require.NoError(t, err)
 
-		assert.Equal(t, "# Different\n\nContent here.", doc.Content)
-		assert.Contains(t, doc.Content, "# Different")
+		// New behavior: strips H1 whenever title exists in frontmatter
+		assert.Equal(t, "\nContent here.", doc.Content)
+		assert.NotContains(t, doc.Content, "# Different")
 	})
 
-	t.Run("handles whitespace in comparison", func(t *testing.T) {
+	t.Run("handles whitespace in H1", func(t *testing.T) {
 		doc := &Document{
 			Content: "#   Welcome   \n\nContent.",
 			FrontMatter: map[string]any{
@@ -321,11 +322,11 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		_, err := stripHeading(doc)
 		require.NoError(t, err)
 
-		// Should strip because trimmed values match
+		// Should strip H1 since title exists
 		assert.NotContains(t, doc.Content, "# Welcome")
 	})
 
-	t.Run("strips H1 when it starts with title (partial match)", func(t *testing.T) {
+	t.Run("strips H1 regardless of content", func(t *testing.T) {
 		doc := &Document{
 			Content: "# ADR-000: Uniform Error Handling Across DocBuilder\n\nContent here.",
 			FrontMatter: map[string]any{
@@ -336,12 +337,12 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		_, err := stripHeading(doc)
 		require.NoError(t, err)
 
-		// Should strip because H1 starts with front matter title
+		// Should strip H1 since title exists (no longer requires partial match)
 		assert.NotContains(t, doc.Content, "# ADR-000")
 		assert.Contains(t, doc.Content, "Content here.")
 	})
 
-	t.Run("case-insensitive partial match", func(t *testing.T) {
+	t.Run("strips any H1 when title exists", func(t *testing.T) {
 		doc := &Document{
 			Content: "# Getting Started with DocBuilder\n\nContent.",
 			FrontMatter: map[string]any{
@@ -352,7 +353,7 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		_, err := stripHeading(doc)
 		require.NoError(t, err)
 
-		// Should strip because H1 starts with title (case-insensitive)
+		// Should strip H1 since title exists
 		assert.NotContains(t, doc.Content, "# Getting Started")
 	})
 }

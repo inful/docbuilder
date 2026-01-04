@@ -31,7 +31,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:decaeb238c96f7cc"
+      "contentHash": "sha256:79c50e4cd600c2c2"
     },
     "content/frontend/_index.md": {
       "frontmatter": {
@@ -48,7 +48,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:aaa1591f9eb05c8c"
+      "contentHash": "sha256:9c9b5b33be6a328c"
     },
     "content/frontend/setup.md": {
       "frontmatter": {

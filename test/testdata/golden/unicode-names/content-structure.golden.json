@@ -14,7 +14,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:634a691e06e24834"
+      "contentHash": "sha256:7b7f76f7f12d2867"
     },
     "content/русский.md": {
       "frontmatter": {
@@ -23,7 +23,7 @@
         "type": "docs",
         "weight": 3
       },
-      "contentHash": "sha256:853a6e6a90f8e968"
+      "contentHash": "sha256:12289332be97cd2e"
     },
     "content/中文.md": {
       "frontmatter": {
@@ -32,7 +32,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:86bdd44dcce1bb9d"
+      "contentHash": "sha256:5013337cc0e9b426"
     }
   },
   "structure": {

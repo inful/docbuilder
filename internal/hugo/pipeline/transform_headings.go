@@ -75,32 +75,28 @@ func extractH1AsTitle(doc *Document) ([]*Document, error) {
 	return nil, nil
 }
 
-// stripHeading removes the first H1 heading from content if appropriate.
-// Only strips if H1 matches the title in front matter.
+// stripHeading removes the first H1 heading from content when a title exists in frontmatter.
+// Rules:
+// - If title exists in frontmatter → strip first H1 at start of content (if present)
+// - This works in conjunction with extractH1AsTitle which extracts H1 as title when needed
 func stripHeading(doc *Document) ([]*Document, error) {
-	// Check if we have a title in front matter
-	title, hasTitle := doc.FrontMatter["title"].(string)
+	// Only strip if we have a title in frontmatter
+	_, hasTitle := doc.FrontMatter["title"].(string)
 	if !hasTitle {
 		return nil, nil
 	}
 
-	// Pattern to match H1 heading
+	// Pattern to match H1 heading at start of content
 	h1Pattern := regexp.MustCompile(`(?m)^# (.+)\n?`)
-	matches := h1Pattern.FindStringSubmatch(doc.Content)
-	if matches == nil {
-		return nil, nil // No H1 found
-	}
-
-	h1Title := strings.TrimSpace(matches[1])
-	fmTitle := strings.TrimSpace(title)
-
-	// Strip if H1 matches front matter title (exact or case-insensitive match)
-	// or if H1 starts with the front matter title (common pattern: title + additional context)
-	h1Lower := strings.ToLower(h1Title)
-	fmLower := strings.ToLower(fmTitle)
-
-	if h1Lower == fmLower || strings.HasPrefix(h1Lower, fmLower) {
-		doc.Content = h1Pattern.ReplaceAllString(doc.Content, "")
+	
+	// Check if H1 is at the start of content (no text before it)
+	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
+	if matches != nil {
+		textBeforeH1 := strings.TrimSpace(doc.Content[:matches[0]])
+		if textBeforeH1 == "" {
+			// Strip the first H1 since we have a title in frontmatter
+			doc.Content = h1Pattern.ReplaceAllString(doc.Content, "")
+		}
 	}
 
 	return nil, nil
