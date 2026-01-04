@@ -31,7 +31,7 @@ hugo:
   title: "Documentation Hub (Dev)"
   description: "Development documentation site"
   base_url: "http://localhost:8080/"
-  theme: hextra
+  theme: relearn
   params:
     page:
       width: full

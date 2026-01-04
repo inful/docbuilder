@@ -19,11 +19,11 @@ test/
 └── testdata/
     ├── repos/           # Source repository structures
     │   └── themes/
-    │       └── hextra-basic/  # Test repository
+    │       └── relearn-basic/  # Test repository
     ├── configs/         # Test configurations
-    │   └── hextra-basic.yaml
+    │   └── relearn-basic.yaml
     └── golden/          # Verified output snapshots
-        └── hextra-basic/
+        └── relearn-basic/
             ├── hugo-config.golden.yaml        # Hugo configuration
             └── content-structure.golden.json  # Content files + front matter
 ```
@@ -35,7 +35,7 @@ test/
 go test ./test/integration
 
 # Run specific test
-go test ./test/integration -run TestGolden_HextraBasic
+go test ./test/integration -run TestGolden_RelearnBasic
 
 # Skip in short mode (for quick test runs)
 go test -short ./...
@@ -53,7 +53,7 @@ When you intentionally change the output (e.g., adding new features or fixing bu
 go test ./test/integration -update-golden
 
 # Update specific test
-go test ./test/integration -run TestGolden_HextraBasic -update-golden
+go test ./test/integration -run TestGolden_RelearnBasic -update-golden
 ```
 
 **Important**: Always review the diff before committing updated golden files!
@@ -90,7 +90,7 @@ repositories:
 
 hugo:
   title: My Feature Test
-  theme: hextra
+  theme: relearn
   # ... other config
 
 output:
@@ -219,7 +219,7 @@ Add normalization in `helpers.go` if needed.
 
 Ensure paths are relative to the test file location:
 ```go
-setupTestRepo(t, "../../test/testdata/repos/themes/hextra-basic")
+setupTestRepo(t, "../../test/testdata/repos/themes/relearn-basic")
 ```
 
 ## CI Integration

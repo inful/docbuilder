@@ -121,7 +121,7 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		}
 	}
 
-	// Set type=docs for Hextra theme
+	// Set type=docs for Relearn theme (ensures proper layout)
 	if _, hasType := doc.FrontMatter["type"]; !hasType {
 		doc.FrontMatter["type"] = "docs"
 	}

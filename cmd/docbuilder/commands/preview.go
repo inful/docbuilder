@@ -18,7 +18,6 @@ const configVersion = "2.0"
 type PreviewCmd struct {
 	DocsDir        string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory to watch."`
 	OutputDir      string `short:"o" name:"output" default:"" help:"Output directory for the generated site (defaults to temp)."`
-	Theme          string `name:"theme" default:"relearn" help:"Hugo theme to use (hextra, docsy, or relearn)."`
 	Title          string `name:"title" default:"Local Preview" help:"Site title."`
 	BaseURL        string `name:"base-url" default:"http://localhost:1316" help:"Base URL used in Hugo config."`
 	Port           int    `name:"port" default:"1316" help:"Docs server port."`

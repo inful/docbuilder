@@ -89,7 +89,7 @@ Registration occurs in `init()` via `transforms.Register(t)`. The registry produ
 | enrich | edit_link_injector_v2 | Adds `editURL` with set-if-missing semantics using **centralized resolver** & **capability-gated** theme detection |
 | merge | front_matter_merge | Apply ordered patches into merged map |
 | transform | relative_link_rewriter | Rewrite intra-repo markdown links to Hugo-friendly paths (strip .md) |
-| finalize | strip_first_heading, shortcode_escaper, hextra_type_enforcer | Post-process content |
+| finalize | strip_first_heading, shortcode_escaper, relearn_type_enforcer | Post-process content |
 | serialize | front_matter_serialize | Serialize merged front matter + body |
 
 Why split builder and edit link? Decoupling eliminates implicit coupling between title/metadata generation and theme-specific edit link logic, enabling future themes to provide alternative edit URL policies or disable them entirely via transform filters.**Edit Link Generation (Post-Consolidation)**: Edit links are now generated exclusively through `hugo.EditLinkResolver` which centralizes path normalization, forge type detection, and theme capability checking. The previous `fmcore.ResolveEditLink` function has been removed. This ensures consistent behavior and eliminates the risk of `docs/docs/` path duplication. Theme capability flags (`ThemeCapabilities.WantsPerPageEditLinks`) and forge capability flags (`ForgeCapabilities.SupportsEditLinks`) gate edit link injection at the transform level.

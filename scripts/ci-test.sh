@@ -51,7 +51,7 @@ test_docker_integration() {
 hugo:
   title: "CI Test Docs"
   baseURL: "https://test.example.com"
-  theme: hextra
+  theme: relearn
   
 repositories:
   - url: https://github.com/alecthomas/kong.git

@@ -10,7 +10,7 @@ hugo:
   title: "Malformed Front Matter Test"
   description: "Testing graceful handling of invalid YAML in front matter"
   base_url: "http://localhost:1313"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

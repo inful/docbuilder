@@ -201,7 +201,7 @@ hugo:
   title: "Company Documentation Portal"
   description: "Aggregated documentation from all engineering projects"
   base_url: "https://docs.company.com"
-  theme: "hextra"
+  theme: "relearn"
   
 monitoring:
   metrics:

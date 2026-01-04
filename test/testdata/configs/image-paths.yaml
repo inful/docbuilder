@@ -10,7 +10,7 @@ hugo:
   title: "Image Path Testing"
   description: "Testing asset path handling and transformations"
   base_url: "http://localhost"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

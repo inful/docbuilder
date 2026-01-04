@@ -26,7 +26,7 @@ hugo:
   title: "Documentation Hub"
   description: "Aggregated documentation from GitLab repositories"
   base_url: "http://localhost:8080/"
-  theme: hextra
+  theme: relearn
 
 output:
   directory: "/tmp/site"

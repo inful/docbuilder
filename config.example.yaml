@@ -32,9 +32,9 @@ hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"
   base_url: "https://docs.example.com"
-  theme: "hextra"
+  theme: "relearn"
   
-  # Optional: Enable smooth page transitions (Hextra theme only)
+  # Optional: Enable smooth page transitions
   # enable_page_transitions: true
   
   params:

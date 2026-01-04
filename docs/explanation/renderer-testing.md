@@ -217,7 +217,7 @@ Verify render_mode is not "never"
 func TestExampleFeature(t *testing.T) {
     // Setup
     cfg := &config.Config{}
-    cfg.Hugo.Theme = "hextra"
+    cfg.Hugo.Theme = "relearn"
     cfg.Build.RenderMode = "always"
     
     dir := t.TempDir()

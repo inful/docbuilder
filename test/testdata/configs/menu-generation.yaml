@@ -10,7 +10,7 @@ hugo:
   title: "Menu Generation Testing"
   description: "Testing automatic menu generation from front matter"
   base_url: "http://localhost"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

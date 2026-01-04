@@ -274,7 +274,7 @@ func TestResolver(t *testing.T) {
 		}
 	})
 
-	t.Run("Returns empty for non-Hextra theme", func(t *testing.T) {
+	t.Run("Returns empty for themes with no edit link", func(t *testing.T) {
 		resolver := NewResolver()
 
 		cfg := &config.Config{
@@ -286,7 +286,7 @@ func TestResolver(t *testing.T) {
 		result := resolver.Resolve(file, cfg)
 
 		if result != "" {
-			t.Errorf("expected empty result for non-Hextra theme, got %s", result)
+			t.Errorf("expected empty result for themes with no edit link, got %s", result)
 		}
 	})
 

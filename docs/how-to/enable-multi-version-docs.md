@@ -171,7 +171,7 @@ versioning:
   
 hugo:
   title: "API Documentation"
-  theme: hextra
+  theme: relearn
   params:
     version_menu: true
 
@@ -267,32 +267,15 @@ versioning:
 
 ## Theme Integration
 
-### Hextra Theme
+### Relearn Theme
 
-Hextra automatically detects version metadata:
-
-```yaml
-hugo:
-  theme: hextra
-  params:
-    navbar:
-      version_dropdown: true
-```
-
-### Docsy Theme
-
-Docsy requires version configuration:
+The Relearn theme automatically detects version metadata and displays it in the navigation:
 
 ```yaml
 hugo:
-  theme: docsy
+  theme: relearn
   params:
-    version_menu: "v2.0.0"
-    versions:
-      - version: "v2.0.0"
-        url: "https://docs.example.com/"
-      - version: "v1.0.0"
-        url: "https://v1.docs.example.com/"
+    version_menu: true
 ```
 
 ## Default Version

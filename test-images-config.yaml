@@ -30,7 +30,7 @@ hugo:
   title: "Test Docs with Images"
   description: "Testing asset discovery and copying"
   base_url: "http://localhost:8080/"
-  theme: hextra
+  theme: relearn
 
 output:
   directory: "./test-site"

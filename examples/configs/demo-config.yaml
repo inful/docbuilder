@@ -48,7 +48,7 @@ versioning:
   tag_patterns: [v*.*.*]
   max_versions_per_repo: 10
 hugo:
-  theme: hextra
+  theme: relearn
   base_url: https://docs.company.com
   title: Company Documentation Portal
   description: Aggregated documentation from all engineering projects

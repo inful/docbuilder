@@ -5,10 +5,10 @@ repositories:
     branch: main
     paths: [docs]
 hugo:
-  title: 'Hextra Test Documentation'
-  description: 'Testing DocBuilder with Hextra theme using a local repo'
+  title: 'Relearn Test Documentation'
+  description: 'Testing DocBuilder with Relearn theme using a local repo'
   base_url: 'http://localhost:1316'
-  theme: 'hextra'
+  theme: 'relearn'
 output:
-  directory: './hextra-site'
+  directory: './relearn-site'
   clean: true

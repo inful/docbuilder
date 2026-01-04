@@ -10,7 +10,7 @@ hugo:
   title: "Empty Docs Test"
   description: "Testing repository with no markdown files"
   base_url: "http://localhost:1313"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

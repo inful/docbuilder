@@ -27,7 +27,7 @@ data:
       title: "Documentation Site"
       description: "Aggregated documentation from multiple repositories"
       base_url: "https://docs.example.com"
-      theme: "hextra"
+      theme: "relearn"
       params:
         navbar:
           displayTitle: true

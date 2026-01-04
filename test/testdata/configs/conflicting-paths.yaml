@@ -14,7 +14,7 @@ hugo:
   title: "Conflicting Paths Test"
   description: "Testing handling of same-named files from different repos"
   base_url: "http://localhost"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"
