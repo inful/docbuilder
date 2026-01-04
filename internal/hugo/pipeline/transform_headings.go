@@ -78,7 +78,7 @@ func extractH1AsTitle(doc *Document) ([]*Document, error) {
 // stripHeading removes the first H1 heading from content when a title exists in frontmatter.
 // Rules:
 // - If title exists in frontmatter → strip first H1 at start of content (if present)
-// - This works in conjunction with extractH1AsTitle which extracts H1 as title when needed
+// - This works in conjunction with extractH1AsTitle which extracts H1 as title when needed.
 func stripHeading(doc *Document) ([]*Document, error) {
 	// Only strip if we have a title in frontmatter
 	_, hasTitle := doc.FrontMatter["title"].(string)
