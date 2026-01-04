@@ -224,7 +224,7 @@ func (g *Generator) removeOldBackup(prev string) {
 			return nil
 		})
 		if err := os.RemoveAll(prev); err != nil {
-			slog.Warn("Failed to remove previous backup", logfields.Path(prev), "error", err)
+			slog.Warn("Failed to remove previous backup", logfields.Path(prev), logfields.Error(err))
 			// Continue anyway - rename will fail if prev still exists
 		}
 	}

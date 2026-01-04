@@ -123,7 +123,7 @@ func (g *Generator) sanitizeGoMod(goModPath string, lines []string) error {
 		return g.ensureThemeVersionRequires(goModPath)
 	}
 
-	slog.Debug("Rewrote go.mod with sanitized module name", logfields.Path(goModPath), "module", sanitized)
+	slog.Debug("Rewrote go.mod with sanitized module name", logfields.Path(goModPath), slog.String("module", sanitized))
 	return g.ensureThemeVersionRequires(goModPath)
 }
 

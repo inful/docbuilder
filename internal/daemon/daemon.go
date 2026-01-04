@@ -212,7 +212,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		if err != nil {
 			slog.Warn("Failed to initialize link verification service",
 				logfields.Error(err),
-				"enabled", false)
+				slog.Bool("enabled", false))
 		} else {
 			daemon.linkVerifier = linkVerifier
 			slog.Info("Link verification service initialized",
@@ -818,9 +818,9 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 
 	slog.Info("Webhook build triggered",
 		logfields.JobID(jobID),
-		"repo", repoFullName,
-		"branch", branch,
-		"target_count", len(targetRepos))
+		slog.String("repo", repoFullName),
+		slog.String("branch", branch),
+		slog.Int("target_count", len(targetRepos)))
 
 	atomic.AddInt32(&d.queueLength, 1)
 	return jobID
