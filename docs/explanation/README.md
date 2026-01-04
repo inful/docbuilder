@@ -134,7 +134,7 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 
 The architecture has undergone significant evolution documented in:
 
-- **[Architecture Migration Plan](../../ARCHITECTURE_MIGRATION_PLAN.md)**
+- **[Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md)** - Completed
   - 19 completed phases (A-M, O-P, R-S-T-U)
   - 2 deferred phases (Q, J)
   - ~1,290 lines eliminated

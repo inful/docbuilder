@@ -81,7 +81,6 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			// Check that the build process started correctly
 			if !strings.Contains(result.Stdout, "Starting DocBuilder build") {
 				t.Errorf("Expected output to contain 'Starting DocBuilder build', got: %s", result.Stdout)
-
 				return &testutils.TestResult{Success: false}
 			}
 
@@ -91,7 +90,6 @@ func TestRefactoredCLIFramework(t *testing.T) {
 				// If it failed, check it was due to repository issues (expected in test)
 				if !strings.Contains(result.Stderr, "repository not found") && !strings.Contains(result.Stderr, "clone not found") {
 					t.Errorf("Build failed with unexpected error: %s", result.Stderr)
-
 					return &testutils.TestResult{Success: false}
 				}
 			} else {
