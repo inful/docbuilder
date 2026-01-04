@@ -33,7 +33,6 @@ linters:
     - govet
     - ineffassign
     - intrange
-    - ireturn
     - makezero
     - mirror
     - misspell
@@ -59,31 +58,6 @@ linters:
     - usestdlibvars
     - whitespace
   settings:
-    ireturn:
-      allow:
-        - anon
-        - error
-        - empty
-        - stdlib
-        - generic
-        # Allow common go-git interfaces
-        - github.com/go-git/go-git/v5/plumbing/transport.AuthMethod
-        # Allow internal project interfaces for dependency injection
-        - git.home.luguber.info/inful/docbuilder/internal/forge.Client
-        - git.home.luguber.info/inful/docbuilder/internal/hugo.RepoFetcher
-        - git.home.luguber.info/inful/docbuilder/internal/hugo/commands.StageCommand
-        - git.home.luguber.info/inful/docbuilder/internal/hugo/models.TypedTransformer
-        - git.home.luguber.info/inful/docbuilder/internal/hugo/models.ConfigProvider
-        - git.home.luguber.info/inful/docbuilder/internal/hugo/models.EditLinkResolver
-        - git.home.luguber.info/inful/docbuilder/internal/lint.Formatter
-        - git.home.luguber.info/inful/docbuilder/internal/metrics.Recorder
-        - git.home.luguber.info/inful/docbuilder/internal/state.Store
-        - git.home.luguber.info/inful/docbuilder/internal/state.RepositoryStore
-        - git.home.luguber.info/inful/docbuilder/internal/state.BuildStore
-        - git.home.luguber.info/inful/docbuilder/internal/state.ScheduleStore
-        - git.home.luguber.info/inful/docbuilder/internal/state.StatisticsStore
-        - git.home.luguber.info/inful/docbuilder/internal/state.ConfigurationStore
-        - git.home.luguber.info/inful/docbuilder/internal/state.DaemonInfoStore
     tagalign:
       sort: true
       strict: false
