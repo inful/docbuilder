@@ -22,7 +22,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:02280225471b7e82"
+      "contentHash": "sha256:937e5e7697e41af0"
     },
     "content/repo-a/setup.md": {
       "frontmatter": {
@@ -31,7 +31,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:e7e8c48346368604"
+      "contentHash": "sha256:c20c5e7aac1b3dbc"
     },
     "content/repo-b/_index.md": {
       "frontmatter": {
@@ -48,7 +48,7 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:fe9452767998c148"
+      "contentHash": "sha256:c7b25d5a416d8757"
     },
     "content/repo-b/tutorial.md": {
       "frontmatter": {
@@ -57,7 +57,7 @@
         "type": "docs",
         "weight": 2
       },
-      "contentHash": "sha256:7b5a454ceb451a0c"
+      "contentHash": "sha256:d67a0780103272e0"
     }
   },
   "structure": {
