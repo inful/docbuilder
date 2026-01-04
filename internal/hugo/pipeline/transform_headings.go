@@ -76,8 +76,12 @@ func stripHeading(doc *Document) ([]*Document, error) {
 	h1Title := strings.TrimSpace(matches[1])
 	fmTitle := strings.TrimSpace(title)
 
-	// Only strip if H1 matches front matter title
-	if h1Title == fmTitle {
+	// Strip if H1 matches front matter title (exact or case-insensitive match)
+	// or if H1 starts with the front matter title (common pattern: title + additional context)
+	h1Lower := strings.ToLower(h1Title)
+	fmLower := strings.ToLower(fmTitle)
+	
+	if h1Lower == fmLower || strings.HasPrefix(h1Lower, fmLower) {
 		doc.Content = h1Pattern.ReplaceAllString(doc.Content, "")
 	}
 
