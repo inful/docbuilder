@@ -156,9 +156,7 @@ The implementation uses the browser's native View Transitions API with a simple 
 
 This tells the browser to automatically handle cross-document page transitions without any JavaScript intervention. The browser manages the DOM updates, preserving all event handlers and script contexts, which is why interactive elements continue to work correctly.
 
-For more information, see:
-- [Lincoln Loop Blog: View Transitions with Hugo](https://lincolnloop.com/blog/view-transitions-with-hugo/)
-- [MDN: View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
+For more information: [MDN: View Transitions API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
 
 ## See Also
 

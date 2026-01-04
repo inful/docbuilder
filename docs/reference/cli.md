@@ -11,61 +11,193 @@ tags:
 
 # CLI Reference
 
-Primary commands (Kong-based CLI):
+DocBuilder provides a unified command-line interface for building documentation sites from Git repositories.
+
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `build` | Run full pipeline (clone → discover → generate config → copy content → indexes → (optional) Hugo run). |
-| `init` | Create an example configuration file. |
-| `discover` | (If present) Run discovery only (debug content paths). |
-| `daemon` | Run long-lived service (if implemented in current codebase). |
+| `build` | Build documentation site from repositories or local directory |
+| `init` | Create example configuration file |
+| `discover` | List documentation files found in repositories (debugging) |
+| `lint` | Check documentation for errors and style issues |
+| `daemon` | Run continuous documentation server with webhooks |
+| `preview` | Preview local documentation with live reload |
 
-## Global Flags (Common)
+## Global Flags
 
-| Flag | Purpose |
-|------|---------|
-| `-c, --config` | Path to YAML config file. |
-| `-v` | Verbose logging. |
-| `--version` | Print version/build info. |
+| Flag | Description |
+|------|-------------|
+| `-c, --config PATH` | Configuration file (default: `config.yaml`) |
+| `-v, --verbose` | Enable verbose logging |
+| `--version` | Show version and exit |
 
-## Environment Variables (Behavior Modifiers)
+## Build Command
 
-| Variable | Effect |
-|----------|--------|
-| `--render-mode always` | Force running Hugo after scaffolding. |
-| `--render-mode never` | Force skipping Hugo even when enabled in config. |
+Build documentation from configured repositories.
 
-## Build Report Outputs
+### Syntax
 
-Generated in output directory:
+```bash
+docbuilder build [flags]
+```
 
-- `build-report.json` — machine-readable summary (contains `doc_files_hash`).
-- `build-report.txt` — human summary line.
+### Flags
 
-Key JSON fields:
+| Flag | Description |
+|------|-------------|
+| `-o, --output DIR` | Output directory (default: `./site`) |
+| `-i, --incremental` | Use incremental updates (skip unchanged repos) |
+| `--render-mode MODE` | Override Hugo rendering: `auto`, `always`, `never` |
+| `-d, --docs-dir DIR` | Local docs directory when no config provided (default: `./docs`) |
+| `--title TEXT` | Site title for local mode (default: `"Documentation"`) |
+| `--base-url URL` | Override Hugo base_url |
+| `--relocatable` | Generate fully relocatable site (relative links) |
+| `--keep-workspace` | Keep workspace directories for debugging |
 
-| Field | Meaning |
-|-------|---------|
-| `repositories` | Number of repositories that produced at least one doc file. |
-| `files` | Number of discovered documentation files. |
-| `outcome` | Final build result. One of: `success`, `warning`, `failed`, `canceled`. |
-| `cloned_repositories` | Successfully cloned or updated repos. |
-| `failed_repositories` | Repos that failed clone/auth. |
-| `rendered_pages` | Markdown files written to content directory. |
-| `static_rendered` | True if Hugo was run and succeeded. |
-| `doc_files_hash` | Stable fingerprint of doc file set. |
-| `issues[]` | Structured issue entries (code, stage, severity, message, transient). |
+### Examples
+
+```bash
+# Build from config file
+docbuilder build -c config.yaml
+
+# Build with verbose output
+docbuilder build -v
+
+# Build without running Hugo
+docbuilder build --render-mode=never
+
+# Build local docs without config
+docbuilder build -d ./docs -o ./site
+
+# Incremental build (skip unchanged repos)
+docbuilder build -i
+```
+
+## Init Command
+
+Create example configuration file.
+
+```bash
+docbuilder init [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-c, --config FILE` | Output filename (default: `config.yaml`) |
+
+## Discover Command
+
+List documentation files found in repositories (for debugging).
+
+```bash
+docbuilder discover [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-r, --repository NAME` | Discover specific repository only |
+
+## Lint Command
+
+Check documentation for errors and style issues.
+
+```bash
+docbuilder lint [PATH] [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-f, --format FORMAT` | Output format: `text` or `json` (default: `text`) |
+| `-q, --quiet` | Show only errors, suppress warnings |
+| `--fix` | Automatically fix issues (requires confirmation) |
+| `--dry-run` | Show what would be fixed without applying changes |
+| `-y, --yes` | Auto-confirm fixes (for CI/CD) |
+
+### Examples
+
+```bash
+# Lint current directory
+docbuilder lint
+
+# Lint specific path
+docbuilder lint docs/
+
+# Fix issues automatically (with confirmation)
+docbuilder lint --fix
+
+# CI mode: fix without confirmation
+docbuilder lint --fix -y
+
+# Show JSON output for CI integration
+docbuilder lint -f json
+```
+
+## Daemon Command
+
+Run continuous documentation server with webhook support.
+
+```bash
+docbuilder daemon [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-d, --data-dir DIR` | Data directory for daemon state (default: `./daemon-data`) |
+
+## Preview Command
+
+Preview local documentation with live reload.
+
+```bash
+docbuilder preview [flags]
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-d, --docs-dir DIR` | Documentation directory to watch (default: `./docs`) |
+| `-o, --output DIR` | Hugo site directory (default: `./site`) |
+| `-p, --port PORT` | Server port (default: 1313) |
+| `--no-livereload` | Disable live reload |
+
+## Build Report
+
+Generated in output directory after `build` command:
+
+- `build-report.json` - Machine-readable build summary
+- `build-report.txt` - Human-readable one-line summary
+
+### JSON Fields
+
+| Field | Description |
+|-------|-------------|
+| `repositories` | Number of repositories with documentation |
+| `files` | Total documentation files discovered |
+| `outcome` | Build result: `success`, `warning`, `failed`, `canceled` |
+| `cloned_repositories` | Successfully cloned repositories |
+| `failed_repositories` | Repositories that failed to clone |
+| `rendered_pages` | Markdown files copied to Hugo content directory |
+| `static_rendered` | True if Hugo rendering succeeded |
+| `doc_files_hash` | SHA-256 fingerprint of documentation file set |
+| `issues[]` | Structured issues (code, stage, severity, message) |
 
 ## Exit Codes
 
-| Condition | Exit Code |
-|-----------|-----------|
-| Success | 0 |
-| Fatal error | Non-zero (varies by underlying error path) |
-| Canceled (context) | Non-zero |
-
-## Logging Highlights
-
-- Clone stage logs per-repo successes/failures and update method (fast-forward vs already up-to-date).
-- Discovery stage logs unchanged doc set when identical to prior run (and repository heads unchanged).
-- Early exit path logs when entire pipeline is skipped due to no changes and valid prior output.
+| Exit Code | Meaning |
+|-----------|---------|
+| 0 | Success |
+| 2 | Configuration or validation error |
+| 10 | Authentication error |
+| 11 | Git operation error |
+| 20 | Network error (retryable) |
+| 1 | Other error |

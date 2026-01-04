@@ -1,9 +1,3 @@
----
-title: "PR Comment Integration Examples"
-description: "Examples for integrating DocBuilder lint results into pull request comments across different platforms"
-weight: 50
----
-
 # PR Comment Integration Examples
 
 This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.

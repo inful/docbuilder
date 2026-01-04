@@ -5,148 +5,88 @@ categories:
   - documentation
 tags:
   - overview
-  - getting-started
 ---
 
 # DocBuilder Documentation
 
-Welcome to the DocBuilder documentation! This documentation follows the [Diátaxis](https://diataxis.fr/) framework, organizing content by user needs.
+Technical documentation organized by the [Diátaxis](https://diataxis.fr/) framework.
 
-## Documentation Structure
+## Structure
 
 ### 📚 [Tutorials](tutorials/)
-**Learning-oriented** - Step-by-step lessons to get you started.
 
-- [Getting Started](tutorials/getting-started.md) - Your first DocBuilder project
-- [Multi-Repository Setup](tutorials/multi-repo-setup.md) - Aggregate docs from multiple repos
-- [Theme Customization](tutorials/theme-customization.md) - Customize your Hugo theme
+Step-by-step learning guides:
 
-**Best for:** First-time users, learning the basics
+- [Getting Started](tutorials/getting-started.md)
 
 ### 🛠️ [How-To Guides](how-to/)
-**Task-oriented** - Practical guides for specific tasks.
 
-- [Add Content Transforms](how-to/add-content-transforms.md) - Create custom markdown transformations
-- [Add Theme Support](how-to/add-theme-support.md) - Integrate a new Hugo theme
-- [Configure Forge Namespacing](how-to/configure-forge-namespacing.md) - Set up multi-forge projects
-- [Customize Index Pages](how-to/customize-index-pages.md) - Tailor index page generation
-- [Enable Hugo Render](how-to/enable-hugo-render.md) - Configure Hugo rendering
-- [Prune Workspace Size](how-to/prune-workspace-size.md) - Optimize disk usage
-- [Run Incremental Builds](how-to/run-incremental-builds.md) - Speed up builds
-
-**Best for:** Users with specific goals, solving problems
-
-### 📖 [Reference](reference/)
-**Information-oriented** - Technical specifications and API documentation.
-
-- [CLI Reference](reference/cli.md) - Command-line interface documentation
-- [Configuration Reference](reference/configuration.md) - Complete config file specification
-- [Index File Handling](reference/index-files.md) - How index files are processed and precedence rules
-- [Build Report Reference](reference/report.md) - Build report format and fields
-
-**Best for:** Looking up specific information, API details
-
-### 💡 [Explanation](explanation/)
-**Understanding-oriented** - Conceptual documentation and design rationale.
-
-#### Architecture Documentation
-
-- **[Architecture Documentation Index](explanation/README.md)** - Start here for architecture overview
-- **[Comprehensive Architecture](explanation/comprehensive-architecture.md)** - Complete system design
-- **[Architecture Diagrams](explanation/architecture-diagrams.md)** - Visual system representations
-- **[Package Architecture Guide](explanation/package-architecture.md)** - Detailed package documentation
-- **[Architecture Overview](explanation/architecture.md)** - Quick reference guide
-- **[Namespacing Rationale](explanation/namespacing-rationale.md)** - Forge namespacing design
-- **[Renderer Testing](explanation/renderer-testing.md)** - Hugo rendering tests
-
-#### Architecture Decision Records (ADRs)
-
-- [ADR-000: Uniform Error Handling](adr/ADR-000-uniform-error-handling.md)
-- [ADR-001: Forge Integration Daemon](../plan/adr-001-forge-integration-daemon.md)
-
-**Best for:** Understanding why things work the way they do, architectural decisions
-
-## Quick Start Guide
-
-### New Users
-
-1. Start with [Getting Started Tutorial](tutorials/getting-started.md)
-2. Review [CLI Reference](reference/cli.md) for commands
-3. Check [Configuration Reference](reference/configuration.md) for options
-
-### Developers/Contributors
-
-1. Read [Architecture Documentation Index](explanation/README.md)
-2. Study [Comprehensive Architecture](explanation/comprehensive-architecture.md)
-3. Review [Package Architecture Guide](explanation/package-architecture.md)
-4. Check [Contributing Guide](../CONTRIBUTING.md)
-
-### Operations/DevOps
-
-1. Review [Getting Started Tutorial](tutorials/getting-started.md)
-2. Check [How-To: Run Incremental Builds](how-to/run-incremental-builds.md)
-3. Review [Build Report Reference](reference/report.md)
-4. Study operational considerations in [Comprehensive Architecture](explanation/comprehensive-architecture.md#operational-considerations)
-
-## Documentation by Feature
-
-### Basic Usage
-
-- [Getting Started Tutorial](tutorials/getting-started.md)
-- [CLI Reference](reference/cli.md)
-- [Configuration Reference](reference/configuration.md)
-
-### Multi-Repository Aggregation
-
-- [Multi-Repository Setup Tutorial](tutorials/multi-repo-setup.md)
-- [Configure Forge Namespacing](how-to/configure-forge-namespacing.md)
-- [Namespacing Rationale](explanation/namespacing-rationale.md)
-
-### Theme Integration
-
-- [Theme Customization Tutorial](tutorials/theme-customization.md)
-- [Add Theme Support](how-to/add-theme-support.md)
-- [Relearn Theme Configuration](explanation/comprehensive-architecture.md#1-relearn-theme-configuration)
-
-### Performance Optimization
-
-- [Run Incremental Builds](how-to/run-incremental-builds.md)
-- [Prune Workspace Size](how-to/prune-workspace-size.md)
-- [Change Detection](explanation/comprehensive-architecture.md#3-change-detection)
-
-### Customization
+Task-oriented guides:
 
 - [Add Content Transforms](how-to/add-content-transforms.md)
+- [Configure Forge Namespacing](how-to/configure-forge-namespacing.md)
+- [Configure Webhooks](how-to/configure-webhooks.md)
 - [Customize Index Pages](how-to/customize-index-pages.md)
-- [Index File Handling](reference/index-files.md)
-- [Theme Customization Tutorial](tutorials/theme-customization.md)
+- [Enable Hugo Render](how-to/enable-hugo-render.md)
+- [Enable Multi-Version Docs](how-to/enable-multi-version-docs.md)
+- [Enable Page Transitions](how-to/enable-page-transitions.md)
+- [Prune Workspace Size](how-to/prune-workspace-size.md)
+- [Run Incremental Builds](how-to/run-incremental-builds.md)
+- [Setup Linting](how-to/setup-linting.md)
+- [Use Relearn Theme](how-to/use-relearn-theme.md)
+- [Write Cross-Document Links](how-to/write-cross-document-links.md)
+
+### 📖 [Reference](reference/)
+
+Technical specifications:
+
+- [CLI Reference](reference/cli.md)
 - [Configuration Reference](reference/configuration.md)
+- [Content Transforms](reference/content-transforms.md)
+- [Build Report Format](reference/report.md)
+- [Index File Handling](reference/index-files.md)
+- [Lint Rules](reference/lint-rules.md)
 
-### Advanced Topics
+### 💡 [Explanation](explanation/)
 
+Architecture and design rationale:
+
+- [Architecture Documentation Index](explanation/README.md)
 - [Comprehensive Architecture](explanation/comprehensive-architecture.md)
-- [Package Architecture Guide](explanation/package-architecture.md)
 - [Architecture Diagrams](explanation/architecture-diagrams.md)
+- [Package Architecture](explanation/package-architecture.md)
+- [Namespacing Rationale](explanation/namespacing-rationale.md)
+- [Skip Evaluation](explanation/skip-evaluation.md)
+- [Renderer Testing](explanation/renderer-testing.md)
+- [Webhook Isolation](explanation/webhook-documentation-isolation.md)
 
-## Additional Resources
+### Architecture Decision Records
 
-### Project Documentation
+- [ADR-000: Uniform Error Handling](adr/adr-000-uniform-error-handling.md)
+- [ADR-001: Golden Testing Strategy](adr/adr-001-golden-testing-strategy.md)
+- [ADR-002: In-Memory Content Pipeline](adr/adr-002-in-memory-content-pipeline.md)
+- [ADR-003: Fixed Transform Pipeline](adr/adr-003-fixed-transform-pipeline.md)
+- [ADR-004: Forge-Specific Markdown](adr/adr-004-forge-specific-markdown.md)
+- [ADR-005: Documentation Linting](adr/adr-005-documentation-linting.md)
+- [ADR-006: Drop Local Namespace](adr/adr-006-drop-local-namespace.md)
+- [ADR-007: Merge Generate Into Build](adr/adr-007-merge-generate-into-build-command.md)
 
-- [README](../README.md) - Project overview and quick reference
-- [CHANGELOG](../CHANGELOG.md) - Version history and changes
-- [CONTRIBUTING](../CONTRIBUTING.md) - Contribution guidelines
-- [LICENSE](../LICENSE) - Project license
+## Quick Start
 
-### Architecture & Planning
+**New Users:**
+1. [Getting Started Tutorial](tutorials/getting-started.md)
+2. [CLI Reference](reference/cli.md)
+3. [Configuration Reference](reference/configuration.md)
 
-- [Architecture Migration Plan (2025)](archive/architecture-migration-plan-2025.md) - Completed migration history
-- [Plan Directory](../plan/) - Feature plans and ADRs
-- [Docs Archive](archive/) - Historical documentation
+**Developers:**
+1. [Architecture Documentation](explanation/README.md)
+2. [Package Architecture](explanation/package-architecture.md)
+3. [Contributing Guide](../CONTRIBUTING.md)
 
-### Examples
-
-- [Examples Directory](../examples/) - Sample configurations and tools
-- [Example Configs](../examples/configs/) - Ready-to-use configurations
+**Operations:**
+1. [Run Incremental Builds](how-to/run-incremental-builds.md)
+2. [Build Report Format](reference/report.md)
+3. [Configure Webhooks](how-to/configure-webhooks.md)
 
 ## Documentation Principles
 
