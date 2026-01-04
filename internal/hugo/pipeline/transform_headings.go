@@ -88,7 +88,7 @@ func stripHeading(doc *Document) ([]*Document, error) {
 
 	// Pattern to match H1 heading at start of content
 	h1Pattern := regexp.MustCompile(`(?m)^# (.+)\n?`)
-	
+
 	// Check if H1 is at the start of content (no text before it)
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
 	if matches != nil {
