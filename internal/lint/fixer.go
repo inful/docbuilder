@@ -313,7 +313,7 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 	timestamp := time.Now().Format("20060102-150405")
 	backupDir := filepath.Join(rootPath, fmt.Sprintf(".docbuilder-backup-%s", timestamp))
 
-	if err := os.MkdirAll(backupDir, 0o755); err != nil {
+	if err := os.MkdirAll(backupDir, 0o750); err != nil {
 		return "", fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
@@ -353,7 +353,7 @@ func (f *Fixer) backupFile(filePath, backupDir, rootPath string) error {
 	backupPath := filepath.Join(backupDir, relPath)
 
 	// Create parent directories
-	if err := os.MkdirAll(filepath.Dir(backupPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(backupPath), 0o750); err != nil {
 		return err
 	}
 
@@ -363,12 +363,14 @@ func (f *Fixer) backupFile(filePath, backupDir, rootPath string) error {
 
 // copyFile copies a file from src to dst.
 func (f *Fixer) copyFile(src, dst string) error {
+	// #nosec G304 -- src/dst are validated file paths from fixer operations
 	sourceFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = sourceFile.Close() }()
 
+	// #nosec G304 -- src/dst are validated file paths from fixer operations
 	destFile, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -520,6 +522,7 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 
 // findLinksInFile scans a single markdown file for links to the target.
 func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference, error) {
+	// #nosec G304 -- sourceFile is from discovery walkFiles, not user input
 	content, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
@@ -623,6 +626,7 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 
 // detectBrokenLinksInFile scans a single markdown file for broken links.
 func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
+	// #nosec G304 -- sourceFile is from discovery walkFiles, not user input
 	content, err := os.ReadFile(sourceFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
@@ -1191,6 +1195,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 	// Process each file
 	for sourceFile, linkRefs := range fileLinks {
 		// Read file content
+		// #nosec G304 -- sourceFile is from link discovery, validated paths
 		content, err := os.ReadFile(sourceFile)
 		if err != nil {
 			// Rollback any previous changes
@@ -1253,7 +1258,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 
 			// Create backup before writing
 			backupPath := sourceFile + ".backup"
-			err := os.WriteFile(backupPath, content, 0o644)
+			err := os.WriteFile(backupPath, content, 0o600)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
@@ -1262,7 +1267,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			backupPaths = append(backupPaths, backupPath)
 
 			// Write updated content
-			err = os.WriteFile(sourceFile, []byte(newContent), 0o644)
+			err = os.WriteFile(sourceFile, []byte(newContent), 0o600)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
@@ -1309,8 +1314,9 @@ func (f *Fixer) rollbackLinkUpdates(backupPaths []string) {
 		// Extract original file path by removing .backup suffix
 		originalFile := strings.TrimSuffix(backupPath, ".backup")
 
+		// #nosec G304 -- backupPath created internally, not user input
 		if content, err := os.ReadFile(backupPath); err == nil {
-			_ = os.WriteFile(originalFile, content, 0o644) // Best effort restore
+			_ = os.WriteFile(originalFile, content, 0o600) // Best effort restore
 		}
 		_ = os.Remove(backupPath) // Best effort cleanup
 	}

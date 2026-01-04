@@ -22,8 +22,8 @@ func TestApplyLinkUpdates_BasicUpdate(t *testing.T) {
 
 See [API Guide](./api-guide.md) for details.
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
-	require.NoError(t, os.WriteFile(targetFile, []byte("# API Guide"), 0o644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
+	require.NoError(t, os.WriteFile(targetFile, []byte("# API Guide"), 0o600))
 
 	// Create link reference
 	links := []LinkReference{
@@ -51,6 +51,8 @@ See [API Guide](./api-guide.md) for details.
 	assert.Equal(t, "./api_guide.md", updates[0].NewTarget)
 
 	// Verify file was updated
+	// #nosec G304 -- test utility reading from test output directory
+	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	assert.Contains(t, string(updatedContent), "[API Guide](./api_guide.md)")
@@ -78,7 +80,7 @@ Reference: [api-guide][1]
 
 [1]: ./api-guide.md
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references (will be sorted reverse by applyLinkUpdates)
 	links := []LinkReference{
@@ -120,6 +122,7 @@ Reference: [api-guide][1]
 	assert.Len(t, updates, 4)
 
 	// Verify file was updated correctly
+	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
@@ -141,8 +144,8 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 	source2 := filepath.Join(tmpDir, "guide2.md")
 
 	// Create source files
-	require.NoError(t, os.WriteFile(source1, []byte(testAPILink), 0o644))
-	require.NoError(t, os.WriteFile(source2, []byte(testAPILink), 0o644))
+	require.NoError(t, os.WriteFile(source1, []byte(testAPILink), 0o600))
+	require.NoError(t, os.WriteFile(source2, []byte(testAPILink), 0o600))
 
 	// Create link references from multiple files
 	links := []LinkReference{
@@ -172,10 +175,12 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 	assert.Len(t, updates, 2)
 
 	// Verify both files were updated
+	// #nosec G304 -- test utility reading from test output directory
 	content1, err := os.ReadFile(source1)
 	require.NoError(t, err)
 	assert.Contains(t, string(content1), "./api_guide.md")
 
+	// #nosec G304 -- test utility reading from test output directory
 	content2, err := os.ReadFile(source2)
 	require.NoError(t, err)
 	assert.Contains(t, string(content2), "./api_guide.md")
@@ -185,7 +190,7 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourceFile := filepath.Join(tmpDir, "docs", "source.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(sourceFile), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(sourceFile), 0o750))
 
 	// Create source file with various relative paths
 	sourceContent := `# Links
@@ -195,7 +200,7 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 - [Subdir](./sub/api-guide.md)
 - [No prefix](api-guide.md)
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with different path styles
 	links := []LinkReference{
@@ -236,6 +241,7 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 	// Verify all updates preserve relative path structure
 	assert.Len(t, updates, 4)
 
+	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
@@ -256,7 +262,7 @@ func TestApplyLinkUpdates_AnchorFragmentPreservation(t *testing.T) {
 
 See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with anchors
 	links := []LinkReference{
@@ -287,6 +293,7 @@ See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 	assert.Equal(t, "./api_guide.md#overview", updates[0].NewTarget)
 	assert.Equal(t, "./api_guide.md#methods", updates[1].NewTarget)
 
+	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
@@ -303,7 +310,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 
 	// Create first source file (valid)
 	originalContent1 := testAPILink
-	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
+	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o600))
 
 	// Create second source file as read-only to trigger error
 	originalContent2 := testAPILink
@@ -337,6 +344,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 	assert.Nil(t, updates)
 
 	// Verify first file was rolled back to original content
+	// #nosec G304 -- test utility reading from test output directory
 	content1, err := os.ReadFile(source1)
 	require.NoError(t, err)
 	assert.Equal(t, originalContent1, string(content1), "file should be rolled back on error")
@@ -347,6 +355,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 	assert.True(t, os.IsNotExist(err), "backup file should be cleaned up")
 
 	// Clean up read-only file
+	// #nosec G302 -- intentional permission change for test cleanup
 	_ = os.Chmod(source2, 0o644)
 }
 
@@ -432,16 +441,16 @@ func TestIntegration_RenameWithLinkUpdates(t *testing.T) {
 	apiFile := filepath.Join(tmpDir, "API_Guide.md") // Uppercase - violates kebab-case
 	indexFile := filepath.Join(tmpDir, "index.md")
 	readmeFile := filepath.Join(tmpDir, "docs", "README.md")
-	require.NoError(t, os.MkdirAll(filepath.Dir(readmeFile), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Dir(readmeFile), 0o750))
 
 	// Create files with cross-references
-	require.NoError(t, os.WriteFile(apiFile, []byte("# API Guide"), 0o644))
+	require.NoError(t, os.WriteFile(apiFile, []byte("# API Guide"), 0o600))
 	require.NoError(t, os.WriteFile(indexFile, []byte(`# Index
 See [API Guide](./API_Guide.md) for details.
-`), 0o644))
+`), 0o600))
 	require.NoError(t, os.WriteFile(readmeFile, []byte(`# Docs
 Check [API](../API_Guide.md).
-`), 0o644))
+`), 0o600))
 
 	// Create linter and fixer
 	linter := NewLinter(&Config{Format: "text"})
@@ -462,12 +471,14 @@ Check [API](../API_Guide.md).
 	assert.GreaterOrEqual(t, len(result.LinksUpdated), 2, "should update links in index and readme")
 
 	// Verify index.md was updated
+	// #nosec G304 -- test utility reading from test output directory
 	indexContent, err := os.ReadFile(indexFile)
 	require.NoError(t, err)
 	assert.Contains(t, string(indexContent), "[API Guide](./api_guide.md)")
 	assert.NotContains(t, string(indexContent), "./API_Guide.md")
 
 	// Verify docs/README.md was updated
+	// #nosec G304 -- test utility reading from test output directory
 	readmeContent, err := os.ReadFile(readmeFile)
 	require.NoError(t, err)
 	assert.Contains(t, string(readmeContent), "[API](../api_guide.md)")
@@ -494,7 +505,7 @@ Also check [Overview](./api-guide.md#overview) section.
 
 Reference to [Errors](../api-guide.md#errors).
 `
-	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o644))
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with anchor fragments
 	links := []LinkReference{
@@ -553,6 +564,7 @@ Reference to [Errors](../api-guide.md#errors).
 	assert.Equal(t, "../api_guide.md#errors", updatesByLine[7].NewTarget)
 
 	// Verify file was updated correctly with fragments preserved
+	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	content := string(updatedContent)
@@ -574,13 +586,15 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 
 	// Create first source file
 	originalContent1 := testAPILink
-	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o644))
+	require.NoError(t, os.WriteFile(source1, []byte(originalContent1), 0o600))
 
 	// Create second source file as read-only to trigger failure
 	originalContent2 := testAPILink
-	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o644))
+	require.NoError(t, os.WriteFile(source2, []byte(originalContent2), 0o600))
+	// #nosec G302 -- intentional read-only permission for test setup
 	require.NoError(t, os.Chmod(source2, 0o444)) // Make it read-only
 	defer func() {
+		// #nosec G302 -- intentional permission change for test cleanup
 		_ = os.Chmod(source2, 0o644) // Clean up (ignore error)
 	}()
 
@@ -609,6 +623,7 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 	require.Error(t, err, "should fail when writing to read-only file")
 
 	// Verify source1 was rolled back to original content
+	// #nosec G304 -- test utility reading from test output directory
 	content1, err := os.ReadFile(source1)
 	require.NoError(t, err)
 	assert.Equal(t, originalContent1, string(content1), "source1 should be rolled back")

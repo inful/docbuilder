@@ -29,7 +29,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	hookPath := filepath.Join(hooksDir, "pre-commit")
 
 	// Create hooks directory if it doesn't exist
-	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
+	if err := os.MkdirAll(hooksDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create hooks directory: %w", err)
 	}
 
@@ -38,12 +38,13 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 		backupPath := fmt.Sprintf("%s.backup-%s", hookPath, time.Now().Format("20060102-150405"))
 		fmt.Printf("📦 Backing up existing hook to: %s\n", backupPath)
 
+		// #nosec G304 -- hookPath is constructed from git directory, not user input
 		content, err := os.ReadFile(hookPath)
 		if err != nil {
 			return fmt.Errorf("failed to read existing hook: %w", err)
 		}
 
-		if err := os.WriteFile(backupPath, content, 0o755); err != nil {
+		if err := os.WriteFile(backupPath, content, 0o600); err != nil {
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
 	}
@@ -106,8 +107,15 @@ else
 fi
 `
 
-	if err := os.WriteFile(hookPath, []byte(hookContent), 0o755); err != nil {
+	// Write hook file with restrictive permissions first
+	if err := os.WriteFile(hookPath, []byte(hookContent), 0o600); err != nil {
 		return fmt.Errorf("failed to write hook file: %w", err)
+	}
+
+	// Make it executable (owner and group only)
+	// #nosec G302 -- intentional executable permission for git hook
+	if err := os.Chmod(hookPath, 0o750); err != nil {
+		return fmt.Errorf("failed to make hook executable: %w", err)
 	}
 
 	fmt.Println("✅ Pre-commit hook installed successfully")

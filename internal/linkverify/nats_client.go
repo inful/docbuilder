@@ -2,6 +2,7 @@ package linkverify
 
 import (
 	"context"
+	// #nosec G501 -- MD5 used for cache key hashing, not cryptographic security
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -359,6 +360,7 @@ func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) err
 // sanitizeKVKey converts a URL into a valid NATS KV key using MD5 hash.
 // NATS KV keys must match [a-zA-Z0-9_-]+ (no slashes, query params, etc.)
 func sanitizeKVKey(url string) string {
+	// #nosec G401 -- MD5 is used for key generation, not cryptographic security
 	hash := md5.Sum([]byte(url))
 	return hex.EncodeToString(hash[:])
 }

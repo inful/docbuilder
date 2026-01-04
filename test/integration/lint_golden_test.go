@@ -114,10 +114,10 @@ func verifyLintResult(t *testing.T, result *lint.Result, goldenPath string, upda
 		data, err := json.MarshalIndent(normalized, "", "  ")
 		require.NoError(t, err, "failed to marshal result")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o750)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0o644)
+		err = os.WriteFile(goldenPath, data, 0o600)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
@@ -125,6 +125,7 @@ func verifyLintResult(t *testing.T, result *lint.Result, goldenPath string, upda
 	}
 
 	// Read and compare with golden file
+	// #nosec G304 -- test utility reading golden file from testdata
 	goldenData, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 

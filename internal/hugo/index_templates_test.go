@@ -28,6 +28,7 @@ func TestIndexTemplates_FallbackEmbedded(t *testing.T) {
 		t.Fatalf("generate indexes: %v", err)
 	}
 	mainIdx := filepath.Join(g.outputDir, "content", "_index.md")
+	// #nosec G304 -- test utility reading from test output directory
 	b, err := os.ReadFile(mainIdx)
 	if err != nil {
 		t.Fatalf("read main index: %v", err)
@@ -58,6 +59,7 @@ func TestIndexTemplates_UserOverridePrecedence(t *testing.T) {
 		t.Fatalf("generate indexes: %v", err)
 	}
 	mainIdx := filepath.Join(g.outputDir, "content", "_index.md")
+	// #nosec G304 -- test utility reading from test output directory
 	b, err := os.ReadFile(mainIdx)
 	if err != nil {
 		t.Fatalf("read main index: %v", err)

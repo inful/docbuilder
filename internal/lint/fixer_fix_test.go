@@ -15,14 +15,14 @@ func TestFix_SuccessfulRenameWithLinkUpdates(t *testing.T) {
 
 	// Create a file with uppercase letters (violates naming convention)
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
 	// Create a file that links to the bad filename
 	linkingFile := filepath.Join(tmpDir, "linking.md")
 	linkContent := []byte("[Link](BadFilename.md)")
-	if err := os.WriteFile(linkingFile, linkContent, 0o644); err != nil {
+	if err := os.WriteFile(linkingFile, linkContent, 0o600); err != nil {
 		t.Fatalf("failed to create linking file: %v", err)
 	}
 
@@ -57,7 +57,7 @@ func TestFix_SuccessfulRenameNoLinks(t *testing.T) {
 
 	// Create a file with uppercase letters (violates naming convention)
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
@@ -91,13 +91,13 @@ func TestFix_RenameFailure(t *testing.T) {
 
 	// Create a file with uppercase letters
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
 	// Create the target file (will cause rename to fail)
 	expectedTarget := filepath.Join(tmpDir, "badfilename.md")
-	if err := os.WriteFile(expectedTarget, []byte("# Existing"), 0o644); err != nil {
+	if err := os.WriteFile(expectedTarget, []byte("# Existing"), 0o600); err != nil {
 		t.Fatalf("failed to create conflicting file: %v", err)
 	}
 
@@ -137,13 +137,13 @@ func TestFix_DryRunMode(t *testing.T) {
 
 	// Create test files
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
 	linkingFile := filepath.Join(tmpDir, "linking.md")
 	linkContent := []byte("[Link](BadFilename.md)")
-	if err := os.WriteFile(linkingFile, linkContent, 0o644); err != nil {
+	if err := os.WriteFile(linkingFile, linkContent, 0o600); err != nil {
 		t.Fatalf("failed to create linking file: %v", err)
 	}
 
@@ -178,7 +178,7 @@ func TestFix_FindLinksError(t *testing.T) {
 
 	// Create a file to rename
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
@@ -189,6 +189,7 @@ func TestFix_FindLinksError(t *testing.T) {
 	}
 	defer func() {
 		// Restore permissions for cleanup
+		// #nosec G302 -- intentional permission change for test cleanup
 		_ = os.Chmod(restrictedDir, 0o755)
 	}()
 
@@ -216,18 +217,20 @@ func TestFix_ApplyLinkUpdatesError(t *testing.T) {
 
 	// Create a file to rename
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
-	if err := os.WriteFile(badFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(badFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
 	// Create a read-only linking file to cause update error
 	linkingFile := filepath.Join(tmpDir, "readonly.md")
 	linkContent := []byte("[Link](BadFilename.md)")
+	// #nosec G306 -- intentional read-only permission for test setup
 	if err := os.WriteFile(linkingFile, linkContent, 0o444); err != nil {
 		t.Fatalf("failed to create linking file: %v", err)
 	}
 	defer func() {
 		// Restore write permissions for cleanup
+		// #nosec G302 -- intentional permission change for test cleanup
 		_ = os.Chmod(linkingFile, 0o644)
 	}()
 
@@ -256,7 +259,7 @@ func TestFix_NoFilenameIssues(t *testing.T) {
 
 	// Create a file with valid name
 	goodFile := filepath.Join(tmpDir, "valid-filename.md")
-	if err := os.WriteFile(goodFile, []byte("# Test"), 0o644); err != nil {
+	if err := os.WriteFile(goodFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 

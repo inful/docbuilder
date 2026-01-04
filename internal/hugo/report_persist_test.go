@@ -24,6 +24,7 @@ func TestReportPersistence_Success(t *testing.T) {
 	if _, err := os.Stat(jsonPath); err != nil {
 		t.Fatalf("expected report json: %v", err)
 	}
+	// #nosec G304 -- test utility reading from test output directory
 	b, _ := os.ReadFile(jsonPath)
 	var parsed map[string]any
 	if err := json.Unmarshal(b, &parsed); err != nil {

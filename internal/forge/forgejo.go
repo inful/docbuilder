@@ -299,13 +299,13 @@ func (c *ForgejoClient) ValidateWebhook(payload []byte, signature string, secret
 	// Legacy raw SHA1 (some older Forgejo/Gitea setups)
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy Forgejo/Gitea webhook signature fallback
+		mac := hmac.New(sha1.New, []byte(secret))
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))
 	}
 	// Bare SHA1 hash fallback (no prefix)
-	mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy Forgejo/Gitea webhook signature fallback (no prefix)
+	mac := hmac.New(sha1.New, []byte(secret))
 	mac.Write(payload)
 	calc := hex.EncodeToString(mac.Sum(nil))
 	return hmac.Equal([]byte(signature), []byte(calc))

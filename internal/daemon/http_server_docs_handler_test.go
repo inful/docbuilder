@@ -55,14 +55,14 @@ func TestDocsHandlerStaticRoot(t *testing.T) {
 	// Create temp directory structure
 	tmpDir := t.TempDir()
 	publicDir := filepath.Join(tmpDir, "public")
-	if err := os.MkdirAll(publicDir, 0o755); err != nil {
+	if err := os.MkdirAll(publicDir, 0o750); err != nil {
 		t.Fatalf("failed to create public dir: %v", err)
 	}
 
 	// Create a test file in public directory
 	testFile := filepath.Join(publicDir, "index.html")
 	content := []byte("<html><body>Test Content</body></html>")
-	if err := os.WriteFile(testFile, content, 0o644); err != nil {
+	if err := os.WriteFile(testFile, content, 0o600); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 

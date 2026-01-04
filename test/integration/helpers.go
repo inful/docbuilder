@@ -123,12 +123,14 @@ func copyDir(src, dst string) error {
 
 // copyFile copies a single file.
 func copyFile(src, dst string) error {
+	// #nosec G304 -- test utility with paths from test setup, not user input
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = srcFile.Close() }()
 
+	// #nosec G304 -- test utility with paths from test setup, not user input
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -154,6 +156,7 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	t.Helper()
 
 	actualPath := filepath.Join(outputDir, "hugo.yaml")
+	// #nosec G304 -- test utility reading from test output directory
 	actualData, err := os.ReadFile(actualPath)
 	require.NoError(t, err, "failed to read generated hugo.yaml")
 
@@ -168,16 +171,17 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 		data, err = yaml.Marshal(actual)
 		require.NoError(t, err, "failed to marshal golden config")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o750)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0o644)
+		err = os.WriteFile(goldenPath, data, 0o600)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
 
+	// #nosec G304 -- test utility reading golden file from testdata
 	goldenData, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 
@@ -262,6 +266,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 
 		relPath, _ := filepath.Rel(outputDir, path)
 
+		// #nosec G304 -- test utility reading from test output directory
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -293,10 +298,10 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		data, err = json.MarshalIndent(actual, "", "  ")
 		require.NoError(t, err, "failed to marshal content structure")
 
-		err = os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		err = os.MkdirAll(filepath.Dir(goldenPath), 0o750)
 		require.NoError(t, err, "failed to create golden directory")
 
-		err = os.WriteFile(goldenPath, data, 0o644)
+		err = os.WriteFile(goldenPath, data, 0o600)
 		require.NoError(t, err, "failed to write golden file")
 
 		t.Logf("Updated golden file: %s", goldenPath)
@@ -386,6 +391,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 
 	for _, path := range sorted {
 		fullPath := filepath.Join(outputDir, path)
+		// #nosec G304 -- test utility reading from test output directory for debugging
 		content, err := os.ReadFile(fullPath)
 		if err != nil {
 			t.Logf("  %s: (error reading: %v)", path, err)
@@ -414,7 +420,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 
 		// Write to /tmp for debugging
 		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
-		_ = os.WriteFile(debugPath, body, 0o644)
+		_ = os.WriteFile(debugPath, body, 0o600)
 		t.Logf("Wrote body to: %s", debugPath)
 	}
 }

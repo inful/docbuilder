@@ -43,6 +43,7 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
 	assert.FileExists(t, cssPath, "CSS asset should be written to static directory")
 
+	// #nosec G304 -- test utility reading from test output directory
 	cssContent, err := os.ReadFile(cssPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(cssContent), "@view-transition", "CSS should contain View Transitions directives")
@@ -52,6 +53,7 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
 	assert.FileExists(t, partialPath, "HTML partial should be written to layouts directory")
 
+	// #nosec G304 -- test utility reading from test output directory
 	htmlContent, err := os.ReadFile(partialPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(htmlContent), ".Site.Params.enable_transitions", "HTML should check for enable_transitions param")
@@ -61,6 +63,7 @@ func TestViewTransitionsIntegration(t *testing.T) {
 	hugoConfigPath := filepath.Join(outputDir, "hugo.yaml")
 	assert.FileExists(t, hugoConfigPath, "hugo.yaml should be generated")
 
+	// #nosec G304 -- test utility reading from test output directory
 	hugoContent, err := os.ReadFile(hugoConfigPath)
 	require.NoError(t, err)
 	assert.Contains(t, string(hugoContent), "enable_transitions: true", "Hugo config should enable transitions param")
@@ -95,6 +98,7 @@ func TestViewTransitionsDisabled(t *testing.T) {
 
 	// Verify Hugo config does NOT have enable_transitions param
 	hugoConfigPath := filepath.Join(outputDir, "hugo.yaml")
+	// #nosec G304 -- test utility reading from test output directory
 	hugoContent, err := os.ReadFile(hugoConfigPath)
 	require.NoError(t, err)
 	assert.NotContains(t, string(hugoContent), "enable_transitions:", "Hugo config should not have transitions param when disabled")

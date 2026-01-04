@@ -31,6 +31,7 @@ func TestGenerateIndexPages(t *testing.T) {
 
 	// Main index
 	mainIdx := filepath.Join(out, "content", "_index.md")
+	// #nosec G304 -- test utility reading from test output directory
 	b, err := os.ReadFile(mainIdx)
 	if err != nil {
 		t.Fatalf("read main index: %v", err)
@@ -44,6 +45,7 @@ func TestGenerateIndexPages(t *testing.T) {
 
 	// Repo index
 	repoIdx := filepath.Join(out, "content", "repoA", "_index.md")
+	// #nosec G304 -- test utility reading from test output directory
 	rb, err := os.ReadFile(repoIdx)
 	if err != nil {
 		t.Fatalf("read repo index: %v", err)
@@ -59,6 +61,7 @@ func TestGenerateIndexPages(t *testing.T) {
 
 	// Section index
 	secIdx := filepath.Join(out, "content", "repoA", "section1", "_index.md")
+	// #nosec G304 -- test utility reading from test output directory
 	sb, err := os.ReadFile(secIdx)
 	if err != nil {
 		t.Fatalf("read section index: %v", err)

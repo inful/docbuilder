@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	// #nosec G501 -- MD5 used for content change detection, not cryptographic security
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -651,6 +652,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		// Compute MD5 hash of HTML content for change detection
 		var contentHash string
 		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil {
+			// #nosec G401 -- MD5 is used for content hashing, not cryptographic security
 			hash := md5.New()
 			hash.Write(htmlBytes)
 			contentHash = hex.EncodeToString(hash.Sum(nil))

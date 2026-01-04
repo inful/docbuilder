@@ -28,6 +28,7 @@ func TestGenerateSiteWithReportContextSetsDocFilesHash(t *testing.T) {
 		t.Fatalf("expected non-empty DocFilesHash")
 	}
 	// Sanity: persisted build-report.json contains the same value.
+	// #nosec G304 -- test utility reading from test output directory
 	data, err := os.ReadFile(filepath.Join(out, "build-report.json"))
 	if err != nil {
 		t.Fatalf("read report: %v", err)
