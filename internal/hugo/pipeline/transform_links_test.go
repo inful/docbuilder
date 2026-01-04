@@ -127,38 +127,44 @@ func TestExtractDirectory(t *testing.T) {
 	tests := []struct {
 		name     string
 		hugoPath string
+		forge    string
 		want     string
 	}{
 		{
 			name:     "Index in subdirectory",
 			hugoPath: "servejs/how-to/_index.md",
+			forge:    "",
 			want:     "how-to",
 		},
 		{
 			name:     "Index at repository root",
 			hugoPath: "servejs/_index.md",
+			forge:    "",
 			want:     "",
 		},
 		{
 			name:     "Regular file in subdirectory",
 			hugoPath: "myrepo/api/reference.md",
+			forge:    "",
 			want:     "api",
 		},
 		{
 			name:     "Nested subdirectory",
 			hugoPath: "myproject/guide/advanced/_index.md",
+			forge:    "",
 			want:     "guide/advanced",
 		},
 		{
 			name:     "File with forge namespace",
 			hugoPath: "gitlab/myrepo/how-to/index.md",
+			forge:    "gitlab",
 			want:     "how-to",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := extractDirectory(tt.hugoPath, false) // Multi-repo tests
+			got := extractDirectory(tt.hugoPath, false, tt.forge) // Multi-repo tests
 			assert.Equal(t, tt.want, got)
 		})
 	}

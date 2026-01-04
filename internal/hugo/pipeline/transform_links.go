@@ -266,7 +266,7 @@ func handleParentDirNavigation(path, repository, forge string, isSingleRepo bool
 // handleIndexFileLink handles relative links from index files.
 func handleIndexFileLink(path, docPath, repository, forge string, isSingleRepo bool, anchor string) (string, bool) {
 	// Extract directory from document path
-	docDir := extractDirectory(docPath, isSingleRepo)
+	docDir := extractDirectory(docPath, isSingleRepo, forge)
 
 	// If link doesn't navigate up (..), keep it relative to current section
 	if strings.HasPrefix(path, "/") || docDir == "" {
@@ -288,7 +288,7 @@ func handleIndexFileLink(path, docPath, repository, forge string, isSingleRepo b
 // handleRegularFileLink handles relative links from regular (non-index) files.
 func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo bool) string {
 	// Extract directory from document path for relative link context
-	docDir := extractDirectory(docPath, isSingleRepo)
+	docDir := extractDirectory(docPath, isSingleRepo, forge)
 
 	if !isSingleRepo {
 		return buildFullPath(forge, repository, docDir, path)
@@ -307,7 +307,7 @@ func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo
 // extractDirectory extracts the section/directory path from a Hugo document path.
 // For single-repo builds, all segments except the filename are returned.
 // For multi-repo builds, the repository (and optional forge) segments are stripped first.
-func extractDirectory(hugoPath string, isSingleRepo bool) string {
+func extractDirectory(hugoPath string, isSingleRepo bool, forge string) string {
 	// Remove leading slash if present
 	hugoPath = strings.TrimPrefix(hugoPath, "/")
 
@@ -329,11 +329,8 @@ func extractDirectory(hugoPath string, isSingleRepo bool) string {
 		return strings.Join(segments, "/")
 	}
 
-	// Detect forge namespace pattern
-	// Common forge names: gitlab, github, forgejo, gitea (all <= 8 chars)
-	hasForge := len(segments) >= 3 && len(segments[0]) <= 8
-
-	if hasForge {
+	// Check if forge namespace is present
+	if forge != "" {
 		// forge/repo/section... format
 		// Return everything after repo (index 1)
 		if len(segments) > 2 {
@@ -342,7 +339,7 @@ func extractDirectory(hugoPath string, isSingleRepo bool) string {
 		return ""
 	}
 
-	// repo/section... format
+	// repo/section... format (no forge)
 	// Return everything after repo (index 0)
 	if len(segments) > 1 {
 		return strings.Join(segments[1:], "/")

@@ -1,0 +1,21 @@
+{
+  "format_version": "1",
+  "version": "2.0.0",
+  "start_time": "2025-12-15T23:43:29.008204113Z",
+  "last_update": "2025-12-16T07:30:28.829595993Z",
+  "status": "starting",
+  "repositories": {},
+  "builds": {},
+  "schedules": {},
+  "statistics": {
+    "total_builds": 0,
+    "successful_builds": 0,
+    "failed_builds": 0,
+    "total_discoveries": 144,
+    "documents_found": 0,
+    "average_build_time_seconds": 0,
+    "last_stat_reset": "2025-12-15T23:43:29.00820403Z",
+    "uptime_seconds": 0,
+    "last_updated": "2025-12-16T07:30:28.829595576Z"
+  }
+}
