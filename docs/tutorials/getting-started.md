@@ -153,13 +153,5 @@ Validate documentation follows best practices:
 ./bin/docbuilder lint docs/ --fix --dry-run
 ```
 
-### Generate from Local Directory
-
-Generate a Hugo site from local documentation (no git required):
-
-```bash
-./bin/docbuilder generate --docs-dir ./docs --output ./site
-```
-
 ---
 **You are ready to explore How‑To guides for specific tasks.**
