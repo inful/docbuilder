@@ -8,7 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/testforge"
+	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
 // TestGenerateSite_Smoke validates that a minimal set of doc files are processed

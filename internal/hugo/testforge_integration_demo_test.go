@@ -5,7 +5,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/testforge"
+	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
 // TestHugoWithTestForgeIntegration demonstrates how TestForge can enhance Hugo package tests.

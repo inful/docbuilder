@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/testforge"
+	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
 func TestDocumentationDiscovery(t *testing.T) {
