@@ -305,8 +305,8 @@ func (bq *BuildQueue) markJobCompleted(job *BuildJob, err error) time.Duration {
 
 	slog.Debug("Build job completed",
 		logfields.JobID(job.ID),
-		"has_error", err != nil,
-		"event_emitter_nil", bq.eventEmitter == nil)
+		slog.Bool("has_error", err != nil),
+		slog.Bool("event_emitter_nil", bq.eventEmitter == nil))
 
 	return duration
 }
@@ -341,9 +341,9 @@ func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
 func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, report *hugo.BuildReport) {
 	slog.Debug("Build queue event emit check",
 		logfields.JobID(job.ID),
-		"emitter_nil", bq.eventEmitter == nil,
-		"typed_meta_nil", job.TypedMeta == nil,
-		"build_report_nil", report == nil)
+		slog.Bool("emitter_nil", bq.eventEmitter == nil),
+		slog.Bool("typed_meta_nil", job.TypedMeta == nil),
+		slog.Bool("build_report_nil", report == nil))
 
 	if report != nil {
 		if err := bq.eventEmitter.EmitBuildReport(ctx, job.ID, report); err != nil {

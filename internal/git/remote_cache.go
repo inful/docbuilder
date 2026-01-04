@@ -117,7 +117,7 @@ func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Reposito
 	if err != nil {
 		slog.Debug("Failed to check remote HEAD, will fetch",
 			logfields.Name(repo.Name),
-			"error", err.Error())
+			slog.String("error", err.Error()))
 		return true, "", nil // On error, fetch anyway
 	}
 
@@ -131,8 +131,8 @@ func (c *Client) CheckRemoteChanged(cache *RemoteHeadCache, repo appcfg.Reposito
 	if cached.CommitSHA != currentSHA {
 		slog.Info("Remote HEAD changed",
 			logfields.Name(repo.Name),
-			"old", cached.CommitSHA[:8],
-			"new", currentSHA[:8])
+			slog.String("old", cached.CommitSHA[:8]),
+			slog.String("new", currentSHA[:8]))
 		return true, currentSHA, nil
 	}
 
