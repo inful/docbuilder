@@ -196,14 +196,15 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 		normalizeIndexFiles,          // 2. Rename README to _index
 		buildBaseFrontMatter,         // 3. Build base front matter structure
 		extractIndexTitle,            // 4. Extract H1 title from index files
-		stripHeading,                 // 5. Strip H1 if appropriate
-		escapeShortcodesInCodeBlocks, // 6. Escape Hugo shortcodes in code blocks
-		rewriteRelativeLinks(cfg),    // 7. Fix markdown links
-		rewriteImageLinks,            // 8. Fix image paths
-		generateFromKeywords,         // 9. Create new files based on keywords (e.g., @glossary)
-		addRepositoryMetadata(cfg),   // 10. Add repo/commit/source metadata
-		addEditLink(cfg),             // 11. Generate edit URL
-		serializeDocument,            // 12. Serialize to final bytes (FM + content)
+		extractH1AsTitle,             // 5. Extract H1 as title for all files (if no title)
+		stripHeading,                 // 6. Strip H1 if appropriate
+		escapeShortcodesInCodeBlocks, // 7. Escape Hugo shortcodes in code blocks
+		rewriteRelativeLinks(cfg),    // 8. Fix markdown links
+		rewriteImageLinks,            // 9. Fix image paths
+		generateFromKeywords,         // 10. Create new files based on keywords (e.g., @glossary)
+		addRepositoryMetadata(cfg),   // 11. Add repo/commit/source metadata
+		addEditLink(cfg),             // 12. Generate edit URL
+		serializeDocument,            // 13. Serialize to final bytes (FM + content)
 	}
 }
 

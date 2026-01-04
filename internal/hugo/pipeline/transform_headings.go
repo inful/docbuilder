@@ -16,7 +16,7 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	// Skip if title already exists and is not a fallback
 	// Allow extraction if title is "Untitled", "_index", or the doc name (fallback values)
 	if existingTitle, hasTitle := doc.FrontMatter["title"].(string); hasTitle {
-		if existingTitle != "Untitled" && existingTitle != "_index" && existingTitle != doc.Name {
+		if existingTitle != untitledDocTitle && existingTitle != indexFileSuffix && existingTitle != doc.Name {
 			return nil, nil // Skip - real title already exists
 		}
 	}
@@ -37,6 +37,24 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	}
 
 	// PRIORITY 2: Extract H1 title for section-level index files (subsections within a repo)
+	return extractH1AsTitle(doc)
+}
+
+// extractH1AsTitle extracts the first H1 heading to use as the document title.
+// Only extracts if:
+// - No proper title exists in frontmatter (or it's a fallback like filename)
+// - H1 is at the start of content (no text before it)
+// This allows users to write title once in H1, which gets promoted to frontmatter.
+func extractH1AsTitle(doc *Document) ([]*Document, error) {
+	// Skip if title already exists and is not a fallback
+	// Fallback titles to replace: "Untitled", "_index", or the doc name (auto-generated from filename)
+	if existingTitle, hasTitle := doc.FrontMatter["title"].(string); hasTitle {
+		// Keep existing non-fallback titles
+		if existingTitle != untitledDocTitle && existingTitle != indexFileSuffix && existingTitle != doc.Name {
+			return nil, nil
+		}
+	}
+
 	// Pattern to match H1 heading
 	h1Pattern := regexp.MustCompile(`(?m)^# (.+)$`)
 	matches := h1Pattern.FindStringSubmatchIndex(doc.Content)
@@ -80,7 +98,7 @@ func stripHeading(doc *Document) ([]*Document, error) {
 	// or if H1 starts with the front matter title (common pattern: title + additional context)
 	h1Lower := strings.ToLower(h1Title)
 	fmLower := strings.ToLower(fmTitle)
-	
+
 	if h1Lower == fmLower || strings.HasPrefix(h1Lower, fmLower) {
 		doc.Content = h1Pattern.ReplaceAllString(doc.Content, "")
 	}

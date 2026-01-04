@@ -10,10 +10,10 @@
     "content/invalid-yaml.md": {
       "frontmatter": {
         "repository": "malformed-frontmatter",
-        "title": "invalid-yaml",
+        "title": "Malformed Front Matter",
         "type": "docs"
       },
-      "contentHash": "sha256:b3e5693672701cf9"
+      "contentHash": "sha256:e463eb05ad072560"
     },
     "content/valid.md": {
       "frontmatter": {
