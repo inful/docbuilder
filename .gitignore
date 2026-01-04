@@ -1,8 +1,8 @@
-# Ignore generated config for Hextra test
-hextra-config.yaml
+# Build outputs and generated files
 
-# Runtime repository state (daemon/dev)
-/repositories/
+# Working directory for development/testing
+/repositories/working/
+
 # Ignore test content files
 internal/hugo/content/
 # ---> Go

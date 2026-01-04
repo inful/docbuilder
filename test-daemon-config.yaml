@@ -30,7 +30,7 @@ versioning:
 hugo:
   title: "Test Documentation Site"
   description: "DocBuilder V2 Test Site"
-  theme: "hextra"
+  theme: "relearn"
   base_url: "http://localhost:8080"
 
 monitoring:

@@ -10,7 +10,7 @@ hugo:
   title: "Only README Test"
   description: "Testing repository with only README.md (should be ignored)"
   base_url: "http://localhost:1313"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

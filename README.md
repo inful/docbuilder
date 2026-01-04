@@ -465,7 +465,7 @@ DocBuilder includes comprehensive test coverage through multiple testing strateg
 
 Golden tests verify end-to-end functionality by comparing generated output against known-good "golden" files. These tests cover:
 
-- **Theme Support**: Hextra and Docsy theme generation
+- **Theme Support**: Relearn theme generation with comprehensive configuration
 - **Content Transformations**: Front matter injection, link rewrites, image paths
 - **Multi-Repository**: Repository aggregation and conflict resolution
 - **Edge Cases**: Empty docs, Unicode filenames, deep nesting, malformed input
@@ -478,10 +478,10 @@ Run golden tests:
 go test ./test/integration -run=TestGolden -v
 
 # Run specific test
-go test ./test/integration -run=TestGolden_HextraBasic -v
+go test ./test/integration -run=TestGolden_RelearnBasic -v
 
 # Update golden files when output changes are expected
-go test ./test/integration -run=TestGolden_HextraBasic -update-golden
+go test ./test/integration -run=TestGolden_RelearnBasic -update-golden
 
 # Skip in short mode for faster test runs
 go test ./test/integration -short
@@ -758,7 +758,7 @@ hugo:
   title: Unified Docs
   description: Combined service & monorepo documentation
   base_url: https://docs.example.com
-  theme: hextra
+  theme: relearn
 
 output:
   directory: ./site

@@ -10,7 +10,7 @@ hugo:
   title: "Section Index Testing"
   description: "Testing automatic _index.md generation for sections"
   base_url: "http://localhost"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

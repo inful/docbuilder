@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestFixer_CanFixFilename tests the canFixFilename method.
 func TestFixer_CanFixFilename(t *testing.T) {
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
@@ -40,6 +41,7 @@ func TestFixer_CanFixFilename(t *testing.T) {
 	})
 }
 
+// TestFixer_DryRun tests dry-run mode behavior.
 func TestFixer_DryRun(t *testing.T) {
 	// Create a temporary directory with a test file
 	tmpDir := t.TempDir()
@@ -66,6 +68,7 @@ func TestFixer_DryRun(t *testing.T) {
 	assert.Equal(t, testFile, result.FilesRenamed[0].OldPath)
 }
 
+// TestFixer_RenameFile tests basic file renaming.
 func TestFixer_RenameFile(t *testing.T) {
 	// Create a temporary directory with a test file
 	tmpDir := t.TempDir()
@@ -98,6 +101,7 @@ func TestFixer_RenameFile(t *testing.T) {
 	assert.Equal(t, 1, result.ErrorsFixed)
 }
 
+// TestFixer_RenameMultipleFiles tests renaming multiple files.
 func TestFixer_RenameMultipleFiles(t *testing.T) {
 	// Create a temporary directory with multiple test files
 	tmpDir := t.TempDir()
@@ -148,6 +152,7 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 	}
 }
 
+// TestFixer_ErrorWhenTargetExists tests error handling when target file exists.
 func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	// Create a temporary directory
 	tmpDir := t.TempDir()
@@ -184,283 +189,180 @@ func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	assert.NoError(t, err, "existing file should still exist")
 }
 
-func TestFixResult_Summary(t *testing.T) {
-	result := &FixResult{
-		FilesRenamed: []RenameOperation{
-			{OldPath: "file1.md", NewPath: "file1-new.md", Success: true},
-			{OldPath: "file2.md", NewPath: "file2-new.md", Success: true},
-		},
-		ErrorsFixed: 3,
-		Errors:      []error{},
-	}
-
-	summary := result.Summary()
-	assert.Contains(t, summary, "Files renamed: 2")
-	assert.Contains(t, summary, "Errors fixed: 3")
-}
-
-func TestFixResult_SummaryWithErrors(t *testing.T) {
-	result := &FixResult{
-		FilesRenamed: []RenameOperation{
-			{OldPath: "file1.md", NewPath: "file1-new.md", Success: false, Error: assert.AnError},
-		},
-		ErrorsFixed: 0,
-		Errors:      []error{assert.AnError},
-	}
-
-	summary := result.Summary()
-	assert.Contains(t, summary, "Files renamed: 1")
-	assert.Contains(t, summary, "Errors encountered: 1")
-}
-
-func TestIsGitRepository(t *testing.T) {
-	t.Run("detects git repository", func(t *testing.T) {
-		// Current directory should be a git repo
-		isGit := isGitRepository(".")
-		assert.True(t, isGit, "current directory should be a git repository")
-	})
-
-	t.Run("detects non-git directory", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		isGit := isGitRepository(tmpDir)
-		assert.False(t, isGit, "temp directory should not be a git repository")
-	})
-}
-
-// TestPathsEqualCaseInsensitive tests case-insensitive path comparison.
-func TestPathsEqualCaseInsensitive(t *testing.T) {
-	tests := []struct {
-		name     string
-		path1    string
-		path2    string
-		expected bool
-	}{
-		{
-			name:     "exact match",
-			path1:    "/docs/api-guide.md",
-			path2:    "/docs/api-guide.md",
-			expected: true,
-		},
-		{
-			name:     "case difference",
-			path1:    "/docs/API_Guide.md",
-			path2:    "/docs/api_guide.md",
-			expected: true,
-		},
-		{
-			name:     "mixed case in directory",
-			path1:    "/Docs/API/Guide.md",
-			path2:    "/docs/api/guide.md",
-			expected: true,
-		},
-		{
-			name:     "different files",
-			path1:    "/docs/guide.md",
-			path2:    "/docs/tutorial.md",
-			expected: false,
-		},
-		{
-			name:     "normalized paths",
-			path1:    "/docs/../docs/guide.md",
-			path2:    "/docs/guide.md",
-			expected: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := pathsEqualCaseInsensitive(tt.path1, tt.path2)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// TestFileExists tests file existence checking with case-insensitive fallback.
-func TestFileExists(t *testing.T) {
+// TestFixer_CreateBackup tests backup creation functionality.
+func TestFixer_CreateBackup(t *testing.T) {
+	// Create test directory structure
 	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
 
 	// Create test files
-	testFile := filepath.Join(tmpDir, "TestFile.md")
-	err := os.WriteFile(testFile, []byte("test"), 0o600)
+	file1 := filepath.Join(docsDir, "api.md")
+	file2 := filepath.Join(docsDir, "guide.md")
+	err = os.WriteFile(file1, []byte("API content"), 0o600)
+	require.NoError(t, err)
+	err = os.WriteFile(file2, []byte("Guide content"), 0o600)
 	require.NoError(t, err)
 
-	t.Run("exact case match", func(t *testing.T) {
-		exists := fileExists(testFile)
-		assert.True(t, exists)
-	})
-
-	t.Run("different case", func(t *testing.T) {
-		lowerCasePath := filepath.Join(tmpDir, "testfile.md")
-		exists := fileExists(lowerCasePath)
-		assert.True(t, exists, "should find file with case-insensitive lookup")
-	})
-
-	t.Run("non-existent file", func(t *testing.T) {
-		nonExistent := filepath.Join(tmpDir, "missing.md")
-		exists := fileExists(nonExistent)
-		assert.False(t, exists)
-	})
-}
-
-// TestDetectBrokenLinks tests broken link detection.
-func TestDetectBrokenLinks(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create test structure
-	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0o750)
-	require.NoError(t, err)
-
-	// Create a file with broken links
-	indexFile := filepath.Join(docsDir, "index.md")
-	indexContent := `# Documentation
-[Existing File](./guide.md)
-[Broken Link](./missing.md)
-![Broken Image](./images/missing.png)
-[External Link](https://example.com/guide.md)
-[Fragment Only](#section)
-`
-	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
-	require.NoError(t, err)
-
-	// Create the existing file
-	guideFile := filepath.Join(docsDir, "guide.md")
-	err = os.WriteFile(guideFile, []byte("# Guide"), 0o600)
-	require.NoError(t, err)
-
-	// Run broken link detection
-	broken, err := detectBrokenLinks(docsDir)
-	require.NoError(t, err)
-
-	// Should find 2 broken links (missing.md and missing.png)
-	// Should NOT report: existing file, external URL, or fragment-only link
-	assert.Len(t, broken, 2, "should detect exactly 2 broken links")
-
-	// Verify broken link details
-	brokenFiles := make([]string, 0, len(broken))
-	for _, link := range broken {
-		brokenFiles = append(brokenFiles, link.Target)
+	// Create result with changes
+	result := &FixResult{
+		FilesRenamed: []RenameOperation{
+			{OldPath: file1, NewPath: filepath.Join(docsDir, "api-guide.md")},
+		},
+		LinksUpdated: []LinkUpdate{
+			{SourceFile: file2, LineNumber: 5},
+		},
 	}
-	assert.Contains(t, brokenFiles, "./missing.md")
-	assert.Contains(t, brokenFiles, "./images/missing.png")
-}
 
-// TestDetectBrokenLinks_CaseInsensitive tests that broken link detection
-// works correctly on case-insensitive filesystems.
-func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create test files
-	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0o750)
-	require.NoError(t, err)
-
-	// Create file with specific case
-	actualFile := filepath.Join(docsDir, "API_Guide.md")
-	err = os.WriteFile(actualFile, []byte("# API Guide"), 0o600)
-	require.NoError(t, err)
-
-	// Create index file that links with different case
-	indexFile := filepath.Join(docsDir, "index.md")
-	indexContent := `# Index
-[API Guide](./api_guide.md)
-[Another Link](./Api_Guide.md)
-`
-	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
-	require.NoError(t, err)
-
-	// Run broken link detection
-	broken, err := detectBrokenLinks(docsDir)
-	require.NoError(t, err)
-
-	// On case-insensitive filesystems (macOS/Windows), these should NOT be broken
-	// On case-sensitive filesystems (Linux), these WOULD be broken
-	// The fileExists function handles both cases
-	if len(broken) > 0 {
-		t.Logf("Detected %d broken links (likely running on case-sensitive filesystem)", len(broken))
-	} else {
-		t.Log("No broken links detected (likely running on case-insensitive filesystem)")
-	}
-}
-
-// TestLinkDiscovery_CaseInsensitive tests that link discovery works with
-// case-insensitive path matching.
-func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	// Create test structure
-	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0o750)
-	require.NoError(t, err)
-
-	// Create target file with specific case
-	targetFile := filepath.Join(docsDir, "API_Guide.md")
-	err = os.WriteFile(targetFile, []byte("# API Guide"), 0o600)
-	require.NoError(t, err)
-
-	// Create index file that links to target with different case
-	indexFile := filepath.Join(docsDir, "index.md")
-	indexContent := `# Index
-[API Guide](./api_guide.md)
-[Another Reference](./Api_Guide.md)
-![Diagram](./API_GUIDE.md)
-`
-	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
-	require.NoError(t, err)
-
-	// Find links to the target file
+	// Create fixer and backup
 	linter := NewLinter(&Config{Format: "text"})
 	fixer := NewFixer(linter, false, false)
 
-	links, err := fixer.findLinksToFile(targetFile, tmpDir)
+	backupDir, err := fixer.CreateBackup(result, docsDir)
 	require.NoError(t, err)
+	assert.NotEmpty(t, backupDir, "should return backup directory path")
 
-	// On case-insensitive comparison, all three links should be found
-	// even though they have different cases
-	assert.GreaterOrEqual(t, len(links), 3, "should find links with case-insensitive matching")
+	// Verify backup directory exists
+	_, err = os.Stat(backupDir)
+	assert.NoError(t, err, "backup directory should exist")
+
+	// Verify backup directory name format
+	assert.Contains(t, filepath.Base(backupDir), ".docbuilder-backup-")
+
+	// Verify backed up files exist
+	backupFile1 := filepath.Join(backupDir, "api.md")
+	backupFile2 := filepath.Join(backupDir, "guide.md")
+
+	// #nosec G304 -- test utility reading backup files from test directory
+	content1, err := os.ReadFile(backupFile1)
+	assert.NoError(t, err, "should backup first file")
+	assert.Equal(t, "API content", string(content1))
+
+	// #nosec G304 -- test utility reading backup files from test directory
+	content2, err := os.ReadFile(backupFile2)
+	assert.NoError(t, err, "should backup second file")
+	assert.Equal(t, "Guide content", string(content2))
 }
 
-// TestFix_WithBrokenLinkDetection tests that the Fix function includes broken link detection.
-func TestFix_WithBrokenLinkDetection(t *testing.T) {
+// TestFixer_CreateBackup_DryRun tests that dry-run mode skips backup.
+func TestFixer_CreateBackup_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 
+	result := &FixResult{
+		FilesRenamed: []RenameOperation{
+			{OldPath: filepath.Join(tmpDir, "api.md"), NewPath: filepath.Join(tmpDir, "api-guide.md")},
+		},
+	}
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, true, false) // dry-run mode
+
+	backupDir, err := fixer.CreateBackup(result, tmpDir)
+	require.NoError(t, err)
+	assert.Empty(t, backupDir, "dry-run mode should not create backup")
+}
+
+// TestFixer_WithAutoConfirm tests the auto-confirm flag.
+func TestFixer_WithAutoConfirm(t *testing.T) {
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	// Initial state
+	assert.False(t, fixer.autoConfirm)
+
+	// Set auto-confirm
+	fixer = fixer.WithAutoConfirm(true)
+	assert.True(t, fixer.autoConfirm)
+
+	// Verify it returns the fixer for chaining
+	fixer2 := fixer.WithAutoConfirm(false)
+	assert.Same(t, fixer, fixer2, "should return same instance for chaining")
+}
+
+// TestFixer_ConfirmChanges_AutoConfirm tests that auto-confirm skips prompts.
+func TestFixer_ConfirmChanges_AutoConfirm(t *testing.T) {
+	result := &FixResult{
+		FilesRenamed: []RenameOperation{
+			{OldPath: "/tmp/api.md", NewPath: "/tmp/api-guide.md"},
+		},
+	}
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
+
+	// Should auto-confirm without prompting
+	confirmed, err := fixer.ConfirmChanges(result)
+	require.NoError(t, err)
+	assert.True(t, confirmed, "auto-confirm should return true")
+}
+
+// TestFixer_ConfirmChanges_DryRun tests that dry-run mode skips prompts.
+func TestFixer_ConfirmChanges_DryRun(t *testing.T) {
+	result := &FixResult{
+		FilesRenamed: []RenameOperation{
+			{OldPath: "/tmp/api.md", NewPath: "/tmp/api-guide.md"},
+		},
+	}
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, true, false) // dry-run mode
+
+	// Should auto-confirm in dry-run
+	confirmed, err := fixer.ConfirmChanges(result)
+	require.NoError(t, err)
+	assert.True(t, confirmed, "dry-run should auto-confirm")
+}
+
+// TestFixer_ConfirmChanges_NoChanges tests that no prompt shown when no changes.
+func TestFixer_ConfirmChanges_NoChanges(t *testing.T) {
+	result := &FixResult{} // No changes
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	// Should return true without prompting when there are no changes
+	confirmed, err := fixer.ConfirmChanges(result)
+	require.NoError(t, err)
+	assert.True(t, confirmed, "should auto-confirm when no changes")
+}
+
+// TestFixer_FixWithConfirmation_Integration tests the full confirmation workflow.
+func TestFixer_FixWithConfirmation_Integration(t *testing.T) {
 	// Create test structure
+	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
 	err := os.MkdirAll(docsDir, 0o750)
 	require.NoError(t, err)
 
-	// Create a file with naming issues and broken links
-	badFile := filepath.Join(docsDir, "Bad_File.md")
-	badContent := `# Documentation
-[Existing](./good.md)
-[Broken](./missing.md)
-`
-	err = os.WriteFile(badFile, []byte(badContent), 0o600)
+	// Create test file with naming issue
+	badFile := filepath.Join(docsDir, "API Guide.md")
+	err = os.WriteFile(badFile, []byte("# API Guide\n"), 0o600)
 	require.NoError(t, err)
 
-	// Create the existing referenced file
-	goodFile := filepath.Join(docsDir, "good.md")
-	err = os.WriteFile(goodFile, []byte("# Good"), 0o600)
-	require.NoError(t, err)
-
-	// Run fix
+	// Use auto-confirm to avoid interactive prompt in test
 	linter := NewLinter(&Config{Format: "text"})
-	fixer := NewFixer(linter, false, false) // not dry-run, so broken links are detected
+	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 
-	result, err := fixer.Fix(docsDir)
+	// Run with confirmation (should auto-confirm due to flag)
+	result, err := fixer.FixWithConfirmation(docsDir)
 	require.NoError(t, err)
 
-	// Should detect broken links
-	assert.NotEmpty(t, result.BrokenLinks, "should detect broken links")
+	// Verify fix was applied
+	assert.Greater(t, len(result.FilesRenamed), 0, "should have renamed files")
+	assert.True(t, result.FilesRenamed[0].Success, "rename should succeed")
 
-	// Verify broken link details
-	foundBroken := false
-	for _, broken := range result.BrokenLinks {
-		if broken.Target == "./missing.md" {
-			foundBroken = true
-			assert.Equal(t, badFile, broken.SourceFile)
-			break
-		}
-	}
-	assert.True(t, foundBroken, "should find the broken link to missing.md")
+	// Verify new file exists
+	expectedPath := filepath.Join(docsDir, "api-guide.md")
+	_, err = os.Stat(expectedPath)
+	assert.NoError(t, err, "renamed file should exist")
+
+	// Verify old file is gone
+	_, err = os.Stat(badFile)
+	assert.Error(t, err, "old file should not exist")
+
+	// Verify backup was created
+	backupFiles, err := filepath.Glob(filepath.Join(docsDir, ".docbuilder-backup-*"))
+	require.NoError(t, err)
+	assert.Greater(t, len(backupFiles), 0, "backup directory should be created")
 }

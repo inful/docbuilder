@@ -60,7 +60,7 @@ hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"
   base_url: "https://docs.example.com"
-  theme: "hextra"
+  theme: "relearn"
   params:
     search:
       enable: true
@@ -134,7 +134,7 @@ Or for local development without git polling:
 ## 8. Next Steps
 
 - Customize landing pages with `templates/index/*.tmpl`.
-- Pick a supported theme (`hextra`, `docsy`, or `relearn`).
+- DocBuilder uses the Relearn theme exclusively for consistent documentation.
 - Integrate with CI: compare `doc_files_hash` between runs to skip downstream jobs.
 
 ## Additional Commands

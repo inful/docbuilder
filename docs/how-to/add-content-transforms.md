@@ -47,7 +47,7 @@ Stage: transform
 Stage: finalize
   7. Strip First Heading          - Remove duplicate titles
   8. Shortcode Escaper            - Escape Hugo shortcodes
-  9. Hextra Type Enforcer         - Set page types
+  9. Type Enforcer                - Set page types
 
 Stage: serialize
   10. Serializer                  - Write final YAML + content

@@ -34,7 +34,7 @@ hugo:
   title: "Updated Documentation Hub"
   description: "Automated documentation from multiple repositories (hot-reloaded)"
   base_url: "http://localhost:8080"
-  theme: "hextra"
+  theme: "relearn"
 
 monitoring:
   health:

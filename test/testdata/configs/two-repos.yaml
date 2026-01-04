@@ -14,7 +14,7 @@ hugo:
   title: "Multi-Repo Documentation"
   description: "Testing multi-repository aggregation"
   base_url: "http://localhost"
-  theme: "hextra"
+  theme: "relearn"
 
 output:
   directory: "./test-output"

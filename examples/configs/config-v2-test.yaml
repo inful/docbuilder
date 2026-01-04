@@ -38,7 +38,7 @@ hugo:
   title: "Test Documentation Site"
   description: "Testing DocBuilder daemon mode"
   base_url: "http://localhost:1313"
-  theme: "hextra"
+  theme: "relearn"
   language_code: "en"
   params:
     version: "2.0.0"
