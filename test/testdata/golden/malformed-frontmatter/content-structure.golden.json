@@ -15,14 +15,6 @@
       },
       "contentHash": "sha256:b3e5693672701cf9"
     },
-    "content/malformed-frontmatter/_index.md": {
-      "frontmatter": {
-        "repository": "malformed-frontmatter",
-        "title": "Malformed Frontmatter",
-        "type": "docs"
-      },
-      "contentHash": "sha256:883cc69c7b6f5722"
-    },
     "content/valid.md": {
       "frontmatter": {
         "repository": "malformed-frontmatter",
@@ -36,9 +28,6 @@
   "structure": {
     "_index.md": {},
     "invalid-yaml.md": {},
-    "malformed-frontmatter": {
-      "_index.md": {}
-    },
     "valid.md": {}
   }
 }

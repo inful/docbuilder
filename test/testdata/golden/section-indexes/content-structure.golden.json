@@ -7,6 +7,14 @@
       },
       "contentHash": "sha256:1990848bd13b3d56"
     },
+    "content/advanced/_index.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "advanced",
+        "type": "docs"
+      },
+      "contentHash": "sha256:5092f9dabda898c1"
+    },
     "content/advanced/plugins.md": {
       "frontmatter": {
         "repository": "section-docs",
@@ -25,6 +33,14 @@
       },
       "contentHash": "sha256:e278346a5d790faa"
     },
+    "content/getting-started/_index.md": {
+      "frontmatter": {
+        "repository": "section-docs",
+        "title": "getting-started",
+        "type": "docs"
+      },
+      "contentHash": "sha256:4b71e029b87cf014"
+    },
     "content/getting-started/configuration.md": {
       "frontmatter": {
         "repository": "section-docs",
@@ -42,50 +58,19 @@
         "weight": 1
       },
       "contentHash": "sha256:a5a9a6de89e0e05a"
-    },
-    "content/section-docs/_index.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "Section Docs",
-        "type": "docs"
-      },
-      "contentHash": "sha256:ef64bfb9894ae603"
-    },
-    "content/section-docs/advanced/_index.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "advanced",
-        "type": "docs"
-      },
-      "contentHash": "sha256:5092f9dabda898c1"
-    },
-    "content/section-docs/getting-started/_index.md": {
-      "frontmatter": {
-        "repository": "section-docs",
-        "title": "getting-started",
-        "type": "docs"
-      },
-      "contentHash": "sha256:4b71e029b87cf014"
     }
   },
   "structure": {
     "_index.md": {},
     "advanced": {
+      "_index.md": {},
       "plugins.md": {},
       "themes.md": {}
     },
     "getting-started": {
+      "_index.md": {},
       "configuration.md": {},
       "installation.md": {}
-    },
-    "section-docs": {
-      "_index.md": {},
-      "advanced": {
-        "_index.md": {}
-      },
-      "getting-started": {
-        "_index.md": {}
-      }
     }
   }
 }

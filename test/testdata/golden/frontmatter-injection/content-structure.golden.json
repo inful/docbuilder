@@ -25,22 +25,11 @@
         "type": "docs"
       },
       "contentHash": "sha256:52f5f06e661990cf"
-    },
-    "content/test-repo/_index.md": {
-      "frontmatter": {
-        "repository": "test-repo",
-        "title": "Test Repo",
-        "type": "docs"
-      },
-      "contentHash": "sha256:014c1ca979f93fb5"
     }
   },
   "structure": {
     "_index.md": {},
     "metadata.md": {},
-    "no-editurl.md": {},
-    "test-repo": {
-      "_index.md": {}
-    }
+    "no-editurl.md": {}
   }
 }

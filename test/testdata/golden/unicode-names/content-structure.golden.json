@@ -16,14 +16,6 @@
       },
       "contentHash": "sha256:634a691e06e24834"
     },
-    "content/unicode-names/_index.md": {
-      "frontmatter": {
-        "repository": "unicode-names",
-        "title": "Unicode Names",
-        "type": "docs"
-      },
-      "contentHash": "sha256:3b97336ff394c3fe"
-    },
     "content/русский.md": {
       "frontmatter": {
         "repository": "unicode-names",
@@ -46,9 +38,6 @@
   "structure": {
     "_index.md": {},
     "español.md": {},
-    "unicode-names": {
-      "_index.md": {}
-    },
     "русский.md": {},
     "中文.md": {}
   }

@@ -16,6 +16,14 @@
       },
       "contentHash": "sha256:0fefd4d2264d4d26"
     },
+    "content/special-chars (test)/_index.md": {
+      "frontmatter": {
+        "repository": "special-chars",
+        "title": "special-chars (test)",
+        "type": "docs"
+      },
+      "contentHash": "sha256:8573a9f7674903c7"
+    },
     "content/special-chars (test)/doc-[brackets].md": {
       "frontmatter": {
         "repository": "special-chars",
@@ -24,34 +32,13 @@
         "weight": 2
       },
       "contentHash": "sha256:a80042af72e4fcb8"
-    },
-    "content/special-chars/_index.md": {
-      "frontmatter": {
-        "repository": "special-chars",
-        "title": "Special Chars",
-        "type": "docs"
-      },
-      "contentHash": "sha256:3354c640979ec443"
-    },
-    "content/special-chars/special-chars (test)/_index.md": {
-      "frontmatter": {
-        "repository": "special-chars",
-        "title": "special-chars (test)",
-        "type": "docs"
-      },
-      "contentHash": "sha256:8573a9f7674903c7"
     }
   },
   "structure": {
     "_index.md": {},
     "file with spaces.md": {},
-    "special-chars": {
-      "_index.md": {},
-      "special-chars (test)": {
-        "_index.md": {}
-      }
-    },
     "special-chars (test)": {
+      "_index.md": {},
       "doc-[brackets].md": {}
     }
   }

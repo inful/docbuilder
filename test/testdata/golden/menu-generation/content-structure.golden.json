@@ -50,23 +50,12 @@
         "weight": 1
       },
       "contentHash": "sha256:c10d4b901f7adf2e"
-    },
-    "content/menu-docs/_index.md": {
-      "frontmatter": {
-        "repository": "menu-docs",
-        "title": "Menu Docs",
-        "type": "docs"
-      },
-      "contentHash": "sha256:75b39bab57bd3341"
     }
   },
   "structure": {
     "_index.md": {},
     "api.md": {},
     "guide.md": {},
-    "intro.md": {},
-    "menu-docs": {
-      "_index.md": {}
-    }
+    "intro.md": {}
   }
 }
