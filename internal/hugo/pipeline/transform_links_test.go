@@ -13,22 +13,24 @@ import (
 
 func TestRewriteLinkPath(t *testing.T) {
 	tests := []struct {
-		name       string
-		path       string
-		repository string
-		forge      string
-		isIndex    bool
-		docPath    string
-		want       string
+		name         string
+		path         string
+		repository   string
+		forge        string
+		isIndex      bool
+		docPath      string
+		isSingleRepo bool
+		want         string
 	}{
 		{
-			name:       "Index file in subdirectory - relative link preserves directory",
-			path:       "configure-env-exposure.md",
-			repository: "servejs",
-			forge:      "",
-			isIndex:    true,
-			docPath:    "servejs/how-to/_index.md",
-			want:       "/servejs/how-to/configure-env-exposure",
+			name:         "Index file in subdirectory - relative link preserves directory",
+			path:         "configure-env-exposure.md",
+			repository:   "servejs",
+			forge:        "",
+			isIndex:      true,
+			docPath:      "servejs/how-to/_index.md",
+			isSingleRepo: false,
+			want:         "/servejs/how-to/configure-env-exposure",
 		},
 		{
 			name:       "Index file in subdirectory with forge - relative link preserves directory",
@@ -115,7 +117,7 @@ func TestRewriteLinkPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := rewriteLinkPath(tt.path, tt.repository, tt.forge, tt.isIndex, tt.docPath)
+			got := rewriteLinkPath(tt.path, tt.repository, tt.forge, tt.isIndex, tt.docPath, tt.isSingleRepo)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -156,7 +158,7 @@ func TestExtractDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := extractDirectory(tt.hugoPath)
+			got := extractDirectory(tt.hugoPath, false) // Multi-repo tests
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -268,4 +270,45 @@ func TestRewriteRelativeLinks_RealWorldContent(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Less(t, duration.Milliseconds(), int64(100), "Transform should complete in under 100ms but took %v", duration)
 	t.Logf("Transform completed in %v", duration)
+}
+
+func TestRewriteLinkPath_SingleRepo(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         string
+		repository   string
+		forge        string
+		isIndex      bool
+		docPath      string
+		isSingleRepo bool
+		want         string
+	}{
+		{
+			name:         "Single repo - parent directory navigation",
+			path:         "../reference/configuration.md",
+			repository:   "local",
+			forge:        "",
+			isIndex:      false,
+			docPath:      "content/how-to/enable-page-transitions.md",
+			isSingleRepo: true,
+			want:         "/reference/configuration",
+		},
+		{
+			name:         "Single repo - same directory link",
+			path:         "./enable-hugo-render.md",
+			repository:   "local",
+			forge:        "",
+			isIndex:      false,
+			docPath:      "content/how-to/enable-page-transitions.md",
+			isSingleRepo: true,
+			want:         "/how-to/enable-hugo-render",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := rewriteLinkPath(tt.path, tt.repository, tt.forge, tt.isIndex, tt.docPath, tt.isSingleRepo)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
