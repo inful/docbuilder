@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	testutils "git.home.luguber.info/inful/docbuilder/internal/testing"
+	testutils "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 )
 
 // TestRefactoredCLIFramework demonstrates how to use the new testing framework

@@ -1,4 +1,4 @@
-package testforge_test
+package forge_test
 
 import (
 	"context"

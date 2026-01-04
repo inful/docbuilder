@@ -6,7 +6,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/testforge"
+	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
 func fixedTime() time.Time { return time.Date(2025, 9, 26, 12, 34, 56, 0, time.UTC) }
