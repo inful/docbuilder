@@ -7,14 +7,6 @@
       },
       "contentHash": "sha256:d8a36b93b60b9044"
     },
-    "content/image-docs/_index.md": {
-      "frontmatter": {
-        "repository": "image-docs",
-        "title": "Image Docs",
-        "type": "docs"
-      },
-      "contentHash": "sha256:e5a9d59069791d96"
-    },
     "content/images-guide.md": {
       "frontmatter": {
         "repository": "image-docs",
@@ -22,14 +14,11 @@
         "type": "docs",
         "weight": 1
       },
-      "contentHash": "sha256:ad3d3cbda675de1b"
+      "contentHash": "sha256:0b367b19e93548d6"
     }
   },
   "structure": {
     "_index.md": {},
-    "image-docs": {
-      "_index.md": {}
-    },
     "images": {
       "architecture.svg": {},
       "logo.png": {}
