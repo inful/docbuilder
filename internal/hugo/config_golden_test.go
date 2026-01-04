@@ -14,6 +14,7 @@ import (
 
 // normalizeConfig removes volatile fields (dates) and sorts maps for stable serialization.
 func normalizeConfig(t *testing.T, path string) []byte {
+	t.Helper()
 	// #nosec G304 - test helper
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -104,6 +105,7 @@ func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
 
 // writeMismatch writes a simple diff-ish output to help debugging mismatches.
 func writeMismatch(t *testing.T, want, got []byte) {
+	t.Helper()
 	// naive line diff for brevity
 	wantLines := lines(string(want))
 	gotLines := lines(string(got))

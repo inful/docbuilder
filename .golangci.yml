@@ -47,6 +47,7 @@ linters:
     - revive
     - staticcheck
     - tagalign
+    - thelper
     - usetesting
     - unconvert
     - unparam

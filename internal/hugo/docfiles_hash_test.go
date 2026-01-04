@@ -47,6 +47,7 @@ func TestDocFilesHashChanges(t *testing.T) {
 }
 
 func readHash(t *testing.T, path string) string {
+	t.Helper()
 	b, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read report: %v", err)

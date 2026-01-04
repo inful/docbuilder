@@ -18,6 +18,7 @@ type ConfigBuilder struct {
 
 // NewConfigBuilder creates a new configuration builder for tests.
 func NewConfigBuilder(t *testing.T) *ConfigBuilder {
+	t.Helper()
 	return &ConfigBuilder{
 		config: &config.Config{
 			Version: "2.0",
@@ -195,6 +196,7 @@ type ConfigFactory struct {
 
 // NewConfigFactory creates a new configuration factory.
 func NewConfigFactory(t *testing.T) *ConfigFactory {
+	t.Helper()
 	return &ConfigFactory{t: t}
 }
 

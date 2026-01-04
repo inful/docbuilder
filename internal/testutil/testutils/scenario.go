@@ -44,6 +44,7 @@ type TestResult struct {
 
 // NewTestEnvironment creates a new test environment with temporary directories.
 func NewTestEnvironment(t *testing.T) *TestEnvironment {
+	t.Helper()
 	tempDir := t.TempDir()
 
 	configDir := filepath.Join(tempDir, "config")
@@ -102,6 +103,7 @@ func (env *TestEnvironment) ConfigPath() string {
 
 // Run executes a test scenario.
 func (scenario *TestScenario) Run(t *testing.T) {
+	t.Helper()
 	t.Run(scenario.Name, func(t *testing.T) {
 		if scenario.Description != "" {
 			t.Logf("=== %s ===", scenario.Description)
@@ -131,6 +133,7 @@ func (scenario *TestScenario) Run(t *testing.T) {
 }
 
 func (scenario *TestScenario) runInternal(t *testing.T) {
+	t.Helper()
 	// Setup
 	var env *TestEnvironment
 	if scenario.Setup != nil {

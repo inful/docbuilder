@@ -45,6 +45,7 @@ func newTestGenerator(_ *testing.T, cfg *cfg.Config, outDir string) *hugo.Genera
 
 // writePrevReport helper writes a build-report.json with the provided fields and updates checksum state.
 func writePrevReport(t *testing.T, outDir string, files, rendered int, docHash string, st *fakeSkipState) {
+	t.Helper()
 	prev := struct {
 		Repositories      int    `json:"repositories"`
 		Files             int    `json:"files"`

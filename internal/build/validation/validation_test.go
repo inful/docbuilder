@@ -44,6 +44,7 @@ func newTestGenerator(t *testing.T, cfg *cfg.Config, outDir string) *hugo.Genera
 }
 
 func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, docHash string, st *fakeSkipState) {
+	t.Helper()
 	prev := struct {
 		Repositories      int    `json:"repositories"`
 		Files             int    `json:"files"`
@@ -68,6 +69,7 @@ func makeBaseConfig(out string) *cfg.Config {
 }
 
 func setupValidTestEnvironment(t *testing.T, out string) {
+	t.Helper()
 	// Create minimal public structure
 	pubDir := filepath.Join(out, "public")
 	if err := os.MkdirAll(pubDir, 0o750); err != nil {

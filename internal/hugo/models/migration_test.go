@@ -22,6 +22,7 @@ func TestMigrationHelper_ConvertLegacyPatch(t *testing.T) {
 			name:  "nil input",
 			input: nil,
 			validate: func(t *testing.T, patch *FrontMatterPatch) {
+				t.Helper()
 				assert.True(t, patch.IsEmpty())
 			},
 		},
@@ -47,6 +48,7 @@ func TestMigrationHelper_ConvertLegacyPatch(t *testing.T) {
 				"custom_field":         "custom_value",
 			},
 			validate: func(t *testing.T, patch *FrontMatterPatch) {
+				t.Helper()
 				assert.Equal(t, "Test Title", *patch.Title)
 				assert.True(t, testTime.Equal(*patch.Date))
 				assert.Equal(t, true, *patch.Draft)
@@ -73,6 +75,7 @@ func TestMigrationHelper_ConvertLegacyPatch(t *testing.T) {
 				"date":  "2023-12-25T10:30:00Z",
 			},
 			validate: func(t *testing.T, patch *FrontMatterPatch) {
+				t.Helper()
 				assert.Equal(t, "Test", *patch.Title)
 				assert.True(t, testTime.Equal(*patch.Date))
 			},
@@ -85,6 +88,7 @@ func TestMigrationHelper_ConvertLegacyPatch(t *testing.T) {
 				"keywords":   []any{"key1", "key2"},
 			},
 			validate: func(t *testing.T, patch *FrontMatterPatch) {
+				t.Helper()
 				assert.Equal(t, []string{"tag1", "tag2"}, *patch.Tags)
 				assert.Equal(t, []string{"cat1", "cat2"}, *patch.Categories)
 				assert.Equal(t, []string{"key1", "key2"}, *patch.Keywords)

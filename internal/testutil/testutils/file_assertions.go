@@ -15,6 +15,7 @@ type FileAssertions struct {
 
 // NewFileAssertions creates a new file assertions helper.
 func NewFileAssertions(t *testing.T, baseDir string) *FileAssertions {
+	t.Helper()
 	return &FileAssertions{
 		t:       t,
 		baseDir: baseDir,
