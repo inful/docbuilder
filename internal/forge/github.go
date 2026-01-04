@@ -245,7 +245,7 @@ func (c *GitHubClient) ValidateWebhook(payload []byte, signature, secret string)
 	// Fallback legacy SHA-1 format: sha1=<hash>
 	if strings.HasPrefix(signature, "sha1=") {
 		expected := signature[len("sha1="):]
-		mac := hmac.New(sha1.New, []byte(secret)) //nolint:gosec // legacy GitHub webhook signature fallback
+		mac := hmac.New(sha1.New, []byte(secret))
 		mac.Write(payload)
 		calc := hex.EncodeToString(mac.Sum(nil))
 		return hmac.Equal([]byte(expected), []byte(calc))

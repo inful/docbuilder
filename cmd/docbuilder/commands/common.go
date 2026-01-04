@@ -135,6 +135,7 @@ func CopyDir(src, dst string) error {
 
 // copyFile copies a single file from src to dst.
 func copyFile(src, dst string) error {
+	// #nosec G304 -- src/dst paths are validated by caller
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
@@ -143,6 +144,7 @@ func copyFile(src, dst string) error {
 		_ = srcFile.Close()
 	}()
 
+	// #nosec G304 -- dst path is validated by caller
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err

@@ -40,6 +40,7 @@ This is a test repository.
 	}
 
 	// Verify file was created
+	// #nosec G304 -- test utility reading from test output directory
 	content, err := os.ReadFile(indexPath)
 	if err != nil {
 		t.Fatalf("failed to read index file: %v", err)
@@ -102,6 +103,7 @@ This is a test repository without front matter.
 	}
 
 	// Verify file was created
+	// #nosec G304 -- test utility reading from test output directory
 	content, err := os.ReadFile(indexPath)
 	if err != nil {
 		t.Fatalf("failed to read index file: %v", err)
@@ -221,6 +223,7 @@ title: "Partial Front Matter"
 	}
 
 	// Verify file was created
+	// #nosec G304 -- test utility reading from test output directory
 	content, err := os.ReadFile(indexPath)
 	if err != nil {
 		t.Fatalf("failed to read index file: %v", err)
@@ -282,6 +285,7 @@ date: "2023-12-01T00:00:00Z"
 	}
 
 	// Verify file was created
+	// #nosec G304 -- test utility reading from test output directory
 	content, err := os.ReadFile(indexPath)
 	if err != nil {
 		t.Fatalf("failed to read index file: %v", err)

@@ -92,7 +92,7 @@ func TestEnsureGoModForModules(t *testing.T) {
 			// Create existing go.mod if specified
 			goModPath := filepath.Join(tmpDir, "go.mod")
 			if tt.existingGoMod != "" {
-				err := os.WriteFile(goModPath, []byte(tt.existingGoMod), 0o644)
+				err := os.WriteFile(goModPath, []byte(tt.existingGoMod), 0o600)
 				if err != nil {
 					t.Fatalf("Failed to create test go.mod: %v", err)
 				}
@@ -108,6 +108,7 @@ func TestEnsureGoModForModules(t *testing.T) {
 			}
 
 			// Verify go.mod was created
+			// #nosec G304 -- test utility reading from test output directory
 			content, err := os.ReadFile(goModPath)
 			if err != nil {
 				t.Fatalf("Failed to read go.mod: %v", err)
@@ -178,6 +179,7 @@ func TestDeriveModuleName(t *testing.T) {
 			}
 
 			// Read and verify
+			// #nosec G304 -- test utility reading from test output directory
 			content, err := os.ReadFile(filepath.Join(tmpDir, "go.mod"))
 			if err != nil {
 				t.Fatalf("Failed to read go.mod: %v", err)

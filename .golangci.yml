@@ -24,6 +24,7 @@ linters:
     - goconst
     - gocritic
     - gocyclo
+    - gosec
     - godoclint
     - godot
     #- godox

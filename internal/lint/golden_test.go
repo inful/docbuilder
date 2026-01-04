@@ -126,12 +126,13 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	goldenPath := filepath.Join(testdataDir, "..", "golden", "fix-dry-run.golden.txt")
 
 	if *updateGolden {
-		writeErr := os.WriteFile(goldenPath, []byte(summary), 0o644)
+		writeErr := os.WriteFile(goldenPath, []byte(summary), 0o600)
 		require.NoError(t, writeErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
 
+	// #nosec G304 -- test utility reading golden file from testdata
 	expected, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file")
 
@@ -151,7 +152,7 @@ func TestGoldenAutoFix_BrokenLinkDetection(t *testing.T) {
 	// Create test structure with broken links
 	tmpDir := t.TempDir()
 	docsDir := filepath.Join(tmpDir, "docs")
-	err := os.MkdirAll(docsDir, 0o755)
+	err := os.MkdirAll(docsDir, 0o750)
 	require.NoError(t, err)
 
 	// Create a file with broken links
@@ -164,12 +165,12 @@ func TestGoldenAutoFix_BrokenLinkDetection(t *testing.T) {
 [External Link](https://example.com/guide.md)
 `
 	indexFile := filepath.Join(docsDir, "index.md")
-	err = os.WriteFile(indexFile, []byte(indexContent), 0o644)
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
 	require.NoError(t, err)
 
 	// Create the existing file
 	guideFile := filepath.Join(docsDir, "guide.md")
-	err = os.WriteFile(guideFile, []byte("# Guide\n"), 0o644)
+	err = os.WriteFile(guideFile, []byte("# Guide\n"), 0o600)
 	require.NoError(t, err)
 
 	// Run fix (which includes broken link detection)
@@ -209,6 +210,7 @@ func copyDir(src, dst string) error {
 		}
 
 		// Copy file
+		// #nosec G304 -- test utility copying files from test directory
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -241,9 +243,11 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 		actualPath := filepath.Join(actualDir, relPath)
 
 		// Read both files
+		// #nosec G304 -- test utility reading test output for comparison
 		expectedContent, err := os.ReadFile(expectedPath)
 		require.NoError(t, err, "failed to read expected file: %s", expectedPath)
 
+		// #nosec G304 -- test utility reading test output for comparison
 		actualContent, err := os.ReadFile(actualPath)
 		require.NoError(t, err, "failed to read actual file: %s", actualPath)
 
@@ -336,14 +340,15 @@ func compareFixResultGolden(t *testing.T, result *FixResult, goldenPath string, 
 	require.NoError(t, err)
 
 	if update {
-		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750)
 		require.NoError(t, updateErr)
-		updateErr = os.WriteFile(goldenPath, actualJSON, 0o644)
+		updateErr = os.WriteFile(goldenPath, actualJSON, 0o600)
 		require.NoError(t, updateErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
 
+	// #nosec G304 -- test utility reading golden file from testdata
 	expectedJSON, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 
@@ -385,14 +390,15 @@ func compareBrokenLinksGolden(t *testing.T, brokenLinks []BrokenLink, goldenPath
 	require.NoError(t, err)
 
 	if update {
-		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0o755)
+		updateErr := os.MkdirAll(filepath.Dir(goldenPath), 0o750)
 		require.NoError(t, updateErr)
-		updateErr = os.WriteFile(goldenPath, actualJSON, 0o644)
+		updateErr = os.WriteFile(goldenPath, actualJSON, 0o600)
 		require.NoError(t, updateErr)
 		t.Logf("Updated golden file: %s", goldenPath)
 		return
 	}
 
+	// #nosec G304 -- test utility reading golden file from testdata
 	expectedJSON, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 

@@ -54,6 +54,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 		t.Fatalf("guide file missing: %v", err)
 	}
 
+	// #nosec G304 -- test utility reading from test output directory
 	b, err := os.ReadFile(introPath)
 	if err != nil {
 		t.Fatalf("read intro: %v", err)
@@ -80,6 +81,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 	}
 
 	// Sanity: guide file also has front matter
+	// #nosec G304 -- test utility reading from test output directory
 	gb, err := os.ReadFile(guidePath)
 	if err != nil {
 		t.Fatalf("read guide: %v", err)
@@ -185,6 +187,7 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 		// Validate a sample file has proper front matter
 		// When README.md is the only index file, it becomes _index.md
 		indexPath := filepath.Join(repoDir, "_index.md")
+		// #nosec G304 -- test utility reading from test output directory
 		if content, err := os.ReadFile(indexPath); err != nil {
 			t.Fatalf("Failed to read index for %s: %v", repo.Name, err)
 		} else {

@@ -18,6 +18,7 @@ func DetectHugoVersion(ctx context.Context) string {
 	}
 
 	// Run hugo version command
+	// #nosec G204 -- hugoPath is from exec.LookPath, not user-controlled
 	cmd := exec.CommandContext(ctx, hugoPath, "version")
 	output, err := cmd.Output()
 	if err != nil {

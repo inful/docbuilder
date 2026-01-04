@@ -19,6 +19,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 		t.Fatalf("first copy: %v", err)
 	}
 	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
+	// #nosec G304 -- test utility reading from test output directory
 	data, err := os.ReadFile(outPath)
 	if err != nil {
 		t.Fatalf("read: %v", err)
@@ -35,6 +36,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file2}); err != nil {
 		t.Fatalf("second copy: %v", err)
 	}
+	// #nosec G304 -- test utility reading from test output directory
 	data2, _ := os.ReadFile(outPath)
 	if strings.Count(string(data2), "---\n") != 2 {
 		t.Fatalf("idempotency failed; delimiters=%d", strings.Count(string(data2), "---\n"))
@@ -50,6 +52,7 @@ func TestPipeline_Order(t *testing.T) {
 		t.Fatalf("copy: %v", err)
 	}
 	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
+	// #nosec G304 -- test utility reading from test output directory
 	data, _ := os.ReadFile(outPath)
 	out := string(data)
 	if !strings.Contains(out, "custom: val") {

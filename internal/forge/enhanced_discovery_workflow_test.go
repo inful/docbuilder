@@ -220,9 +220,11 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Test forge manager with all configurations
 		manager := NewForgeManager()
-		manager.AddForge(configs[0], github)
-		manager.AddForge(configs[1], gitlab)
-		manager.AddForge(configs[2], forgejo)
+		if len(configs) >= 3 {
+			manager.AddForge(configs[0], github)
+			manager.AddForge(configs[1], gitlab)
+			manager.AddForge(configs[2], forgejo)
+		}
 
 		// Test discovery across all platforms
 		discovery := NewDiscoveryService(manager, &config.FilteringConfig{})

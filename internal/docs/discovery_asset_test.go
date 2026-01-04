@@ -22,15 +22,15 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 	imagesPath := filepath.Join(guidesPath, "images")
 
 	// Create directory structure
-	require.NoError(t, os.MkdirAll(imagesPath, 0o755))
+	require.NoError(t, os.MkdirAll(imagesPath, 0o750))
 
 	// Create markdown file in subdirectory
 	mdContent := []byte("# Guide\n\n![Image](images/test.png)")
-	require.NoError(t, os.WriteFile(filepath.Join(guidesPath, "tutorial.md"), mdContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(guidesPath, "tutorial.md"), mdContent, 0o600))
 
 	// Create image in subdirectory's images folder
 	imageContent := []byte("fake png content")
-	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "test.png"), imageContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "test.png"), imageContent, 0o600))
 
 	// Setup config
 	cfg := &config.Config{
@@ -95,15 +95,15 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 	docsPath := filepath.Join(repoPath, "docs")
 	imagesPath := filepath.Join(docsPath, "images")
 
-	require.NoError(t, os.MkdirAll(imagesPath, 0o755))
+	require.NoError(t, os.MkdirAll(imagesPath, 0o750))
 
 	// Create markdown in docs root
 	mdContent := []byte("# Guide\n\n![Logo](images/logo.png)")
-	require.NoError(t, os.WriteFile(filepath.Join(docsPath, "index.md"), mdContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(docsPath, "index.md"), mdContent, 0o600))
 
 	// Create image in docs/images
 	imageContent := []byte("fake png content")
-	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "logo.png"), imageContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "logo.png"), imageContent, 0o600))
 
 	cfg := &config.Config{
 		Repositories: []config.Repository{
@@ -153,15 +153,15 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 	docsPath := filepath.Join(repoPath, "docs")
 	imagesPath := filepath.Join(docsPath, "images")
 
-	require.NoError(t, os.MkdirAll(imagesPath, 0o755))
+	require.NoError(t, os.MkdirAll(imagesPath, 0o750))
 
 	// Create markdown referencing mixed-case image
 	mdContent := []byte("# Guide\n\n![Approve button](./images/6_3_approve_MR.png)")
-	require.NoError(t, os.WriteFile(filepath.Join(docsPath, "tutorial.md"), mdContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(docsPath, "tutorial.md"), mdContent, 0o600))
 
 	// Create image with mixed-case filename
 	imageContent := []byte("fake png content")
-	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "6_3_approve_MR.png"), imageContent, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(imagesPath, "6_3_approve_MR.png"), imageContent, 0o600))
 
 	cfg := &config.Config{
 		Repositories: []config.Repository{

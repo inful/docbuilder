@@ -51,6 +51,7 @@ func TestBuildReportStability(t *testing.T) {
 	}
 
 	goldenPath := filepath.Join("testdata", "build-report.golden.json")
+	// #nosec G304 -- test utility reading from testdata directory
 	golden, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatalf("read golden: %v", err)

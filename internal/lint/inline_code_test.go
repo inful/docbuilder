@@ -72,7 +72,7 @@ func TestDetectBrokenLinks_SkipsInlineCode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	docsDir := filepath.Join(tmpDir, "docs")
-	require.NoError(t, os.MkdirAll(docsDir, 0o755))
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
 	// Create a file with links inside inline code (should NOT be flagged as broken)
 	indexPath := filepath.Join(docsDir, "index.md")
@@ -93,7 +93,7 @@ Reference link in inline code: ` + "`[ref]: ./reference.md`" + `
 
 Real image: ![Real](./missing.png)
 `
-	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o644))
+	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
 	// Run broken link detection
 	broken, err := detectBrokenLinks(docsDir)
@@ -121,7 +121,7 @@ func TestDetectBrokenLinks_ComplexInlineCode(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	docsDir := filepath.Join(tmpDir, "docs")
-	require.NoError(t, os.MkdirAll(docsDir, 0o755))
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
 	// Test edge cases with inline code
 	indexPath := filepath.Join(docsDir, "test.md")
@@ -133,7 +133,7 @@ Nested situation: Use ` + "`[Example](./example.md)`" + ` like this [Broken](./b
 
 Backtick at end: ` + "`something` [Link](./real-missing.md)" + `
 `
-	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o644))
+	require.NoError(t, os.WriteFile(indexPath, []byte(content), 0o600))
 
 	broken, err := detectBrokenLinks(docsDir)
 	require.NoError(t, err)

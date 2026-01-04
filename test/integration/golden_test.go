@@ -399,10 +399,10 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 
 	// Create a minimal docs directory
 	docsDir := filepath.Join(tmpDir, "docs")
-	require.NoError(t, os.MkdirAll(docsDir, 0o755))
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
 	testFile := filepath.Join(docsDir, "test.md")
-	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0o644))
+	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0o600))
 
 	// Initialize git but don't commit
 	cmd := exec.CommandContext(context.Background(), "git", "init")
@@ -410,10 +410,12 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	require.NoError(t, cmd.Run())
 
 	// Configure git
+	// #nosec G204 -- controlled test environment with hardcoded git commands
 	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.name", "Test").Run()
-	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
+	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.email", "test@example.com").Run() // #nosec G204
 
 	// Add files but don't commit (this creates an edge case)
+	// #nosec G204 -- controlled test environment with hardcoded git commands
 	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "add", ".").Run()
 
 	// Load configuration
