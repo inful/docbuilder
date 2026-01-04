@@ -2,11 +2,15 @@ package forge
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
+
+// ErrNotSupported is returned when an operation is not supported by the forge client.
+var ErrNotSupported = errors.New("operation not supported")
 
 // LocalClient is a minimal forge client that uses the current working directory
 // as a single local repository source. It is useful for development and
@@ -71,7 +75,7 @@ func (c *LocalClient) ValidateWebhook(payload []byte, signature string, secret s
 }
 
 func (c *LocalClient) ParseWebhookEvent(payload []byte, event string) (*WebhookEvent, error) {
-	return nil, nil
+	return nil, ErrNotSupported
 }
 
 func (c *LocalClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {

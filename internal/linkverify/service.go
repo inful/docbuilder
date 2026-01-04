@@ -18,6 +18,9 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
+// ErrNoFrontMatter is returned when content has no front matter.
+var ErrNoFrontMatter = errors.New("no front matter")
+
 // PageMetadata contains metadata about a page for verification.
 type PageMetadata struct {
 	DocFile      *docs.DocFile  // Original doc file reference
@@ -398,15 +401,16 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 }
 
 // ParseFrontMatter extracts front matter from transformed content.
+// Returns ErrNoFrontMatter if content has no front matter.
 func ParseFrontMatter(content []byte) (map[string]any, error) {
 	if !hasFrontMatter(content) {
-		return nil, nil
+		return nil, ErrNoFrontMatter
 	}
 
 	// Extract front matter between --- delimiters
 	parts := strings.SplitN(string(content), "---", 3)
 	if len(parts) < 3 {
-		return nil, nil
+		return nil, ErrNoFrontMatter
 	}
 
 	var fm map[string]any

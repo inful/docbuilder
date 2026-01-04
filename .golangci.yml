@@ -38,6 +38,7 @@ linters:
     # - mnd
     - modernize
     - nestif
+    - nilnil
     - noctx
     - nolintlint
     - perfsprint
