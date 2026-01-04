@@ -23,19 +23,19 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 		forgejo := NewEnhancedForgejoMock("comprehensive-forgejo")
 
 		// Add diverse organizations and repositories across all forges
-		setupComprehensiveForgeEcosystem(github, gitlab, forgejo, t)
+		setupComprehensiveForgeEcosystem(t, github, gitlab, forgejo)
 
 		// Phase 4A: CLI Testing Framework validation
 		cliConfig := createCLITestConfiguration(github, gitlab, forgejo)
-		validateCLIConfiguration(cliConfig, t)
+		validateCLIConfiguration(t, cliConfig)
 
 		// Phase 4B: Component Integration Testing validation
 		integrationContext := createComponentIntegrationContext(github, gitlab, forgejo)
-		validateComponentIntegration(integrationContext, t)
+		validateComponentIntegration(t, integrationContext)
 
 		// Phase 5: Enterprise Deployment Patterns validation
 		enterpriseContext := createEnterpriseDeploymentContext(github, gitlab, forgejo)
-		validateEnterpriseDeployment(enterpriseContext, t)
+		validateEnterpriseDeployment(t, enterpriseContext)
 
 		t.Log("✓ Multi-phase integration validation complete")
 	})
@@ -246,7 +246,8 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 
 // Helper functions for comprehensive testing
 
-func setupComprehensiveForgeEcosystem(github, gitlab, forgejo *EnhancedMockForgeClient, t *testing.T) {
+func setupComprehensiveForgeEcosystem(t *testing.T, github, gitlab, forgejo *EnhancedMockForgeClient) {
+	t.Helper()
 	// GitHub ecosystem
 	github.AddOrganization(CreateMockGitHubOrg("enterprise-org"))
 	github.AddRepository(CreateMockGitHubRepo("enterprise-org", "platform-docs", true, false, true, true))
@@ -284,7 +285,8 @@ func createCLITestConfiguration(github, gitlab, forgejo *EnhancedMockForgeClient
 	}
 }
 
-func validateCLIConfiguration(cfg *config.Config, t *testing.T) {
+func validateCLIConfiguration(t *testing.T, cfg *config.Config) {
+	t.Helper()
 	if len(cfg.Forges) != 3 {
 		t.Errorf("Expected 3 forge configurations, got %d", len(cfg.Forges))
 	}
@@ -305,7 +307,8 @@ func createComponentIntegrationContext(github, gitlab, forgejo *EnhancedMockForg
 	}
 }
 
-func validateComponentIntegration(context map[string]any, t *testing.T) {
+func validateComponentIntegration(t *testing.T, context map[string]any) {
+	t.Helper()
 	forges := context["forges"].([]Client)
 	if len(forges) != 3 {
 		t.Errorf("Expected 3 forge clients, got %d", len(forges))
@@ -328,7 +331,8 @@ func createEnterpriseDeploymentContext(_, _, _ *EnhancedMockForgeClient) map[str
 	}
 }
 
-func validateEnterpriseDeployment(context map[string]any, t *testing.T) {
+func validateEnterpriseDeployment(t *testing.T, context map[string]any) {
+	t.Helper()
 	requiredFeatures := []string{
 		"production_ready", "monitoring_enabled", "ha_configured",
 		"security_validated", "compliance_met",

@@ -107,6 +107,7 @@ func testRepositoryOperations(t *testing.T) {
 }
 
 func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
+	t.Helper()
 	ctx := context.Background()
 	missingURL := "https://github.com/example/missing.git"
 	errCases := []struct {

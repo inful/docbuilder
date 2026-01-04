@@ -19,6 +19,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 		Timeout:     10 * time.Second,
 		Setup:       testutils.NewTestEnvironment,
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+			t.Helper()
 			cliEnv := testutils.NewMockCLIEnvironment(t).
 				WithBinaryPath("../../bin/docbuilder")
 
@@ -47,6 +48,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 		Description: "Test CLI build workflow with realistic configuration",
 		Timeout:     30 * time.Second,
 		Setup: func(t *testing.T) *testutils.TestEnvironment {
+			t.Helper()
 			env := testutils.NewTestEnvironment(t)
 
 			// Create realistic configuration with a mock repository
@@ -64,6 +66,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			return env.WithConfig(config)
 		},
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+			t.Helper()
 			cliEnv := testutils.NewMockCLIEnvironment(t).
 				WithBinaryPath("../../bin/docbuilder")
 			cliEnv.Config = env.Config
@@ -115,6 +118,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 		Name:        "AutoDiscoveryConfiguration",
 		Description: "Test configuration with auto-discovery enabled",
 		Setup: func(t *testing.T) *testutils.TestEnvironment {
+			t.Helper()
 			env := testutils.NewTestEnvironment(t)
 
 			// Create auto-discovery configuration
@@ -124,6 +128,7 @@ func TestRefactoredCLIFramework(t *testing.T) {
 			return env.WithConfig(config)
 		},
 		Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+			t.Helper()
 			// Validate auto-discovery configuration
 			forge := env.Config.Forges[0]
 			if !forge.AutoDiscover {
@@ -156,10 +161,12 @@ func TestRefactoredConfigValidation(t *testing.T) {
 		{
 			Name: "ValidMinimalConfig",
 			Setup: func(t *testing.T) *testutils.TestEnvironment {
+				t.Helper()
 				config := configFactory.MinimalConfig()
 				return testutils.NewTestEnvironment(t).WithConfig(config)
 			},
 			Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+				t.Helper()
 				// Apply defaults first (like normal config loading does)
 				applier := config.NewDefaultApplier()
 				if err := applier.ApplyDefaults(env.Config); err != nil {
@@ -178,10 +185,12 @@ func TestRefactoredConfigValidation(t *testing.T) {
 		{
 			Name: "InvalidEmptyForges",
 			Setup: func(t *testing.T) *testutils.TestEnvironment {
+				t.Helper()
 				config := configFactory.ValidationTestConfig("empty_forges")
 				return testutils.NewTestEnvironment(t).WithConfig(config)
 			},
 			Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+				t.Helper()
 				err := config.ValidateConfig(env.Config)
 				if err == nil {
 					t.Error("Expected config with no forges to fail validation")
@@ -199,10 +208,12 @@ func TestRefactoredConfigValidation(t *testing.T) {
 		{
 			Name: "MultiForgeConfig",
 			Setup: func(t *testing.T) *testutils.TestEnvironment {
+				t.Helper()
 				config := configFactory.MultiForgeConfig()
 				return testutils.NewTestEnvironment(t).WithConfig(config)
 			},
 			Execute: func(t *testing.T, env *testutils.TestEnvironment) *testutils.TestResult {
+				t.Helper()
 				if len(env.Config.Forges) != 3 {
 					t.Errorf("Expected 3 forges, got %d", len(env.Config.Forges))
 					return &testutils.TestResult{Success: false}

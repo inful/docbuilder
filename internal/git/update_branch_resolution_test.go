@@ -21,6 +21,7 @@ const (
 
 // helper to create a commit (duplicate of logic in other tests but kept local to avoid accidental coupling).
 func addSimpleCommit(t *testing.T, repo *git.Repository, repoPath, name string) plumbing.Hash {
+	t.Helper()
 	wt, err := repo.Worktree()
 	if err != nil {
 		t.Fatalf("worktree: %v", err)

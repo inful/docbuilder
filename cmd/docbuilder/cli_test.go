@@ -30,6 +30,7 @@ type MockCLIEnvironment struct {
 
 // NewMockCLIEnvironment creates a new CLI testing environment.
 func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
+	t.Helper()
 	workspaceDir := t.TempDir()
 
 	return &MockCLIEnvironment{
@@ -416,6 +417,7 @@ func (env *MockCLIEnvironment) simulateValidateCommand(_ []string) int {
 
 // AssertExitCode checks that the command exited with the expected code.
 func (result *CLIResult) AssertExitCode(t *testing.T, expected int) {
+	t.Helper()
 	if result.ExitCode != expected {
 		t.Errorf("Expected exit code %d, got %d. Stderr: %s", expected, result.ExitCode, result.Stderr)
 	}
@@ -423,6 +425,7 @@ func (result *CLIResult) AssertExitCode(t *testing.T, expected int) {
 
 // AssertOutputContains checks that the stdout contains the expected text.
 func (result *CLIResult) AssertOutputContains(t *testing.T, expected string) {
+	t.Helper()
 	if !strings.Contains(result.Stdout, expected) {
 		t.Errorf("Expected output to contain %q, got: %s", expected, result.Stdout)
 	}
@@ -430,6 +433,7 @@ func (result *CLIResult) AssertOutputContains(t *testing.T, expected string) {
 
 // AssertErrorContains checks that the stderr contains the expected text.
 func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) {
+	t.Helper()
 	if !strings.Contains(result.Stderr, expected) {
 		t.Errorf("Expected error to contain %q, got: %s", expected, result.Stderr)
 	}
@@ -437,6 +441,7 @@ func (result *CLIResult) AssertErrorContains(t *testing.T, expected string) {
 
 // AssertConfigGenerated checks that a configuration file was generated.
 func (result *CLIResult) AssertConfigGenerated(t *testing.T) {
+	t.Helper()
 	if result.ConfigPath == "" {
 		t.Error("Expected configuration path to be set")
 		return
@@ -449,6 +454,7 @@ func (result *CLIResult) AssertConfigGenerated(t *testing.T) {
 
 // AssertFilesGenerated checks that the expected files were generated.
 func (result *CLIResult) AssertFilesGenerated(t *testing.T, minFiles int) {
+	t.Helper()
 	if len(result.GeneratedFiles) < minFiles {
 		t.Errorf("Expected at least %d generated files, got %d", minFiles, len(result.GeneratedFiles))
 	}
@@ -462,6 +468,7 @@ func (result *CLIResult) AssertFilesGenerated(t *testing.T, minFiles int) {
 
 // AssertPerformance checks that the command completed within the expected time.
 func (result *CLIResult) AssertPerformance(t *testing.T, maxDuration time.Duration) {
+	t.Helper()
 	if result.Duration > maxDuration {
 		t.Errorf("Command took too long: %v (max: %v)", result.Duration, maxDuration)
 	}

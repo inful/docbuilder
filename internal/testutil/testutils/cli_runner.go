@@ -23,6 +23,7 @@ type CLITestRunner struct {
 
 // NewCLITestRunner creates a new CLI test runner.
 func NewCLITestRunner(t *testing.T, binaryPath string) *CLITestRunner {
+	t.Helper()
 	return &CLITestRunner{
 		t:          t,
 		binaryPath: binaryPath,
@@ -158,6 +159,7 @@ type MockCLIEnvironment struct {
 
 // NewMockCLIEnvironment creates a new mock CLI environment.
 func NewMockCLIEnvironment(t *testing.T) *MockCLIEnvironment {
+	t.Helper()
 	env := NewTestEnvironment(t)
 	runner := NewCLITestRunner(t, "docbuilder") // Assumes binary is in PATH
 
