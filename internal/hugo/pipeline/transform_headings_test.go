@@ -324,4 +324,35 @@ func TestStripHeading_BehaviorVerification(t *testing.T) {
 		// Should strip because trimmed values match
 		assert.NotContains(t, doc.Content, "# Welcome")
 	})
+
+	t.Run("strips H1 when it starts with title (partial match)", func(t *testing.T) {
+		doc := &Document{
+			Content: "# ADR-000: Uniform Error Handling Across DocBuilder\n\nContent here.",
+			FrontMatter: map[string]any{
+				"title": "ADR-000: Uniform Error Handling",
+			},
+		}
+
+		_, err := stripHeading(doc)
+		require.NoError(t, err)
+
+		// Should strip because H1 starts with front matter title
+		assert.NotContains(t, doc.Content, "# ADR-000")
+		assert.Contains(t, doc.Content, "Content here.")
+	})
+
+	t.Run("case-insensitive partial match", func(t *testing.T) {
+		doc := &Document{
+			Content: "# Getting Started with DocBuilder\n\nContent.",
+			FrontMatter: map[string]any{
+				"title": "Getting Started",
+			},
+		}
+
+		_, err := stripHeading(doc)
+		require.NoError(t, err)
+
+		// Should strip because H1 starts with title (case-insensitive)
+		assert.NotContains(t, doc.Content, "# Getting Started")
+	})
 }
