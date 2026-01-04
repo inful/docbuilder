@@ -34,8 +34,8 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 	t.Run("nil job", func(t *testing.T) {
 		adapter := NewBuildServiceAdapter(&mockBuildService{})
 		report, err := adapter.Build(context.Background(), nil)
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+		if err == nil {
+			t.Error("expected error for nil job")
 		}
 		if report != nil {
 			t.Errorf("expected nil report for nil job")
@@ -49,8 +49,8 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			TypedMeta: &BuildJobMetadata{},
 		}
 		report, err := adapter.Build(context.Background(), job)
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+		if err == nil {
+			t.Error("expected error for missing config")
 		}
 		if report != nil {
 			t.Errorf("expected nil report for missing config")

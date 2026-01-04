@@ -18,6 +18,9 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+// ErrCacheMiss is returned when a cache entry is not found.
+var ErrCacheMiss = errors.New("cache miss")
+
 // NATSClient manages NATS connection and operations for link verification.
 type NATSClient struct {
 	conn         *nats.Conn
@@ -274,11 +277,12 @@ type CacheEntry struct {
 }
 
 // GetCachedResult retrieves a cached link verification result.
+// Returns ErrCacheMiss if the entry is not found or cache is unavailable.
 func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEntry, error) {
 	// Ensure we're connected before accessing cache
 	if err := c.ensureConnected(ctx); err != nil {
 		slog.Debug("NATS not connected, skipping cache lookup", "error", err)
-		return nil, nil // Return nil to indicate cache miss
+		return nil, ErrCacheMiss
 	}
 
 	cacheCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -289,7 +293,7 @@ func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEnt
 	c.mu.RUnlock()
 
 	if kv == nil {
-		return nil, nil // Cache not available
+		return nil, ErrCacheMiss
 	}
 
 	// Use MD5 hash as KV key
@@ -298,7 +302,7 @@ func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEnt
 	entry, err := kv.Get(cacheCtx, key)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			return nil, nil // Not cached
+			return nil, ErrCacheMiss
 		}
 		return nil, fmt.Errorf("failed to get cache entry: %w", err)
 	}

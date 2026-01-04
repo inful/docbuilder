@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"time"
 
@@ -27,7 +28,7 @@ func NewBuildServiceAdapter(svc build.BuildService) *BuildServiceAdapter {
 // Build implements the Builder interface by delegating to BuildService.
 func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) {
 	if job == nil {
-		return nil, nil
+		return nil, errors.New("build job is nil")
 	}
 
 	// Extract configuration from TypedMeta
@@ -36,7 +37,7 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 		cfg = job.TypedMeta.V2Config
 	}
 	if cfg == nil {
-		return nil, nil
+		return nil, errors.New("build job has no configuration")
 	}
 
 	// For discovery builds, use the discovered repositories instead of config file repos
