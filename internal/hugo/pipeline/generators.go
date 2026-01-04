@@ -45,6 +45,11 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 
 // generateRepositoryIndex creates _index.md for repositories that don't have one.
 func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
+	// Skip repository indexes entirely for single-repository builds
+	if ctx.IsSingleRepo {
+		return nil, nil
+	}
+
 	// Group documents by repository
 	repoFiles := make(map[string][]*Document)
 	for _, doc := range ctx.Discovered {
@@ -159,10 +164,17 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		}
 		description := fmt.Sprintf("Documentation for %s", sectionName)
 
-		// Build section path (handle forge namespacing)
-		sectionPath := filepath.Join(repo, sectionName)
-		if repoMeta.Namespace != "" {
-			sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
+		// Build section path (handle forge namespacing and single-repo mode)
+		var sectionPath string
+		if ctx.IsSingleRepo {
+			// Single repository: skip repository namespace
+			sectionPath = sectionName
+		} else {
+			// Multiple repositories: include repository in path
+			sectionPath = filepath.Join(repo, sectionName)
+			if repoMeta.Namespace != "" {
+				sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
+			}
 		}
 
 		doc := &Document{

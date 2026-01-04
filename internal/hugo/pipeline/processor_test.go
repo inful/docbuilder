@@ -16,7 +16,7 @@ func TestProcessContent_EmptyInput(t *testing.T) {
 	}
 	processor := NewProcessor(cfg)
 
-	docs, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{})
+	docs, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.NoError(t, err)
 	// Should generate main index even with no input
 	assert.NotEmpty(t, docs, "should generate at least main index")
@@ -50,7 +50,7 @@ func TestProcessContent_WithDocuments(t *testing.T) {
 		},
 	}
 
-	docs, err := processor.ProcessContent(discovered, repoMetadata)
+	docs, err := processor.ProcessContent(discovered, repoMetadata, false)
 	require.NoError(t, err)
 	assert.Greater(t, len(docs), len(discovered), "should have generated additional documents")
 
@@ -78,7 +78,7 @@ func TestProcessContent_GeneratorError(t *testing.T) {
 	}
 	processor.WithGenerators([]FileGenerator{failingGenerator})
 
-	_, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{})
+	_, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "generator 0 failed")
 }
@@ -104,7 +104,7 @@ func TestProcessContent_TransformError(t *testing.T) {
 		},
 	}
 
-	_, err := processor.ProcessContent(discovered, map[string]RepositoryInfo{})
+	_, err := processor.ProcessContent(discovered, map[string]RepositoryInfo{}, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "transformation phase failed")
 	assert.Contains(t, err.Error(), "transform failed")
@@ -308,7 +308,7 @@ func TestWithGenerators(t *testing.T) {
 
 	processor.WithGenerators([]FileGenerator{customGenerator})
 
-	docs, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{})
+	docs, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.NoError(t, err)
 
 	// Should only have the custom generated document
@@ -341,7 +341,7 @@ func TestWithTransforms(t *testing.T) {
 		},
 	}
 
-	docs, err := processor.ProcessContent(discovered, map[string]RepositoryInfo{})
+	docs, err := processor.ProcessContent(discovered, map[string]RepositoryInfo{}, false)
 	require.NoError(t, err)
 	require.Len(t, docs, 1)
 	assert.Equal(t, "transformed", docs[0].FrontMatter["custom"])
@@ -387,7 +387,7 @@ func TestProcessContent_RepositoryMetadataInjection(t *testing.T) {
 		},
 	}
 
-	docs, err := processor.ProcessContent(discovered, repoMetadata)
+	docs, err := processor.ProcessContent(discovered, repoMetadata, false)
 	require.NoError(t, err)
 
 	// Find documents and verify metadata
