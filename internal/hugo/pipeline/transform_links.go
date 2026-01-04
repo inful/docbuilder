@@ -222,67 +222,83 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 
 	// Handle relative paths that navigate up directories (../)
 	if after, ok := strings.CutPrefix(path, "../"); ok {
-		// Strip all leading ../ sequences
-		path = after
-		for strings.HasPrefix(path, "../") {
-			path = strings.TrimPrefix(path, "../")
-		}
-
-		// Prepend repository path (skip if single-repo build)
-		if !isSingleRepo && repository != "" {
-			if forge != "" {
-				path = fmt.Sprintf("/%s/%s/%s", forge, repository, path)
-			} else {
-				path = fmt.Sprintf("/%s/%s", repository, path)
-			}
-		} else {
-			// Single-repo mode: ensure leading slash
-			if !strings.HasPrefix(path, "/") {
-				path = "/" + path
-			}
-		}
+		path = handleParentDirNavigation(after, repository, forge, isSingleRepo)
 		return path + anchor
 	}
 
 	// For index files, preserve relative links within the same directory
 	if isIndex {
-		// Extract directory from document path
-		docDir := extractDirectory(docPath, isSingleRepo)
-
-		// If link doesn't navigate up (..), keep it relative to current section
-		if !strings.HasPrefix(path, "/") && docDir != "" {
-			// Link is relative to current directory - prepend directory
-			if !isSingleRepo {
-				if forge != "" {
-					path = fmt.Sprintf("/%s/%s/%s", forge, repository, docDir+"/"+path)
-				} else {
-					path = fmt.Sprintf("/%s/%s", repository, docDir+"/"+path)
-				}
-			} else {
-				// Single-repo mode: skip repository namespace
-				path = fmt.Sprintf("/%s/%s", docDir, path)
-			}
-			return path + anchor
+		if result, handled := handleIndexFileLink(path, docPath, repository, forge, isSingleRepo, anchor); handled {
+			return result
 		}
 	}
 
 	// For regular files or absolute paths from index root, prepend repository path
 	if !strings.HasPrefix(path, "/") && repository != "" {
-		// Extract directory from document path for relative link context
-		docDir := extractDirectory(docPath, isSingleRepo)
-		if !isSingleRepo {
-			path = buildFullPath(forge, repository, docDir, path)
-		} else {
-			// Single-repo mode: skip repository namespace
-			if docDir != "" {
-				path = "/" + docDir + "/" + path
-			} else {
-				path = "/" + path
-			}
-		}
+		path = handleRegularFileLink(path, docPath, repository, forge, isSingleRepo)
 	}
 
 	return path + anchor
+}
+
+// handleParentDirNavigation handles links with ../ navigation.
+func handleParentDirNavigation(path, repository, forge string, isSingleRepo bool) string {
+	// Strip all leading ../ sequences
+	for strings.HasPrefix(path, "../") {
+		path = strings.TrimPrefix(path, "../")
+	}
+
+	// Prepend repository path (skip if single-repo build)
+	if !isSingleRepo && repository != "" {
+		if forge != "" {
+			return fmt.Sprintf("/%s/%s/%s", forge, repository, path)
+		}
+		return fmt.Sprintf("/%s/%s", repository, path)
+	}
+
+	// Single-repo mode: ensure leading slash
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return path
+}
+
+// handleIndexFileLink handles relative links from index files.
+func handleIndexFileLink(path, docPath, repository, forge string, isSingleRepo bool, anchor string) (string, bool) {
+	// Extract directory from document path
+	docDir := extractDirectory(docPath, isSingleRepo)
+
+	// If link doesn't navigate up (..), keep it relative to current section
+	if strings.HasPrefix(path, "/") || docDir == "" {
+		return "", false // Not handled, continue with regular processing
+	}
+
+	// Link is relative to current directory - prepend directory
+	if !isSingleRepo {
+		if forge != "" {
+			return fmt.Sprintf("/%s/%s/%s%s", forge, repository, docDir+"/"+path, anchor), true
+		}
+		return fmt.Sprintf("/%s/%s%s", repository, docDir+"/"+path, anchor), true
+	}
+
+	// Single-repo mode: skip repository namespace
+	return fmt.Sprintf("/%s/%s%s", docDir, path, anchor), true
+}
+
+// handleRegularFileLink handles relative links from regular (non-index) files.
+func handleRegularFileLink(path, docPath, repository, forge string, isSingleRepo bool) string {
+	// Extract directory from document path for relative link context
+	docDir := extractDirectory(docPath, isSingleRepo)
+
+	if !isSingleRepo {
+		return buildFullPath(forge, repository, docDir, path)
+	}
+
+	// Single-repo mode: skip repository namespace
+	if docDir != "" {
+		return "/" + docDir + "/" + path
+	}
+	return "/" + path
 }
 
 // extractDirectory extracts the directory part of a Hugo path.
