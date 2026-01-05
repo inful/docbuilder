@@ -3,11 +3,14 @@ package daemon
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -102,15 +105,14 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	// Check if VS Code IPC socket is available (required for remote editing)
-	// This environment variable is set by VS Code when it initializes the terminal
-	// If DocBuilder starts from a system startup script, this may not be available yet
-	ipcSocket := os.Getenv("VSCODE_IPC_HOOK_CLI")
+	// Find VS Code IPC socket - check environment first, then search filesystem
+	ipcSocket := findVSCodeIPCSocket()
 	if ipcSocket == "" {
-		slog.Warn("VS Code edit handler: VSCODE_IPC_HOOK_CLI not set - VS Code may not be fully initialized",
+		slog.Warn("VS Code edit handler: could not find VS Code IPC socket",
 			slog.String("path", absPath),
-			slog.String("hint", "If using auto-start, ensure DocBuilder starts after VS Code is ready"))
-		// Continue anyway - may work in some environments
+			slog.String("hint", "Ensure VS Code is running and connected via remote SSH"))
+		http.Error(w, "VS Code IPC socket not found - is VS Code running?", http.StatusServiceUnavailable)
+		return
 	}
 
 	// Find the code CLI - try bash login shell first (loads full PATH),
@@ -120,7 +122,7 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
 	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
 
-	// Ensure VS Code environment variables are passed to the command
+	// Set VS Code IPC socket environment variable
 	cmd.Env = append(os.Environ(),
 		"VSCODE_IPC_HOOK_CLI="+ipcSocket,
 	)
@@ -135,8 +137,7 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		slog.String("path", absPath),
 		slog.String("code_cli", codeCmd),
 		slog.String("command", fullCommand),
-		slog.String("ipc_socket", ipcSocket),
-		slog.Bool("ipc_exists", ipcSocket != "" && fileExists(ipcSocket)))
+		slog.String("ipc_socket", ipcSocket))
 
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
@@ -250,6 +251,109 @@ func isExecutable(path string) bool {
 func shellEscape(path string) string {
 	// Simple escaping: wrap in single quotes and escape any single quotes
 	return "'" + strings.ReplaceAll(path, "'", "'\\''") + "'"
+}
+
+// findVSCodeIPCSocket locates the VS Code IPC socket for remote CLI communication.
+// It first checks the VSCODE_IPC_HOOK_CLI environment variable, then searches
+// for active sockets in /run/user/{uid}/ if not found.
+//
+// Based on the approach from code-connect: https://github.com/chvolkmann/code-connect
+func findVSCodeIPCSocket() string {
+	// First, check if the environment variable is set
+	if ipcSocket := os.Getenv("VSCODE_IPC_HOOK_CLI"); ipcSocket != "" {
+		if isSocketOpen(ipcSocket) {
+			slog.Debug("Found VS Code IPC socket from environment",
+				slog.String("socket", ipcSocket))
+			return ipcSocket
+		}
+		slog.Debug("Environment IPC socket not open, searching filesystem",
+			slog.String("socket", ipcSocket))
+	}
+
+	// Search for IPC sockets in /run/user/{uid}/
+	uid := os.Getuid()
+	runDir := fmt.Sprintf("/run/user/%d", uid)
+	pattern := filepath.Join(runDir, "vscode-ipc-*.sock")
+
+	matches, err := filepath.Glob(pattern)
+	if err != nil || len(matches) == 0 {
+		slog.Debug("No VS Code IPC sockets found",
+			slog.String("pattern", pattern),
+			slog.Int("uid", uid))
+		return ""
+	}
+
+	// Sort by access time (most recent first) and find first open socket
+	type socketInfo struct {
+		path       string
+		accessTime time.Time
+	}
+
+	sockets := make([]socketInfo, 0, len(matches))
+	maxIdleTime := 4 * time.Hour // Same as code-connect default
+	now := time.Now()
+
+	for _, sockPath := range matches {
+		info, err := os.Stat(sockPath)
+		if err != nil {
+			continue
+		}
+
+		// Only consider recently accessed sockets
+		accessTime := info.ModTime() // Use ModTime as proxy for access time
+		if now.Sub(accessTime) > maxIdleTime {
+			slog.Debug("Skipping stale IPC socket",
+				slog.String("socket", sockPath),
+				slog.Duration("idle", now.Sub(accessTime)))
+			continue
+		}
+
+		sockets = append(sockets, socketInfo{
+			path:       sockPath,
+			accessTime: accessTime,
+		})
+	}
+
+	// Sort by access time, most recent first
+	sort.Slice(sockets, func(i, j int) bool {
+		return sockets[i].accessTime.After(sockets[j].accessTime)
+	})
+
+	// Find the first socket that is actually open
+	for _, sock := range sockets {
+		if isSocketOpen(sock.path) {
+			slog.Debug("Found open VS Code IPC socket",
+				slog.String("socket", sock.path),
+				slog.Time("accessed", sock.accessTime))
+			return sock.path
+		}
+		slog.Debug("Socket exists but not open",
+			slog.String("socket", sock.path))
+	}
+
+	slog.Warn("No open VS Code IPC sockets found",
+		slog.String("pattern", pattern),
+		slog.Int("candidates", len(sockets)))
+	return ""
+}
+
+// isSocketOpen checks if a UNIX socket is currently listening/open.
+// Returns true if the socket can be connected to.
+func isSocketOpen(sockPath string) bool {
+	if !fileExists(sockPath) {
+		return false
+	}
+
+	// Try to connect to the socket with a short timeout
+	dialer := &net.Dialer{
+		Timeout: 100 * time.Millisecond,
+	}
+	conn, err := dialer.Dial("unix", sockPath)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
 }
 
 // getDocsDirectory returns the docs directory for preview mode edit operations.
