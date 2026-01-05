@@ -399,4 +399,3 @@ Command Layer (CLI)
 
 - [High-Level System Architecture](high-level-architecture.md)
 - [Comprehensive Architecture](../comprehensive-architecture.md)
-- [Go Style Guide](../../../docs/STYLE_GUIDE.md)
