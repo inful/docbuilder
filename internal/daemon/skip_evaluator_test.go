@@ -53,7 +53,7 @@ func writePrevReport(t *testing.T, outDir string, files, rendered int, docHash s
 		DocFilesHash      string `json:"doc_files_hash"`
 		DocBuilderVersion string `json:"doc_builder_version"`
 		HugoVersion       string `json:"hugo_version"`
-	}{1, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
+	}{1, files, rendered, docHash, "unknown", ""} // Match current version
 	b, err := json.Marshal(prev)
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
