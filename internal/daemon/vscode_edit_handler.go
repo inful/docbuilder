@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -254,19 +253,22 @@ func shellEscape(path string) string {
 }
 
 // findVSCodeIPCSocket locates the VS Code IPC socket for remote CLI communication.
-// It first checks the VSCODE_IPC_HOOK_CLI environment variable, then searches
-// for active sockets in /tmp and /run/user/{uid}/.
+// It first checks the VSCODE_IPC_HOOK_CLI environment variable (most reliable),
+// then searches for the most recently modified open socket in /tmp and /run/user/{uid}/.
 //
 // Based on the approach from code-connect: https://github.com/chvolkmann/code-connect
 func findVSCodeIPCSocket() string {
-	// First, check if the environment variable is set
+	// Primary: Check if the environment variable is set
+	// This is the most reliable method when VS Code has initialized the terminal
 	if ipcSocket := os.Getenv("VSCODE_IPC_HOOK_CLI"); ipcSocket != "" {
-		if isSocketOpen(ipcSocket) {
+		// Trust the environment variable - it's set by VS Code itself
+		// Even if we can't connect now, it's the correct socket to use
+		if fileExists(ipcSocket) {
 			slog.Debug("Found VS Code IPC socket from environment",
 				slog.String("socket", ipcSocket))
 			return ipcSocket
 		}
-		slog.Debug("Environment IPC socket not open, searching filesystem",
+		slog.Warn("Environment IPC socket does not exist, searching filesystem",
 			slog.String("socket", ipcSocket))
 	}
 
@@ -296,10 +298,12 @@ func findVSCodeIPCSocket() string {
 		return ""
 	}
 
-	// Sort by access time (most recent first) and find first open socket
+	// Fallback: Search filesystem for most recently modified socket
+	// Sort by modification time (most recent first) - the active socket will be
+	// the one that was most recently touched by VS Code
 	type socketInfo struct {
-		path       string
-		accessTime time.Time
+		path    string
+		modTime time.Time
 	}
 
 	sockets := make([]socketInfo, 0, len(allMatches))
@@ -312,61 +316,41 @@ func findVSCodeIPCSocket() string {
 			continue
 		}
 
-		// Only consider recently accessed sockets
-		accessTime := info.ModTime() // Use ModTime as proxy for access time
-		if now.Sub(accessTime) > maxIdleTime {
+		// Only consider recently modified sockets (active VS Code sessions)
+		modTime := info.ModTime()
+		if now.Sub(modTime) > maxIdleTime {
 			slog.Debug("Skipping stale IPC socket",
 				slog.String("socket", sockPath),
-				slog.Duration("idle", now.Sub(accessTime)))
+				slog.Duration("idle", now.Sub(modTime)))
 			continue
 		}
 
 		sockets = append(sockets, socketInfo{
-			path:       sockPath,
-			accessTime: accessTime,
+			path:    sockPath,
+			modTime: modTime,
 		})
 	}
 
-	// Sort by access time, most recent first
+	// Sort by modification time, most recent first
 	sort.Slice(sockets, func(i, j int) bool {
-		return sockets[i].accessTime.After(sockets[j].accessTime)
+		return sockets[i].modTime.After(sockets[j].modTime)
 	})
 
-	// Find the first socket that is actually open
-	for _, sock := range sockets {
-		if isSocketOpen(sock.path) {
-			slog.Debug("Found open VS Code IPC socket",
-				slog.String("socket", sock.path),
-				slog.Time("accessed", sock.accessTime))
-			return sock.path
-		}
-		slog.Debug("Socket exists but not open",
-			slog.String("socket", sock.path))
+	// Return the most recently modified socket
+	// This is likely the active VS Code instance
+	if len(sockets) > 0 {
+		selected := sockets[0]
+		slog.Debug("Selected most recent IPC socket",
+			slog.String("socket", selected.path),
+			slog.Time("modified", selected.modTime),
+			slog.Int("total_candidates", len(sockets)))
+		return selected.path
 	}
 
 	slog.Warn("No open VS Code IPC sockets found",
 		slog.Int("total_candidates", len(allMatches)),
 		slog.Int("recent_candidates", len(sockets)))
 	return ""
-}
-
-// isSocketOpen checks if a UNIX socket is currently listening/open.
-// Returns true if the socket can be connected to.
-func isSocketOpen(sockPath string) bool {
-	if !fileExists(sockPath) {
-		return false
-	}
-
-	// Try to connect to the socket with a short timeout
-	dialer := &net.Dialer{
-		Timeout: 100 * time.Millisecond,
-	}
-	conn, err := dialer.Dial("unix", sockPath)
-	if err != nil {
-		return false
-	}
-	_ = conn.Close()
-	return true
 }
 
 // getDocsDirectory returns the docs directory for preview mode edit operations.
