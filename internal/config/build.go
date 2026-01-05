@@ -24,7 +24,8 @@ type BuildConfig struct {
 	RenderMode         RenderMode       `yaml:"render_mode,omitempty"`      // auto|always|never (source of truth for Hugo execution)
 	DetectDeletions    bool             `yaml:"detect_deletions,omitempty"` // enable unchanged repo deletion scan during partial recomposition
 	LiveReload         bool             `yaml:"live_reload,omitempty"`      // enable SSE livereload endpoint & script (development only)
-	IsPreview          bool             `yaml:"-"`                          // true when running in preview/daemon mode (enables VS Code edit links, not persisted)
+	IsPreview          bool             `yaml:"-"`                          // true when running in preview/daemon mode
+	VSCodeEditLinks    bool             `yaml:"-"`                          // enable VS Code edit links with /_edit/ handler (set via --vscode flag)
 	EditURLBase        string           `yaml:"-"`                          // base URL for edit links (CLI override, not persisted)
 	// detectDeletionsSpecified is set internally during load when the YAML explicitly sets detect_deletions.
 	// This lets defaults apply (true) only when user omitted the field entirely.

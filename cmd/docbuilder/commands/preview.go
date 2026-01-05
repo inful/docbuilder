@@ -43,6 +43,7 @@ type PreviewCmd struct {
 	Port           int    `name:"port" default:"1316" help:"Docs server port."`
 	LiveReloadPort int    `name:"livereload-port" default:"0" help:"LiveReload server port (defaults to port+3)."`
 	NoLiveReload   bool   `name:"no-live-reload" help:"Disable LiveReload SSE and script injection for preview."`
+	VSCode         bool   `name:"vscode" help:"Enable VS Code edit links (opens files in editor via /_edit/ handler)."`
 }
 
 //nolint:forbidigo // fmt is used for user-facing messages
@@ -106,7 +107,8 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	cfg.Hugo.BaseURL = p.BaseURL
 	cfg.Build.RenderMode = config.RenderModeAlways
 	cfg.Build.NamespaceForges = config.NamespacingNever // Prevent "Locals" navigation section
-	cfg.Build.IsPreview = true                          // Enable VS Code edit links in preview mode
+	cfg.Build.IsPreview = true                          // Enable preview mode features
+	cfg.Build.VSCodeEditLinks = p.VSCode                // Enable VS Code edit links when --vscode flag is set
 	// Enable LiveReload by default for preview, unless explicitly disabled.
 	cfg.Build.LiveReload = !p.NoLiveReload
 
