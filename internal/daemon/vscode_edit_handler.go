@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"net/http"
@@ -91,17 +92,32 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	// Use bash login shell to get proper PATH environment
-	// In devcontainers, the code CLI is installed in user's PATH
-	// which is only available in login shells, not non-interactive sh
-	// #nosec G204 -- absPath is validated and sanitized above (path traversal check)
-	cmd := exec.CommandContext(ctx, "bash", "-l", "-c", "code --reuse-window --goto "+shellEscape(absPath))
+	// Find the code CLI - try bash login shell first (loads full PATH),
+	// then fall back to common VS Code server locations.
+	codeCmd := findCodeCLI(ctx)
+	fullCommand := codeCmd + " --reuse-window --goto " + shellEscape(absPath)
+	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
+	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
+
+	// Capture stdout and stderr to see what's happening
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Debug logging to see what we're executing
+	slog.Debug("VS Code edit handler: executing command",
+		slog.String("path", absPath),
+		slog.String("command", fullCommand),
+		slog.String("shell", "bash -l -c"))
 
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
 		slog.Error("VS Code edit handler: failed to execute code command",
 			slog.String("path", absPath),
-			slog.String("error", err.Error()))
+			slog.String("command", fullCommand),
+			slog.String("error", err.Error()),
+			slog.String("stdout", stdout.String()),
+			slog.String("stderr", stderr.String()))
 		http.Error(w, "Failed to open file in VS Code", http.StatusInternalServerError)
 		return
 	}
@@ -115,6 +131,62 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, referer, http.StatusSeeOther)
+}
+
+// findCodeCLI finds the VS Code CLI executable.
+// Tries multiple strategies to locate the code command:
+// 1. Check common VS Code server locations (devcontainers).
+// 2. Use 'bash -l -c which code' to load full PATH.
+// 3. Fall back to just 'code' and hope it's in PATH.
+func findCodeCLI(parentCtx context.Context) string {
+	// Common VS Code server locations in devcontainers
+	vscodePaths := []string{
+		"/vscode/vscode-server/bin/linux-x64/*/bin/remote-cli/code",
+		"/vscode/vscode-server/bin/*/bin/remote-cli/code",
+		"/usr/local/bin/code",
+		"/usr/bin/code",
+	}
+
+	// Try to find code in common locations
+	for _, pattern := range vscodePaths {
+		if strings.Contains(pattern, "*") {
+			// Glob pattern - try to expand it
+			matches, err := filepath.Glob(pattern)
+			if err == nil && len(matches) > 0 {
+				// Use the first match
+				slog.Debug("Found code CLI via glob",
+					slog.String("pattern", pattern),
+					slog.String("path", matches[0]))
+				return matches[0]
+			}
+		} else {
+			// Direct path - check if it exists
+			if _, err := os.Stat(pattern); err == nil {
+				slog.Debug("Found code CLI at fixed location",
+					slog.String("path", pattern))
+				return pattern
+			}
+		}
+	}
+
+	// Try to find code via 'which' in login shell
+	ctx, cancel := context.WithTimeout(parentCtx, 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "bash", "-l", "-c", "which code")
+	output, err := cmd.Output()
+	if err == nil && len(output) > 0 {
+		codePath := strings.TrimSpace(string(output))
+		if codePath != "" {
+			slog.Debug("Found code CLI via which in login shell",
+				slog.String("path", codePath))
+			return codePath
+		}
+	}
+
+	// Fall back to just 'code' and hope it's in PATH
+	slog.Debug("Using fallback 'code' command (no explicit path found)")
+	return "code"
 }
 
 // shellEscape escapes a file path for safe use in shell commands.
