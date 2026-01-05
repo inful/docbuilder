@@ -57,13 +57,39 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
+	// Try to find the code command
+	// In devcontainers, it might be in different locations
+	codeCmd := "code"
+	if _, err := exec.LookPath("code"); err != nil {
+		// Try alternative locations
+		alternatives := []string{
+			"/vscode/bin/remote-cli/code",
+			"/workspaces/.codespaces/.persistedshare/cli/code",
+		}
+		found := false
+		for _, alt := range alternatives {
+			if _, err := exec.LookPath(alt); err == nil {
+				codeCmd = alt
+				found = true
+				break
+			}
+		}
+		if !found {
+			slog.Error("VS Code edit handler: code command not found in PATH",
+				slog.String("path", absPath))
+			http.Error(w, "VS Code CLI not available in container", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	// #nosec G204 -- absPath is validated and sanitized above (path traversal check)
-	cmd := exec.CommandContext(ctx, "code", "--reuse-window", "--goto", absPath)
+	cmd := exec.CommandContext(ctx, codeCmd, "--reuse-window", "--goto", absPath)
 
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
 		slog.Error("VS Code edit handler: failed to execute code command",
 			slog.String("path", absPath),
+			slog.String("command", codeCmd),
 			slog.String("error", err.Error()))
 		http.Error(w, "Failed to open file in VS Code", http.StatusInternalServerError)
 		return
