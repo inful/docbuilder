@@ -3,6 +3,7 @@ package daemon
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -26,135 +27,24 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract file path from URL (remove /_edit/ prefix)
-	const editPrefix = "/_edit/"
-	if !strings.HasPrefix(r.URL.Path, editPrefix) {
-		http.Error(w, "Invalid edit URL", http.StatusBadRequest)
-		return
-	}
-
-	relPath := strings.TrimPrefix(r.URL.Path, editPrefix)
-	if relPath == "" {
-		http.Error(w, "No file path specified", http.StatusBadRequest)
-		return
-	}
-
-	// Resolve to absolute path relative to docs directory
-	docsDir := s.getDocsDirectory()
-	if docsDir == "" {
-		slog.Error("VS Code edit handler: unable to determine docs directory")
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
 	// VS Code edit handler is only for preview mode (single local repository)
-	// In daemon mode, edit URLs point to forge web interfaces
 	if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
 		slog.Warn("VS Code edit handler called in daemon mode - this endpoint is for preview mode only",
-			slog.String("path", relPath))
+			slog.String("path", r.URL.Path))
 		http.Error(w, "VS Code edit links are only available in preview mode", http.StatusNotImplemented)
 		return
 	}
 
-	// Preview mode: direct path relative to docs dir
-	absPath := filepath.Join(docsDir, relPath)
-
-	// Security: ensure the resolved path is within the docs directory
-	cleanDocs := filepath.Clean(docsDir)
-	cleanPath := filepath.Clean(absPath)
-	if !strings.HasPrefix(cleanPath, cleanDocs) {
-		slog.Warn("VS Code edit handler: attempted path traversal",
-			slog.String("requested", relPath),
-			slog.String("resolved", cleanPath),
-			slog.String("docs_dir", cleanDocs))
-		http.Error(w, "Invalid file path", http.StatusBadRequest)
-		return
-	}
-
-	// Verify the file exists and is a regular file
-	fileInfo, err := os.Stat(cleanPath)
+	// Extract and validate the file path
+	absPath, err := s.validateAndResolveEditPath(r.URL.Path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			slog.Warn("VS Code edit handler: file not found",
-				slog.String("path", cleanPath))
-			http.Error(w, "File not found", http.StatusNotFound)
-		} else {
-			slog.Error("VS Code edit handler: failed to stat file",
-				slog.String("path", cleanPath),
-				slog.String("error", err.Error()))
-			http.Error(w, "Failed to access file", http.StatusInternalServerError)
-		}
+		s.handleEditError(w, err)
 		return
 	}
 
-	if !fileInfo.Mode().IsRegular() {
-		slog.Warn("VS Code edit handler: not a regular file",
-			slog.String("path", cleanPath))
-		http.Error(w, "Not a regular file", http.StatusBadRequest)
-		return
-	}
-
-	// Verify it's a documentation file (markdown)
-	ext := strings.ToLower(filepath.Ext(cleanPath))
-	if ext != ".md" && ext != ".markdown" {
-		slog.Warn("VS Code edit handler: not a markdown file",
-			slog.String("path", cleanPath),
-			slog.String("extension", ext))
-		http.Error(w, "Only markdown files can be edited", http.StatusBadRequest)
-		return
-	}
-
-	// Execute 'code --goto <filepath>' to open in VS Code
-	// The 'code' command works for both local and remote VS Code sessions
-	// --goto flag ensures the file opens and gets focus
-	// --reuse-window opens in the current VS Code window
-	// Use a short timeout context to avoid hanging
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	defer cancel()
-
-	// Find VS Code IPC socket - check environment first, then search filesystem
-	ipcSocket := findVSCodeIPCSocket()
-	if ipcSocket == "" {
-		slog.Warn("VS Code edit handler: could not find VS Code IPC socket",
-			slog.String("path", absPath),
-			slog.String("hint", "Ensure VS Code is running and connected via remote SSH"))
-		http.Error(w, "VS Code IPC socket not found - is VS Code running?", http.StatusServiceUnavailable)
-		return
-	}
-
-	// Find the code CLI - try bash login shell first (loads full PATH),
-	// then fall back to common VS Code server locations.
-	codeCmd := findCodeCLI(ctx)
-	fullCommand := codeCmd + " --reuse-window --goto " + shellEscape(absPath)
-	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
-	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
-
-	// Set VS Code IPC socket environment variable
-	cmd.Env = append(os.Environ(),
-		"VSCODE_IPC_HOOK_CLI="+ipcSocket,
-	)
-
-	// Capture stdout and stderr to see what's happening
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	// Debug logging to see what we're executing
-	slog.Debug("VS Code edit handler: executing command",
-		slog.String("path", absPath),
-		slog.String("code_cli", codeCmd),
-		slog.String("command", fullCommand),
-		slog.String("ipc_socket", ipcSocket))
-
-	// Use Run() to wait for command completion and capture any errors
-	if err := cmd.Run(); err != nil {
-		slog.Error("VS Code edit handler: failed to execute code command",
-			slog.String("path", absPath),
-			slog.String("command", fullCommand),
-			slog.String("error", err.Error()),
-			slog.String("stdout", stdout.String()),
-			slog.String("stderr", stderr.String()))
-		http.Error(w, "Failed to open file in VS Code", http.StatusInternalServerError)
+	// Execute the VS Code open command
+	if err := s.executeVSCodeOpen(r.Context(), absPath); err != nil {
+		s.handleEditError(w, err)
 		return
 	}
 
@@ -165,8 +55,199 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	if referer == "" {
 		referer = "/"
 	}
-
 	http.Redirect(w, r, referer, http.StatusSeeOther)
+}
+
+// editError represents an error from the VS Code edit handler with an HTTP status code.
+type editError struct {
+	message    string
+	statusCode int
+	logLevel   string // "warn" or "error"
+	logFields  []any
+}
+
+func (e *editError) Error() string {
+	return e.message
+}
+
+// handleEditError logs and responds with the appropriate error.
+func (s *HTTPServer) handleEditError(w http.ResponseWriter, err error) {
+	var editErr *editError
+	if ok := errors.As(err, &editErr); ok {
+		if editErr.logLevel == "error" {
+			slog.Error("VS Code edit handler: "+editErr.message, editErr.logFields...)
+		} else {
+			slog.Warn("VS Code edit handler: "+editErr.message, editErr.logFields...)
+		}
+		http.Error(w, editErr.message, editErr.statusCode)
+	} else {
+		slog.Error("VS Code edit handler: unexpected error", slog.String("error", err.Error()))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+// validateAndResolveEditPath extracts the file path from the URL and validates it.
+func (s *HTTPServer) validateAndResolveEditPath(urlPath string) (string, error) {
+	// Extract file path from URL
+	const editPrefix = "/_edit/"
+	if !strings.HasPrefix(urlPath, editPrefix) {
+		return "", &editError{
+			message:    "Invalid edit URL",
+			statusCode: http.StatusBadRequest,
+			logLevel:   "warn",
+		}
+	}
+
+	relPath := strings.TrimPrefix(urlPath, editPrefix)
+	if relPath == "" {
+		return "", &editError{
+			message:    "No file path specified",
+			statusCode: http.StatusBadRequest,
+			logLevel:   "warn",
+		}
+	}
+
+	// Get docs directory
+	docsDir := s.getDocsDirectory()
+	if docsDir == "" {
+		return "", &editError{
+			message:    "Server configuration error",
+			statusCode: http.StatusInternalServerError,
+			logLevel:   "error",
+			logFields:  []any{slog.String("reason", "unable to determine docs directory")},
+		}
+	}
+
+	// Resolve to absolute path
+	absPath := filepath.Join(docsDir, relPath)
+
+	// Security: ensure the resolved path is within the docs directory
+	cleanDocs := filepath.Clean(docsDir)
+	cleanPath := filepath.Clean(absPath)
+	if !strings.HasPrefix(cleanPath, cleanDocs) {
+		return "", &editError{
+			message:    "Invalid file path",
+			statusCode: http.StatusBadRequest,
+			logLevel:   "warn",
+			logFields: []any{
+				slog.String("requested", relPath),
+				slog.String("resolved", cleanPath),
+				slog.String("docs_dir", cleanDocs),
+			},
+		}
+	}
+
+	// Validate file exists and is a markdown file
+	if err := s.validateMarkdownFile(cleanPath); err != nil {
+		return "", err
+	}
+
+	return cleanPath, nil
+}
+
+// validateMarkdownFile checks that the file exists, is regular, and is markdown.
+func (s *HTTPServer) validateMarkdownFile(path string) error {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &editError{
+				message:    "File not found",
+				statusCode: http.StatusNotFound,
+				logLevel:   "warn",
+				logFields:  []any{slog.String("path", path)},
+			}
+		}
+		return &editError{
+			message:    "Failed to access file",
+			statusCode: http.StatusInternalServerError,
+			logLevel:   "error",
+			logFields: []any{
+				slog.String("path", path),
+				slog.String("error", err.Error()),
+			},
+		}
+	}
+
+	if !fileInfo.Mode().IsRegular() {
+		return &editError{
+			message:    "Not a regular file",
+			statusCode: http.StatusBadRequest,
+			logLevel:   "warn",
+			logFields:  []any{slog.String("path", path)},
+		}
+	}
+
+	// Verify it's a markdown file
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext != ".md" && ext != ".markdown" {
+		return &editError{
+			message:    "Only markdown files can be edited",
+			statusCode: http.StatusBadRequest,
+			logLevel:   "warn",
+			logFields: []any{
+				slog.String("path", path),
+				slog.String("extension", ext),
+			},
+		}
+	}
+
+	return nil
+}
+
+// executeVSCodeOpen finds the VS Code CLI and IPC socket, then opens the file.
+func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string) error {
+	ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)
+	defer cancel()
+
+	// Find VS Code IPC socket
+	ipcSocket := findVSCodeIPCSocket()
+	if ipcSocket == "" {
+		return &editError{
+			message:    "VS Code IPC socket not found - is VS Code running?",
+			statusCode: http.StatusServiceUnavailable,
+			logLevel:   "warn",
+			logFields: []any{
+				slog.String("path", absPath),
+				slog.String("hint", "Ensure VS Code is running and connected via remote SSH"),
+			},
+		}
+	}
+
+	// Find the code CLI
+	codeCmd := findCodeCLI(ctx)
+	fullCommand := codeCmd + " --reuse-window --goto " + shellEscape(absPath)
+
+	// Execute command
+	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
+	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
+	cmd.Env = append(os.Environ(), "VSCODE_IPC_HOOK_CLI="+ipcSocket)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	slog.Debug("VS Code edit handler: executing command",
+		slog.String("path", absPath),
+		slog.String("code_cli", codeCmd),
+		slog.String("command", fullCommand),
+		slog.String("ipc_socket", ipcSocket))
+
+	if err := cmd.Run(); err != nil {
+		return &editError{
+			message:    "Failed to open file in VS Code",
+			statusCode: http.StatusInternalServerError,
+			logLevel:   "error",
+			logFields: []any{
+				slog.String("path", absPath),
+				slog.String("command", fullCommand),
+				slog.String("error", err.Error()),
+				slog.String("stdout", stdout.String()),
+				slog.String("stderr", stderr.String()),
+			},
+		}
+	}
+
+	return nil
 }
 
 // findCodeCLI finds the VS Code CLI executable.
