@@ -102,12 +102,28 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
+	// Check if VS Code IPC socket is available (required for remote editing)
+	// This environment variable is set by VS Code when it initializes the terminal
+	// If DocBuilder starts from a system startup script, this may not be available yet
+	ipcSocket := os.Getenv("VSCODE_IPC_HOOK_CLI")
+	if ipcSocket == "" {
+		slog.Warn("VS Code edit handler: VSCODE_IPC_HOOK_CLI not set - VS Code may not be fully initialized",
+			slog.String("path", absPath),
+			slog.String("hint", "If using auto-start, ensure DocBuilder starts after VS Code is ready"))
+		// Continue anyway - may work in some environments
+	}
+
 	// Find the code CLI - try bash login shell first (loads full PATH),
 	// then fall back to common VS Code server locations.
 	codeCmd := findCodeCLI(ctx)
 	fullCommand := codeCmd + " --reuse-window --goto " + shellEscape(absPath)
 	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
 	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
+
+	// Ensure VS Code environment variables are passed to the command
+	cmd.Env = append(os.Environ(),
+		"VSCODE_IPC_HOOK_CLI="+ipcSocket,
+	)
 
 	// Capture stdout and stderr to see what's happening
 	var stdout, stderr bytes.Buffer
@@ -117,8 +133,10 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	// Debug logging to see what we're executing
 	slog.Debug("VS Code edit handler: executing command",
 		slog.String("path", absPath),
+		slog.String("code_cli", codeCmd),
 		slog.String("command", fullCommand),
-		slog.String("shell", "bash -l -c"))
+		slog.String("ipc_socket", ipcSocket),
+		slog.Bool("ipc_exists", ipcSocket != "" && fileExists(ipcSocket)))
 
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
@@ -210,6 +228,12 @@ func tryPattern(pattern string) string {
 		return pattern
 	}
 	return ""
+}
+
+// fileExists checks if a file or socket exists at the given path.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // isExecutable checks if a file exists and is executable.
