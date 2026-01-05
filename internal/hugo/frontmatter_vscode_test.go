@@ -9,7 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
-// TestBuildFrontMatter_VSCodeEditURL verifies that edit URLs are generated for local preview mode
+// TestBuildFrontMatter_VSCodeEditURL verifies that edit URLs are generated for local preview mode.
 func TestBuildFrontMatter_VSCodeEditURL(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Repositories = []config.Repository{
