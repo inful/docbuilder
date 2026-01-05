@@ -211,16 +211,16 @@ jobs:
             --base-url "https://${{ github.repository_owner }}.github.io/docbuilder" \
             --render-mode always
           
-          # Verify the site was generated
-          test -d public || (echo "Public directory not created" && exit 1)
-          test -f public/index.html || (echo "index.html not created" && exit 1)
+          # Verify the site was generated (Hugo creates public/ subdirectory)
+          test -d public/public || (echo "Public directory not created" && exit 1)
+          test -f public/public/index.html || (echo "index.html not created" && exit 1)
 
       - name: Upload generated site as artifact
         if: steps.docs_changed.outputs.changed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: generated-docs-site
-          path: public/
+          path: public/public/
           retention-days: 3
 
       - name: Site generation summary
