@@ -137,5 +137,4 @@ When updating architecture:
 - [Architecture Overview](architecture.md) - High-level architecture concepts
 - [Package Architecture Guide](package-architecture.md) - Package-level documentation
 - [Namespacing Rationale](namespacing-rationale.md) - Design decisions for namespace structure
-- [Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md) - Completed migration history
 

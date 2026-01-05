@@ -945,24 +945,6 @@ See `docs/adr/` for detailed architectural decisions:
 
 ---
 
-## Migration Status
-
-The architecture has undergone significant evolution. See [Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md) for historical details:
-
-- 19 completed phases (A-M, O-P, R-S-T-U)
-- 2 deferred phases (Q, J)
-- ~1,290 lines eliminated
-- Zero breaking changes
-
-**Current State:** Architecture migration complete. Codebase follows:
-- Event-driven patterns
-- Typed configuration/state
-- Unified observability
-- Single execution pipeline
-- Clean domain boundaries
-
----
-
 ## References
 
 - [Getting Started Tutorial](../tutorials/getting-started.md)
