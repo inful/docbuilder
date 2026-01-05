@@ -16,7 +16,8 @@ type Resolver struct {
 // NewResolver creates a new edit link resolver with the standard detector chain.
 func NewResolver() *Resolver {
 	chain := NewDetectorChain().
-		Add(NewConfiguredDetector()).  // Try repository tags first
+		Add(NewVSCodeDetector()).      // Try VS Code local preview first
+		Add(NewConfiguredDetector()).  // Try repository tags
 		Add(NewForgeConfigDetector()). // Then try forge configuration
 		Add(NewHeuristicDetector())    // Finally try hostname heuristics
 
