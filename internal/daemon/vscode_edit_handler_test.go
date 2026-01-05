@@ -121,7 +121,7 @@ func TestValidateAndResolveEditPath_PathTraversal(t *testing.T) {
 	}
 
 	srv := &HTTPServer{config: cfg}
-	
+
 	// Try to escape the docs directory
 	_, err := srv.validateAndResolveEditPath("/_edit/../../../etc/passwd")
 
@@ -141,7 +141,7 @@ func TestValidateAndResolveEditPath_PathTraversal(t *testing.T) {
 // TestValidateAndResolveEditPath_Success tests successful path validation.
 func TestValidateAndResolveEditPath_Success(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create a test markdown file
 	testFile := filepath.Join(tmpDir, "test.md")
 	if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
@@ -236,7 +236,7 @@ func TestValidateMarkdownFile_NonMarkdown(t *testing.T) {
 // TestValidateMarkdownFile_Success tests successful markdown validation.
 func TestValidateMarkdownFile_Success(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	tests := []struct {
 		name     string
 		filename string
@@ -248,7 +248,7 @@ func TestValidateMarkdownFile_Success(t *testing.T) {
 	}
 
 	srv := &HTTPServer{}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testFile := filepath.Join(tmpDir, tt.filename)
@@ -281,7 +281,7 @@ func TestEditError_Error(t *testing.T) {
 func TestHandleEditError_EditError(t *testing.T) {
 	srv := &HTTPServer{}
 	w := httptest.NewRecorder()
-	
+
 	err := &editError{
 		message:    "validation failed",
 		statusCode: http.StatusBadRequest,
@@ -302,7 +302,7 @@ func TestHandleEditError_EditError(t *testing.T) {
 func TestHandleEditError_UnexpectedError(t *testing.T) {
 	srv := &HTTPServer{}
 	w := httptest.NewRecorder()
-	
+
 	err := errors.New("unexpected error")
 
 	srv.handleEditError(w, err)
@@ -574,7 +574,7 @@ func TestFindVSCodeIPCSocket_NoSocketsFound(t *testing.T) {
 	// This test assumes /tmp and /run/user/{uid} don't have recent vscode sockets
 	// or returns the most recent one if they exist
 	result := findVSCodeIPCSocket()
-	
+
 	// Result could be empty string or a real socket path if VS Code is running
 	// We just verify it doesn't panic
 	t.Logf("Found socket: %s", result)
@@ -640,7 +640,7 @@ func TestFindMostRecentIPCSocket(t *testing.T) {
 // TestHandleVSCodeEdit_Integration tests the full handler flow with a valid markdown file.
 func TestHandleVSCodeEdit_Integration(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create a test markdown file
 	testFile := filepath.Join(tmpDir, "test.md")
 	if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
@@ -684,4 +684,3 @@ func TestExecuteVSCodeOpen_NoSocket(t *testing.T) {
 
 	t.Logf("Got expected error (VS Code not running or file issues): %v", err)
 }
-
