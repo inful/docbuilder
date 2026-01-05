@@ -198,6 +198,13 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 		}
 	}
 
+	// Edit link configuration - per-page editURLs in frontmatter are enabled by default
+	// Only set this if not already configured by user (to avoid suppressing per-page links)
+	if _, ok := params["editURL"]; !ok {
+		// Empty object enables edit link UI without suppressing per-page URLs
+		params["editURL"] = map[string]any{}
+	}
+
 	// Math support (using MathJax by default in Relearn)
 	if _, ok := params["math"]; !ok {
 		params["math"] = map[string]any{
