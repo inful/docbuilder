@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -46,6 +47,39 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 			slog.String("resolved", cleanPath),
 			slog.String("docs_dir", cleanDocs))
 		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
+
+	// Verify the file exists and is a regular file
+	fileInfo, err := os.Stat(cleanPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			slog.Warn("VS Code edit handler: file not found",
+				slog.String("path", cleanPath))
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			slog.Error("VS Code edit handler: failed to stat file",
+				slog.String("path", cleanPath),
+				slog.String("error", err.Error()))
+			http.Error(w, "Failed to access file", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if !fileInfo.Mode().IsRegular() {
+		slog.Warn("VS Code edit handler: not a regular file",
+			slog.String("path", cleanPath))
+		http.Error(w, "Not a regular file", http.StatusBadRequest)
+		return
+	}
+
+	// Verify it's a documentation file (markdown)
+	ext := strings.ToLower(filepath.Ext(cleanPath))
+	if ext != ".md" && ext != ".markdown" {
+		slog.Warn("VS Code edit handler: not a markdown file",
+			slog.String("path", cleanPath),
+			slog.String("extension", ext))
+		http.Error(w, "Only markdown files can be edited", http.StatusBadRequest)
 		return
 	}
 
