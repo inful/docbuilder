@@ -22,6 +22,12 @@ func (b *StandardEditURLBuilder) BuildURL(forgeType config.ForgeType, baseURL, f
 		return ""
 	}
 
+	// Handle special case for VS Code local preview mode
+	if forgeType == "vscode" {
+		// fullName contains the relative path for VS Code URLs
+		return fmt.Sprintf("/_edit/%s", fullName)
+	}
+
 	// Clean up the base URL
 	baseURL = strings.TrimSuffix(baseURL, "/")
 

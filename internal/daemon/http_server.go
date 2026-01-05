@@ -396,6 +396,9 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 	mux.HandleFunc("/ready", s.handleReadiness)
 	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
 
+	// VS Code edit link handler for local preview mode
+	mux.HandleFunc("/_edit/", s.handleVSCodeEdit)
+
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically
 	// switching to the fully rendered site once available—without restarting the daemon.
