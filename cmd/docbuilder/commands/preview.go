@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -14,11 +16,29 @@ import (
 
 const configVersion = "2.0"
 
+// deriveTitleFromDocsDir derives a title from the parent directory of docsDir.
+func deriveTitleFromDocsDir(docsDir string) string {
+	absDocsDir, err := filepath.Abs(docsDir)
+	if err != nil {
+		return "Local Preview"
+	}
+
+	parentDir := filepath.Dir(absDocsDir)
+	dirName := filepath.Base(parentDir)
+
+	// Capitalize first letter if we have a valid directory name
+	if dirName != "" && dirName != "." && dirName != "/" {
+		return strings.ToUpper(dirName[:1]) + dirName[1:]
+	}
+
+	return "Local Preview"
+}
+
 // PreviewCmd starts a local server watching a docs directory without forge polling.
 type PreviewCmd struct {
 	DocsDir        string `short:"d" name:"docs-dir" default:"./docs" help:"Path to local docs directory to watch."`
 	OutputDir      string `short:"o" name:"output" default:"" help:"Output directory for the generated site (defaults to temp)."`
-	Title          string `name:"title" default:"Local Preview" help:"Site title."`
+	Title          string `name:"title" default:"" help:"Site title (defaults to parent directory name)."`
 	BaseURL        string `name:"base-url" default:"http://localhost:1316" help:"Base URL used in Hugo config."`
 	Port           int    `name:"port" default:"1316" help:"Docs server port."`
 	LiveReloadPort int    `name:"livereload-port" default:"0" help:"LiveReload server port (defaults to port+3)."`
@@ -74,7 +94,14 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	}
 	cfg.Output.Directory = outDir
 	cfg.Output.Clean = true
-	cfg.Hugo.Title = p.Title
+
+	// Derive title from parent directory of DocsDir if not provided
+	title := p.Title
+	if title == "" {
+		title = deriveTitleFromDocsDir(p.DocsDir)
+	}
+
+	cfg.Hugo.Title = title
 	cfg.Hugo.Description = "DocBuilder local preview"
 	cfg.Hugo.BaseURL = p.BaseURL
 	cfg.Build.RenderMode = config.RenderModeAlways
