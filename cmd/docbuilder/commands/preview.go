@@ -106,6 +106,7 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	cfg.Hugo.BaseURL = p.BaseURL
 	cfg.Build.RenderMode = config.RenderModeAlways
 	cfg.Build.NamespaceForges = config.NamespacingNever // Prevent "Locals" navigation section
+	cfg.Build.IsPreview = true                          // Enable VS Code edit links in preview mode
 	// Enable LiveReload by default for preview, unless explicitly disabled.
 	cfg.Build.LiveReload = !p.NoLiveReload
 
