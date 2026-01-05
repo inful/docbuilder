@@ -44,18 +44,17 @@ func addEditLink(cfg *config.Config) FileTransform {
 		}
 
 		// For VS Code preview mode, generate edit URL even without SourceURL
-		vsCodeEnv := isVSCodeEnvironment()
-		if doc.IsPreviewMode && doc.IsSingleRepo && doc.RelativePath != "" && vsCodeEnv {
+		if doc.VSCodeEditLinks && doc.IsSingleRepo && doc.RelativePath != "" {
 			doc.FrontMatter["editURL"] = fmt.Sprintf("/_edit/%s", doc.RelativePath)
-			fmt.Fprintf(os.Stderr, "DEBUG: Generated VS Code edit URL: /_edit/%s (IsPreviewMode=%v, IsSingleRepo=%v, RelativePath=%q, VSCodeEnv=%v)\n",
-				doc.RelativePath, doc.IsPreviewMode, doc.IsSingleRepo, doc.RelativePath, vsCodeEnv)
+			fmt.Fprintf(os.Stderr, "DEBUG: Generated VS Code edit URL: /_edit/%s (VSCodeEditLinks=%v, IsSingleRepo=%v, RelativePath=%q)\n",
+				doc.RelativePath, doc.VSCodeEditLinks, doc.IsSingleRepo, doc.RelativePath)
 			return nil, nil
 		}
 
 		// Debug: Log why VS Code edit URL was not generated
 		if doc.RelativePath != "" && !doc.Generated {
-			fmt.Fprintf(os.Stderr, "DEBUG: VS Code edit URL NOT generated for %s: IsPreviewMode=%v, IsSingleRepo=%v, RelativePath=%q, VSCodeEnv=%v\n",
-				doc.RelativePath, doc.IsPreviewMode, doc.IsSingleRepo, doc.RelativePath, vsCodeEnv)
+			fmt.Fprintf(os.Stderr, "DEBUG: VS Code edit URL NOT generated for %s: VSCodeEditLinks=%v, IsSingleRepo=%v, RelativePath=%q\n",
+				doc.RelativePath, doc.VSCodeEditLinks, doc.IsSingleRepo, doc.RelativePath)
 		}
 
 		// Generate forge edit URL if we have repository URL and relative path
@@ -75,12 +74,10 @@ func addEditLink(cfg *config.Config) FileTransform {
 // For preview mode in VS Code, VS Code edit URLs are handled separately.
 func generateEditURL(doc *Document) string {
 	// Preview mode with VS Code: generate local edit URL
-	if doc.IsPreviewMode && doc.IsSingleRepo {
-		// Check if we're in VS Code environment (VSCODE_* env vars)
+	if doc.VSCodeEditLinks && doc.IsSingleRepo {
+		// VS Code edit links enabled via --vscode flag
 		// This handler opens files directly in the VS Code editor
-		if isVSCodeEnvironment() {
-			return fmt.Sprintf("/_edit/%s", doc.RelativePath)
-		}
+		return fmt.Sprintf("/_edit/%s", doc.RelativePath)
 	}
 
 	// Production builds: generate forge-specific edit URLs
@@ -179,24 +176,5 @@ func isForgeURL(url string) bool {
 		return true
 	}
 	// Anything else (./path, /path, relative paths) is local
-	return false
-}
-
-// isVSCodeEnvironment checks if we're running inside VS Code or a devcontainer.
-func isVSCodeEnvironment() bool {
-	// Check for VS Code specific environment variables
-	// VSCODE_GIT_IPC_HANDLE, TERM_PROGRAM=vscode, or REMOTE_CONTAINERS=true
-	if os.Getenv("TERM_PROGRAM") == "vscode" {
-		return true
-	}
-	if os.Getenv("VSCODE_GIT_IPC_HANDLE") != "" {
-		return true
-	}
-	if os.Getenv("REMOTE_CONTAINERS") == "true" {
-		return true
-	}
-	if os.Getenv("VSCODE_INJECTION") == "1" {
-		return true
-	}
 	return false
 }
