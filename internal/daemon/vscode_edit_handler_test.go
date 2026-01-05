@@ -314,24 +314,71 @@ func TestHandleEditError_UnexpectedError(t *testing.T) {
 
 // TestShellEscape tests shell escaping for file paths.
 func TestShellEscape(t *testing.T) {
+	t.Skip("shellEscape removed in favor of direct exec (security improvement)")
+}
+
+// TestValidateIPCSocketPath tests IPC socket path validation.
+func TestValidateIPCSocketPath(t *testing.T) {
 	tests := []struct {
-		input    string
-		expected string
+		name      string
+		path      string
+		expectErr bool
 	}{
-		{"simple.md", "'simple.md'"},
-		{"path with spaces.md", "'path with spaces.md'"},
-		{"path'with'quotes.md", "'path'\\''with'\\''quotes.md'"},
-		{"/absolute/path.md", "'/absolute/path.md'"},
-		{"../relative/../path.md", "'../relative/../path.md'"},
+		{"valid /tmp socket", "/tmp/vscode-ipc-abc123.sock", false},
+		{"valid /run/user socket", "/run/user/1000/vscode-ipc-xyz.sock", false},
+		{"newline injection", "/tmp/vscode-ipc-test.sock\nMALICIOUS=value", true},
+		{"carriage return", "/tmp/vscode-ipc-test.sock\r", true},
+		{"null byte", "/tmp/vscode-ipc-test\x00.sock", true},
+		{"wrong location", "/home/user/evil.sock", true},
+		{"missing .sock extension", "/tmp/vscode-ipc-test", true},
+		{"relative path", "./vscode-ipc-test.sock", true},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result := shellEscape(tt.input)
-			if result != tt.expected {
-				t.Errorf("Expected %s, got %s", tt.expected, result)
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateIPCSocketPath(tt.path)
+			if tt.expectErr && err == nil {
+				t.Errorf("Expected error for path: %s", tt.path)
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("Expected no error for path: %s, got: %v", tt.path, err)
 			}
 		})
+	}
+}
+
+// TestValidateMarkdownFile_Symlink tests symlink rejection.
+func TestValidateMarkdownFile_Symlink(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a real markdown file
+	realFile := filepath.Join(tmpDir, "real.md")
+	if err := os.WriteFile(realFile, []byte("# Real"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a symlink to it
+	symlinkFile := filepath.Join(tmpDir, "symlink.md")
+	if err := os.Symlink(realFile, symlinkFile); err != nil {
+		t.Skip("Cannot create symlinks on this system")
+	}
+
+	srv := &HTTPServer{}
+	err := srv.validateMarkdownFile(symlinkFile)
+
+	if err == nil {
+		t.Fatal("Expected error for symlink file")
+	}
+
+	var editErr *editError
+	if !errors.As(err, &editErr) {
+		t.Fatalf("Expected editError, got: %T", err)
+	}
+	if editErr.statusCode != http.StatusForbidden {
+		t.Errorf("Expected status 403, got %d", editErr.statusCode)
+	}
+	if !strings.Contains(editErr.message, "Symlink") {
+		t.Errorf("Expected 'Symlink' in message, got: %s", editErr.message)
 	}
 }
 
