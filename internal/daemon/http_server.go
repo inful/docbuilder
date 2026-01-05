@@ -917,7 +917,7 @@ func (l *liveReloadInjector) finalize() {
 
 	// Inject script before </body>
 	html := string(l.buffer)
-	script := fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script></body>`, l.port)
+	script := fmt.Sprintf(`<script async src="http://localhost:%d/livereload.js"></script></body>`, l.port)
 	modified := strings.Replace(html, "</body>", script, 1)
 
 	l.ResponseWriter.Header().Del("Content-Length")

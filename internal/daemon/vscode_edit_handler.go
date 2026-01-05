@@ -49,15 +49,19 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Execute 'code <filepath>' to open in VS Code
+	// Execute 'code --goto <filepath>' to open in VS Code
 	// The 'code' command works for both local and remote VS Code sessions
+	// --goto flag ensures the file opens and gets focus
+	// --reuse-window opens in the current VS Code window
 	// Use a short timeout context to avoid hanging
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
 	// #nosec G204 -- absPath is validated and sanitized above (path traversal check)
-	cmd := exec.CommandContext(ctx, "code", absPath)
-	if err := cmd.Start(); err != nil {
+	cmd := exec.CommandContext(ctx, "code", "--reuse-window", "--goto", absPath)
+	
+	// Use Run() to wait for command completion and capture any errors
+	if err := cmd.Run(); err != nil {
 		slog.Error("VS Code edit handler: failed to execute code command",
 			slog.String("path", absPath),
 			slog.String("error", err.Error()))
