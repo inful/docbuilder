@@ -91,11 +91,11 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 
-	// Use shell to execute the command so PATH is properly resolved
-	// In devcontainers, the code CLI path can vary by VS Code version
-	// Running via shell ensures we get the proper PATH from the environment
+	// Use bash login shell to get proper PATH environment
+	// In devcontainers, the code CLI is installed in user's PATH
+	// which is only available in login shells, not non-interactive sh
 	// #nosec G204 -- absPath is validated and sanitized above (path traversal check)
-	cmd := exec.CommandContext(ctx, "sh", "-c", "code --reuse-window --goto "+shellEscape(absPath))
+	cmd := exec.CommandContext(ctx, "bash", "-l", "-c", "code --reuse-window --goto "+shellEscape(absPath))
 
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
