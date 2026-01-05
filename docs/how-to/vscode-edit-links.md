@@ -78,6 +78,41 @@ go test ./internal/hugo/editlink/ -run TestVSCode
 8. User edits file in VS Code
 9. File watcher detects change and rebuilds site automatically
 
+## Troubleshooting
+
+### Edit Links Not Opening Files
+
+**Symptom**: Clicking edit links logs success but files don't open in VS Code.
+
+**Cause**: The `VSCODE_IPC_HOOK_CLI` environment variable is not available. This typically happens when:
+- DocBuilder is started via a system startup script (e.g., `/etc/bash.bashrc`)
+- DocBuilder starts before VS Code completes its initialization
+- The process doesn't inherit VS Code's environment variables
+
+**Solution**: 
+1. **Manual Start**: Run DocBuilder from a VS Code terminal instead of auto-start scripts:
+   ```bash
+   docbuilder preview --docs-dir ./docs --vscode
+   ```
+
+2. **Delayed Auto-Start**: If using auto-start scripts, add a delay to ensure VS Code is fully initialized:
+   ```bash
+   #!/bin/bash
+   # Wait for VS Code to be ready
+   while [ -z "$VSCODE_IPC_HOOK_CLI" ]; do
+     sleep 1
+   done
+   docbuilder preview --docs-dir ./docs --vscode
+   ```
+
+3. **Check Environment**: Verify the IPC socket is available:
+   ```bash
+   echo $VSCODE_IPC_HOOK_CLI
+   # Should output something like: /tmp/vscode-ipc-xxxxx.sock
+   ```
+
+**Note**: This is a preview-mode development feature only. Daemon mode (production) uses forge web editors and is not affected by this limitation.
+
 ## Future Enhancements
 
 Potential improvements:
@@ -85,3 +120,4 @@ Potential improvements:
 - Support other editors via configuration (`vim`, `emacs`, etc.)
 - Add visual feedback in the UI when file opens successfully
 - Cache file path mappings for faster lookups
+- Detect VS Code readiness before starting the server
