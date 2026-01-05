@@ -135,14 +135,17 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 
 // findCodeCLI finds the VS Code CLI executable.
 // Tries multiple strategies to locate the code command:
-// 1. Check common VS Code server locations (devcontainers).
-// 2. Use 'bash -l -c which code' to load full PATH.
-// 3. Fall back to just 'code' and hope it's in PATH.
+// 1. Check VS Code server locations with glob patterns (prioritize actual VS Code binaries).
+// 2. Check fixed paths (/usr/local/bin/code, /usr/bin/code).
+// 3. Use 'bash -l -c which code' to load full PATH.
+// 4. Fall back to just 'code' and hope it's in PATH.
 func findCodeCLI(parentCtx context.Context) string {
 	// Common VS Code server locations in devcontainers
+	// Glob patterns first (actual VS Code binaries), then fixed paths (may be wrappers)
 	vscodePaths := []string{
-		"/vscode/vscode-server/bin/linux-x64/*/bin/remote-cli/code",
-		"/vscode/vscode-server/bin/*/bin/remote-cli/code",
+		"/vscode/vscode-server/bin/linux-arm64/*/bin/remote-cli/code", // ARM64 architecture
+		"/vscode/vscode-server/bin/linux-x64/*/bin/remote-cli/code",   // x64 architecture
+		"/vscode/vscode-server/bin/*/bin/remote-cli/code",              // Any architecture
 		"/usr/local/bin/code",
 		"/usr/bin/code",
 	}
@@ -153,15 +156,18 @@ func findCodeCLI(parentCtx context.Context) string {
 			// Glob pattern - try to expand it
 			matches, err := filepath.Glob(pattern)
 			if err == nil && len(matches) > 0 {
-				// Use the first match
-				slog.Debug("Found code CLI via glob",
-					slog.String("pattern", pattern),
-					slog.String("path", matches[0]))
-				return matches[0]
+				// Use the first match and verify it's executable
+				codePath := matches[0]
+				if isExecutable(codePath) {
+					slog.Debug("Found code CLI via glob",
+						slog.String("pattern", pattern),
+						slog.String("path", codePath))
+					return codePath
+				}
 			}
 		} else {
-			// Direct path - check if it exists
-			if _, err := os.Stat(pattern); err == nil {
+			// Direct path - check if it exists and is executable
+			if isExecutable(pattern) {
 				slog.Debug("Found code CLI at fixed location",
 					slog.String("path", pattern))
 				return pattern
@@ -187,6 +193,16 @@ func findCodeCLI(parentCtx context.Context) string {
 	// Fall back to just 'code' and hope it's in PATH
 	slog.Debug("Using fallback 'code' command (no explicit path found)")
 	return "code"
+}
+
+// isExecutable checks if a file exists and is executable.
+func isExecutable(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	// Check if it's a regular file and has execute permission
+	return info.Mode().IsRegular() && (info.Mode().Perm()&0111 != 0)
 }
 
 // shellEscape escapes a file path for safe use in shell commands.
