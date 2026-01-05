@@ -124,6 +124,12 @@ func (s *HTTPServer) validateAndResolveEditPath(urlPath string) (string, error) 
 	// Security: ensure the resolved path is within the docs directory
 	cleanDocs := filepath.Clean(docsDir)
 	cleanPath := filepath.Clean(absPath)
+
+	// Ensure proper directory boundary check by adding separator
+	if !strings.HasSuffix(cleanDocs, string(filepath.Separator)) {
+		cleanDocs += string(filepath.Separator)
+	}
+
 	if !strings.HasPrefix(cleanPath, cleanDocs) {
 		return "", &editError{
 			message:    "Invalid file path",
@@ -147,7 +153,8 @@ func (s *HTTPServer) validateAndResolveEditPath(urlPath string) (string, error) 
 
 // validateMarkdownFile checks that the file exists, is regular, and is markdown.
 func (s *HTTPServer) validateMarkdownFile(path string) error {
-	fileInfo, err := os.Stat(path)
+	// Use Lstat to detect symlinks (Stat would follow them)
+	fileInfo, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return &editError{
@@ -164,6 +171,19 @@ func (s *HTTPServer) validateMarkdownFile(path string) error {
 			logFields: []any{
 				slog.String("path", path),
 				slog.String("error", err.Error()),
+			},
+		}
+	}
+
+	// Security: Reject symlinks to prevent path traversal via symlink attacks
+	if fileInfo.Mode()&os.ModeSymlink != 0 {
+		return &editError{
+			message:    "Symlinks are not allowed",
+			statusCode: http.StatusForbidden,
+			logLevel:   "warn",
+			logFields: []any{
+				slog.String("path", path),
+				slog.String("reason", "symlink detected"),
 			},
 		}
 	}
@@ -213,13 +233,26 @@ func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string
 		}
 	}
 
+	// Security: Validate IPC socket path to prevent environment variable injection
+	if err := validateIPCSocketPath(ipcSocket); err != nil {
+		return &editError{
+			message:    "Invalid IPC socket path",
+			statusCode: http.StatusInternalServerError,
+			logLevel:   "error",
+			logFields: []any{
+				slog.String("socket", ipcSocket),
+				slog.String("error", err.Error()),
+			},
+		}
+	}
+
 	// Find the code CLI
 	codeCmd := findCodeCLI(ctx)
-	fullCommand := codeCmd + " --reuse-window --goto " + shellEscape(absPath)
 
-	// Execute command
-	// #nosec G204 -- codeCmd comes from findCodeCLI (validated paths) and absPath is validated above
-	cmd := exec.CommandContext(ctx, "bash", "-c", fullCommand)
+	// Security: Execute directly without shell to prevent injection attacks
+	// Pass arguments as separate parameters instead of using bash -c
+	// #nosec G204 -- codeCmd comes from findCodeCLI (validated trusted paths only)
+	cmd := exec.CommandContext(ctx, codeCmd, "--reuse-window", "--goto", absPath)
 	cmd.Env = append(os.Environ(), "VSCODE_IPC_HOOK_CLI="+ipcSocket)
 
 	var stdout, stderr bytes.Buffer
@@ -229,7 +262,6 @@ func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string
 	slog.Debug("VS Code edit handler: executing command",
 		slog.String("path", absPath),
 		slog.String("code_cli", codeCmd),
-		slog.String("command", fullCommand),
 		slog.String("ipc_socket", ipcSocket))
 
 	if err := cmd.Run(); err != nil {
@@ -239,7 +271,7 @@ func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string
 			logLevel:   "error",
 			logFields: []any{
 				slog.String("path", absPath),
-				slog.String("command", fullCommand),
+				slog.String("code_cli", codeCmd),
 				slog.String("error", err.Error()),
 				slog.String("stdout", stdout.String()),
 				slog.String("stderr", stderr.String()),
@@ -335,10 +367,32 @@ func isExecutable(path string) bool {
 	return info.Mode().IsRegular() && (info.Mode().Perm()&0o111 != 0)
 }
 
-// shellEscape escapes a file path for safe use in shell commands.
-func shellEscape(path string) string {
-	// Simple escaping: wrap in single quotes and escape any single quotes
-	return "'" + strings.ReplaceAll(path, "'", "'\\''") + "'"
+// validateIPCSocketPath validates that an IPC socket path is safe to use.
+// This prevents environment variable injection and ensures the path is from expected locations.
+func validateIPCSocketPath(socketPath string) error {
+	// Reject paths with newlines or other control characters that could inject env vars
+	if strings.ContainsAny(socketPath, "\n\r\x00") {
+		return errors.New("socket path contains invalid characters")
+	}
+
+	// Reject relative paths
+	if !filepath.IsAbs(socketPath) {
+		return errors.New("socket path must be absolute")
+	}
+
+	// Ensure socket path is from expected VS Code locations
+	if !strings.HasPrefix(socketPath, "/tmp/vscode-ipc-") &&
+		!strings.Contains(socketPath, "/run/user/") &&
+		!strings.Contains(socketPath, "/vscode-ipc-") {
+		return errors.New("socket path not from expected VS Code location")
+	}
+
+	// Ensure it has .sock extension
+	if !strings.HasSuffix(socketPath, ".sock") {
+		return fmt.Errorf("socket path must end with .sock")
+	}
+
+	return nil
 }
 
 // findVSCodeIPCSocket locates the VS Code IPC socket for remote CLI communication.
