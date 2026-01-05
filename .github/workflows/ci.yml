@@ -158,7 +158,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
-            if echo "$FILES" | grep -qE '^(docs/|cmd/docbuilder/.*generate|internal/hugo/)'; then
+            if echo "$FILES" | grep -qE '^(docs/|cmd/docbuilder/commands/(build|preview)|internal/hugo/)'; then
               echo "changed=true" >> $GITHUB_OUTPUT
             else
               echo "changed=false" >> $GITHUB_OUTPUT
@@ -204,13 +204,12 @@ jobs:
       - name: Generate documentation site
         if: steps.docs_changed.outputs.changed == 'true'
         run: |
-          ./docbuilder generate \
+          ./docbuilder build \
             --docs-dir ./docs \
             --output ./public \
-            --theme relearn \
             --title "DocBuilder Documentation" \
             --base-url "https://${{ github.repository_owner }}.github.io/docbuilder" \
-            --render
+            --render-mode always
           
           # Verify the site was generated
           test -d public || (echo "Public directory not created" && exit 1)
