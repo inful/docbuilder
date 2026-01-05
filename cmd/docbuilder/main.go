@@ -7,16 +7,14 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/cmd/docbuilder/commands"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
-
-// Set at build time with: -ldflags "-X main.version=1.0.0-rc1".
-var version = "dev"
 
 func main() {
 	cli := &commands.CLI{}
 	parser := kong.Parse(cli,
 		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
-		kong.Vars{"version": version},
+		kong.Vars{"version": version.Version},
 	)
 
 	// Set up structured error handling
