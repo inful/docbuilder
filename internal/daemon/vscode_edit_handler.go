@@ -255,7 +255,7 @@ func shellEscape(path string) string {
 
 // findVSCodeIPCSocket locates the VS Code IPC socket for remote CLI communication.
 // It first checks the VSCODE_IPC_HOOK_CLI environment variable, then searches
-// for active sockets in /run/user/{uid}/ if not found.
+// for active sockets in /tmp and /run/user/{uid}/.
 //
 // Based on the approach from code-connect: https://github.com/chvolkmann/code-connect
 func findVSCodeIPCSocket() string {
@@ -270,15 +270,28 @@ func findVSCodeIPCSocket() string {
 			slog.String("socket", ipcSocket))
 	}
 
-	// Search for IPC sockets in /run/user/{uid}/
+	// Search for IPC sockets in multiple locations
+	// VS Code may store sockets in /tmp or /run/user/{uid}/ depending on the environment
 	uid := os.Getuid()
-	runDir := fmt.Sprintf("/run/user/%d", uid)
-	pattern := filepath.Join(runDir, "vscode-ipc-*.sock")
+	searchPaths := []string{
+		"/tmp/vscode-ipc-*.sock",
+		filepath.Join(fmt.Sprintf("/run/user/%d", uid), "vscode-ipc-*.sock"),
+	}
 
-	matches, err := filepath.Glob(pattern)
-	if err != nil || len(matches) == 0 {
-		slog.Debug("No VS Code IPC sockets found",
-			slog.String("pattern", pattern),
+	var allMatches []string
+	for _, pattern := range searchPaths {
+		matches, err := filepath.Glob(pattern)
+		if err == nil && len(matches) > 0 {
+			allMatches = append(allMatches, matches...)
+			slog.Debug("Found VS Code IPC socket candidates",
+				slog.String("pattern", pattern),
+				slog.Int("count", len(matches)))
+		}
+	}
+
+	if len(allMatches) == 0 {
+		slog.Debug("No VS Code IPC sockets found in any location",
+			slog.Any("searched", searchPaths),
 			slog.Int("uid", uid))
 		return ""
 	}
@@ -289,11 +302,11 @@ func findVSCodeIPCSocket() string {
 		accessTime time.Time
 	}
 
-	sockets := make([]socketInfo, 0, len(matches))
+	sockets := make([]socketInfo, 0, len(allMatches))
 	maxIdleTime := 4 * time.Hour // Same as code-connect default
 	now := time.Now()
 
-	for _, sockPath := range matches {
+	for _, sockPath := range allMatches {
 		info, err := os.Stat(sockPath)
 		if err != nil {
 			continue
@@ -332,8 +345,8 @@ func findVSCodeIPCSocket() string {
 	}
 
 	slog.Warn("No open VS Code IPC sockets found",
-		slog.String("pattern", pattern),
-		slog.Int("candidates", len(sockets)))
+		slog.Int("total_candidates", len(allMatches)),
+		slog.Int("recent_candidates", len(sockets)))
 	return ""
 }
 
