@@ -253,8 +253,10 @@ func shellEscape(path string) string {
 }
 
 // findVSCodeIPCSocket locates the VS Code IPC socket for remote CLI communication.
-// It first checks the VSCODE_IPC_HOOK_CLI environment variable (most reliable),
-// then searches for the most recently modified open socket in /tmp and /run/user/{uid}/.
+// It uses multiple strategies to find the correct socket when VSCODE_IPC_HOOK_CLI is not set:
+// 1. Check environment variable (most reliable when set)
+// 2. Look for companion VS Code sockets (git, containers) to identify the active session
+// 3. Use the most recently modified socket as fallback
 //
 // Based on the approach from code-connect: https://github.com/chvolkmann/code-connect
 func findVSCodeIPCSocket() string {
@@ -262,7 +264,6 @@ func findVSCodeIPCSocket() string {
 	// This is the most reliable method when VS Code has initialized the terminal
 	if ipcSocket := os.Getenv("VSCODE_IPC_HOOK_CLI"); ipcSocket != "" {
 		// Trust the environment variable - it's set by VS Code itself
-		// Even if we can't connect now, it's the correct socket to use
 		if fileExists(ipcSocket) {
 			slog.Debug("Found VS Code IPC socket from environment",
 				slog.String("socket", ipcSocket))
@@ -272,6 +273,114 @@ func findVSCodeIPCSocket() string {
 			slog.String("socket", ipcSocket))
 	}
 
+	// Secondary: Look for companion VS Code sockets to identify the active session
+	// When VS Code starts, it creates multiple related sockets (git, containers, ssh-auth)
+	// These can help us identify which IPC socket belongs to the current session
+	companionSocket := findCompanionSocket()
+	if companionSocket != "" {
+		// Try to match IPC sockets by proximity in time to companion socket
+		if ipcSocket := findIPCSocketByCompanion(companionSocket); ipcSocket != "" {
+			slog.Debug("Found VS Code IPC socket via companion match",
+				slog.String("socket", ipcSocket),
+				slog.String("companion", companionSocket))
+			return ipcSocket
+		}
+	}
+
+	// Fallback: Search for IPC sockets and select most recently modified
+	return findMostRecentIPCSocket()
+}
+
+// findCompanionSocket looks for other VS Code sockets that can help identify the active session.
+func findCompanionSocket() string {
+	// Check for other VS Code environment variables that point to sockets
+	companionEnvVars := []string{
+		"VSCODE_GIT_IPC_HANDLE",
+		"REMOTE_CONTAINERS_IPC",
+		"SSH_AUTH_SOCK", // May be VS Code managed
+	}
+
+	for _, envVar := range companionEnvVars {
+		if sockPath := os.Getenv(envVar); sockPath != "" {
+			if fileExists(sockPath) && strings.Contains(sockPath, "vscode") {
+				slog.Debug("Found companion VS Code socket",
+					slog.String("env_var", envVar),
+					slog.String("socket", sockPath))
+				return sockPath
+			}
+		}
+	}
+	return ""
+}
+
+// findIPCSocketByCompanion finds an IPC socket that was created around the same time as a companion socket.
+func findIPCSocketByCompanion(companionPath string) string {
+	companionInfo, err := os.Stat(companionPath)
+	if err != nil {
+		return ""
+	}
+	companionTime := companionInfo.ModTime()
+
+	// Search for IPC sockets
+	uid := os.Getuid()
+	searchPaths := []string{
+		"/tmp/vscode-ipc-*.sock",
+		filepath.Join(fmt.Sprintf("/run/user/%d", uid), "vscode-ipc-*.sock"),
+	}
+
+	var candidates []struct {
+		path     string
+		modTime  time.Time
+		timeDiff time.Duration
+	}
+
+	for _, pattern := range searchPaths {
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			continue
+		}
+
+		for _, sockPath := range matches {
+			info, err := os.Stat(sockPath)
+			if err != nil {
+				continue
+			}
+
+			modTime := info.ModTime()
+			timeDiff := companionTime.Sub(modTime)
+			if timeDiff < 0 {
+				timeDiff = -timeDiff
+			}
+
+			// Consider sockets created within 10 seconds of the companion
+			if timeDiff <= 10*time.Second {
+				candidates = append(candidates, struct {
+					path     string
+					modTime  time.Time
+					timeDiff time.Duration
+				}{sockPath, modTime, timeDiff})
+			}
+		}
+	}
+
+	// Return the socket with the smallest time difference
+	if len(candidates) > 0 {
+		sort.Slice(candidates, func(i, j int) bool {
+			return candidates[i].timeDiff < candidates[j].timeDiff
+		})
+		selected := candidates[0]
+		slog.Debug("Matched IPC socket to companion by time",
+			slog.String("socket", selected.path),
+			slog.Time("modified", selected.modTime),
+			slog.Duration("time_diff", selected.timeDiff))
+		return selected.path
+	}
+
+	return ""
+}
+
+// findMostRecentIPCSocket searches for IPC sockets and returns the most recently modified one.
+func findMostRecentIPCSocket() string {
 	// Search for IPC sockets in multiple locations
 	// VS Code may store sockets in /tmp or /run/user/{uid}/ depending on the environment
 	uid := os.Getuid()
