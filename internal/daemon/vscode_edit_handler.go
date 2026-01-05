@@ -37,7 +37,25 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	absPath := filepath.Join(docsDir, relPath)
+	// In daemon mode, path format is: {repo_name}/{docs_path}/file.md
+	// Extract repo name and construct path to working/{repo_name}/{docs_path}/file.md
+	var absPath string
+	if s.config.Daemon != nil {
+		// Parse repo name from path (first path component)
+		parts := strings.SplitN(relPath, "/", 2)
+		if len(parts) < 2 {
+			http.Error(w, "Invalid path format (expected: repo_name/docs_path/file.md)", http.StatusBadRequest)
+			return
+		}
+		repoName := parts[0]
+		repoRelPath := parts[1]
+
+		// Construct absolute path: working/{repo_name}/{docs_path}/file.md
+		absPath = filepath.Join(docsDir, repoName, repoRelPath)
+	} else {
+		// Preview mode: direct path relative to docs dir
+		absPath = filepath.Join(docsDir, relPath)
+	}
 
 	// Security: ensure the resolved path is within the docs directory
 	cleanDocs := filepath.Clean(docsDir)
@@ -145,33 +163,15 @@ func findCodeCLI(parentCtx context.Context) string {
 	vscodePaths := []string{
 		"/vscode/vscode-server/bin/linux-arm64/*/bin/remote-cli/code", // ARM64 architecture
 		"/vscode/vscode-server/bin/linux-x64/*/bin/remote-cli/code",   // x64 architecture
-		"/vscode/vscode-server/bin/*/bin/remote-cli/code",              // Any architecture
+		"/vscode/vscode-server/bin/*/bin/remote-cli/code",             // Any architecture
 		"/usr/local/bin/code",
 		"/usr/bin/code",
 	}
 
 	// Try to find code in common locations
 	for _, pattern := range vscodePaths {
-		if strings.Contains(pattern, "*") {
-			// Glob pattern - try to expand it
-			matches, err := filepath.Glob(pattern)
-			if err == nil && len(matches) > 0 {
-				// Use the first match and verify it's executable
-				codePath := matches[0]
-				if isExecutable(codePath) {
-					slog.Debug("Found code CLI via glob",
-						slog.String("pattern", pattern),
-						slog.String("path", codePath))
-					return codePath
-				}
-			}
-		} else {
-			// Direct path - check if it exists and is executable
-			if isExecutable(pattern) {
-				slog.Debug("Found code CLI at fixed location",
-					slog.String("path", pattern))
-				return pattern
-			}
+		if codePath := tryPattern(pattern); codePath != "" {
+			return codePath
 		}
 	}
 
@@ -195,6 +195,31 @@ func findCodeCLI(parentCtx context.Context) string {
 	return "code"
 }
 
+// tryPattern attempts to find an executable VS Code CLI at the given pattern.
+// Returns the path if found and executable, empty string otherwise.
+func tryPattern(pattern string) string {
+	if strings.Contains(pattern, "*") {
+		// Glob pattern - try to expand it
+		matches, err := filepath.Glob(pattern)
+		if err == nil && len(matches) > 0 {
+			// Use the first match and verify it's executable
+			codePath := matches[0]
+			if isExecutable(codePath) {
+				slog.Debug("Found code CLI via glob",
+					slog.String("pattern", pattern),
+					slog.String("path", codePath))
+				return codePath
+			}
+		}
+	} else if isExecutable(pattern) {
+		// Direct path - check if it exists and is executable
+		slog.Debug("Found code CLI at fixed location",
+			slog.String("path", pattern))
+		return pattern
+	}
+	return ""
+}
+
 // isExecutable checks if a file exists and is executable.
 func isExecutable(path string) bool {
 	info, err := os.Stat(path)
@@ -202,7 +227,7 @@ func isExecutable(path string) bool {
 		return false
 	}
 	// Check if it's a regular file and has execute permission
-	return info.Mode().IsRegular() && (info.Mode().Perm()&0111 != 0)
+	return info.Mode().IsRegular() && (info.Mode().Perm()&0o111 != 0)
 }
 
 // shellEscape escapes a file path for safe use in shell commands.
@@ -211,14 +236,29 @@ func shellEscape(path string) string {
 	return "'" + strings.ReplaceAll(path, "'", "'\\''") + "'"
 }
 
-// getDocsDirectory returns the docs directory for local preview mode.
-// For preview mode, this is the repository URL (which is a local path).
+// getDocsDirectory returns the docs directory for edit operations.
+// In daemon mode, this is the working directory where repositories are cloned.
+// For single-repo preview, this returns the repository URL (a local path).
 func (s *HTTPServer) getDocsDirectory() string {
 	if s.config == nil || len(s.config.Repositories) == 0 {
 		return ""
 	}
 
-	// In preview mode, the repository URL is the local docs directory
+	// In daemon mode with multiple repositories, use the working directory
+	if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
+		workingDir := filepath.Join(s.config.Daemon.Storage.RepoCacheDir, "working")
+		// Ensure absolute path
+		if !filepath.IsAbs(workingDir) {
+			if abs, err := filepath.Abs(workingDir); err == nil {
+				workingDir = abs
+			}
+		}
+		slog.Debug("VS Code edit handler: using daemon working directory",
+			slog.String("working_dir", workingDir))
+		return workingDir
+	}
+
+	// In preview mode (single repository), the repository URL is the local docs directory
 	docsDir := s.config.Repositories[0].URL
 
 	// Ensure absolute path
@@ -228,5 +268,7 @@ func (s *HTTPServer) getDocsDirectory() string {
 		}
 	}
 
+	slog.Debug("VS Code edit handler: using repository URL as docs dir",
+		slog.String("docs_dir", docsDir))
 	return docsDir
 }
