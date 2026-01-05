@@ -37,25 +37,17 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// In daemon mode, path format is: {repo_name}/{docs_path}/file.md
-	// Extract repo name and construct path to working/{repo_name}/{docs_path}/file.md
-	var absPath string
-	if s.config.Daemon != nil {
-		// Parse repo name from path (first path component)
-		parts := strings.SplitN(relPath, "/", 2)
-		if len(parts) < 2 {
-			http.Error(w, "Invalid path format (expected: repo_name/docs_path/file.md)", http.StatusBadRequest)
-			return
-		}
-		repoName := parts[0]
-		repoRelPath := parts[1]
-
-		// Construct absolute path: working/{repo_name}/{docs_path}/file.md
-		absPath = filepath.Join(docsDir, repoName, repoRelPath)
-	} else {
-		// Preview mode: direct path relative to docs dir
-		absPath = filepath.Join(docsDir, relPath)
+	// VS Code edit handler is only for preview mode (single local repository)
+	// In daemon mode, edit URLs point to forge web interfaces
+	if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
+		slog.Warn("VS Code edit handler called in daemon mode - this endpoint is for preview mode only",
+			slog.String("path", relPath))
+		http.Error(w, "VS Code edit links are only available in preview mode", http.StatusNotImplemented)
+		return
 	}
+
+	// Preview mode: direct path relative to docs dir
+	absPath := filepath.Join(docsDir, relPath)
 
 	// Security: ensure the resolved path is within the docs directory
 	cleanDocs := filepath.Clean(docsDir)
@@ -236,26 +228,11 @@ func shellEscape(path string) string {
 	return "'" + strings.ReplaceAll(path, "'", "'\\''") + "'"
 }
 
-// getDocsDirectory returns the docs directory for edit operations.
-// In daemon mode, this is the working directory where repositories are cloned.
-// For single-repo preview, this returns the repository URL (a local path).
+// getDocsDirectory returns the docs directory for preview mode edit operations.
+// VS Code edit links are only supported in preview mode, not daemon mode.
 func (s *HTTPServer) getDocsDirectory() string {
 	if s.config == nil || len(s.config.Repositories) == 0 {
 		return ""
-	}
-
-	// In daemon mode with multiple repositories, use the working directory
-	if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
-		workingDir := filepath.Join(s.config.Daemon.Storage.RepoCacheDir, "working")
-		// Ensure absolute path
-		if !filepath.IsAbs(workingDir) {
-			if abs, err := filepath.Abs(workingDir); err == nil {
-				workingDir = abs
-			}
-		}
-		slog.Debug("VS Code edit handler: using daemon working directory",
-			slog.String("working_dir", workingDir))
-		return workingDir
 	}
 
 	// In preview mode (single repository), the repository URL is the local docs directory
