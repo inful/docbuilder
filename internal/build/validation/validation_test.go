@@ -52,7 +52,7 @@ func writePrevReport(t *testing.T, outDir string, repos, files, rendered int, do
 		DocFilesHash      string `json:"doc_files_hash"`
 		DocBuilderVersion string `json:"doc_builder_version"`
 		HugoVersion       string `json:"hugo_version"`
-	}{repos, files, rendered, docHash, "2.1.0-dev", ""} // Match current version
+	}{repos, files, rendered, docHash, "unknown", ""} // Match current version
 	b, err := json.Marshal(prev)
 	if err != nil {
 		t.Fatalf("marshal prev: %v", err)
@@ -232,8 +232,8 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Same versions (no Hugo)
 		vctx = Context{
 			PrevReport: &PreviousReport{
-				DocBuilderVersion: "2.1.0-dev", // Should match version.Version in tests
-				HugoVersion:       "",          // No Hugo used
+				DocBuilderVersion: "unknown", // Should match version.Version in tests
+				HugoVersion:       "",        // No Hugo used
 			},
 		}
 		result = rule.Validate(context.Background(), vctx)
@@ -261,7 +261,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// In CI without Hugo, DetectHugoVersion() returns "" so we test that case
 		vctx = Context{
 			PrevReport: &PreviousReport{
-				DocBuilderVersion: "2.1.0-dev",
+				DocBuilderVersion: "unknown",
 				HugoVersion:       "0.100.0", // Any previous Hugo version
 			},
 		}
