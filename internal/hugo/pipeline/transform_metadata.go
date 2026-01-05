@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -55,9 +56,32 @@ func addEditLink(cfg *config.Config) FileTransform {
 }
 
 // generateEditURL creates a forge-appropriate edit URL for a document.
+// Only generates URLs for documents with repository metadata.
+// For preview mode in VS Code, VS Code edit URLs are handled separately.
 func generateEditURL(doc *Document) string {
-	// Get base URL by stripping .git suffix if present
-	baseURL := strings.TrimSuffix(doc.SourceURL, ".git")
+	// Preview mode with VS Code: generate local edit URL
+	if doc.IsPreviewMode && doc.IsSingleRepo {
+		// Check if we're in VS Code environment (VSCODE_* env vars)
+		// This handler opens files directly in the VS Code editor
+		if isVSCodeEnvironment() {
+			return fmt.Sprintf("/_edit/%s", doc.RelativePath)
+		}
+	}
+
+	// Production builds: generate forge-specific edit URLs
+	// Use EditURLBase override if provided, otherwise use SourceURL
+	var baseURL string
+	switch {
+	case doc.EditURLBase != "":
+		// CLI override provided
+		baseURL = strings.TrimSuffix(doc.EditURLBase, ".git")
+	case doc.SourceURL != "" && isForgeURL(doc.SourceURL):
+		// Use SourceURL if it's a real forge URL
+		baseURL = strings.TrimSuffix(doc.SourceURL, ".git")
+	default:
+		// No valid base URL for edit links
+		return ""
+	}
 
 	// Determine branch (fallback to "main" if not set)
 	branch := doc.SourceBranch
@@ -128,4 +152,36 @@ func detectForgeType(forgeField, baseURL string) config.ForgeType {
 
 	// Final fallback to GitHub
 	return config.ForgeGitHub
+}
+
+// isForgeURL checks if a URL is a real forge URL (not a local path).
+func isForgeURL(url string) bool {
+	// Real forge URLs start with http://, https://, or git@
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		return true
+	}
+	if strings.HasPrefix(url, "git@") {
+		return true
+	}
+	// Anything else (./path, /path, relative paths) is local
+	return false
+}
+
+// isVSCodeEnvironment checks if we're running inside VS Code or a devcontainer.
+func isVSCodeEnvironment() bool {
+	// Check for VS Code specific environment variables
+	// VSCODE_GIT_IPC_HANDLE, TERM_PROGRAM=vscode, or REMOTE_CONTAINERS=true
+	if os.Getenv("TERM_PROGRAM") == "vscode" {
+		return true
+	}
+	if os.Getenv("VSCODE_GIT_IPC_HANDLE") != "" {
+		return true
+	}
+	if os.Getenv("REMOTE_CONTAINERS") == "true" {
+		return true
+	}
+	if os.Getenv("VSCODE_INJECTION") == "1" {
+		return true
+	}
+	return false
 }
