@@ -18,6 +18,14 @@ import (
 // URL format: /_edit/<relative-path-to-file>
 // This handler opens the file in VS Code and redirects back to the referer.
 func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
+	// Check if VS Code edit links are enabled (requires --vscode flag)
+	if s.config == nil || !s.config.Build.VSCodeEditLinks {
+		slog.Warn("VS Code edit handler: feature not enabled - use --vscode flag",
+			slog.String("path", r.URL.Path))
+		http.Error(w, "VS Code edit links not enabled. Use --vscode flag with preview command.", http.StatusNotFound)
+		return
+	}
+
 	// Extract file path from URL (remove /_edit/ prefix)
 	const editPrefix = "/_edit/"
 	if !strings.HasPrefix(r.URL.Path, editPrefix) {
