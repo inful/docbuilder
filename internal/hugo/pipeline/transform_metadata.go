@@ -43,7 +43,13 @@ func addEditLink(cfg *config.Config) FileTransform {
 			return nil, nil
 		}
 
-		// Generate edit URL if we have repository URL and relative path
+		// For VS Code preview mode, generate edit URL even without SourceURL
+		if doc.IsPreviewMode && doc.IsSingleRepo && doc.RelativePath != "" && isVSCodeEnvironment() {
+			doc.FrontMatter["editURL"] = fmt.Sprintf("/_edit/%s", doc.RelativePath)
+			return nil, nil
+		}
+
+		// Generate forge edit URL if we have repository URL and relative path
 		if doc.SourceURL != "" && doc.RelativePath != "" {
 			editURL := generateEditURL(doc)
 			if editURL != "" {

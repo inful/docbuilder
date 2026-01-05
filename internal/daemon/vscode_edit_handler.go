@@ -59,7 +59,7 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 
 	// #nosec G204 -- absPath is validated and sanitized above (path traversal check)
 	cmd := exec.CommandContext(ctx, "code", "--reuse-window", "--goto", absPath)
-	
+
 	// Use Run() to wait for command completion and capture any errors
 	if err := cmd.Run(); err != nil {
 		slog.Error("VS Code edit handler: failed to execute code command",
