@@ -103,8 +103,9 @@ func generateEditURL(doc *Document) string {
 
 	// Build path relative to repository root
 	// RelativePath is already relative to docs base, need to prepend DocsBase if it's not already there
+	// Skip if DocsBase is "." (current directory marker used in local builds)
 	filePath := doc.RelativePath
-	if doc.DocsBase != "" && !strings.HasPrefix(filePath, doc.DocsBase+"/") {
+	if doc.DocsBase != "" && doc.DocsBase != "." && !strings.HasPrefix(filePath, doc.DocsBase+"/") {
 		filePath = doc.DocsBase + "/" + filePath
 	}
 

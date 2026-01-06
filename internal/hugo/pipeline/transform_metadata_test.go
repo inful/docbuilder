@@ -419,6 +419,28 @@ func TestGenerateEditURL_WithEditURLBase(t *testing.T) {
 			},
 			expectedURL: "https://gitlab.com/group/project/-/edit/main/docs/api/reference.md",
 		},
+		{
+			name: "EditURLBase with DocsBase as current directory (.)",
+			doc: &Document{
+				Forge:        "gitlab",
+				EditURLBase:  "https://gitlab.example.com/group/project",
+				SourceBranch: "main",
+				RelativePath: "ci-cd-setup.md",
+				DocsBase:     ".",
+			},
+			expectedURL: "https://gitlab.example.com/group/project/-/edit/main/ci-cd-setup.md",
+		},
+		{
+			name: "Local build mode with DocsBase as dot",
+			doc: &Document{
+				Forge:        "github",
+				EditURLBase:  "https://github.com/org/repo",
+				SourceBranch: "main",
+				RelativePath: "README.md",
+				DocsBase:     ".",
+			},
+			expectedURL: "https://github.com/org/repo/edit/main/README.md",
+		},
 	}
 
 	for _, tt := range tests {

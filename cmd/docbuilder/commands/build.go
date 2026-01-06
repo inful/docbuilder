@@ -220,6 +220,35 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	return nil
 }
 
+// prepareLocalRepoConfig configures repository settings for local builds.
+// Returns the repository config and the actual path to use for discovery.
+func (b *BuildCmd) prepareLocalRepoConfig(cfg *config.Config, docsPath string) ([]config.Repository, string) {
+	repos := cfg.Repositories
+
+	if len(repos) == 0 {
+		// Fallback if config is missing repositories
+		return []config.Repository{{
+			URL:    docsPath,
+			Name:   "local",
+			Branch: "",
+			Paths:  []string{"."},
+		}}, docsPath
+	}
+
+	// If paths is not just ["."], it means DocsDir is a subdirectory and we need
+	// to use the parent directory as the repo root for discovery to work correctly
+	if len(repos[0].Paths) == 1 && repos[0].Paths[0] != "." {
+		// Use parent directory of docsPath as the repo root
+		parentPath := filepath.Dir(docsPath)
+		repos[0].URL = parentPath
+		return repos, parentPath
+	}
+
+	// Standard case: paths is ["."], use docsPath directly
+	repos[0].URL = docsPath
+	return repos, docsPath
+}
+
 // runLocalBuild builds from a local docs directory without git cloning.
 //
 //nolint:forbidigo // fmt is used for user-facing messages
@@ -249,21 +278,16 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 		"docs_dir", docsPath,
 		"output", outputDir)
 
-	// Prepare discovery
-	repos := []config.Repository{{
-		URL:    docsPath,
-		Name:   "local",
-		Branch: "",
-		Paths:  []string{"."},
-	}}
+	// Prepare repository configuration for discovery
+	repos, repoPath := b.prepareLocalRepoConfig(cfg, docsPath)
 	discovery := docs.NewDiscovery(repos, &cfg.Build)
-	repoPaths := map[string]string{"local": docsPath}
+	repoPaths := map[string]string{"local": repoPath}
 
 	// Discover docs
 	slog.Info("Discovering documentation files")
-	docFiles, err := discovery.DiscoverDocs(repoPaths)
-	if err != nil {
-		return fmt.Errorf("discovery failed: %w", err)
+	docFiles, discErr := discovery.DiscoverDocs(repoPaths)
+	if discErr != nil {
+		return fmt.Errorf("discovery failed: %w", discErr)
 	}
 
 	if len(docFiles) == 0 {
@@ -308,12 +332,32 @@ func (b *BuildCmd) createLocalConfig() *config.Config {
 
 	cfg.Build.RenderMode = config.RenderModeAlways
 
+	// Determine repository URL and paths for edit URLs
+	// Extract the base directory name to use as the docs path in edit URLs
+	cleanDir := filepath.Clean(b.DocsDir)
+	baseName := filepath.Base(cleanDir)
+
+	repoURL := b.DocsDir
+	paths := []string{"."}
+
+	// If DocsDir is a subdirectory (not just "." or current directory),
+	// use the parent as repo root and subdirectory name as the path
+	// This ensures edit URLs include the correct subdirectory prefix
+	if baseName != "." && baseName != ".." {
+		parentDir := filepath.Dir(cleanDir)
+		if parentDir == "." {
+			parentDir = "./"
+		}
+		repoURL = parentDir
+		paths = []string{baseName}
+	}
+
 	// Single local repository entry pointing to DocsDir
 	cfg.Repositories = []config.Repository{{
-		URL:    b.DocsDir,
+		URL:    repoURL,
 		Name:   "local",
 		Branch: "",
-		Paths:  []string{"."},
+		Paths:  paths,
 	}}
 
 	return cfg
