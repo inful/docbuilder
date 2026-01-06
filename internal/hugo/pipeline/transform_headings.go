@@ -94,8 +94,9 @@ func stripHeading(doc *Document) ([]*Document, error) {
 	if matches != nil {
 		textBeforeH1 := strings.TrimSpace(doc.Content[:matches[0]])
 		if textBeforeH1 == "" {
-			// Strip the first H1 since we have a title in frontmatter
-			doc.Content = h1Pattern.ReplaceAllString(doc.Content, "")
+			// Strip only the first H1 since we have a title in frontmatter
+			// Use string slicing to remove only the matched portion
+			doc.Content = doc.Content[:matches[0]] + doc.Content[matches[1]:]
 		}
 	}
 
