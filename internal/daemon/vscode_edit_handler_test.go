@@ -144,7 +144,7 @@ func TestValidateAndResolveEditPath_Success(t *testing.T) {
 
 	// Create a test markdown file
 	testFile := filepath.Join(tmpDir, "test.md")
-	if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +156,6 @@ func TestValidateAndResolveEditPath_Success(t *testing.T) {
 
 	srv := &HTTPServer{config: cfg}
 	absPath, err := srv.validateAndResolveEditPath("/_edit/test.md")
-
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -210,7 +209,7 @@ func TestValidateMarkdownFile_Directory(t *testing.T) {
 func TestValidateMarkdownFile_NonMarkdown(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -252,7 +251,7 @@ func TestValidateMarkdownFile_Success(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			testFile := filepath.Join(tmpDir, tt.filename)
-			if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
+			if err := os.WriteFile(testFile, []byte("# Test"), 0o600); err != nil {
 				t.Fatal(err)
 			}
 
@@ -353,7 +352,7 @@ func TestValidateMarkdownFile_Symlink(t *testing.T) {
 
 	// Create a real markdown file
 	realFile := filepath.Join(tmpDir, "real.md")
-	if err := os.WriteFile(realFile, []byte("# Real"), 0644); err != nil {
+	if err := os.WriteFile(realFile, []byte("# Real"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -388,13 +387,14 @@ func TestIsExecutable(t *testing.T) {
 
 	// Create executable file
 	execFile := filepath.Join(tmpDir, "executable")
-	if err := os.WriteFile(execFile, []byte("#!/bin/bash"), 0755); err != nil {
+	// #nosec G306 -- test file needs to be executable
+	if err := os.WriteFile(execFile, []byte("#!/bin/bash"), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create non-executable file
 	nonExecFile := filepath.Join(tmpDir, "not-executable")
-	if err := os.WriteFile(nonExecFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(nonExecFile, []byte("test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -423,7 +423,7 @@ func TestIsExecutable(t *testing.T) {
 func TestFileExists(t *testing.T) {
 	tmpDir := t.TempDir()
 	existingFile := filepath.Join(tmpDir, "exists")
-	if err := os.WriteFile(existingFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(existingFile, []byte("test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -453,21 +453,22 @@ func TestTryPattern(t *testing.T) {
 
 	// Create a mock VS Code binary
 	vscodeDir := filepath.Join(tmpDir, "vscode-server", "bin", "abc123", "bin", "remote-cli")
-	if err := os.MkdirAll(vscodeDir, 0755); err != nil {
+	if err := os.MkdirAll(vscodeDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	codeExec := filepath.Join(vscodeDir, "code")
-	if err := os.WriteFile(codeExec, []byte("#!/bin/bash"), 0755); err != nil {
+	// #nosec G306 -- test file needs to be executable to test findCodeCLI
+	if err := os.WriteFile(codeExec, []byte("#!/bin/bash"), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create a non-executable file
 	nonExecDir := filepath.Join(tmpDir, "bin")
-	if err := os.MkdirAll(nonExecDir, 0755); err != nil {
+	if err := os.MkdirAll(nonExecDir, 0o750); err != nil {
 		t.Fatal(err)
 	}
 	nonExecFile := filepath.Join(nonExecDir, "code")
-	if err := os.WriteFile(nonExecFile, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(nonExecFile, []byte("test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -570,11 +571,12 @@ func TestGetDocsDirectory(t *testing.T) {
 			srv := &HTTPServer{config: tt.cfg}
 			result := srv.getDocsDirectory()
 
-			if tt.expected == "" && result != "" && tt.name != "relative path" {
+			switch {
+			case tt.expected == "" && result != "" && tt.name != "relative path":
 				t.Errorf("Expected empty string, got %s", result)
-			} else if tt.expected != "" && result != tt.expected {
+			case tt.expected != "" && result != tt.expected:
 				t.Errorf("Expected %s, got %s", tt.expected, result)
-			} else if tt.name == "relative path" && !filepath.IsAbs(result) && result != "" {
+			case tt.name == "relative path" && !filepath.IsAbs(result) && result != "":
 				t.Errorf("Expected absolute path for relative input, got %s", result)
 			}
 		})
@@ -586,20 +588,12 @@ func TestFindVSCodeIPCSocket_Environment(t *testing.T) {
 	// Create a temporary socket file
 	tmpDir := t.TempDir()
 	socketPath := filepath.Join(tmpDir, "vscode-ipc-test.sock")
-	if err := os.WriteFile(socketPath, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(socketPath, []byte{}, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Set environment variable
-	oldEnv := os.Getenv("VSCODE_IPC_HOOK_CLI")
-	defer func() {
-		if oldEnv != "" {
-			os.Setenv("VSCODE_IPC_HOOK_CLI", oldEnv)
-		} else {
-			os.Unsetenv("VSCODE_IPC_HOOK_CLI")
-		}
-	}()
-	os.Setenv("VSCODE_IPC_HOOK_CLI", socketPath)
+	t.Setenv("VSCODE_IPC_HOOK_CLI", socketPath)
 
 	result := findVSCodeIPCSocket()
 	if result != socketPath {
@@ -609,14 +603,8 @@ func TestFindVSCodeIPCSocket_Environment(t *testing.T) {
 
 // TestFindVSCodeIPCSocket_NoSocketsFound tests behavior when no sockets exist.
 func TestFindVSCodeIPCSocket_NoSocketsFound(t *testing.T) {
-	// Unset environment variable
-	oldEnv := os.Getenv("VSCODE_IPC_HOOK_CLI")
-	defer func() {
-		if oldEnv != "" {
-			os.Setenv("VSCODE_IPC_HOOK_CLI", oldEnv)
-		}
-	}()
-	os.Unsetenv("VSCODE_IPC_HOOK_CLI")
+	// Unset environment variable (set to empty)
+	t.Setenv("VSCODE_IPC_HOOK_CLI", "")
 
 	// This test assumes /tmp and /run/user/{uid} don't have recent vscode sockets
 	// or returns the most recent one if they exist
@@ -632,20 +620,12 @@ func TestFindCompanionSocket(t *testing.T) {
 	// Create a temporary socket file
 	tmpDir := t.TempDir()
 	socketPath := filepath.Join(tmpDir, "vscode-git.sock")
-	if err := os.WriteFile(socketPath, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(socketPath, []byte{}, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Set environment variable
-	oldEnv := os.Getenv("VSCODE_GIT_IPC_HANDLE")
-	defer func() {
-		if oldEnv != "" {
-			os.Setenv("VSCODE_GIT_IPC_HANDLE", oldEnv)
-		} else {
-			os.Unsetenv("VSCODE_GIT_IPC_HANDLE")
-		}
-	}()
-	os.Setenv("VSCODE_GIT_IPC_HANDLE", socketPath)
+	t.Setenv("VSCODE_GIT_IPC_HANDLE", socketPath)
 
 	result := findCompanionSocket()
 	if result != socketPath {
@@ -659,14 +639,14 @@ func TestFindIPCSocketByCompanion(t *testing.T) {
 
 	// Create companion socket
 	companionPath := filepath.Join(tmpDir, "vscode-companion.sock")
-	if err := os.WriteFile(companionPath, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(companionPath, []byte{}, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create IPC socket with similar timestamp (within 1 second)
 	time.Sleep(100 * time.Millisecond)
 	ipcPath := filepath.Join(tmpDir, "vscode-ipc-test.sock")
-	if err := os.WriteFile(ipcPath, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(ipcPath, []byte{}, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -690,7 +670,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 
 	// Create a test markdown file
 	testFile := filepath.Join(tmpDir, "test.md")
-	if err := os.WriteFile(testFile, []byte("# Test"), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte("# Test"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

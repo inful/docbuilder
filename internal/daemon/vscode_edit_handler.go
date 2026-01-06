@@ -389,7 +389,7 @@ func validateIPCSocketPath(socketPath string) error {
 
 	// Ensure it has .sock extension
 	if !strings.HasSuffix(socketPath, ".sock") {
-		return fmt.Errorf("socket path must end with .sock")
+		return errors.New("socket path must end with .sock")
 	}
 
 	return nil
