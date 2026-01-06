@@ -366,6 +366,69 @@ func TestGenerateEditURL_ForgeTypes(t *testing.T) {
 	}
 }
 
+// TestGenerateEditURL_WithEditURLBase verifies EditURLBase override works correctly.
+func TestGenerateEditURL_WithEditURLBase(t *testing.T) {
+	tests := []struct {
+		name        string
+		doc         *Document
+		expectedURL string
+	}{
+		{
+			name: "EditURLBase overrides SourceURL",
+			doc: &Document{
+				Forge:        "gitlab",
+				SourceURL:    "https://gitlab.com/old/repo.git",
+				EditURLBase:  "https://gitlab.example.com/group/project",
+				SourceBranch: "main",
+				RelativePath: "guide.md",
+				DocsBase:     "docs",
+			},
+			expectedURL: "https://gitlab.example.com/group/project/-/edit/main/docs/guide.md",
+		},
+		{
+			name: "EditURLBase without SourceURL",
+			doc: &Document{
+				Forge:        "github",
+				SourceURL:    "", // No source URL (local repo)
+				EditURLBase:  "https://github.com/org/repo",
+				SourceBranch: "main",
+				RelativePath: "api.md",
+				DocsBase:     "documentation",
+			},
+			expectedURL: "https://github.com/org/repo/edit/main/documentation/api.md",
+		},
+		{
+			name: "EditURLBase with .git suffix stripped",
+			doc: &Document{
+				Forge:        "github",
+				EditURLBase:  "https://github.com/org/repo.git",
+				SourceBranch: "develop",
+				RelativePath: "README.md",
+				DocsBase:     "",
+			},
+			expectedURL: "https://github.com/org/repo/edit/develop/README.md",
+		},
+		{
+			name: "EditURLBase with subdirectory path",
+			doc: &Document{
+				Forge:        "gitlab",
+				EditURLBase:  "https://gitlab.com/group/project",
+				SourceBranch: "main",
+				RelativePath: "api/reference.md",
+				DocsBase:     "docs",
+			},
+			expectedURL: "https://gitlab.com/group/project/-/edit/main/docs/api/reference.md",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualURL := generateEditURL(tt.doc)
+			assert.Equal(t, tt.expectedURL, actualURL)
+		})
+	}
+}
+
 // TestBuildBaseFrontMatter_Idempotent verifies that base frontmatter building is idempotent.
 func TestBuildBaseFrontMatter_Idempotent(t *testing.T) {
 	tests := []struct {
