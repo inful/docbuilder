@@ -103,7 +103,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		// Convert all forges to config repositories
-		var allRepos []config.Repository
+		allRepos := make([]config.Repository, 0, len(multiPlatformScenario.Forges)*5)
 		for _, forge := range multiPlatformScenario.Forges {
 			repos := forge.ToConfigRepositories()
 			allRepos = append(allRepos, repos...)

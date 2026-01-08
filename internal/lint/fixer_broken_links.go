@@ -135,21 +135,21 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 		return broken
 	}
 
-	endBracket := strings.Index(trimmed, "]:")
-	if endBracket == -1 {
+	_, after, ok := strings.Cut(trimmed, "]:")
+	if !ok {
 		return broken
 	}
 
-	rest := strings.TrimSpace(trimmed[endBracket+2:])
+	rest := strings.TrimSpace(after)
 	if rest == "" {
 		return broken
 	}
 
 	linkTarget := rest
-	if idx := strings.Index(rest, " \""); idx != -1 {
-		linkTarget = rest[:idx]
-	} else if idx := strings.Index(rest, " '"); idx != -1 {
-		linkTarget = rest[:idx]
+	if before, _, ok := strings.Cut(rest, " \""); ok {
+		linkTarget = before
+	} else if before, _, ok := strings.Cut(rest, " '"); ok {
+		linkTarget = before
 	}
 	linkTarget = strings.TrimSpace(linkTarget)
 
