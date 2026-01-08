@@ -158,13 +158,20 @@ func FixFrontmatter(filePath string) error {
 	contentStr := string(content)
 	hasFM := hasFrontmatter(contentStr)
 
+	// Get original file permissions
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to get file info: %w", err)
+	}
+	fileMode := fileInfo.Mode()
+
 	if !hasFM {
 		// Add complete frontmatter
 		newID := uuid.New().String()
 		frontmatter := fmt.Sprintf("---\ntags: []\ncategories: []\nid: %s\n---\n\n", newID)
 		newContent := frontmatter + contentStr
 
-		if errWrite := os.WriteFile(filePath, []byte(newContent), 0o600); errWrite != nil {
+		if errWrite := os.WriteFile(filePath, []byte(newContent), fileMode); errWrite != nil {
 			return fmt.Errorf("failed to write file: %w", errWrite)
 		}
 		return nil
@@ -204,7 +211,7 @@ func FixFrontmatter(filePath string) error {
 		return fmt.Errorf("failed to rebuild content: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, []byte(newContent), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte(newContent), fileMode); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -212,6 +219,7 @@ func FixFrontmatter(filePath string) error {
 }
 
 // rebuildContentWithFrontmatter replaces frontmatter in content with updated version.
+// Uses yaml.Node to preserve field order from original frontmatter.
 func rebuildContentWithFrontmatter(content string, fm map[string]any) (string, error) {
 	// Normalize line endings
 	content = strings.ReplaceAll(content, "\r\n", "\n")
@@ -230,15 +238,71 @@ func rebuildContentWithFrontmatter(content string, fm map[string]any) (string, e
 		return "", errors.New("frontmatter end delimiter not found")
 	}
 
-	// Marshal frontmatter to YAML
-	yamlBytes, err := yaml.Marshal(fm)
+	// Extract original YAML content
+	yamlContent := strings.Join(lines[1:endIdx], "\n")
+
+	// Parse into Node to preserve field order
+	var node yaml.Node
+	if err := yaml.Unmarshal([]byte(yamlContent), &node); err != nil {
+		return "", fmt.Errorf("failed to parse YAML: %w", err)
+	}
+
+	// The node is typically a Document node containing a Mapping node
+	var mappingNode *yaml.Node
+	switch {
+	case node.Kind == yaml.DocumentNode && len(node.Content) > 0:
+		mappingNode = node.Content[0]
+	case node.Kind == yaml.MappingNode:
+		mappingNode = &node
+	default:
+		return "", errors.New("unexpected YAML structure")
+	}
+
+	if mappingNode.Kind != yaml.MappingNode {
+		return "", errors.New("frontmatter is not a mapping")
+	}
+
+	// Update existing fields and add new ones while preserving order
+	// Content in a MappingNode is [key1, value1, key2, value2, ...]
+	existingKeys := make(map[string]int) // maps key to index in Content array
+	for i := 0; i < len(mappingNode.Content); i += 2 {
+		keyNode := mappingNode.Content[i]
+		existingKeys[keyNode.Value] = i
+	}
+
+	// Update existing fields
+	for key, value := range fm {
+		if idx, exists := existingKeys[key]; exists {
+			// Update the value node at idx+1
+			valueNode := mappingNode.Content[idx+1]
+			if err := valueNode.Encode(value); err != nil {
+				return "", fmt.Errorf("failed to encode value for key %s: %w", key, err)
+			}
+		} else {
+			// Add new field at the end
+			keyNode := &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: key,
+			}
+			valueNode := &yaml.Node{}
+			if err := valueNode.Encode(value); err != nil {
+				return "", fmt.Errorf("failed to encode value for key %s: %w", key, err)
+			}
+			mappingNode.Content = append(mappingNode.Content, keyNode, valueNode)
+		}
+	}
+
+	// Marshal back to YAML
+	yamlBytes, err := yaml.Marshal(mappingNode)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal YAML: %w", err)
 	}
 
-	// Reconstruct content
+	// Reconstruct content with two newlines after closing delimiter for consistency
 	bodyContent := strings.Join(lines[endIdx+1:], "\n")
-	newContent := fmt.Sprintf("---\n%s---\n%s", string(yamlBytes), bodyContent)
+	// Trim leading newlines from body to avoid extra blank lines
+	bodyContent = strings.TrimLeft(bodyContent, "\n")
+	newContent := fmt.Sprintf("---\n%s---\n\n%s", string(yamlBytes), bodyContent)
 
 	return newContent, nil
 }
