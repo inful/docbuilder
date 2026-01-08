@@ -344,7 +344,7 @@ Content here.`
 func TestFixFrontmatter_PreservesExistingValues(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "existing-values.md")
-	
+
 	// Frontmatter with existing tags and categories, but missing id
 	originalContent := `---
 title: API Documentation
@@ -379,14 +379,14 @@ This file has existing tags and categories that should be preserved.`
 	}
 
 	// Verify existing tags were preserved
-	tags, ok := fm["tags"].([]interface{})
+	tags, ok := fm["tags"].([]any)
 	if !ok {
 		t.Fatal("Tags field is not an array")
 	}
 	if len(tags) != 3 {
 		t.Errorf("Expected 3 tags, got %d", len(tags))
 	}
-	
+
 	expectedTags := []string{"api", "rest", "graphql"}
 	for i, tag := range tags {
 		if tag.(string) != expectedTags[i] {
@@ -395,14 +395,14 @@ This file has existing tags and categories that should be preserved.`
 	}
 
 	// Verify existing categories were preserved
-	categories, ok := fm["categories"].([]interface{})
+	categories, ok := fm["categories"].([]any)
 	if !ok {
 		t.Fatal("Categories field is not an array")
 	}
 	if len(categories) != 2 {
 		t.Errorf("Expected 2 categories, got %d", len(categories))
 	}
-	
+
 	expectedCategories := []string{"backend", "documentation"}
 	for i, cat := range categories {
 		if cat.(string) != expectedCategories[i] {
