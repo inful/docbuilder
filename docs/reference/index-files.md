@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: 0f47bc40-0ae7-4d73-a574-4fbad811f17b
+---
+
 # Index File Handling
 
 DocBuilder automatically generates index pages for repositories and sections, but also respects user-provided index files. This document explains how index files are discovered, processed, and what takes precedence when multiple options exist.

@@ -1,12 +1,13 @@
 ---
-title: "Architecture Diagrams Index"
-date: 2026-01-04
 categories:
-  - explanation
+    - explanation
+date: 2026-01-04T00:00:00Z
+id: a8b3d098-4e15-4539-a77d-a000efd20268
 tags:
-  - architecture
-  - diagrams
-  - visualization
+    - architecture
+    - diagrams
+    - visualization
+title: Architecture Diagrams Index
 ---
 
 # Architecture Diagrams Index

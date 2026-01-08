@@ -1,12 +1,13 @@
 ---
-title: "How To: Add Content Transforms"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: 17ab4b24-0783-40d6-8cf9-80421b8b145f
 tags:
-  - content-transforms
-  - development
-  - customization
+    - content-transforms
+    - development
+    - customization
+title: 'How To: Add Content Transforms'
 ---
 
 # Add Content Transforms

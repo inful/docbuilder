@@ -1,11 +1,12 @@
 ---
-title: "Skip Evaluation Logic"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: db88fe6d-7171-46df-8b99-eb01a6904c3b
 tags:
-  - optimization
-  - performance
+    - optimization
+    - performance
+title: Skip Evaluation Logic
 ---
 
 # Skip Evaluation System

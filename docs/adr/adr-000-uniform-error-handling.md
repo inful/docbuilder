@@ -1,13 +1,14 @@
 ---
-title: "ADR-000: Uniform Error Handling"
-date: 2025-10-03
-lastmod: 2025-12-14
 categories:
-  - architecture-decisions
+    - architecture-decisions
+date: 2025-10-03T00:00:00Z
+id: 8f2aaf7f-ceb7-4e52-a949-4c66d256fa78
+lastmod: 2025-12-14T00:00:00Z
 tags:
-  - error-handling
-  - foundation
-  - architecture
+    - error-handling
+    - foundation
+    - architecture
+title: 'ADR-000: Uniform Error Handling'
 weight: 1
 ---
 

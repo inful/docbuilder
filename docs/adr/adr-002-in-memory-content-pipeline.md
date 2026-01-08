@@ -1,13 +1,14 @@
 ---
-title: "ADR-002: Fix Index Stage Pipeline Bypass"
-date: 2025-12-13
 categories:
-  - architecture-decisions
+    - architecture-decisions
+date: 2025-12-13T00:00:00Z
+id: 68287a52-bc0a-4f9e-9ecd-1f0904310336
 tags:
-  - pipeline
-  - content-processing
-  - architecture
-  - performance
+    - pipeline
+    - content-processing
+    - architecture
+    - performance
+title: 'ADR-002: Fix Index Stage Pipeline Bypass'
 weight: 3
 ---
 

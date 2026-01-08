@@ -1,13 +1,14 @@
 ---
-title: "State Machine Diagrams"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 1d230ac6-ada6-4c92-891d-b46ee75515df
 tags:
-  - state-machines
-  - lifecycle
-  - status
+    - state-machines
+    - lifecycle
+    - status
+title: State Machine Diagrams
 ---
 
 # State Machine Diagrams

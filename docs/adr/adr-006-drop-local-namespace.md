@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: 9710e166-77be-47f6-9c25-5ff6fa0d0825
+---
+
 # ADR-006: Drop "local" Namespace for Single-Project Preview and Build
 
 **Status**: Proposed  

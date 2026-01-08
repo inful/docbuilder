@@ -1,11 +1,12 @@
 ---
-title: "How To: Enable Multi-Version Documentation"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: e55a3c3f-4f31-4f86-8f18-222e63c60644
 tags:
-  - versioning
-  - documentation
+    - versioning
+    - documentation
+title: 'How To: Enable Multi-Version Documentation'
 ---
 
 # How to Enable Multi-Version Documentation

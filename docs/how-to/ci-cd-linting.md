@@ -1,14 +1,15 @@
 ---
-title: "How To: CI/CD Linting Integration"
-date: 2025-12-29
 categories:
-  - how-to
+    - how-to
+date: 2025-12-29T00:00:00Z
+id: 3958dcf8-8ca3-42e1-a7b0-d2773a5690c2
 tags:
-  - ci-cd
-  - linting
-  - automation
-  - github-actions
-  - gitlab-ci
+    - ci-cd
+    - linting
+    - automation
+    - github-actions
+    - gitlab-ci
+title: 'How To: CI/CD Linting Integration'
 ---
 
 # CI/CD Linting Integration

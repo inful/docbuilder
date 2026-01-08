@@ -1,13 +1,14 @@
 ---
-title: "ADR-005: Documentation Linting for Pre-Commit Validation"
-date: 2025-12-29
 categories:
-  - architecture-decisions
+    - architecture-decisions
+date: 2025-12-29T00:00:00Z
+id: 3d5edad4-cb9e-4df1-8763-579e9efef7d8
 tags:
-  - linting
-  - validation
-  - documentation
-  - developer-experience
+    - linting
+    - validation
+    - documentation
+    - developer-experience
+title: 'ADR-005: Documentation Linting for Pre-Commit Validation'
 weight: 5
 ---
 

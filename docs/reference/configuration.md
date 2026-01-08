@@ -1,12 +1,13 @@
 ---
-title: "Configuration Reference"
-date: 2025-12-15
 categories:
-  - reference
+    - reference
+date: 2025-12-15T00:00:00Z
+id: fe301d8b-d137-43e5-83e4-a92d3f4f6070
 tags:
-  - configuration
-  - yaml
-  - settings
+    - configuration
+    - yaml
+    - settings
+title: Configuration Reference
 ---
 
 # Configuration Reference

@@ -1,13 +1,14 @@
 ---
-title: "Release Process"
-date: 2026-01-01
 categories:
-  - development
-  - ci-cd
+    - development
+    - ci-cd
+date: 2026-01-01T00:00:00Z
+id: 851879f9-3cd2-4cc7-b29f-ee39d35ffabf
 tags:
-  - releases
-  - devcontainer
-  - github-actions
+    - releases
+    - devcontainer
+    - github-actions
+title: Release Process
 ---
 
 # Release Process

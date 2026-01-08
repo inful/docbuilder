@@ -1,12 +1,13 @@
 ---
-title: "CLI Reference"
-date: 2025-12-15
 categories:
-  - reference
+    - reference
+date: 2025-12-15T00:00:00Z
+id: 3b8a15b3-89bc-4f18-973a-2c4b2890f479
 tags:
-  - cli
-  - commands
-  - usage
+    - cli
+    - commands
+    - usage
+title: CLI Reference
 ---
 
 # CLI Reference

@@ -1,12 +1,13 @@
 ---
-date: 2025-12-29
 categories:
-  - how-to
+    - how-to
+date: 2025-12-29T00:00:00Z
+id: ff0d7d68-738a-4af9-9994-79f3ae67c68a
 tags:
-  - linting
-  - validation
-  - git-hooks
-  - developer-experience
+    - linting
+    - validation
+    - git-hooks
+    - developer-experience
 ---
 
 # Setup Documentation Linting

@@ -1,12 +1,13 @@
 ---
-title: "Configure Webhooks for Automatic Rebuilds"
-date: 2025-12-17
 categories:
-  - how-to
+    - how-to
+date: 2025-12-17T00:00:00Z
+id: 55b23946-bea2-4964-8b7b-594a8b2cc445
 tags:
-  - webhooks
-  - automation
-  - ci-cd
+    - webhooks
+    - automation
+    - ci-cd
+title: Configure Webhooks for Automatic Rebuilds
 ---
 
 # Configure Webhooks for Automatic Rebuilds

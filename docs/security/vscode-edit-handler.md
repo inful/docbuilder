@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: 6fa8cf27-eb5a-4f62-861a-f38cc3b922a2
+---
+
 # VS Code Edit Handler Security
 
 ## Overview

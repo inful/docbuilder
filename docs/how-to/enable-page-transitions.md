@@ -1,12 +1,13 @@
 ---
-title: "How To: Enable Page Transitions"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: 154e7291-1dcc-46e5-8076-c282c3362636
 tags:
-  - ui
-  - transitions
-  - relearn
+    - ui
+    - transitions
+    - relearn
+title: 'How To: Enable Page Transitions'
 ---
 
 # Enable Page Transitions

@@ -1,14 +1,15 @@
 ---
-title: "ADR-004: Forge-Specific Markdown Support"
-date: 2025-12-18
-status: "proposed"
 categories:
-  - architecture
+    - architecture
+date: 2025-12-18T00:00:00Z
+id: 95f6dab4-bc59-4716-922c-1598375303b6
+status: proposed
 tags:
-  - adr
-  - markdown
-  - forges
-  - content-processing
+    - adr
+    - markdown
+    - forges
+    - content-processing
+title: 'ADR-004: Forge-Specific Markdown Support'
 ---
 
 # ADR-004: Forge-Specific Markdown Support

@@ -1,12 +1,13 @@
 ---
-title: "How To: Run Incremental Builds"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: 812608d5-3b8d-4532-85f8-6275b43c382f
 tags:
-  - performance
-  - incremental
-  - builds
+    - performance
+    - incremental
+    - builds
+title: 'How To: Run Incremental Builds'
 ---
 
 # How To: Run Incremental Builds

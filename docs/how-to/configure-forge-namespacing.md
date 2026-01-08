@@ -1,12 +1,13 @@
 ---
-title: "How To: Configure Forge Namespacing"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: 54275365-2e98-4150-a31c-19de1f5bce37
 tags:
-  - forge
-  - namespacing
-  - configuration
+    - forge
+    - namespacing
+    - configuration
+title: 'How To: Configure Forge Namespacing'
 ---
 
 # How To: Configure Forge Namespacing

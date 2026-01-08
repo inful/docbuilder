@@ -1,12 +1,13 @@
 ---
-title: "How To: Enable Hugo Rendering"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: b9d6b957-952c-4bd6-9282-902d8cfba4be
 tags:
-  - hugo
-  - rendering
-  - static-sites
+    - hugo
+    - rendering
+    - static-sites
+title: 'How To: Enable Hugo Rendering'
 ---
 
 # How To: Enable Hugo Rendering

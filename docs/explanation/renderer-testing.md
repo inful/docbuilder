@@ -1,11 +1,12 @@
 ---
-title: "Renderer Testing"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: 41eb961c-18bb-4c8d-82b0-f5d6c8b46408
 tags:
-  - testing
-  - renderer
+    - testing
+    - renderer
+title: Renderer Testing
 ---
 
 # Hugo Renderer Testing Strategy

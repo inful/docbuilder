@@ -1,12 +1,13 @@
 ---
-title: "Package Architecture"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: 48301a6a-6d17-44a5-b5bf-4c6df859c5d0
 tags:
-  - architecture
-  - packages
-  - code-organization
+    - architecture
+    - packages
+    - code-organization
+title: Package Architecture
 ---
 
 # Package Architecture Guide

@@ -1,12 +1,13 @@
 ---
-title: "ADR-001: Golden Testing Strategy for Output Verification"
-date: 2025-12-12
 categories:
-  - architecture-decisions
+    - architecture-decisions
+date: 2025-12-12T00:00:00Z
+id: 3f383b5a-9bf5-441a-8b3b-5781a1c15aab
 tags:
-  - testing
-  - golden-tests
-  - quality-assurance
+    - testing
+    - golden-tests
+    - quality-assurance
+title: 'ADR-001: Golden Testing Strategy for Output Verification'
 weight: 2
 ---
 

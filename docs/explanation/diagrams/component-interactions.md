@@ -1,13 +1,14 @@
 ---
-title: "Component Interactions Diagrams"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 1b740fed-1103-44b3-9689-8785c4db8377
 tags:
-  - components
-  - interactions
-  - integration
+    - components
+    - interactions
+    - integration
+title: Component Interactions Diagrams
 ---
 
 # Component Interactions Diagrams

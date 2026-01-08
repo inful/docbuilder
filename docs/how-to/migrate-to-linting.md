@@ -1,12 +1,13 @@
 ---
-title: "How To: Migrate Existing Repository to Linting"
-date: 2025-12-29
 categories:
-  - how-to
+    - how-to
+date: 2025-12-29T00:00:00Z
+id: a0303d2c-db6e-414a-bc94-901060163b7c
 tags:
-  - linting
-  - migration
-  - cleanup
+    - linting
+    - migration
+    - cleanup
+title: 'How To: Migrate Existing Repository to Linting'
 ---
 
 # Migrate Existing Repository to Linting

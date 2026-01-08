@@ -1,12 +1,13 @@
 ---
-title: "How To: Write Cross-Document Links"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: 89dcf605-e63b-47db-b511-58eb7618e5d8
 tags:
-  - documentation
-  - links
-  - markdown
+    - documentation
+    - links
+    - markdown
+title: 'How To: Write Cross-Document Links'
 ---
 
 # How to Write Cross-Document Links

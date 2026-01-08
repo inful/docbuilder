@@ -1,12 +1,13 @@
 ---
-title: "Build Reports Reference"
-date: 2025-12-15
 categories:
-  - reference
+    - reference
+date: 2025-12-15T00:00:00Z
+id: 0d2b3363-21d6-4bce-ada5-f64ffaa93890
 tags:
-  - reports
-  - builds
-  - output
+    - reports
+    - builds
+    - output
+title: Build Reports Reference
 ---
 
 # Build Report Reference

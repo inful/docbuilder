@@ -1,12 +1,13 @@
 ---
-title: "How To: Use Relearn Theme"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: cad55f96-5458-4bd9-8f0b-d9796a3bdf3a
 tags:
-  - themes
-  - relearn
-  - hugo
+    - themes
+    - relearn
+    - hugo
+title: 'How To: Use Relearn Theme'
 ---
 
 # Hugo Relearn Theme Support

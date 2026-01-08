@@ -96,6 +96,7 @@ func (fr *FixResult) Summary() string {
 	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
 	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
 	b.WriteString(fmt.Sprintf("Links updated: %d\n", len(fr.LinksUpdated)))
+	b.WriteString(fmt.Sprintf("Warnings fixed: %d\n", fr.WarningsFixed))
 
 	if len(fr.BrokenLinks) > 0 {
 		b.WriteString(fmt.Sprintf("\nBroken links detected: %d\n", len(fr.BrokenLinks)))

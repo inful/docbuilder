@@ -1,12 +1,13 @@
 ---
-title: "Getting Started Tutorial"
-date: 2025-12-15
 categories:
-  - tutorials
+    - tutorials
+date: 2025-12-15T00:00:00Z
+id: ac106654-80b8-4a06-8bfe-9bd07a202b03
 tags:
-  - getting-started
-  - quickstart
-  - introduction
+    - getting-started
+    - quickstart
+    - introduction
+title: Getting Started Tutorial
 ---
 
 # Getting Started with DocBuilder

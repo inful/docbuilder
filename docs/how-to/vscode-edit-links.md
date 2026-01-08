@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: eb647a97-f85d-471b-a2d0-89d646385792
+---
+
 # VS Code Edit Link Integration for Preview Mode
 
 ## Overview
