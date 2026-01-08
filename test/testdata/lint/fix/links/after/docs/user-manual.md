@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: PLACEHOLDER_UUID
+---
+
 # User Manual
 
 Welcome to the user manual.

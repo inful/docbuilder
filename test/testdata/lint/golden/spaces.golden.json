@@ -31,11 +31,20 @@
       "message": "Filename contains spaces",
       "explanation": "Spaces in filenames create problematic URLs with %20 encoding \nand break cross-references.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
       "fix": "Rename using hyphens: user-manual.md"
+    },
+    {
+      "file": "invalid/spaces/User Manual.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
     }
   ],
   "file_count": 2,
   "error_count": 4,
-  "warn_count": 0,
+  "warn_count": 1,
   "info_count": 0,
   "has_errors": true
 }

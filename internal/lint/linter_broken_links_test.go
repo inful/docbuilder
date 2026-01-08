@@ -37,9 +37,18 @@ func TestLinter_LintPath_DetectsBrokenLinks(t *testing.T) {
 	// Two broken links in index.md (missing.md + missing.png). The README.md broken
 	// link should not be included because README.md is ignored.
 	require.True(t, res.HasErrors())
-	require.Equal(t, 2, res.ErrorCount())
 
+	// Filter for broken-links issues only
+	brokenLinkIssues := []Issue{}
 	for _, issue := range res.Issues {
+		if issue.Rule == "broken-links" {
+			brokenLinkIssues = append(brokenLinkIssues, issue)
+		}
+	}
+
+	require.Equal(t, 2, len(brokenLinkIssues), "Expected 2 broken link issues")
+
+	for _, issue := range brokenLinkIssues {
 		require.Equal(t, "broken-links", issue.Rule)
 		require.Equal(t, SeverityError, issue.Severity)
 		require.Equal(t, indexPath, issue.FilePath)

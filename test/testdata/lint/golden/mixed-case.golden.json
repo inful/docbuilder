@@ -9,17 +9,35 @@
       "fix": "Rename to lowercase: api_guide.md"
     },
     {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
+    },
+    {
       "file": "invalid/mixed-case/GettingStarted.md",
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
       "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  GettingStarted.md\nSuggested: gettingstarted.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
       "fix": "Rename to lowercase: gettingstarted.md"
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
     }
   ],
   "file_count": 2,
   "error_count": 2,
-  "warn_count": 0,
+  "warn_count": 2,
   "info_count": 0,
   "has_errors": true
 }

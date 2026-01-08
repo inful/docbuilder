@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"testing"
 
@@ -221,6 +222,7 @@ func copyDir(src, dst string) error {
 }
 
 // compareDirectories compares two directory structures and file contents.
+// UUIDs in frontmatter are normalized for comparison since they are randomly generated.
 func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 	t.Helper()
 
@@ -251,14 +253,26 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 		actualContent, err := os.ReadFile(actualPath)
 		require.NoError(t, err, "failed to read actual file: %s", actualPath)
 
+		// Normalize UUIDs in frontmatter for comparison (UUIDs are randomly generated)
+		expectedStr := normalizeUUIDs(string(expectedContent))
+		actualStr := normalizeUUIDs(string(actualContent))
+
 		// Compare contents
-		assert.Equal(t, string(expectedContent), string(actualContent),
+		assert.Equal(t, expectedStr, actualStr,
 			"file content mismatch: %s", relPath)
 
 		return nil
 	})
 
 	require.NoError(t, err, "failed to walk expected directory")
+}
+
+// normalizeUUIDs replaces UUID values in frontmatter with a placeholder for comparison.
+func normalizeUUIDs(content string) string {
+	// Replace any UUID (8-4-4-4-12 hex pattern) with PLACEHOLDER_UUID
+	// This regex matches standard UUID format
+	uuidRegex := regexp.MustCompile(`id:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	return uuidRegex.ReplaceAllString(content, "id: PLACEHOLDER_UUID")
 }
 
 // FixResultForGolden is a normalized version of FixResult for golden file comparison.

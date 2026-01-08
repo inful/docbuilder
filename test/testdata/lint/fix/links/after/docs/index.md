@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: PLACEHOLDER_UUID
+---
+
 # Documentation Index
 
 Welcome to our documentation!
