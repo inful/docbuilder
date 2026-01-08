@@ -340,3 +340,86 @@ Content here.`
 		t.Error("ID was modified when it shouldn't be")
 	}
 }
+
+func TestFixFrontmatter_PreservesExistingValues(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "existing-values.md")
+	
+	// Frontmatter with existing tags and categories, but missing id
+	originalContent := `---
+title: API Documentation
+tags: [api, rest, graphql]
+categories: [backend, documentation]
+author: John Doe
+---
+
+# API Documentation
+
+This file has existing tags and categories that should be preserved.`
+
+	if err := os.WriteFile(filePath, []byte(originalContent), 0o600); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	if err := FixFrontmatter(filePath); err != nil {
+		t.Fatalf("FixFrontmatter failed: %v", err)
+	}
+
+	// Read updated content
+	//nolint:gosec // G304: Reading test file by path is expected
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read fixed file: %v", err)
+	}
+
+	// Parse and verify fields
+	fm, err := parseFrontmatterFromFile(string(content))
+	if err != nil {
+		t.Fatalf("Failed to parse frontmatter: %v", err)
+	}
+
+	// Verify existing tags were preserved
+	tags, ok := fm["tags"].([]interface{})
+	if !ok {
+		t.Fatal("Tags field is not an array")
+	}
+	if len(tags) != 3 {
+		t.Errorf("Expected 3 tags, got %d", len(tags))
+	}
+	
+	expectedTags := []string{"api", "rest", "graphql"}
+	for i, tag := range tags {
+		if tag.(string) != expectedTags[i] {
+			t.Errorf("Tag %d: expected %s, got %s", i, expectedTags[i], tag.(string))
+		}
+	}
+
+	// Verify existing categories were preserved
+	categories, ok := fm["categories"].([]interface{})
+	if !ok {
+		t.Fatal("Categories field is not an array")
+	}
+	if len(categories) != 2 {
+		t.Errorf("Expected 2 categories, got %d", len(categories))
+	}
+	
+	expectedCategories := []string{"backend", "documentation"}
+	for i, cat := range categories {
+		if cat.(string) != expectedCategories[i] {
+			t.Errorf("Category %d: expected %s, got %s", i, expectedCategories[i], cat.(string))
+		}
+	}
+
+	// Verify id was added
+	if _, hasID := fm["id"]; !hasID {
+		t.Error("Expected 'id' field to be added")
+	}
+
+	// Verify other existing fields were preserved
+	if title, ok := fm["title"]; !ok || title != "API Documentation" {
+		t.Error("Original title not preserved")
+	}
+	if author, ok := fm["author"]; !ok || author != "John Doe" {
+		t.Error("Original author field not preserved")
+	}
+}
