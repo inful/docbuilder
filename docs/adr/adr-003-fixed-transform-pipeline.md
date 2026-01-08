@@ -1,13 +1,14 @@
 ---
-title: "ADR-003: Fixed Transform Pipeline"
-date: 2025-12-16
 categories:
-  - architecture-decisions
+    - architecture-decisions
+date: 2025-12-16T00:00:00Z
+id: d9a9dda1-ee56-43a1-88dd-71f040d66163
 tags:
-  - pipeline
-  - transforms
-  - architecture
-  - simplification
+    - pipeline
+    - transforms
+    - architecture
+    - simplification
+title: 'ADR-003: Fixed Transform Pipeline'
 weight: 4
 ---
 

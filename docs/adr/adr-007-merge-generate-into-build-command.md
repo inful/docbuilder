@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: 67bf2a75-e7cd-40c4-ad11-c4a17402ee3d
+---
+
 # ADR-007: Merge Generate Command into Build Command
 
 **Status**: Accepted  

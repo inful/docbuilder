@@ -1,11 +1,12 @@
 ---
-title: "Architecture Overview"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: 0f50dd69-7beb-4194-afb0-3ec283247e04
 tags:
-  - architecture
-  - design
+    - architecture
+    - design
+title: Architecture Overview
 ---
 
 # Architecture Overview

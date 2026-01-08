@@ -1,12 +1,13 @@
 ---
-title: "Lint Rules Reference"
-date: 2025-12-29
 categories:
-  - reference
+    - reference
+date: 2025-12-29T00:00:00Z
+id: b845049e-ed49-4523-a418-0b79d092b755
 tags:
-  - linting
-  - validation
-  - rules
+    - linting
+    - validation
+    - rules
+title: Lint Rules Reference
 ---
 
 # Lint Rules Reference

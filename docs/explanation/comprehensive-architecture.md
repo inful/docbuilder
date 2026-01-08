@@ -1,12 +1,13 @@
 ---
-title: "Comprehensive Architecture"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: 3e682189-8cfc-49d3-a077-89296a2c585c
 tags:
-  - architecture
-  - design
-  - deep-dive
+    - architecture
+    - design
+    - deep-dive
+title: Comprehensive Architecture
 ---
 
 # Comprehensive Architecture Documentation

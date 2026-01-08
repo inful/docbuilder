@@ -1,12 +1,13 @@
 ---
-title: "Content Transforms Reference (DEPRECATED)"
-date: 2025-12-15
 categories:
-  - reference
+    - reference
+date: 2025-12-15T00:00:00Z
+id: 4d3b90ef-f6f7-4315-b678-77a37229ed1e
 tags:
-  - transforms
-  - content-processing
-  - deprecated
+    - transforms
+    - content-processing
+    - deprecated
+title: Content Transforms Reference (DEPRECATED)
 ---
 
 # Content Transform Pipeline (DEPRECATED)

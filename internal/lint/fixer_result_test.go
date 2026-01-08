@@ -141,13 +141,15 @@ func TestFixResult_Summary(t *testing.T) {
 			{OldPath: "file1.md", NewPath: "file1-new.md", Success: true},
 			{OldPath: "file2.md", NewPath: "file2-new.md", Success: true},
 		},
-		ErrorsFixed: 3,
-		Errors:      []error{},
+		ErrorsFixed:   3,
+		WarningsFixed: 2,
+		Errors:        []error{},
 	}
 
 	summary := result.Summary()
 	assert.Contains(t, summary, "Files renamed: 2")
 	assert.Contains(t, summary, "Errors fixed: 3")
+	assert.Contains(t, summary, "Warnings fixed: 2")
 }
 
 // TestFixResult_SummaryWithErrors tests the Summary method with errors.

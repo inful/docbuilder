@@ -1,11 +1,12 @@
 ---
-title: "How To: Customize Index Pages"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: e7c2310d-2af0-47f5-9c30-3d95c3b44da6
 tags:
-  - customization
-  - index-pages
+    - customization
+    - index-pages
+title: 'How To: Customize Index Pages'
 ---
 
 # How To: Customize Index Pages

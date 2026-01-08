@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: 4d23033d-9c7e-461a-954a-7894bc3e0a6b
+---
+
 # JSON Output Schema
 
 DocBuilder's linter supports machine-readable JSON output for CI/CD integration, automated reporting, and tooling integration.

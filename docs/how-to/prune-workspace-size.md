@@ -1,12 +1,13 @@
 ---
-title: "How To: Prune Workspace Size"
-date: 2025-12-15
 categories:
-  - how-to
+    - how-to
+date: 2025-12-15T00:00:00Z
+id: a518228a-62de-4741-bc87-a9d7883ff787
 tags:
-  - optimization
-  - workspace
-  - performance
+    - optimization
+    - workspace
+    - performance
+title: 'How To: Prune Workspace Size'
 ---
 
 # How To: Prune Workspace Size

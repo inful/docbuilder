@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: a38b9f82-628d-46fa-a29a-50ee404a273c
+---
+
 # PR Comment Integration Examples
 
 This document provides examples for integrating DocBuilder lint results into pull request comments across different platforms.

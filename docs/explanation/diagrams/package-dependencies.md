@@ -1,13 +1,14 @@
 ---
-title: "Package Dependencies Diagram"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 61e4cae2-8801-4a8c-bff8-665604f9f629
 tags:
-  - packages
-  - dependencies
-  - structure
+    - packages
+    - dependencies
+    - structure
+title: Package Dependencies Diagram
 ---
 
 # Package Dependencies Diagram

@@ -1,13 +1,14 @@
 ---
-title: "Data Flow Diagrams"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 2b56a727-f6eb-4186-88d7-329ae4552b37
 tags:
-  - data-flow
-  - sequences
-  - state
+    - data-flow
+    - sequences
+    - state
+title: Data Flow Diagrams
 ---
 
 # Data Flow Diagrams

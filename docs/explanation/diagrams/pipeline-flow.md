@@ -1,13 +1,14 @@
 ---
-title: "Pipeline Flow Diagrams"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 4429e342-be38-43e0-9ced-914cdf9329ff
 tags:
-  - pipeline
-  - stages
-  - workflow
+    - pipeline
+    - stages
+    - workflow
+title: Pipeline Flow Diagrams
 ---
 
 # Pipeline Flow Diagrams

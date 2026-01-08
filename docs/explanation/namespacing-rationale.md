@@ -1,12 +1,13 @@
 ---
-title: "Namespacing Rationale"
-date: 2025-12-15
 categories:
-  - explanation
+    - explanation
+date: 2025-12-15T00:00:00Z
+id: f5e04e42-4f16-4506-98c3-8ccaa60f89ba
 tags:
-  - architecture
-  - namespacing
-  - design-decisions
+    - architecture
+    - namespacing
+    - design-decisions
+title: Namespacing Rationale
 ---
 
 # Forge Namespacing Rationale

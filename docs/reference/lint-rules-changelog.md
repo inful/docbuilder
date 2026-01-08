@@ -1,12 +1,13 @@
 ---
-title: "Lint Rules Changelog"
-date: 2025-12-29
 categories:
-  - reference
+    - reference
+date: 2025-12-29T00:00:00Z
+id: 03dda7dd-fb12-464d-b66e-f69044cb83d3
 tags:
-  - linting
-  - changelog
-  - versions
+    - linting
+    - changelog
+    - versions
+title: Lint Rules Changelog
 ---
 
 # Lint Rules Changelog

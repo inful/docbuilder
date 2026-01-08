@@ -1,12 +1,13 @@
 ---
-title: "Pipeline Visualization"
-date: 2025-12-15
 categories:
-  - reference
+    - reference
+date: 2025-12-15T00:00:00Z
+id: 4592041a-70ac-4bc5-9626-70c2321a1f8b
 tags:
-  - pipeline
-  - visualization
-  - diagrams
+    - pipeline
+    - visualization
+    - diagrams
+title: Pipeline Visualization
 ---
 
 # Pipeline Visualization

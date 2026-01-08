@@ -1,11 +1,12 @@
 ---
-title: "CI/CD Setup"
-date: 2025-12-15
 categories:
-  - ci-cd
+    - ci-cd
+date: 2025-12-15T00:00:00Z
+id: 2f761f70-1a15-4897-b52a-2291cd18ed46
 tags:
-  - continuous-integration
-  - docker
+    - continuous-integration
+    - docker
+title: CI/CD Setup
 ---
 
 # CI/CD Setup

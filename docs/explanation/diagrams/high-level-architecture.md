@@ -1,13 +1,14 @@
 ---
-title: "High-Level System Architecture"
-date: 2026-01-04
 categories:
-  - explanation
-  - architecture
+    - explanation
+    - architecture
+date: 2026-01-04T00:00:00Z
+id: 30d43529-3606-4174-a701-8009f18257ba
 tags:
-  - architecture
-  - diagrams
-  - layers
+    - architecture
+    - diagrams
+    - layers
+title: High-Level System Architecture
 ---
 
 # High-Level System Architecture

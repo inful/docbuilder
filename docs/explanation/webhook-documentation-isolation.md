@@ -1,12 +1,13 @@
 ---
-title: "Webhook and Documentation Isolation Strategy"
-date: 2025-12-17
 categories:
-  - explanation
+    - explanation
+date: 2025-12-17T00:00:00Z
+id: 701cffe1-c278-4820-965a-8e452b243234
 tags:
-  - architecture
-  - webhooks
-  - security
+    - architecture
+    - webhooks
+    - security
+title: Webhook and Documentation Isolation Strategy
 ---
 
 # Webhook and Documentation Isolation Strategy
