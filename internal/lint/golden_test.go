@@ -270,8 +270,9 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 // normalizeUUIDs replaces UUID values in frontmatter with a placeholder for comparison.
 func normalizeUUIDs(content string) string {
 	// Replace any UUID (8-4-4-4-12 hex pattern) with PLACEHOLDER_UUID
-	// This regex matches standard UUID format
-	uuidRegex := regexp.MustCompile(`id:\s*[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	// This regex matches standard UUID format (case-insensitive)
+	// Using (?i) flag for case-insensitive matching and validating proper UUID structure
+	uuidRegex := regexp.MustCompile(`(?i)id:\s*[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}`)
 	return uuidRegex.ReplaceAllString(content, "id: PLACEHOLDER_UUID")
 }
 
