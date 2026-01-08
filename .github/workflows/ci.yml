@@ -257,11 +257,11 @@ jobs:
           cache: true
 
       - name: Build binaries for Docker
-        run: |
-          # Install GoReleaser
-          go install github.com/goreleaser/goreleaser/v2@latest
-          # Build binaries using GoReleaser config (creates dist/ directory)
-          goreleaser build --snapshot --clean --single-target
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --snapshot --clean --single-target
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
