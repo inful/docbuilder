@@ -14,6 +14,10 @@ const (
 	linkTypeInline    = "link"
 	linkTypeImage     = "image"
 	linkTypeReference = "reference"
+
+	// Rule names.
+	ruleFilenameConventions = "filename-conventions"
+	ruleFrontmatter         = "frontmatter"
 )
 
 // Fixer performs automatic fixes for linting issues.
@@ -128,10 +132,11 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		fixResult.BrokenLinks = brokenLinks
 	}
 
-	// Group issues by file
+	// Group issues by file (process both errors and warnings)
 	fileIssues := make(map[string][]Issue)
 	for _, issue := range result.Issues {
-		if issue.Severity == SeverityError {
+		// Process both errors and warnings for fixing
+		if issue.Severity == SeverityError || issue.Severity == SeverityWarning {
 			fileIssues[issue.FilePath] = append(fileIssues[issue.FilePath], issue)
 		}
 	}
@@ -146,19 +151,33 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 
 // processFileWithIssues handles fixing issues for a single file.
 func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult) {
-	// Check if this is a filename issue that can be fixed
-	if !f.canFixFilename(issues) {
-		return
+	// Separate issues by type
+	var filenameIssues, frontmatterIssues []Issue
+	for _, issue := range issues {
+		switch issue.Rule {
+		case ruleFilenameConventions:
+			filenameIssues = append(filenameIssues, issue)
+		case ruleFrontmatter:
+			frontmatterIssues = append(frontmatterIssues, issue)
+		}
 	}
 
-	op := f.renameFile(filePath)
-	fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
+	// Fix frontmatter issues first (they apply to the current file path)
+	if len(frontmatterIssues) > 0 {
+		f.fixFrontmatter(filePath, frontmatterIssues, fixResult)
+	}
 
-	if op.Success {
-		fixResult.ErrorsFixed += len(issues)
-		f.handleSuccessfulRename(filePath, op.NewPath, rootPath, fixResult)
-	} else if op.Error != nil {
-		fixResult.Errors = append(fixResult.Errors, op.Error)
+	// Then handle filename issues (which may rename the file)
+	if f.canFixFilename(filenameIssues) {
+		op := f.renameFile(filePath)
+		fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
+
+		if op.Success {
+			fixResult.ErrorsFixed += len(filenameIssues)
+			f.handleSuccessfulRename(filePath, op.NewPath, rootPath, fixResult)
+		} else if op.Error != nil {
+			fixResult.Errors = append(fixResult.Errors, op.Error)
+		}
 	}
 }
 
@@ -195,6 +214,25 @@ func (f *Fixer) findAndUpdateLinks(oldPath, newPath, rootPath string) ([]LinkUpd
 	}
 
 	return updates, nil
+}
+
+// fixFrontmatter fixes frontmatter issues for a file.
+func (f *Fixer) fixFrontmatter(filePath string, issues []Issue, fixResult *FixResult) {
+	if f.dryRun {
+		// In dry-run mode, just record that we would fix it
+		fixResult.WarningsFixed += len(issues)
+		return
+	}
+
+	// Call the FixFrontmatter function
+	err := FixFrontmatter(filePath)
+	if err != nil {
+		fixResult.Errors = append(fixResult.Errors, fmt.Errorf("failed to fix frontmatter in %s: %w", filePath, err))
+		return
+	}
+
+	// Successfully fixed
+	fixResult.WarningsFixed += len(issues)
 }
 
 // canFixFilename checks if the issues for a file are filename-related and fixable.

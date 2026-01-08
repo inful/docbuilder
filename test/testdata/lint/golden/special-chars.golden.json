@@ -9,17 +9,35 @@
       "fix": "Rename to remove special characters: configv2.md"
     },
     {
+      "file": "invalid/special-chars/config@v2.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
+    },
+    {
       "file": "invalid/special-chars/tutorial#1.md",
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains special characters: #",
       "explanation": "Special characters are unsupported by Hugo slugify and may cause \nshell escaping issues.\n\nCurrent:  tutorial#1.md\nSuggested: tutorial1.md\n\nAllowed characters: [a-z0-9-_.]\nInvalid characters found: #",
       "fix": "Rename to remove special characters: tutorial1.md"
+    },
+    {
+      "file": "invalid/special-chars/tutorial#1.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
     }
   ],
   "file_count": 2,
   "error_count": 2,
-  "warn_count": 0,
+  "warn_count": 2,
   "info_count": 0,
   "has_errors": true
 }

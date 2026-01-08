@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: PLACEHOLDER_UUID
+---
+
 # API Guide
 
 This is the API documentation guide.

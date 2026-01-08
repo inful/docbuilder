@@ -165,7 +165,15 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 	}
 
 	if !dryRun {
-		_, _ = fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+		switch {
+		case fixResult.ErrorsFixed > 0 && fixResult.WarningsFixed > 0:
+			_, _ = fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors and %d warnings\n",
+				fixResult.ErrorsFixed, fixResult.WarningsFixed)
+		case fixResult.ErrorsFixed > 0:
+			_, _ = fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d errors\n", fixResult.ErrorsFixed)
+		case fixResult.WarningsFixed > 0:
+			_, _ = fmt.Fprintf(os.Stdout, "\n✨ Successfully fixed %d warnings\n", fixResult.WarningsFixed)
+		}
 	}
 	return nil
 }

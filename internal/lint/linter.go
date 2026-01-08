@@ -24,7 +24,7 @@ func NewLinter(cfg *Config) *Linter {
 		cfg: cfg,
 		rules: []Rule{
 			&FilenameRule{},
-			// Additional rules will be added here in future phases
+			&FrontmatterRule{},
 		},
 	}
 }

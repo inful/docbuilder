@@ -13,11 +13,20 @@
       "rule": "filename-conventions",
       "message": "Whitelisted double extension",
       "explanation": "File uses whitelisted double extension for embedded diagrams (.drawio.png or .drawio.svg)"
+    },
+    {
+      "file": "valid/whitelisted-extensions/overview.md",
+      "severity": "WARNING",
+      "rule": "frontmatter",
+      "message": "Missing frontmatter",
+      "explanation": "Markdown files should have YAML frontmatter with required fields (tags, categories, id)",
+      "fix": "Add frontmatter with tags: [], categories: [], and id fields",
+      "line": 1
     }
   ],
   "file_count": 3,
   "error_count": 0,
-  "warn_count": 0,
+  "warn_count": 1,
   "info_count": 2,
   "has_errors": false
 }

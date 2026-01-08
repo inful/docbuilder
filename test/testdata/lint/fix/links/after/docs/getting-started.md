@@ -1,3 +1,9 @@
+---
+tags: []
+categories: []
+id: PLACEHOLDER_UUID
+---
+
 # Getting Started
 
 This guide helps you get started quickly.
