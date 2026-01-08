@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -141,8 +142,16 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		}
 	}
 
-	// Process each file with issues
-	for filePath, issues := range fileIssues {
+	// Sort file paths to ensure deterministic processing order
+	filePaths := make([]string, 0, len(fileIssues))
+	for filePath := range fileIssues {
+		filePaths = append(filePaths, filePath)
+	}
+	sort.Strings(filePaths)
+
+	// Process each file with issues in sorted order
+	for _, filePath := range filePaths {
+		issues := fileIssues[filePath]
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult)
 	}
 
