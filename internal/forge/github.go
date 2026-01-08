@@ -89,7 +89,7 @@ type githubRepo struct {
 
 // ListOrganizations returns accessible organizations.
 func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
-	var orgs []*Organization
+	orgs := make([]*Organization, 0, 10)
 
 	// Get user's organizations
 	userOrgs, err := c.getUserOrganizations(ctx)

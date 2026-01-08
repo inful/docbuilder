@@ -391,7 +391,7 @@ func (d *Discovery) detectPathCollisions() error {
 
 			if len(unique) > 1 {
 				// True collision - different source files map to same Hugo path
-				var sources []string
+				sources := make([]string, 0, len(unique))
 				for sp := range unique {
 					sources = append(sources, sp)
 				}

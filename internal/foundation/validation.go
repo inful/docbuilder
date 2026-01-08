@@ -60,7 +60,7 @@ func (vr ValidationResult) Combine(other ValidationResult) ValidationResult {
 		return Valid()
 	}
 
-	var allErrors []FieldError
+	allErrors := make([]FieldError, 0, len(vr.Errors)+len(other.Errors))
 	allErrors = append(allErrors, vr.Errors...)
 	allErrors = append(allErrors, other.Errors...)
 
