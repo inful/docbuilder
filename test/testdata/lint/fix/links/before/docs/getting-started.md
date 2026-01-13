@@ -1,3 +1,6 @@
+---
+fingerprint: 3754967f3d7a5cfc1e023da866af3cafbbef6ae39dd77baf3eff1a40a36721c4
+---
 # Getting Started
 
 This guide helps you get started quickly.

@@ -1,12 +1,13 @@
 module git.home.luguber.info/inful/docbuilder
 
-go 1.24.0
+go 1.24.11
 
 require (
 	github.com/alecthomas/kong v1.13.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-co-op/gocron/v2 v2.19.0
 	github.com/go-git/go-git/v5 v5.16.4
+	github.com/inful/mdfp v1.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats.go v1.47.0
 	github.com/prometheus/client_golang v1.23.2
@@ -19,7 +20,6 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
-	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

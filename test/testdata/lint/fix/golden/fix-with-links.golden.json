@@ -19,55 +19,55 @@
   "links_updated": [
     {
       "source_file": "getting-started.md",
-      "line_number": 7,
+      "line_number": 10,
       "old_target": "./User Manual.md",
       "new_target": "./user-manual.md"
     },
     {
       "source_file": "getting-started.md",
-      "line_number": 11,
+      "line_number": 14,
       "old_target": "./API_Guide.md",
       "new_target": "./api_guide.md"
     },
     {
       "source_file": "getting-started.md",
-      "line_number": 13,
+      "line_number": 16,
       "old_target": "./API_Guide.md#authentication",
       "new_target": "./api_guide.md#authentication"
     },
     {
       "source_file": "getting-started.md",
-      "line_number": 19,
+      "line_number": 22,
       "old_target": "./User Manual.md#getting-started",
       "new_target": "./user-manual.md#getting-started"
     },
     {
       "source_file": "index.md",
-      "line_number": 7,
+      "line_number": 10,
       "old_target": "./API_Guide.md",
       "new_target": "./api_guide.md"
     },
     {
       "source_file": "index.md",
-      "line_number": 8,
+      "line_number": 11,
       "old_target": "./User Manual.md",
       "new_target": "./user-manual.md"
     },
     {
       "source_file": "index.md",
-      "line_number": 12,
+      "line_number": 15,
       "old_target": "./API_Guide.md#authentication",
       "new_target": "./api_guide.md#authentication"
     },
     {
       "source_file": "index.md",
-      "line_number": 14,
+      "line_number": 17,
       "old_target": "./User Manual.md#advanced-features",
       "new_target": "./user-manual.md#advanced-features"
     },
     {
       "source_file": "index.md",
-      "line_number": 16,
+      "line_number": 19,
       "old_target": "./images/Diagram.png",
       "new_target": "./images/diagram.png"
     }

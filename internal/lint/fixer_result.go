@@ -10,10 +10,18 @@ import (
 type FixResult struct {
 	FilesRenamed  []RenameOperation
 	LinksUpdated  []LinkUpdate
+	Fingerprints  []FingerprintUpdate
 	BrokenLinks   []BrokenLink // Links to non-existent files
 	ErrorsFixed   int
 	WarningsFixed int
 	Errors        []error
+}
+
+// FingerprintUpdate represents an update to a markdown file's frontmatter fingerprint.
+type FingerprintUpdate struct {
+	FilePath string
+	Success  bool
+	Error    error
 }
 
 // RenameOperation represents a file rename operation.
@@ -69,7 +77,7 @@ func (fr *FixResult) HasErrors() bool {
 
 // HasChanges returns true if there are any fixes to apply.
 func (fr *FixResult) HasChanges() bool {
-	return len(fr.FilesRenamed) > 0 || len(fr.LinksUpdated) > 0
+	return len(fr.FilesRenamed) > 0 || len(fr.LinksUpdated) > 0 || len(fr.Fingerprints) > 0
 }
 
 // CountAffectedFiles returns the number of unique files that will be modified.
@@ -86,6 +94,11 @@ func (fr *FixResult) CountAffectedFiles() int {
 		affected[update.SourceFile] = true
 	}
 
+	// Files with fingerprint updates
+	for _, fp := range fr.Fingerprints {
+		affected[fp.FilePath] = true
+	}
+
 	return len(affected)
 }
 
@@ -95,6 +108,7 @@ func (fr *FixResult) Summary() string {
 
 	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
 	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
+	b.WriteString(fmt.Sprintf("Fingerprints updated: %d\n", len(fr.Fingerprints)))
 	b.WriteString(fmt.Sprintf("Links updated: %d\n", len(fr.LinksUpdated)))
 
 	if len(fr.BrokenLinks) > 0 {
@@ -167,10 +181,20 @@ func (fr *FixResult) PreviewChanges() string {
 		b.WriteString("\n")
 	}
 
+	// Fingerprints section
+	if len(fr.Fingerprints) > 0 {
+		b.WriteString("FRONTMATTER FINGERPRINTS:\n")
+		for _, fp := range fr.Fingerprints {
+			b.WriteString(fmt.Sprintf("  • %s\n", filepath.Base(fp.FilePath)))
+		}
+		b.WriteString("\n")
+	}
+
 	// Statistics
 	b.WriteString("SUMMARY:\n")
 	b.WriteString(fmt.Sprintf("  • %d file%s will be renamed\n", len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed))))
 	b.WriteString(fmt.Sprintf("  • %d link%s will be updated\n", len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated))))
+	b.WriteString(fmt.Sprintf("  • %d file%s will have fingerprints updated\n", len(fr.Fingerprints), pluralize(len(fr.Fingerprints))))
 	if len(fr.BrokenLinks) > 0 {
 		b.WriteString(fmt.Sprintf("  • %d broken link%s detected\n", len(fr.BrokenLinks), pluralize(len(fr.BrokenLinks))))
 	}
@@ -220,6 +244,14 @@ func (fr *FixResult) DetailedPreview() string {
 			}
 			b.WriteString(fmt.Sprintf("%d. %s:%d (%s)\n", i+1, broken.SourceFile, broken.LineNumber, linkTypeStr))
 			b.WriteString(fmt.Sprintf("   Target: %s (file not found)\n\n", broken.Target))
+		}
+	}
+
+	if len(fr.Fingerprints) > 0 {
+		b.WriteString("[Frontmatter Fingerprints]\n")
+		for i, fp := range fr.Fingerprints {
+			b.WriteString(fmt.Sprintf("%d. %s\n", i+1, fp.FilePath))
+			b.WriteString("   → fingerprint updated\n\n")
 		}
 	}
 
