@@ -68,12 +68,19 @@ else
     exit 0
 fi
 
-# Get list of staged markdown and image files
-STAGED_DOCS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|markdown|png|jpg|jpeg|gif|svg)$' || true)
+# Get list of staged markdown and image files (NUL-delimited to support spaces)
+STAGED_DOCS=()
+while IFS= read -r -d '' file; do
+	case "$file" in
+		*.md|*.markdown|*.png|*.jpg|*.jpeg|*.gif|*.svg)
+			STAGED_DOCS+=("$file")
+			;;
+	esac
+done < <(git diff --cached --name-only -z --diff-filter=ACM)
 
-if [ -z "$STAGED_DOCS" ]; then
-    # No documentation files staged, skip linting
-    exit 0
+if [ ${#STAGED_DOCS[@]} -eq 0 ]; then
+	# No documentation files staged, skip linting
+	exit 0
 fi
 
 echo "🔍 Linting staged documentation files..."
@@ -83,7 +90,7 @@ TEMP_DIR=$(mktemp -d)
 trap "rm -rf ${TEMP_DIR}" EXIT
 
 # Copy staged files to temporary directory preserving structure
-for file in $STAGED_DOCS; do
+for file in "${STAGED_DOCS[@]}"; do
     mkdir -p "${TEMP_DIR}/$(dirname "$file")"
     git show ":$file" > "${TEMP_DIR}/${file}"
 done
