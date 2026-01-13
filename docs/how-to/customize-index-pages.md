@@ -1,4 +1,5 @@
 ---
+uid: 5cec1e52-55f5-4c51-a64f-a34da2482cea
 title: "How To: Customize Index Pages"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - customization
   - index-pages
+fingerprint: e8d4fae923072e3cffbb3a86a4db16f9d2e8cb662442333dc20d93eca7c11548
 ---
 
 # How To: Customize Index Pages

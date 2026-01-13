@@ -1,4 +1,5 @@
 ---
+uid: 4f6c6944-e4de-4f09-ae84-1d566bb00277
 title: "ADR-002: Fix Index Stage Pipeline Bypass"
 date: 2025-12-13
 categories:
@@ -9,6 +10,7 @@ tags:
   - architecture
   - performance
 weight: 3
+fingerprint: 0b95837283f980669122a9d9aa633afb9a22777b82bfb1c783d153d76db739f4
 ---
 
 # ADR-002: Fix Index Stage Pipeline Bypass

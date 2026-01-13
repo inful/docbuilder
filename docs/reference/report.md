@@ -1,4 +1,5 @@
 ---
+uid: 48b52695-0104-48d5-a91c-4698b031113e
 title: "Build Reports Reference"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - reports
   - builds
   - output
+fingerprint: 42591efb30008410395aec489e2daf73f957e888398e9c6792662ab49d7c5b6c
 ---
 
 # Build Report Reference

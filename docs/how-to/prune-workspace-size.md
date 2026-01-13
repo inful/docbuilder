@@ -1,4 +1,5 @@
 ---
+uid: 56876591-4835-49a5-a63e-494590a557d5
 title: "How To: Prune Workspace Size"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - optimization
   - workspace
   - performance
+fingerprint: ca08c6ee51f0b1144fc49079311c845b0f40bcdea0ead31952810835103411fe
 ---
 
 # How To: Prune Workspace Size

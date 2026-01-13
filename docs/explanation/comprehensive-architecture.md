@@ -1,4 +1,5 @@
 ---
+uid: 86afd906-d6c4-4013-bc06-02f90e716825
 title: "Comprehensive Architecture"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - architecture
   - design
   - deep-dive
+fingerprint: 8ddf7f43a59251f22d549a478357c96cd2acc70931ec7df94aa252871e2cb1a7
 ---
 
 # Comprehensive Architecture Documentation

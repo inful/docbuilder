@@ -1,4 +1,5 @@
 ---
+uid: d7da54f5-3864-4e53-b004-d8d3ae551f98
 title: "CI/CD Setup"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - continuous-integration
   - docker
+fingerprint: e2145298145f73b9adff03b579235d6c836be5ec20d5eebf53eeaffae474b815
 ---
 
 # CI/CD Setup

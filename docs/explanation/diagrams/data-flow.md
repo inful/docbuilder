@@ -1,4 +1,5 @@
 ---
+uid: 13690187-bce4-4683-a34a-3743ba03d7ac
 title: "Data Flow Diagrams"
 date: 2026-01-04
 categories:
@@ -8,6 +9,7 @@ tags:
   - data-flow
   - sequences
   - state
+fingerprint: 7c0b3548c805280f0b85920cfc3f48b71f7ddc9aba4cf53c475fd7ff628fa9f9
 ---
 
 # Data Flow Diagrams

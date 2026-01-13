@@ -1,4 +1,5 @@
 ---
+uid: a89ff86e-31ab-43b5-b751-05c37768b0ba
 title: "How To: CI/CD Linting Integration"
 date: 2025-12-29
 categories:
@@ -9,6 +10,7 @@ tags:
   - automation
   - github-actions
   - gitlab-ci
+fingerprint: b56a60f533d006be042e2f3c7658a14aaea5c35452ce3965443a216364493a4d
 ---
 
 # CI/CD Linting Integration

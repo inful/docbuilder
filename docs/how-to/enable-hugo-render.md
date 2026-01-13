@@ -1,4 +1,5 @@
 ---
+uid: 6549b7d7-c578-4b52-a202-d290d19be13c
 title: "How To: Enable Hugo Rendering"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - hugo
   - rendering
   - static-sites
+fingerprint: 5dc3aeeac1b07d1b89f4a43c4bd5444caf637d0b1b64855c0573099bb696354e
 ---
 
 # How To: Enable Hugo Rendering

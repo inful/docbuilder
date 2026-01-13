@@ -1,4 +1,5 @@
 ---
+uid: 17f711ab-2410-4ae1-96f1-384ebacc19ac
 title: "Transform Validation Reference (DEPRECATED)"
 date: 2025-12-15
 categories:
@@ -8,6 +9,7 @@ tags:
   - transforms
   - testing
   - deprecated
+fingerprint: a6a9fb14c74aa5dc07ebe223648a8299fb9c749172be5a83b69c3c2baf01cef7
 ---
 
 # Transform Pipeline Validation (DEPRECATED)

@@ -1,4 +1,5 @@
 ---
+uid: 8f736168-8777-470e-a8a4-ddb9209a073b
 title: "How To: Add Content Transforms"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - content-transforms
   - development
   - customization
+fingerprint: f7c9af6199ab8b56bb63714695aae943803111e750686431fc05577aae8d861c
 ---
 
 # Add Content Transforms

@@ -1,4 +1,5 @@
 ---
+uid: 58cfc94a-28b1-40af-b149-0ccb52a0b58a
 title: "Webhook and Documentation Isolation Strategy"
 date: 2025-12-17
 categories:
@@ -7,6 +8,7 @@ tags:
   - architecture
   - webhooks
   - security
+fingerprint: e41f2f940d2f55f75737292699ae761784af723af8cf211da02deaf935985556
 ---
 
 # Webhook and Documentation Isolation Strategy

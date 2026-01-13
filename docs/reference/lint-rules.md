@@ -1,4 +1,5 @@
 ---
+uid: cb491357-fc40-4fee-bddc-f68fee69c437
 title: "Lint Rules Reference"
 date: 2025-12-29
 categories:
@@ -7,6 +8,7 @@ tags:
   - linting
   - validation
   - rules
+fingerprint: ff32eaa47d94c5e801082b0fdc2abe257ba37c534b170e0034c40a15128202e9
 ---
 
 # Lint Rules Reference

@@ -1,3 +1,8 @@
+---
+uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
+fingerprint: 7aecb8a52a32e5f3f4867190e5a5456eb545d84aadd46266bdfa247dc541920b
+---
+
 # VS Code Edit Link Integration for Preview Mode
 
 ## Overview

@@ -1,4 +1,5 @@
 ---
+uid: 1bc938b7-2e2c-47d1-8192-06e2300d09aa
 title: "How To: Write Cross-Document Links"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - documentation
   - links
   - markdown
+fingerprint: 58297ba3725d544262e634420d2be6c48746393f73cdeee48bdcae462d7fa6a8
 ---
 
 # How to Write Cross-Document Links

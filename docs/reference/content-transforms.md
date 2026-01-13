@@ -1,4 +1,5 @@
 ---
+uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
 title: "Content Transforms Reference (DEPRECATED)"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - transforms
   - content-processing
   - deprecated
+fingerprint: 5d9d47c53b791c8f8f523d8478204ac3ee0b12c33e72fb20dc7ee39813875cf9
 ---
 
 # Content Transform Pipeline (DEPRECATED)

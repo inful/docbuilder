@@ -1,4 +1,5 @@
 ---
+uid: 53887282-d86e-4d04-9062-abfe344d81e1
 title: "Package Architecture"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - architecture
   - packages
   - code-organization
+fingerprint: f17ab2c5af6799236bb9aeeea0704469fa31aa746aaf8b19061cd3e47b87be51
 ---
 
 # Package Architecture Guide

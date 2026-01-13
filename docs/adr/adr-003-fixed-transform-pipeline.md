@@ -1,4 +1,5 @@
 ---
+uid: 8bccb937-22a1-4828-a6ef-ab7b74a1a6bc
 title: "ADR-003: Fixed Transform Pipeline"
 date: 2025-12-16
 categories:
@@ -9,6 +10,7 @@ tags:
   - architecture
   - simplification
 weight: 4
+fingerprint: e5c3362654ffb59567a628bffc1e6ffbe56fceda78dddb20a37c482e5a7178e8
 ---
 
 # ADR-003: Fixed Transform Pipeline

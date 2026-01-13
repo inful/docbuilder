@@ -1,4 +1,5 @@
 ---
+uid: 23db9b8b-6c79-4e9d-b8e6-6afe9251dc94
 title: "Namespacing Rationale"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - architecture
   - namespacing
   - design-decisions
+fingerprint: 35117f27a95b148b7226b78a9397850c23e042e2ab285cc599459c0f39bb673a
 ---
 
 # Forge Namespacing Rationale
