@@ -215,6 +215,9 @@ func normalizeFrontMatter(fm map[string]any) {
 	if fm == nil {
 		return
 	}
+	// Fingerprint values are content-derived and not meaningful to pin in goldens.
+	delete(fm, "fingerprint")
+
 	// Remove timestamp fields that change between runs
 	delete(fm, "date")
 	delete(fm, "lastmod")

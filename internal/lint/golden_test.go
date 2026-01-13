@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -251,14 +252,60 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 		actualContent, err := os.ReadFile(actualPath)
 		require.NoError(t, err, "failed to read actual file: %s", actualPath)
 
+		expectedText := string(expectedContent)
+		actualText := string(actualContent)
+
+		// DocBuilder lint --fix may inject/update a frontmatter fingerprint.
+		// Golden fixtures intentionally avoid pinning hash values, so we normalize
+		// by removing only the `fingerprint` field from frontmatter before comparing.
+		if IsDocFile(expectedPath) {
+			expectedText = stripFingerprintFrontmatter(expectedText)
+			actualText = stripFingerprintFrontmatter(actualText)
+		}
+
 		// Compare contents
-		assert.Equal(t, string(expectedContent), string(actualContent),
-			"file content mismatch: %s", relPath)
+		assert.Equal(t, expectedText, actualText, "file content mismatch: %s", relPath)
 
 		return nil
 	})
 
 	require.NoError(t, err, "failed to walk expected directory")
+}
+
+func stripFingerprintFrontmatter(content string) string {
+	if !strings.HasPrefix(content, "---\n") {
+		return content
+	}
+
+	endIdx := strings.Index(content[4:], "\n---\n")
+	if endIdx == -1 {
+		return content
+	}
+
+	frontmatter := content[4 : endIdx+4]
+	body := content[endIdx+9:]
+
+	lines := strings.Split(frontmatter, "\n")
+	kept := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "fingerprint:") {
+			continue
+		}
+		if trim == "" {
+			// keep empty lines for stable formatting unless we drop entire frontmatter
+			kept = append(kept, line)
+			continue
+		}
+		kept = append(kept, line)
+	}
+
+	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
+	if newFM == "" {
+		return body
+	}
+
+	return "---\n" + newFM + "\n---\n" + body
 }
 
 // FixResultForGolden is a normalized version of FixResult for golden file comparison.

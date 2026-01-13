@@ -156,6 +156,18 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 		_, _ = fmt.Fprintf(os.Stdout, "\n")
 	}
 
+	if len(fixResult.Fingerprints) > 0 {
+		_, _ = fmt.Fprintf(os.Stdout, "Frontmatter fingerprints updated in %d files:\n", len(fixResult.Fingerprints))
+		for _, fp := range fixResult.Fingerprints {
+			if fp.Success {
+				_, _ = fmt.Fprintf(os.Stdout, "  %s\n", fp.FilePath)
+			} else if fp.Error != nil {
+				_, _ = fmt.Fprintf(os.Stdout, "  %s (ERROR: %v)\n", fp.FilePath, fp.Error)
+			}
+		}
+		_, _ = fmt.Fprintf(os.Stdout, "\n")
+	}
+
 	// Display fix summary
 	_, _ = fmt.Fprintf(os.Stdout, "%s\n", fixResult.Summary())
 

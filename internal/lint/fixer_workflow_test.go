@@ -125,9 +125,9 @@ func TestFix_RenameFailure(t *testing.T) {
 		t.Error("expected error to be recorded")
 	}
 
-	// Verify ErrorsFixed is 0 since rename failed
-	if result.ErrorsFixed != 0 {
-		t.Errorf("expected ErrorsFixed=0, got %d", result.ErrorsFixed)
+	// Even if rename fails, other fixable issues (like fingerprints) may still be applied.
+	if result.ErrorsFixed == 0 {
+		t.Errorf("expected ErrorsFixed > 0, got %d", result.ErrorsFixed)
 	}
 }
 
@@ -276,8 +276,8 @@ func TestFix_NoFilenameIssues(t *testing.T) {
 		t.Errorf("expected 0 files renamed, got %d", len(result.FilesRenamed))
 	}
 
-	// No errors fixed
-	if result.ErrorsFixed != 0 {
-		t.Errorf("expected ErrorsFixed=0, got %d", result.ErrorsFixed)
+	// Fingerprints are still fixed even when there are no filename issues.
+	if result.ErrorsFixed == 0 {
+		t.Errorf("expected ErrorsFixed > 0, got %d", result.ErrorsFixed)
 	}
 }

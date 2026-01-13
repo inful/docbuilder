@@ -6,6 +6,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/inful/mdfp"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
@@ -108,16 +111,26 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 				herrors.ErrContentWriteFailed, outputPath, err)
 		}
 
+		contentBytes := doc.Raw
+		if strings.HasSuffix(strings.ToLower(doc.Path), ".md") {
+			updated, err := mdfp.ProcessContent(string(contentBytes))
+			if err != nil {
+				return fmt.Errorf("%w: failed to generate frontmatter fingerprint for %s: %w",
+					herrors.ErrContentWriteFailed, outputPath, err)
+			}
+			contentBytes = []byte(updated)
+		}
+
 		// Write file
 		// #nosec G306 -- content files are public documentation
-		if err := os.WriteFile(outputPath, doc.Raw, 0o644); err != nil {
+		if err := os.WriteFile(outputPath, contentBytes, 0o644); err != nil {
 			return fmt.Errorf("%w: failed to write file %s: %w",
 				herrors.ErrContentWriteFailed, outputPath, err)
 		}
 
 		slog.Debug("Wrote processed document",
 			slog.String("path", doc.Path),
-			slog.Int("bytes", len(doc.Raw)),
+			slog.Int("bytes", len(contentBytes)),
 			slog.Bool("generated", doc.Generated))
 
 		// Update page counter
@@ -128,7 +141,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		// Store transformed bytes for index generation
 		// Find corresponding DocFile and update it
 		if i < len(markdownFiles) && !doc.Generated {
-			markdownFiles[i].TransformedBytes = doc.Raw
+			markdownFiles[i].TransformedBytes = contentBytes
 		}
 	}
 

@@ -1,3 +1,4 @@
 Files renamed: 3
 Errors fixed: 4
+Fingerprints updated: 0
 Links updated: 0

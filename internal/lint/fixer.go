@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/inful/mdfp"
 )
 
 const (
@@ -108,6 +111,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	fixResult := &FixResult{
 		FilesRenamed: make([]RenameOperation, 0),
 		LinksUpdated: make([]LinkUpdate, 0),
+		Fingerprints: make([]FingerprintUpdate, 0),
 		BrokenLinks:  make([]BrokenLink, 0),
 		Errors:       make([]error, 0),
 	}
@@ -128,54 +132,133 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		fixResult.BrokenLinks = brokenLinks
 	}
 
-	// Group issues by file
+	// Group issues by file and track fingerprint fix targets.
+	// IMPORTANT: fingerprint regeneration must always run as the final fix step,
+	// because other fixes (like link rewrites) can change content and would
+	// invalidate previously-computed fingerprints.
 	fileIssues := make(map[string][]Issue)
+	fingerprintTargets := make(map[string]struct{})
+	fingerprintIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
-		if issue.Severity == SeverityError {
-			fileIssues[issue.FilePath] = append(fileIssues[issue.FilePath], issue)
+		if issue.Severity != SeverityError {
+			continue
+		}
+		fileIssues[issue.FilePath] = append(fileIssues[issue.FilePath], issue)
+		if issue.Rule == frontmatterFingerprintRuleName {
+			fingerprintTargets[issue.FilePath] = struct{}{}
+			fingerprintIssueCounts[issue.FilePath]++
 		}
 	}
 
-	// Process each file with issues
+	// Phase 1: perform renames + link updates.
 	for filePath, issues := range fileIssues {
-		f.processFileWithIssues(filePath, issues, rootPath, fixResult)
+		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
 	}
+
+	// Phase 2: regenerate fingerprints LAST, for all affected files.
+	f.applyFingerprintFixes(fingerprintTargets, fingerprintIssueCounts, fixResult)
 
 	return fixResult, nil
 }
 
 // processFileWithIssues handles fixing issues for a single file.
-func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult) {
-	// Check if this is a filename issue that can be fixed
+func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath string, fixResult *FixResult, fingerprintTargets map[string]struct{}, fingerprintIssueCounts map[string]int) {
+	currentPath := filePath
+
+	// 1) Filename fixes (renames)
 	if !f.canFixFilename(issues) {
 		return
 	}
 
 	op := f.renameFile(filePath)
 	fixResult.FilesRenamed = append(fixResult.FilesRenamed, op)
-
-	if op.Success {
-		fixResult.ErrorsFixed += len(issues)
-		f.handleSuccessfulRename(filePath, op.NewPath, rootPath, fixResult)
-	} else if op.Error != nil {
-		fixResult.Errors = append(fixResult.Errors, op.Error)
-	}
-}
-
-// handleSuccessfulRename processes link updates after a successful file rename.
-func (f *Fixer) handleSuccessfulRename(oldPath, newPath, rootPath string, fixResult *FixResult) {
-	// Skip link updates in dry-run mode
-	if f.dryRun {
+	if !op.Success {
+		if op.Error != nil {
+			fixResult.Errors = append(fixResult.Errors, op.Error)
+		}
 		return
 	}
 
-	updates, err := f.findAndUpdateLinks(oldPath, newPath, rootPath)
+	// Only count issues we actually addressed: filename issues are always fixable.
+	fixResult.ErrorsFixed += countIssuesByRule(issues, "filename-conventions")
+
+	// In dry-run mode the rename is not applied, so subsequent operations must
+	// continue to reference the original on-disk path.
+	if !f.dryRun {
+		currentPath = op.NewPath
+	}
+
+	// If this file needs a fingerprint fix, make sure we track the final path
+	// (renames are applied on-disk only when not in dry-run).
+	if _, ok := fingerprintTargets[filePath]; ok {
+		delete(fingerprintTargets, filePath)
+		fingerprintTargets[currentPath] = struct{}{}
+		if c, okc := fingerprintIssueCounts[filePath]; okc {
+			delete(fingerprintIssueCounts, filePath)
+			fingerprintIssueCounts[currentPath] = c
+		}
+	}
+
+	updates, err := f.handleSuccessfulRename(filePath, op.NewPath, rootPath)
 	if err != nil {
 		fixResult.Errors = append(fixResult.Errors, err)
 		return
 	}
 
 	fixResult.LinksUpdated = append(fixResult.LinksUpdated, updates...)
+	// Link rewrites modify content, so those files must have fingerprints refreshed.
+	for _, upd := range updates {
+		fingerprintTargets[upd.SourceFile] = struct{}{}
+	}
+
+	// Fingerprint fixes are intentionally deferred until AFTER all renames/link updates.
+}
+
+// handleSuccessfulRename processes link updates after a successful file rename.
+func (f *Fixer) handleSuccessfulRename(oldPath, newPath, rootPath string) ([]LinkUpdate, error) {
+	// Skip link updates in dry-run mode
+	if f.dryRun {
+		return nil, nil
+	}
+
+	updates, err := f.findAndUpdateLinks(oldPath, newPath, rootPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return updates, nil
+}
+
+func (f *Fixer) applyFingerprintFixes(targets map[string]struct{}, fingerprintIssueCounts map[string]int, fixResult *FixResult) {
+	if len(targets) == 0 {
+		return
+	}
+
+	// De-dup and keep deterministic ordering in results.
+	paths := make([]string, 0, len(targets))
+	for p := range targets {
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+
+	for _, p := range paths {
+		// Only fingerprint markdown files.
+		ext := strings.ToLower(filepath.Ext(p))
+		if ext != ".md" && ext != ".markdown" {
+			continue
+		}
+
+		fpOp := f.updateFrontmatterFingerprint(p)
+		fixResult.Fingerprints = append(fixResult.Fingerprints, fpOp)
+		if fpOp.Success {
+			// Only count errors that were reported by the initial lint run.
+			// Fingerprints may also be refreshed for files we modified (e.g. link rewrites),
+			// but those invalidations occur after the initial lint pass.
+			fixResult.ErrorsFixed += fingerprintIssueCounts[p]
+		} else if fpOp.Error != nil {
+			fixResult.Errors = append(fixResult.Errors, fpOp.Error)
+		}
+	}
 }
 
 // findAndUpdateLinks finds all links to a file and updates them to the new path.
@@ -205,6 +288,58 @@ func (f *Fixer) canFixFilename(issues []Issue) bool {
 		}
 	}
 	return false
+}
+
+func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate {
+	op := FingerprintUpdate{FilePath: filePath, Success: true}
+
+	// #nosec G304 -- filePath is derived from the current lint/fix target set.
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("read file for fingerprint update: %w", err)
+		return op
+	}
+
+	updated, err := mdfp.ProcessContent(string(data))
+	if err != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("compute fingerprint update: %w", err)
+		return op
+	}
+
+	if updated == string(data) {
+		return op
+	}
+
+	if f.dryRun {
+		return op
+	}
+
+	info, statErr := os.Stat(filePath)
+	if statErr != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("stat file for fingerprint update: %w", statErr)
+		return op
+	}
+
+	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("write file for fingerprint update: %w", writeErr)
+		return op
+	}
+
+	return op
+}
+
+func countIssuesByRule(issues []Issue, rule string) int {
+	count := 0
+	for _, issue := range issues {
+		if issue.Rule == rule {
+			count++
+		}
+	}
+	return count
 }
 
 // WithAutoConfirm sets the auto-confirm flag for non-interactive mode.
