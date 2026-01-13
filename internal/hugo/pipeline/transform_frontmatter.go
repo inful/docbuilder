@@ -25,7 +25,10 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		// No front matter
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
-		doc.FrontMatter = make(map[string]any)
+		// Preserve any pre-populated frontmatter (e.g., from generators).
+		if len(doc.FrontMatter) == 0 {
+			doc.FrontMatter = make(map[string]any)
+		}
 		return nil, nil
 	}
 
@@ -58,7 +61,10 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		// Malformed front matter - no closing delimiter
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
-		doc.FrontMatter = make(map[string]any)
+		// Preserve any pre-populated frontmatter (e.g., from generators).
+		if len(doc.FrontMatter) == 0 {
+			doc.FrontMatter = make(map[string]any)
+		}
 		return nil, nil
 	}
 
@@ -74,7 +80,10 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		// Empty front matter - no fields but delimiters were present
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
-		doc.FrontMatter = make(map[string]any)
+		// Preserve any pre-populated frontmatter (e.g., from generators).
+		if len(doc.FrontMatter) == 0 {
+			doc.FrontMatter = make(map[string]any)
+		}
 		return nil, nil
 	}
 
@@ -83,8 +92,11 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		// Invalid YAML - treat as no front matter but content already stripped
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
-		doc.FrontMatter = make(map[string]any)
-		return nil, nil //nolint:nilerr // Intentionally suppressing YAML parse error to gracefully handle malformed frontmatter
+		// Preserve any pre-populated frontmatter (e.g., from generators).
+		if len(doc.FrontMatter) == 0 {
+			doc.FrontMatter = make(map[string]any)
+		}
+		return nil, nil
 	}
 
 	doc.HadFrontMatter = true

@@ -2,16 +2,20 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Testing handling of same-named files from different repos",
         "title": "Conflicting Paths Test",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:12d6d60f9d60d143"
     },
     "content/repo-a/_index.md": {
       "frontmatter": {
+        "description": "Documentation for repo-a",
         "repository": "repo-a",
         "title": "Repo A",
-        "type": "docs"
+        "type": "docs",
+        "uid": "47887e59-b164-5f06-a7e9-66d6b2483eea"
       },
       "contentHash": "sha256:e2cfaa83449b1292"
     },
@@ -35,9 +39,11 @@
     },
     "content/repo-b/_index.md": {
       "frontmatter": {
+        "description": "Documentation for repo-b",
         "repository": "repo-b",
         "title": "Repo B",
-        "type": "docs"
+        "type": "docs",
+        "uid": "ee2ecc68-1d8b-56de-95f9-0ff9e2984716"
       },
       "contentHash": "sha256:4ff58e98e12634bb"
     },

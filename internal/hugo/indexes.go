@@ -11,6 +11,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/google/uuid"
+
 	"gopkg.in/yaml.v3"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -20,6 +22,12 @@ import (
 )
 
 const rootSection = "root"
+
+func stableGeneratedUID(key string) string {
+	// Deterministic UUID for generated pages (indexes, sections).
+	// This avoids churn across builds while still being globally unique enough.
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("docbuilder:"+key)).String()
+}
 
 // sortDocFiles sorts a slice of DocFile by path for deterministic ordering.
 func sortDocFiles(files []docs.DocFile) {
@@ -102,7 +110,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 		repoGroups[file.Repository] = append(repoGroups[file.Repository], *file)
 	}
 	// Use fixed epoch date for reproducible builds (user can override via custom index.md)
-	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
+	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs", "uid": stableGeneratedUID("index:root")}
 	// Add cascade for all themes to ensure type: docs propagates to children
 	frontMatter["cascade"] = map[string]any{"type": "docs"}
 	fmData, err := yaml.Marshal(frontMatter)
@@ -188,7 +196,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			continue
 		}
 
-		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": "2024-01-01T00:00:00Z"}
+		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": "2024-01-01T00:00:00Z", "uid": stableGeneratedUID("index:repo:" + repoName)}
 		fmData, err := yaml.Marshal(frontMatter)
 		if err != nil {
 			return fmt.Errorf("failed to marshal front matter: %w", err)
@@ -488,6 +496,7 @@ func (g *Generator) buildSectionFrontMatter(repoName, sectionName string) map[st
 		"repository": repoName,
 		"section":    sectionName,
 		"date":       "2024-01-01T00:00:00Z",
+		"uid":        stableGeneratedUID("index:repo:" + repoName + ":section:" + sectionName),
 	}
 }
 
