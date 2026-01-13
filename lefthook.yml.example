@@ -32,10 +32,17 @@ pre-commit:
           exit 0
         fi
         
-        # Get staged documentation files
-        STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|markdown|png|jpg|jpeg|gif,svg)$' || true)
+        # Get staged documentation files (NUL-delimited to support spaces)
+        STAGED_FILES=()
+        while IFS= read -r -d '' file; do
+          case "$file" in
+            *.md|*.markdown|*.png|*.jpg|*.jpeg|*.gif|*.svg)
+              STAGED_FILES+=("$file")
+              ;;
+          esac
+        done < <(git diff --cached --name-only -z --diff-filter=ACM)
         
-        if [ -z "$STAGED_FILES" ]; then
+        if [ ${#STAGED_FILES[@]} -eq 0 ]; then
           exit 0
         fi
         
@@ -44,7 +51,7 @@ pre-commit:
         trap "rm -rf ${TEMP_DIR}" EXIT
         
         # Copy staged files preserving structure
-        for file in $STAGED_FILES; do
+        for file in "${STAGED_FILES[@]}"; do
           mkdir -p "${TEMP_DIR}/$(dirname "$file")"
           git show ":$file" > "${TEMP_DIR}/${file}"
         done
