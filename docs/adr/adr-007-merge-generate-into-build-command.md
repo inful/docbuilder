@@ -1,3 +1,8 @@
+---
+uid: 52e0a4c1-9281-4086-b0e5-d6ff690eee53
+fingerprint: 7754a80643a0ce27887fa1caa3250a768daa892b9248f27b872ad25989162676
+---
+
 # ADR-007: Merge Generate Command into Build Command
 
 **Status**: Accepted  

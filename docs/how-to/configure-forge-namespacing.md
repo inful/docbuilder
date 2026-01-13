@@ -1,4 +1,5 @@
 ---
+uid: a8161eb4-7b61-46e5-81c8-cfa763e8d26e
 title: "How To: Configure Forge Namespacing"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - forge
   - namespacing
   - configuration
+fingerprint: 276024d5a15e75b9bc62761763a6d47f82f201a8295cbf4c5116ff47976e7fa8
 ---
 
 # How To: Configure Forge Namespacing

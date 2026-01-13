@@ -1,4 +1,5 @@
 ---
+uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
 title: "How To: Enable Page Transitions"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - ui
   - transitions
   - relearn
+fingerprint: cc1cc1fc134dc6baf41f39c87d50e74046d3eaec14164e3d041717bb5b1c9d23
 ---
 
 # Enable Page Transitions

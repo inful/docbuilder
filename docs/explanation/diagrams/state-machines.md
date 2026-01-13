@@ -1,4 +1,5 @@
 ---
+uid: bd04a400-e6bb-431f-8c5e-032a486559f7
 title: "State Machine Diagrams"
 date: 2026-01-04
 categories:
@@ -8,6 +9,7 @@ tags:
   - state-machines
   - lifecycle
   - status
+fingerprint: a30c309efac7610cb50bbb0a97101a11329725f9a47ceace59e7d72d2fc5cd1c
 ---
 
 # State Machine Diagrams

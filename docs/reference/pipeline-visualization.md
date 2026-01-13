@@ -1,4 +1,5 @@
 ---
+uid: 447486d8-8ee9-4b20-a69a-12497dbb8b92
 title: "Pipeline Visualization"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - pipeline
   - visualization
   - diagrams
+fingerprint: af80f39a69b311452b35ae06b991139b1d57dde2307da0ab092b85a708a0c4ee
 ---
 
 # Pipeline Visualization

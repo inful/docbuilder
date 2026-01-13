@@ -1,4 +1,5 @@
 ---
+uid: aad82557-a8ca-417e-9da3-e5cec27f80df
 title: "How To: Use Relearn Theme"
 date: 2025-12-15
 categories:
@@ -7,6 +8,7 @@ tags:
   - themes
   - relearn
   - hugo
+fingerprint: 1b025b380fd5ae47565278a5a78ac4f4bdcebec9db59f61dc9b2976856271c9d
 ---
 
 # Hugo Relearn Theme Support

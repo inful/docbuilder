@@ -1,4 +1,5 @@
 ---
+uid: d81afd2a-5a6f-4721-ab3a-d8c4950bd162
 title: "ADR-000: Uniform Error Handling"
 date: 2025-10-03
 lastmod: 2025-12-14
@@ -9,6 +10,7 @@ tags:
   - foundation
   - architecture
 weight: 1
+fingerprint: eb631918ec2f00f5bac3f316e1e96005e0497a0f19d3876e1f0d178f83595b3c
 ---
 
 # ADR-000: Uniform Error Handling Across DocBuilder

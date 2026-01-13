@@ -1,4 +1,5 @@
 ---
+uid: c9a38b75-67d0-498f-ab60-e00dfd70e8ae
 title: "Architecture Overview"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - architecture
   - design
+fingerprint: 6ae22676dae4626c8cdccf94db26bca28ce70633b66e37fe49c8806678b03d51
 ---
 
 # Architecture Overview

@@ -1,4 +1,5 @@
 ---
+uid: a8168637-9de1-47a2-9d96-76d1bbf2deb5
 title: "Skip Evaluation Logic"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - optimization
   - performance
+fingerprint: a7697302e7c84c616d6dccf59b916857231e0f70f248f182e0f3ef56a07f4591
 ---
 
 # Skip Evaluation System

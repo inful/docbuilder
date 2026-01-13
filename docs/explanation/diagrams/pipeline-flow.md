@@ -1,4 +1,5 @@
 ---
+uid: fd65129c-5904-4cef-bc9b-6cdae00b8891
 title: "Pipeline Flow Diagrams"
 date: 2026-01-04
 categories:
@@ -8,6 +9,7 @@ tags:
   - pipeline
   - stages
   - workflow
+fingerprint: e84cec78ff2fb59b0166174db9454a7b02f5d6f58323affb8331f0f2e7e5b106
 ---
 
 # Pipeline Flow Diagrams

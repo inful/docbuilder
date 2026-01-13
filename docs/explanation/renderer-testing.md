@@ -1,4 +1,5 @@
 ---
+uid: 1575ffc4-7bf0-46df-a8b2-904e93f95031
 title: "Renderer Testing"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - testing
   - renderer
+fingerprint: 1193625675d0289d92d95ee2323275dd943fcdb57987b6a5d6516745758ebc82
 ---
 
 # Hugo Renderer Testing Strategy

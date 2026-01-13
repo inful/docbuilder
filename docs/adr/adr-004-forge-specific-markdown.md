@@ -1,4 +1,5 @@
 ---
+uid: 138c1d38-5a96-4820-8a74-dbb45c94a0e3
 title: "ADR-004: Forge-Specific Markdown Support"
 date: 2025-12-18
 status: "proposed"
@@ -9,6 +10,7 @@ tags:
   - markdown
   - forges
   - content-processing
+fingerprint: cbc9bbfc42b17372c3309bdeb741518af0808c713c30b88588e593e8297e470b
 ---
 
 # ADR-004: Forge-Specific Markdown Support

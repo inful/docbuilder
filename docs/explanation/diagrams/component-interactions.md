@@ -1,4 +1,5 @@
 ---
+uid: 36766002-6e10-4a98-9c90-981b15fa6f99
 title: "Component Interactions Diagrams"
 date: 2026-01-04
 categories:
@@ -8,6 +9,7 @@ tags:
   - components
   - interactions
   - integration
+fingerprint: 4a1996a364d54dd26bbf5e19e82e1b1c7087e238846e3e5e647eb8e62c8ea7a2
 ---
 
 # Component Interactions Diagrams

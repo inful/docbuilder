@@ -1,4 +1,5 @@
 ---
+uid: a12d6319-3e23-4e1f-a276-920b402b50d6
 title: "Package Dependencies Diagram"
 date: 2026-01-04
 categories:
@@ -8,6 +9,7 @@ tags:
   - packages
   - dependencies
   - structure
+fingerprint: 3c3292d61bf660b0c33038e1ad843ed52aed8021d420e9666813389432612090
 ---
 
 # Package Dependencies Diagram

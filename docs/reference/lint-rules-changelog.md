@@ -1,4 +1,5 @@
 ---
+uid: 139d45f0-c55f-40be-9c29-a3485c009143
 title: "Lint Rules Changelog"
 date: 2025-12-29
 categories:
@@ -7,6 +8,7 @@ tags:
   - linting
   - changelog
   - versions
+fingerprint: f337a797550122b70aa799ea0323696c271ef2f73209f3b9dc8c1c3a34f4b4fa
 ---
 
 # Lint Rules Changelog

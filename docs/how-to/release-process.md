@@ -1,4 +1,5 @@
 ---
+uid: 591c7ad3-3af8-47f8-9d01-531da3233a5d
 title: "Release Process"
 date: 2026-01-01
 categories:
@@ -8,6 +9,7 @@ tags:
   - releases
   - devcontainer
   - github-actions
+fingerprint: d13e9f4dc79989f2727f0d7129449acddd0d7940e38c871e9dd89c02cb6d8c8e
 ---
 
 # Release Process

@@ -1,4 +1,5 @@
 ---
+uid: 98165082-c567-4857-bb4e-12757cdae01e
 title: "How To: Enable Multi-Version Documentation"
 date: 2025-12-15
 categories:
@@ -6,6 +7,7 @@ categories:
 tags:
   - versioning
   - documentation
+fingerprint: 1c986eac56cf62e048f8fe41006217ed2b755a54c58b9f3b7240c1f74000f017
 ---
 
 # How to Enable Multi-Version Documentation

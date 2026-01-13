@@ -1,4 +1,5 @@
 ---
+uid: f589369a-b003-410b-87ff-86e976e787ce
 title: "How To: Migrate Existing Repository to Linting"
 date: 2025-12-29
 categories:
@@ -7,6 +8,7 @@ tags:
   - linting
   - migration
   - cleanup
+fingerprint: 45c8570b8ab2741965cb650fad431ae6b46b901a812f2776eff8c78ec3617b2d
 ---
 
 # Migrate Existing Repository to Linting

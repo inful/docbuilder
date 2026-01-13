@@ -1,4 +1,5 @@
 ---
+uid: 93f56604-829d-4753-a7dc-9e7447a7af4f
 title: "ADR-001: Golden Testing Strategy for Output Verification"
 date: 2025-12-12
 categories:
@@ -8,6 +9,7 @@ tags:
   - golden-tests
   - quality-assurance
 weight: 2
+fingerprint: e4be1d7d554d77c1003c02d90480b631b5d3cc0c50a92ee097723a141e1ddb9a
 ---
 
 # ADR-001: Golden Testing Strategy for Output Verification
