@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/uuid"
 )
+
+func stableGeneratedUID(key string) string {
+	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("docbuilder:"+key)).String()
+}
 
 // generateMainIndex creates the site root _index.md if it doesn't exist.
 func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
@@ -35,6 +41,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 			"title":       title,
 			"description": description,
 			"type":        "docs",
+			"uid":         stableGeneratedUID("index:root"),
 		},
 		Repository: "",
 		Section:    "",
@@ -94,6 +101,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 					"title":       title,
 					"description": description,
 					"type":        "docs",
+					"uid":         stableGeneratedUID("index:repo:" + repoPath),
 				},
 			}
 			generated = append(generated, doc)
@@ -189,6 +197,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 				"title":       title,
 				"description": description,
 				"type":        "docs",
+				"uid":         stableGeneratedUID("index:section:" + sectionPath),
 			},
 		}
 		generated = append(generated, doc)

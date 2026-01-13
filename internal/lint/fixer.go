@@ -132,30 +132,40 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		fixResult.BrokenLinks = brokenLinks
 	}
 
-	// Group issues by file and track fingerprint fix targets.
+	// Group issues by file and track uid/fingerprint fix targets.
 	// IMPORTANT: fingerprint regeneration must always run as the final fix step,
-	// because other fixes (like link rewrites) can change content and would
-	// invalidate previously-computed fingerprints.
+	// because other fixes (like uid insertion and link rewrites) can change content
+	// and would invalidate previously-computed fingerprints.
 	fileIssues := make(map[string][]Issue)
 	fingerprintTargets := make(map[string]struct{})
+	uidTargets := make(map[string]struct{})
+	uidIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError {
 			continue
 		}
 		fileIssues[issue.FilePath] = append(fileIssues[issue.FilePath], issue)
+		if issue.Rule == frontmatterUIDRuleName && issue.Message == missingUIDMessage {
+			uidTargets[issue.FilePath] = struct{}{}
+			uidIssueCounts[issue.FilePath]++
+		}
 		if issue.Rule == frontmatterFingerprintRuleName {
 			fingerprintTargets[issue.FilePath] = struct{}{}
 			fingerprintIssueCounts[issue.FilePath]++
 		}
 	}
+	// Phase 1: add missing frontmatter uids.
+	// We never rewrite an existing uid (even if invalid), because uid must be stable.
+	f.applyUIDFixes(uidTargets, uidIssueCounts, fixResult, fingerprintTargets)
 
-	// Phase 1: perform renames + link updates.
+	// Phase 2: perform renames + link updates.
 	for filePath, issues := range fileIssues {
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
 	}
 
-	// Phase 2: regenerate fingerprints LAST, for all affected files.
+	// Phase 3: regenerate fingerprints LAST, for all affected files.
+	// (This must remain the final fixer phase.)
 	f.applyFingerprintFixes(fingerprintTargets, fingerprintIssueCounts, fixResult)
 
 	return fixResult, nil
@@ -244,7 +254,7 @@ func (f *Fixer) applyFingerprintFixes(targets map[string]struct{}, fingerprintIs
 	for _, p := range paths {
 		// Only fingerprint markdown files.
 		ext := strings.ToLower(filepath.Ext(p))
-		if ext != ".md" && ext != ".markdown" {
+		if ext != docExtensionMarkdown && ext != docExtensionMarkdownLong {
 			continue
 		}
 
@@ -307,6 +317,9 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		op.Error = fmt.Errorf("compute fingerprint update: %w", err)
 		return op
 	}
+
+	// mdfp may rewrite frontmatter; ensure stable uid is preserved.
+	updated = preserveUIDAcrossContentRewrite(string(data), updated)
 
 	if updated == string(data) {
 		return op

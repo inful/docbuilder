@@ -2,8 +2,10 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Testing automatic menu generation from front matter",
         "title": "Menu Generation Testing",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:bf21a427179077e9"
     },

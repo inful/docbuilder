@@ -2,6 +2,11 @@ package lint
 
 import "path/filepath"
 
+const (
+	docExtensionMarkdown     = ".md"
+	docExtensionMarkdownLong = ".markdown"
+)
+
 // Severity indicates the importance level of a linting issue.
 type Severity int
 
@@ -120,7 +125,7 @@ type Config struct {
 // IsDocFile returns true if the file is a documentation file.
 func IsDocFile(path string) bool {
 	ext := filepath.Ext(path)
-	return ext == ".md" || ext == ".markdown"
+	return ext == docExtensionMarkdown || ext == docExtensionMarkdownLong
 }
 
 // IsAssetFile returns true if the file is an image asset.

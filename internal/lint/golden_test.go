@@ -255,9 +255,9 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 		expectedText := string(expectedContent)
 		actualText := string(actualContent)
 
-		// DocBuilder lint --fix may inject/update a frontmatter fingerprint.
-		// Golden fixtures intentionally avoid pinning hash values, so we normalize
-		// by removing only the `fingerprint` field from frontmatter before comparing.
+		// DocBuilder lint --fix may inject/update dynamic frontmatter fields.
+		// Golden fixtures intentionally avoid pinning those values, so we normalize
+		// by removing `fingerprint` and `uid` from frontmatter before comparing.
 		if IsDocFile(expectedPath) {
 			expectedText = stripFingerprintFrontmatter(expectedText)
 			actualText = stripFingerprintFrontmatter(actualText)
@@ -290,6 +290,9 @@ func stripFingerprintFrontmatter(content string) string {
 	for _, line := range lines {
 		trim := strings.TrimSpace(line)
 		if strings.HasPrefix(trim, "fingerprint:") {
+			continue
+		}
+		if strings.HasPrefix(trim, "uid:") {
 			continue
 		}
 		if trim == "" {

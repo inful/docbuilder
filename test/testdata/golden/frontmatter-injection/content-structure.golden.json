@@ -2,8 +2,10 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Test automatic front matter injection (editURL, repository metadata)",
         "title": "Frontmatter Injection Test",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:c929e1ef4ddd3faf"
     },

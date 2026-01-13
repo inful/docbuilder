@@ -2,8 +2,10 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Testing paths with spaces and special characters",
         "title": "Special Characters Test",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:0bdbf168e433f09a"
     },
@@ -18,9 +20,11 @@
     },
     "content/special-chars (test)/_index.md": {
       "frontmatter": {
+        "description": "Documentation for special-chars (test)",
         "repository": "special-chars",
         "title": "special-chars (test)",
-        "type": "docs"
+        "type": "docs",
+        "uid": "41f15434-5a40-520a-896d-c59b766092fb"
       },
       "contentHash": "sha256:8573a9f7674903c7"
     },

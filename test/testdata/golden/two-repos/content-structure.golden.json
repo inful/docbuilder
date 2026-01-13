@@ -2,16 +2,20 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Testing multi-repository aggregation",
         "title": "Multi-Repo Documentation",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:e694497b9815541b"
     },
     "content/repository-one/_index.md": {
       "frontmatter": {
+        "description": "Documentation for repository-one",
         "repository": "repository-one",
         "title": "Repository One",
-        "type": "docs"
+        "type": "docs",
+        "uid": "b6db9f3e-21b1-5fdd-8fe3-a8f83a5cb714"
       },
       "contentHash": "sha256:f590fadb89f7ec8c"
     },
@@ -35,9 +39,11 @@
     },
     "content/repository-two/_index.md": {
       "frontmatter": {
+        "description": "Documentation for repository-two",
         "repository": "repository-two",
         "title": "Repository Two",
-        "type": "docs"
+        "type": "docs",
+        "uid": "4ca2361f-ddf8-52c2-be40-5eb925840c6a"
       },
       "contentHash": "sha256:94ca879766d67aa9"
     },

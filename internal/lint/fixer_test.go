@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/inful/mdfp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -99,11 +100,15 @@ func TestFixer_RenameFile(t *testing.T) {
 	assert.True(t, result.FilesRenamed[0].Success)
 	assert.Equal(t, oldFile, result.FilesRenamed[0].OldPath)
 	assert.Equal(t, expectedNewFile, result.FilesRenamed[0].NewPath)
-	assert.Equal(t, 2, result.ErrorsFixed) // rename + frontmatter fingerprint
+	assert.Equal(t, 3, result.ErrorsFixed) // rename + frontmatter uid + frontmatter fingerprint
 
 	// #nosec G304 -- test reads a temp file path under t.TempDir().
 	updatedBytes, readErr := os.ReadFile(expectedNewFile)
 	require.NoError(t, readErr)
+	uid, hasUID := extractUIDFromFrontmatter(string(updatedBytes))
+	require.True(t, hasUID)
+	_, parseErr := uuid.Parse(uid)
+	require.NoError(t, parseErr)
 	ok, verr := mdfp.VerifyFingerprint(string(updatedBytes))
 	require.NoError(t, verr)
 	require.True(t, ok)

@@ -2,8 +2,10 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
+        "description": "Testing graceful handling of invalid YAML in front matter",
         "title": "Malformed Front Matter Test",
-        "type": "docs"
+        "type": "docs",
+        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
       },
       "contentHash": "sha256:2cab0b95e957f0cc"
     },
