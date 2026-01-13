@@ -584,7 +584,7 @@ BREAKING CHANGE: Configuration field 'theme' renamed to 'hugo_theme' for clarity
 ### Checklist Summary
 
 Before completing any task, verify:
-- [ ] `golangci-lint run` passes with no issues
+- [ ] `golangci-lint run --fix` passes with no issues
 - [ ] `go test ./test/integration -v` passes (all golden tests)
 - [ ] `go test ./...` passes (full test suite)
 - [ ] Only task-related files are staged (`git diff --cached`)
@@ -674,11 +674,13 @@ fixer_broken_links.go     // Broken link detection
 - Verify test coverage remains the same
 
 **5. Refactoring checklist:**
+- [ ] When adding a new feature, use a strict TDD approach.
+- [ ] When fixing a bug, make sure you first create a test to reproduce the bug before proceeding to fix it.
 - [ ] Each file has single, clear responsibility
 - [ ] File names clearly indicate content
 - [ ] No circular dependencies between new files
 - [ ] All tests pass: `go test ./...`
-- [ ] Linter passes: `golangci-lint run`
+- [ ] Linter passes: `golangci-lint run --fix`
 - [ ] Public API unchanged (no breaking changes)
 - [ ] Documentation updated if needed
 
