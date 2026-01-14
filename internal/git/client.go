@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -70,7 +70,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 	if err := os.RemoveAll(repoPath); err != nil {
-		return "", fmt.Errorf("failed to remove existing directory: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to remove existing directory").WithSeverity(foundationerrors.SeverityError).WithContext("repo_name", repo.Name).WithContext("repo_path", repoPath).Build()
 	}
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL}
@@ -90,7 +90,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	if repo.Auth != nil {
 		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return "", fmt.Errorf("failed to setup authentication: %w", err)
+			return "", foundationerrors.WrapError(err, foundationerrors.CategoryAuth, "failed to setup authentication").WithSeverity(foundationerrors.SeverityError).WithContext("repo_name", repo.Name).Build()
 		}
 		cloneOptions.Auth = auth
 	}
@@ -115,7 +115,7 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 	if err := os.RemoveAll(repoPath); err != nil {
-		return CloneResult{}, fmt.Errorf("failed to remove existing directory: %w", err)
+		return CloneResult{}, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to remove existing directory").WithSeverity(foundationerrors.SeverityError).WithContext("repo_name", repo.Name).WithContext("repo_path", repoPath).Build()
 	}
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL}
@@ -135,7 +135,7 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	if repo.Auth != nil {
 		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return CloneResult{}, fmt.Errorf("failed to setup authentication: %w", err)
+			return CloneResult{}, foundationerrors.WrapError(err, foundationerrors.CategoryAuth, "failed to setup authentication").WithSeverity(foundationerrors.SeverityError).WithContext("repo_name", repo.Name).Build()
 		}
 		cloneOptions.Auth = auth
 	}
@@ -195,7 +195,7 @@ func classifyCloneError(url string, err error) error {
 	if strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout") {
 		return &NetworkTimeoutError{Op: "clone", URL: url, Err: err}
 	}
-	return fmt.Errorf("failed to clone repository %s: %w", url, err)
+	return foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to clone repository").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", url).Build()
 }
 
 // UpdateRepo updates an existing repository or clones it if missing.

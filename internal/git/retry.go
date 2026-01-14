@@ -2,13 +2,13 @@ package git
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"strings"
 	"time"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
@@ -67,7 +67,7 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 		}
 		time.Sleep(delay)
 	}
-	return "", fmt.Errorf("git %s failed after retries: %w", op, lastErr)
+	return "", foundationerrors.WrapError(lastErr, foundationerrors.CategoryGit, "git operation failed after retries").WithSeverity(foundationerrors.SeverityError).WithContext("operation", op).Build()
 }
 
 // withRetryMetadata wraps an operation returning CloneResult with retry logic.
@@ -117,7 +117,7 @@ func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, 
 		}
 		time.Sleep(delay)
 	}
-	return CloneResult{}, fmt.Errorf("git %s failed after retries: %w", op, lastErr)
+	return CloneResult{}, foundationerrors.WrapError(lastErr, foundationerrors.CategoryGit, "git operation failed after retries").WithSeverity(foundationerrors.SeverityError).WithContext("operation", op).Build()
 }
 
 func isPermanentGitError(err error) bool {

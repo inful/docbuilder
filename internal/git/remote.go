@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RemoteReference represents a Git reference from a remote repository.
@@ -44,7 +44,7 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 
 	refs, err := remote.List(listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list remote references: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to list remote references").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repoURL).Build()
 	}
 
 	remoteRefs := make([]*RemoteReference, 0, len(refs))
@@ -100,7 +100,7 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 	if authConfig != nil {
 		auth, err := c.getAuth(authConfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup authentication: %w", err)
+			return nil, foundationerrors.WrapError(err, foundationerrors.CategoryAuth, "failed to setup authentication").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repoURL).Build()
 		}
 		listOptions.Auth = auth
 	}
@@ -108,7 +108,7 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 	// List references
 	refs, err := remote.List(listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list remote references: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to list remote references").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repoURL).Build()
 	}
 
 	remoteRefs := make([]*RemoteReference, 0, len(refs))

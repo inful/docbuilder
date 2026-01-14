@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -71,7 +72,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 	if repo.Auth != nil {
 		a, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return "", fmt.Errorf("authentication: %w", err)
+			return "", foundationerrors.WrapError(err, foundationerrors.CategoryAuth, "failed to setup authentication").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repo.URL).Build()
 		}
 		auth = a
 	}
@@ -83,7 +84,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 
 	refs, err := rem.List(listOpts)
 	if err != nil {
-		return "", fmt.Errorf("ls-remote: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to list remote references").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repo.URL).Build()
 	}
 
 	// Look for the specific branch
@@ -102,7 +103,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 		}
 	}
 
-	return "", fmt.Errorf("branch %s not found on remote", branch)
+	return "", foundationerrors.NewError(foundationerrors.CategoryGit, "branch not found on remote").WithSeverity(foundationerrors.SeverityError).WithContext("repo_url", repo.URL).WithContext("branch", branch).Build()
 }
 
 // CheckRemoteChanged checks if remote HEAD has changed since last fetch.
@@ -176,16 +177,16 @@ func (c *RemoteHeadCache) Save() error {
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o750); err != nil {
-		return fmt.Errorf("create cache dir: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to create cache directory").WithSeverity(foundationerrors.SeverityError).WithContext("cache_path", c.path).Build()
 	}
 
 	data, err := json.MarshalIndent(c.entries, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal cache: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to marshal cache").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	if err := os.WriteFile(c.path, data, 0o600); err != nil {
-		return fmt.Errorf("write cache: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to write cache file").WithSeverity(foundationerrors.SeverityError).WithContext("cache_path", c.path).Build()
 	}
 
 	return nil
@@ -206,7 +207,7 @@ func (c *RemoteHeadCache) load() error {
 	defer c.mu.Unlock()
 
 	if err := json.Unmarshal(data, &c.entries); err != nil {
-		return fmt.Errorf("unmarshal cache: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to unmarshal cache").WithSeverity(foundationerrors.SeverityError).WithContext("cache_path", c.path).Build()
 	}
 
 	return nil

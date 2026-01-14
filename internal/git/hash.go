@@ -12,6 +12,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RepoTree represents a snapshot of a repository at a specific commit.
@@ -31,23 +33,23 @@ type RepoTree struct {
 func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return "", fmt.Errorf("open repository: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to open repository").WithSeverity(foundationerrors.SeverityError).WithContext("repo_path", repoPath).Build()
 	}
 
 	// Resolve commit
 	hash, err := repo.ResolveRevision(plumbing.Revision(commit))
 	if err != nil {
-		return "", fmt.Errorf("resolve commit %s: %w", commit, err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to resolve commit").WithSeverity(foundationerrors.SeverityError).WithContext("commit", commit).Build()
 	}
 
 	commitObj, err := repo.CommitObject(*hash)
 	if err != nil {
-		return "", fmt.Errorf("get commit object: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to get commit object").WithSeverity(foundationerrors.SeverityError).WithContext("commit_hash", hash.String()).Build()
 	}
 
 	tree, err := commitObj.Tree()
 	if err != nil {
-		return "", fmt.Errorf("get tree: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to get commit tree").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Build list of files to hash
@@ -63,7 +65,7 @@ func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 		if path == "." || path == "" {
 			// Hash entire tree
 			if err := hashTree(tree, "", &fileHashes); err != nil {
-				return "", fmt.Errorf("hash tree: %w", err)
+				return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to hash tree").WithSeverity(foundationerrors.SeverityError).Build()
 			}
 			continue
 		}
@@ -85,7 +87,7 @@ func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 				continue
 			}
 			if err := hashTree(subtree, path, &fileHashes); err != nil {
-				return "", fmt.Errorf("hash subtree %s: %w", path, err)
+				return "", foundationerrors.WrapError(err, foundationerrors.CategoryGit, "failed to hash subtree").WithSeverity(foundationerrors.SeverityError).WithContext("path", path).Build()
 			}
 		}
 	}
@@ -135,7 +137,8 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 			if os.IsNotExist(err) {
 				continue // Path doesn't exist, skip
 			}
-			return "", fmt.Errorf("stat %s: %w", fullPath, err)
+			err := foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to stat file").WithSeverity(foundationerrors.SeverityError).WithContext("path", fullPath).Build()
+			return "", err
 		}
 
 		if info.IsDir() {
@@ -180,7 +183,7 @@ func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
 		// #nosec G304 - p is from filepath.Walk, within controlled directory
 		content, err := os.ReadFile(p)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", p, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to read file").WithSeverity(foundationerrors.SeverityError).WithContext("path", p).Build()
 		}
 
 		h := sha256.Sum256(content)
@@ -189,7 +192,7 @@ func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("walk %s: %w", dirPath, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to walk directory").WithSeverity(foundationerrors.SeverityError).WithContext("directory", dirPath).Build()
 	}
 	return nil
 }
@@ -199,7 +202,7 @@ func hashSingleFile(repoPath, filePath string, fileHashes *[]string) error {
 	// #nosec G304 - filePath is validated and within controlled directory
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("read %s: %w", filePath, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to read file").WithSeverity(foundationerrors.SeverityError).WithContext("file_path", filePath).Build()
 	}
 
 	h := sha256.Sum256(content)
