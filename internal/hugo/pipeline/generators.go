@@ -41,7 +41,6 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 			"title":       title,
 			"description": description,
 			"type":        "docs",
-			"uid":         stableGeneratedUID("index:root"),
 		},
 		Repository: "",
 		Section:    "",
@@ -101,7 +100,6 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 					"title":       title,
 					"description": description,
 					"type":        "docs",
-					"uid":         stableGeneratedUID("index:repo:" + repoPath),
 				},
 			}
 			generated = append(generated, doc)
@@ -197,7 +195,6 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 				"title":       title,
 				"description": description,
 				"type":        "docs",
-				"uid":         stableGeneratedUID("index:section:" + sectionPath),
 			},
 		}
 		generated = append(generated, doc)

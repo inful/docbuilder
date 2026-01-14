@@ -4,8 +4,7 @@
       "frontmatter": {
         "description": "Testing files with non-ASCII characters in names",
         "title": "Unicode Names Test",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:c7e9db45990045b5"
     },
