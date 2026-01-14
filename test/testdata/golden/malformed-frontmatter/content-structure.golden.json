@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing graceful handling of invalid YAML in front matter",
         "title": "Malformed Front Matter Test",
         "type": "docs"
       },
@@ -10,7 +9,6 @@
     },
     "content/invalid-yaml.md": {
       "frontmatter": {
-        "repository": "malformed-frontmatter",
         "title": "Malformed Front Matter",
         "type": "docs"
       },
@@ -18,7 +16,6 @@
     },
     "content/valid.md": {
       "frontmatter": {
-        "repository": "malformed-frontmatter",
         "title": "Valid Document",
         "type": "docs",
         "weight": 10

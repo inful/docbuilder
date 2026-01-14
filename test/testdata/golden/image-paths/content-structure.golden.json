@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing asset path handling and transformations",
         "title": "Image Path Testing",
         "type": "docs"
       },
@@ -10,7 +9,6 @@
     },
     "content/images-guide.md": {
       "frontmatter": {
-        "repository": "image-docs",
         "title": "Image Examples",
         "type": "docs",
         "weight": 1

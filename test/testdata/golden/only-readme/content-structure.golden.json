@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing repository with only README.md (should be ignored)",
         "title": "Only README Test",
         "type": "docs"
       },

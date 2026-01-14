@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing automatic _index.md generation for sections",
         "title": "Section Index Testing",
         "type": "docs"
       },
@@ -10,8 +9,6 @@
     },
     "content/advanced/_index.md": {
       "frontmatter": {
-        "description": "Documentation for advanced",
-        "repository": "section-docs",
         "title": "advanced",
         "type": "docs"
       },
@@ -19,7 +16,6 @@
     },
     "content/advanced/plugins.md": {
       "frontmatter": {
-        "repository": "section-docs",
         "title": "Plugin System",
         "type": "docs",
         "weight": 2
@@ -28,7 +24,6 @@
     },
     "content/advanced/themes.md": {
       "frontmatter": {
-        "repository": "section-docs",
         "title": "Custom Themes",
         "type": "docs",
         "weight": 1
@@ -37,8 +32,6 @@
     },
     "content/getting-started/_index.md": {
       "frontmatter": {
-        "description": "Documentation for getting-started",
-        "repository": "section-docs",
         "title": "getting-started",
         "type": "docs"
       },
@@ -46,7 +39,6 @@
     },
     "content/getting-started/configuration.md": {
       "frontmatter": {
-        "repository": "section-docs",
         "title": "Configuration",
         "type": "docs",
         "weight": 2
@@ -55,7 +47,6 @@
     },
     "content/getting-started/installation.md": {
       "frontmatter": {
-        "repository": "section-docs",
         "title": "Installation",
         "type": "docs",
         "weight": 1

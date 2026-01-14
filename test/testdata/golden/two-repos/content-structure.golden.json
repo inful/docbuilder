@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing multi-repository aggregation",
         "title": "Multi-Repo Documentation",
         "type": "docs"
       },
@@ -10,8 +9,6 @@
     },
     "content/repository-one/_index.md": {
       "frontmatter": {
-        "description": "Documentation for repository-one",
-        "repository": "repository-one",
         "title": "Repository One",
         "type": "docs"
       },
@@ -19,7 +16,6 @@
     },
     "content/repository-one/api.md": {
       "frontmatter": {
-        "repository": "repository-one",
         "title": "API Reference",
         "type": "docs",
         "weight": 2
@@ -28,7 +24,6 @@
     },
     "content/repository-one/guide.md": {
       "frontmatter": {
-        "repository": "repository-one",
         "title": "Getting Started Guide",
         "type": "docs",
         "weight": 1
@@ -37,8 +32,6 @@
     },
     "content/repository-two/_index.md": {
       "frontmatter": {
-        "description": "Documentation for repository-two",
-        "repository": "repository-two",
         "title": "Repository Two",
         "type": "docs"
       },
@@ -46,7 +39,6 @@
     },
     "content/repository-two/deployment.md": {
       "frontmatter": {
-        "repository": "repository-two",
         "title": "Deployment Guide",
         "type": "docs",
         "weight": 2
@@ -55,7 +47,6 @@
     },
     "content/repository-two/tutorial.md": {
       "frontmatter": {
-        "repository": "repository-two",
         "title": "Advanced Tutorial",
         "type": "docs",
         "weight": 1

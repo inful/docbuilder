@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing files with non-ASCII characters in names",
         "title": "Unicode Names Test",
         "type": "docs"
       },
@@ -10,7 +9,6 @@
     },
     "content/español.md": {
       "frontmatter": {
-        "repository": "unicode-names",
         "title": "Documento en Español",
         "type": "docs",
         "weight": 1
@@ -19,7 +17,6 @@
     },
     "content/русский.md": {
       "frontmatter": {
-        "repository": "unicode-names",
         "title": "Cyrillic Documentation",
         "type": "docs",
         "weight": 3
@@ -28,7 +25,6 @@
     },
     "content/中文.md": {
       "frontmatter": {
-        "repository": "unicode-names",
         "title": "Chinese Documentation",
         "type": "docs",
         "weight": 2

@@ -29,9 +29,13 @@ type BuildCmd struct {
 }
 
 func (b *BuildCmd) Run(_ *Global, root *CLI) error {
+	// Load .env file if it exists (before config)
+	if err := LoadEnvFile(); err == nil && root.Verbose {
+		slog.Info("Loaded environment variables from .env file")
+	}
+
 	// If no config file is specified and doesn't exist, create a minimal config for local docs
 	var cfg *config.Config
-	var err error
 	var useLocalMode bool
 
 	if root.Config == "" || !fileExists(root.Config) {
@@ -42,9 +46,14 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			"docs_dir", b.DocsDir,
 			"output", b.Output)
 	} else {
-		cfg, err = config.Load(root.Config)
+		result, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
+		}
+		cfg = loadedCfg
+		// Print any normalization warnings
+		for _, w := range result.Warnings {
+			slog.Warn(w)
 		}
 		useLocalMode = false
 	}
