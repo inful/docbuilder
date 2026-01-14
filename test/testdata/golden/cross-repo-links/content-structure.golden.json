@@ -4,8 +4,7 @@
       "frontmatter": {
         "description": "Testing link transformation between repositories",
         "title": "Cross-Repository Links",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:f605eef59d55223e"
     },
@@ -14,8 +13,7 @@
         "description": "Documentation for backend",
         "repository": "backend",
         "title": "Backend",
-        "type": "docs",
-        "uid": "d5afc152-4cb2-54b6-87a6-4fb448cb65c3"
+        "type": "docs"
       },
       "contentHash": "sha256:b6c08fd9feb030c2"
     },
@@ -42,8 +40,7 @@
         "description": "Documentation for frontend",
         "repository": "frontend",
         "title": "Frontend",
-        "type": "docs",
-        "uid": "55673fac-6be1-5ab6-a264-f6da1614ca61"
+        "type": "docs"
       },
       "contentHash": "sha256:c48c4a1ad922e0b6"
     },
