@@ -2,16 +2,13 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing asset path handling and transformations",
         "title": "Image Path Testing",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:d8a36b93b60b9044"
     },
     "content/images-guide.md": {
       "frontmatter": {
-        "repository": "image-docs",
         "title": "Image Examples",
         "type": "docs",
         "weight": 1

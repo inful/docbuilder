@@ -2,10 +2,8 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing repository with only README.md (should be ignored)",
         "title": "Only README Test",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:7cb57d7d0cde7013"
     }

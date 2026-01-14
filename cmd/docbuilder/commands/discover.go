@@ -16,9 +16,18 @@ type DiscoverCmd struct {
 }
 
 func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
-	cfg, err := config.Load(root.Config)
+	// Load .env file if it exists (before config)
+	if err := LoadEnvFile(); err == nil && root.Verbose {
+		slog.Info("Loaded environment variables from .env file")
+	}
+
+	result, cfg, err := config.LoadWithResult(root.Config)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
+	}
+	// Print any normalization warnings
+	for _, w := range result.Warnings {
+		slog.Warn(w)
 	}
 	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
 		return err

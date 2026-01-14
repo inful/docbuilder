@@ -2,10 +2,8 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing automatic menu generation from front matter",
         "title": "Menu Generation Testing",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:bf21a427179077e9"
     },
@@ -17,7 +15,6 @@
             "weight": 30
           }
         },
-        "repository": "menu-docs",
         "title": "API Documentation",
         "type": "docs",
         "weight": 3
@@ -32,7 +29,6 @@
             "weight": 20
           }
         },
-        "repository": "menu-docs",
         "title": "User Guide",
         "type": "docs",
         "weight": 2
@@ -46,7 +42,6 @@
             "weight": 10
           }
         },
-        "repository": "menu-docs",
         "title": "Introduction",
         "type": "docs",
         "weight": 1

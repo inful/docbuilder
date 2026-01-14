@@ -2,26 +2,20 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing deeply nested directory structures",
         "title": "Deep Nesting Test",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:b4d46f14c90ab5bf"
     },
     "content/level1/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1",
-        "repository": "deep-nesting",
         "title": "level1",
-        "type": "docs",
-        "uid": "9ac0ef2f-097f-50bf-a21e-0743ca9a74dc"
+        "type": "docs"
       },
       "contentHash": "sha256:d93f9f143c25cd50"
     },
     "content/level1/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 1",
         "type": "docs",
         "weight": 2
@@ -30,17 +24,13 @@
     },
     "content/level1/level2/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2",
-        "repository": "deep-nesting",
         "title": "level2",
-        "type": "docs",
-        "uid": "c9dc6b69-363e-538a-b111-1135c71a9b9d"
+        "type": "docs"
       },
       "contentHash": "sha256:224a4c43bd2decf4"
     },
     "content/level1/level2/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 2",
         "type": "docs",
         "weight": 3
@@ -49,17 +39,13 @@
     },
     "content/level1/level2/level3/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2/level3",
-        "repository": "deep-nesting",
         "title": "level3",
-        "type": "docs",
-        "uid": "bbd1e435-228e-5527-98e9-01ab031c6a30"
+        "type": "docs"
       },
       "contentHash": "sha256:bce434dbd869b116"
     },
     "content/level1/level2/level3/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 3",
         "type": "docs",
         "weight": 4
@@ -68,17 +54,13 @@
     },
     "content/level1/level2/level3/level4/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2/level3/level4",
-        "repository": "deep-nesting",
         "title": "level4",
-        "type": "docs",
-        "uid": "ce4808c6-94ab-55c6-8459-3936da45b441"
+        "type": "docs"
       },
       "contentHash": "sha256:55a1da60e6c2baef"
     },
     "content/level1/level2/level3/level4/deep-doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 4",
         "type": "docs",
         "weight": 5
@@ -87,7 +69,6 @@
     },
     "content/root.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Root Level",
         "type": "docs",
         "weight": 1
