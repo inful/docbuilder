@@ -2,12 +2,12 @@ package lint
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // renameFile renames a file to fix filename issues.
@@ -22,7 +22,11 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	suggestedName := SuggestFilename(filename)
 
 	if suggestedName == "" || suggestedName == filename {
-		op.Error = errors.New("could not determine suggested filename or file is already correct")
+		op.Error = foundationerrors.NewError(foundationerrors.CategoryValidation,
+			"could not determine suggested filename or file is already correct").
+			WithContext("file", oldPath).
+			WithContext("current_name", filename).
+			Build()
 		return op
 	}
 
@@ -33,7 +37,11 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 
 	// Check if target already exists
 	if _, err := os.Stat(newPath); err == nil && !f.force {
-		op.Error = fmt.Errorf("target file already exists: %s", newPath)
+		op.Error = foundationerrors.NewError(foundationerrors.CategoryValidation,
+			"target file already exists").
+			WithContext("target_path", newPath).
+			WithContext("source_path", oldPath).
+			Build()
 		return op
 	}
 
@@ -48,14 +56,22 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 		// Use git mv to preserve history
 		err := f.gitMv(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("git mv failed: %w", err)
+			op.Error = foundationerrors.WrapError(err, foundationerrors.CategoryGit,
+				"git mv failed").
+				WithContext("old_path", oldPath).
+				WithContext("new_path", newPath).
+				Build()
 			return op
 		}
 	} else {
 		// Use regular file system rename
 		err := os.Rename(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("rename failed: %w", err)
+			op.Error = foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"rename failed").
+				WithContext("old_path", oldPath).
+				WithContext("new_path", newPath).
+				Build()
 			return op
 		}
 	}
@@ -81,7 +97,12 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+		return foundationerrors.WrapError(err, foundationerrors.CategoryGit,
+			"git mv command failed").
+			WithContext("old_path", oldPath).
+			WithContext("new_path", newPath).
+			WithContext("output", string(output)).
+			Build()
 	}
 	return nil
 }

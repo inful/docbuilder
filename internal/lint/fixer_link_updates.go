@@ -1,10 +1,11 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // applyLinkUpdates applies link updates to markdown files atomically.
@@ -27,7 +28,10 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		if err != nil {
 			// Rollback any previous changes
 			f.rollbackLinkUpdates(backupPaths)
-			return nil, fmt.Errorf("failed to read %s: %w", sourceFile, err)
+			return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to read file for link update").
+				WithContext("file", sourceFile).
+				Build()
 		}
 
 		lines := strings.Split(string(content), "\n")
@@ -89,7 +93,11 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
-				return nil, fmt.Errorf("failed to create backup for %s: %w", sourceFile, err)
+				return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+					"failed to create backup for link update").
+					WithContext("file", sourceFile).
+					WithContext("backup_path", backupPath).
+					Build()
 			}
 			backupPaths = append(backupPaths, backupPath)
 
@@ -98,7 +106,10 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
-				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
+				return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+					"failed to write updated file with link changes").
+					WithContext("file", sourceFile).
+					Build()
 			}
 		}
 	}

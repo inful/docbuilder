@@ -1,13 +1,14 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/google/uuid"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func preserveUIDAcrossContentRewrite(original, updated string) string {
@@ -150,7 +151,10 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("read file for uid update: %w", err)
+		op.Error = foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read file for UID update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
@@ -166,13 +170,19 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 	info, statErr := os.Stat(filePath)
 	if statErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("stat file for uid update: %w", statErr)
+		op.Error = foundationerrors.WrapError(statErr, foundationerrors.CategoryFileSystem,
+			"failed to stat file for UID update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
 	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("write file for uid update: %w", writeErr)
+		op.Error = foundationerrors.WrapError(writeErr, foundationerrors.CategoryFileSystem,
+			"failed to write file for UID update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 

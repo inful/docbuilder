@@ -1,11 +1,12 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/inful/mdfp"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // FrontmatterFingerprintRule verifies that markdown files have a valid content fingerprint
@@ -32,7 +33,10 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	// #nosec G304 -- filePath comes from controlled doc discovery/lint walk.
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read file for fingerprint check").
+			WithContext("file", filePath).
+			Build()
 	}
 
 	ok, verifyErr := mdfp.VerifyFingerprint(string(data))

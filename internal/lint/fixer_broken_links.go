@@ -1,9 +1,10 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"strings"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // detectBrokenLinks scans all markdown files in a path for links to non-existent files.
@@ -13,7 +14,10 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 	// Determine if rootPath is a file or directory
 	info, err := os.Stat(rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat path: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to stat path").
+			WithContext("path", rootPath).
+			Build()
 	}
 
 	var filesToScan []string
@@ -44,7 +48,10 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	// #nosec G304 -- sourceFile is from discovery walkFiles, not user input
 	content, err := os.ReadFile(sourceFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read file").
+			WithContext("file", sourceFile).
+			Build()
 	}
 
 	var brokenLinks []BrokenLink

@@ -2,7 +2,6 @@ package lint
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 	"time"
 
 	"github.com/inful/mdfp"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const (
@@ -74,22 +75,33 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	// Phase 2: Show preview and get confirmation (unless auto-confirm)
 	confirmed, err := f.ConfirmChanges(previewResult)
 	if err != nil {
-		return nil, fmt.Errorf("confirmation failed: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"user confirmation failed").
+			Build()
 	}
 
 	if !confirmed {
-		return previewResult, errors.New("user canceled operation")
+		return previewResult, foundationerrors.NewError(foundationerrors.CategoryValidation,
+			"user canceled operation").
+			WithSeverity(foundationerrors.SeverityInfo).
+			Build()
 	}
 
 	// Phase 3: Create backup (always, even with auto-confirm)
 	rootPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to get absolute path").
+			WithContext("path", path).
+			Build()
 	}
 
 	backupDir, err := f.CreateBackup(previewResult, rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create backup: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to create backup before applying fixes").
+			WithContext("root_path", rootPath).
+			Build()
 	}
 
 	if backupDir != "" {
@@ -105,7 +117,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to lint path: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to lint path").
+			WithContext("path", path).
+			Build()
 	}
 
 	fixResult := &FixResult{
@@ -119,7 +134,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Get absolute path for the root directory (for searching links)
 	rootPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to get absolute path for root directory").
+			WithContext("path", path).
+			Build()
 	}
 
 	// Detect broken links before applying fixes
@@ -127,7 +145,11 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	if err != nil {
 		// Non-fatal: log but continue with fixes
 		fixResult.Errors = append(fixResult.Errors,
-			fmt.Errorf("failed to detect broken links: %w", err))
+			foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"failed to detect broken links").
+				WithContext("path", path).
+				WithSeverity(foundationerrors.SeverityWarning).
+				Build())
 	} else {
 		fixResult.BrokenLinks = brokenLinks
 	}
@@ -275,7 +297,11 @@ func (f *Fixer) applyFingerprintFixes(targets map[string]struct{}, fingerprintIs
 func (f *Fixer) findAndUpdateLinks(oldPath, newPath, rootPath string) ([]LinkUpdate, error) {
 	links, err := f.findLinksToFile(oldPath, rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find links to %s: %w", oldPath, err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to find links to file").
+			WithContext("old_path", oldPath).
+			WithContext("root_path", rootPath).
+			Build()
 	}
 
 	if len(links) == 0 {
@@ -284,7 +310,11 @@ func (f *Fixer) findAndUpdateLinks(oldPath, newPath, rootPath string) ([]LinkUpd
 
 	updates, err := f.applyLinkUpdates(links, oldPath, newPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update links: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to update links").
+			WithContext("old_path", oldPath).
+			WithContext("new_path", newPath).
+			Build()
 	}
 
 	return updates, nil
@@ -307,14 +337,20 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("read file for fingerprint update: %w", err)
+		op.Error = foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read file for fingerprint update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
 	updated, err := mdfp.ProcessContent(string(data))
 	if err != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("compute fingerprint update: %w", err)
+		op.Error = foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to compute fingerprint").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
@@ -332,13 +368,19 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 	info, statErr := os.Stat(filePath)
 	if statErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("stat file for fingerprint update: %w", statErr)
+		op.Error = foundationerrors.WrapError(statErr, foundationerrors.CategoryFileSystem,
+			"failed to stat file for fingerprint update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
 	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("write file for fingerprint update: %w", writeErr)
+		op.Error = foundationerrors.WrapError(writeErr, foundationerrors.CategoryFileSystem,
+			"failed to write file for fingerprint update").
+			WithContext("file", filePath).
+			Build()
 		return op
 	}
 
@@ -386,7 +428,9 @@ func (f *Fixer) ConfirmChanges(result *FixResult) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 	response, err := reader.ReadString('\n')
 	if err != nil {
-		return false, fmt.Errorf("failed to read user input: %w", err)
+		return false, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to read user input").
+			Build()
 	}
 
 	response = strings.TrimSpace(strings.ToLower(response))
@@ -406,13 +450,20 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 	backupDir := filepath.Join(rootPath, fmt.Sprintf(".docbuilder-backup-%s", timestamp))
 
 	if err := os.MkdirAll(backupDir, 0o750); err != nil {
-		return "", fmt.Errorf("failed to create backup directory: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to create backup directory").
+			WithContext("backup_dir", backupDir).
+			Build()
 	}
 
 	// Backup files that will be renamed
 	for _, rename := range result.FilesRenamed {
 		if err := f.backupFile(rename.OldPath, backupDir, rootPath); err != nil {
-			return "", fmt.Errorf("failed to backup %s: %w", rename.OldPath, err)
+			return "", foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to backup renamed file").
+				WithContext("file", rename.OldPath).
+				WithContext("backup_dir", backupDir).
+				Build()
 		}
 	}
 
@@ -424,7 +475,11 @@ func (f *Fixer) CreateBackup(result *FixResult, rootPath string) (string, error)
 			continue
 		}
 		if err := f.backupFile(update.SourceFile, backupDir, rootPath); err != nil {
-			return "", fmt.Errorf("failed to backup %s: %w", update.SourceFile, err)
+			return "", foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to backup updated file").
+				WithContext("file", update.SourceFile).
+				WithContext("backup_dir", backupDir).
+				Build()
 		}
 		backedUp[update.SourceFile] = true
 	}

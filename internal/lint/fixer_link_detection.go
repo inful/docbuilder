@@ -1,10 +1,11 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // findLinksToFile finds all markdown links that reference the given target file.
@@ -16,13 +17,19 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 	// Get absolute path of target for comparison
 	absTarget, err := filepath.Abs(targetPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for target: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to get absolute path for target").
+			WithContext("target_path", targetPath).
+			Build()
 	}
 
 	// Ensure rootPath is a directory
 	rootInfo, err := os.Stat(rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat root path: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to stat root path").
+			WithContext("root_path", rootPath).
+			Build()
 	}
 
 	searchRoot := rootPath
@@ -48,7 +55,11 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 		// Find links in this file
 		fileLinks, err := f.findLinksInFile(path, absTarget)
 		if err != nil {
-			return fmt.Errorf("failed to scan %s: %w", path, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to scan file for links").
+				WithContext("file", path).
+				WithContext("target", absTarget).
+				Build()
 		}
 
 		links = append(links, fileLinks...)
@@ -63,7 +74,10 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 	// #nosec G304 -- sourceFile is from discovery walkFiles, not user input
 	content, err := os.ReadFile(sourceFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read file").
+			WithContext("file", sourceFile).
+			Build()
 	}
 
 	var links []LinkReference

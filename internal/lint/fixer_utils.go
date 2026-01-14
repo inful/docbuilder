@@ -1,10 +1,11 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // fileExists checks if a file exists (case-insensitive on applicable filesystems).
@@ -89,7 +90,10 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	// Get absolute path
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve absolute path: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to resolve absolute path").
+			WithContext("path", cleanPath).
+			Build()
 	}
 
 	return absPath, nil
@@ -144,7 +148,10 @@ func collectMarkdownFiles(rootPath string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk directory: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to walk directory").
+			WithContext("root_path", rootPath).
+			Build()
 	}
 	return filesToScan, nil
 }
