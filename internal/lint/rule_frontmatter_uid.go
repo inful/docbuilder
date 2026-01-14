@@ -14,8 +14,9 @@ type FrontmatterUIDRule struct{}
 const frontmatterUIDRuleName = "frontmatter-uid"
 
 const (
-	missingUIDMessage = "Missing uid in frontmatter"
-	invalidUIDMessage = "Invalid uid format in frontmatter"
+	missingUIDMessage      = "Missing uid in frontmatter"
+	invalidUIDMessage      = "Invalid uid format in frontmatter"
+	missingUIDaliasMessage = "Missing uid-based alias in frontmatter"
 )
 
 func (r *FrontmatterUIDRule) Name() string {
@@ -64,7 +65,39 @@ func (r *FrontmatterUIDRule) Check(filePath string) ([]Issue, error) {
 		return []Issue{r.invalidIssue(filePath, "uid must be a valid GUID/UUID")}, nil //nolint:nilerr // reported as lint issue, not a hard error
 	}
 
-	return nil, nil
+	// Check for uid-based alias
+	expectedAlias := "/_uid/" + uidStr + "/"
+	aliasesAny, hasAliases := obj["aliases"]
+	if !hasAliases {
+		return []Issue{r.missingAliasIssue(filePath, uidStr)}, nil
+	}
+
+	// aliases can be a string or array
+	var aliasesList []string
+	switch v := aliasesAny.(type) {
+	case string:
+		aliasesList = []string{v}
+	case []any:
+		for _, item := range v {
+			if str, ok := item.(string); ok {
+				aliasesList = append(aliasesList, str)
+			}
+		}
+	case []string:
+		aliasesList = v
+	default:
+		// Invalid aliases format, but let it pass to avoid false positives
+		return nil, nil
+	}
+
+	// Check if the expected alias is present
+	for _, alias := range aliasesList {
+		if strings.TrimSpace(alias) == expectedAlias {
+			return nil, nil
+		}
+	}
+
+	return []Issue{r.missingAliasIssue(filePath, uidStr)}, nil
 }
 
 func (r *FrontmatterUIDRule) missingIssue(filePath string) Issue {
@@ -96,6 +129,23 @@ func (r *FrontmatterUIDRule) invalidIssue(filePath, detail string) Issue {
 			"Details: " + detail,
 		}, "\n")),
 		Fix:  "Manually update the uid to a valid GUID/UUID (do not change it once set).",
+		Line: 0,
+	}
+}
+
+func (r *FrontmatterUIDRule) missingAliasIssue(filePath, uid string) Issue {
+	return Issue{
+		FilePath: filePath,
+		Severity: SeverityError,
+		Rule:     frontmatterUIDRuleName,
+		Message:  missingUIDaliasMessage,
+		Explanation: strings.TrimSpace(strings.Join([]string{
+			"This document has a valid uid but is missing the corresponding alias in frontmatter.",
+			"Documents should include a stable /_uid/<uid>/ alias for durable external references.",
+			"",
+			"Expected alias: /_uid/" + uid + "/",
+		}, "\n")),
+		Fix:  "Run: docbuilder lint --fix (adds missing uid-based aliases)",
 		Line: 0,
 	}
 }
