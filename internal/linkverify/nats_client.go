@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -17,10 +16,11 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ErrCacheMiss is returned when a cache entry is not found.
-var ErrCacheMiss = errors.New("cache miss")
+var ErrCacheMiss = foundationerrors.NewError(foundationerrors.CategoryNotFound, "cache miss").Build()
 
 // NATSClient manages NATS connection and operations for link verification.
 type NATSClient struct {
@@ -38,11 +38,11 @@ type NATSClient struct {
 // Connection failures are non-fatal; the client will attempt to reconnect automatically.
 func NewNATSClient(cfg *config.LinkVerificationConfig) (*NATSClient, error) {
 	if cfg == nil {
-		return nil, errors.New("link verification config is required")
+		return nil, foundationerrors.NewError(foundationerrors.CategoryValidation, "link verification config is required").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	if !cfg.Enabled {
-		return nil, errors.New("link verification is disabled")
+		return nil, foundationerrors.NewError(foundationerrors.CategoryValidation, "link verification is disabled").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	client := &NATSClient{
@@ -106,14 +106,14 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 	// Connect to NATS
 	conn, err := nats.Connect(c.cfg.NATSURL, opts...)
 	if err != nil {
-		return fmt.Errorf("failed to connect to NATS: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to connect to NATS").WithSeverity(foundationerrors.SeverityError).WithContext("nats_url", c.cfg.NATSURL).Build()
 	}
 
 	// Create JetStream context
 	js, err := jetstream.New(conn)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("failed to create JetStream context: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to create JetStream context").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	c.conn = conn
@@ -124,7 +124,7 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 		conn.Close()
 		c.conn = nil
 		c.js = nil
-		return fmt.Errorf("failed to initialize KV bucket: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to initialize KV bucket").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Initialize stream for broken link events
@@ -155,7 +155,7 @@ func (c *NATSClient) ensureConnected(ctx context.Context) error {
 
 	// Avoid multiple concurrent reconnection attempts
 	if c.reconnecting.Swap(true) {
-		return errors.New("reconnection already in progress")
+		return foundationerrors.NewError(foundationerrors.CategoryValidation, "reconnection already in progress").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 	defer c.reconnecting.Store(false)
 
@@ -184,7 +184,7 @@ func (c *NATSClient) initKVBucket(ctx context.Context) error {
 		TTL:         0,                 // Per-key TTL
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create KV bucket: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to create KV bucket").WithSeverity(foundationerrors.SeverityError).WithContext("bucket_name", c.kvBucket).Build()
 	}
 
 	c.kv = kv
@@ -218,7 +218,7 @@ func (c *NATSClient) initStream(ctx context.Context) error {
 		Discard:     jetstream.DiscardOld,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create stream: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to create stream").WithSeverity(foundationerrors.SeverityError).WithContext("stream_name", streamName).Build()
 	}
 
 	slog.Info("Created NATS stream for broken link events",
@@ -231,7 +231,7 @@ func (c *NATSClient) initStream(ctx context.Context) error {
 func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEvent) error {
 	// Ensure we're connected before publishing
 	if err := c.ensureConnected(ctx); err != nil {
-		return fmt.Errorf("NATS not connected: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "NATS not connected").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -241,7 +241,7 @@ func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEve
 
 	data, err := json.Marshal(event)
 	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation, "failed to marshal event").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	c.mu.RLock()
@@ -249,12 +249,12 @@ func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEve
 	c.mu.RUnlock()
 
 	if js == nil {
-		return errors.New("JetStream not available")
+		return foundationerrors.NewError(foundationerrors.CategoryNetwork, "JetStream not available").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	_, err = js.Publish(pubCtx, c.subject, data)
 	if err != nil {
-		return fmt.Errorf("failed to publish event: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to publish event").WithSeverity(foundationerrors.SeverityError).WithContext("subject", c.subject).Build()
 	}
 
 	slog.Debug("Published broken link event",
@@ -305,12 +305,12 @@ func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEnt
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return nil, ErrCacheMiss
 		}
-		return nil, fmt.Errorf("failed to get cache entry: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to get cache entry").WithSeverity(foundationerrors.SeverityError).WithContext("cache_key", sanitizeKVKey(url)).Build()
 	}
 
 	var cached CacheEntry
 	if err := json.Unmarshal(entry.Value(), &cached); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cache entry: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation, "failed to unmarshal cache entry").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	return &cached, nil
@@ -331,7 +331,7 @@ func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) err
 
 	data, err := json.Marshal(entry)
 	if err != nil {
-		return fmt.Errorf("failed to marshal cache entry: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation, "failed to marshal cache entry").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Note: NATS KV doesn't support per-key TTL in current API
@@ -351,7 +351,7 @@ func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) err
 	// Put entry in KV store
 	_, err = kv.Put(cacheCtx, key, data)
 	if err != nil {
-		return fmt.Errorf("failed to put cache entry: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to put cache entry").WithSeverity(foundationerrors.SeverityError).WithContext("cache_key", key).Build()
 	}
 
 	return nil
@@ -410,7 +410,7 @@ func (c *NATSClient) GetPageHash(ctx context.Context, pagePath string) (string, 
 	c.mu.RUnlock()
 
 	if kv == nil {
-		return "", errors.New("KV bucket not available")
+		return "", foundationerrors.NewError(foundationerrors.CategoryNetwork, "KV bucket not available").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Use page_ prefix to distinguish from link cache entries
@@ -420,9 +420,9 @@ func (c *NATSClient) GetPageHash(ctx context.Context, pagePath string) (string, 
 	entry, err := kv.Get(hashCtx, key)
 	if err != nil {
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
-			return "", errors.New("page hash not cached")
+			return "", foundationerrors.NewError(foundationerrors.CategoryNotFound, "page hash not cached").WithSeverity(foundationerrors.SeverityError).WithContext("page_path", pagePath).Build()
 		}
-		return "", fmt.Errorf("failed to get page hash: %w", err)
+		return "", foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to get page hash").WithSeverity(foundationerrors.SeverityError).WithContext("page_path", pagePath).Build()
 	}
 
 	return string(entry.Value()), nil
@@ -453,7 +453,7 @@ func (c *NATSClient) SetPageHash(ctx context.Context, pagePath, hash string) err
 
 	_, err := kv.Put(hashCtx, key, []byte(hash))
 	if err != nil {
-		return fmt.Errorf("failed to put page hash: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to put page hash").WithSeverity(foundationerrors.SeverityError).WithContext("page_path", pagePath).Build()
 	}
 
 	return nil

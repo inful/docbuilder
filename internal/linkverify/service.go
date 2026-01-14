@@ -2,8 +2,6 @@ package linkverify
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,10 +14,11 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ErrNoFrontMatter is returned when content has no front matter.
-var ErrNoFrontMatter = errors.New("no front matter")
+var ErrNoFrontMatter = foundationerrors.NewError(foundationerrors.CategoryValidation, "no front matter").Build()
 
 // PageMetadata contains metadata about a page for verification.
 type PageMetadata struct {
@@ -49,13 +48,13 @@ type VerificationService struct {
 // NewVerificationService creates a new link verification service.
 func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationService, error) {
 	if cfg == nil || !cfg.Enabled {
-		return nil, errors.New("link verification is disabled")
+		return nil, foundationerrors.NewError(foundationerrors.CategoryValidation, "link verification is disabled").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Create NATS client
 	natsClient, err := NewNATSClient(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create NATS client: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to create NATS client").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	// Parse timeout
@@ -77,7 +76,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 				return http.ErrUseLastResponse
 			}
 			if len(via) >= cfg.MaxRedirects {
-				return fmt.Errorf("stopped after %d redirects", cfg.MaxRedirects)
+				return foundationerrors.NewError(foundationerrors.CategoryNetwork, "stopped after maximum redirects").WithSeverity(foundationerrors.SeverityError).WithContext("max_redirects", cfg.MaxRedirects).Build()
 			}
 			return nil
 		},
@@ -96,7 +95,7 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 	s.mu.Lock()
 	if s.running {
 		s.mu.Unlock()
-		return errors.New("verification already running")
+		return foundationerrors.NewError(foundationerrors.CategoryValidation, "verification already running").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 	s.running = true
 	s.mu.Unlock()
@@ -289,7 +288,7 @@ func (s *VerificationService) checkLink(ctx context.Context, linkURL string, isI
 func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL string) (int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, linkURL, nil)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create request: %w", err)
+		return 0, foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "failed to create request").WithSeverity(foundationerrors.SeverityError).WithContext("url", linkURL).Build()
 	}
 
 	// Set user agent
@@ -297,7 +296,7 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("request failed: %w", err)
+		return 0, foundationerrors.WrapError(err, foundationerrors.CategoryNetwork, "request failed").WithSeverity(foundationerrors.SeverityError).WithContext("url", linkURL).Build()
 	}
 	defer func() {
 		_ = resp.Body.Close() // Ignore close errors after reading
@@ -313,7 +312,8 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 	}
 
 	if resp.StatusCode >= 400 {
-		return resp.StatusCode, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+		err := foundationerrors.NewError(foundationerrors.CategoryNetwork, "HTTP error response").WithSeverity(foundationerrors.SeverityError).WithContext("status_code", resp.StatusCode).WithContext("status", resp.Status).Build()
+		return resp.StatusCode, err
 	}
 
 	return resp.StatusCode, nil
@@ -415,7 +415,7 @@ func ParseFrontMatter(content []byte) (map[string]any, error) {
 
 	var fm map[string]any
 	if err := yaml.Unmarshal([]byte(parts[1]), &fm); err != nil {
-		return nil, fmt.Errorf("failed to parse front matter: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation, "failed to parse front matter").WithSeverity(foundationerrors.SeverityError).Build()
 	}
 
 	return fm, nil

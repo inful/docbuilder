@@ -1,7 +1,6 @@
 package linkverify
 
 import (
-	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"strings"
 
 	"golang.org/x/net/html"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Link represents an extracted link from HTML content.
@@ -25,7 +26,7 @@ type Link struct {
 func ExtractLinks(htmlPath string, baseURL string) ([]*Link, error) {
 	file, err := os.Open(filepath.Clean(htmlPath))
 	if err != nil {
-		return nil, fmt.Errorf("failed to open HTML file: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryFileSystem, "failed to open HTML file").WithSeverity(errors.SeverityError).WithContext("html_path", htmlPath).Build()
 	}
 	defer func() {
 		_ = file.Close() // Ignore close errors on read-only operation
@@ -38,12 +39,12 @@ func ExtractLinks(htmlPath string, baseURL string) ([]*Link, error) {
 func ExtractLinksFromReader(r io.Reader, baseURL string) ([]*Link, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryValidation, "failed to parse HTML").WithSeverity(errors.SeverityError).Build()
 	}
 
 	base, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid base URL: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryValidation, "invalid base URL").WithSeverity(errors.SeverityError).WithContext("base_url", baseURL).Build()
 	}
 
 	var links []*Link
