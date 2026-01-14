@@ -1,8 +1,9 @@
 package config
 
 import (
-	"errors"
 	"fmt"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // NormalizationResult captures adjustments & warnings from normalization pass.
@@ -12,7 +13,7 @@ type NormalizationResult struct{ Warnings []string }
 // It mutates the provided config in-place and returns a result describing any coercions.
 func NormalizeConfig(c *Config) (*NormalizationResult, error) {
 	if c == nil {
-		return nil, errors.New("config nil")
+		return nil, errors.NewError(errors.CategoryValidation, "configuration is nil").WithSeverity(errors.SeverityError).Build()
 	}
 	res := &NormalizationResult{}
 	normalizeBuildConfig(&c.Build, res)

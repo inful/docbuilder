@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const configVersion = "2.0"
@@ -156,13 +158,13 @@ func Load(configPath string) (*Config, error) {
 // LoadWithResult reads and validates a configuration file, returning warnings separately.
 func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, nil, fmt.Errorf("configuration file not found: %s", configPath)
+		return nil, nil, errors.NewError(errors.CategoryConfig, fmt.Sprintf("configuration file not found: %s", configPath)).WithSeverity(errors.SeverityError).Build()
 	}
 
 	// #nosec G304 - configPath is from CLI argument, user-controlled
 	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, nil, errors.WrapError(err, errors.CategoryFileSystem, "failed to read config file").WithSeverity(errors.SeverityError).Build()
 	}
 
 	// Expand environment variables in the YAML content
@@ -170,19 +172,19 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 
 	var config Config
 	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
-		return nil, nil, fmt.Errorf("failed to unmarshal v2 config: %w", err)
+		return nil, nil, errors.WrapError(err, errors.CategoryValidation, "failed to unmarshal v2 config").WithSeverity(errors.SeverityError).Build()
 	}
 
 	// Validate version
 	if config.Version != configVersion {
-		return nil, nil, fmt.Errorf("unsupported configuration version: %s (expected 2.0)", config.Version)
+		return nil, nil, errors.NewError(errors.CategoryConfig, fmt.Sprintf("unsupported configuration version: %s (expected 2.0)", config.Version)).WithSeverity(errors.SeverityError).Build()
 	}
 
 	result := &LoadResult{Warnings: []string{}}
 
 	// Normalization pass (case-fold enumerations, bounds, early coercions)
 	if nres, nerr := NormalizeConfig(&config); nerr != nil {
-		return nil, nil, fmt.Errorf("normalize: %w", nerr)
+		return nil, nil, errors.WrapError(nerr, errors.CategoryConfig, "failed to normalize configuration").WithSeverity(errors.SeverityError).Build()
 	} else if nres != nil && len(nres.Warnings) > 0 {
 		for _, w := range nres.Warnings {
 			result.Warnings = append(result.Warnings, fmt.Sprintf("config normalization: %s", w))
@@ -190,12 +192,12 @@ func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	}
 	// Apply defaults (after normalization so canonical values drive defaults)
 	if err := applyDefaults(&config); err != nil {
-		return nil, nil, fmt.Errorf("failed to apply defaults: %w", err)
+		return nil, nil, errors.WrapError(err, errors.CategoryConfig, "failed to apply defaults").WithSeverity(errors.SeverityError).Build()
 	}
 
 	// Validate configuration
 	if err := validateConfig(&config); err != nil {
-		return nil, nil, fmt.Errorf("configuration validation failed: %w", err)
+		return nil, nil, errors.WrapError(err, errors.CategoryValidation, "configuration validation failed").WithSeverity(errors.SeverityError).Build()
 	}
 
 	return result, &config, nil
@@ -215,7 +217,7 @@ func validateConfig(config *Config) error {
 // Init writes an example configuration file (version 2.0) to the given path. If force is false, it will not overwrite existing files.
 func Init(configPath string, force bool) error {
 	if _, err := os.Stat(configPath); err == nil && !force {
-		return fmt.Errorf("configuration file already exists: %s (use --force to overwrite)", configPath)
+		return errors.NewError(errors.CategoryConfig, fmt.Sprintf("configuration file already exists: %s (use --force to overwrite)", configPath)).WithSeverity(errors.SeverityError).Build()
 	}
 
 	exampleConfig := Config{
@@ -318,12 +320,12 @@ func Init(configPath string, force bool) error {
 
 	data, err := yaml.Marshal(&exampleConfig)
 	if err != nil {
-		return fmt.Errorf("failed to marshal v2 config: %w", err)
+		return errors.WrapError(err, errors.CategoryValidation, "failed to marshal v2 config").WithSeverity(errors.SeverityError).Build()
 	}
 
 	// #nosec G306 -- example config file for documentation purposes
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write v2 config file: %w", err)
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to write v2 config file").WithSeverity(errors.SeverityError).Build()
 	}
 
 	return nil
@@ -332,13 +334,13 @@ func Init(configPath string, force bool) error {
 // IsConfigVersion returns true if the config file version field in the given file starts with "2.".
 func IsConfigVersion(configPath string) (bool, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return false, fmt.Errorf("configuration file not found: %s", configPath)
+		return false, errors.NewError(errors.CategoryConfig, fmt.Sprintf("configuration file not found: %s", configPath)).WithSeverity(errors.SeverityError).Build()
 	}
 
 	// #nosec G304 - configPath is from CLI argument, user-controlled
 	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
-		return false, fmt.Errorf("failed to read config file: %w", err)
+		return false, errors.WrapError(err, errors.CategoryFileSystem, "failed to read config file").WithSeverity(errors.SeverityError).Build()
 	}
 
 	// Expand environment variables
