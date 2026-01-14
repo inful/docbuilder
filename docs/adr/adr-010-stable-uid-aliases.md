@@ -14,8 +14,9 @@ fingerprint: 3f689f6f134e4b48f5e8a82ea157c6f9f9297ecafcc544b29a3efb9a1cd79529
 
 # ADR-010: Stable Document Identity via UID Aliases
 
-**Status**: Proposed  
+**Status**: Accepted  
 **Date**: 2026-01-14  
+**Implemented**: 2026-01-14  
 **Decision Makers**: DocBuilder Core Team  
 **Technical Story**: Enable stable document URLs independent of repository/path changes
 
@@ -38,7 +39,7 @@ Every document already has a stable `uid` (UUID) in frontmatter that never chang
 
 ## Decision
 
-DocBuilder will automatically inject a Hugo `aliases` entry into each document's frontmatter during the content pipeline, mapping `/_uid/<uid>/` to the document's canonical URL.
+DocBuilder will automatically inject a Hugo `aliases` entry into each user-authored document's frontmatter, mapping `/_uid/<uid>/` to the document's canonical URL. Generated index files (`_index.md`) are excluded as they are ephemeral and don't require stable identifiers.
 
 Hugo uses the `aliases` field to generate redirect pages at alternative URLs that point to the canonical page. When a document moves:
 
@@ -48,28 +49,34 @@ Hugo uses the `aliases` field to generate redirect pages at alternative URLs tha
 
 ### Implementation
 
-**Injection Point**: During the content copy stage (after UID validation, before Hugo rendering)
+**Current Implementation**: The linter (`docbuilder lint --fix`) is the primary mechanism for adding uid-based aliases. This was implemented in January 2026 and handles both new UID generation and alias injection for existing UIDs.
 
-**Linter Extension**: DocBuilder already has a linting rule (`FrontmatterUIDRule` in `internal/lint/`) that validates the presence and format of `uid` in frontmatter. This rule should be extended to also ensure the `aliases` field includes the `/_uid/<uid>/` entry.
+**Linter Extension**: The `FrontmatterUIDRule` in `internal/lint/rule_frontmatter_uid.go` validates:
+1. Presence and format of `uid` in frontmatter
+2. Presence of the `/_uid/<uid>/` entry in the `aliases` field
+3. Excludes generated `_index.md` files from validation (they don't need UIDs)
 
-The linter's auto-fix mode (`docbuilder lint --fix`) will handle two cases:
+The linter's auto-fix mode (`docbuilder lint --fix`) handles two cases:
 1. **Missing UID**: Generate a new UUID, add it as `uid`, and add the corresponding `aliases: ["/_uid/<uuid>/"]` entry
 2. **UID exists but alias missing**: Add `/_uid/<uid>/` to the `aliases` list (appending to any existing user-defined aliases)
 
-**Implementation Changes Required**:
+**Implementation Complete**:
 
 1. **Linter Rule** (`internal/lint/rule_frontmatter_uid.go`):
-   - Extend `FrontmatterUIDRule.Check()` to also validate that `aliases` contains `/_uid/<uid>/`
-   - Report a new issue type when alias is missing
+   - ✅ Extended `FrontmatterUIDRule.Check()` to validate that `aliases` contains `/_uid/<uid>/`
+   - ✅ Added exclusion for `_index.md` files (generated indexes don't need UIDs)
+   - ✅ Reports missing alias issue when UID exists but alias is missing
 
 2. **Linter Fixer** (`internal/lint/fixer_uid.go`):
-   - Extend `addUIDIfMissing()` to also inject the alias when generating a new UID
-   - Add new function to append the uid-based alias to existing frontmatter (preserving user aliases)
+   - ✅ Extended `addUIDAndAliasIfMissing()` to inject both uid and alias when generating new UIDs
+   - ✅ Added `ensureFrontmatterUIDAlias()` to append uid-based alias to existing documents
+   - ✅ Preserves user-defined aliases (appends rather than replaces)
+   - ✅ Added dedicated fix phase for alias injection (Phase 2 in fixer pipeline)
 
 3. **Content Pipeline** (`internal/hugo/content_copy_pipeline.go`):
-   - Ensure alias injection happens during content copying (already processes frontmatter for fingerprints)
-   - Add uid-based alias to the frontmatter transform chain alongside fingerprint generation
-   - Preserve any existing user-defined aliases in the source documents
+   - ⚠️ Not implemented - deferred because linter-based approach is sufficient
+   - Generated `_index.md` files intentionally excluded from UID requirement
+   - User-authored source documents already have aliases before pipeline processes them
 
 **Frontmatter Modification**:
 ```yaml
@@ -106,7 +113,19 @@ The ingester can then:
 
 ### Configuration
 
-No configuration needed. The alias injection is **automatic and required** for all markdown documents that have a valid `uid`.
+No configuration needed. The alias injection is **automatic and required** for all user-authored markdown documents that have a valid `uid`. Generated `_index.md` files are automatically excluded from this requirement.
+
+### Usage
+
+To add uid-based aliases to existing documentation:
+
+```bash
+# Lint and auto-fix all documentation
+docbuilder lint path /path/to/docs --fix --yes
+
+# Dry-run to preview changes
+docbuilder lint path /path/to/docs --fix --dry-run
+```
 
 ## Rationale
 
@@ -134,8 +153,10 @@ No configuration needed. The alias injection is **automatic and required** for a
 ### Limitations
 
 - Requires that `uid` exists and is valid (enforced by linter, required before ingestion)
+- Generated `_index.md` files are excluded from UID/alias requirements (intentional - they are ephemeral)
 - Does not handle deletion; tombstones or reconciliation are delegated to the ingester (see ADR-009)
 - Alias URLs are site-relative; absolute URL generation requires `base_url` to be set
+- Content pipeline integration deferred; linter-based approach is currently sufficient
 
 ## Alternatives Considered
 
