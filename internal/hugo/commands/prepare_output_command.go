@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"os"
 
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
@@ -35,7 +35,10 @@ func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) h
 	if bs.Git.WorkspaceDir != "" {
 		// Ensure workspace directory exists
 		if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
-			err = fmt.Errorf("failed to create workspace directory %s: %w", bs.Git.WorkspaceDir, err)
+			err = foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create workspace directory").
+				WithContext("workspace_dir", bs.Git.WorkspaceDir).
+				Build()
 			c.LogStageFailure(err)
 			return hugo.ExecutionFailure(err)
 		}

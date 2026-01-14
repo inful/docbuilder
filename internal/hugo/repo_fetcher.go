@@ -2,7 +2,6 @@ package hugo
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -134,7 +134,10 @@ func gitStatRepo(path string) (bool, error) {
 		return false, err
 	}
 	if _, err := os.Stat(path + "/.git"); err != nil { // missing .git
-		return false, fmt.Errorf("no git dir: %w", err)
+		return false, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"git directory not found in repository path").
+			WithContext("path", path).
+			Build()
 	}
 	return true, nil
 }

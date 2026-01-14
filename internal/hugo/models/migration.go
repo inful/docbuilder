@@ -1,9 +1,10 @@
 package models
 
 import (
-	"errors"
 	"fmt"
 	"time"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const (
@@ -150,7 +151,9 @@ func (m *MigrationHelper) CreateBasePatch(title, repository, forge, section stri
 // This provides the same functionality as the legacy patch application system.
 func (m *MigrationHelper) ApplyPatchSequence(base *FrontMatter, patches ...*FrontMatterPatch) (*FrontMatter, error) {
 	if base == nil {
-		return nil, errors.New("base front matter cannot be nil")
+		return nil, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"base front matter cannot be nil").
+			Build()
 	}
 
 	result := base.Clone()
@@ -163,7 +166,10 @@ func (m *MigrationHelper) ApplyPatchSequence(base *FrontMatter, patches ...*Fron
 		var err error
 		result, err = patch.Apply(result)
 		if err != nil {
-			return nil, fmt.Errorf("failed to apply patch %d: %w", i, err)
+			return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"failed to apply front matter patch in sequence").
+				WithContext("patch_index", i).
+				Build()
 		}
 	}
 
@@ -246,7 +252,10 @@ func (m *MigrationHelper) parseMergeMode(mode string) (MergeMode, error) {
 	case "set_if_missing":
 		return MergeModeSetIfMissing, nil
 	default:
-		return MergeModeDeep, fmt.Errorf("unknown merge mode: %s", mode)
+		return MergeModeDeep, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"unknown merge mode").
+			WithContext("mode", mode).
+			Build()
 	}
 }
 
@@ -260,6 +269,9 @@ func (m *MigrationHelper) parseArrayMergeStrategy(strategy string) (ArrayMergeSt
 	case mergeStrategyReplace:
 		return ArrayMergeStrategyReplace, nil
 	default:
-		return ArrayMergeStrategyUnion, fmt.Errorf("unknown array merge strategy: %s", strategy)
+		return ArrayMergeStrategyUnion, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"unknown array merge strategy").
+			WithContext("strategy", strategy).
+			Build()
 	}
 }

@@ -2,9 +2,10 @@ package hugo
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // runStages executes stages in order, recording timing and stopping on first fatal error.
@@ -44,7 +45,11 @@ func runStages(ctx context.Context, bs *BuildState, stages []StageDef) error {
 			if out.Error != nil {
 				return out.Error
 			}
-			return fmt.Errorf("stage %s aborted", st.Name)
+			return foundationerrors.NewError(foundationerrors.CategoryValidation,
+				"stage aborted without error").
+				WithContext("stage", string(st.Name)).
+				WithSeverity(foundationerrors.SeverityError).
+				Build()
 		}
 		if st.Name == StageCloneRepos && bs.Git.AllReposUnchanged { // early skip optimization
 			if bs.Generator != nil && bs.Generator.existingSiteValidForSkip() {

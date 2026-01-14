@@ -1,11 +1,12 @@
 package models
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"strings"
 	"time"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const unknownMode = "unknown"
@@ -214,7 +215,9 @@ func (p *FrontMatterPatch) WithArrayMergeStrategy(strategy ArrayMergeStrategy) *
 // Apply applies this patch to the given FrontMatter, returning a new instance.
 func (p *FrontMatterPatch) Apply(fm *FrontMatter) (*FrontMatter, error) {
 	if fm == nil {
-		return nil, errors.New("cannot apply patch to nil front matter")
+		return nil, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"cannot apply patch to nil front matter").
+			Build()
 	}
 
 	// Clone the original to avoid mutation
@@ -229,7 +232,10 @@ func (p *FrontMatterPatch) Apply(fm *FrontMatter) (*FrontMatter, error) {
 	case MergeModeDeep:
 		return p.applyDeep(result), nil
 	default:
-		return nil, fmt.Errorf("unknown merge mode: %v", p.MergeMode)
+		return nil, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"unknown merge mode for patch").
+			WithContext("merge_mode", fmt.Sprintf("%v", p.MergeMode)).
+			Build()
 	}
 }
 

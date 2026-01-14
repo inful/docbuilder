@@ -1,31 +1,31 @@
 package errors
 
 // Package errors provides sentinel errors for Hugo site generation stages.
-// These enable consistent classification (expanded in Phase 4) while keeping
-// user‑facing messages descriptive via wrapping.
+// These are classified errors that enable consistent error handling throughout
+// the Hugo generation pipeline.
 
-import "errors"
+import foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 
 var (
 	// ErrHugoBinaryNotFound indicates the hugo executable was not detected on PATH.
-	ErrHugoBinaryNotFound = errors.New("hugo binary not found")
+	ErrHugoBinaryNotFound = foundationerrors.NewError(foundationerrors.CategoryValidation, "hugo binary not found")
 	// ErrHugoExecutionFailed indicates the hugo command returned a non‑zero exit status.
-	ErrHugoExecutionFailed = errors.New("hugo execution failed")
+	ErrHugoExecutionFailed = foundationerrors.NewError(foundationerrors.CategoryValidation, "hugo execution failed")
 	// ErrConfigMarshalFailed indicates marshaling the generated Hugo configuration failed.
-	ErrConfigMarshalFailed = errors.New("hugo config marshal failed")
+	ErrConfigMarshalFailed = foundationerrors.NewError(foundationerrors.CategoryValidation, "hugo config marshal failed")
 	// ErrConfigWriteFailed indicates writing the hugo.yaml file failed.
-	ErrConfigWriteFailed = errors.New("hugo config write failed")
+	ErrConfigWriteFailed = foundationerrors.NewError(foundationerrors.CategoryFileSystem, "hugo config write failed")
 
 	// ErrContentTransformFailed indicates a content transformer failed during pipeline execution.
-	ErrContentTransformFailed = errors.New("content transform failed")
+	ErrContentTransformFailed = foundationerrors.NewError(foundationerrors.CategoryValidation, "content transform failed")
 	// ErrContentWriteFailed indicates writing processed content to the Hugo content directory failed.
-	ErrContentWriteFailed = errors.New("content write failed")
+	ErrContentWriteFailed = foundationerrors.NewError(foundationerrors.CategoryFileSystem, "content write failed")
 	// ErrIndexGenerationFailed indicates generating index files (main, repository, section) failed.
-	ErrIndexGenerationFailed = errors.New("index generation failed")
+	ErrIndexGenerationFailed = foundationerrors.NewError(foundationerrors.CategoryValidation, "index generation failed")
 	// ErrLayoutCopyFailed indicates copying theme layouts to the Hugo site failed.
-	ErrLayoutCopyFailed = errors.New("layout copy failed")
+	ErrLayoutCopyFailed = foundationerrors.NewError(foundationerrors.CategoryFileSystem, "layout copy failed")
 	// ErrStagingFailed indicates staging directory operations failed.
-	ErrStagingFailed = errors.New("staging operation failed")
+	ErrStagingFailed = foundationerrors.NewError(foundationerrors.CategoryFileSystem, "staging operation failed")
 	// ErrReportPersistFailed indicates writing the build report failed.
-	ErrReportPersistFailed = errors.New("build report persist failed")
+	ErrReportPersistFailed = foundationerrors.NewError(foundationerrors.CategoryFileSystem, "build report persist failed")
 )

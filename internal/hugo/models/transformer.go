@@ -1,11 +1,10 @@
 package models
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // TransformStage represents a major phase in the typed transformation pipeline.
@@ -154,17 +153,24 @@ func NewTypedTransformerRegistry() *TypedTransformerRegistry {
 // Register adds a transformer to the registry.
 func (r *TypedTransformerRegistry) Register(transformer TypedTransformer) error {
 	if transformer == nil {
-		return errors.New("transformer cannot be nil")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"transformer cannot be nil").
+			Build()
 	}
 
 	name := transformer.Name()
 	if name == "" {
-		return errors.New("transformer name cannot be empty")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"transformer name cannot be empty").
+			Build()
 	}
 
 	// Check for conflicts
 	if _, exists := r.transformers[name]; exists {
-		return fmt.Errorf("transformer with name %q already registered", name)
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"transformer already registered").
+			WithContext("transformer_name", name).
+			Build()
 	}
 
 	r.transformers[name] = transformer
@@ -248,7 +254,10 @@ func buildTypedPipeline(transformers []TypedTransformer) ([]TypedTransformer, er
 
 		sorted, err := topologicalSortTyped(stageTransforms)
 		if err != nil {
-			return nil, fmt.Errorf("stage %s: %w", stage, err)
+			return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"failed to sort transformers for stage").
+				WithContext("stage", stage).
+				Build()
 		}
 
 		result = append(result, sorted...)
@@ -351,7 +360,9 @@ func topologicalSortTyped(transformers []TypedTransformer) ([]TypedTransformer, 
 
 	// Check for cycles
 	if len(result) != len(transformers) {
-		return nil, errors.New("circular dependency detected in typed transformers")
+		return nil, foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"circular dependency detected in transformer dependencies").
+			Build()
 	}
 
 	return result, nil
@@ -373,7 +384,9 @@ func (r *TypedTransformerRegistry) BuildExecutionPlan(filter []string) ([]TypedT
 	// Use dependency-based ordering (V2)
 	available, err := r.ListByDependencies()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build execution plan: %w", err)
+		return nil, foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to build execution plan").
+			Build()
 	}
 
 	// Apply filter if provided
@@ -468,7 +481,10 @@ func (p *ContentPage) ApplyFrontMatterPatches() error {
 	for i, patch := range p.FrontMatterPatches {
 		applied, err := patch.Apply(result)
 		if err != nil {
-			return fmt.Errorf("failed to apply patch %d: %w", i, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"failed to apply front matter patch").
+				WithContext("patch_index", i).
+				Build()
 		}
 		result = applied
 	}
@@ -572,12 +588,16 @@ func (p *ContentPage) Clone() *ContentPage {
 // Validate performs basic validation of the content page.
 func (p *ContentPage) Validate() error {
 	if p.File.Path == "" {
-		return errors.New("file path is required")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"file path is required").
+			Build()
 	}
 
 	if p.FrontMatter != nil {
 		if err := p.FrontMatter.Validate(); err != nil {
-			return fmt.Errorf("front matter validation failed: %w", err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"front matter validation failed").
+				Build()
 		}
 	}
 

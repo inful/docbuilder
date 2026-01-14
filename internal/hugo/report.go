@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -206,31 +207,50 @@ func (r *BuildReport) Persist(root string) error {
 		r.deriveOutcome()
 	}
 	if err := os.MkdirAll(root, 0o750); err != nil {
-		return fmt.Errorf("ensure root for report: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to create directory for build report").
+			WithContext("root", root).
+			Build()
 	}
 	// JSON
 	jb, err := json.MarshalIndent(r.sanitizedCopy(), "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal report json: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to marshal build report to JSON").
+			Build()
 	}
 	jsonPath := filepath.Join(root, "build-report.json")
 	tmpJSON := jsonPath + ".tmp"
 	// #nosec G306 -- build report is a public artifact
 	if err := os.WriteFile(tmpJSON, jb, 0o644); err != nil {
-		return fmt.Errorf("write temp report json: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to write temporary build report JSON").
+			WithContext("path", tmpJSON).
+			Build()
 	}
 	if err := os.Rename(tmpJSON, jsonPath); err != nil {
-		return fmt.Errorf("atomic rename json: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to atomically rename build report JSON").
+			WithContext("from", tmpJSON).
+			WithContext("to", jsonPath).
+			Build()
 	}
 	// Text summary
 	summaryPath := filepath.Join(root, "build-report.txt")
 	tmpTxt := summaryPath + ".tmp"
 	// #nosec G306 -- build report is a public artifact
 	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0o644); err != nil {
-		return fmt.Errorf("write temp report summary: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to write temporary build report summary").
+			WithContext("path", tmpTxt).
+			Build()
 	}
 	if err := os.Rename(tmpTxt, summaryPath); err != nil {
-		return fmt.Errorf("atomic rename summary: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to atomically rename build report summary").
+			WithContext("from", tmpTxt).
+			WithContext("to", summaryPath).
+			Build()
 	}
 	return nil
 }

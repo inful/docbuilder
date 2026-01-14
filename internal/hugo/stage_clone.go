@@ -3,7 +3,6 @@ package hugo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -20,12 +20,20 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		return nil
 	}
 	if bs.Git.WorkspaceDir == "" {
-		return newFatalStageError(StageCloneRepos, errors.New("workspace directory not set"))
+		return newFatalStageError(StageCloneRepos,
+			foundationerrors.NewError(foundationerrors.CategoryValidation,
+				"workspace directory not set").
+				WithSeverity(foundationerrors.SeverityError).
+				Build())
 	}
 	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
 	// Ensure workspace directory structure (previously via git client)
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
-		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
+		return newFatalStageError(StageCloneRepos,
+			foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create workspace directory").
+				WithContext("workspace_dir", bs.Git.WorkspaceDir).
+				Build())
 	}
 	strategy := config.CloneStrategyFresh
 	if bs.Generator != nil {
@@ -105,10 +113,23 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.postHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
+		return newWarnStageError(StageCloneRepos,
+			foundationerrors.WrapError(build.ErrClone, foundationerrors.CategoryGit,
+				"all repository clones failed").
+				WithContext("failed_count", bs.Report.FailedRepositories).
+				WithContext("total_count", len(bs.Git.Repositories)).
+				WithSeverity(foundationerrors.SeverityWarning).
+				Build())
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
+		return newWarnStageError(StageCloneRepos,
+			foundationerrors.WrapError(build.ErrClone, foundationerrors.CategoryGit,
+				"some repository clones failed").
+				WithContext("failed_count", bs.Report.FailedRepositories).
+				WithContext("total_count", len(bs.Git.Repositories)).
+				WithContext("succeeded_count", bs.Report.ClonedRepositories).
+				WithSeverity(foundationerrors.SeverityWarning).
+				Build())
 	}
 	return nil
 }

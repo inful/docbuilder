@@ -3,15 +3,14 @@ package commands
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
@@ -42,7 +41,9 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	c.LogStageStart()
 
 	if bs.Git.WorkspaceDir == "" {
-		err := errors.New("workspace directory not set")
+		err := foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"workspace directory not set for clone operation").
+			Build()
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}
@@ -51,7 +52,10 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 
 	// Ensure workspace directory structure
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
-		err = fmt.Errorf("ensure workspace: %w", err)
+		err = foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to ensure workspace directory structure").
+			WithContext("workspace_dir", bs.Git.WorkspaceDir).
+			Build()
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}
@@ -148,7 +152,11 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	}
 
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		err := fmt.Errorf("%w: all clones failed", build.ErrClone)
+		err := foundationerrors.WrapError(nil, foundationerrors.CategoryGit,
+			"all repository clones failed").
+			WithContext("failed_count", bs.Report.FailedRepositories).
+			WithContext("total_count", len(bs.Git.Repositories)).
+			Build()
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}

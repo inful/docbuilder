@@ -1,10 +1,11 @@
 package models
 
 import (
-	"errors"
 	"maps"
 	"slices"
 	"time"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // FrontMatter represents a strongly-typed Hugo front matter structure.
@@ -325,16 +326,22 @@ func (fm *FrontMatter) AddKeyword(keyword string) {
 // Validate performs basic validation of the front matter.
 func (fm *FrontMatter) Validate() error {
 	if fm.Title == "" {
-		return errors.New("title is required")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"title is required in front matter").
+			Build()
 	}
 
 	if fm.Date.IsZero() {
-		return errors.New("date is required")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"date is required in front matter").
+			Build()
 	}
 
 	// Repository should be set for DocBuilder-generated content
 	if fm.Repository == "" {
-		return errors.New("repository is required for DocBuilder content")
+		return foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"repository is required for DocBuilder content").
+			Build()
 	}
 
 	return nil

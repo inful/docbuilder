@@ -1,9 +1,10 @@
 package hugo
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // copyTaxonomyLayouts creates custom taxonomy term layouts to avoid Relearn v9's
@@ -58,13 +59,20 @@ func (g *Generator) copyTaxonomyLayouts() error {
 
 	for _, layoutsDir := range locations {
 		if err := os.MkdirAll(layoutsDir, 0o750); err != nil {
-			return fmt.Errorf("create layouts directory %s: %w", layoutsDir, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create layouts directory").
+				WithContext("directory", layoutsDir).
+				Build()
 		}
 
 		termPath := filepath.Join(layoutsDir, "term.html")
 		// #nosec G306 -- layout files are public templates
 		if err := os.WriteFile(termPath, []byte(termTemplate), 0o644); err != nil {
-			return fmt.Errorf("write term.html to %s: %w", layoutsDir, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to write term.html template").
+				WithContext("layouts_dir", layoutsDir).
+				WithContext("term_path", termPath).
+				Build()
 		}
 	}
 

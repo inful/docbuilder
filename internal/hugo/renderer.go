@@ -3,13 +3,12 @@ package hugo
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
 
-	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -33,13 +32,19 @@ type BinaryRenderer struct{}
 
 func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"hugo binary not found in PATH").
+			WithSeverity(foundationerrors.SeverityError).
+			Build()
 	}
 
 	// Check staging directory exists before Hugo runs
 	if stat, err := os.Stat(rootDir); err != nil {
 		slog.Error("Staging directory missing before Hugo execution", "dir", rootDir, "error", err)
-		return fmt.Errorf("staging directory not found: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"staging directory not found before Hugo execution").
+			WithContext("root_dir", rootDir).
+			Build()
 	} else {
 		slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 	}
@@ -76,13 +81,21 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 
 	if err != nil {
 		logHugoExecutionError(outStr, errStr)
-		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"hugo execution failed").
+			WithContext("root_dir", rootDir).
+			WithContext("stdout_length", len(outStr)).
+			WithContext("stderr_length", len(errStr)).
+			Build()
 	}
 
 	// Check staging directory still exists after Hugo runs
 	if stat, err := os.Stat(rootDir); err != nil {
 		slog.Error("Staging directory MISSING after Hugo execution", "dir", rootDir, "error", err)
-		return fmt.Errorf("staging directory disappeared during Hugo execution: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"staging directory disappeared during Hugo execution").
+			WithContext("root_dir", rootDir).
+			Build()
 	} else {
 		slog.Debug("Staging directory confirmed after Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 	}

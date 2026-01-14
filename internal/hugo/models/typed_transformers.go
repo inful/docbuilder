@@ -1,11 +1,10 @@
 package models
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 	"time"
 
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -105,7 +104,9 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	search := content[4:] // Skip initial "---\n"
 	endIndex := strings.Index(search, "\n---\n")
 	if endIndex == -1 {
-		return result.SetError(errors.New("unterminated front matter")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"unterminated front matter").
+			Build()).SetDuration(time.Since(startTime)), nil
 	}
 
 	frontMatterContent := search[:endIndex]
@@ -115,7 +116,9 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	var frontMatterMap map[string]any
 	if err := yaml.Unmarshal([]byte(frontMatterContent), &frontMatterMap); err != nil {
 		if t.config.FailOnError {
-			return result.SetError(fmt.Errorf("failed to parse front matter: %w", err)).SetDuration(time.Since(startTime)), nil
+			return result.SetError(foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"failed to parse front matter YAML").
+				Build()).SetDuration(time.Since(startTime)), nil
 		}
 
 		// Log warning but continue without front matter
@@ -135,7 +138,9 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	// Convert to typed front matter
 	frontMatter, err := FromMap(frontMatterMap)
 	if err != nil {
-		return result.SetError(fmt.Errorf("failed to convert front matter to typed structure: %w", err)).SetDuration(time.Since(startTime)), nil
+		return result.SetError(foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to convert front matter to typed structure").
+			Build()).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Update page state
@@ -254,7 +259,9 @@ func (t *FrontMatterBuilderV3) Transform(page *ContentPage, context *TransformCo
 	// Get configuration
 	config := context.Generator.GetConfig()
 	if config == nil {
-		return result.SetError(errors.New("configuration required but not available")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"configuration required but not available").
+			Build()).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Build base patch using migration helper
@@ -405,7 +412,9 @@ func (t *EditLinkInjectorV3) Transform(page *ContentPage, context *TransformCont
 
 	resolver := context.Generator.GetEditLinkResolver()
 	if resolver == nil {
-		return result.SetError(errors.New("edit link resolver required but not available")).SetDuration(time.Since(startTime)), nil
+		return result.SetError(foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"edit link resolver required but not available").
+			Build()).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Resolve edit URL
@@ -414,7 +423,10 @@ func (t *EditLinkInjectorV3) Transform(page *ContentPage, context *TransformCont
 		if t.config.SkipIfEmpty {
 			return result.SetSuccess().SetDuration(time.Since(startTime)), nil
 		}
-		return result.SetError(fmt.Errorf("failed to resolve edit URL for file %s", page.File.Path)).SetDuration(time.Since(startTime)), nil
+		return result.SetError(foundationerrors.WrapError(nil, foundationerrors.CategoryValidation,
+			"failed to resolve edit URL for file").
+			WithContext("file_path", page.File.Path).
+			Build()).SetDuration(time.Since(startTime)), nil
 	}
 
 	// Create patch with edit URL

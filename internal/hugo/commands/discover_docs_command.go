@@ -4,12 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"sort"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
@@ -49,7 +48,9 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.Config().Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		err = fmt.Errorf("%w: %w", build.ErrDiscovery, err)
+		err = foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"documentation discovery failed").
+			Build()
 		c.LogStageFailure(err)
 		return hugo.ExecutionFailure(err)
 	}

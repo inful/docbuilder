@@ -80,7 +80,7 @@ func TestProcessContent_GeneratorError(t *testing.T) {
 
 	_, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "generator 0 failed")
+	assert.Contains(t, err.Error(), "file generator failed in pipeline")
 }
 
 func TestProcessContent_TransformError(t *testing.T) {
@@ -242,8 +242,7 @@ func TestProcessTransforms_TransformError(t *testing.T) {
 
 	_, err := processor.processTransforms(docs)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "transform 0 failed")
-	assert.Contains(t, err.Error(), "test.md")
+	assert.Contains(t, err.Error(), "content transformation failed in pipeline")
 }
 
 func TestProcessTransforms_MultipleTransforms(t *testing.T) {

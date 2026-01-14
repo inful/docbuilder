@@ -1,13 +1,12 @@
 package hugo
 
 import (
-	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -27,7 +26,11 @@ func (g *Generator) createHugoStructure() error {
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
 		if err := os.MkdirAll(path, 0o750); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", path, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create Hugo directory structure").
+				WithContext("path", path).
+				WithContext("directory", dir).
+				Build()
 		}
 	}
 	slog.Debug("Created Hugo directory structure", "root", root)
@@ -79,7 +82,10 @@ func (g *Generator) finalizeStaging() error {
 		slog.String("output", g.outputDir))
 
 	if g.stageDir == "" {
-		return errors.New("no staging directory initialized")
+		return foundationerrors.NewError(foundationerrors.CategoryValidation,
+			"no staging directory initialized").
+			WithSeverity(foundationerrors.SeverityError).
+			Build()
 	}
 
 	// Check if staging directory still exists
@@ -88,7 +94,11 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("staging", g.stageDir),
 			slog.String("output", g.outputDir),
 			slog.String("error", err.Error()))
-		return fmt.Errorf("staging directory missing: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"staging directory missing at finalize").
+			WithContext("staging", g.stageDir).
+			WithContext("output", g.outputDir).
+			Build()
 	} else {
 		slog.Debug("Staging directory verified",
 			slog.String("path", g.stageDir),
@@ -111,7 +121,11 @@ func (g *Generator) finalizeStaging() error {
 				slog.String("from", g.outputDir),
 				slog.String("to", prev),
 				slog.String("error", err.Error()))
-			return fmt.Errorf("backup existing output: %w", err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to backup existing output").
+				WithContext("from", g.outputDir).
+				WithContext("to", prev).
+				Build()
 		}
 		slog.Debug("Successfully backed up current output")
 	} else {
@@ -128,7 +142,11 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("from", g.stageDir),
 			slog.String("to", g.outputDir),
 			slog.String("error", err.Error()))
-		return fmt.Errorf("promote staging: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to promote staging directory to output").
+			WithContext("from", g.stageDir).
+			WithContext("to", g.outputDir).
+			Build()
 	}
 	g.stageDir = ""
 	slog.Info("Successfully promoted staging directory",

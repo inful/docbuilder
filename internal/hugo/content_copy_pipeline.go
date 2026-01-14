@@ -2,7 +2,6 @@ package hugo
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,7 +10,7 @@ import (
 	"github.com/inful/mdfp"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
 )
 
@@ -147,7 +146,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		if err := g.copyAssetFile(*file, isSingleRepo); err != nil {
-			return fmt.Errorf("failed to copy asset %s: %w", file.Path, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to copy asset").
+				WithContext("asset_path", file.Path).
+				Build()
 		}
 	}
 
@@ -157,8 +159,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		file := &markdownFiles[i]
 		// Load content
 		if err := file.LoadContent(); err != nil {
-			return fmt.Errorf("%w: failed to load content for %s: %w",
-				herrors.ErrContentTransformFailed, file.Path, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to load content").
+				WithContext("file_path", file.Path).
+				Build()
 		}
 
 		// Convert to pipeline Document
@@ -177,8 +181,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 	processor := pipeline.NewProcessor(g.config)
 	processedDocs, err := processor.ProcessContent(discovered, repoMetadata, isSingleRepo)
 	if err != nil {
-		return fmt.Errorf("%w: pipeline processing failed: %w",
-			herrors.ErrContentTransformFailed, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"pipeline processing failed").
+			WithContext("input_count", len(discovered)).
+			Build()
 	}
 
 	slog.Info("Pipeline processing complete",
@@ -198,8 +204,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 
 		// Create directory if needed
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
-			return fmt.Errorf("%w: failed to create directory for %s: %w",
-				herrors.ErrContentWriteFailed, outputPath, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create directory").
+				WithContext("directory", filepath.Dir(outputPath)).
+				Build()
 		}
 
 		contentBytes := doc.Raw
@@ -207,8 +215,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 			original := string(contentBytes)
 			updated, err := mdfp.ProcessContent(original)
 			if err != nil {
-				return fmt.Errorf("%w: failed to generate frontmatter fingerprint for %s: %w",
-					herrors.ErrContentWriteFailed, outputPath, err)
+				return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+					"failed to generate frontmatter fingerprint").
+					WithContext("output_path", outputPath).
+					Build()
 			}
 			updated = preserveUIDAcrossFingerprintRewrite(original, updated)
 			contentBytes = []byte(updated)
@@ -217,8 +227,11 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		// Write file
 		// #nosec G306 -- content files are public documentation
 		if err := os.WriteFile(outputPath, contentBytes, 0o644); err != nil {
-			return fmt.Errorf("%w: failed to write file %s: %w",
-				herrors.ErrContentWriteFailed, outputPath, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to write file").
+				WithContext("output_path", outputPath).
+				WithContext("size_bytes", len(contentBytes)).
+				Build()
 		}
 
 		slog.Debug("Wrote processed document",
@@ -243,7 +256,9 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 
 	// Generate and write static assets (e.g., View Transitions)
 	if err := g.generateStaticAssets(processor); err != nil {
-		return fmt.Errorf("failed to generate static assets: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"failed to generate static assets").
+			Build()
 	}
 
 	return nil
@@ -253,7 +268,9 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
 	assets, err := processor.GenerateStaticAssets()
 	if err != nil {
-		return fmt.Errorf("static asset generation failed: %w", err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+			"static asset generation failed").
+			Build()
 	}
 
 	if len(assets) == 0 {
@@ -267,15 +284,20 @@ func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
 
 		// Create directory if needed
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
-			return fmt.Errorf("%w: failed to create directory for %s: %w",
-				herrors.ErrContentWriteFailed, outputPath, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to create directory for asset").
+				WithContext("directory", filepath.Dir(outputPath)).
+				Build()
 		}
 
 		// Write asset file
 		// #nosec G306 -- static assets are public files
 		if err := os.WriteFile(outputPath, asset.Content, 0o644); err != nil {
-			return fmt.Errorf("%w: failed to write asset %s: %w",
-				herrors.ErrContentWriteFailed, outputPath, err)
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+				"failed to write asset").
+				WithContext("output_path", outputPath).
+				WithContext("size_bytes", len(asset.Content)).
+				Build()
 		}
 
 		slog.Debug("Wrote static asset",
@@ -338,8 +360,10 @@ func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 	// Read the asset file
 	content, err := os.ReadFile(file.Path)
 	if err != nil {
-		return fmt.Errorf("%w: failed to read asset %s: %w",
-			herrors.ErrContentWriteFailed, file.Path, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to read asset").
+			WithContext("asset_path", file.Path).
+			Build()
 	}
 
 	// Calculate output path - assets go in same location as markdown files
@@ -347,15 +371,20 @@ func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 
 	// Create directory if needed
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
-		return fmt.Errorf("%w: failed to create directory for %s: %w",
-			herrors.ErrContentWriteFailed, outputPath, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to create directory for asset").
+			WithContext("directory", filepath.Dir(outputPath)).
+			Build()
 	}
 
 	// Copy asset file as-is
 	// #nosec G306 -- asset files are public documentation resources
 	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
-		return fmt.Errorf("%w: failed to write asset %s: %w",
-			herrors.ErrContentWriteFailed, outputPath, err)
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem,
+			"failed to write asset").
+			WithContext("output_path", outputPath).
+			WithContext("size_bytes", len(content)).
+			Build()
 	}
 
 	slog.Debug("Copied asset file",

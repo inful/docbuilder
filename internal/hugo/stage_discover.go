@@ -4,17 +4,21 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"sort"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	if len(bs.Git.RepoPaths) == 0 {
-		return newWarnStageError(StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
+		return newWarnStageError(StageDiscoverDocs,
+			foundationerrors.WrapError(build.ErrDiscovery, foundationerrors.CategoryValidation,
+				"no repositories cloned for discovery").
+				WithSeverity(foundationerrors.SeverityWarning).
+				Build())
 	}
 	select {
 	case <-ctx.Done():
@@ -24,7 +28,11 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.config.Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %w", build.ErrDiscovery, err))
+		return newFatalStageError(StageDiscoverDocs,
+			foundationerrors.WrapError(err, foundationerrors.CategoryValidation,
+				"document discovery failed").
+				WithContext("repo_count", len(bs.Git.RepoPaths)).
+				Build())
 	}
 	prevCount := len(bs.Docs.Files)
 	prevFiles := bs.Docs.Files
