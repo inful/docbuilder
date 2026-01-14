@@ -287,6 +287,7 @@ func stripFingerprintFrontmatter(content string) string {
 
 	lines := strings.Split(frontmatter, "\n")
 	kept := make([]string, 0, len(lines))
+	inAliases := false
 	for _, line := range lines {
 		trim := strings.TrimSpace(line)
 		if strings.HasPrefix(trim, "fingerprint:") {
@@ -294,6 +295,16 @@ func stripFingerprintFrontmatter(content string) string {
 		}
 		if strings.HasPrefix(trim, "uid:") {
 			continue
+		}
+		if strings.HasPrefix(trim, "aliases:") {
+			inAliases = true
+			continue
+		}
+		if inAliases && strings.HasPrefix(trim, "- ") {
+			continue // Skip alias items
+		}
+		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") {
+			inAliases = false // End of aliases section
 		}
 		if trim == "" {
 			// keep empty lines for stable formatting unless we drop entire frontmatter

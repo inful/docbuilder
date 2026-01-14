@@ -139,7 +139,9 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	fileIssues := make(map[string][]Issue)
 	fingerprintTargets := make(map[string]struct{})
 	uidTargets := make(map[string]struct{})
+	uidAliasTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
+	uidAliasIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError {
@@ -150,21 +152,28 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 			uidTargets[issue.FilePath] = struct{}{}
 			uidIssueCounts[issue.FilePath]++
 		}
+		if issue.Rule == frontmatterUIDRuleName && issue.Message == missingUIDaliasMessage {
+			uidAliasTargets[issue.FilePath] = struct{}{}
+			uidAliasIssueCounts[issue.FilePath]++
+		}
 		if issue.Rule == frontmatterFingerprintRuleName {
 			fingerprintTargets[issue.FilePath] = struct{}{}
 			fingerprintIssueCounts[issue.FilePath]++
 		}
 	}
-	// Phase 1: add missing frontmatter uids.
+	// Phase 1: add missing frontmatter uids (and corresponding aliases).
 	// We never rewrite an existing uid (even if invalid), because uid must be stable.
 	f.applyUIDFixes(uidTargets, uidIssueCounts, fixResult, fingerprintTargets)
 
-	// Phase 2: perform renames + link updates.
+	// Phase 2: add missing uid-based aliases (for files that already have valid uids).
+	f.applyUIDAliasesFixes(uidAliasTargets, uidAliasIssueCounts, fixResult, fingerprintTargets)
+
+	// Phase 3: perform renames + link updates.
 	for filePath, issues := range fileIssues {
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
 	}
 
-	// Phase 3: regenerate fingerprints LAST, for all affected files.
+	// Phase 4: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)
 	f.applyFingerprintFixes(fingerprintTargets, fingerprintIssueCounts, fixResult)
 
