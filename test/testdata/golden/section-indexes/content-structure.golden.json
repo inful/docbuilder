@@ -4,8 +4,7 @@
       "frontmatter": {
         "description": "Testing automatic _index.md generation for sections",
         "title": "Section Index Testing",
-        "type": "docs",
-        "uid": "e3effd3f-fa04-54fc-9feb-9ae7b4ec902d"
+        "type": "docs"
       },
       "contentHash": "sha256:1990848bd13b3d56"
     },
@@ -14,8 +13,7 @@
         "description": "Documentation for advanced",
         "repository": "section-docs",
         "title": "advanced",
-        "type": "docs",
-        "uid": "8bef2b80-2819-51a0-b1fe-ef25f3deac27"
+        "type": "docs"
       },
       "contentHash": "sha256:5092f9dabda898c1"
     },
@@ -42,8 +40,7 @@
         "description": "Documentation for getting-started",
         "repository": "section-docs",
         "title": "getting-started",
-        "type": "docs",
-        "uid": "d73ce777-f129-5381-a7f5-af50508bf093"
+        "type": "docs"
       },
       "contentHash": "sha256:4b71e029b87cf014"
     },

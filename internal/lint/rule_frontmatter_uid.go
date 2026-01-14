@@ -24,6 +24,10 @@ func (r *FrontmatterUIDRule) Name() string {
 }
 
 func (r *FrontmatterUIDRule) AppliesTo(filePath string) bool {
+	// Skip generated index files - they don't need UIDs
+	if strings.HasSuffix(filePath, "/_index.md") || strings.HasSuffix(filePath, "\\_index.md") {
+		return false
+	}
 	return IsDocFile(filePath)
 }
 
