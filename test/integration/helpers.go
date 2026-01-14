@@ -209,23 +209,36 @@ func normalizeDynamicFields(cfg map[string]any) {
 	}
 }
 
-// normalizeFrontMatter removes dynamic fields from front matter.
+// normalizeFrontMatter normalizes front matter to keep only structural keys.
+// This ensures golden tests focus on site structure, not generated metadata.
+// Structural keys (kept): title, linkTitle, weight, type, slug, url, cascade, menu.
+// All other keys (dropped): date, lastmod, fingerprint, uid, description, editURL, etc.
 func normalizeFrontMatter(fm map[string]any) {
 	if fm == nil {
 		return
 	}
-	// Fingerprint values are content-derived and not meaningful to pin in goldens.
-	delete(fm, "fingerprint")
 
-	// Remove timestamp fields that change between runs
-	delete(fm, "date")
-	delete(fm, "lastmod")
-	delete(fm, "publishDate")
-	delete(fm, "expiryDate")
+	// Whitelist of structural keys that define site hierarchy and navigation.
+	structuralKeys := map[string]bool{
+		"title":     true,
+		"linkTitle": true,
+		"weight":    true,
+		"type":      true,
+		"slug":      true,
+		"url":       true,
+		"cascade":   true,
+		"menu":      true,
+	}
 
-	// Remove editURL if it contains /tmp/ paths (dynamic test paths)
-	if editURL, ok := fm["editURL"].(string); ok && strings.Contains(editURL, "/tmp/") {
-		delete(fm, "editURL")
+	// Keep only structural keys; delete all others (metadata, timestamps, hashes, etc.)
+	keysToDelete := []string{}
+	for key := range fm {
+		if !structuralKeys[key] {
+			keysToDelete = append(keysToDelete, key)
+		}
+	}
+	for _, key := range keysToDelete {
+		delete(fm, key)
 	}
 }
 

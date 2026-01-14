@@ -141,22 +141,28 @@ type LinkVerificationConfig struct {
 	MaxRedirects       int    `yaml:"max_redirects"`        // Maximum redirects to follow
 }
 
-// Load reads and validates a configuration file (version 2.x), expanding environment variables and applying normalization and defaults.
-func Load(configPath string) (*Config, error) {
-	// Load .env file if it exists
-	if err := loadEnvFile(); err != nil {
-		// Don't fail if .env doesn't exist, just log it
-		fmt.Fprintf(os.Stderr, "Note: .env file not found or couldn't be loaded: %v\n", err)
-	}
+// LoadResult contains the outcome of a Load operation, including warnings.
+type LoadResult struct {
+	Warnings []string
+}
 
+// Load reads and validates a configuration file (version 2.x), expanding environment variables and applying normalization and defaults.
+// Load is a pure library function: it does not print, load .env files, or modify process state.
+func Load(configPath string) (*Config, error) {
+	_, cfg, err := LoadWithResult(configPath)
+	return cfg, err
+}
+
+// LoadWithResult reads and validates a configuration file, returning warnings separately.
+func LoadWithResult(configPath string) (*LoadResult, *Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("configuration file not found: %s", configPath)
+		return nil, nil, fmt.Errorf("configuration file not found: %s", configPath)
 	}
 
 	// #nosec G304 - configPath is from CLI argument, user-controlled
 	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		return nil, nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	// Expand environment variables in the YAML content
@@ -164,33 +170,35 @@ func Load(configPath string) (*Config, error) {
 
 	var config Config
 	if err := yaml.Unmarshal([]byte(expandedData), &config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal v2 config: %w", err)
+		return nil, nil, fmt.Errorf("failed to unmarshal v2 config: %w", err)
 	}
 
 	// Validate version
 	if config.Version != configVersion {
-		return nil, fmt.Errorf("unsupported configuration version: %s (expected 2.0)", config.Version)
+		return nil, nil, fmt.Errorf("unsupported configuration version: %s (expected 2.0)", config.Version)
 	}
+
+	result := &LoadResult{Warnings: []string{}}
 
 	// Normalization pass (case-fold enumerations, bounds, early coercions)
 	if nres, nerr := NormalizeConfig(&config); nerr != nil {
-		return nil, fmt.Errorf("normalize: %w", nerr)
+		return nil, nil, fmt.Errorf("normalize: %w", nerr)
 	} else if nres != nil && len(nres.Warnings) > 0 {
 		for _, w := range nres.Warnings {
-			fmt.Fprintf(os.Stderr, "config normalization: %s\n", w)
+			result.Warnings = append(result.Warnings, fmt.Sprintf("config normalization: %s", w))
 		}
 	}
 	// Apply defaults (after normalization so canonical values drive defaults)
 	if err := applyDefaults(&config); err != nil {
-		return nil, fmt.Errorf("failed to apply defaults: %w", err)
+		return nil, nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
 
 	// Validate configuration
 	if err := validateConfig(&config); err != nil {
-		return nil, fmt.Errorf("configuration validation failed: %w", err)
+		return nil, nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
-	return &config, nil
+	return result, &config, nil
 }
 
 // applyDefaults applies default values to a Config after normalization.

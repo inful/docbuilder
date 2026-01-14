@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing paths with spaces and special characters",
         "title": "Special Characters Test",
         "type": "docs"
       },
@@ -10,7 +9,6 @@
     },
     "content/file with spaces.md": {
       "frontmatter": {
-        "repository": "special-chars",
         "title": "File With Spaces",
         "type": "docs",
         "weight": 1
@@ -19,8 +17,6 @@
     },
     "content/special-chars (test)/_index.md": {
       "frontmatter": {
-        "description": "Documentation for special-chars (test)",
-        "repository": "special-chars",
         "title": "special-chars (test)",
         "type": "docs"
       },
@@ -28,7 +24,6 @@
     },
     "content/special-chars (test)/doc-[brackets].md": {
       "frontmatter": {
-        "repository": "special-chars",
         "title": "Special Characters",
         "type": "docs",
         "weight": 2

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/joho/godotenv"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
@@ -71,6 +73,21 @@ func parseLogLevel(verbose bool) slog.Level {
 
 	// Default to info level
 	return slog.LevelInfo
+}
+
+// LoadEnvFile loads environment variables from .env or .env.local file.
+// Returns nil if successful; returns error if file doesn't exist but doesn't fail the command.
+func LoadEnvFile() error {
+	envPaths := []string{".env", ".env.local"}
+	for _, p := range envPaths {
+		if _, err := os.Stat(p); err == nil {
+			if err := godotenv.Load(p); err != nil {
+				return fmt.Errorf("failed loading %s: %w", p, err)
+			}
+			return nil
+		}
+	}
+	return errors.New("no .env file found")
 }
 
 // ResolveOutputDir determines the final output directory based on CLI flag, config, and base_directory.

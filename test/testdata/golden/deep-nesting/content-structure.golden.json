@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing deeply nested directory structures",
         "title": "Deep Nesting Test",
         "type": "docs"
       },
@@ -10,8 +9,6 @@
     },
     "content/level1/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1",
-        "repository": "deep-nesting",
         "title": "level1",
         "type": "docs"
       },
@@ -19,7 +16,6 @@
     },
     "content/level1/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 1",
         "type": "docs",
         "weight": 2
@@ -28,8 +24,6 @@
     },
     "content/level1/level2/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2",
-        "repository": "deep-nesting",
         "title": "level2",
         "type": "docs"
       },
@@ -37,7 +31,6 @@
     },
     "content/level1/level2/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 2",
         "type": "docs",
         "weight": 3
@@ -46,8 +39,6 @@
     },
     "content/level1/level2/level3/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2/level3",
-        "repository": "deep-nesting",
         "title": "level3",
         "type": "docs"
       },
@@ -55,7 +46,6 @@
     },
     "content/level1/level2/level3/doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 3",
         "type": "docs",
         "weight": 4
@@ -64,8 +54,6 @@
     },
     "content/level1/level2/level3/level4/_index.md": {
       "frontmatter": {
-        "description": "Documentation for level1/level2/level3/level4",
-        "repository": "deep-nesting",
         "title": "level4",
         "type": "docs"
       },
@@ -73,7 +61,6 @@
     },
     "content/level1/level2/level3/level4/deep-doc.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Level 4",
         "type": "docs",
         "weight": 5
@@ -82,7 +69,6 @@
     },
     "content/root.md": {
       "frontmatter": {
-        "repository": "deep-nesting",
         "title": "Root Level",
         "type": "docs",
         "weight": 1

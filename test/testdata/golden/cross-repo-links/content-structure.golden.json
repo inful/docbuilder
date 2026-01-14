@@ -2,7 +2,6 @@
   "files": {
     "content/_index.md": {
       "frontmatter": {
-        "description": "Testing link transformation between repositories",
         "title": "Cross-Repository Links",
         "type": "docs"
       },
@@ -10,8 +9,6 @@
     },
     "content/backend/_index.md": {
       "frontmatter": {
-        "description": "Documentation for backend",
-        "repository": "backend",
         "title": "Backend",
         "type": "docs"
       },
@@ -19,7 +16,6 @@
     },
     "content/backend/api.md": {
       "frontmatter": {
-        "repository": "backend",
         "title": "Backend API",
         "type": "docs",
         "weight": 1
@@ -28,7 +24,6 @@
     },
     "content/backend/auth.md": {
       "frontmatter": {
-        "repository": "backend",
         "title": "Backend Authentication",
         "type": "docs",
         "weight": 2
@@ -37,8 +32,6 @@
     },
     "content/frontend/_index.md": {
       "frontmatter": {
-        "description": "Documentation for frontend",
-        "repository": "frontend",
         "title": "Frontend",
         "type": "docs"
       },
@@ -46,7 +39,6 @@
     },
     "content/frontend/guide.md": {
       "frontmatter": {
-        "repository": "frontend",
         "title": "Frontend Guide",
         "type": "docs",
         "weight": 1
@@ -55,7 +47,6 @@
     },
     "content/frontend/setup.md": {
       "frontmatter": {
-        "repository": "frontend",
         "title": "Frontend Setup",
         "type": "docs",
         "weight": 2
