@@ -155,13 +155,19 @@ func (c *ForgejoClient) ListRepositories(ctx context.Context, organizations []st
 		}
 	}
 
-	for _, org := range organizations {
-		repos, oerr := c.getOrgRepositories(ctx, org)
-		if oerr != nil {
-			slog.Warn("Forgejo: skipping organization due to error", "forge", c.GetName(), "organization", org, "error", oerr)
+	// Organization listing is often the slowest part. Run those in parallel,
+	// but preserve existing behavior: org failures are logged and skipped.
+	results := runOrdered(organizations, 4, func(org string) ([]*Repository, error) {
+		return c.getOrgRepositories(ctx, org)
+	})
+
+	for i, org := range organizations {
+		res := results[i]
+		if res.Err != nil {
+			slog.Warn("Forgejo: skipping organization due to error", "forge", c.GetName(), "organization", org, "error", res.Err)
 			continue
 		}
-		for _, r := range repos {
+		for _, r := range res.Value {
 			repoMap[r.FullName] = r
 		}
 	}

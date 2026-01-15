@@ -853,17 +853,16 @@ Register with event store.
 ### Performance
 
 **Incremental Builds:**
-- Enable with `build.incremental: true`
-- Typically 10-100x faster for unchanged repos
-- Requires persistent workspace
+- Use `build.clone_strategy: auto` or `build.clone_strategy: update` with a persistent `build.workspace_dir`
+- Unchanged repositories can skip fetch/processing (cache-aware)
 
 **Pruning:**
-- Enable with `pruning.enabled: true`
+ - Enable with `build.prune_non_doc_paths: true`
 - Removes non-doc directories
 - Reduces workspace size by 50-90%
 
 **Shallow Clones:**
-- Enable with `git.shallow: true`
+- Enable with `build.shallow_depth: 1` (default when omitted)
 - Depth 1 clones
 - Faster for large repositories
 

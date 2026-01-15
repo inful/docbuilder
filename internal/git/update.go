@@ -70,12 +70,24 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 }
 
 // fetchOrigin performs a fetch of the origin remote with appropriate depth, refspec, and authentication.
-func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository) error {
+//
+// Performance note: fetching "+refs/heads/*" can be very expensive for repositories with many branches.
+// DocBuilder generally only needs a single target branch, so we fetch only that branch when provided.
+func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository, branch string) error {
 	depth := 0
 	if c.buildCfg != nil && c.buildCfg.ShallowDepth > 0 {
 		depth = c.buildCfg.ShallowDepth
 	}
-	fetchOpts := &git.FetchOptions{RemoteName: "origin", Tags: git.NoTags, RefSpecs: []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}}
+
+	refSpecs := []ggitcfg.RefSpec{"+refs/heads/*:refs/remotes/origin/*"}
+	if branch != "" {
+		// Fetch only the required branch.
+		refSpecs = []ggitcfg.RefSpec{ggitcfg.RefSpec(
+			fmt.Sprintf("+refs/heads/%s:refs/remotes/origin/%s", branch, branch),
+		)}
+	}
+
+	fetchOpts := &git.FetchOptions{RemoteName: "origin", Tags: git.NoTags, RefSpecs: refSpecs}
 	if depth > 0 {
 		fetchOpts.Depth = depth
 	}
@@ -213,7 +225,7 @@ func isAncestor(repo *git.Repository, a, b plumbing.Hash) (bool, error) {
 func (c *Client) performFetch(repository *git.Repository, repo appcfg.Repository, branch, remoteSHA string) error {
 	logFetchOperation(repo.Name, branch, remoteSHA)
 
-	if fetchErr := c.fetchOrigin(repository, repo); fetchErr != nil {
+	if fetchErr := c.fetchOrigin(repository, repo, branch); fetchErr != nil {
 		return classifyFetchError(repo.URL, fetchErr)
 	}
 

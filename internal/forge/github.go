@@ -134,14 +134,23 @@ func (c *GitHubClient) getUserOrganizations(ctx context.Context) ([]*Organizatio
 
 // ListRepositories returns repositories for specified organizations.
 func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []string) ([]*Repository, error) {
-	var allRepos []*Repository
+	if len(organizations) == 0 {
+		return nil, nil
+	}
 
-	for _, org := range organizations {
-		repos, err := c.getOrgRepositories(ctx, org)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get repositories for org %s: %w", org, err)
+	// Listing repos is typically one API call chain per organization. Run those in parallel,
+	// but keep the error semantics (any failure is fatal) and preserve org order.
+	results := runOrdered(organizations, 4, func(org string) ([]*Repository, error) {
+		return c.getOrgRepositories(ctx, org)
+	})
+
+	var allRepos []*Repository
+	for i, org := range organizations {
+		res := results[i]
+		if res.Err != nil {
+			return nil, fmt.Errorf("failed to get repositories for org %s: %w", org, res.Err)
 		}
-		allRepos = append(allRepos, repos...)
+		allRepos = append(allRepos, res.Value...)
 	}
 
 	return allRepos, nil

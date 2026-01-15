@@ -50,7 +50,6 @@ func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 	}, nil
 }
 
-// GetType returns the forge type.
 func (c *GitLabClient) GetType() cfg.ForgeType { return cfg.ForgeGitLab }
 
 // GetName returns the configured name.
@@ -58,7 +57,6 @@ func (c *GitLabClient) GetName() string {
 	return c.config.Name
 }
 
-// gitlabGroup represents a GitLab group.
 type gitlabGroup struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
@@ -150,14 +148,21 @@ func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 
 // ListRepositories returns repositories for specified groups.
 func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([]*Repository, error) {
-	var allRepos []*Repository
+	if len(groups) == 0 {
+		return nil, nil
+	}
 
-	for _, group := range groups {
-		repos, err := c.getGroupProjects(ctx, group)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get projects for group %s: %w", group, err)
+	results := runOrdered(groups, 4, func(group string) ([]*Repository, error) {
+		return c.getGroupProjects(ctx, group)
+	})
+
+	var allRepos []*Repository
+	for i, group := range groups {
+		res := results[i]
+		if res.Err != nil {
+			return nil, fmt.Errorf("failed to get projects for group %s: %w", group, res.Err)
 		}
-		allRepos = append(allRepos, repos...)
+		allRepos = append(allRepos, res.Value...)
 	}
 
 	return allRepos, nil

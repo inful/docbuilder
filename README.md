@@ -218,6 +218,7 @@ Key notes:
 - Per-forge discovery errors are exposed at `/status?format=json` under `discovery_errors`.
 - To include repositories even if they have no matching documentation paths, set `required_paths: []`.
 - The `build` section (see below) controls performance knobs like clone concurrency.
+- `build.shallow_depth` defaults to `1` when omitted (set `0` to disable shallow cloning).
 - Repository persistence decisions depend on `clone_strategy` plus the presence of `repo_cache_dir` (see Workspace & Cache Paths section below).
 
 ### Workspace & Cache Paths (Daemon Mode)
