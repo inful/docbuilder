@@ -99,7 +99,7 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	if err != nil {
 		classified := classifyCloneError(repo.URL, err)
 		var authErr *AuthError
-		if repo.Auth != nil && errors.As(classified, &authErr) {
+		if errors.As(classified, &authErr) {
 			logCloneAuthContext(repo, authErr)
 		}
 		return "", classified
@@ -149,7 +149,7 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	if err != nil {
 		classified := classifyCloneError(repo.URL, err)
 		var authErr *AuthError
-		if repo.Auth != nil && errors.As(classified, &authErr) {
+		if errors.As(classified, &authErr) {
 			logCloneAuthContext(repo, authErr)
 		}
 		return CloneResult{}, classified
@@ -190,37 +190,37 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 
 func logCloneAuthContext(repo appcfg.Repository, authErr *AuthError) {
 	authCfg := repo.Auth
-	if authCfg == nil {
-		return
-	}
-
-	username := authCfg.Username
-	tokenValue := ""
-	switch authCfg.Type {
-	case appcfg.AuthTypeToken:
-		tokenValue = authCfg.Token
-	case appcfg.AuthTypeBasic:
-		tokenValue = authCfg.Password
-	case appcfg.AuthTypeSSH, appcfg.AuthTypeNone:
-		// No token value to log.
-	}
-
 	attrs := []any{
 		logfields.Name(repo.Name),
 		logfields.URL(repo.URL),
-		slog.String("auth_type", string(authCfg.Type)),
+		slog.Bool("auth_present", authCfg != nil),
 	}
-	if username != "" {
-		attrs = append(attrs, slog.String("auth_username", username))
-	}
-	if tokenValue != "" {
-		attrs = append(attrs,
-			slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
-			slog.Int("auth_token_len", len(tokenValue)),
-		)
-	}
-	if authCfg.Type == appcfg.AuthTypeSSH {
-		attrs = append(attrs, slog.String("auth_key_path", authCfg.KeyPath))
+	if authCfg != nil {
+		attrs = append(attrs, slog.String("auth_type", string(authCfg.Type)))
+
+		if authCfg.Username != "" {
+			attrs = append(attrs, slog.String("auth_username", authCfg.Username))
+		}
+
+		tokenValue := ""
+		switch authCfg.Type {
+		case appcfg.AuthTypeToken:
+			tokenValue = authCfg.Token
+		case appcfg.AuthTypeBasic:
+			tokenValue = authCfg.Password
+		case appcfg.AuthTypeSSH, appcfg.AuthTypeNone:
+			// No token value to log.
+		}
+		if tokenValue != "" {
+			attrs = append(attrs,
+				slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
+				slog.Int("auth_token_len", len(tokenValue)),
+			)
+		}
+
+		if authCfg.Type == appcfg.AuthTypeSSH {
+			attrs = append(attrs, slog.String("auth_key_path", authCfg.KeyPath))
+		}
 	}
 	attrs = append(attrs, slog.String("error", authErr.Error()))
 
