@@ -2,9 +2,12 @@ package build
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
+	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
@@ -12,6 +15,72 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
+
+const (
+	authTypeToken = "token"
+	authTypeBasic = "basic"
+	authTypeSSH   = "ssh"
+)
+
+func tokenPrefix(token string, n int) string {
+	if n <= 0 || token == "" {
+		return ""
+	}
+	if len(token) <= n {
+		return token
+	}
+	return token[:n]
+}
+
+func repoFailureLogAttrs(repoName, repoURL string, authCfg *appcfg.AuthConfig, err error) []slog.Attr {
+	attrs := []slog.Attr{
+		slog.String("name", repoName),
+		slog.String("url", repoURL),
+		slog.String("error", err.Error()),
+		slog.Bool("auth_present", authCfg != nil),
+	}
+
+	var authErr *git.AuthError
+	if !errors.As(err, &authErr) {
+		return attrs
+	}
+	if authCfg == nil {
+		return attrs
+	}
+
+	authType := strings.ToLower(string(authCfg.Type))
+	attrs = append(attrs, slog.String("auth_type", authType))
+
+	authUsername := authCfg.Username
+	if authType == authTypeToken && authUsername == "" {
+		authUsername = authTypeToken
+	}
+	if authUsername != "" {
+		attrs = append(attrs, slog.String("auth_username", authUsername))
+	}
+
+	tokenValue := ""
+	switch authType {
+	case authTypeToken:
+		tokenValue = authCfg.Token
+	case authTypeBasic:
+		tokenValue = authCfg.Password
+	}
+	if tokenValue != "" {
+		attrs = append(attrs,
+			slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
+			slog.Int("auth_token_len", len(tokenValue)),
+		)
+	}
+
+	if authType == authTypeSSH {
+		if keyPath := authCfg.KeyPath; keyPath != "" {
+			attrs = append(attrs, slog.String("auth_key_path", keyPath))
+		}
+	}
+
+	return attrs
+}
 
 // HugoGenerator is the interface for Hugo site generation (avoids import cycle with hugo package).
 type HugoGenerator interface {
@@ -193,9 +262,8 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		}
 
 		if err != nil {
-			observability.ErrorContext(ctx, "Failed to process repository",
-				slog.String("name", repo.Name),
-				slog.String("error", err.Error()))
+			attrs := repoFailureLogAttrs(repo.Name, repo.URL, repo.Auth, err)
+			observability.ErrorContext(ctx, "Failed to process repository", attrs...)
 			// Log the error but continue with remaining repositories
 			s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), false)
 			s.recorder.IncCloneRepoResult(false)
