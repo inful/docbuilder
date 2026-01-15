@@ -26,6 +26,7 @@ type Fixer struct {
 	force       bool
 	gitAware    bool
 	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
+	nowFn       func() time.Time
 }
 
 // NewFixer creates a new fixer with the given linter and options.
@@ -36,7 +37,16 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 		force:       force,
 		gitAware:    isGitRepository("."),
 		autoConfirm: false,
+		nowFn:       time.Now,
 	}
+}
+
+func (f *Fixer) todayUTC() string {
+	nowFn := f.nowFn
+	if nowFn == nil {
+		nowFn = time.Now
+	}
+	return nowFn().UTC().Format("2006-01-02")
 }
 
 // Fix attempts to automatically fix issues found in the given path.
@@ -328,9 +338,17 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 	}
 
 	// mdfp may rewrite frontmatter; ensure stable uid is preserved.
-	updated = preserveUIDAcrossContentRewrite(string(data), updated)
+	original := string(data)
+	updated = preserveUIDAcrossContentRewrite(original, updated)
 
-	if updated == string(data) {
+	// ADR-011: If fingerprint changes, update lastmod (YYYY-MM-DD, UTC).
+	oldFP, _ := extractFingerprintFromFrontmatter(original)
+	newFP, _ := extractFingerprintFromFrontmatter(updated)
+	if newFP != "" && newFP != oldFP {
+		updated = setOrUpdateLastmodInFrontmatter(updated, f.todayUTC())
+	}
+
+	if updated == original {
 		return op
 	}
 

@@ -299,6 +299,9 @@ func stripFingerprintFrontmatter(content string) string {
 		if strings.HasPrefix(trim, "fingerprint:") {
 			continue
 		}
+		if strings.HasPrefix(trim, "lastmod:") {
+			continue
+		}
 		if strings.HasPrefix(trim, "uid:") {
 			continue
 		}
