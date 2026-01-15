@@ -216,70 +216,172 @@ func (s *HTTPServer) validateMarkdownFile(path string) error {
 
 // executeVSCodeOpen finds the VS Code CLI and IPC socket, then opens the file.
 func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string) error {
-	ctx, cancel := context.WithTimeout(parentCtx, 5*time.Second)
+	// Allow some time for transient VS Code IPC reconnects.
+	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 	defer cancel()
 
-	// Find VS Code IPC socket
-	ipcSocket := findVSCodeIPCSocket()
-	if ipcSocket == "" {
-		return &editError{
-			message:    "VS Code IPC socket not found - is VS Code running?",
-			statusCode: http.StatusServiceUnavailable,
-			logLevel:   "warn",
-			logFields: []any{
-				slog.String("path", absPath),
-				slog.String("hint", "Ensure VS Code is running and connected via remote SSH"),
-			},
-		}
-	}
-
-	// Security: Validate IPC socket path to prevent environment variable injection
-	if err := validateIPCSocketPath(ipcSocket); err != nil {
-		return &editError{
-			message:    "Invalid IPC socket path",
-			statusCode: http.StatusInternalServerError,
-			logLevel:   "error",
-			logFields: []any{
-				slog.String("socket", ipcSocket),
-				slog.String("error", err.Error()),
-			},
-		}
-	}
-
-	// Find the code CLI
+	// Find the code CLI once; retries focus on IPC socket discovery/connection.
 	codeCmd := findCodeCLI(ctx)
 
-	// Security: Execute directly without shell to prevent injection attacks
-	// Pass arguments as separate parameters instead of using bash -c
-	// #nosec G204 -- codeCmd comes from findCodeCLI (validated trusted paths only)
-	cmd := exec.CommandContext(ctx, codeCmd, "--reuse-window", "--goto", absPath)
-	cmd.Env = append(os.Environ(), "VSCODE_IPC_HOOK_CLI="+ipcSocket)
+	// Retry a few times to handle transient VS Code server/IPC disconnects.
+	// This commonly happens when the remote VS Code server restarts.
+	backoffs := []time.Duration{200 * time.Millisecond, 600 * time.Millisecond, 1200 * time.Millisecond}
+	var lastStdout, lastStderr string
+	var lastErr error
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	slog.Debug("VS Code edit handler: executing command",
-		slog.String("path", absPath),
-		slog.String("code_cli", codeCmd),
-		slog.String("ipc_socket", ipcSocket))
-
-	if err := cmd.Run(); err != nil {
-		return &editError{
-			message:    "Failed to open file in VS Code",
-			statusCode: http.StatusInternalServerError,
-			logLevel:   "error",
-			logFields: []any{
-				slog.String("path", absPath),
-				slog.String("code_cli", codeCmd),
-				slog.String("error", err.Error()),
-				slog.String("stdout", stdout.String()),
-				slog.String("stderr", stderr.String()),
-			},
+	for attempt := range len(backoffs) + 1 {
+		// Find VS Code IPC socket
+		ipcSocket := findVSCodeIPCSocket()
+		if ipcSocket == "" {
+			lastErr = errors.New("ipc socket not found")
+			lastStderr = ""
+			lastStdout = ""
+			if attempt < len(backoffs) {
+				slog.Warn("VS Code edit handler: IPC socket not found, retrying",
+					slog.String("path", absPath),
+					slog.Int("attempt", attempt+1),
+					slog.Int("max_attempts", len(backoffs)+1))
+				if err := sleepWithContext(ctx, backoffs[attempt]); err == nil {
+					continue
+				}
+			}
+			return &editError{
+				message:    "VS Code IPC socket not found - is VS Code running?",
+				statusCode: http.StatusServiceUnavailable,
+				logLevel:   "warn",
+				logFields: []any{
+					slog.String("path", absPath),
+					slog.String("hint", "Ensure VS Code is running and connected via remote SSH"),
+				},
+			}
 		}
+
+		// Security: Validate IPC socket path to prevent environment variable injection
+		if err := validateIPCSocketPath(ipcSocket); err != nil {
+			return &editError{
+				message:    "Invalid IPC socket path",
+				statusCode: http.StatusInternalServerError,
+				logLevel:   "error",
+				logFields: []any{
+					slog.String("socket", ipcSocket),
+					slog.String("error", err.Error()),
+				},
+			}
+		}
+
+		// Security: Execute directly without shell to prevent injection attacks
+		// Pass arguments as separate parameters instead of using bash -c
+		// #nosec G204 -- codeCmd comes from findCodeCLI (validated trusted paths only)
+		cmd := exec.CommandContext(ctx, codeCmd, "--reuse-window", "--goto", absPath)
+		cmd.Env = append(os.Environ(), "VSCODE_IPC_HOOK_CLI="+ipcSocket)
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		slog.Debug("VS Code edit handler: executing command",
+			slog.String("path", absPath),
+			slog.String("code_cli", codeCmd),
+			slog.String("ipc_socket", ipcSocket),
+			slog.Int("attempt", attempt+1),
+			slog.Int("max_attempts", len(backoffs)+1))
+
+		if err := cmd.Run(); err != nil {
+			lastErr = err
+			lastStdout = stdout.String()
+			lastStderr = stderr.String()
+
+			if attempt < len(backoffs) && isRetriableVSCodeOpenFailure(err, lastStderr) {
+				slog.Warn("VS Code edit handler: failed to open file, retrying",
+					slog.String("path", absPath),
+					slog.String("code_cli", codeCmd),
+					slog.String("error", err.Error()),
+					slog.Int("attempt", attempt+1),
+					slog.Int("max_attempts", len(backoffs)+1))
+				if sleepErr := sleepWithContext(ctx, backoffs[attempt]); sleepErr == nil {
+					continue
+				}
+			}
+
+			return &editError{
+				message:    "Failed to open file in VS Code",
+				statusCode: http.StatusInternalServerError,
+				logLevel:   "error",
+				logFields: []any{
+					slog.String("path", absPath),
+					slog.String("code_cli", codeCmd),
+					slog.String("error", err.Error()),
+					slog.String("stdout", lastStdout),
+					slog.String("stderr", lastStderr),
+				},
+			}
+		}
+
+		return nil
 	}
 
-	return nil
+	return &editError{
+		message:    "Failed to open file in VS Code",
+		statusCode: http.StatusInternalServerError,
+		logLevel:   "error",
+		logFields: []any{
+			slog.String("path", absPath),
+			slog.String("code_cli", codeCmd),
+			slog.String("error", fmt.Sprintf("%v", lastErr)),
+			slog.String("stdout", lastStdout),
+			slog.String("stderr", lastStderr),
+		},
+	}
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+func isRetriableVSCodeOpenFailure(err error, stderr string) bool {
+	// If the process was killed due to timeout/cancel, don't retry.
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+
+	// Heuristic: VS Code remote CLI commonly reports IPC failures in stderr.
+	msg := strings.ToLower(stderr)
+	if msg == "" {
+		// Some failures don't emit stderr, but are still transient (e.g., stale socket).
+		// Retry once or twice in that case.
+		return true
+	}
+	keywords := []string{
+		"vscode-ipc",
+		"ipc",
+		"socket",
+		"econnrefused",
+		"econnreset",
+		"epipe",
+		"enoent",
+		"timed out",
+		"timeout",
+		"not running",
+		"could not connect",
+		"connection refused",
+		"connection reset",
+	}
+	for _, k := range keywords {
+		if strings.Contains(msg, k) {
+			return true
+		}
+	}
+	return false
 }
 
 // findCodeCLI finds the VS Code CLI executable.

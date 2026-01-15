@@ -711,3 +711,57 @@ func TestExecuteVSCodeOpen_NoSocket(t *testing.T) {
 
 	t.Logf("Got expected error (VS Code not running or file issues): %v", err)
 }
+
+func TestIsRetriableVSCodeOpenFailure(t *testing.T) {
+	t.Parallel()
+
+	testErr := errors.New("command failed")
+
+	cases := []struct {
+		name   string
+		err    error
+		stderr string
+		want   bool
+	}{
+		{
+			name:   "empty stderr is retriable",
+			err:    testErr,
+			stderr: "",
+			want:   true,
+		},
+		{
+			name:   "ipc keywords retriable",
+			err:    testErr,
+			stderr: "Error: could not connect to vscode-ipc socket",
+			want:   true,
+		},
+		{
+			name:   "ECONNREFUSED retriable",
+			err:    testErr,
+			stderr: "connect ECONNREFUSED /tmp/vscode-ipc-123.sock",
+			want:   true,
+		},
+		{
+			name:   "non-ipc error not retriable",
+			err:    testErr,
+			stderr: "flag provided but not defined: --goto",
+			want:   false,
+		},
+		{
+			name:   "nil error not retriable",
+			err:    nil,
+			stderr: "ipc",
+			want:   false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := isRetriableVSCodeOpenFailure(tc.err, tc.stderr)
+			if got != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
