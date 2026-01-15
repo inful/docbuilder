@@ -46,6 +46,17 @@ func TestManager_CreateAuth(t *testing.T) {
 			description: "valid token auth should create http.BasicAuth",
 		},
 		{
+			name: "token auth - custom username",
+			authConfig: &config.AuthConfig{
+				Type:     config.AuthTypeToken,
+				Token:    "test-token",
+				Username: "oauth2",
+			},
+			expectNil:   false,
+			expectError: false,
+			description: "token auth should allow overriding the username (e.g. GitLab oauth2)",
+		},
+		{
 			name: "token auth - missing token",
 			authConfig: &config.AuthConfig{
 				Type: config.AuthTypeToken,
@@ -126,7 +137,7 @@ func verifyAuthType(t *testing.T, tt struct {
 
 	switch tt.authConfig.Type {
 	case config.AuthTypeToken:
-		verifyTokenAuth(t, auth, tt.authConfig.Token)
+		verifyTokenAuth(t, auth, tt.authConfig.Token, tt.authConfig.Username)
 	case config.AuthTypeBasic:
 		verifyBasicAuth(t, auth, tt.authConfig.Username, tt.authConfig.Password)
 	case config.AuthTypeNone:
@@ -137,7 +148,7 @@ func verifyAuthType(t *testing.T, tt struct {
 }
 
 // verifyTokenAuth verifies token authentication configuration.
-func verifyTokenAuth(t *testing.T, auth transport.AuthMethod, expectedToken string) {
+func verifyTokenAuth(t *testing.T, auth transport.AuthMethod, expectedToken string, expectedUsername string) {
 	t.Helper()
 
 	basicAuth, ok := auth.(*http.BasicAuth)
@@ -146,8 +157,11 @@ func verifyTokenAuth(t *testing.T, auth transport.AuthMethod, expectedToken stri
 		return
 	}
 
-	if basicAuth.Username != "token" {
-		t.Errorf("Token auth should use 'token' as username, got: %s", basicAuth.Username)
+	if expectedUsername == "" {
+		expectedUsername = "token"
+	}
+	if basicAuth.Username != expectedUsername {
+		t.Errorf("Token auth username mismatch, got: %s", basicAuth.Username)
 	}
 	if basicAuth.Password != expectedToken {
 		t.Errorf("Token auth password should match token")

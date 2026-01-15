@@ -28,9 +28,16 @@ func (p *TokenProvider) CreateAuth(authCfg *config.AuthConfig) (transport.AuthMe
 		return nil, errors.New("token authentication requires a token")
 	}
 
-	// Most Git hosting services use "token" as the username for token auth
+	username := authCfg.Username
+	if username == "" {
+		// Most Git hosting services use "token" as the username for token auth.
+		// Some GitLab setups expect "oauth2" instead; allowing override via config keeps
+		// tokens out of clone URLs (safer) while supporting those servers.
+		username = "token"
+	}
+
 	return &http.BasicAuth{
-		Username: "token",
+		Username: username,
 		Password: authCfg.Token,
 	}, nil
 }
