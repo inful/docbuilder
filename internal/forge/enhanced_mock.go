@@ -407,7 +407,7 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 		APIURL:  apiURL,
 		BaseURL: baseURL,
 		Organizations: func() []string {
-			var orgs []string
+			orgs := make([]string, 0, len(m.organizations))
 			for _, org := range m.organizations {
 				orgs = append(orgs, org.Name)
 			}
