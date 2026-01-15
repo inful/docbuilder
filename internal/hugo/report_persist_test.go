@@ -54,7 +54,7 @@ func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	initialMod := info.ModTime()
 
 	// Now attempt a canceled build
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
 	if _, siteGenerationErr := gen2.GenerateSiteWithReportContext(ctx, []docs.DocFile{{Repository: "r", Name: "fail", RelativePath: "fail.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Fail\n")}}); siteGenerationErr == nil {

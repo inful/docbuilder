@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -72,7 +71,7 @@ func testProductionBuilderPattern(t *testing.T) {
 		WithDelay(time.Millisecond * 10).
 		Build()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	repos, err := mock.ListRepositories(ctx, []string{"company"})
 	if err != nil {
 		t.Fatalf("Failed to list repositories: %v", err)
@@ -97,7 +96,7 @@ func testProductionBuilderPattern(t *testing.T) {
 func testProductionFailureSimulation(t *testing.T) {
 	// Test failure simulation capabilities
 	mock := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test auth failure
 	mock.WithAuthFailure()
@@ -134,7 +133,7 @@ func testProductionRealisticMocks(t *testing.T) {
 	gitlabMock := CreateRealisticGitLabMock("realistic-gitlab")
 	forgejoMock := CreateRealisticForgejoMock("realistic-forgejo")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Validate GitHub mock
 	githubRepos, err := githubMock.ListRepositories(ctx, []string{"company"})
@@ -228,7 +227,7 @@ func testForgeClientInterface(t *testing.T) {
 	// Ensure enhanced mock implements ForgeClient interface
 	var client Client = NewEnhancedMockForgeClient("interface-test", TypeGitHub)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test interface methods
 	if client.GetType() != TypeGitHub {

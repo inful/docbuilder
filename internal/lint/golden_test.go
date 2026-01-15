@@ -17,6 +17,12 @@ var updateGolden = flag.Bool("update-golden", false, "update golden test files")
 
 // TestGoldenAutoFix_FileRenameWithLinkUpdates tests the complete auto-fix workflow
 // including file renaming and link updates, comparing against golden files.
+//
+// This test verifies both filename normalization and UID alias injection:
+// - 3 files with naming violations (API_Guide.md, User Manual.md, Diagram.png)
+// - 4 markdown files missing UID-based aliases (all have uid but no aliases field)
+// - 1 image reference that needs updating
+// Total: 8 errors fixed (4 alias injections + 3 renames + 1 image reference update = 8).
 func TestGoldenAutoFix_FileRenameWithLinkUpdates(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping golden test in short mode")
@@ -300,10 +306,10 @@ func stripFingerprintFrontmatter(content string) string {
 			inAliases = true
 			continue
 		}
-		if inAliases && strings.HasPrefix(trim, "- ") {
+		if inAliases && isAliasItem(trim) {
 			continue // Skip alias items
 		}
-		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") {
+		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") && !isAliasItem(trim) {
 			inAliases = false // End of aliases section
 		}
 		if trim == "" {

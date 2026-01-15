@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"context"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -114,7 +113,7 @@ func TestCommandExecution(t *testing.T) {
 	// complete build state with generators, configs, etc.
 
 	cmd := NewDiscoverDocsCommand()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test with minimal build state (should skip due to no repo paths)
 	buildState := &hugo.BuildState{}

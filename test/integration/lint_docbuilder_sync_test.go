@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,7 +36,7 @@ func TestLintDocBuilderSync(t *testing.T) {
 			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
 		})
 
-	result, err := svc.Run(context.Background(), build.BuildRequest{
+	result, err := svc.Run(t.Context(), build.BuildRequest{
 		Config:    cfg,
 		OutputDir: outputDir,
 	})
@@ -101,7 +100,7 @@ func TestLintDocBuilderSync_FileNaming(t *testing.T) {
 			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
 		})
 
-	result, err := svc.Run(context.Background(), build.BuildRequest{
+	result, err := svc.Run(t.Context(), build.BuildRequest{
 		Config:    cfg,
 		OutputDir: outputDir,
 	})

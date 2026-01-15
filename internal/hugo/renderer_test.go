@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -25,7 +24,7 @@ func TestNoopRenderer(t *testing.T) {
 
 	// Minimal doc file to drive pipeline through content stages.
 	doc := docs.DocFile{Repository: "repo1", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Intro\n")}
-	report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+	report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 	if err != nil {
 		// Any hugo invocation attempt (if NoopRenderer not used) could fail here if binary missing.
 		// Surface error for visibility.

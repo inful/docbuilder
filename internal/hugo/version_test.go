@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"testing"
 )
 
@@ -63,7 +62,7 @@ func TestDetectHugoVersion(t *testing.T) {
 	// 1. Hugo available (returns version string)
 	// 2. Hugo not available (returns empty string)
 
-	version := DetectHugoVersion(context.Background())
+	version := DetectHugoVersion(t.Context())
 
 	// We can't assert the exact value since it depends on the environment
 	// But we can verify it returns a string (empty or with version)

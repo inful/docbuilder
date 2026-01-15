@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -94,7 +93,7 @@ func TestBaseForge_NewRequest(t *testing.T) {
 				bf.SetCustomHeader(k, v)
 			}
 
-			req, err := bf.NewRequest(context.Background(), http.MethodGet, tt.endpoint, tt.body)
+			req, err := bf.NewRequest(t.Context(), http.MethodGet, tt.endpoint, tt.body)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -188,7 +187,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 			client := server.Client()
 			bf := NewBaseForge(client, server.URL, "test-token")
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/test", http.NoBody)
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/test", http.NoBody)
 			if err != nil {
 				t.Fatalf("failed to create request: %v", err)
 			}
@@ -221,7 +220,7 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 	client := server.Client()
 	bf := NewBaseForge(client, server.URL, "test-token")
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/test", http.NoBody)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/test", http.NoBody)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
@@ -276,7 +275,7 @@ func TestBaseForge_Integration(t *testing.T) {
 	bf.SetCustomHeader("Accept", "application/json")
 
 	// Test GET
-	req, err := bf.NewRequest(context.Background(), http.MethodGet, "/repos", nil)
+	req, err := bf.NewRequest(t.Context(), http.MethodGet, "/repos", nil)
 	if err != nil {
 		t.Fatalf("NewRequest() error = %v", err)
 	}
@@ -292,7 +291,7 @@ func TestBaseForge_Integration(t *testing.T) {
 
 	// Test POST with body
 	body := map[string]string{"data": "test-data"}
-	req, err = bf.NewRequest(context.Background(), http.MethodPost, "/repos", body)
+	req, err = bf.NewRequest(t.Context(), http.MethodPost, "/repos", body)
 	if err != nil {
 		t.Fatalf("NewRequest() POST error = %v", err)
 	}

@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -102,7 +101,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 
 		// Create discovery service
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Test the actual discovery process
 		result, err := discovery.DiscoverAll(ctx)
@@ -191,7 +190,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		manager.AddForge(githubConfig, github)
 
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Measure performance
 		start := time.Now()
@@ -259,7 +258,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		manager.AddForge(forgejoConfig, forgejo)
 
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Test error handling
 		result, _ := discovery.DiscoverAll(ctx)
@@ -365,7 +364,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 				manager.AddForge(githubConfig, github)
 
 				discovery := NewDiscoveryService(manager, tc.filtering)
-				ctx := context.Background()
+				ctx := t.Context()
 
 				result, err := discovery.DiscoverAll(ctx)
 				if err != nil {

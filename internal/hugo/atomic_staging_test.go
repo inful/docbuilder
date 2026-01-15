@@ -90,7 +90,7 @@ func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	// Start second build with immediate cancellation
 	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Broken\n")}}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel immediately
 	if _, err := gen2.GenerateSiteWithReportContext(ctx, filesV2); err == nil {
 		t.Fatalf("expected cancellation error")

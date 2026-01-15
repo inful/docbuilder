@@ -62,7 +62,7 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 	sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
 	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&hugo.NoopRenderer{})
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	report, err := gen.GenerateFullSite(ctx, []cfg.Repository{repo}, ws)
 	if err != nil {

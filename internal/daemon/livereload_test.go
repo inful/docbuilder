@@ -21,7 +21,7 @@ func TestLiveReload_InitialConnectReceivesNoReload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(hub.ServeHTTP))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
 	resp, err := http.DefaultClient.Do(req)
@@ -57,7 +57,7 @@ func TestLiveReload_BroadcastSendsEvent(t *testing.T) {
 	defer server.Close()
 
 	// Connect client
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
@@ -101,7 +101,7 @@ func TestLiveReload_DuplicateBroadcastIgnored(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(hub.ServeHTTP))
 	defer server.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
 	resp, err := http.DefaultClient.Do(req)

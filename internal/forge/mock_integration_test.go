@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -23,7 +22,7 @@ func TestPhase3BIntegrationDemo(t *testing.T) {
 func testDirectForgeClientReplacement(t *testing.T) {
 	// Demonstrate direct replacement of existing ForgeClient usage
 	var client Client = NewEnhancedMockForgeClient("integration-demo", TypeGitHub)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Add test data using enhanced system
 	enhanced := client.(*EnhancedMockForgeClient)
@@ -66,7 +65,7 @@ func testRealisticTestData(t *testing.T) {
 	gitlab := CreateRealisticGitLabMock("demo-gitlab")
 	forgejo := CreateRealisticForgejoMock("demo-forgejo")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// GitHub realistic data
 	githubRepos, err := github.ListRepositories(ctx, []string{"company"})
@@ -114,7 +113,7 @@ func testRealisticTestData(t *testing.T) {
 func testAdvancedFailureSimulation(t *testing.T) {
 	// Demonstrate advanced failure simulation for robust testing
 	client := NewEnhancedMockForgeClient("failure-demo", TypeGitHub)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Add test data
 	client.AddRepository(CreateMockGitHubRepo("test-org", "test-repo", true, false, false, false))
@@ -204,7 +203,7 @@ func testBulkDataGeneration(t *testing.T) {
 		client.AddRepository(repo)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	retrievedRepos, err := client.ListRepositories(ctx, []string{"large-org"})
 	if err != nil {
 		t.Fatalf("Failed to list bulk repositories: %v", err)
@@ -231,7 +230,7 @@ func testFluentBuilderPatterns(t *testing.T) {
 		WithDelay(time.Millisecond * 10).
 		Build()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Verify organizations
 	orgs, err := mock.ListOrganizations(ctx)
@@ -285,7 +284,7 @@ func testBeforeAfterComparison(t *testing.T) {
 	client.AddRepository(CreateMockGitHubRepo("company", "docs", true, false, false, false))
 	client.AddOrganization(CreateMockGitHubOrg("company"))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	repos, err := client.ListRepositories(ctx, []string{"company"})
 	if err != nil {
 		t.Fatalf("Enhanced mock failed: %v", err)
@@ -321,7 +320,7 @@ func testEasyMigrationSteps(t *testing.T) {
 	enhanced := NewEnhancedMockForgeClient("migrated-test", TypeGitHub)
 	enhanced.AddRepository(CreateMockGitHubRepo("migrated-org", "migrated-repo", true, false, false, false))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	repos, err := enhanced.ListRepositories(ctx, []string{"migrated-org"})
 	if err != nil {
 		t.Fatalf("Migrated test failed: %v", err)

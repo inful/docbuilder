@@ -33,7 +33,7 @@ func (m *mockBuildService) Run(ctx context.Context, req build.BuildRequest) (*bu
 func TestBuildServiceAdapter_Build(t *testing.T) {
 	t.Run("nil job", func(t *testing.T) {
 		adapter := NewBuildServiceAdapter(&mockBuildService{})
-		report, err := adapter.Build(context.Background(), nil)
+		report, err := adapter.Build(t.Context(), nil)
 		if err == nil {
 			t.Error("expected error for nil job")
 		}
@@ -48,7 +48,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			ID:        "test",
 			TypedMeta: &BuildJobMetadata{},
 		}
-		report, err := adapter.Build(context.Background(), job)
+		report, err := adapter.Build(t.Context(), job)
 		if err == nil {
 			t.Error("expected error for missing config")
 		}
@@ -83,7 +83,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			},
 		}
 
-		report, err := adapter.Build(context.Background(), job)
+		report, err := adapter.Build(t.Context(), job)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -116,7 +116,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			TypedMeta: &BuildJobMetadata{V2Config: &config.Config{}},
 		}
 
-		_, err := adapter.Build(context.Background(), job)
+		_, err := adapter.Build(t.Context(), job)
 		if !errors.Is(err, context.Canceled) {
 			t.Errorf("expected context.Canceled, got %v", err)
 		}
@@ -139,7 +139,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			TypedMeta: &BuildJobMetadata{V2Config: &config.Config{}},
 		}
 
-		report, err := adapter.Build(context.Background(), job)
+		report, err := adapter.Build(t.Context(), job)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

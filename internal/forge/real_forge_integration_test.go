@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -93,7 +92,7 @@ func TestRealForgeIntegration(t *testing.T) {
 			RequiredPaths: []string{"docs"}, // This will filter out repos without HasDocs=true
 		}
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Test the actual discovery process
 		result, err := discovery.DiscoverAll(ctx)
@@ -207,7 +206,7 @@ func TestRealForgeIntegration(t *testing.T) {
 
 		// Create discovery service with empty filtering
 		discovery := NewDiscoveryService(manager, &config.FilteringConfig{})
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Run discovery
 		result, err := discovery.DiscoverAll(ctx)
@@ -292,7 +291,7 @@ func TestRealForgeIntegration(t *testing.T) {
 		manager.AddForge(forgeConfig, mockForge)
 
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		result, err := discovery.DiscoverAll(ctx)
 		if err != nil {
@@ -338,7 +337,7 @@ func TestRealForgeIntegration(t *testing.T) {
 		manager.AddForge(forgeConfig, errorMock)
 
 		discovery := NewDiscoveryService(manager, &config.FilteringConfig{})
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Discovery should handle errors gracefully
 		result, err := discovery.DiscoverAll(ctx)
