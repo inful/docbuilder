@@ -224,7 +224,7 @@ func logCloneAuthContext(repo appcfg.Repository, authErr *AuthError) {
 	}
 	attrs = append(attrs, slog.String("error", authErr.Error()))
 
-	slog.Warn("Git clone authentication failed (auth context)", attrs...)
+	slog.Error("Git clone authentication failed (auth context)", attrs...)
 }
 
 func tokenPrefix(token string, n int) string {
