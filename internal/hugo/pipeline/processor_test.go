@@ -82,12 +82,12 @@ func TestProcessContent_GeneratorError(t *testing.T) {
 	_, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "file generator failed in pipeline")
-	
+
 	// Verify error classification
 	classified, ok := foundationerrors.AsClassified(err)
 	require.True(t, ok, "error should be classified")
 	assert.Equal(t, foundationerrors.CategoryValidation, classified.Category())
-	
+
 	// Verify context includes generator index
 	ctx := classified.Context()
 	_, hasIndex := ctx.Get("generator_index")
@@ -254,12 +254,12 @@ func TestProcessTransforms_TransformError(t *testing.T) {
 	_, err := processor.processTransforms(docs)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "content transformation failed in pipeline")
-	
+
 	// Verify error classification
 	classified, ok := foundationerrors.AsClassified(err)
 	require.True(t, ok, "error should be classified")
 	assert.Equal(t, foundationerrors.CategoryValidation, classified.Category())
-	
+
 	// Verify context includes transform index and document path
 	ctx := classified.Context()
 	_, hasIndex := ctx.Get("transform_index")
