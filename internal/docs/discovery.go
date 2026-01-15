@@ -95,11 +95,16 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			continue
 		}
 
+		filesBeforeRepo := len(d.docFiles)
+
 		// Check for .docignore file in repository root
 		if hasDocIgnore, err := d.checkDocIgnore(repoPath); err != nil {
 			slog.Warn("Failed to check .docignore", slog.String("repository", repoName), logfields.Error(err))
 		} else if hasDocIgnore {
-			slog.Info("Skipping repository due to .docignore file", slog.String("repository", repoName))
+			slog.Info("Repository filtered during docs discovery",
+				logfields.Repository(repoName),
+				slog.String("forge", repo.Tags["forge_type"]),
+				slog.String("reason", "docignore_present"))
 			continue
 		}
 
@@ -109,10 +114,12 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 		if namespaceForges {
 			forgeNS = repo.Tags["forge_type"]
 		}
+		missingDocsPaths := 0
 		for _, docsPath := range repo.Paths {
 			fullDocsPath := filepath.Join(repoPath, docsPath)
 
 			if _, err := os.Stat(fullDocsPath); os.IsNotExist(err) {
+				missingDocsPaths++
 				slog.Warn("Documentation path not found",
 					logfields.Repository(repoName),
 					logfields.Path(docsPath),
@@ -128,6 +135,18 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 			d.docFiles = append(d.docFiles, files...)
 		}
 
+		filesAfterRepo := len(d.docFiles)
+		if filesAfterRepo == filesBeforeRepo {
+			reason := "no_docs_files_found"
+			if len(repo.Paths) > 0 && missingDocsPaths == len(repo.Paths) {
+				reason = "docs_paths_missing"
+			}
+			slog.Info("Repository filtered during docs discovery",
+				logfields.Repository(repoName),
+				slog.String("forge", repo.Tags["forge_type"]),
+				slog.String("reason", reason),
+				slog.Any("paths", repo.Paths))
+		}
 		slog.Info("Documentation discovered", logfields.Repository(repoName), slog.Int("files", len(d.docFiles)))
 	}
 
