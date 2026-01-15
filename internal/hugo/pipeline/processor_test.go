@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	foundationerrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func TestProcessContent_EmptyInput(t *testing.T) {
@@ -81,6 +82,16 @@ func TestProcessContent_GeneratorError(t *testing.T) {
 	_, err := processor.ProcessContent([]*Document{}, map[string]RepositoryInfo{}, false)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "file generator failed in pipeline")
+	
+	// Verify error classification
+	classified, ok := foundationerrors.AsClassified(err)
+	require.True(t, ok, "error should be classified")
+	assert.Equal(t, foundationerrors.CategoryValidation, classified.Category())
+	
+	// Verify context includes generator index
+	ctx := classified.Context()
+	_, hasIndex := ctx.Get("generator_index")
+	assert.True(t, hasIndex, "error context should include generator_index")
 }
 
 func TestProcessContent_TransformError(t *testing.T) {
@@ -243,6 +254,18 @@ func TestProcessTransforms_TransformError(t *testing.T) {
 	_, err := processor.processTransforms(docs)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "content transformation failed in pipeline")
+	
+	// Verify error classification
+	classified, ok := foundationerrors.AsClassified(err)
+	require.True(t, ok, "error should be classified")
+	assert.Equal(t, foundationerrors.CategoryValidation, classified.Category())
+	
+	// Verify context includes transform index and document path
+	ctx := classified.Context()
+	_, hasIndex := ctx.Get("transform_index")
+	assert.True(t, hasIndex, "error context should include transform_index")
+	_, hasPath := ctx.Get("document_path")
+	assert.True(t, hasPath, "error context should include document_path")
 }
 
 func TestProcessTransforms_MultipleTransforms(t *testing.T) {

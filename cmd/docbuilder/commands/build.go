@@ -46,6 +46,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			"docs_dir", b.DocsDir,
 			"output", b.Output)
 	} else {
+		// Load configuration from file (err declared via := in this block scope)
 		result, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)

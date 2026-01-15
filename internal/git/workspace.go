@@ -11,7 +11,10 @@ import (
 
 func (c *Client) EnsureWorkspace() error {
 	if err := os.MkdirAll(c.workspaceDir, 0o750); err != nil {
-		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to create workspace directory").WithSeverity(foundationerrors.SeverityError).WithContext("workspace_dir", c.workspaceDir).Build()
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to create workspace directory").
+			WithSeverity(foundationerrors.SeverityError).
+			WithContext("workspace_dir", c.workspaceDir).
+			Build()
 	}
 	return nil
 }
@@ -22,11 +25,17 @@ func (c *Client) CleanWorkspace() error {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to read workspace directory").WithSeverity(foundationerrors.SeverityError).WithContext("workspace_dir", c.workspaceDir).Build()
+		return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to read workspace directory").
+			WithSeverity(foundationerrors.SeverityError).
+			WithContext("workspace_dir", c.workspaceDir).
+			Build()
 	}
 	for _, e := range entries {
 		if err := os.RemoveAll(filepath.Join(c.workspaceDir, e.Name())); err != nil {
-			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to remove workspace entry").WithSeverity(foundationerrors.SeverityError).WithContext("entry_name", e.Name()).Build()
+			return foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to remove workspace entry").
+				WithSeverity(foundationerrors.SeverityError).
+				WithContext("entry_name", e.Name()).
+				Build()
 		}
 	}
 	slog.Info("Workspace cleaned", logfields.Path(c.workspaceDir))
@@ -43,5 +52,8 @@ func (c *Client) CheckDocIgnore(repoPath string) (bool, error) {
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-	return false, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to check .docignore file").WithSeverity(foundationerrors.SeverityError).WithContext("file_path", path).Build()
+	return false, foundationerrors.WrapError(err, foundationerrors.CategoryFileSystem, "failed to check .docignore file").
+		WithSeverity(foundationerrors.SeverityError).
+		WithContext("file_path", path).
+		Build()
 }

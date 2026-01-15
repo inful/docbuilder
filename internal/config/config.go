@@ -1,5 +1,14 @@
 // Package config provides configuration types and helpers for DocBuilder, including loading,
 // validation, and normalization of the unified v2 configuration format.
+//
+// This package focuses on parsing and validating YAML configuration, including
+// environment variable expansion, while avoiding side effects such as reading
+// from the process environment or the filesystem on its own.
+//
+// Loading .env files and populating environment variables is intentionally
+// handled by the CLI layer, via LoadEnvFile in cmd/docbuilder/commands/common.go.
+// Keeping that behavior in the command package helps ensure this config
+// library remains pure and reusable in other contexts.
 package config
 
 import (
@@ -150,6 +159,8 @@ type LoadResult struct {
 
 // Load reads and validates a configuration file (version 2.x), expanding environment variables and applying normalization and defaults.
 // Load is a pure library function: it does not print, load .env files, or modify process state.
+// It is a convenience wrapper around LoadWithResult and intentionally discards any normalization warnings.
+// Callers that need access to warnings should use LoadWithResult directly.
 func Load(configPath string) (*Config, error) {
 	_, cfg, err := LoadWithResult(configPath)
 	return cfg, err
