@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
@@ -15,7 +14,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	original := "---\ncustom: keep\n---\n# Heading\n\nLink to [Doc](doc.md)."
 	file := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", Content: []byte(original)}
-	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+	if err := gen.copyContentFiles(t.Context(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("first copy: %v", err)
 	}
 	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
@@ -33,7 +32,7 @@ func TestPipeline_Idempotency(t *testing.T) {
 	}
 	// Re-run using transformed output as input
 	file2 := docs.DocFile{Repository: "repo", Name: "page", RelativePath: "page.md", Content: data}
-	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file2}); err != nil {
+	if err := gen.copyContentFiles(t.Context(), []docs.DocFile{file2}); err != nil {
 		t.Fatalf("second copy: %v", err)
 	}
 	// #nosec G304 -- test utility reading from test output directory
@@ -48,7 +47,7 @@ func TestPipeline_Order(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	existing := "---\ncustom: val\n---\nBody"
 	file := docs.DocFile{Repository: "r", Name: "body", RelativePath: "body.md", Content: []byte(existing)}
-	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+	if err := gen.copyContentFiles(t.Context(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 	outPath := gen.buildRoot() + "/" + file.GetHugoPath(true)
@@ -68,7 +67,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	malformed := "---\n:bad yaml\n---\n# T\n"
 	file := docs.DocFile{Repository: "r", Name: "bad", RelativePath: "bad.md", Content: []byte(malformed)}
-	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+	if err := gen.copyContentFiles(t.Context(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath(true))
@@ -81,7 +80,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 func TestDateConsistency(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Content: []byte("Body")}
-	if err := gen.copyContentFiles(context.Background(), []docs.DocFile{file}); err != nil {
+	if err := gen.copyContentFiles(t.Context(), []docs.DocFile{file}); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 	data, _ := os.ReadFile(gen.buildRoot() + "/" + file.GetHugoPath(true))

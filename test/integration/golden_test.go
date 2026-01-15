@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"context"
 	"flag"
 	"os"
 	"os/exec"
@@ -191,7 +190,7 @@ func TestGolden_EmptyDocs(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	result, err := svc.Run(context.Background(), req)
+	result, err := svc.Run(t.Context(), req)
 	require.NoError(t, err, "build pipeline should not fail with empty docs")
 	require.Equal(t, build.BuildStatusSuccess, result.Status, "build should succeed")
 
@@ -323,7 +322,7 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	result, err := svc.Run(context.Background(), req)
+	result, err := svc.Run(t.Context(), req)
 
 	// Build service is graceful - logs errors but may return success
 	// Verify that either we got an error OR the build shows skipped repos
@@ -374,7 +373,7 @@ func TestGolden_Error_InvalidConfig(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	result, err := svc.Run(context.Background(), req)
+	result, err := svc.Run(t.Context(), req)
 
 	// Build may succeed with warning since empty config is technically valid
 	// The key is it doesn't crash
@@ -405,18 +404,18 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	require.NoError(t, os.WriteFile(testFile, []byte("# Test\n\nContent"), 0o600))
 
 	// Initialize git but don't commit
-	cmd := exec.CommandContext(context.Background(), "git", "init")
+	cmd := exec.CommandContext(t.Context(), "git", "init")
 	cmd.Dir = tmpDir
 	require.NoError(t, cmd.Run())
 
 	// Configure git
 	// #nosec G204 -- controlled test environment with hardcoded git commands
-	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.name", "Test").Run()
-	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "config", "user.email", "test@example.com").Run() // #nosec G204
+	_ = exec.CommandContext(t.Context(), "git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	_ = exec.CommandContext(t.Context(), "git", "-C", tmpDir, "config", "user.email", "test@example.com").Run() // #nosec G204
 
 	// Add files but don't commit (this creates an edge case)
 	// #nosec G204 -- controlled test environment with hardcoded git commands
-	_ = exec.CommandContext(context.Background(), "git", "-C", tmpDir, "add", ".").Run()
+	_ = exec.CommandContext(t.Context(), "git", "-C", tmpDir, "add", ".").Run()
 
 	// Load configuration
 	cfg := loadGoldenConfig(t, "../../test/testdata/configs/relearn-basic.yaml")
@@ -438,7 +437,7 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 		OutputDir: outputDir,
 	}
 
-	result, err := svc.Run(context.Background(), req)
+	result, err := svc.Run(t.Context(), req)
 
 	// Build may succeed with warnings or fail gracefully
 	// The key is it shouldn't panic or crash

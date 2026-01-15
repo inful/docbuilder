@@ -433,6 +433,11 @@ func insertAliasesField(lines []string, expectedAlias, aliasesIndent string) ([]
 	return kept, inserted
 }
 
+// isAliasItem returns true if the trimmed line is an alias list item.
+func isAliasItem(trimmedLine string) bool {
+	return strings.HasPrefix(trimmedLine, "- ")
+}
+
 // appendToExistingAliases adds an alias to an existing aliases field.
 func appendToExistingAliases(lines []string, expectedAlias, aliasesIndent string) ([]string, bool) {
 	aliasesLineIdx := -1
@@ -445,9 +450,9 @@ AliasLoop:
 		switch {
 		case strings.HasPrefix(trim, "aliases:"):
 			aliasesLineIdx = i
-		case aliasesLineIdx >= 0 && strings.HasPrefix(trim, "- "):
+		case aliasesLineIdx >= 0 && isAliasItem(trim):
 			lastAliasLineIdx = i
-		case aliasesLineIdx >= 0 && lastAliasLineIdx >= 0 && trim != "" && !strings.HasPrefix(trim, "#"):
+		case aliasesLineIdx >= 0 && lastAliasLineIdx >= 0 && trim != "" && !strings.HasPrefix(trim, "#") && !isAliasItem(trim):
 			// Hit a non-alias field after we found aliases - stop scanning
 			break AliasLoop
 		}

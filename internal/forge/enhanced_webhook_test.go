@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -21,7 +20,7 @@ func testEnhancedGitHubWebhookWorkflow(t *testing.T) {
 	client := NewEnhancedGitHubMock("webhook-github").
 		WithWebhookSecret("github-webhook-secret")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create a test repository
 	repo := CreateMockGitHubRepo("webhook-org", "webhook-repo", true, false, false, false)
@@ -86,7 +85,7 @@ func testEnhancedGitLabWebhookWorkflow(t *testing.T) {
 	client := NewEnhancedGitLabMock("webhook-gitlab").
 		WithWebhookSecret("gitlab-webhook-token")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create a test project
 	repo := CreateMockGitLabRepo("webhook-group", "webhook-project", true, false, false, false)
@@ -141,7 +140,7 @@ func testEnhancedMultiPlatformWebhookHandling(t *testing.T) {
 	gitlab := NewEnhancedGitLabMock("multi-gitlab").WithWebhookSecret("gitlab-secret")
 	forgejo := NewEnhancedForgejoMock("multi-forgejo").WithWebhookSecret("forgejo-secret")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Add repositories to each platform
 	githubRepo := CreateMockGitHubRepo("multi-org", "github-docs", true, false, false, false)
@@ -189,7 +188,7 @@ func testEnhancedWebhookFailureScenarios(t *testing.T) {
 	client := NewEnhancedMockForgeClient("failure-webhook", TypeGitHub).
 		WithWebhookSecret("test-secret")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	repo := CreateMockGitHubRepo("failure-org", "failure-repo", true, false, false, false)
 	client.AddRepository(repo)
 

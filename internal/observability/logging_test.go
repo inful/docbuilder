@@ -2,13 +2,12 @@ package observability
 
 import (
 	"bytes"
-	"context"
 	"log/slog"
 	"testing"
 )
 
 func TestWithBuildID(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-123")
 
 	lc := extractLogContext(ctx)
@@ -18,7 +17,7 @@ func TestWithBuildID(t *testing.T) {
 }
 
 func TestWithStage(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithStage(ctx, "clone")
 
 	lc := extractLogContext(ctx)
@@ -28,7 +27,7 @@ func TestWithStage(t *testing.T) {
 }
 
 func TestContextChaining(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-1")
 	ctx = WithStage(ctx, "discover")
 
@@ -39,7 +38,7 @@ func TestContextChaining(t *testing.T) {
 }
 
 func TestOverwriteContextValue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-old")
 	ctx = WithBuildID(ctx, "build-new")
 
@@ -50,7 +49,7 @@ func TestOverwriteContextValue(t *testing.T) {
 }
 
 func TestEmptyContext(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	lc := extractLogContext(ctx)
 	if lc.BuildID != "" || lc.Stage != "" {
@@ -65,7 +64,7 @@ func TestInfoContext(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-123")
 	ctx = WithStage(ctx, "clone")
 
@@ -84,7 +83,7 @@ func TestWarnContext(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-456")
 
 	WarnContext(ctx, "test warning", slog.String("reason", "test"))
@@ -102,7 +101,7 @@ func TestErrorContext(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithStage(ctx, "hugo")
 
 	ErrorContext(ctx, "test error", slog.String("error", "failed"))
@@ -120,7 +119,7 @@ func TestDebugContext(t *testing.T) {
 	}))
 	slog.SetDefault(logger)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-debug")
 
 	DebugContext(ctx, "debug message", slog.Int("count", 42))
@@ -132,10 +131,10 @@ func TestDebugContext(t *testing.T) {
 }
 
 func TestContextIsolation(t *testing.T) {
-	ctx1 := context.Background()
+	ctx1 := t.Context()
 	ctx1 = WithBuildID(ctx1, "build-1")
 
-	ctx2 := context.Background()
+	ctx2 := t.Context()
 	ctx2 = WithBuildID(ctx2, "build-2")
 
 	lc1 := extractLogContext(ctx1)
@@ -150,7 +149,7 @@ func TestContextIsolation(t *testing.T) {
 }
 
 func TestGetLogAttrsWithMixedValues(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx = WithBuildID(ctx, "build-mixed")
 	ctx = WithStage(ctx, "test-stage")
 
@@ -181,7 +180,7 @@ func TestGetLogAttrsWithMixedValues(t *testing.T) {
 }
 
 func TestGetLogAttrsEmptyContext(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	attrs := getLogAttrs(ctx)
 
 	if len(attrs) != 0 {

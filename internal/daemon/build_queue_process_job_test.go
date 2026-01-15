@@ -77,7 +77,7 @@ func TestProcessJob_SuccessWithReport(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Verify job status
@@ -127,7 +127,7 @@ func TestProcessJob_SuccessWithoutReport(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Verify job status
@@ -167,7 +167,7 @@ func TestProcessJob_Failure(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Verify job status
@@ -214,7 +214,7 @@ func TestProcessJob_FailureWithReport(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Verify job status
@@ -254,7 +254,7 @@ func TestProcessJob_NoEventEmitter(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Should complete without errors even with no emitter
@@ -289,7 +289,7 @@ func TestProcessJob_EventEmitterErrors(t *testing.T) {
 		Status:   BuildStatusQueued,
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	bq.processJob(ctx, job, "worker-1")
 
 	// Job should still complete despite event emission errors

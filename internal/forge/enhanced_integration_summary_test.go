@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"testing"
@@ -56,7 +55,7 @@ func testEnhancedForgeManager(t *testing.T) {
 func testEnhancedMockForgeClientPreConfigured(t *testing.T) {
 	client := NewEnhancedGitHubMock("enhanced-test")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test organization listing (should have pre-configured data)
 	orgs, err := client.ListOrganizations(ctx)
@@ -101,7 +100,7 @@ func testEnhancedMockForgeClientPreConfigured(t *testing.T) {
 
 func testEnhancedMockForgeClientFailureModes(t *testing.T) {
 	client := NewEnhancedMockForgeClient("failure-test", TypeGitHub)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test authentication failure
 	client.WithAuthFailure()
@@ -169,7 +168,7 @@ func testMultiPlatformDiscovery(t *testing.T) {
 	manager.AddForge(forgejo.GenerateForgeConfig(), forgejo)
 
 	// Test discovery across all platforms
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// GitHub discovery
 	githubRepos, err := github.ListRepositories(ctx, []string{"github-org"})
@@ -309,14 +308,14 @@ func testEnhancedDiscoveryService(t *testing.T) {
 	}
 
 	// Test that discovery service can access enhanced forge data
-	repos, err := github.ListRepositories(context.Background(), []string{"github-org"})
+	repos, err := github.ListRepositories(t.Context(), []string{"github-org"})
 	if err != nil {
 		t.Errorf("DiscoveryService repository access error: %v", err)
 	}
 
 	docsRepos := 0
 	for _, repo := range repos {
-		err := github.CheckDocumentation(context.Background(), repo)
+		err := github.CheckDocumentation(t.Context(), repo)
 		if err != nil {
 			t.Errorf("CheckDocumentation() error: %v", err)
 		}
@@ -347,7 +346,7 @@ func testPerformanceAndResilience(t *testing.T) {
 		}
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	start := time.Now()
 
 	// Test large-scale organization listing

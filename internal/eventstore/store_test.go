@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"bytes"
-	"context"
 	"testing"
 	"time"
 )
@@ -15,7 +14,7 @@ func TestEventStoreAppendAndRetrieve(t *testing.T) {
 	}
 	defer func() { _ = store.Close() }()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	buildID := testBuildID
 	eventType := "TestEvent"
 	payload := []byte(`{"test": "data"}`)
@@ -59,7 +58,7 @@ func TestEventStoreGetRange(t *testing.T) {
 	}
 	defer func() { _ = store.Close() }()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	now := time.Now()
 
 	// Add events
@@ -91,7 +90,7 @@ func TestEventStoreMultipleBuilds(t *testing.T) {
 	}
 	defer func() { _ = store.Close() }()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Add events for different builds
 	_ = store.Append(ctx, "build-1", "Event1", []byte("data1"), nil)

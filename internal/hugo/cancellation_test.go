@@ -12,7 +12,7 @@ import (
 func TestGenerationCancelledEarly(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel immediately
 
 	_, err := gen.GenerateSiteWithReportContext(ctx, nil)
