@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -96,7 +97,12 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
 	if err != nil {
-		return "", classifyCloneError(repo.URL, err)
+		classified := classifyCloneError(repo.URL, err)
+		var authErr *AuthError
+		if repo.Auth != nil && errors.As(classified, &authErr) {
+			logCloneAuthContext(repo, authErr)
+		}
+		return "", classified
 	}
 	if ref, herr := repository.Head(); herr == nil {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), slog.String("commit", ref.Hash().String()[:8]), logfields.Path(repoPath))
@@ -141,7 +147,12 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
 	if err != nil {
-		return CloneResult{}, classifyCloneError(repo.URL, err)
+		classified := classifyCloneError(repo.URL, err)
+		var authErr *AuthError
+		if repo.Auth != nil && errors.As(classified, &authErr) {
+			logCloneAuthContext(repo, authErr)
+		}
+		return CloneResult{}, classified
 	}
 
 	// Get commit metadata
@@ -175,6 +186,55 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 		}
 	}
 	return result, nil
+}
+
+func logCloneAuthContext(repo appcfg.Repository, authErr *AuthError) {
+	authCfg := repo.Auth
+	if authCfg == nil {
+		return
+	}
+
+	username := authCfg.Username
+	tokenValue := ""
+	switch authCfg.Type {
+	case appcfg.AuthTypeToken:
+		tokenValue = authCfg.Token
+	case appcfg.AuthTypeBasic:
+		tokenValue = authCfg.Password
+	case appcfg.AuthTypeSSH, appcfg.AuthTypeNone:
+		// No token value to log.
+	}
+
+	attrs := []any{
+		logfields.Name(repo.Name),
+		logfields.URL(repo.URL),
+		slog.String("auth_type", string(authCfg.Type)),
+	}
+	if username != "" {
+		attrs = append(attrs, slog.String("auth_username", username))
+	}
+	if tokenValue != "" {
+		attrs = append(attrs,
+			slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
+			slog.Int("auth_token_len", len(tokenValue)),
+		)
+	}
+	if authCfg.Type == appcfg.AuthTypeSSH {
+		attrs = append(attrs, slog.String("auth_key_path", authCfg.KeyPath))
+	}
+	attrs = append(attrs, slog.String("error", authErr.Error()))
+
+	slog.Warn("Git clone authentication failed (auth context)", attrs...)
+}
+
+func tokenPrefix(token string, n int) string {
+	if n <= 0 || token == "" {
+		return ""
+	}
+	if len(token) <= n {
+		return token
+	}
+	return token[:n]
 }
 
 func classifyCloneError(url string, err error) error {
