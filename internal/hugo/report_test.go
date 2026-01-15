@@ -91,7 +91,7 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 			}
 
 			// Create test files for all repositories
-			var files []docs.DocFile
+			files := make([]docs.DocFile, 0, len(repositories))
 			for _, repo := range repositories {
 				files = append(files, docs.DocFile{
 					Repository:   repo.Name,
