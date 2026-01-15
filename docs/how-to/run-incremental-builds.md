@@ -1,5 +1,7 @@
 ---
 uid: 8a4a0ee2-d35b-45e0-8199-955e88ec3c84
+aliases:
+  - /_uid/8a4a0ee2-d35b-45e0-8199-955e88ec3c84/
 title: "How To: Run Incremental Builds"
 date: 2025-12-15
 categories:

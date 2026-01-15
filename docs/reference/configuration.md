@@ -1,5 +1,7 @@
 ---
 uid: d7e42918-9daa-47e0-9e29-8cda2e13dd7a
+aliases:
+  - /_uid/d7e42918-9daa-47e0-9e29-8cda2e13dd7a/
 title: "Configuration Reference"
 date: 2025-12-15
 categories:
@@ -8,7 +10,8 @@ tags:
   - configuration
   - yaml
   - settings
-fingerprint: 7116f9c951c691cd3494c38cadbbdc25553dfcca8ac604f06fd9b6cb8fd306d1
+fingerprint: 02ccfd062237a416bd66e44cf0fb64376c567b9690b5d7cdba3e4a3d743bd16f
+lastmod: 2026-01-15
 ---
 
 # Configuration Reference

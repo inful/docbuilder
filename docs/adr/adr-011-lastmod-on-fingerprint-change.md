@@ -11,7 +11,8 @@ tags:
   - fingerprint
   - lastmod
   - hugo
-fingerprint: c3211462fd46798739faccd46a630ae9768537286b99646380e4821464d3f701
+fingerprint: 70ae5c0d1d00e8f9f5dcda4baa30f080c396b3f12ad429e2b1c0b6be03b9e112
+lastmod: 2026-01-15
 ---
 
 # ADR-011: Set lastmod When Fingerprint Changes

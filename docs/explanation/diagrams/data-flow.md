@@ -1,5 +1,7 @@
 ---
 uid: 13690187-bce4-4683-a34a-3743ba03d7ac
+aliases:
+  - /_uid/13690187-bce4-4683-a34a-3743ba03d7ac/
 title: "Data Flow Diagrams"
 date: 2026-01-04
 categories:

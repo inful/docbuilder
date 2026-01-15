@@ -1,5 +1,7 @@
 ---
 uid: d7da54f5-3864-4e53-b004-d8d3ae551f98
+aliases:
+  - /_uid/d7da54f5-3864-4e53-b004-d8d3ae551f98/
 title: "CI/CD Setup"
 date: 2025-12-15
 categories:

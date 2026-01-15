@@ -1,5 +1,7 @@
 ---
 uid: 1575ffc4-7bf0-46df-a8b2-904e93f95031
+aliases:
+  - /_uid/1575ffc4-7bf0-46df-a8b2-904e93f95031/
 title: "Renderer Testing"
 date: 2025-12-15
 categories:

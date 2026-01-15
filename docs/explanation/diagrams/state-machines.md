@@ -1,5 +1,7 @@
 ---
 uid: bd04a400-e6bb-431f-8c5e-032a486559f7
+aliases:
+  - /_uid/bd04a400-e6bb-431f-8c5e-032a486559f7/
 title: "State Machine Diagrams"
 date: 2026-01-04
 categories:

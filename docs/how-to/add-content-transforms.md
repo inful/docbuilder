@@ -1,5 +1,7 @@
 ---
 uid: 8f736168-8777-470e-a8a4-ddb9209a073b
+aliases:
+  - /_uid/8f736168-8777-470e-a8a4-ddb9209a073b/
 title: "How To: Add Content Transforms"
 date: 2025-12-15
 categories:

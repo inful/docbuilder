@@ -1,5 +1,7 @@
 ---
 uid: ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1
+aliases:
+  - /_uid/ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1/
 title: "ADR-005: Documentation Linting for Pre-Commit Validation"
 date: 2025-12-29
 categories:

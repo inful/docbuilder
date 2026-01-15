@@ -1,5 +1,7 @@
 ---
 uid: a8161eb4-7b61-46e5-81c8-cfa763e8d26e
+aliases:
+  - /_uid/a8161eb4-7b61-46e5-81c8-cfa763e8d26e/
 title: "How To: Configure Forge Namespacing"
 date: 2025-12-15
 categories:

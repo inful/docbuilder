@@ -1,5 +1,7 @@
 ---
 uid: aad82557-a8ca-417e-9da3-e5cec27f80df
+aliases:
+  - /_uid/aad82557-a8ca-417e-9da3-e5cec27f80df/
 title: "How To: Use Relearn Theme"
 date: 2025-12-15
 categories:

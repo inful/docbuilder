@@ -1,5 +1,7 @@
 ---
 uid: a32222c2-182c-47b4-9744-2a0dd1794367
+aliases:
+  - /_uid/a32222c2-182c-47b4-9744-2a0dd1794367/
 title: "Configure Webhooks for Automatic Rebuilds"
 date: 2025-12-17
 categories:

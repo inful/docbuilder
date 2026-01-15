@@ -1,5 +1,7 @@
 ---
 uid: 48b52695-0104-48d5-a91c-4698b031113e
+aliases:
+  - /_uid/48b52695-0104-48d5-a91c-4698b031113e/
 title: "Build Reports Reference"
 date: 2025-12-15
 categories:

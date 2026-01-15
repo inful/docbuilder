@@ -1,5 +1,7 @@
 ---
 uid: 58cfc94a-28b1-40af-b149-0ccb52a0b58a
+aliases:
+  - /_uid/58cfc94a-28b1-40af-b149-0ccb52a0b58a/
 title: "Webhook and Documentation Isolation Strategy"
 date: 2025-12-17
 categories:

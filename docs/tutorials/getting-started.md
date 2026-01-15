@@ -1,5 +1,7 @@
 ---
 uid: 4a61e911-03a6-4769-9e15-63d304572860
+aliases:
+  - /_uid/4a61e911-03a6-4769-9e15-63d304572860/
 title: "Getting Started Tutorial"
 date: 2025-12-15
 categories:

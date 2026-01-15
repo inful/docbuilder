@@ -1,5 +1,7 @@
 ---
 uid: 36766002-6e10-4a98-9c90-981b15fa6f99
+aliases:
+  - /_uid/36766002-6e10-4a98-9c90-981b15fa6f99/
 title: "Component Interactions Diagrams"
 date: 2026-01-04
 categories:

@@ -1,5 +1,7 @@
 ---
 uid: 17f711ab-2410-4ae1-96f1-384ebacc19ac
+aliases:
+  - /_uid/17f711ab-2410-4ae1-96f1-384ebacc19ac/
 title: "Transform Validation Reference (DEPRECATED)"
 date: 2025-12-15
 categories:

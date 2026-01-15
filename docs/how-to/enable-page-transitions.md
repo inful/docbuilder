@@ -1,5 +1,7 @@
 ---
 uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
+aliases:
+  - /_uid/771a70f5-88cb-4508-9b69-baebfdf90b48/
 title: "How To: Enable Page Transitions"
 date: 2025-12-15
 categories:

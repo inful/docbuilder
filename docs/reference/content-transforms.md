@@ -1,5 +1,7 @@
 ---
 uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
+aliases:
+  - /_uid/3e530ceb-32d7-45fe-888b-6a9309ffb6c4/
 title: "Content Transforms Reference (DEPRECATED)"
 date: 2025-12-15
 categories:

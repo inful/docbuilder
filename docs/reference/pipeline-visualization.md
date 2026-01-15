@@ -1,5 +1,7 @@
 ---
 uid: 447486d8-8ee9-4b20-a69a-12497dbb8b92
+aliases:
+  - /_uid/447486d8-8ee9-4b20-a69a-12497dbb8b92/
 title: "Pipeline Visualization"
 date: 2025-12-15
 categories:

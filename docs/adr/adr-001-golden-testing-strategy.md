@@ -1,5 +1,7 @@
 ---
 uid: 93f56604-829d-4753-a7dc-9e7447a7af4f
+aliases:
+  - /_uid/93f56604-829d-4753-a7dc-9e7447a7af4f/
 title: "ADR-001: Golden Testing Strategy for Output Verification"
 date: 2025-12-12
 categories:

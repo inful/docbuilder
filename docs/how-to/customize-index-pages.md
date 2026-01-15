@@ -1,5 +1,7 @@
 ---
 uid: 5cec1e52-55f5-4c51-a64f-a34da2482cea
+aliases:
+  - /_uid/5cec1e52-55f5-4c51-a64f-a34da2482cea/
 title: "How To: Customize Index Pages"
 date: 2025-12-15
 categories:
