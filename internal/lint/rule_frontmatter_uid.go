@@ -11,12 +11,12 @@ import (
 
 type FrontmatterUIDRule struct{}
 
-const frontmatterUIDRuleName = "frontmatter-uid"
-
 const (
+	frontmatterUIDRuleName = "frontmatter-uid"
 	missingUIDMessage      = "Missing uid in frontmatter"
 	invalidUIDMessage      = "Invalid uid format in frontmatter"
 	missingUIDaliasMessage = "Missing uid-based alias in frontmatter"
+	indexFilename          = "_index.md"
 )
 
 func (r *FrontmatterUIDRule) Name() string {
@@ -25,7 +25,7 @@ func (r *FrontmatterUIDRule) Name() string {
 
 func (r *FrontmatterUIDRule) AppliesTo(filePath string) bool {
 	// Skip generated index files - they don't need UIDs
-	if strings.HasSuffix(filePath, "/_index.md") || strings.HasSuffix(filePath, "\\_index.md") {
+	if strings.HasSuffix(filePath, "/"+indexFilename) || strings.HasSuffix(filePath, "\\"+indexFilename) || filePath == indexFilename {
 		return false
 	}
 	return IsDocFile(filePath)
