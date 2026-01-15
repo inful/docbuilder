@@ -439,6 +439,54 @@ ERROR: Incomplete frontmatter
 
 ---
 
+### Rule: Frontmatter Fingerprint
+
+**Pattern**: Missing `fingerprint:` field, or fingerprint does not match content
+
+**Rationale**:
+- DocBuilder uses a frontmatter fingerprint to detect content changes reliably
+- Helps avoid stale pages where content changed but metadata did not
+- Enables deterministic updates of `lastmod` only when content meaningfully changes
+
+**Examples**:
+
+```yaml
+❌ Invalid (missing fingerprint):
+---
+title: "API Guide"
+date: 2025-12-29
+---
+
+❌ Invalid (stale fingerprint):
+---
+title: "API Guide"
+date: 2025-12-29
+fingerprint: deadbeef
+---
+
+✅ Valid:
+---
+title: "API Guide"
+date: 2025-12-29
+fingerprint: <generated>
+---
+```
+
+**Auto-fix**:
+- Regenerates `fingerprint` via `docbuilder lint --fix`
+- If the fingerprint value changes, sets/updates `lastmod` to today’s UTC date (`YYYY-MM-DD`)
+
+**Error Message**:
+```
+ERROR: Missing or invalid fingerprint in frontmatter
+  File: docs/api-guide.md
+  Issue: fingerprint is missing or does not match the document content
+
+  Fix: docbuilder lint --fix docs/
+```
+
+---
+
 ### Rule: Broken Internal Links
 
 **Pattern**: Link to non-existent local file
