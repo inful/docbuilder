@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -14,6 +15,66 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
+
+const (
+	authTypeToken = "token"
+	authTypeBasic = "basic"
+	authTypeSSH   = "ssh"
+)
+
+func tokenPrefix(token string, n int) string {
+	if n <= 0 || token == "" {
+		return ""
+	}
+	if len(token) <= n {
+		return token
+	}
+	return token[:n]
+}
+
+func repoFailureLogArgs(repo *config.Repository, err error) []any {
+	args := []any{
+		"name", repo.Name,
+		"error", err,
+		"auth_present", repo.Auth != nil,
+	}
+
+	var authErr *git.AuthError
+	if !errors.As(err, &authErr) {
+		return args
+	}
+	if repo.Auth == nil {
+		return args
+	}
+
+	authType := strings.ToLower(string(repo.Auth.Type))
+	args = append(args, "auth_type", authType)
+
+	authUsername := repo.Auth.Username
+	if authType == authTypeToken && authUsername == "" {
+		authUsername = authTypeToken
+	}
+	if authUsername != "" {
+		args = append(args, "auth_username", authUsername)
+	}
+
+	tokenValue := ""
+	switch authType {
+	case authTypeToken:
+		tokenValue = repo.Auth.Token
+	case authTypeBasic:
+		tokenValue = repo.Auth.Password
+	}
+	if tokenValue != "" {
+		args = append(args, "auth_token_prefix", tokenPrefix(tokenValue, 4), "auth_token_len", len(tokenValue))
+	}
+
+	if authType == authTypeSSH && repo.Auth.KeyPath != "" {
+		args = append(args, "auth_key_path", repo.Auth.KeyPath)
+	}
+
+	return args
+}
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
@@ -165,7 +226,7 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		}
 
 		if err != nil {
-			slog.Error("Failed to process repository", "name", repo.Name, "error", err)
+			slog.Error("Failed to process repository", repoFailureLogArgs(repo, err)...)
 			// Continue with remaining repositories instead of failing
 			repositoriesSkipped++
 
