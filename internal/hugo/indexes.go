@@ -11,8 +11,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/google/uuid"
-
 	"gopkg.in/yaml.v3"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -22,12 +20,6 @@ import (
 )
 
 const rootSection = "root"
-
-func stableGeneratedUID(key string) string {
-	// Deterministic UUID for generated pages (indexes, sections).
-	// This avoids churn across builds while still being globally unique enough.
-	return uuid.NewSHA1(uuid.NameSpaceURL, []byte("docbuilder:"+key)).String()
-}
 
 // sortDocFiles sorts a slice of DocFile by path for deterministic ordering.
 func sortDocFiles(files []docs.DocFile) {
