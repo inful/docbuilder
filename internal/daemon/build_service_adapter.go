@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
@@ -18,6 +19,7 @@ const defaultSiteDir = "./site"
 // compatibility with the existing job-based architecture.
 type BuildServiceAdapter struct {
 	inner build.BuildService
+	mu    sync.Mutex
 }
 
 // NewBuildServiceAdapter creates a new adapter wrapping a BuildService.
@@ -30,6 +32,11 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 	if job == nil {
 		return nil, errors.New("build job is nil")
 	}
+
+	// Daemon serves a single output directory. Serializing builds here prevents concurrent
+	// build jobs (via BuildQueue workers) from clobbering shared staging/output paths.
+	a.mu.Lock()
+	defer a.mu.Unlock()
 
 	// Extract configuration from TypedMeta
 	var cfg *config.Config
