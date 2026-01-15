@@ -494,21 +494,24 @@ func (s *HTTPServer) resolveDocsRoot() string {
 
 	// If public doesn't exist, check if we're in the middle of a rebuild
 	// and the previous backup directory exists
-	prev := out + "_prev"
-	prevPublic := filepath.Join(prev, "public")
-	if st, err := os.Stat(prevPublic); err == nil && st.IsDir() {
-		// Serve from previous backup to avoid empty responses during atomic rename
-		slog.Warn("Serving from backup directory - primary public missing",
-			slog.String("backup_path", prevPublic),
-			slog.String("expected_path", public),
-			slog.Time("backup_modified", st.ModTime()))
-		return prevPublic
+	// NOTE: Hugo generator currently uses "<output>.prev" as the backup dir name during
+	// atomic promotion. We also check "<output>_prev" for backward compatibility.
+	for _, prev := range []string{out + ".prev", out + "_prev"} {
+		prevPublic := filepath.Join(prev, "public")
+		if st, err := os.Stat(prevPublic); err == nil && st.IsDir() {
+			// Serve from previous backup to avoid empty responses during atomic rename
+			slog.Warn("Serving from backup directory - primary public missing",
+				slog.String("backup_path", prevPublic),
+				slog.String("expected_path", public),
+				slog.Time("backup_modified", st.ModTime()))
+			return prevPublic
+		}
 	}
 
 	slog.Warn("No public directory found, serving from output root",
 		slog.String("path", out),
 		slog.String("expected_public", public),
-		slog.String("expected_backup", prevPublic))
+		slog.String("expected_backup", out+".prev/public or "+out+"_prev/public"))
 	return out
 }
 
