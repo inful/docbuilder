@@ -58,7 +58,7 @@ func TestNewBuildService(t *testing.T) {
 func TestDefaultBuildService_Run_NilConfig(t *testing.T) {
 	svc := NewBuildService()
 
-	result, err := svc.Run(context.Background(), BuildRequest{
+	result, err := svc.Run(t.Context(), BuildRequest{
 		Config:    nil,
 		OutputDir: "/tmp/test",
 	})
@@ -74,7 +74,7 @@ func TestDefaultBuildService_Run_NilConfig(t *testing.T) {
 func TestDefaultBuildService_Run_NoRepositories(t *testing.T) {
 	svc := NewBuildService()
 
-	result, err := svc.Run(context.Background(), BuildRequest{
+	result, err := svc.Run(t.Context(), BuildRequest{
 		Config:    &config.Config{},
 		OutputDir: "/tmp/test",
 	})
@@ -87,7 +87,7 @@ func TestDefaultBuildService_Run_NoRepositories(t *testing.T) {
 }
 
 func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // Cancel immediately
 
 	svc := NewBuildService().
@@ -146,7 +146,7 @@ func TestDefaultBuildService_WithFactories(t *testing.T) {
 	}
 
 	// Verify factories are called during Run (with empty repos so it exits early)
-	_, _ = svc.Run(context.Background(), BuildRequest{
+	_, _ = svc.Run(t.Context(), BuildRequest{
 		Config:    &config.Config{},
 		OutputDir: "/tmp/test",
 	})
@@ -194,7 +194,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 				return evaluator
 			})
 
-		result, err := svc.Run(context.Background(), BuildRequest{
+		result, err := svc.Run(t.Context(), BuildRequest{
 			Config: &config.Config{
 				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
 			},
@@ -237,7 +237,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 
 		// This will fail at git clone (no network), but that's fine for testing
 		// The important thing is that it proceeds past skip evaluation
-		result, _ := svc.Run(context.Background(), BuildRequest{
+		result, _ := svc.Run(t.Context(), BuildRequest{
 			Config: &config.Config{
 				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
 			},
@@ -261,7 +261,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 				return evaluator
 			})
 
-		_, _ = svc.Run(context.Background(), BuildRequest{
+		_, _ = svc.Run(t.Context(), BuildRequest{
 			Config: &config.Config{
 				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
 			},

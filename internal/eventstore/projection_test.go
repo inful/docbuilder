@@ -1,7 +1,6 @@
 package eventstore
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -119,7 +118,7 @@ func TestBuildHistoryProjection_BuildFailed(t *testing.T) {
 }
 
 func TestBuildHistoryProjection_Rebuild(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	store, err := NewSQLiteStore(":memory:")
 	if err != nil {
 		t.Fatalf("Failed to create store: %v", err)

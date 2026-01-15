@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 )
@@ -22,7 +21,7 @@ func TestEnhancedMockForgeClient_BasicFunctionality(t *testing.T) {
 	org := CreateMockOrganization("1", "test-org", "Test Organization", "Organization")
 	client.AddOrganization(org)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	orgs, err := client.ListOrganizations(ctx)
 	if err != nil {
 		t.Errorf("ListOrganizations() error: %v", err)
@@ -42,7 +41,7 @@ func TestEnhancedMockForgeClient_FailureSimulation(t *testing.T) {
 
 	// Test auth failure
 	client.WithAuthFailure()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := client.ListOrganizations(ctx)
 	if err == nil {
@@ -72,7 +71,7 @@ func TestEnhancedMockForgeClient_RateLimitSimulation(t *testing.T) {
 
 	// Test rate limit
 	client.WithRateLimit(100, time.Hour)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := client.ListOrganizations(ctx)
 	if err == nil {
@@ -89,7 +88,7 @@ func TestEnhancedMockForgeClient_NetworkTimeoutSimulation(t *testing.T) {
 
 	// Test network timeout (but don't actually wait for the timeout)
 	client.WithNetworkTimeout(time.Millisecond * 50)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := client.ListOrganizations(ctx)
 	if err == nil {
@@ -112,7 +111,7 @@ func TestEnhancedMockForgeClient_RepositoryManagement(t *testing.T) {
 	repo := CreateMockGitHubRepo("test-org", "docs-repo", true, false, false, false)
 	client.AddRepository(repo)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test repository listing
 	repos, err := client.ListRepositories(ctx, []string{"test-org"})
@@ -170,7 +169,7 @@ func TestEnhancedMockForgeClient_WebhookFunctionality(t *testing.T) {
 	}
 
 	// Test webhook event parsing
-	ctx := context.Background()
+	ctx := t.Context()
 	event, err := client.ParseWebhookEvent(payload, "push")
 	if err != nil {
 		t.Errorf("ParseWebhookEvent() error: %v", err)
@@ -210,7 +209,7 @@ func TestEnhancedMockForgeClient_FactoryMethods(t *testing.T) {
 	}
 
 	// Should have default organization and repository
-	ctx := context.Background()
+	ctx := t.Context()
 	orgs, err := github.ListOrganizations(ctx)
 	if err != nil {
 		t.Errorf("GitHub mock ListOrganizations() error: %v", err)
@@ -320,7 +319,7 @@ func TestEnhancedMockForgeClient_DelaySimulation(t *testing.T) {
 
 	client.AddOrganization(CreateMockOrganization("1", "test-org", "Test Organization", "Organization"))
 
-	ctx := context.Background()
+	ctx := t.Context()
 	start := time.Now()
 
 	_, err := client.ListOrganizations(ctx)

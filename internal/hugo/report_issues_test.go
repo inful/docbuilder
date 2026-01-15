@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
@@ -13,7 +12,7 @@ import (
 
 // TestIssueTaxonomyPartialClone verifies issue codes for partial clone warning path.
 func TestIssueTaxonomyPartialClone(t *testing.T) {
-	report := newBuildReport(context.Background(), 0, 0)
+	report := newBuildReport(t.Context(), 0, 0)
 	// Override git client globally would be complex; instead simulate outcomes by directly manipulating report counts
 	// Simulate one success + one failure then inject a warning StageError consistent with stageCloneRepos behavior.
 	report.ClonedRepositories = 1
@@ -43,7 +42,7 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
 
 // TestIssueTaxonomyHugoWarning ensures hugo execution warning produces an issue entry.
 func TestIssueTaxonomyHugoWarning(t *testing.T) {
-	report := newBuildReport(context.Background(), 0, 0)
+	report := newBuildReport(t.Context(), 0, 0)
 	// Simulate a hugo run warning
 	se := newWarnStageError(StageRunHugo, errors.New("wrap: "+build.ErrHugo.Error()))
 	report.StageErrorKinds[StageRunHugo] = se.Kind
@@ -69,7 +68,7 @@ func TestIssueTaxonomyHugoWarning(t *testing.T) {
 
 // Simple time guard to ensure sanitized copy preserves schema_version & issues.
 func TestSanitizedCopyPreservesSchemaVersionAndIssues(t *testing.T) {
-	r := newBuildReport(context.Background(), 1, 1)
+	r := newBuildReport(t.Context(), 1, 1)
 	r.Issues = append(r.Issues, ReportIssue{Code: IssueCloneFailure, Stage: StageCloneRepos, Severity: SeverityError, Message: "m", Transient: false})
 	time.Sleep(time.Millisecond) // ensure non-zero duration
 	r.finish()

@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -32,7 +31,7 @@ func TestTestForgeBasics(t *testing.T) {
 	forge.AddOrganization("test-org")
 
 	// Test basic functionality
-	orgs, err := forge.GetUserOrganizations(context.Background())
+	orgs, err := forge.GetUserOrganizations(t.Context())
 	if err != nil {
 		t.Fatalf("Failed to list organizations: %v", err)
 	}
@@ -42,7 +41,7 @@ func TestTestForgeBasics(t *testing.T) {
 	}
 
 	// Test repository listing
-	repos, err := forge.GetRepositoriesForOrganization(context.Background(), "test-org")
+	repos, err := forge.GetRepositoriesForOrganization(t.Context(), "test-org")
 	if err != nil {
 		t.Fatalf("Failed to list repositories: %v", err)
 	}
@@ -63,7 +62,7 @@ func TestTestForgeFailureModes(t *testing.T) {
 	forge.SetFailMode(FailModeAuth)
 
 	// Test that failures are triggered
-	_, err := forge.GetUserOrganizations(context.Background())
+	_, err := forge.GetUserOrganizations(t.Context())
 	if err == nil {
 		t.Error("Expected failure due to auth error, but got success")
 	}
@@ -72,7 +71,7 @@ func TestTestForgeFailureModes(t *testing.T) {
 	forge.SetFailMode(FailModeNone)
 
 	// Should work now
-	orgs, err := forge.GetUserOrganizations(context.Background())
+	orgs, err := forge.GetUserOrganizations(t.Context())
 	if err != nil {
 		t.Fatalf("Expected success after disabling failures, got: %v", err)
 	}
