@@ -102,6 +102,7 @@ docbuilder lint --fix --force
 Auto-fix will:
 - Rename files to lowercase with hyphens
 - Update all internal links to renamed files
+- Regenerate frontmatter `fingerprint` values, setting `lastmod` (UTC `YYYY-MM-DD`) when a fingerprint changes
 - Preserve Git history with `git mv`
 - Show detailed report of changes
 
