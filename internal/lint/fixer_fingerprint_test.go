@@ -119,44 +119,44 @@ func TestFixer_UpdatesFrontmatterFingerprint_UpdatesLastmodWhenFingerprintChange
 }
 
 func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprintUnchanged(t *testing.T) {
-tmpDir := t.TempDir()
-path := filepath.Join(tmpDir, "doc.md")
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "doc.md")
 
-// Create a file with valid fingerprint and lastmod
-seed, err := mdfp.ProcessContent("# Title\n\nHello\n")
-require.NoError(t, err)
-seed = setOrUpdateLastmodInFrontmatter(seed, "2000-01-01")
-require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
+	// Create a file with valid fingerprint and lastmod
+	seed, err := mdfp.ProcessContent("# Title\n\nHello\n")
+	require.NoError(t, err)
+	seed = setOrUpdateLastmodInFrontmatter(seed, "2000-01-01")
+	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
 
-// Verify the file has valid fingerprint and correct lastmod
-ok, verr := mdfp.VerifyFingerprint(seed)
-require.NoError(t, verr)
-require.True(t, ok)
-lastmodBefore, ok := extractLastmodFromFrontmatter(seed)
-require.True(t, ok)
-require.Equal(t, "2000-01-01", lastmodBefore)
+	// Verify the file has valid fingerprint and correct lastmod
+	ok, verr := mdfp.VerifyFingerprint(seed)
+	require.NoError(t, verr)
+	require.True(t, ok)
+	lastmodBefore, ok := extractLastmodFromFrontmatter(seed)
+	require.True(t, ok)
+	require.Equal(t, "2000-01-01", lastmodBefore)
 
-// Re-run the fixer without changing content
-linter := NewLinter(&Config{Format: "text"})
-fixer := NewFixer(linter, false, false)
-fixer.nowFn = func() time.Time { return time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC) }
+	// Re-run the fixer without changing content
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+	fixer.nowFn = func() time.Time { return time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC) }
 
-res, err := fixer.Fix(tmpDir)
-require.NoError(t, err)
-require.NotNil(t, res)
+	res, err := fixer.Fix(tmpDir)
+	require.NoError(t, err)
+	require.NotNil(t, res)
 
-// #nosec G304 -- test reads a temp file path under t.TempDir().
-updatedBytes, err := os.ReadFile(path)
-require.NoError(t, err)
-updatedStr := string(updatedBytes)
+	// #nosec G304 -- test reads a temp file path under t.TempDir().
+	updatedBytes, err := os.ReadFile(path)
+	require.NoError(t, err)
+	updatedStr := string(updatedBytes)
 
-// Verify fingerprint is still valid
-ok, verr = mdfp.VerifyFingerprint(updatedStr)
-require.NoError(t, verr)
-require.True(t, ok)
+	// Verify fingerprint is still valid
+	ok, verr = mdfp.VerifyFingerprint(updatedStr)
+	require.NoError(t, verr)
+	require.True(t, ok)
 
-// CRITICAL: lastmod should remain unchanged because fingerprint didn't change
-lastmodAfter, ok := extractLastmodFromFrontmatter(updatedStr)
-require.True(t, ok)
-require.Equal(t, "2000-01-01", lastmodAfter, "lastmod should not be updated when fingerprint is unchanged")
+	// CRITICAL: lastmod should remain unchanged because fingerprint didn't change
+	lastmodAfter, ok := extractLastmodFromFrontmatter(updatedStr)
+	require.True(t, ok)
+	require.Equal(t, "2000-01-01", lastmodAfter, "lastmod should not be updated when fingerprint is unchanged")
 }
