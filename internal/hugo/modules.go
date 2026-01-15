@@ -22,8 +22,8 @@ func deriveModuleName(baseURL string) string {
 
 	// Extract host (before first slash)
 	host := s
-	if idx := strings.IndexByte(s, '/'); idx >= 0 {
-		host = s[:idx]
+	if before, _, ok := strings.Cut(s, "/"); ok {
+		host = before
 	}
 
 	// Remove port if present
