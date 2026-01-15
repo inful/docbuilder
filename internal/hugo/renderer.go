@@ -143,9 +143,9 @@ func parseHugoRenderError(line string) {
 			snippet = snippet[:200] + "..."
 		}
 		rootCause = snippet
-	} else if idx := strings.Index(line, "failed:"); idx >= 0 {
+	} else if _, after, ok := strings.Cut(line, "failed:"); ok {
 		// Take a snippet after "failed:"
-		snippet := strings.TrimSpace(line[idx+7:])
+		snippet := strings.TrimSpace(after)
 		if len(snippet) > 200 {
 			snippet = snippet[:200] + "..."
 		}
