@@ -28,6 +28,9 @@ build:
   # If omitted and base_directory is not set, defaults to ./site/_workspace.
   # Place outside output.directory to persist clones between builds for faster incremental updates.
   workspace_dir: ./site/_workspace
+  # For documentation sites, shallow clones are typically sufficient and much faster/lower memory.
+  # Set to 0 to disable shallow cloning.
+  shallow_depth: 1
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"

@@ -46,7 +46,7 @@ output: {}          # Output directory behavior
 |-------|------|---------|-------------|
 | clone_concurrency | int | 4 | Parallel clone/update workers (bounded to repo count). |
 | clone_strategy | enum | fresh | Repository acquisition mode: `fresh`, `update`, or `auto`. |
-| shallow_depth | int | 0 | If >0 use shallow clones of that depth. |
+| shallow_depth | int | 1 | Shallow clone depth. Set to `0` to disable shallow cloning. |
 | prune_non_doc_paths | bool | false | Remove non-doc top-level directories after clone. |
 | prune_allow | []string | [] | Keep-listed directories/files (glob). |
 | prune_deny | []string | [] | Force-remove directories/files (glob) except .git. |

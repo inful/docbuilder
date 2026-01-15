@@ -45,9 +45,15 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 		}
 	}
 
-	// ShallowDepth: leave as-is (0 meaning disabled). Negative coerced to 0.
+	// ShallowDepth:
+	// - If omitted: default to a very shallow clone (1) since DocBuilder typically needs only current docs.
+	// - If explicitly set: respect the user value (including 0 to disable).
+	// - Negative coerced to 0.
 	if cfg.Build.ShallowDepth < 0 {
 		cfg.Build.ShallowDepth = 0
+	}
+	if !cfg.Build.shallowDepthSpecified && cfg.Build.ShallowDepth == 0 {
+		cfg.Build.ShallowDepth = 1
 	}
 
 	// Deletion detection default: enable only if user omitted the field entirely.

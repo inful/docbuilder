@@ -74,12 +74,17 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 		return "", fmt.Errorf("failed to remove existing directory: %w", err)
 	}
 
-	cloneOptions := &git.CloneOptions{URL: repo.URL}
-	if repo.Branch != "" {
-		if repo.IsTag {
+	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
+	// Default to cloning only the remote HEAD branch.
+	// This dramatically reduces memory/network usage vs fetching all branches/tags.
+	if repo.IsTag {
+		if repo.Branch != "" {
 			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
 			slog.Debug("Cloning tag reference", logfields.Name(repo.Name), slog.String("tag", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
-		} else {
+		}
+		cloneOptions.SingleBranch = true
+	} else {
+		if repo.Branch != "" {
 			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
 			slog.Debug("Cloning branch reference", logfields.Name(repo.Name), slog.String("branch", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
 		}
@@ -124,12 +129,16 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 		return CloneResult{}, fmt.Errorf("failed to remove existing directory: %w", err)
 	}
 
-	cloneOptions := &git.CloneOptions{URL: repo.URL}
-	if repo.Branch != "" {
-		if repo.IsTag {
+	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
+	// Default to cloning only the remote HEAD branch.
+	if repo.IsTag {
+		if repo.Branch != "" {
 			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/tags/" + repo.Branch)
 			slog.Debug("Cloning tag reference", logfields.Name(repo.Name), slog.String("tag", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
-		} else {
+		}
+		cloneOptions.SingleBranch = true
+	} else {
+		if repo.Branch != "" {
 			cloneOptions.ReferenceName = plumbing.ReferenceName("refs/heads/" + repo.Branch)
 			slog.Debug("Cloning branch reference", logfields.Name(repo.Name), slog.String("branch", repo.Branch), slog.String("ref", string(cloneOptions.ReferenceName)))
 		}

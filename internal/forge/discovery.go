@@ -52,27 +52,51 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 		Timestamp:     startTime,
 	}
 
-	for forgeName, client := range ds.forgeManager.GetAllForges() {
-		slog.Info("Starting discovery", "forge", forgeName)
-
-		// Discover repositories for this forge
-		repos, orgs, filtered, err := ds.discoverForge(ctx, client)
-		if err != nil {
-			result.Errors[forgeName] = err
-			slog.Error("Discovery failed", "forge", forgeName, "error", err)
-			continue
-		}
-
-		result.Repositories = append(result.Repositories, repos...)
-		result.Organizations[forgeName] = orgs
-		result.Filtered = append(result.Filtered, filtered...)
-
-		slog.Info("Discovery completed",
-			"forge", forgeName,
-			"repositories", len(repos),
-			"organizations", len(orgs),
-			"filtered", len(filtered))
+	forges := ds.forgeManager.GetAllForges()
+	if len(forges) == 0 {
+		result.Duration = time.Since(startTime)
+		return result, nil
 	}
+
+	// Discover each forge concurrently. This can significantly reduce end-to-end time
+	// when multiple forges are configured or when a single forge has high-latency APIs.
+	const maxForgeConcurrency = 4
+	sem := make(chan struct{}, maxForgeConcurrency)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for forgeName, client := range forges {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			slog.Info("Starting discovery", "forge", forgeName)
+
+			// Discover repositories for this forge
+			repos, orgs, filtered, err := ds.discoverForge(ctx, client)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				result.Errors[forgeName] = err
+				slog.Error("Discovery failed", "forge", forgeName, "error", err)
+				return
+			}
+
+			result.Repositories = append(result.Repositories, repos...)
+			result.Organizations[forgeName] = orgs
+			result.Filtered = append(result.Filtered, filtered...)
+
+			slog.Info("Discovery completed",
+				"forge", forgeName,
+				"repositories", len(repos),
+				"organizations", len(orgs),
+				"filtered", len(filtered))
+		}()
+	}
+
+	wg.Wait()
 
 	result.Duration = time.Since(startTime)
 
@@ -92,38 +116,59 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		return nil, nil, nil, fmt.Errorf("forge configuration not found for %s", client.GetName())
 	}
 
-	// Determine which organizations/groups to scan
-	var targetOrgs []string
+	// Determine which organizations/groups to scan.
+	// If none are configured, enter auto-discovery mode and enumerate all accessible organizations.
+	var (
+		targetOrgs       []string
+		organizations    []*Organization
+		hasPrelistedOrgs bool
+		organizationsErr error
+		repositories     []*Repository
+		repositoriesErr  error
+	)
+
 	targetOrgs = append(targetOrgs, forgeConfig.Organizations...)
 	targetOrgs = append(targetOrgs, forgeConfig.Groups...)
 
 	if len(targetOrgs) == 0 {
-		// If no specific orgs/groups configured, enter auto-discovery mode and enumerate all accessible organizations
 		slog.Info("Entering auto-discovery mode (no organizations/groups configured)", "forge", client.GetName())
-		// If no specific orgs configured, discover all accessible ones
 		orgs, err := client.ListOrganizations(ctx)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to list organizations: %w", err)
 		}
+		organizations = orgs
+		hasPrelistedOrgs = true
 		for _, org := range orgs {
-			// Always use Name for API calls (GitHub/Forgejo use login names, GitLab accepts both ID and name)
-			// org.Name contains the appropriate identifier for API endpoints
 			targetOrgs = append(targetOrgs, org.Name)
 		}
 		slog.Info("Auto-discovered organizations", "forge", client.GetName(), "count", len(orgs))
 	}
 
-	// Get all organizations (for metadata)
-	organizations, err := client.ListOrganizations(ctx)
-	if err != nil {
-		slog.Warn("Failed to get organization metadata", "forge", client.GetName(), "error", err)
-		organizations = make([]*Organization, 0)
+	// Fetch org metadata and repositories concurrently where possible.
+	// If we already listed orgs for auto-discovery, reuse that result.
+	var fetchWG sync.WaitGroup
+	if !hasPrelistedOrgs {
+		fetchWG.Add(1)
+		go func() {
+			defer fetchWG.Done()
+			organizations, organizationsErr = client.ListOrganizations(ctx)
+		}()
 	}
 
-	// Discover repositories
-	repositories, err := client.ListRepositories(ctx, targetOrgs)
-	if err != nil {
-		return nil, organizations, nil, fmt.Errorf("failed to list repositories: %w", err)
+	fetchWG.Add(1)
+	go func() {
+		defer fetchWG.Done()
+		repositories, repositoriesErr = client.ListRepositories(ctx, targetOrgs)
+	}()
+
+	fetchWG.Wait()
+
+	if organizationsErr != nil {
+		slog.Warn("Failed to get organization metadata", "forge", client.GetName(), "error", organizationsErr)
+		organizations = make([]*Organization, 0)
+	}
+	if repositoriesErr != nil {
+		return nil, organizations, nil, fmt.Errorf("failed to list repositories: %w", repositoriesErr)
 	}
 
 	// Ensure repository metadata includes forge identity for downstream conversion (auth, namespacing, edit links).
