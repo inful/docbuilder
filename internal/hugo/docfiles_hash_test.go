@@ -15,7 +15,8 @@ func TestDocFilesHashChanges(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
 
-	files := []docs.DocFile{{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")}}
+	files := make([]docs.DocFile, 0, 2)
+	files = append(files, docs.DocFile{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")})
 	if err := gen.GenerateSite(files); err != nil {
 		t.Fatalf("first build failed: %v", err)
 	}

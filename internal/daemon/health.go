@@ -41,7 +41,7 @@ type HealthResponse struct {
 func (d *Daemon) PerformHealthChecks() *HealthResponse {
 	startTime := time.Now()
 
-	var checks []HealthCheck
+	checks := make([]HealthCheck, 0, 5)
 	overallStatus := HealthStatusHealthy
 
 	// Check daemon status

@@ -176,7 +176,7 @@ func testCrossComponentWorkflowIntegration(t *testing.T) {
 	ctx := t.Context()
 
 	// Phase 1: Forge Discovery Integration
-	allRepos := make([]*Repository, 0)
+	allRepos := make([]*Repository, 0, 3)
 
 	// Discover repositories from all forges
 	forgeClients := map[string]Client{
