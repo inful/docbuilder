@@ -126,6 +126,21 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		return nil, organizations, nil, fmt.Errorf("failed to list repositories: %w", err)
 	}
 
+	// Ensure repository metadata includes forge identity for downstream conversion (auth, namespacing, edit links).
+	forgeName := client.GetName()
+	forgeType := strings.ToLower(string(client.GetType()))
+	for _, repo := range repositories {
+		if repo.Metadata == nil {
+			repo.Metadata = make(map[string]string)
+		}
+		if repo.Metadata["forge_name"] == "" {
+			repo.Metadata["forge_name"] = forgeName
+		}
+		if repo.Metadata["forge_type"] == "" {
+			repo.Metadata["forge_type"] = forgeType
+		}
+	}
+
 	// Check documentation status and apply filtering
 	originalCount := len(repositories)
 	var validRepos []*Repository
@@ -342,11 +357,25 @@ func (ds *DiscoveryService) ConvertToConfigRepositories(repos []*Repository, for
 	for _, repo := range repos {
 		// Find the forge config for this repository
 		var auth *config.AuthConfig
+		forgeNameMeta := repo.Metadata["forge_name"]
 		for forgeName, forgeConfig := range forgeManager.GetForgeConfigs() {
-			if forgeName == repo.Metadata["forge_name"] ||
-				forgeConfig.Name == repo.Metadata["forge_name"] {
+			if forgeName == forgeNameMeta || forgeConfig.Name == forgeNameMeta {
 				auth = forgeConfig.Auth
 				break
+			}
+		}
+
+		// Fallback: if forge_name metadata is missing, try matching by BaseURL.
+		if auth == nil {
+			for _, forgeConfig := range forgeManager.GetForgeConfigs() {
+				base := strings.TrimRight(forgeConfig.BaseURL, "/")
+				if base == "" {
+					continue
+				}
+				if strings.HasPrefix(repo.CloneURL, base+"/") || repo.CloneURL == base {
+					auth = forgeConfig.Auth
+					break
+				}
 			}
 		}
 
