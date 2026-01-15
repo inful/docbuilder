@@ -152,19 +152,31 @@ categories:
 			shouldChange:       true,
 		},
 		{
-			name: "categories with spaces to underscores",
+			name: "all caps with spaces",
 			input: `---
 title: Test
 categories:
-  - API Reference
-  - Getting Started
+  - API REFERENCE
+  - GETTING STARTED
 ---
 # Content`,
-			expectedCategories: []string{"Api_reference", "Getting_started"},
+			expectedCategories: []string{"Api reference", "Getting started"},
 			shouldChange:       true,
 		},
 		{
-			name: "already valid categories",
+			name: "already valid categories with spaces",
+			input: `---
+title: Test
+categories:
+  - API Guide
+  - HTTP Protocol
+---
+# Content`,
+			expectedCategories: []string{"API Guide", "HTTP Protocol"},
+			shouldChange:       false,
+		},
+		{
+			name: "already valid categories without spaces",
 			input: `---
 title: Test
 categories:

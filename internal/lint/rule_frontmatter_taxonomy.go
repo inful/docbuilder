@@ -21,8 +21,12 @@ var (
 	// Tags must match: lowercase letters, numbers, hyphens, underscores.
 	validTagPattern = regexp.MustCompile(`^[a-z0-9\-_]*$`)
 
-	// Categories must match: starts with uppercase, followed by lowercase/numbers/hyphens/underscores.
-	validCategoryPattern = regexp.MustCompile(`^[A-Z][a-z0-9\-_]*$`)
+	// Categories must match: starts with uppercase, can contain uppercase/lowercase/numbers/spaces/hyphens/underscores.
+	// But should not be all uppercase (checked separately).
+	validCategoryPattern = regexp.MustCompile(`^[A-Z][a-zA-Z0-9 \-_]*$`)
+	
+	// All caps pattern to detect categories that are entirely uppercase (except numbers/separators).
+	allCapsPattern = regexp.MustCompile(`^[A-Z0-9 \-_]+$`)
 )
 
 // Name returns the rule identifier.
@@ -85,9 +89,45 @@ func isValidTag(tag string) bool {
 	return validTagPattern.MatchString(tag)
 }
 
-// isValidCategory checks if a category matches the pattern ^[A-Z][a-z0-9\-_]*$.
+// isValidCategory checks if a category is valid.
+// Valid categories:
+// - Start with uppercase letter
+// - Can contain uppercase/lowercase letters, numbers, spaces, hyphens, underscores
+// - Must not be ALL_CAPS (e.g., "TUTORIAL" or "API REFERENCE" are invalid)
+// - Mixed case with multiple capitals is OK (e.g., "API Guide" or "REST API" are valid if properly cased)
 func isValidCategory(category string) bool {
-	return validCategoryPattern.MatchString(category)
+	// Must match the basic pattern
+	if !validCategoryPattern.MatchString(category) {
+		return false
+	}
+	
+	// Check if it's all caps (not allowed)
+	// A category is all caps if all letters are uppercase (no lowercase letters)
+	if allCapsPattern.MatchString(category) {
+		// Check if there's at least one lowercase letter
+		hasLowercase := false
+		for _, r := range category {
+			if unicode.IsLower(r) {
+				hasLowercase = true
+				break
+			}
+		}
+		// If there are no lowercase letters and there's at least one uppercase letter, it's all caps
+		if !hasLowercase {
+			hasUppercase := false
+			for _, r := range category {
+				if unicode.IsUpper(r) {
+					hasUppercase = true
+					break
+				}
+			}
+			if hasUppercase {
+				return false // All caps (single or multiple words), invalid
+			}
+		}
+	}
+	
+	return true
 }
 
 // extractStringArray converts various YAML array formats to []string.
@@ -144,18 +184,19 @@ func (r *FrontmatterTaxonomyRule) invalidCategoryIssue(filePath, category string
 		Rule:     frontmatterTaxonomyRuleName,
 		Message:  fmt.Sprintf("Invalid category format: %q", category),
 		Explanation: strings.TrimSpace(strings.Join([]string{
-			"Categories must match the pattern: ^[A-Z][a-z0-9\\-_]*$",
+			"Categories must match the pattern: ^[A-Z][a-zA-Z0-9 \\-_]*$",
 			"",
 			"Invalid category: " + category,
 			"Suggested:       " + suggested,
 			"",
 			"Rules:",
 			"  • Must start with an uppercase letter (A-Z)",
-			"  • Followed by lowercase letters, numbers, hyphens, or underscores",
+			"  • Can contain uppercase and lowercase letters",
 			"  • Numbers are allowed (0-9)",
-			"  • Hyphens (-) and underscores (_) are allowed",
-			"  • No spaces (use underscores instead)",
-			"  • No special characters",
+			"  • Spaces, hyphens (-) and underscores (_) are allowed",
+			"  • Must not be ALL_CAPS (e.g., 'TUTORIAL' → 'Tutorial')",
+			"  • Multiple capitals are OK (e.g., 'API Guide' is valid)",
+			"  • No other special characters",
 		}, "\n")),
 		Fix:  "Run: docbuilder lint --fix (automatically normalizes categories)",
 		Line: 0,
@@ -173,24 +214,43 @@ func normalizeTag(tag string) string {
 	return result
 }
 
-// normalizeCategory converts a category to valid format: capitalize first letter, lowercase rest, spaces to underscores.
+// normalizeCategory converts a category to valid format.
+// Handles ALL_CAPS by capitalizing first letter and lowercasing the rest.
+// Preserves spaces and mixed case like "API Guide".
 func normalizeCategory(category string) string {
-	// Replace spaces with underscores first
-	result := strings.ReplaceAll(category, " ", "_")
-	// Remove any invalid characters (keep only letters, numbers, -, _)
-	result = regexp.MustCompile(`[^a-zA-Z0-9\-_]`).ReplaceAllString(result, "")
-
-	// Capitalize: first letter uppercase, rest lowercase
+	// Remove any invalid characters (keep only letters, numbers, spaces, -, _)
+	result := regexp.MustCompile(`[^a-zA-Z0-9 \-_]`).ReplaceAllString(category, "")
+	
 	if len(result) == 0 {
 		return result
 	}
-
+	
+	// Check if it's all caps (needs normalization)
+	isAllCaps := true
+	hasLetter := false
+	for _, r := range result {
+		if unicode.IsLetter(r) {
+			hasLetter = true
+			if unicode.IsLower(r) {
+				isAllCaps = false
+				break
+			}
+		}
+	}
+	
+	// If it's all caps and has letters, convert to title case (first letter upper, rest lower)
+	if isAllCaps && hasLetter {
+		runes := []rune(result)
+		runes[0] = unicode.ToUpper(runes[0])
+		for i := 1; i < len(runes); i++ {
+			runes[i] = unicode.ToLower(runes[i])
+		}
+		return string(runes)
+	}
+	
+	// Otherwise, just ensure first letter is uppercase
 	runes := []rune(result)
 	runes[0] = unicode.ToUpper(runes[0])
-	for i := 1; i < len(runes); i++ {
-		runes[i] = unicode.ToLower(runes[i])
-	}
-
 	return string(runes)
 }
 

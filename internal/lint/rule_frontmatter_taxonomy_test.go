@@ -258,6 +258,28 @@ categories:
 # Content`,
 		},
 		{
+			name: "categories with spaces",
+			content: `---
+title: Test
+categories:
+  - API Guide
+  - Getting Started
+  - User Documentation
+---
+# Content`,
+		},
+		{
+			name: "categories with multiple capitals",
+			content: `---
+title: Test
+categories:
+  - API Reference
+  - HTTP Protocol
+  - RESTful Services
+---
+# Content`,
+		},
+		{
 			name: "empty categories array",
 			content: `---
 title: Test
@@ -314,7 +336,7 @@ categories:
 			expectedCategories: []string{"documentation", "tutorial"},
 		},
 		{
-			name: "all uppercase categories",
+			name: "all uppercase categories (ALL_CAPS)",
 			content: `---
 title: Test
 categories:
@@ -325,15 +347,15 @@ categories:
 			expectedCategories: []string{"DOCUMENTATION", "TUTORIAL"},
 		},
 		{
-			name: "categories with spaces",
+			name: "all caps with spaces",
 			content: `---
 title: Test
 categories:
-  - API Reference
-  - Getting Started
+  - API REFERENCE
+  - GETTING STARTED
 ---
 # Content`,
-			expectedCategories: []string{"API Reference", "Getting Started"},
+			expectedCategories: []string{"API REFERENCE", "GETTING STARTED"},
 		},
 		{
 			name: "categories with special characters",
@@ -473,15 +495,15 @@ func TestNormalizeCategories(t *testing.T) {
 			changed:  true,
 		},
 		{
-			name:     "spaces to underscores",
-			input:    []string{"API Reference", "Getting Started"},
-			expected: []string{"Api_reference", "Getting_started"},
-			changed:  true,
+			name:     "preserve spaces and mixed case",
+			input:    []string{"API Guide", "HTTP Protocol"},
+			expected: []string{"API Guide", "HTTP Protocol"},
+			changed:  false,
 		},
 		{
-			name:     "mixed case with spaces",
-			input:    []string{"api reference", "GETTING STARTED"},
-			expected: []string{"Api_reference", "Getting_started"},
+			name:     "all caps with spaces to title case",
+			input:    []string{"API REFERENCE", "GETTING STARTED"},
+			expected: []string{"Api reference", "Getting started"},
 			changed:  true,
 		},
 		{
