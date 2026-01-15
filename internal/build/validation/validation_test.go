@@ -108,7 +108,7 @@ func TestSkipEvaluator_ValidationRulesIntegration(t *testing.T) {
 	st.lastGlobalDocFiles = "abc123"
 
 	evaluator := NewSkipEvaluator(out, st, gen)
-	rep, ok := evaluator.Evaluate(context.Background(), []cfg.Repository{repo})
+	rep, ok := evaluator.Evaluate(t.Context(), []cfg.Repository{repo})
 
 	if !ok {
 		t.Fatalf("expected skip to succeed")
@@ -129,14 +129,14 @@ func TestValidationRulesCoverage(t *testing.T) {
 			Generator: &hugo.Generator{},
 			Repos:     []cfg.Repository{{Name: "test"}},
 		}
-		result := rule.Validate(context.Background(), vctx)
+		result := rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 
 		// Invalid context - nil state
 		vctx.State = nil
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for nil state")
 		}
@@ -153,14 +153,14 @@ func TestValidationRulesCoverage(t *testing.T) {
 		hash := gen.ComputeConfigHashForPersistence()
 		st.lastConfigHash = hash
 		vctx := Context{State: st, Generator: gen}
-		result := rule.Validate(context.Background(), vctx)
+		result := rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
 
 		// Invalid hash
 		st.lastConfigHash = "different"
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for mismatched hash")
 		}
@@ -179,7 +179,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 			t.Fatalf("write index.html: %v", err)
 		}
 		vctx := Context{OutDir: out}
-		result := rule.Validate(context.Background(), vctx)
+		result := rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -187,7 +187,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 		// Missing directory
 		out2 := t.TempDir()
 		vctx.OutDir = out2
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for missing directory")
 		}
@@ -198,7 +198,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 
 		// Skip when no previous files
 		vctx := Context{PrevReport: &PreviousReport{Files: 0}}
-		result := rule.Validate(context.Background(), vctx)
+		result := rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success (skip), got failure: %s", result.Reason)
 		}
@@ -213,7 +213,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 			t.Fatalf("write test.md: %v", err)
 		}
 		vctx = Context{OutDir: out, PrevReport: &PreviousReport{Files: 1}}
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -224,7 +224,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 
 		// No previous report
 		vctx := Context{PrevReport: nil}
-		result := rule.Validate(context.Background(), vctx)
+		result := rule.Validate(t.Context(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure when no previous report")
 		}
@@ -236,7 +236,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 				HugoVersion:       "",        // No Hugo used
 			},
 		}
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if !result.Passed {
 			t.Errorf("expected success for matching versions, got failure: %s", result.Reason)
 		}
@@ -248,7 +248,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 				HugoVersion:       "",
 			},
 		}
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		if result.Passed {
 			t.Errorf("expected failure for docbuilder version mismatch")
 		}
@@ -265,7 +265,7 @@ func TestValidationRulesCoverage(t *testing.T) {
 				HugoVersion:       "0.100.0", // Any previous Hugo version
 			},
 		}
-		result = rule.Validate(context.Background(), vctx)
+		result = rule.Validate(t.Context(), vctx)
 		// This will pass or fail depending on whether Hugo is installed
 		// If Hugo is not available, DetectHugoVersion() returns ""
 		// and will not match "0.100.0", causing failure
@@ -281,7 +281,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("all rules pass", func(t *testing.T) {
 		chain := NewRuleChain(successRule, successRule)
-		result := chain.Validate(context.Background(), Context{})
+		result := chain.Validate(t.Context(), Context{})
 		if !result.Passed {
 			t.Errorf("expected success, got failure: %s", result.Reason)
 		}
@@ -289,7 +289,7 @@ func TestRuleChain(t *testing.T) {
 
 	t.Run("early failure stops chain", func(t *testing.T) {
 		chain := NewRuleChain(successRule, failureRule, successRule)
-		result := chain.Validate(context.Background(), Context{})
+		result := chain.Validate(t.Context(), Context{})
 		if result.Passed {
 			t.Errorf("expected failure, got success")
 		}

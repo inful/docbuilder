@@ -1,7 +1,6 @@
 package forge_test
 
 import (
-	"context"
 	"slices"
 	"testing"
 
@@ -32,7 +31,7 @@ func TestTestForgeBasicUsage(t *testing.T) {
 	forge.AddRepository(testRepo)
 	forge.AddOrganization("acme-corp")
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test organization discovery
 	orgs, err := forge.GetUserOrganizations(ctx)
@@ -120,7 +119,7 @@ func TestTestForgeConfiguration(t *testing.T) {
 // TestTestForgeFailureModes demonstrates testing error conditions.
 func TestTestForgeFailureModes(t *testing.T) {
 	forge := testforge.NewTestForge("failure-test", config.ForgeGitHub)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testCases := []struct {
 		name     string

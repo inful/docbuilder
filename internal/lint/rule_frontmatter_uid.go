@@ -3,6 +3,7 @@ package lint
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ func (r *FrontmatterUIDRule) Name() string {
 
 func (r *FrontmatterUIDRule) AppliesTo(filePath string) bool {
 	// Skip generated index files - they don't need UIDs
-	if strings.HasSuffix(filePath, "/"+indexFilename) || strings.HasSuffix(filePath, "\\"+indexFilename) || filePath == indexFilename {
+	if filepath.Base(filePath) == indexFilename {
 		return false
 	}
 	return IsDocFile(filePath)

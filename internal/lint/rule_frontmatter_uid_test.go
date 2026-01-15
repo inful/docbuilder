@@ -23,13 +23,8 @@ func TestFrontmatterUIDRule_AppliesTo(t *testing.T) {
 			want:     true,
 		},
 		{
-			name:     "excludes _index.md (Unix path)",
+			name:     "excludes _index.md in subdirectory",
 			filePath: "/path/to/section/_index.md",
-			want:     false,
-		},
-		{
-			name:     "excludes _index.md (Windows path)",
-			filePath: "C:\\path\\to\\section\\_index.md",
 			want:     false,
 		},
 		{

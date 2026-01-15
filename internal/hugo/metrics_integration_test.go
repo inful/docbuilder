@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -66,7 +65,7 @@ func TestMetricsRecorderIntegration(t *testing.T) {
 		{Repository: "repo1", Name: "b", Path: srcB, RelativePath: "b.md", DocsBase: ".", Extension: ".md"},
 	}
 	rec := g.recorder.(*capturingRecorder)
-	_, err := g.GenerateSiteWithReportContext(context.Background(), docFiles)
+	_, err := g.GenerateSiteWithReportContext(t.Context(), docFiles)
 	if err != nil {
 		t.Fatalf("build errored: %v", err)
 	}

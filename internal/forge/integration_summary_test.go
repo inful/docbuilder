@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -67,7 +66,7 @@ func testEnhancedMockForgeClient(t *testing.T) {
 	client.AddRepository(repo)
 
 	// Test organization listing
-	ctx := context.Background()
+	ctx := t.Context()
 	orgs, err := client.ListOrganizations(ctx)
 	if err != nil {
 		t.Errorf("ListOrganizations() error: %v", err)
@@ -156,7 +155,7 @@ func testEnhancedMultiPlatformDiscovery(t *testing.T) {
 	manager.AddForge(gitlabConfig, gitlab)
 	manager.AddForge(forgejoConfig, forgejo)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test GitHub discovery
 	githubRepos, err := github.ListRepositories(ctx, []string{"github-org"})

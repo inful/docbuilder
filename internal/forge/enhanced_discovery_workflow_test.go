@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -38,7 +37,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 		}
 
 		discovery := NewDiscoveryService(manager, filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Test repository discovery using actual DiscoverAll method
 		result, err := discovery.DiscoverAll(ctx)
@@ -109,7 +108,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Test discovery with the configuration
 		discovery := NewDiscoveryService(manager, fullConfig.Filtering)
-		ctx := context.Background()
+		ctx := t.Context()
 
 		result, err := discovery.DiscoverAll(ctx)
 		if err != nil {
@@ -139,7 +138,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 		manager.AddForge(gitlab.GenerateForgeConfig(), gitlab)
 
 		discovery := NewDiscoveryService(manager, &config.FilteringConfig{})
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// Test auth failure scenario
 		github.WithAuthFailure()
@@ -228,7 +227,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Test discovery across all platforms
 		discovery := NewDiscoveryService(manager, &config.FilteringConfig{})
-		ctx := context.Background()
+		ctx := t.Context()
 
 		result, err := discovery.DiscoverAll(ctx)
 		if err != nil {

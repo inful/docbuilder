@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -46,7 +45,7 @@ func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 		Content:      []byte("---\ntitle: Test Page\n---\n\n# Test Content\n\nThis is a test.\n"),
 	}
 
-	report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+	report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 	if err != nil {
 		// Hugo execution may fail if theme modules can't be fetched (no network, etc.)
 		// This is expected in many CI environments. The key thing we're testing is
@@ -98,7 +97,7 @@ func TestBinaryRenderer_MissingHugoBinary(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Try to execute - should fail with appropriate error
-	err := renderer.Execute(context.Background(), tempDir)
+	err := renderer.Execute(t.Context(), tempDir)
 	if err == nil {
 		// If Hugo is actually installed, this test might succeed
 		// That's OK - we're just verifying the error handling works
@@ -132,7 +131,7 @@ func TestRenderMode_Never_SkipsRendering(t *testing.T) {
 		Content:      []byte("# Test\n"),
 	}
 
-	report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+	report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 	if err != nil {
 		t.Fatalf("generation failed: %v", err)
 	}
@@ -171,7 +170,7 @@ func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 		Content:      []byte("# Test\n"),
 	}
 
-	report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+	report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 	if err != nil {
 		t.Fatalf("generation failed: %v", err)
 	}
@@ -212,7 +211,7 @@ func TestRenderMode_Auto_WithoutEnvVars(t *testing.T) {
 		Content:      []byte("# Test\n"),
 	}
 
-	report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+	report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 	if err != nil {
 		t.Fatalf("generation failed: %v", err)
 	}
@@ -303,7 +302,7 @@ func TestRendererPrecedence(t *testing.T) {
 				Content:      []byte("# Test\n"),
 			}
 
-			report, err := g.GenerateSiteWithReportContext(context.Background(), []docs.DocFile{doc})
+			report, err := g.GenerateSiteWithReportContext(t.Context(), []docs.DocFile{doc})
 			if err != nil {
 				// For tests that skip if no Hugo, errors are expected (module fetch fails, etc.)
 				if tt.skipIfNoHugo {

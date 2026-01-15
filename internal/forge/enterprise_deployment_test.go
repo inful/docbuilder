@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -105,7 +104,7 @@ func testProductionDeploymentScenarioValidation(t *testing.T) {
 	}
 
 	// Test production deployment validation
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Validate enterprise-scale repository discovery
 	var totalRepos int
@@ -171,7 +170,7 @@ func testMonitoringAndObservabilityIntegration(t *testing.T) {
 	}
 
 	// Simulate monitoring metrics collection
-	ctx := context.Background()
+	ctx := t.Context()
 	start := time.Now()
 
 	repos, err := github.ListRepositories(ctx, []string{})
@@ -270,7 +269,7 @@ func testSecurityAndAuthenticationTesting(t *testing.T) {
 	forgejo.AddRepository(CreateMockForgejoRepo("security-infra", "internal-systems", true, true, false, false))
 
 	// Test authentication validation
-	ctx := context.Background()
+	ctx := t.Context()
 
 	secureForges := map[string]struct {
 		client Client
@@ -389,7 +388,7 @@ func testLargeScaleEnterpriseDeploymentTesting(t *testing.T) {
 	}
 
 	// Test large-scale deployment performance
-	ctx := context.Background()
+	ctx := t.Context()
 	start := time.Now()
 
 	var discoveredRepos int
@@ -451,7 +450,7 @@ func testHighAvailabilityAndResilienceTesting(t *testing.T) {
 	}
 
 	// Test primary instance
-	ctx := context.Background()
+	ctx := t.Context()
 	primaryRepos, err := primaryGitHub.ListRepositories(ctx, []string{})
 	if err != nil {
 		t.Fatalf("Primary instance failed: %v", err)

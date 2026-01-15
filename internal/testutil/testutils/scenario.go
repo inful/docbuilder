@@ -58,7 +58,7 @@ func NewTestEnvironment(t *testing.T) *TestEnvironment {
 		t.Fatalf("Failed to create output directory: %v", err)
 	}
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	_, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 
 	return &TestEnvironment{
 		t:         t,
@@ -111,7 +111,7 @@ func (scenario *TestScenario) Run(t *testing.T) {
 
 		// Apply timeout if specified
 		if scenario.Timeout > 0 {
-			ctx, cancel := context.WithTimeout(context.Background(), scenario.Timeout)
+			ctx, cancel := context.WithTimeout(t.Context(), scenario.Timeout)
 			defer cancel()
 
 			done := make(chan bool)
