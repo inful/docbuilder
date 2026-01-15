@@ -66,7 +66,7 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	sm.EnsureRepositoryState(repository.URL, repository.Name, repository.Branch)
 	gen := hugo.NewGenerator(conf, outputDir).WithStateManager(sm).WithRenderer(&hugo.NoopRenderer{})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	report, err := gen.GenerateFullSite(ctx, conf.Repositories, workspace)
 	if err != nil {

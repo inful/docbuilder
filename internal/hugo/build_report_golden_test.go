@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"context"
 	"encoding/json"
 	"path/filepath"
 	"testing"
@@ -11,7 +10,7 @@ import (
 // TestBuildReportGolden ensures that the serialized JSON schema for a minimal successful build
 // remains stable (excluding dynamic timestamps which are compared for presence only).
 func TestBuildReportGolden(t *testing.T) {
-	r := newBuildReport(context.Background(), 2, 5)
+	r := newBuildReport(t.Context(), 2, 5)
 	r.ClonedRepositories = 2
 	r.RenderedPages = 5
 	r.StageDurations["prepare_output"] = 10 * time.Millisecond

@@ -41,7 +41,7 @@ func testServiceOrchestratorIntegration(t *testing.T) {
 	gitlab.AddRepository(CreateMockGitLabRepo("internal", "deployment-guides", true, false, true, false))
 
 	// Test service orchestration with multiple forges
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 
 	// Simulate coordinated discovery across forge clients
@@ -91,7 +91,7 @@ func testDocsDiscoveryComponentIntegration(t *testing.T) {
 	forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "infrastructure-docs", true, false, true, false))
 
 	// Test docs discovery across all forge types
-	ctx := context.Background()
+	ctx := t.Context()
 
 	forgeClients := map[string]Client{
 		"github":  github,
@@ -139,7 +139,7 @@ func testHugoGeneratorIntegrationSimulation(t *testing.T) {
 	github.AddRepository(CreateMockGitHubRepo("enterprise", "docs-site", true, false, false, false))
 
 	// Test Hugo configuration generation with forge integration
-	ctx := context.Background()
+	ctx := t.Context()
 	repos, err := github.ListRepositories(ctx, []string{})
 	if err != nil {
 		t.Fatalf("Failed to get repositories for Hugo integration: %v", err)
@@ -173,7 +173,7 @@ func testCrossComponentWorkflowIntegration(t *testing.T) {
 	forgejo.AddRepository(CreateMockForgejoRepo("selfhosted", "admin-guides", true, false, false, false))
 
 	// Simulate complete workflow: Forge Discovery → Docs Discovery → Hugo Generation
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Phase 1: Forge Discovery Integration
 	allRepos := make([]*Repository, 0)
@@ -260,7 +260,7 @@ func testPerformanceIntegrationTesting(t *testing.T) {
 
 	// Test performance with large dataset
 	start := time.Now()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	repos, err := github.ListRepositories(ctx, []string{})
 	if err != nil {
@@ -293,7 +293,7 @@ func testErrorHandlingIntegration(t *testing.T) {
 	github.AddOrganization(CreateMockGitHubOrg("error-test-org"))
 
 	// Test network timeout simulation
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Nanosecond)
 	defer cancel()
 
 	_, err := github.ListRepositories(ctx, []string{})
@@ -305,7 +305,7 @@ func testErrorHandlingIntegration(t *testing.T) {
 	github.WithRateLimit(1, 100*time.Millisecond) // 1 request per 100ms
 
 	start := time.Now()
-	_, _ = github.ListRepositories(context.Background(), []string{})
+	_, _ = github.ListRepositories(t.Context(), []string{})
 	duration := time.Since(start)
 
 	if duration >= 50*time.Millisecond {
@@ -390,7 +390,7 @@ func testComponentStateManagementIntegration(t *testing.T) {
 	gitlab.AddRepository(CreateMockGitLabRepo("state-group", "state-project", true, true, false, false))
 
 	// Test initial state
-	ctx := context.Background()
+	ctx := t.Context()
 
 	githubRepos, err := github.ListRepositories(ctx, []string{})
 	if err != nil {

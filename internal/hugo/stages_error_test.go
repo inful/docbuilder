@@ -21,12 +21,12 @@ func failingWarnStage(_ context.Context, _ *BuildState) error {
 func TestRunStages_ErrorClassification(t *testing.T) {
 	cfg := &config.Config{}
 	gen := NewGenerator(cfg, t.TempDir())
-	report := newBuildReport(context.Background(), 0, 0)
+	report := newBuildReport(t.Context(), 0, 0)
 	bs := newBuildState(gen, nil, report)
 
 	stages := []StageDef{{StageName("warn_stage"), failingWarnStage}, {StageName("fatal_stage"), failingFatalStage}}
 
-	err := runStages(context.Background(), bs, stages)
+	err := runStages(t.Context(), bs, stages)
 	if err == nil {
 		t.Fatalf("expected fatal error")
 	}
@@ -47,10 +47,10 @@ func TestRunStages_ErrorClassification(t *testing.T) {
 func TestRunStages_Canceled(t *testing.T) {
 	cfg := &config.Config{}
 	gen := NewGenerator(cfg, t.TempDir())
-	report := newBuildReport(context.Background(), 0, 0)
+	report := newBuildReport(t.Context(), 0, 0)
 	bs := newBuildState(gen, nil, report)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	err := runStages(ctx, bs, []StageDef{{StagePrepareOutput, stagePrepareOutput}})
 	if err == nil {
@@ -67,11 +67,11 @@ func TestRunStages_Canceled(t *testing.T) {
 func TestRunStages_TimingRecordedOnWarning(t *testing.T) {
 	cfg := &config.Config{}
 	gen := NewGenerator(cfg, t.TempDir())
-	report := newBuildReport(context.Background(), 0, 0)
+	report := newBuildReport(t.Context(), 0, 0)
 	bs := newBuildState(gen, nil, report)
 
 	stages := []StageDef{{StageName("warn_stage"), failingWarnStage}}
-	if err := runStages(context.Background(), bs, stages); err != nil {
+	if err := runStages(t.Context(), bs, stages); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if _, ok := report.StageDurations["warn_stage"]; !ok {

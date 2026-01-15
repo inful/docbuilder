@@ -516,7 +516,7 @@ func TestTryPattern(t *testing.T) {
 
 // TestFindCodeCLI tests VS Code CLI discovery.
 func TestFindCodeCLI(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 
 	// This test just verifies the function returns a non-empty string
@@ -700,7 +700,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 // TestExecuteVSCodeOpen_NoSocket tests execution behavior (may find socket if VS Code running).
 func TestExecuteVSCodeOpen_NoSocket(t *testing.T) {
 	srv := &HTTPServer{}
-	err := srv.executeVSCodeOpen(context.Background(), "/tmp/nonexistent.md")
+	err := srv.executeVSCodeOpen(t.Context(), "/tmp/nonexistent.md")
 
 	// If VS Code is running, we might get a different error (file execution)
 	// If VS Code is not running, we get socket not found error

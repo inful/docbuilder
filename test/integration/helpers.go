@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -521,7 +520,7 @@ func runBuildPipeline(t *testing.T, cfg *config.Config, outputDir string) (*buil
 		OutputDir: outputDir,
 	}
 
-	return svc.Run(context.Background(), req)
+	return svc.Run(t.Context(), req)
 }
 
 // runMultiRepoGoldenTest is a helper for tests with multiple repositories.

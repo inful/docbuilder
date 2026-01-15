@@ -1,7 +1,6 @@
 package forge
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -67,7 +66,7 @@ func testEnhancedCliConfigurationWorkflow(t *testing.T) {
 	manager.AddForge(githubConfig, github)
 	manager.AddForge(gitlabConfig, gitlab)
 	discovery := NewDiscoveryService(manager, cliConfig.Filtering)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	result, _ := discovery.DiscoverAll(ctx)
 	if result == nil {
@@ -128,7 +127,7 @@ func testEnhancedCliFailureHandling(t *testing.T) {
 	manager.AddForge(cliConfig.Forges[1], gitlab)
 
 	discovery := NewDiscoveryService(manager, cliConfig.Filtering)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test that the CLI operation handles failures gracefully
 	result, _ := discovery.DiscoverAll(ctx)
@@ -217,7 +216,7 @@ func testEnhancedCliWebhookWorkflow(t *testing.T) {
 	manager.AddForge(gitlabConfig, gitlab)
 
 	// Simulate registering webhooks as a CLI would
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, client := range manager.GetAllForges() {
 		// Get repositories for webhook registration
 		orgs, err := client.ListOrganizations(ctx)
@@ -314,7 +313,7 @@ func testEnhancedCliMultiPlatformIntegration(t *testing.T) {
 	manager.AddForge(forgejoConfig, forgejo)
 
 	discovery := NewDiscoveryService(manager, cliConfig.Filtering)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	result, err := discovery.DiscoverAll(ctx)
 	if err != nil {

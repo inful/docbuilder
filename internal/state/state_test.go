@@ -1,7 +1,6 @@
 package state
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +22,7 @@ func TestJSONStore(t *testing.T) {
 
 func testRepositoryOperations(t *testing.T) {
 	store := createTestStore(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	repoStore := store.Repositories()
 
 	// Create a repository
@@ -108,7 +107,7 @@ func testRepositoryOperations(t *testing.T) {
 
 func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 	missingURL := "https://github.com/example/missing.git"
 	errCases := []struct {
 		name string
@@ -154,7 +153,7 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 
 func testBuildOperations(t *testing.T) {
 	store := createTestStore(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	buildStore := store.Builds()
 
 	// Create a build
@@ -208,7 +207,7 @@ func testBuildOperations(t *testing.T) {
 
 func testStatisticsOperations(t *testing.T) {
 	store := createTestStore(t)
-	ctx := context.Background()
+	ctx := t.Context()
 	statsStore := store.Statistics()
 
 	// Get initial statistics
@@ -250,7 +249,7 @@ func testTransactionOperations(t *testing.T) {
 	t.Skip("FIXME: Deadlock in transaction test - needs refactoring of lock-free operations")
 
 	store := createTestStore(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	txResult := store.WithTransaction(ctx, func(txStore Store) error {
 		// Create repository and build in transaction
@@ -298,7 +297,7 @@ func testTransactionOperations(t *testing.T) {
 
 func testHealthCheck(t *testing.T) {
 	store := createTestStore(t)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	healthResult := store.Health(ctx)
 	if healthResult.IsErr() {
@@ -313,7 +312,7 @@ func testHealthCheck(t *testing.T) {
 
 func testPersistence(t *testing.T) {
 	tmpDir := t.TempDir()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Create initial store with data
 	storeResult := NewJSONStore(tmpDir)
@@ -386,7 +385,7 @@ func TestStateService(t *testing.T) {
 	}
 	service := serviceResult.Unwrap()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Test service lifecycle
 	t.Run("Service Lifecycle", func(t *testing.T) {
