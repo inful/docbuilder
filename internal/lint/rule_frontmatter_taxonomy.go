@@ -18,10 +18,10 @@ const (
 )
 
 var (
-	// Tags must match: lowercase letters, numbers, hyphens, underscores
+	// Tags must match: lowercase letters, numbers, hyphens, underscores.
 	validTagPattern = regexp.MustCompile(`^[a-z0-9\-_]*$`)
-	
-	// Categories must match: starts with uppercase, followed by lowercase/numbers/hyphens/underscores
+
+	// Categories must match: starts with uppercase, followed by lowercase/numbers/hyphens/underscores.
 	validCategoryPattern = regexp.MustCompile(`^[A-Z][a-z0-9\-_]*$`)
 )
 
@@ -80,17 +80,17 @@ func (r *FrontmatterTaxonomyRule) Check(filePath string) ([]Issue, error) {
 	return issues, nil
 }
 
-// isValidTag checks if a tag matches the pattern ^[a-z0-9\-_]*$
+// isValidTag checks if a tag matches the pattern ^[a-z0-9\-_]*$.
 func isValidTag(tag string) bool {
 	return validTagPattern.MatchString(tag)
 }
 
-// isValidCategory checks if a category matches the pattern ^[A-Z][a-z0-9\-_]*$
+// isValidCategory checks if a category matches the pattern ^[A-Z][a-z0-9\-_]*$.
 func isValidCategory(category string) bool {
 	return validCategoryPattern.MatchString(category)
 }
 
-// extractStringArray converts various YAML array formats to []string
+// extractStringArray converts various YAML array formats to []string.
 func extractStringArray(value any) []string {
 	switch v := value.(type) {
 	case string:
@@ -162,7 +162,7 @@ func (r *FrontmatterTaxonomyRule) invalidCategoryIssue(filePath, category string
 	}
 }
 
-// normalizeTag converts a tag to valid format: lowercase, spaces to underscores
+// normalizeTag converts a tag to valid format: lowercase, spaces to underscores.
 func normalizeTag(tag string) string {
 	// Convert to lowercase
 	result := strings.ToLower(tag)
@@ -173,36 +173,36 @@ func normalizeTag(tag string) string {
 	return result
 }
 
-// normalizeCategory converts a category to valid format: capitalize first letter, lowercase rest, spaces to underscores
+// normalizeCategory converts a category to valid format: capitalize first letter, lowercase rest, spaces to underscores.
 func normalizeCategory(category string) string {
 	// Replace spaces with underscores first
 	result := strings.ReplaceAll(category, " ", "_")
 	// Remove any invalid characters (keep only letters, numbers, -, _)
 	result = regexp.MustCompile(`[^a-zA-Z0-9\-_]`).ReplaceAllString(result, "")
-	
+
 	// Capitalize: first letter uppercase, rest lowercase
 	if len(result) == 0 {
 		return result
 	}
-	
+
 	runes := []rune(result)
 	runes[0] = unicode.ToUpper(runes[0])
 	for i := 1; i < len(runes); i++ {
 		runes[i] = unicode.ToLower(runes[i])
 	}
-	
+
 	return string(runes)
 }
 
-// normalizeTags normalizes an array of tags and returns whether any changes were made
+// normalizeTags normalizes an array of tags and returns whether any changes were made.
 func normalizeTags(tags []string) ([]string, bool) {
 	if len(tags) == 0 {
 		return tags, false
 	}
-	
+
 	result := make([]string, len(tags))
 	changed := false
-	
+
 	for i, tag := range tags {
 		normalized := normalizeTag(tag)
 		result[i] = normalized
@@ -210,19 +210,19 @@ func normalizeTags(tags []string) ([]string, bool) {
 			changed = true
 		}
 	}
-	
+
 	return result, changed
 }
 
-// normalizeCategories normalizes an array of categories and returns whether any changes were made
+// normalizeCategories normalizes an array of categories and returns whether any changes were made.
 func normalizeCategories(categories []string) ([]string, bool) {
 	if len(categories) == 0 {
 		return categories, false
 	}
-	
+
 	result := make([]string, len(categories))
 	changed := false
-	
+
 	for i, category := range categories {
 		normalized := normalizeCategory(category)
 		result[i] = normalized
@@ -230,6 +230,6 @@ func normalizeCategories(categories []string) ([]string, bool) {
 			changed = true
 		}
 	}
-	
+
 	return result, changed
 }

@@ -10,12 +10,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestFixer_NormalizeTaxonomy_Tags(t *testing.T) {
+func TestFixer_NormalizeTaxonomy_Tags(t *testing.T) { //nolint:dupl // Similar test pattern is acceptable for tags/categories
 	tests := []struct {
-		name            string
-		input           string
-		expectedTags    []string
-		shouldChange    bool
+		name         string
+		input        string
+		expectedTags []string
+		shouldChange bool
 	}{
 		{
 			name: "uppercase tags to lowercase",
@@ -81,7 +81,7 @@ title: Test
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.input), 0644)
+			err := os.WriteFile(filePath, []byte(tt.input), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			cfg := &Config{Fix: true, DryRun: false}
@@ -93,7 +93,7 @@ title: Test
 			assert.True(t, op.Success, "Operation should succeed")
 
 			// Read the updated file
-			updated, err := os.ReadFile(filePath)
+			updated, err := os.ReadFile(filePath) //nolint:gosec // Test file reading
 			require.NoError(t, err)
 
 			if tt.shouldChange {
@@ -120,7 +120,7 @@ title: Test
 	}
 }
 
-func TestFixer_NormalizeTaxonomy_Categories(t *testing.T) {
+func TestFixer_NormalizeTaxonomy_Categories(t *testing.T) { //nolint:dupl // Similar test pattern is acceptable for tags/categories
 	tests := []struct {
 		name               string
 		input              string
@@ -191,7 +191,7 @@ title: Test
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.input), 0644)
+			err := os.WriteFile(filePath, []byte(tt.input), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			cfg := &Config{Fix: true, DryRun: false}
@@ -203,7 +203,7 @@ title: Test
 			assert.True(t, op.Success, "Operation should succeed")
 
 			// Read the updated file
-			updated, err := os.ReadFile(filePath)
+			updated, err := os.ReadFile(filePath) //nolint:gosec // Test file reading
 			require.NoError(t, err)
 
 			if tt.shouldChange {
@@ -244,7 +244,7 @@ categories:
 
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.md")
-	err := os.WriteFile(filePath, []byte(input), 0644)
+	err := os.WriteFile(filePath, []byte(input), 0o644) //nolint:gosec // Test file permissions
 	require.NoError(t, err)
 
 	cfg := &Config{Fix: true, DryRun: true}
@@ -256,7 +256,7 @@ categories:
 	assert.True(t, op.Success, "Dry-run should report success")
 
 	// Read the file - should be unchanged
-	updated, err := os.ReadFile(filePath)
+	updated, err := os.ReadFile(filePath) //nolint:gosec // Test file reading
 	require.NoError(t, err)
 	assert.Equal(t, input, string(updated), "File should not be modified in dry-run mode")
 }
@@ -282,6 +282,7 @@ categories:
 # Content`,
 			shouldChange: true,
 			checkFunc: func(t *testing.T, output string) {
+				t.Helper()
 				fm, ok := extractFrontmatter(output)
 				require.True(t, ok)
 
@@ -310,6 +311,7 @@ categories:
 # Content`,
 			shouldChange: false,
 			checkFunc: func(t *testing.T, output string) {
+				t.Helper()
 				// Should be unchanged
 			},
 		},
@@ -337,6 +339,7 @@ Body content should remain unchanged.
 More content here.`,
 			shouldChange: true,
 			checkFunc: func(t *testing.T, output string) {
+				t.Helper()
 				// Body should be preserved
 				assert.Contains(t, output, "# Heading")
 				assert.Contains(t, output, "Body content should remain unchanged")
@@ -361,7 +364,7 @@ More content here.`,
 	}
 }
 
-// Helper to unmarshal YAML (wrapper for yaml.v3)
+// Helper to unmarshal YAML (wrapper for yaml.v3).
 func unmarshalYAML(data []byte, v any) error {
 	return yaml.Unmarshal(data, v)
 }

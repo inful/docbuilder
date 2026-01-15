@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFrontmatterTaxonomyRule_ValidTags(t *testing.T) {
+func TestFrontmatterTaxonomyRule_ValidTags(t *testing.T) { //nolint:dupl // Similar test pattern is acceptable for tags/categories
 	rule := &FrontmatterTaxonomyRule{}
 
 	tests := []struct {
@@ -89,7 +89,7 @@ title: Test
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.content), 0644)
+			err := os.WriteFile(filePath, []byte(tt.content), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			issues, err := rule.Check(filePath)
@@ -175,7 +175,7 @@ tags:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.content), 0644)
+			err := os.WriteFile(filePath, []byte(tt.content), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			issues, err := rule.Check(filePath)
@@ -186,7 +186,7 @@ tags:
 			for _, expectedTag := range tt.expectedTags {
 				found := false
 				for _, issue := range issues {
-					if issue.Severity == SeverityError && 
+					if issue.Severity == SeverityError &&
 						(containsStr(issue.Message, expectedTag) || containsStr(issue.Explanation, expectedTag)) {
 						found = true
 						break
@@ -198,7 +198,7 @@ tags:
 	}
 }
 
-func TestFrontmatterTaxonomyRule_ValidCategories(t *testing.T) {
+func TestFrontmatterTaxonomyRule_ValidCategories(t *testing.T) { //nolint:dupl // Similar test pattern is acceptable for tags/categories
 	rule := &FrontmatterTaxonomyRule{}
 
 	tests := []struct {
@@ -278,7 +278,7 @@ title: Test
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.content), 0644)
+			err := os.WriteFile(filePath, []byte(tt.content), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			issues, err := rule.Check(filePath)
@@ -364,7 +364,7 @@ categories:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			filePath := filepath.Join(tmpDir, "test.md")
-			err := os.WriteFile(filePath, []byte(tt.content), 0644)
+			err := os.WriteFile(filePath, []byte(tt.content), 0o644) //nolint:gosec // Test file permissions
 			require.NoError(t, err)
 
 			issues, err := rule.Check(filePath)
@@ -375,7 +375,7 @@ categories:
 			for _, expectedCat := range tt.expectedCategories {
 				found := false
 				for _, issue := range issues {
-					if issue.Severity == SeverityError && 
+					if issue.Severity == SeverityError &&
 						(containsStr(issue.Message, expectedCat) || containsStr(issue.Explanation, expectedCat)) {
 						found = true
 						break
@@ -519,7 +519,7 @@ func TestNormalizeCategories(t *testing.T) {
 	}
 }
 
-// Helper function
+// Helper function.
 func containsStr(s, substr string) bool {
 	return len(s) >= len(substr) && findSubstr(s, substr)
 }
