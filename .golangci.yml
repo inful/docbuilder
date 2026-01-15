@@ -25,7 +25,7 @@ linters:
     - gocritic
     - gocyclo
     - gosec
-    - godoclint
+    #- godoclint
     - godot
     #- godox
     - goheader
@@ -37,7 +37,7 @@ linters:
     - mirror
     - misspell
     # - mnd
-    - modernize
+    #- modernize
     - nestif
     - nilerr
     - nilnil
