@@ -26,6 +26,7 @@ func NewLinter(cfg *Config) *Linter {
 			&FilenameRule{},
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
+			&FrontmatterTaxonomyRule{},
 			// Additional rules will be added here in future phases
 		},
 	}

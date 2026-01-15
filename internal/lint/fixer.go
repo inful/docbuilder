@@ -150,8 +150,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	fingerprintTargets := make(map[string]struct{})
 	uidTargets := make(map[string]struct{})
 	uidAliasTargets := make(map[string]struct{})
+	taxonomyTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
 	uidAliasIssueCounts := make(map[string]int)
+	taxonomyIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError {
@@ -166,6 +168,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 			uidAliasTargets[issue.FilePath] = struct{}{}
 			uidAliasIssueCounts[issue.FilePath]++
 		}
+		if issue.Rule == frontmatterTaxonomyRuleName {
+			taxonomyTargets[issue.FilePath] = struct{}{}
+			taxonomyIssueCounts[issue.FilePath]++
+		}
 		if issue.Rule == frontmatterFingerprintRuleName {
 			fingerprintTargets[issue.FilePath] = struct{}{}
 			fingerprintIssueCounts[issue.FilePath]++
@@ -178,12 +184,16 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Phase 2: add missing uid-based aliases (for files that already have valid uids).
 	f.applyUIDAliasesFixes(uidAliasTargets, uidAliasIssueCounts, fixResult, fingerprintTargets)
 
-	// Phase 3: perform renames + link updates.
+	// Phase 3: normalize taxonomy (tags and categories).
+	// Taxonomy changes modify content, so fingerprints must be refreshed.
+	f.applyTaxonomyFixes(taxonomyTargets, taxonomyIssueCounts, fixResult, fingerprintTargets)
+
+	// Phase 4: perform renames + link updates.
 	for filePath, issues := range fileIssues {
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
 	}
 
-	// Phase 4: regenerate fingerprints LAST, for all affected files.
+	// Phase 5: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)
 	f.applyFingerprintFixes(fingerprintTargets, fingerprintIssueCounts, fixResult)
 
