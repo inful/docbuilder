@@ -25,7 +25,7 @@ Use `go run ./cmd/docbuilder <command> -v` for verbose logging during developmen
 
 ### Configuration System
 - YAML configuration with `${ENV_VAR}` expansion
-- Auto-loads `.env` and `.env.local` files
+- Loads environment variables from the first existing file: `.env` then `.env.local` (does not overwrite existing process env)
 - Repository-specific paths (defaults to `["docs"]`)
 - Three auth types: `ssh`, `token`, `basic`
 
@@ -42,45 +42,40 @@ repositories:
 ```
 
 ### Theme System
-DocBuilder exclusively uses the Relearn theme. Theme logic is implemented in `internal/hugo/config_writer.go` with Relearn-specific defaults.
+DocBuilder currently **hard-pins** the Hugo theme to **Relearn**.
 
-```
-type Theme interface {
-  Name() config.Theme
-  Features() ThemeFeatures             // capability flags (modules, math, search json, etc.)
-  ApplyParams(ctx ParamContext, params map[string]any)  // inject default/normalized params
-  CustomizeRoot(ctx ParamContext, root map[string]any)  // final root-level tweaks (optional)
-}
-```
+- The Hugo Modules import is always `github.com/McShelby/hugo-theme-relearn`.
+- Any user-provided `hugo.theme` (or older theme fields) should be treated as legacy/no-op; internally the theme is normalized to `relearn`.
 
-Generation phases (`generateHugoConfig`):
-1. Core defaults (title, baseURL, markup)
-2. `ApplyParams` (theme fills or normalizes `params`)
-3. User param deep-merge (config overrides)
-4. Dynamic fields (`build_date`)
-5. Theme module import block (if `Features().UsesModules`)
-6. Automatic menu (if `Features().AutoMainMenu`)
-7. `CustomizeRoot` (final adjustments)
+Theme configuration is generated in `internal/hugo/config_writer.go` and (at a high level) follows these phases:
+1. Core defaults (title/description/baseURL, markup defaults)
+2. Apply Relearn theme defaults via `applyRelearnThemeDefaults()`
+3. Deep-merge user overrides from `hugo.params`
+4. Add dynamic params (eg. `build_date`, optional version metadata)
+5. Configure Hugo Modules import for Relearn and ensure a `go.mod` exists
+6. Enable math passthrough (Relearn)
+7. Configure outputs/taxonomies defaults and language config required by Relearn
+8. Convert `hugo.menu` into Hugo config format (if provided)
 
-Adding a new theme:
-1. Create `internal/hugo/themes/<name>/theme_<name>.go`
-2. Implement the interface and call `theme.RegisterTheme(Theme{})` in `init()`
-3. Populate `ThemeFeatures` (set `UsesModules`, `ModulePath`, defaults)
-4. Provide sane defaults in `ApplyParams` (avoid overwriting user-provided keys)
-5. (Optional) adjust root in `CustomizeRoot`
-6. Add/extend golden config test for `hugo.yaml`
-
-Theme configuration uses `applyRelearnThemeDefaults()` to set sensible defaults for the Relearn theme.
+If you need support for another Hugo theme, treat it as a larger refactor (new config model + generator behavior). Do not add partial “multi-theme” scaffolding.
 
 ### File Discovery
 Documentation discovery (`internal/docs/discovery.go`) walks configured paths and:
-- Only processes `.md`/`.markdown` files
-- Ignores standard files: `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `LICENSE.md`
+- Discovers markdown files (`.md`, `.markdown`, plus a few common variants) and a small allowlist of static assets (images, pdf, etc.)
+- Skips hidden files (leading `.`)
+- Ignores standard files **at the docs root**, with one exception: root `README.md` is kept so it can be used as repository index content
+- Skips entire repositories that contain a `.docignore` file at the repository root
 - Preserves directory structure as Hugo sections
-- Builds Hugo-compatible paths: `content/{repository}/{section}/{file}.md`
+- Normalizes `index.md` → `_index.md` for Hugo section pages
+- Detects case-insensitive Hugo path collisions (to prevent Hugo ambiguous reference errors)
+
+Hugo path shapes:
+- Single-repository build: `content/{section}/{file}.md`
+- Multi-repo build (single forge): `content/{repository}/{section}/{file}.md`
+- Multi-forge build (namespaced): `content/{forge}/{repository}/{section}/{file}.md`
 
 ### Authentication Handling
-Git client (`internal/git/git.go`) supports multiple auth methods:
+Git operations use the auth manager/providers (`internal/auth/`, wired via `internal/git/`):
 - **SSH**: Uses `~/.ssh/id_rsa` by default or specified `key_path`
 - **Token**: Username="token", Password=token (GitHub/GitLab pattern)
 - **Basic**: Standard username/password auth
@@ -91,7 +86,9 @@ Environment variables are commonly used: `${GIT_ACCESS_TOKEN}`, `${GITHUB_TOKEN}
 
 ### Searching the Codebase
 
-**Always use ripgrep (`rg`) instead of `grep` for pattern searching:**
+**Prefer ripgrep (`rg`) when available; otherwise use the editor search/Go tools.**
+
+If you are running in this Copilot agent environment, you can also use the workspace search tool instead of shelling out.
 
 ```bash
 # Search for pattern (automatically respects .gitignore)
@@ -116,11 +113,11 @@ rg -l "pattern"
 - Better defaults (recursive, colored output, line numbers)
 - Correctly handles binary files and UTF-8
 
-### Adding New Hugo Theme Support
-1. Update `addThemeParams()` logic in `hugo/generator.go`
-2. Add module import pattern if theme supports Hugo Modules
-3. Set theme-specific defaults (search, UI, etc.)
-4. Test with example configuration
+### Adding Hugo Theme Support
+DocBuilder is Relearn-only today. Do not introduce theme-selection or a theme registry unless the change explicitly includes:
+- Config schema changes + normalization
+- Generator changes (config, layouts, assets, content assumptions)
+- Golden tests covering the new theme behavior
 
 ### Testing Changes
 ```bash
@@ -133,6 +130,11 @@ make build
 # Test discovery only
 ./bin/docbuilder discover -c test-config.yaml -v
 ```
+
+### TDD Workflow (Strict)
+- Follow strict TDD: write the test first, watch it fail, then implement the change.
+- When fixing a bug, always add a test that reproduces the issue **before** the fix.
+- The reproducer test must remain after the fix as a long-term regression test (do not add temporary/throwaway tests).
 
 ### Test File Organization
 
@@ -244,38 +246,23 @@ When creating or reorganizing test files:
 
 #### 2. Create Unit Golden Test (if applicable)
 
-```go
-// In internal/hugo/*_golden_test.go
-func TestHugoConfigGolden_FeatureName(t *testing.T) {
-    cfg := &config.Config{
-        Hugo: config.HugoConfig{
-            Theme:          "relearn",
-            EnableFeature:  true,
-            FeatureOption:  "value",
-        },
-    }
-    cfg.Init()
-    
-    actual := generateHugoConfig(cfg)
-    
-    goldenPath := "testdata/hugo_config/feature_name.yaml"
-    compareGolden(t, actual, goldenPath)
-}
-```
+Follow the existing patterns in the repo (eg. the Hugo config golden tests under `internal/hugo/`).
+
+Avoid hard-coding a theme in test configs/snippets: DocBuilder always normalizes to Relearn.
 
 Golden file location: `internal/hugo/testdata/hugo_config/feature_name.yaml`
 
 #### 3. Create Integration Golden Test
 
 **Required Files:**
-1. Test repository: `test/testdata/repos/themes/<theme>-<feature>/docs/*.md`
-2. Test configuration: `test/testdata/configs/<theme>-<feature>.yaml`
+1. Test repository: `test/testdata/repos/<feature>/docs/*.md`
+2. Test configuration: `test/testdata/configs/<feature>.yaml`
 3. Test function: `test/integration/<feature>_golden_test.go`
-4. Golden directory: `test/testdata/golden/<theme>-<feature>/`
+4. Golden directory: `test/testdata/golden/<feature>/`
 
 **Test Repository Structure:**
 ```bash
-test/testdata/repos/themes/<theme>-<feature>/
+test/testdata/repos/<feature>/
 └── docs/
     ├── README.md          # Main documentation
     ├── getting-started.md # Additional content
@@ -297,7 +284,6 @@ hugo:
   title: "Feature Demo"
   description: "Test documentation site for <feature>"
   base_url: "http://localhost:1313/"
-  theme: "relearn"
   enable_feature: true      # Feature-specific config
   feature_option: "value"   # Feature-specific options
   params:
@@ -313,13 +299,13 @@ output:
 
 **Test Function Pattern:**
 ```go
-func TestGolden_<Theme><Feature>(t *testing.T) {
+func TestGolden_<Feature>(t *testing.T) {
     if testing.Short() {
         t.Skip("Skipping golden test in short mode")
     }
 
     // Setup test repository (automatically initializes git)
-    repoPath := setupTestRepo(t, "../../test/testdata/repos/themes/<theme>-<feature>")
+    repoPath := setupTestRepo(t, "../../test/testdata/repos/<feature>")
 
     // Load and configure
     cfg := loadGoldenConfig(t, "../../test/testdata/configs/<theme>-<feature>.yaml")
@@ -341,7 +327,7 @@ func TestGolden_<Theme><Feature>(t *testing.T) {
     require.Equal(t, build.BuildStatusSuccess, result.Status)
 
     // Verify outputs against golden files
-    goldenDir := "../../test/testdata/golden/<theme>-<feature>"
+    goldenDir := "../../test/testdata/golden/<feature>"
     verifyHugoConfig(t, outputDir, goldenDir+"/hugo-config.golden.yaml", *updateGolden)
     verifyContentStructure(t, outputDir, goldenDir+"/content-structure.golden.json", *updateGolden)
     
@@ -414,10 +400,10 @@ func verifyFeatureAssets(t *testing.T, outputDir, goldenPath string, updateGolde
 mkdir -p test/testdata/golden/<theme>-<feature>
 
 # Generate golden files with update flag
-go test ./test/integration -run TestGolden_<Theme><Feature> -v -update-golden
+go test ./test/integration -run TestGolden_<Feature> -v -update-golden
 
 # Verify test passes without update flag
-go test ./test/integration -run TestGolden_<Theme><Feature> -v
+go test ./test/integration -run TestGolden_<Feature> -v
 
 # Run all integration tests to ensure no regressions
 go test ./test/integration -v
@@ -464,8 +450,11 @@ Available in `test/integration/helpers.go`:
 ### 1. Run golangci-lint and Fix All Issues
 
 ```bash
-# Run linter
-golangci-lint run
+# DocBuilder uses golangci-lint v2.8.0
+golangci-lint version
+
+# Run linter and format code
+golangci-lint run --fix
 
 # Fix any issues reported
 # Re-run until no issues remain
@@ -675,7 +664,7 @@ fixer_broken_links.go     // Broken link detection
 
 **5. Refactoring checklist:**
 - [ ] When adding a new feature, use a strict TDD approach.
-- [ ] When fixing a bug, make sure you first create a test to reproduce the bug before proceeding to fix it.
+- [ ] When fixing a bug, first add a failing reproducer test, then fix the bug; keep the test as a permanent regression test.
 - [ ] Each file has single, clear responsibility
 - [ ] File names clearly indicate content
 - [ ] No circular dependencies between new files

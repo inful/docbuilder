@@ -42,15 +42,15 @@ init:
 
 # Format code
 fmt:
-	go fmt ./...
+	golangci-lint fmt
 
 # Lint code
 lint:
-	golangci-lint run
+	golangci-lint run --fix
 
 # Development setup
 dev-setup:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
 
 # Quick development cycle
 dev: fmt build test
