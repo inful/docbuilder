@@ -103,13 +103,13 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 
 	// Find the end of front matter
 	search := content[4:] // Skip initial "---\n"
-	endIndex := strings.Index(search, "\n---\n")
-	if endIndex == -1 {
+	before, after, ok := strings.Cut(search, "\n---\n")
+	if !ok {
 		return result.SetError(errors.New("unterminated front matter")).SetDuration(time.Since(startTime)), nil
 	}
 
-	frontMatterContent := search[:endIndex]
-	remainingContent := search[endIndex+5:] // Skip "\n---\n"
+	frontMatterContent := before
+	remainingContent := after // Skip "\n---\n"
 
 	// Parse YAML front matter
 	var frontMatterMap map[string]any
