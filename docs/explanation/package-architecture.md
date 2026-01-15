@@ -1,5 +1,7 @@
 ---
 uid: 53887282-d86e-4d04-9062-abfe344d81e1
+aliases:
+  - /_uid/53887282-d86e-4d04-9062-abfe344d81e1/
 title: "Package Architecture"
 date: 2025-12-15
 categories:

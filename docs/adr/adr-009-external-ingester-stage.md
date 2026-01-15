@@ -1,5 +1,7 @@
 ---
 uid: 327c9967-2b83-47fc-8ebc-996964bb7001
+aliases:
+  - /_uid/327c9967-2b83-47fc-8ebc-996964bb7001/
 fingerprint: 54d6e6636f3f67c1ef601ab8a88f6ea0ee089a7ebb5cfea1d33a52e84c8fa02d
 ---
 

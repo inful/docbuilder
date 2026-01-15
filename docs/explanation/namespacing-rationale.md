@@ -1,5 +1,7 @@
 ---
 uid: 23db9b8b-6c79-4e9d-b8e6-6afe9251dc94
+aliases:
+  - /_uid/23db9b8b-6c79-4e9d-b8e6-6afe9251dc94/
 title: "Namespacing Rationale"
 date: 2025-12-15
 categories:

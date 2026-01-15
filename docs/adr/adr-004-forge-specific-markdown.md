@@ -1,5 +1,7 @@
 ---
 uid: 138c1d38-5a96-4820-8a74-dbb45c94a0e3
+aliases:
+  - /_uid/138c1d38-5a96-4820-8a74-dbb45c94a0e3/
 title: "ADR-004: Forge-Specific Markdown Support"
 date: 2025-12-18
 status: "proposed"

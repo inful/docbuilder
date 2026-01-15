@@ -1,5 +1,7 @@
 ---
 uid: d81afd2a-5a6f-4721-ab3a-d8c4950bd162
+aliases:
+  - /_uid/d81afd2a-5a6f-4721-ab3a-d8c4950bd162/
 title: "ADR-000: Uniform Error Handling"
 date: 2025-10-03
 lastmod: 2025-12-14

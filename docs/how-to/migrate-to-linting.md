@@ -1,5 +1,7 @@
 ---
 uid: f589369a-b003-410b-87ff-86e976e787ce
+aliases:
+  - /_uid/f589369a-b003-410b-87ff-86e976e787ce/
 title: "How To: Migrate Existing Repository to Linting"
 date: 2025-12-29
 categories:

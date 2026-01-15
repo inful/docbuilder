@@ -1,5 +1,7 @@
 ---
 uid: 663991b1-bfe7-4c55-bd54-8f09e1120e06
+aliases:
+  - /_uid/663991b1-bfe7-4c55-bd54-8f09e1120e06/
 title: "High-Level System Architecture"
 date: 2026-01-04
 categories:

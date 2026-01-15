@@ -1,5 +1,7 @@
 ---
 uid: b43f4ed6-21cb-4a80-9cdd-3304d03cca05
+aliases:
+  - /_uid/b43f4ed6-21cb-4a80-9cdd-3304d03cca05/
 title: "Architecture Diagrams Index"
 date: 2026-01-04
 categories:

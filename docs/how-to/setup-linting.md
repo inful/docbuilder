@@ -1,5 +1,7 @@
 ---
 uid: fb886a4a-1a7f-4d2d-9789-791247e160a0
+aliases:
+  - /_uid/fb886a4a-1a7f-4d2d-9789-791247e160a0/
 date: 2025-12-29
 categories:
   - how-to
@@ -8,7 +10,8 @@ tags:
   - validation
   - git-hooks
   - developer-experience
-fingerprint: dbc0778554c87a8ca8b10587bc8eb390157c610bde41662f584b2d89e26ec7fa
+fingerprint: 3a064aada8f71dc918e076f2dcf965711da7599a833d9ecc8366ecb895679b4d
+lastmod: 2026-01-15
 ---
 
 # Setup Documentation Linting

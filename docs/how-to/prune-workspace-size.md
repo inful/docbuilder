@@ -1,5 +1,7 @@
 ---
 uid: 56876591-4835-49a5-a63e-494590a557d5
+aliases:
+  - /_uid/56876591-4835-49a5-a63e-494590a557d5/
 title: "How To: Prune Workspace Size"
 date: 2025-12-15
 categories:

@@ -1,5 +1,7 @@
 ---
 uid: fd65129c-5904-4cef-bc9b-6cdae00b8891
+aliases:
+  - /_uid/fd65129c-5904-4cef-bc9b-6cdae00b8891/
 title: "Pipeline Flow Diagrams"
 date: 2026-01-04
 categories:

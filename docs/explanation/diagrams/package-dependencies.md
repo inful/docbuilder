@@ -1,5 +1,7 @@
 ---
 uid: a12d6319-3e23-4e1f-a276-920b402b50d6
+aliases:
+  - /_uid/a12d6319-3e23-4e1f-a276-920b402b50d6/
 title: "Package Dependencies Diagram"
 date: 2026-01-04
 categories:

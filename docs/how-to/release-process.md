@@ -1,5 +1,7 @@
 ---
 uid: 591c7ad3-3af8-47f8-9d01-531da3233a5d
+aliases:
+  - /_uid/591c7ad3-3af8-47f8-9d01-531da3233a5d/
 title: "Release Process"
 date: 2026-01-01
 categories:

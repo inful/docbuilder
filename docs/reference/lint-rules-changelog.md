@@ -1,5 +1,7 @@
 ---
 uid: 139d45f0-c55f-40be-9c29-a3485c009143
+aliases:
+  - /_uid/139d45f0-c55f-40be-9c29-a3485c009143/
 title: "Lint Rules Changelog"
 date: 2025-12-29
 categories:

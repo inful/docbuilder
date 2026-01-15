@@ -1,5 +1,7 @@
 ---
 uid: 98165082-c567-4857-bb4e-12757cdae01e
+aliases:
+  - /_uid/98165082-c567-4857-bb4e-12757cdae01e/
 title: "How To: Enable Multi-Version Documentation"
 date: 2025-12-15
 categories:

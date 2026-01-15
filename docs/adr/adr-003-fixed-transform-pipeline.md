@@ -1,5 +1,7 @@
 ---
 uid: 8bccb937-22a1-4828-a6ef-ab7b74a1a6bc
+aliases:
+  - /_uid/8bccb937-22a1-4828-a6ef-ab7b74a1a6bc/
 title: "ADR-003: Fixed Transform Pipeline"
 date: 2025-12-16
 categories:

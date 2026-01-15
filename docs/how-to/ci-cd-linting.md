@@ -1,5 +1,7 @@
 ---
 uid: a89ff86e-31ab-43b5-b751-05c37768b0ba
+aliases:
+  - /_uid/a89ff86e-31ab-43b5-b751-05c37768b0ba/
 title: "How To: CI/CD Linting Integration"
 date: 2025-12-29
 categories:

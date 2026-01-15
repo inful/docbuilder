@@ -1,5 +1,7 @@
 ---
 uid: c9a38b75-67d0-498f-ab60-e00dfd70e8ae
+aliases:
+  - /_uid/c9a38b75-67d0-498f-ab60-e00dfd70e8ae/
 title: "Architecture Overview"
 date: 2025-12-15
 categories:

@@ -1,5 +1,7 @@
 ---
 uid: 4f6c6944-e4de-4f09-ae84-1d566bb00277
+aliases:
+  - /_uid/4f6c6944-e4de-4f09-ae84-1d566bb00277/
 title: "ADR-002: Fix Index Stage Pipeline Bypass"
 date: 2025-12-13
 categories:
