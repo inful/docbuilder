@@ -17,6 +17,12 @@ type DiscoveryService struct {
 	filtering    *config.FilteringConfig
 }
 
+type repoFilterDecision struct {
+	include bool
+	reason  string // stable reason code
+	detail  string // optional detail (e.g. matched pattern)
+}
+
 // NewDiscoveryService creates a new discovery service.
 func NewDiscoveryService(manager *Manager, filtering *config.FilteringConfig) *DiscoveryService {
 	return &DiscoveryService{
@@ -167,14 +173,20 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 			// Apply filtering logic with mutex protection
 			mu.Lock()
 			defer mu.Unlock()
-			if ds.shouldIncludeRepository(r) {
+			decision := ds.filterDecision(r)
+			if decision.include {
 				validRepos = append(validRepos, r)
 			} else {
 				filteredRepos = append(filteredRepos, r)
-				slog.Debug("Repository filtered out",
+				attrs := []any{
 					"forge", client.GetName(),
 					"repository", r.FullName,
-					"reason", ds.getFilterReason(r))
+					"reason", decision.reason,
+				}
+				if decision.detail != "" {
+					attrs = append(attrs, "detail", decision.detail)
+				}
+				slog.Info("Repository filtered", attrs...)
 			}
 		}(repo)
 	}
@@ -220,20 +232,21 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 }
 
 // shouldIncludeRepository determines if a repository should be included based on filtering config.
-func (ds *DiscoveryService) shouldIncludeRepository(repo *Repository) bool {
+
+func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision {
 	// Skip archived repositories
 	if repo.Archived {
-		return false
+		return repoFilterDecision{include: false, reason: "archived"}
 	}
 
 	// Check for .docignore file
 	if repo.HasDocIgnore {
-		return false
+		return repoFilterDecision{include: false, reason: "docignore_present"}
 	}
 
 	// Check if repository has required paths (e.g., docs folder)
 	if !repo.HasDocs && len(ds.filtering.RequiredPaths) > 0 {
-		return false
+		return repoFilterDecision{include: false, reason: "missing_required_paths"}
 	}
 
 	// Check include patterns
@@ -246,54 +259,18 @@ func (ds *DiscoveryService) shouldIncludeRepository(repo *Repository) bool {
 			}
 		}
 		if !included {
-			return false
+			return repoFilterDecision{include: false, reason: "include_patterns_miss"}
 		}
 	}
 
 	// Check exclude patterns
 	for _, pattern := range ds.filtering.ExcludePatterns {
 		if matchesPattern(repo.Name, pattern) || matchesPattern(repo.FullName, pattern) {
-			return false
+			return repoFilterDecision{include: false, reason: "exclude_patterns_match", detail: pattern}
 		}
 	}
 
-	return true
-}
-
-// getFilterReason returns a human-readable reason why a repository was filtered out.
-func (ds *DiscoveryService) getFilterReason(repo *Repository) string {
-	if repo.Archived {
-		return "archived"
-	}
-	if repo.HasDocIgnore {
-		return "has .docignore"
-	}
-	if !repo.HasDocs && len(ds.filtering.RequiredPaths) > 0 {
-		return "missing required docs paths"
-	}
-
-	// Check include patterns
-	if len(ds.filtering.IncludePatterns) > 0 {
-		included := false
-		for _, pattern := range ds.filtering.IncludePatterns {
-			if matchesPattern(repo.Name, pattern) || matchesPattern(repo.FullName, pattern) {
-				included = true
-				break
-			}
-		}
-		if !included {
-			return "doesn't match include patterns"
-		}
-	}
-
-	// Check exclude patterns
-	for _, pattern := range ds.filtering.ExcludePatterns {
-		if matchesPattern(repo.Name, pattern) || matchesPattern(repo.FullName, pattern) {
-			return "matches exclude pattern: " + pattern
-		}
-	}
-
-	return "unknown"
+	return repoFilterDecision{include: true, reason: "included"}
 }
 
 // matchesPattern checks if a string matches a simple glob pattern
