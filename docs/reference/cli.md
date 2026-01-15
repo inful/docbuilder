@@ -141,6 +141,8 @@ docbuilder lint --fix -y
 docbuilder lint -f json
 ```
 
+Note: `docbuilder lint --fix` may update markdown file content beyond renames/link rewrites, including regenerating frontmatter `fingerprint` values and setting `lastmod` (UTC `YYYY-MM-DD`) when a fingerprint changes.
+
 ## Daemon Command
 
 Run continuous documentation server with webhook support.
