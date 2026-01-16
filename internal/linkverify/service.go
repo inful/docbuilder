@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -38,18 +39,31 @@ type PageMetadata struct {
 // VerificationService manages link verification operations.
 type VerificationService struct {
 	cfg        *config.LinkVerificationConfig
-	nats       *NATSClient
+	cache      cacheClient
 	httpClient *http.Client
 	mu         sync.Mutex
 	running    bool
-	wg         sync.WaitGroup
-	semaphore  chan struct{} // Limit concurrent verifications
+	linkSem    chan struct{} // Limit concurrent link checks
+	pageSem    chan struct{} // Limit concurrent page processing
+}
+
+type cacheClient interface {
+	GetCachedResult(ctx context.Context, url string) (*CacheEntry, error)
+	SetCachedResult(ctx context.Context, entry *CacheEntry) error
+	IsCacheValid(entry *CacheEntry) bool
+	GetPageHash(ctx context.Context, path string) (string, error)
+	SetPageHash(ctx context.Context, path string, hash string) error
+	PublishBrokenLink(ctx context.Context, event *BrokenLinkEvent) error
+	Close() error
 }
 
 // NewVerificationService creates a new link verification service.
 func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationService, error) {
 	if cfg == nil || !cfg.Enabled {
 		return nil, errors.New("link verification is disabled")
+	}
+	if cfg.MaxConcurrent <= 0 {
+		cfg.MaxConcurrent = 10
 	}
 
 	// Create NATS client
@@ -85,9 +99,10 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 
 	return &VerificationService{
 		cfg:        cfg,
-		nats:       natsClient,
+		cache:      natsClient,
 		httpClient: httpClient,
-		semaphore:  make(chan struct{}, cfg.MaxConcurrent),
+		linkSem:    make(chan struct{}, cfg.MaxConcurrent),
+		pageSem:    make(chan struct{}, min(cfg.MaxConcurrent, 4)),
 	}, nil
 }
 
@@ -115,11 +130,12 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 		delay = 100 * time.Millisecond
 	}
 
+	var pagesWG sync.WaitGroup
 	for _, page := range pages {
 		select {
 		case <-ctx.Done():
 			slog.Info("Link verification canceled")
-			s.wg.Wait()
+			pagesWG.Wait()
 			return ctx.Err()
 		default:
 		}
@@ -127,13 +143,23 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 		// Rate limiting
 		time.Sleep(delay)
 
-		// Verify page in background
-		s.wg.Add(1)
-		go s.verifyPage(ctx, page)
+		// Verify page in background (bounded)
+		select {
+		case <-ctx.Done():
+			pagesWG.Wait()
+			return ctx.Err()
+		case s.pageSem <- struct{}{}:
+		}
+		pagesWG.Add(1)
+		go func(page *PageMetadata) {
+			defer pagesWG.Done()
+			defer func() { <-s.pageSem }()
+			s.verifyPage(ctx, page)
+		}(page)
 	}
 
 	// Wait for all verifications to complete
-	s.wg.Wait()
+	pagesWG.Wait()
 	slog.Info("Link verification completed")
 
 	return nil
@@ -141,11 +167,9 @@ func (s *VerificationService) VerifyPages(ctx context.Context, pages []*PageMeta
 
 // verifyPage verifies all links in a single page.
 func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata) {
-	defer s.wg.Done()
-
 	// Check if page content has changed using MD5 hash
 	if page.ContentHash != "" {
-		if cachedHash, err := s.nats.GetPageHash(ctx, page.RenderedPath); err == nil && cachedHash == page.ContentHash {
+		if cachedHash, err := s.cache.GetPageHash(ctx, page.RenderedPath); err == nil && cachedHash == page.ContentHash {
 			slog.Debug("Skipping link verification for unchanged page",
 				"path", page.RenderedPath,
 				"hash", page.ContentHash[:8])
@@ -172,9 +196,11 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 		"link_count", len(links))
 
 	// Verify each link
+	var linksWG sync.WaitGroup
 	for _, link := range links {
 		select {
 		case <-ctx.Done():
+			linksWG.Wait()
 			return
 		default:
 		}
@@ -188,15 +214,26 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 			continue
 		}
 
-		// Acquire semaphore
-		s.semaphore <- struct{}{}
-		s.wg.Add(1)
-		go s.verifyLink(ctx, link, page)
+		// Acquire link semaphore before spawning to avoid goroutine backlogs.
+		select {
+		case <-ctx.Done():
+			linksWG.Wait()
+			return
+		case s.linkSem <- struct{}{}:
+		}
+		linksWG.Add(1)
+		go func(link *Link) {
+			defer linksWG.Done()
+			defer func() { <-s.linkSem }()
+			s.verifyLink(ctx, link, page)
+		}(link)
 	}
+
+	linksWG.Wait()
 
 	// All links verified for this page - update page hash in cache
 	if page.ContentHash != "" {
-		if err := s.nats.SetPageHash(ctx, page.RenderedPath, page.ContentHash); err != nil {
+		if err := s.cache.SetPageHash(ctx, page.RenderedPath, page.ContentHash); err != nil {
 			slog.Debug("Failed to cache page hash", "path", page.RenderedPath, "error", err)
 		}
 	}
@@ -204,9 +241,6 @@ func (s *VerificationService) verifyPage(ctx context.Context, page *PageMetadata
 
 // verifyLink verifies a single link.
 func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *PageMetadata) {
-	defer s.wg.Done()
-	defer func() { <-s.semaphore }()
-
 	// Resolve relative URLs
 	absoluteURL := link.URL
 	if link.IsInternal && !strings.HasPrefix(link.URL, "http") {
@@ -220,10 +254,10 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 	}
 
 	// Check cache first
-	cached, err := s.nats.GetCachedResult(ctx, absoluteURL)
+	cached, err := s.cache.GetCachedResult(ctx, absoluteURL)
 	if err != nil {
 		slog.Debug("Cache lookup error", "url", absoluteURL, "error", err)
-	} else if cached != nil && s.nats.IsCacheValid(cached) {
+	} else if cached != nil && s.cache.IsCacheValid(cached) {
 		// Use cached result
 		if !cached.IsValid {
 			// Still broken, update failure count and possibly publish
@@ -254,7 +288,7 @@ func (s *VerificationService) verifyLink(ctx context.Context, link *Link, page *
 	}
 
 	// Update cache
-	if err := s.nats.SetCachedResult(ctx, cacheEntry); err != nil {
+	if err := s.cache.SetCachedResult(ctx, cacheEntry); err != nil {
 		slog.Warn("Failed to update cache", "url", absoluteURL, "error", err)
 	}
 }
@@ -333,6 +367,15 @@ func isAuthError(statusCode int) bool {
 
 // handleBrokenLink creates and publishes a broken link event.
 func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL string, link *Link, page *PageMetadata, status int, errorMsg string, cache *CacheEntry) {
+	frontMatter := page.FrontMatter
+	if frontMatter == nil && page.HugoPath != "" {
+		if contentBytes, err := os.ReadFile(page.HugoPath); err == nil {
+			if fm, err := ParseFrontMatter(contentBytes); err == nil {
+				frontMatter = fm
+			}
+		}
+	}
+
 	event := &BrokenLinkEvent{
 		URL:        absoluteURL,
 		Status:     status,
@@ -353,8 +396,8 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 		RenderedPath: page.RenderedPath,
 		RenderedURL:  page.RenderedURL,
 
-		// Front matter
-		FrontMatter: page.FrontMatter,
+		// Front matter (lazy-loaded to avoid per-page up-front parsing)
+		FrontMatter: frontMatter,
 
 		// Build context
 		BuildID:   page.BuildID,
@@ -362,17 +405,17 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 	}
 
 	// Extract specific front matter fields
-	if page.FrontMatter != nil {
-		if title, ok := page.FrontMatter["title"].(string); ok {
+	if frontMatter != nil {
+		if title, ok := frontMatter["title"].(string); ok {
 			event.Title = title
 		}
-		if desc, ok := page.FrontMatter["description"].(string); ok {
+		if desc, ok := frontMatter["description"].(string); ok {
 			event.Description = desc
 		}
-		if date, ok := page.FrontMatter["date"].(string); ok {
+		if date, ok := frontMatter["date"].(string); ok {
 			event.Date = date
 		}
-		if typ, ok := page.FrontMatter["type"].(string); ok {
+		if typ, ok := frontMatter["type"].(string); ok {
 			event.Type = typ
 		}
 	}
@@ -385,7 +428,7 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 	}
 
 	// Publish event
-	if err := s.nats.PublishBrokenLink(ctx, event); err != nil {
+	if err := s.cache.PublishBrokenLink(ctx, event); err != nil {
 		slog.Error("Failed to publish broken link event",
 			"url", absoluteURL,
 			"source", page.RenderedPath,
@@ -431,8 +474,8 @@ func (s *VerificationService) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.nats != nil {
-		return s.nats.Close()
+	if s.cache != nil {
+		return s.cache.Close()
 	}
 
 	return nil

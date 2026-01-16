@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"os"
@@ -78,7 +79,8 @@ type Daemon struct {
 	discoveryRunner *DiscoveryRunner
 
 	// Link verification service
-	linkVerifier *linkverify.VerificationService
+	linkVerifier      *linkverify.VerificationService
+	linkVerifyRunning int32
 
 	// Build status tracker for preview mode (optional, used by local preview)
 	buildStatus interface{ getStatus() (bool, error, bool) }
@@ -574,38 +576,57 @@ func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
 // verifyLinksAfterBuild runs link verification in the background after a successful build.
 // This is a low-priority task that doesn't block the build pipeline.
 func (d *Daemon) verifyLinksAfterBuild(ctx context.Context, buildID string) {
+	// Avoid overlapping runs: if builds happen faster than verification completes,
+	// concurrent directory walks + metadata slices can spike memory.
+	if !atomic.CompareAndSwapInt32(&d.linkVerifyRunning, 0, 1) {
+		slog.Info("Link verification already running; skipping", "build_id", buildID)
+		return
+	}
+	defer atomic.StoreInt32(&d.linkVerifyRunning, 0)
+
 	// Create background context with timeout (derived from parent ctx)
 	verifyCtx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 
 	slog.Info("Starting link verification for build", "build_id", buildID)
 
-	// Collect page metadata from build report
-	pages, err := d.collectPageMetadata(buildID)
-	if err != nil {
-		slog.Error("Failed to collect page metadata for link verification",
-			"build_id", buildID,
-			"error", err)
-		return
+	// Collect and verify in bounded batches to keep peak memory low.
+	const batchSize = 200
+	batch := make([]*linkverify.PageMetadata, 0, batchSize)
+	flush := func() error {
+		if len(batch) == 0 {
+			return nil
+		}
+		err := d.linkVerifier.VerifyPages(verifyCtx, batch)
+		// Drop references eagerly to allow GC to reclaim page metadata.
+		batch = make([]*linkverify.PageMetadata, 0, batchSize)
+		return err
 	}
 
-	// Verify links
-	if err := d.linkVerifier.VerifyPages(verifyCtx, pages); err != nil {
-		slog.Warn("Link verification encountered errors",
-			"build_id", buildID,
-			"error", err)
+	err := d.collectPageMetadataBatched(buildID, func(page *linkverify.PageMetadata) error {
+		batch = append(batch, page)
+		if len(batch) >= batchSize {
+			return flush()
+		}
+		return nil
+	})
+	if err != nil {
+		slog.Error("Failed to collect page metadata for link verification", "build_id", buildID, "error", err)
+		return
+	}
+	if err := flush(); err != nil {
+		slog.Warn("Link verification encountered errors", "build_id", buildID, "error", err)
 		return
 	}
 
 	slog.Info("Link verification completed successfully", "build_id", buildID)
 }
 
-// collectPageMetadata collects metadata for all pages in the build.
-func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata, error) {
+// collectPageMetadataBatched walks the rendered site and streams page metadata to the callback.
+// This avoids building a huge in-memory slice for large sites.
+func (d *Daemon) collectPageMetadataBatched(buildID string, onPage func(*linkverify.PageMetadata) error) error {
 	outputDir := d.config.Daemon.Storage.OutputDir
 	publicDir := filepath.Join(outputDir, "public")
-
-	var pages []*linkverify.PageMetadata
 
 	// Walk the public directory to find all HTML files
 	err := filepath.Walk(publicDir, func(path string, info os.FileInfo, err error) error {
@@ -625,7 +646,6 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		}
 
 		// Create basic DocFile structure (we don't have the original here)
-		// The link verifier mostly needs the path information
 		docFile := &docs.DocFile{
 			Path:         path,
 			RelativePath: relPath,
@@ -633,14 +653,8 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			Name:         strings.TrimSuffix(filepath.Base(path), ".html"),
 		}
 
-		// Try to find corresponding content file to extract front matter
-		var frontMatter map[string]any
+		// Path to corresponding content file (used for front matter on-demand)
 		contentPath := filepath.Join(outputDir, "content", strings.TrimSuffix(relPath, ".html")+".md")
-		if contentBytes, err := os.ReadFile(filepath.Clean(contentPath)); err == nil {
-			if fm, err := linkverify.ParseFrontMatter(contentBytes); err == nil {
-				frontMatter = fm
-			}
-		}
 
 		// Build rendered URL
 		renderedURL := d.config.Hugo.BaseURL
@@ -651,11 +665,14 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 
 		// Compute MD5 hash of HTML content for change detection
 		var contentHash string
-		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil {
-			// #nosec G401 -- MD5 is used for content hashing, not cryptographic security
-			hash := md5.New()
-			hash.Write(htmlBytes)
-			contentHash = hex.EncodeToString(hash.Sum(nil))
+		if f, err := os.Open(filepath.Clean(path)); err == nil {
+			func() {
+				defer func() { _ = f.Close() }()
+				// #nosec G401 -- MD5 is used for content hashing, not cryptographic security
+				hash := md5.New()
+				_, _ = io.Copy(hash, f)
+				contentHash = hex.EncodeToString(hash.Sum(nil))
+			}()
 		}
 
 		page := &linkverify.PageMetadata{
@@ -664,25 +681,29 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 			HugoPath:     contentPath,
 			RenderedPath: relPath,
 			RenderedURL:  renderedURL,
-			FrontMatter:  frontMatter,
+			FrontMatter:  nil,
 			BaseURL:      d.config.Hugo.BaseURL,
 			BuildID:      buildID,
 			BuildTime:    time.Now(),
 			ContentHash:  contentHash,
 		}
 
-		pages = append(pages, page)
+		if onPage != nil {
+			if err := onPage(page); err != nil {
+				return err
+			}
+		}
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk public directory: %w", err)
+		return fmt.Errorf("failed to walk public directory: %w", err)
 	}
 
 	slog.Debug("Collected page metadata for link verification",
 		"build_id", buildID,
-		"page_count", len(pages))
+		"public_dir", publicDir)
 
-	return pages, nil
+	return nil
 }
 
 // extractRepoFromPath attempts to extract repository name from rendered path.

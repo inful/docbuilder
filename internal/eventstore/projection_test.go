@@ -192,6 +192,14 @@ func TestBuildHistoryProjection_HistoryLimit(t *testing.T) {
 	if len(history) != 3 {
 		t.Errorf("Expected history length 3, got %d", len(history))
 	}
+
+	// Internal builds map should also be bounded to prevent memory growth.
+	projection.mu.RLock()
+	buildCount := len(projection.builds)
+	projection.mu.RUnlock()
+	if buildCount != 3 {
+		t.Errorf("Expected builds map size 3, got %d", buildCount)
+	}
 }
 
 func TestBuildHistoryProjection_GetActiveBuild(t *testing.T) {

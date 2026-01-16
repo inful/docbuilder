@@ -83,6 +83,9 @@ func (p *BuildHistoryProjection) Rebuild(ctx context.Context) error {
 		p.history = p.history[:p.maxSize]
 	}
 
+	// Prevent unbounded growth: keep only bounded history + any running builds.
+	p.pruneBuildsLocked()
+
 	p.lastSync = time.Now()
 	return nil
 }
@@ -193,6 +196,30 @@ func (p *BuildHistoryProjection) addToHistoryLocked(summary *BuildSummary) {
 	// Trim to max size
 	if len(p.history) > p.maxSize {
 		p.history = p.history[:p.maxSize]
+	}
+
+	// Prevent unbounded growth: keep only bounded history + any running builds.
+	p.pruneBuildsLocked()
+}
+
+// pruneBuildsLocked removes completed builds not present in the bounded history.
+// It keeps any builds that are still marked as running.
+// Caller must hold p.mu (write lock).
+func (p *BuildHistoryProjection) pruneBuildsLocked() {
+	keep := make(map[string]struct{}, len(p.history))
+	for _, h := range p.history {
+		if h != nil {
+			keep[h.BuildID] = struct{}{}
+		}
+	}
+
+	for id, summary := range p.builds {
+		if summary != nil && summary.Status == buildStatusRunning {
+			continue
+		}
+		if _, ok := keep[id]; !ok {
+			delete(p.builds, id)
+		}
 	}
 }
 
