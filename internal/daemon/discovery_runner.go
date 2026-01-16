@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sync/atomic"
@@ -27,7 +28,10 @@ type DiscoveryRunner struct {
 
 	// Tracking
 	lastDiscovery *time.Time
+	running       int32
 }
+
+var ErrDiscoveryAlreadyRunning = errors.New("discovery already running")
 
 // DiscoveryRunnerConfig holds the dependencies for creating a DiscoveryRunner.
 type DiscoveryRunnerConfig struct {
@@ -59,6 +63,12 @@ func NewDiscoveryRunner(cfg DiscoveryRunnerConfig) *DiscoveryRunner {
 // It updates the discovery cache with results/errors and triggers builds
 // for newly discovered repositories.
 func (dr *DiscoveryRunner) Run(ctx context.Context) error {
+	if !atomic.CompareAndSwapInt32(&dr.running, 0, 1) {
+		dr.metrics.IncrementCounter("discovery_skipped_already_running")
+		return ErrDiscoveryAlreadyRunning
+	}
+	defer atomic.StoreInt32(&dr.running, 0)
+
 	start := time.Now()
 	dr.metrics.IncrementCounter("discovery_attempts")
 
@@ -148,6 +158,10 @@ func (dr *DiscoveryRunner) SafeRun(ctx context.Context, daemonStatus func() Stat
 		}
 	}()
 	if err := dr.Run(timeoutCtx); err != nil {
+		if errors.Is(err, ErrDiscoveryAlreadyRunning) {
+			slog.Debug("Skipping periodic discovery; previous run still active")
+			return
+		}
 		slog.Warn("Periodic discovery failed", "error", err)
 	} else {
 		slog.Info("Periodic discovery completed")
@@ -173,6 +187,10 @@ func (dr *DiscoveryRunner) TriggerManual(daemonStatus func() Status, activeJobs 
 		defer cancel()
 
 		if err := dr.Run(ctx); err != nil {
+			if errors.Is(err, ErrDiscoveryAlreadyRunning) {
+				slog.Info("Discovery already running; manual trigger ignored", logfields.JobID(jobID))
+				return
+			}
 			slog.Error("Discovery failed", logfields.JobID(jobID), logfields.Error(err))
 		} else {
 			slog.Info("Discovery completed", logfields.JobID(jobID))
