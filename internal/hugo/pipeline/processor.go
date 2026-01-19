@@ -192,19 +192,21 @@ func defaultGenerators() []FileGenerator {
 // Order matters: this is the explicit, fixed pipeline execution order.
 func defaultTransforms(cfg *config.Config) []FileTransform {
 	return []FileTransform{
-		parseFrontMatter,             // 1. Parse YAML front matter from content
-		normalizeIndexFiles,          // 2. Rename README to _index
-		buildBaseFrontMatter,         // 3. Build base front matter structure
-		extractIndexTitle,            // 4. Extract H1 title from index files
-		extractH1AsTitle,             // 5. Extract H1 as title for all files (if no title)
-		stripHeading,                 // 6. Strip H1 if appropriate
-		escapeShortcodesInCodeBlocks, // 7. Escape Hugo shortcodes in code blocks
-		rewriteRelativeLinks(cfg),    // 8. Fix markdown links
-		rewriteImageLinks,            // 9. Fix image paths
-		generateFromKeywords,         // 10. Create new files based on keywords (e.g., @glossary)
-		addRepositoryMetadata(cfg),   // 11. Add repo/commit/source metadata
-		addEditLink(cfg),             // 12. Generate edit URL
-		serializeDocument,            // 13. Serialize to final bytes (FM + content)
+		parseFrontMatter,                  // 1. Parse YAML front matter from content
+		normalizeIndexFiles,               // 2. Rename README to _index
+		buildBaseFrontMatter,              // 3. Build base front matter structure
+		extractIndexTitle,                 // 4. Extract H1 title from index files
+		extractH1AsTitle,                  // 5. Extract H1 as title for all files (if no title)
+		stripHeading,                      // 6. Strip H1 if appropriate
+		escapeShortcodesInCodeBlocks,      // 7. Escape Hugo shortcodes in code blocks
+		rewriteRelativeLinks(cfg),         // 8. Fix markdown links
+		rewriteImageLinks,                 // 9. Fix image paths
+		generateFromKeywords,              // 10. Create new files based on keywords (e.g., @glossary)
+		addRepositoryMetadata(cfg),        // 11. Add repo/commit/source metadata
+		addEditLink(cfg),                  // 12. Generate edit URL
+		injectPermalink(cfg.Hugo.BaseURL), // 13. Append stable permalink badge
+		serializeDocument,                 // 14. Serialize to final bytes (FM + content)
+		fingerprintContent,                // 15. Add content fingerprint (must be last)
 	}
 }
 

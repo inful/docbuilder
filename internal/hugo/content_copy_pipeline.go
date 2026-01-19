@@ -6,105 +6,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"github.com/inful/mdfp"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
 )
-
-func preserveUIDAcrossFingerprintRewrite(original, updated string) string {
-	uid, ok := extractUIDFromFrontmatter(original)
-	if !ok {
-		return updated
-	}
-	// Re-insert uid if it was lost.
-	withUID, changed := addUIDIfMissingWithValue(updated, uid)
-	if !changed {
-		return updated
-	}
-	return withUID
-}
-
-func extractUIDFromFrontmatter(content string) (string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
-		return "", false
-	}
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
-		return "", false
-	}
-	frontmatter := content[4 : endIdx+4]
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		trim := strings.TrimSpace(line)
-		after, ok := strings.CutPrefix(trim, "uid:")
-		if !ok {
-			continue
-		}
-		val := strings.TrimSpace(after)
-		if val != "" {
-			return val, true
-		}
-		return "", false
-	}
-	return "", false
-}
-
-func addUIDIfMissingWithValue(content, uid string) (string, bool) {
-	if strings.TrimSpace(uid) == "" {
-		return content, false
-	}
-	if !strings.HasPrefix(content, "---\n") {
-		fm := "---\nuid: " + uid + "\n---\n\n"
-		return fm + content, true
-	}
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
-		return content, false
-	}
-	frontmatter := content[4 : endIdx+4]
-	body := content[endIdx+9:]
-	lines := make([]string, 0, 8)
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		lines = append(lines, line)
-		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "uid:"); ok {
-			return content, false
-		}
-	}
-	kept := make([]string, 0, len(lines)+1)
-	inserted := false
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		kept = append(kept, line)
-		if !inserted && strings.HasPrefix(trim, "fingerprint:") {
-			kept = append(kept, "uid: "+uid)
-			inserted = true
-		}
-	}
-	if !inserted {
-		out := make([]string, 0, len(kept)+1)
-		added := false
-		for _, line := range kept {
-			trim := strings.TrimSpace(line)
-			if !added && trim != "" {
-				out = append(out, "uid: "+uid)
-				added = true
-			}
-			out = append(out, line)
-		}
-		if !added {
-			out = append(out, "uid: "+uid)
-		}
-		kept = out
-	}
-	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
-	if newFM == "" {
-		newFM = "uid: " + uid
-	}
-	return "---\n" + newFM + "\n---\n" + body, true
-}
 
 // copyContentFilesPipeline copies documentation files using the new fixed transform pipeline.
 // This is the new implementation that replaces the registry-based transform system.
@@ -203,20 +109,6 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		contentBytes := doc.Raw
-		if strings.HasSuffix(strings.ToLower(doc.Path), ".md") {
-			original := string(contentBytes)
-			if withPermalink, changed := injectUIDPermalink(original, g.config.Hugo.BaseURL); changed {
-				original = withPermalink
-			}
-
-			updated, err := mdfp.ProcessContent(original)
-			if err != nil {
-				return fmt.Errorf("%w: failed to generate frontmatter fingerprint for %s: %w",
-					herrors.ErrContentWriteFailed, outputPath, err)
-			}
-			updated = preserveUIDAcrossFingerprintRewrite(original, updated)
-			contentBytes = []byte(updated)
-		}
 
 		// Write file
 		// #nosec G306 -- content files are public documentation

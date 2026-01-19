@@ -442,7 +442,7 @@ func TestDefaultTransforms_Order(t *testing.T) {
 	transforms := defaultTransforms(cfg)
 
 	// Verify we have all expected transforms
-	assert.Len(t, transforms, 13, "should have 13 transforms in pipeline")
+	assert.Len(t, transforms, 15, "should have 15 transforms in pipeline")
 
 	// Verify order by testing a document through the pipeline
 	doc := &Document{
