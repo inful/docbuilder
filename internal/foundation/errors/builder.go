@@ -160,6 +160,11 @@ func FileSystemError(message string) *ErrorBuilder {
 	return NewError(CategoryFileSystem, message).Retryable()
 }
 
+// DocsError creates a documentation discovery error.
+func DocsError(message string) *ErrorBuilder {
+	return NewError(CategoryDocs, message).Fatal()
+}
+
 // RuntimeError creates a runtime error.
 func RuntimeError(message string) *ErrorBuilder {
 	return NewError(CategoryRuntime, message).Fatal()

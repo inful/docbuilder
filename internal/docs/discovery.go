@@ -11,6 +11,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/docs/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -129,7 +130,11 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, docsPath, repo.Tags)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %s in %s: %w", derrors.ErrDocsDirWalkFailed, docsPath, repoName, err)
+				return nil, errors.WrapError(err, errors.CategoryDocs, "documentation directory walk failed").
+					WithContext("path", docsPath).
+					WithContext("repository", repoName).
+					WithCause(derrors.ErrDocsDirWalkFailed).
+					Build()
 			}
 
 			d.docFiles = append(d.docFiles, files...)
@@ -191,7 +196,11 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 		// Calculate relative path from docs directory
 		relPath, err := filepath.Rel(docsPath, path)
 		if err != nil {
-			return fmt.Errorf("%w: %w", derrors.ErrInvalidRelativePath, err)
+			return errors.WrapError(err, errors.CategoryDocs, "failed to calculate relative path").
+				WithContext("docs_path", docsPath).
+				WithContext("file_path", path).
+				WithCause(derrors.ErrInvalidRelativePath).
+				Build()
 		}
 
 		// Determine section from directory structure
@@ -244,7 +253,10 @@ func (df *DocFile) LoadContent() error {
 
 	content, err := os.ReadFile(df.Path)
 	if err != nil {
-		return fmt.Errorf("%w: %s: %w", derrors.ErrFileReadFailed, df.Path, err)
+		return errors.WrapError(err, errors.CategoryDocs, "failed to read documentation file").
+			WithContext("path", df.Path).
+			WithCause(derrors.ErrFileReadFailed).
+			Build()
 	}
 
 	df.Content = content
@@ -382,7 +394,10 @@ func (d *Discovery) checkDocIgnore(repoPath string) (bool, error) {
 		return false, nil
 	}
 
-	return false, fmt.Errorf("%w: %w", derrors.ErrDocIgnoreCheckFailed, err)
+	return false, errors.WrapError(err, errors.CategoryDocs, "docignore check failed").
+		WithContext("path", docIgnorePath).
+		WithCause(derrors.ErrDocIgnoreCheckFailed).
+		Build()
 }
 
 // detectPathCollisions checks for case-insensitive Hugo path collisions.
@@ -427,9 +442,12 @@ func (d *Discovery) detectPathCollisions() error {
 			slog.Warn("Path collision", slog.String("details", collision))
 		}
 
-		return fmt.Errorf("%w: %d case-insensitive path collision(s) found - files with different casing map to same Hugo path:\n%s\n"+
-			"Hugo will treat these as ambiguous page references. Rename or remove conflicting files in source repositories",
-			derrors.ErrPathCollision, len(collisions), strings.Join(collisions, "\n"))
+		return errors.DocsError("case-insensitive path collision(s) detected").
+			WithContext("count", len(collisions)).
+			WithContext("details", strings.Join(collisions, "\n")).
+			WithContext("hint", "rename or remove conflicting files in source repositories").
+			WithCause(derrors.ErrPathCollision).
+			Build()
 	}
 
 	return nil
