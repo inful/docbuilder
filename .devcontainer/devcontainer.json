@@ -3,7 +3,7 @@
 {
     "name": "docbuilder-devcontainer",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/base:trixie",
+    "image": "mcr.microsoft.com/devcontainers/go:1.25-bookworm",
     "containerEnv": {
         "http_proxy": "${localEnv:HTTP_PROXY}",
         "https_proxy": "${localEnv:HTTP_PROXY}",
@@ -14,7 +14,7 @@
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/inful/docbuilder-feature/docbuilder:latest": {
-            "docbuilderVersion": "0.8.14",
+            "docbuilderVersion": "latest",
             "livereloadPort": "56095",
             "verbose": false,
             "httpProxy": "${localEnv:HTTP_PROXY}",
