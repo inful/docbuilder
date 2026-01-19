@@ -32,6 +32,9 @@ type Renderer interface {
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
 
+// getEnvValue returns the value of the environment variable identified by key
+// from the provided env slice, which contains entries in "KEY=VALUE" form.
+// It returns the value and true if key is found, or an empty string and false otherwise.
 func getEnvValue(env []string, key string) (string, bool) {
 	prefix := key + "="
 	for _, kv := range env {
@@ -43,6 +46,7 @@ func getEnvValue(env []string, key string) (string, bool) {
 	return "", false
 }
 
+// setEnvValue sets or replaces an environment variable in the provided env slice and returns the updated slice.
 func setEnvValue(env []string, key, value string) []string {
 	prefix := key + "="
 	newEnv := make([]string, 0, len(env)+1)
@@ -62,6 +66,8 @@ func setEnvValue(env []string, key, value string) []string {
 	return newEnv
 }
 
+// pathContainsDir reports whether dir appears as an element in a PATH-style
+// string that is separated by os.PathListSeparator (colon on Unix, semicolon on Windows).
 func pathContainsDir(pathValue, dir string) bool {
 	for part := range strings.SplitSeq(pathValue, string(os.PathListSeparator)) {
 		if part == dir {
@@ -71,6 +77,8 @@ func pathContainsDir(pathValue, dir string) bool {
 	return false
 }
 
+// ensurePATHContainsDir ensures that dir is present in the PATH entry within
+// the provided env slice, prepending it to PATH if it is not already included.
 func ensurePATHContainsDir(env []string, dir string) []string {
 	pathValue, ok := getEnvValue(env, "PATH")
 	if !ok || pathValue == "" {

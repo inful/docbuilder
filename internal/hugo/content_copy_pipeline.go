@@ -205,7 +205,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		contentBytes := doc.Raw
 		if strings.HasSuffix(strings.ToLower(doc.Path), ".md") {
 			original := string(contentBytes)
-			if withPermalink, changed := injectUIDPermalinkRefShortcode(original); changed {
+			if withPermalink, changed := injectUIDPermalink(original); changed {
 				original = withPermalink
 			}
 
