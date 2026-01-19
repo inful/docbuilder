@@ -3,6 +3,7 @@ uid: bf6c5071-2095-472f-89fc-5319bc2e362b
 aliases:
   - /_uid/bf6c5071-2095-472f-89fc-5319bc2e362b/
 fingerprint: 4cdd381166b292626c4329b949b4624900713fa3fcbd4f869e9134523641cfa7
+description: examples for integrating DocBuilder lint results into pull request comments across different platforms
 ---
 
 # PR Comment Integration Examples

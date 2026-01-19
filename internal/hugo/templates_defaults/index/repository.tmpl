@@ -21,3 +21,5 @@
 {{ range .Files }}- [{{ titleCase (replaceAll .Name "-" " ") }}](./{{ if .Section }}{{ .Section | lower }}/{{ .Name | lower }}{{ else }}{{ .Name | lower }}{{ end }}/)
 {{ end }}
 {{ end }}
+
+{{ "{{" }}% children description="true" %{{ "}}" }}

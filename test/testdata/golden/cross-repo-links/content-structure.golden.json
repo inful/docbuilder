@@ -5,14 +5,14 @@
         "title": "Cross-Repository Links",
         "type": "docs"
       },
-      "contentHash": "sha256:f605eef59d55223e"
+      "contentHash": "sha256:d19f571dd783ec27"
     },
     "content/backend/_index.md": {
       "frontmatter": {
         "title": "Backend",
         "type": "docs"
       },
-      "contentHash": "sha256:b6c08fd9feb030c2"
+      "contentHash": "sha256:90724fc2f80c621e"
     },
     "content/backend/api.md": {
       "frontmatter": {
@@ -35,7 +35,7 @@
         "title": "Frontend",
         "type": "docs"
       },
-      "contentHash": "sha256:c48c4a1ad922e0b6"
+      "contentHash": "sha256:35590bd2f6c307a7"
     },
     "content/frontend/guide.md": {
       "frontmatter": {

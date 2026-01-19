@@ -5,3 +5,5 @@
 {{ range $name, $files := .Repositories -}}
 - [{{$name}}](./{{$name | lower}}/)
 {{ end }}
+
+{{ "{{" }}% children description="true" %{{ "}}" }}

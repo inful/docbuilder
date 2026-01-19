@@ -11,6 +11,7 @@ tags:
   - relearn
   - hugo
 fingerprint: 1b025b380fd5ae47565278a5a78ac4f4bdcebec9db59f61dc9b2976856271c9d
+description: Relearn theme overview
 ---
 
 # Hugo Relearn Theme Support

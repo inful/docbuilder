@@ -5,7 +5,7 @@
         "title": "Special Characters Test",
         "type": "docs"
       },
-      "contentHash": "sha256:0bdbf168e433f09a"
+      "contentHash": "sha256:9c29f331592d9d2a"
     },
     "content/file with spaces.md": {
       "frontmatter": {
@@ -20,7 +20,7 @@
         "title": "special-chars (test)",
         "type": "docs"
       },
-      "contentHash": "sha256:8573a9f7674903c7"
+      "contentHash": "sha256:8d7568059a0f1292"
     },
     "content/special-chars (test)/doc-[brackets].md": {
       "frontmatter": {

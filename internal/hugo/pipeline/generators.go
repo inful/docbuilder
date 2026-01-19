@@ -30,7 +30,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 		Path:      "content/_index.md",
 		IsIndex:   true,
 		Generated: true,
-		Content:   fmt.Sprintf("# %s\n\n%s\n", title, description),
+		Content:   fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
 		FrontMatter: map[string]any{
 			"title":       title,
 			"description": description,
@@ -89,7 +89,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 				Repository: repo,
 				Forge:      repoMeta.Forge,
 				Section:    "",
-				Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
+				Content:    fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
 				FrontMatter: map[string]any{
 					"title":       title,
 					"description": description,
@@ -184,7 +184,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 			Repository: repo,
 			Forge:      repoMeta.Forge,
 			Section:    sectionName,
-			Content:    fmt.Sprintf("# %s\n\n%s\n", title, description),
+			Content:    fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
 			FrontMatter: map[string]any{
 				"title":       title,
 				"description": description,

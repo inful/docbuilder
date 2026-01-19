@@ -5,14 +5,14 @@
         "title": "Section Index Testing",
         "type": "docs"
       },
-      "contentHash": "sha256:1990848bd13b3d56"
+      "contentHash": "sha256:bf748658c9020acf"
     },
     "content/advanced/_index.md": {
       "frontmatter": {
         "title": "advanced",
         "type": "docs"
       },
-      "contentHash": "sha256:5092f9dabda898c1"
+      "contentHash": "sha256:a571a5c19057be79"
     },
     "content/advanced/plugins.md": {
       "frontmatter": {
@@ -35,7 +35,7 @@
         "title": "getting-started",
         "type": "docs"
       },
-      "contentHash": "sha256:4b71e029b87cf014"
+      "contentHash": "sha256:fa329b906a2330d4"
     },
     "content/getting-started/configuration.md": {
       "frontmatter": {

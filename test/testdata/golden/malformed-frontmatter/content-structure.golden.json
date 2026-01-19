@@ -5,7 +5,7 @@
         "title": "Malformed Front Matter Test",
         "type": "docs"
       },
-      "contentHash": "sha256:2cab0b95e957f0cc"
+      "contentHash": "sha256:629abf5d9de2ae81"
     },
     "content/invalid-yaml.md": {
       "frontmatter": {
