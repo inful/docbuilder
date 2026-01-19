@@ -96,6 +96,15 @@ func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
 
 func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	indexPath := filepath.Join(g.buildRoot(), "content", "_index.md")
+	// If a user-provided index already exists (e.g., README.md normalized to _index.md
+	// in single-repo/preview mode), do not overwrite it with the auto-generated landing page.
+	if st, err := os.Stat(indexPath); err == nil && !st.IsDir() {
+		slog.Info("Main index already exists; skipping generation", logfields.Path(indexPath))
+		return nil
+	} else if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("stat main index at %s: %w", indexPath, err)
+	}
+
 	repoGroups := make(map[string][]docs.DocFile)
 	for i := range docFiles {
 		file := &docFiles[i]

@@ -30,6 +30,7 @@ markup:
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
+          version: v9.0.3
 outputs:
     home:
         - HTML
