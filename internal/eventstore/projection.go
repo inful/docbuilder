@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const (
@@ -60,7 +62,9 @@ func (p *BuildHistoryProjection) Rebuild(ctx context.Context) error {
 	// Get all events from the beginning of time
 	events, err := p.store.GetRange(ctx, time.Time{}, time.Now().Add(time.Hour))
 	if err != nil {
-		return err
+		return errors.WrapError(err, errors.CategoryEventStore, "failed to retrieve events for reconstruction").
+			WithCause(ErrProjectionRebuildFailed).
+			Build()
 	}
 
 	p.mu.Lock()

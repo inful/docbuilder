@@ -23,6 +23,7 @@ const (
 	CategoryHugo       ErrorCategory = "hugo"
 	CategoryFileSystem ErrorCategory = "filesystem"
 	CategoryDocs       ErrorCategory = "docs"
+	CategoryEventStore ErrorCategory = "eventstore"
 
 	// CategoryRuntime represents runtime and infrastructure errors.
 	CategoryRuntime  ErrorCategory = "runtime"

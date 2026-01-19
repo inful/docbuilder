@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	_ "modernc.org/sqlite"
 )
 
@@ -22,13 +22,18 @@ type SQLiteStore struct {
 func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("open sqlite database: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "could not open event store database").
+			WithContext("path", dbPath).
+			WithCause(ErrDatabaseOpenFailed).
+			Build()
 	}
 
 	store := &SQLiteStore{db: db}
 	if err := store.initialize(); err != nil {
 		_ = db.Close() // Best effort cleanup on initialization error
-		return nil, fmt.Errorf("initialize schema: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to initialize event store schema").
+			WithCause(ErrInitializeSchemaFailed).
+			Build()
 	}
 
 	return store, nil
@@ -62,7 +67,11 @@ func (s *SQLiteStore) Append(ctx context.Context, buildID, eventType string, pay
 		var err error
 		metadataJSON, err = json.Marshal(metadata)
 		if err != nil {
-			return fmt.Errorf("marshal metadata: %w", err)
+			return errors.WrapError(err, errors.CategoryEventStore, "failed to marshal metadata").
+				WithContext("build_id", buildID).
+				WithContext("event_type", eventType).
+				WithCause(ErrMarshalPayloadFailed).
+				Build()
 		}
 	}
 
@@ -72,7 +81,11 @@ func (s *SQLiteStore) Append(ctx context.Context, buildID, eventType string, pay
 		buildID, eventType, timestamp, payload, metadataJSON,
 	)
 	if err != nil {
-		return fmt.Errorf("insert event: %w", err)
+		return errors.WrapError(err, errors.CategoryEventStore, "failed to insert event").
+			WithContext("build_id", buildID).
+			WithContext("event_type", eventType).
+			WithCause(ErrEventAppendFailed).
+			Build()
 	}
 
 	return nil
@@ -88,7 +101,10 @@ func (s *SQLiteStore) GetByBuildID(ctx context.Context, buildID string) ([]Event
 		buildID,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("query events: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to query events").
+			WithContext("build_id", buildID).
+			WithCause(ErrEventQueryFailed).
+			Build()
 	}
 	defer func() { _ = rows.Close() }()
 
@@ -105,7 +121,11 @@ func (s *SQLiteStore) GetRange(ctx context.Context, start, end time.Time) ([]Eve
 		start.Unix(), end.Unix(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("query events: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to query events by range").
+			WithContext("start", start).
+			WithContext("end", end).
+			WithCause(ErrEventQueryFailed).
+			Build()
 	}
 	defer func() { _ = rows.Close() }()
 
@@ -121,14 +141,18 @@ func (s *SQLiteStore) scanEvents(rows *sql.Rows) ([]Event, error) {
 
 		err := rows.Scan(&e.EventID, &e.EventBuildID, &e.EventType, &timestampUnix, &e.EventPayload, &metadataJSON)
 		if err != nil {
-			return nil, fmt.Errorf("scan event: %w", err)
+			return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to scan event row").
+				WithCause(ErrEventScanFailed).
+				Build()
 		}
 
 		e.EventTimestamp = time.Unix(timestampUnix, 0)
 
 		if len(metadataJSON) > 0 {
 			if err := json.Unmarshal(metadataJSON, &e.EventMetadata); err != nil {
-				return nil, fmt.Errorf("unmarshal metadata: %w", err)
+				return nil, errors.WrapError(err, errors.CategoryEventStore, "failed to unmarshal metadata").
+					WithCause(ErrUnmarshalPayloadFailed).
+					Build()
 			}
 		}
 
@@ -136,7 +160,9 @@ func (s *SQLiteStore) scanEvents(rows *sql.Rows) ([]Event, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate rows: %w", err)
+		return nil, errors.WrapError(err, errors.CategoryEventStore, "error during event iteration").
+			WithCause(ErrEventQueryFailed).
+			Build()
 	}
 
 	return events, nil

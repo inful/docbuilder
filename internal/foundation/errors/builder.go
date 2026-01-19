@@ -165,6 +165,11 @@ func DocsError(message string) *ErrorBuilder {
 	return NewError(CategoryDocs, message).Fatal()
 }
 
+// EventStoreError creates an event store error.
+func EventStoreError(message string) *ErrorBuilder {
+	return NewError(CategoryEventStore, message).Fatal()
+}
+
 // RuntimeError creates a runtime error.
 func RuntimeError(message string) *ErrorBuilder {
 	return NewError(CategoryRuntime, message).Fatal()

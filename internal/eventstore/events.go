@@ -2,8 +2,9 @@ package eventstore
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // BuildStartedMeta contains typed metadata for build start events.
@@ -29,7 +30,10 @@ func NewBuildStarted(buildID string, meta BuildStartedMeta) (*BuildStarted, erro
 		"config":    meta,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal BuildStarted payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			Build()
 	}
 
 	return &BuildStarted{
@@ -62,7 +66,11 @@ func NewRepositoryCloned(buildID, repoName, commit, path string, duration time.D
 		"duration_ms": duration.Milliseconds(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal RepositoryCloned payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			WithContext("repo", repoName).
+			Build()
 	}
 
 	return &RepositoryCloned{
@@ -95,7 +103,11 @@ func NewDocumentsDiscovered(buildID, repoName string, files []string) (*Document
 		"files":      files,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal DocumentsDiscovered payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			WithContext("repo", repoName).
+			Build()
 	}
 
 	return &DocumentsDiscovered{
@@ -127,7 +139,11 @@ func NewTransformApplied(buildID, transformName string, fileCount int, duration 
 		"duration_ms":    duration.Milliseconds(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal TransformApplied payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			WithContext("transform", transformName).
+			Build()
 	}
 
 	return &TransformApplied{
@@ -157,7 +173,10 @@ func NewHugoConfigGenerated(buildID, configHash string, themeFeatures map[string
 		"theme_features": themeFeatures,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal HugoConfigGenerated payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			Build()
 	}
 
 	return &HugoConfigGenerated{
@@ -188,7 +207,10 @@ func NewSiteGenerated(buildID, outputPath string, fileCount int, duration time.D
 		"duration_ms": duration.Milliseconds(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal SiteGenerated payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			Build()
 	}
 
 	return &SiteGenerated{
@@ -220,7 +242,10 @@ func NewBuildCompleted(buildID, status string, duration time.Duration, artifacts
 		"artifacts":   artifacts,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal BuildCompleted payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			Build()
 	}
 
 	return &BuildCompleted{
@@ -250,7 +275,11 @@ func NewBuildFailed(buildID, stage, errorMsg string) (*BuildFailed, error) {
 		"error": errorMsg,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal BuildFailed payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			WithContext("stage", stage).
+			Build()
 	}
 
 	return &BuildFailed{
@@ -290,7 +319,10 @@ type BuildReportGenerated struct {
 func NewBuildReportGenerated(buildID string, report BuildReportData) (*BuildReportGenerated, error) {
 	payload, err := json.Marshal(report)
 	if err != nil {
-		return nil, fmt.Errorf("marshal payload: %w", err)
+		return nil, errors.EventStoreError("failed to marshal BuildReportGenerated payload").
+			WithCause(err).
+			WithContext("build_id", buildID).
+			Build()
 	}
 
 	return &BuildReportGenerated{
