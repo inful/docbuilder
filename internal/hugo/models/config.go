@@ -32,7 +32,8 @@ type ModuleConfig struct {
 }
 
 type ModuleImport struct {
-	Path string `yaml:"path"`
+	Path    string `yaml:"path"`
+	Version string `yaml:"version,omitempty"`
 }
 
 // EnsureGoldmark is a helper for common Markup mutations while preserving map shape.

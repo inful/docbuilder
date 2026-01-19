@@ -75,3 +75,35 @@ func TestGenerateIndexPages(t *testing.T) {
 		t.Logf("year not present in repo index (non-fatal)")
 	}
 }
+
+func TestGenerateMainIndex_SkipsIfExists(t *testing.T) {
+	out := t.TempDir()
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
+
+	if err := gen.createHugoStructure(); err != nil {
+		t.Fatalf("structure: %v", err)
+	}
+
+	// Pre-create a custom main index that simulates a user-provided README.md
+	// that was normalized to content/_index.md by the transform pipeline.
+	mainIdx := filepath.Join(out, "content", "_index.md")
+	custom := "---\ntitle: Custom\n---\n\n# Custom Home\n"
+	// #nosec G306 -- test content written to temp dir
+	if err := os.WriteFile(mainIdx, []byte(custom), 0o644); err != nil {
+		t.Fatalf("write custom main index: %v", err)
+	}
+
+	files := []docs.DocFile{{Repository: "local", Name: "guide", RelativePath: "guide.md", DocsBase: ".", Section: "", Extension: ".md", Content: []byte("# Guide\n")}}
+	if err := gen.generateMainIndex(files); err != nil {
+		t.Fatalf("generate main index: %v", err)
+	}
+
+	// #nosec G304 -- test utility reading from test output directory
+	b, err := os.ReadFile(mainIdx)
+	if err != nil {
+		t.Fatalf("read main index: %v", err)
+	}
+	if string(b) != custom {
+		t.Fatalf("expected custom main index to be preserved; got: %s", string(b))
+	}
+}
