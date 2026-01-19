@@ -16,8 +16,10 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
+	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
 
 // Generator handles Hugo site generation with Relearn theme.
@@ -301,6 +303,19 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 
 	bs.Git.Repositories = repositories
 	bs.Git.WorkspaceDir = filepath.Clean(workspaceDir)
+
+	// Step 2.5: Expand repositories with versioning if enabled
+	if g.config.Versioning != nil && !g.config.Versioning.DefaultBranchOnly {
+		// Create Git client for version discovery (uses standard workspace)
+		gitClient := git.NewClient(bs.Git.WorkspaceDir)
+		expanded, err := versioning.ExpandRepositoriesWithVersions(gitClient, g.config)
+		if err != nil {
+			slog.Warn("Failed to expand repositories with versions, using original list", "error", err)
+		} else {
+			bs.Git.Repositories = expanded
+			slog.Info("Using expanded repository list with versions", "count", len(expanded))
+		}
+	}
 
 	pipeline := models.NewPipeline().
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).

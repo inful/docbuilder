@@ -67,6 +67,11 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 					Duration:       500 * time.Millisecond,
 					StartTime:      time.Now().Add(-500 * time.Millisecond),
 					EndTime:        time.Now(),
+					Report: &models.BuildReport{
+						Outcome:      models.OutcomeSuccess,
+						Repositories: 2,
+						Files:        15,
+					},
 				}, nil
 			},
 		}
@@ -106,6 +111,9 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			runFunc: func(ctx context.Context, req build.BuildRequest) (*build.BuildResult, error) {
 				return &build.BuildResult{
 					Status: build.BuildStatusCancelled,
+					Report: &models.BuildReport{
+						Outcome: models.OutcomeCanceled,
+					},
 				}, context.Canceled
 			},
 		}
@@ -129,6 +137,10 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 					Status:     build.BuildStatusSkipped,
 					Skipped:    true,
 					SkipReason: "no changes detected",
+					Report: &models.BuildReport{
+						Outcome:    models.OutcomeSuccess,
+						SkipReason: "no changes detected",
+					},
 				}, nil
 			},
 		}
@@ -142,6 +154,9 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		report, err := adapter.Build(t.Context(), job)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if report == nil {
+			t.Fatal("expected non-nil report")
 		}
 		if report.Outcome != models.OutcomeSuccess {
 			t.Errorf("expected outcome %s for skipped, got %s", models.OutcomeSuccess, report.Outcome)

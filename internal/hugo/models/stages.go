@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -59,7 +58,7 @@ func (e *StageError) Transient() bool {
 	isSentinel := func(target error) bool { return errors.Is(cause, target) }
 	switch e.Stage {
 	case StageCloneRepos:
-		if isSentinel(build.ErrClone) {
+		if isSentinel(ErrClone) {
 			return true
 		}
 		// Typed transient git errors
@@ -67,11 +66,11 @@ func (e *StageError) Transient() bool {
 			return true
 		}
 	case StageRunHugo:
-		if isSentinel(build.ErrHugo) {
+		if isSentinel(ErrHugo) {
 			return true
 		}
 	case StageDiscoverDocs:
-		if isSentinel(build.ErrDiscovery) {
+		if isSentinel(ErrDiscovery) {
 			return e.Kind == StageErrorWarning
 		}
 	case StagePrepareOutput, StageGenerateConfig, StageLayouts, StageCopyContent, StageIndexes, StagePostProcess:

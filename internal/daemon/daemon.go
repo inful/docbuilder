@@ -134,14 +134,8 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			// Use persistent workspace for incremental builds (repo_cache_dir/working)
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		}).
-		WithHugoGeneratorFactory(func(cfg any, outputDir string) build.HugoGenerator {
-			// Type assert cfg to *config.Config
-			configTyped, ok := cfg.(*config.Config)
-			if !ok {
-				slog.Error("Invalid config type passed to Hugo generator factory")
-				return nil
-			}
-			return hugo.NewGenerator(configTyped, outputDir)
+		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfg, outputDir)
 		}).
 		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
 			// Create skip evaluator with state manager access
@@ -151,10 +145,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 				return nil
 			}
 			gen := hugo.NewGenerator(daemon.config, outputDir)
-			inner := NewSkipEvaluator(outputDir, daemon.stateManager, gen)
-
-			// Wrap in adapter to match build.SkipEvaluator interface
-			return &skipEvaluatorAdapter{inner: inner}
+			return NewSkipEvaluator(outputDir, daemon.stateManager, gen)
 		})
 	buildAdapter := NewBuildServiceAdapter(buildService)
 

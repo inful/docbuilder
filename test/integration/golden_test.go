@@ -199,8 +199,8 @@ func TestGolden_EmptyDocs(t *testing.T) {
 
 	// Create build service
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	// Execute build pipeline
@@ -331,8 +331,8 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 
 	// Create build service
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	// Execute build pipeline
@@ -382,8 +382,8 @@ func TestGolden_Error_InvalidConfig(t *testing.T) {
 
 	// Create build service
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	// Execute build pipeline with empty repositories
@@ -446,8 +446,8 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 
 	// Create build service
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	// Execute build pipeline

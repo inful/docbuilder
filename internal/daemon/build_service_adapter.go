@@ -5,7 +5,6 @@ import (
 	"errors"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -81,34 +80,7 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*models
 		return nil, err
 	}
 
-	// Convert result to BuildReport
-	report := &models.BuildReport{
-		Repositories: result.Repositories,
-		Files:        result.FilesProcessed,
-		Start:        result.StartTime,
-		End:          result.EndTime,
-	}
-
-	// Set outcome based on status
-	switch result.Status {
-	case build.BuildStatusSuccess:
-		report.Outcome = models.OutcomeSuccess
-	case build.BuildStatusFailed:
-		report.Outcome = models.OutcomeFailed
-	case build.BuildStatusSkipped:
-		report.Outcome = models.OutcomeSuccess
-		report.SkipReason = result.SkipReason
-	case build.BuildStatusCancelled:
-		report.Outcome = models.OutcomeCanceled
-	}
-
-	// Store StageDurations
-	if report.StageDurations == nil {
-		report.StageDurations = make(map[string]time.Duration)
-	}
-	report.StageDurations["total"] = result.Duration
-
-	return report, nil
+	return result.Report, nil
 }
 
 // ensure BuildServiceAdapter implements Builder.

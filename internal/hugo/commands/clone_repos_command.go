@@ -13,7 +13,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
@@ -150,7 +149,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *models.BuildState) 
 	}
 
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		err := fmt.Errorf("%w: all clones failed", build.ErrClone)
+		err := fmt.Errorf("%w: all clones failed", models.ErrClone)
 		c.LogStageFailure(err)
 		return stages.ExecutionFailure(err)
 	}

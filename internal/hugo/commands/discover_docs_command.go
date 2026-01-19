@@ -11,7 +11,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
@@ -51,7 +50,7 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *models.BuildState
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.Config().Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		err = fmt.Errorf("%w: %w", build.ErrDiscovery, err)
+		err = fmt.Errorf("%w: %w", models.ErrDiscovery, err)
 		c.LogStageFailure(err)
 		return stages.ExecutionFailure(err)
 	}

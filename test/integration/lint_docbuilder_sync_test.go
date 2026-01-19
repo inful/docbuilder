@@ -32,8 +32,8 @@ func TestLintDocBuilderSync(t *testing.T) {
 
 	// Run DocBuilder build pipeline
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	result, err := svc.Run(t.Context(), build.BuildRequest{
@@ -96,8 +96,8 @@ func TestLintDocBuilderSync_FileNaming(t *testing.T) {
 
 	// Run build
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfgAny, outDir)
 		})
 
 	result, err := svc.Run(t.Context(), build.BuildRequest{

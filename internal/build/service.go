@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // BuildService is the canonical interface for executing documentation builds.
@@ -44,9 +45,8 @@ type BuildResult struct {
 	// Status indicates overall build outcome.
 	Status BuildStatus
 
-	// Report contains detailed build metrics and diagnostics (type: *hugo.BuildReport).
-	// Using any to avoid import cycles; callers should type-assert as needed.
-	Report any
+	// Report contains detailed build metrics and diagnostics.
+	Report *models.BuildReport
 
 	// OutputPath is the final output directory (may differ from request).
 	OutputPath string

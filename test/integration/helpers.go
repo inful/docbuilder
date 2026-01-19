@@ -524,8 +524,8 @@ func runBuildPipeline(t *testing.T, cfg *config.Config, outputDir string) (*buil
 	t.Helper()
 
 	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
+		WithHugoGeneratorFactory(func(c *config.Config, outDir string) build.HugoGenerator {
+			return hugo.NewGenerator(c, outDir)
 		})
 
 	req := build.BuildRequest{

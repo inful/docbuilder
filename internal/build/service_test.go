@@ -8,17 +8,25 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // mockHugoGenerator is a test double for HugoGenerator.
 type mockHugoGenerator struct {
 	generateError error
+	report        *models.BuildReport
 }
 
 func (m *mockHugoGenerator) GenerateSite(docFiles []docs.DocFile) error {
 	return m.generateError
+}
+
+func (m *mockHugoGenerator) GenerateFullSite(ctx context.Context, repos []config.Repository, workspaceDir string) (*models.BuildReport, error) {
+	if m.report == nil {
+		return &models.BuildReport{}, m.generateError
+	}
+	return m.report, m.generateError
 }
 
 func TestBuildStatus_IsSuccess(t *testing.T) {
@@ -49,9 +57,6 @@ func TestNewBuildService(t *testing.T) {
 	}
 	if svc.workspaceFactory == nil {
 		t.Error("workspaceFactory should be set")
-	}
-	if svc.gitClientFactory == nil {
-		t.Error("gitClientFactory should be set")
 	}
 }
 
@@ -93,8 +98,7 @@ func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
 	svc := NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
 			return workspace.NewManager("")
-		}).
-		WithGitClientFactory(git.NewClient)
+		})
 
 	cfg := &config.Config{
 		Repositories: []config.Repository{
@@ -118,7 +122,6 @@ func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
 
 func TestDefaultBuildService_WithFactories(t *testing.T) {
 	wsFactoryCalled := false
-	gitFactoryCalled := false
 	hugoFactoryCalled := false
 
 	svc := NewBuildService().
@@ -126,20 +129,13 @@ func TestDefaultBuildService_WithFactories(t *testing.T) {
 			wsFactoryCalled = true
 			return workspace.NewManager("")
 		}).
-		WithGitClientFactory(func(path string) *git.Client {
-			gitFactoryCalled = true
-			return git.NewClient(path)
-		}).
-		WithHugoGeneratorFactory(func(cfg any, outputDir string) HugoGenerator {
+		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) HugoGenerator {
 			hugoFactoryCalled = true
 			return &mockHugoGenerator{}
 		})
 
 	if svc.workspaceFactory == nil {
 		t.Error("workspaceFactory not set")
-	}
-	if svc.gitClientFactory == nil {
-		t.Error("gitClientFactory not set")
 	}
 	if svc.hugoGeneratorFactory == nil {
 		t.Error("hugoGeneratorFactory not set")
@@ -154,7 +150,6 @@ func TestDefaultBuildService_WithFactories(t *testing.T) {
 	// With no repos, we don't proceed far enough to call all factories
 	// This test just verifies the factories are properly wired
 	_ = wsFactoryCalled
-	_ = gitFactoryCalled
 	_ = hugoFactoryCalled
 }
 
@@ -177,16 +172,16 @@ func TestBuildResult_Duration(t *testing.T) {
 // mockSkipEvaluator is a test double for SkipEvaluator.
 type mockSkipEvaluator struct {
 	canSkip    bool
-	skipReport any
+	skipReport *models.BuildReport
 }
 
-func (m *mockSkipEvaluator) Evaluate(ctx context.Context, repos []any) (any, bool) {
+func (m *mockSkipEvaluator) Evaluate(ctx context.Context, repos []config.Repository) (*models.BuildReport, bool) {
 	return m.skipReport, m.canSkip
 }
 
 func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 	t.Run("skip_when_evaluator_returns_true", func(t *testing.T) {
-		skipReport := "test_skip_report"
+		skipReport := &models.BuildReport{ConfigHash: "test_hash"}
 		evaluator := &mockSkipEvaluator{canSkip: true, skipReport: skipReport}
 
 		svc := NewBuildService().
@@ -230,8 +225,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 			WithWorkspaceFactory(func() *workspace.Manager {
 				return wsManager
 			}).
-			WithGitClientFactory(git.NewClient).
-			WithHugoGeneratorFactory(func(cfg any, outputDir string) HugoGenerator {
+			WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) HugoGenerator {
 				return &mockHugoGenerator{}
 			})
 

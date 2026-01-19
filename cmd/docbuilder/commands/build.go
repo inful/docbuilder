@@ -2,79 +2,15 @@ package commands
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
-	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
-
-const (
-	authTypeToken = "token"
-	authTypeBasic = "basic"
-	authTypeSSH   = "ssh"
-)
-
-func tokenPrefix(token string, n int) string {
-	if n <= 0 || token == "" {
-		return ""
-	}
-	if len(token) <= n {
-		return token
-	}
-	return token[:n]
-}
-
-func repoFailureLogArgs(repo *config.Repository, err error) []any {
-	args := []any{
-		"name", repo.Name,
-		"error", err,
-		"auth_present", repo.Auth != nil,
-	}
-
-	var authErr *git.AuthError
-	if !errors.As(err, &authErr) {
-		return args
-	}
-	if repo.Auth == nil {
-		return args
-	}
-
-	authType := strings.ToLower(string(repo.Auth.Type))
-	args = append(args, "auth_type", authType)
-
-	authUsername := repo.Auth.Username
-	if authType == authTypeToken && authUsername == "" {
-		authUsername = authTypeToken
-	}
-	if authUsername != "" {
-		args = append(args, "auth_username", authUsername)
-	}
-
-	tokenValue := ""
-	switch authType {
-	case authTypeToken:
-		tokenValue = repo.Auth.Token
-	case authTypeBasic:
-		tokenValue = repo.Auth.Password
-	}
-	if tokenValue != "" {
-		args = append(args, "auth_token_prefix", tokenPrefix(tokenValue, 4), "auth_token_len", len(tokenValue))
-	}
-
-	if authType == authTypeSSH && repo.Auth.KeyPath != "" {
-		args = append(args, "auth_key_path", repo.Auth.KeyPath)
-	}
-
-	return args
-}
 
 // BuildCmd implements the 'build' command.
 type BuildCmd struct {
@@ -107,37 +43,26 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 			"docs_dir", b.DocsDir,
 			"output", b.Output)
 	} else {
-		result, loadedCfg, err := config.LoadWithResult(root.Config)
+		_, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
 			return fmt.Errorf("load config: %w", err)
 		}
 		cfg = loadedCfg
-		// Print any normalization warnings
-		for _, w := range result.Warnings {
-			slog.Warn(w)
-		}
-		useLocalMode = false
-	}
-	// Apply CLI render mode override before any build operations (highest precedence besides explicit skip env)
-	if b.RenderMode != "" {
-		if rm := config.NormalizeRenderMode(b.RenderMode); rm != "" {
-			cfg.Build.RenderMode = rm
-			slog.Info("Render mode overridden via CLI flag", "mode", rm)
-		} else {
-			slog.Warn("Ignoring invalid --render-mode value", "value", b.RenderMode)
-		}
+		slog.Info("Loaded config from file", "config", root.Config)
 	}
 
-	// Apply CLI base-url override if provided
+	// Apply CLI overrides to config
 	if b.BaseURL != "" {
 		cfg.Hugo.BaseURL = b.BaseURL
 		slog.Info("Base URL overridden via CLI flag", "base_url", b.BaseURL)
 	}
-
-	// Apply relocatable flag (generates relative links for portability)
 	if b.Relocatable {
 		cfg.Hugo.BaseURL = ""
-		slog.Info("Generating fully relocatable site with relative links (base_url set to empty)")
+		slog.Info("Relocatable mode enabled (base_url set to empty)")
+	}
+	if b.RenderMode != "" {
+		cfg.Build.RenderMode = config.NormalizeRenderMode(b.RenderMode)
+		slog.Info("Render mode overridden via CLI flag", "render_mode", cfg.Build.RenderMode)
 	}
 
 	// Apply edit-url-base override if provided
@@ -160,6 +85,8 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose, b.KeepWorkspace)
 }
 
+// RunBuild executes the build pipeline using the unified generator pipeline.
+//
 //nolint:forbidigo // fmt is used for user-facing messages
 func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, keepWorkspace bool) error {
 	// Provide friendly user-facing messages on stdout for CLI integration tests.
@@ -168,6 +95,11 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 	// Set logging level (parseLogLevel handles both verbose flag and DOCBUILDER_LOG_LEVEL)
 	level := parseLogLevel(verbose)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+
+	// Map incremental flag to config
+	if incrementalMode {
+		cfg.Build.CloneStrategy = config.CloneStrategyUpdate
+	}
 
 	slog.Info("Starting documentation build",
 		"output", outputDir,
@@ -187,104 +119,32 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		fmt.Printf("Workspace preserved at: %s\n", wsManager.GetPath())
 	}
 
-	// Create Git client with build config for auth support
-	gitClient, err := CreateGitClient(wsManager, cfg)
-	if err != nil {
-		return err
-	}
-
-	// Step 2.5: Expand repositories with versioning if enabled
-	repositories := cfg.Repositories
-	if cfg.Versioning != nil && !cfg.Versioning.DefaultBranchOnly {
-		var expandedRepos []config.Repository
-		expandedRepos, err = versioning.ExpandRepositoriesWithVersions(gitClient, cfg)
-		if err != nil {
-			slog.Warn("Failed to expand repositories with versions, using original list", "error", err)
-		} else {
-			repositories = expandedRepos
-			slog.Info("Using expanded repository list with versions", "count", len(repositories))
-		}
-	}
-
-	// Clone/update all repositories
-	repoPaths := make(map[string]string)
-	repositoriesSkipped := 0
-	for i := range repositories {
-		repo := &repositories[i]
-		slog.Info("Processing repository", "name", repo.Name, "url", repo.URL)
-
-		var repoPath string
-
-		if incrementalMode {
-			repoPath, err = gitClient.UpdateRepo(*repo)
-		} else {
-			var result git.CloneResult
-			result, err = gitClient.CloneRepoWithMetadata(*repo)
-			if err == nil {
-				repoPath = result.Path
-			}
-		}
-
-		if err != nil {
-			slog.Error("Failed to process repository", repoFailureLogArgs(repo, err)...)
-			// Continue with remaining repositories instead of failing
-			repositoriesSkipped++
-
-			continue
-		}
-
-		repoPaths[repo.Name] = repoPath
-		slog.Info("Repository processed", "name", repo.Name, "path", repoPath)
-	}
-
-	if repositoriesSkipped > 0 {
-		slog.Warn("Some repositories were skipped due to errors",
-			"skipped", repositoriesSkipped,
-			"successful", len(repoPaths),
-			"total", len(repositories))
-	}
-
-	if len(repoPaths) == 0 {
-		return errors.New("no repositories could be cloned successfully")
-	}
-
-	slog.Info("All repositories processed", "successful", len(repoPaths), "skipped", repositoriesSkipped)
-
-	// Discover documentation files
-	slog.Info("Starting documentation discovery")
-	discovery := docs.NewDiscovery(repositories, &cfg.Build)
-
-	docFiles, err := discovery.DiscoverDocs(repoPaths)
-	if err != nil {
-		return err
-	}
-
-	if len(docFiles) == 0 {
-		slog.Warn("No documentation files found in any repository")
-		return nil
-	}
-
-	// Log discovery summary
-	filesByRepo := discovery.GetDocFilesByRepository()
-	for repoName, files := range filesByRepo {
-		slog.Info("Documentation files by repository", "repository", repoName, "files", len(files))
-	}
-
-	// Generate Hugo site
-	slog.Info("Generating Hugo site", "output", outputDir, "files", len(docFiles))
+	// Initialize Generator
 	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
 
-	if err := generator.GenerateSite(docFiles); err != nil {
-		slog.Error("Failed to generate Hugo site", "error", err)
+	// Run the unified pipeline
+	ctx := context.Background()
+	report, err := generator.GenerateFullSite(ctx, cfg.Repositories, wsManager.GetPath())
+	if err != nil {
+		slog.Error("Build pipeline failed", "error", err)
 		// Show workspace location on error for debugging
 		if keepWorkspace {
 			fmt.Printf("\nError occurred. Workspace preserved at: %s\n", wsManager.GetPath())
-			fmt.Printf("Hugo staging directory: %s\n", outputDir+"_stage")
+			fmt.Printf("Hugo staging directory: %s_stage\n", outputDir)
 		}
 		return err
 	}
 
-	slog.Info("Hugo site generated successfully", "output", outputDir)
+	if report.FailedRepositories > 0 {
+		slog.Warn("Some repositories were skipped due to errors",
+			"skipped", report.FailedRepositories,
+			"total", len(cfg.Repositories))
+	}
+
+	slog.Info("Build completed successfully",
+		"output", outputDir,
+		"pages", report.RenderedPages,
+		"skipped_repos", report.FailedRepositories)
 
 	fmt.Println("Build completed successfully")
 	return nil
@@ -369,17 +229,23 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 
 	// Generate Hugo site
 	slog.Info("Generating Hugo site", "output", outputDir)
+
+	// Use newer site generation with report support
 	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
 
-	if err := generator.GenerateSite(docFiles); err != nil {
+	report, err := generator.GenerateSiteWithReportContext(context.Background(), docFiles)
+	if err != nil {
 		// Show staging location on error for debugging
 		if keepWorkspace {
-			fmt.Printf("\nError occurred. Hugo staging directory: %s\n", outputDir+"_stage")
+			fmt.Printf("\nError occurred. Hugo staging directory: %s_stage\n", outputDir)
 		}
 		return fmt.Errorf("site generation failed: %w", err)
 	}
 
-	slog.Info("Hugo site generated successfully", "output", outputDir)
+	slog.Info("Hugo site generated successfully",
+		"output", outputDir,
+		"pages", report.RenderedPages)
+
 	if keepWorkspace {
 		fmt.Printf("Build output directory: %s\n", outputDir)
 		fmt.Printf("(Staging directory was promoted to output on success)\n")

@@ -3,7 +3,6 @@ package stages
 import (
 	"errors"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -91,7 +90,7 @@ func classifyIssueCode(se *models.StageError, bs *models.BuildState) models.Repo
 
 // classifyCloneIssue classifies clone stage errors.
 func classifyCloneIssue(se *models.StageError, bs *models.BuildState) models.ReportIssueCode {
-	if !errors.Is(se.Err, build.ErrClone) {
+	if !errors.Is(se.Err, models.ErrClone) {
 		return models.IssueCloneFailure
 	}
 
@@ -108,7 +107,7 @@ func classifyCloneIssue(se *models.StageError, bs *models.BuildState) models.Rep
 
 // classifyDiscoveryIssue classifies discovery stage errors.
 func classifyDiscoveryIssue(se *models.StageError, bs *models.BuildState) models.ReportIssueCode {
-	if !errors.Is(se.Err, build.ErrDiscovery) {
+	if !errors.Is(se.Err, models.ErrDiscovery) {
 		return models.IssueDiscoveryFailure
 	}
 

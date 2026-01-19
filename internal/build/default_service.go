@@ -4,96 +4,30 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
 	"time"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
-const (
-	authTypeToken = "token"
-	authTypeBasic = "basic"
-	authTypeSSH   = "ssh"
-)
-
-func tokenPrefix(token string, n int) string {
-	if n <= 0 || token == "" {
-		return ""
-	}
-	if len(token) <= n {
-		return token
-	}
-	return token[:n]
-}
-
-func repoFailureLogAttrs(repoName, repoURL string, authCfg *appcfg.AuthConfig, err error) []slog.Attr {
-	attrs := []slog.Attr{
-		slog.String("name", repoName),
-		slog.String("url", repoURL),
-		slog.String("error", err.Error()),
-		slog.Bool("auth_present", authCfg != nil),
-	}
-
-	var authErr *git.AuthError
-	if !errors.As(err, &authErr) {
-		return attrs
-	}
-	if authCfg == nil {
-		return attrs
-	}
-
-	authType := strings.ToLower(string(authCfg.Type))
-	attrs = append(attrs, slog.String("auth_type", authType))
-
-	authUsername := authCfg.Username
-	if authType == authTypeToken && authUsername == "" {
-		authUsername = authTypeToken
-	}
-	if authUsername != "" {
-		attrs = append(attrs, slog.String("auth_username", authUsername))
-	}
-
-	tokenValue := ""
-	switch authType {
-	case authTypeToken:
-		tokenValue = authCfg.Token
-	case authTypeBasic:
-		tokenValue = authCfg.Password
-	}
-	if tokenValue != "" {
-		attrs = append(attrs,
-			slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
-			slog.Int("auth_token_len", len(tokenValue)),
-		)
-	}
-
-	if authType == authTypeSSH {
-		if keyPath := authCfg.KeyPath; keyPath != "" {
-			attrs = append(attrs, slog.String("auth_key_path", keyPath))
-		}
-	}
-
-	return attrs
-}
-
 // HugoGenerator is the interface for Hugo site generation (avoids import cycle with hugo package).
 type HugoGenerator interface {
 	GenerateSite(docFiles []docs.DocFile) error
+	GenerateFullSite(ctx context.Context, repositories []appcfg.Repository, workspaceDir string) (*models.BuildReport, error)
 }
 
 // HugoGeneratorFactory creates a HugoGenerator for a given configuration and output directory.
-type HugoGeneratorFactory func(cfg any, outputDir string) HugoGenerator
+type HugoGeneratorFactory func(cfg *appcfg.Config, outputDir string) HugoGenerator
 
 // SkipEvaluator evaluates whether a build can be skipped due to no changes.
 // Returns a skip report and true if skip is possible, otherwise nil and false.
 type SkipEvaluator interface {
-	Evaluate(ctx context.Context, repos []any) (report any, canSkip bool)
+	Evaluate(ctx context.Context, repos []appcfg.Repository) (report *models.BuildReport, canSkip bool)
 }
 
 // SkipEvaluatorFactory creates a SkipEvaluator for a given output directory.
@@ -105,7 +39,6 @@ type SkipEvaluatorFactory func(outputDir string) SkipEvaluator
 type DefaultBuildService struct {
 	// Optional dependencies that can be injected
 	workspaceFactory     func() *workspace.Manager
-	gitClientFactory     func(path string) *git.Client
 	hugoGeneratorFactory HugoGeneratorFactory
 	skipEvaluatorFactory SkipEvaluatorFactory
 	recorder             metrics.Recorder
@@ -117,8 +50,7 @@ func NewBuildService() *DefaultBuildService {
 		workspaceFactory: func() *workspace.Manager {
 			return workspace.NewManager("")
 		},
-		gitClientFactory: git.NewClient,
-		recorder:         metrics.NoopRecorder{},
+		recorder: metrics.NoopRecorder{},
 		// hugoGeneratorFactory must be set via WithHugoGeneratorFactory to avoid import cycle
 	}
 }
@@ -126,12 +58,6 @@ func NewBuildService() *DefaultBuildService {
 // WithWorkspaceFactory allows injecting a custom workspace factory (for testing).
 func (s *DefaultBuildService) WithWorkspaceFactory(factory func() *workspace.Manager) *DefaultBuildService {
 	s.workspaceFactory = factory
-	return s
-}
-
-// WithGitClientFactory allows injecting a custom git client factory (for testing).
-func (s *DefaultBuildService) WithGitClientFactory(factory func(path string) *git.Client) *DefaultBuildService {
-	s.gitClientFactory = factory
 	return s
 }
 
@@ -212,163 +138,46 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		}
 	}()
 
-	// Stage 2: Clone/update repositories
-	stageStart = time.Now()
-	ctx = observability.WithStage(ctx, "clone")
-	observability.InfoContext(ctx, "Processing repositories",
-		slog.Int("count", len(req.Config.Repositories)),
-		slog.Bool("incremental", req.Incremental))
-	gitClient := s.gitClientFactory(wsManager.GetPath())
-	if err := gitClient.EnsureWorkspace(); err != nil {
-		result.Status = BuildStatusFailed
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncStageResult("clone", metrics.ResultFatal)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.FileSystemError("failed to ensure git initialized").WithContext("error", err.Error()).Build()
-	}
-
-	repoPaths := make(map[string]string)
-	for i := range req.Config.Repositories {
-		repo := &req.Config.Repositories[i]
-		// Check for cancellation
-		select {
-		case <-ctx.Done():
-			result.Status = BuildStatusCancelled
-			result.EndTime = time.Now()
-			result.Duration = result.EndTime.Sub(startTime)
-			s.recorder.IncStageResult("clone", metrics.ResultCanceled)
-			s.recorder.IncBuildOutcome(metrics.BuildOutcomeCanceled)
-			return result, ctx.Err()
-		default:
-		}
-
-		repoStart := time.Now()
-		observability.InfoContext(ctx, "Processing repository",
-			slog.String("name", repo.Name),
-			slog.String("url", repo.URL))
-
-		var repoPath string
-		var err error
-
-		if req.Incremental {
-			repoPath, err = gitClient.UpdateRepo(*repo)
-		} else {
-			var result git.CloneResult
-			result, err = gitClient.CloneRepoWithMetadata(*repo)
-			if err == nil {
-				repoPath = result.Path
-			}
-		}
-
-		if err != nil {
-			attrs := repoFailureLogAttrs(repo.Name, repo.URL, repo.Auth, err)
-			observability.ErrorContext(ctx, "Failed to process repository", attrs...)
-			// Log the error but continue with remaining repositories
-			s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), false)
-			s.recorder.IncCloneRepoResult(false)
-			// Track this as a skipped repository, not a fatal error
-			result.RepositoriesSkipped++
-			continue
-		}
-
-		s.recorder.ObserveCloneRepoDuration(repo.Name, time.Since(repoStart), true)
-		s.recorder.IncCloneRepoResult(true)
-		repoPaths[repo.Name] = repoPath
-		observability.InfoContext(ctx, "Repository processed",
-			slog.String("name", repo.Name),
-			slog.String("path", repoPath))
-	}
-	s.recorder.ObserveStageDuration("clone", time.Since(stageStart))
-	s.recorder.IncStageResult("clone", metrics.ResultSuccess)
-
-	result.Repositories = len(repoPaths)
-	if result.RepositoriesSkipped > 0 {
-		observability.InfoContext(ctx, "Repository processing completed",
-			slog.Int("successful", len(repoPaths)),
-			slog.Int("skipped", result.RepositoriesSkipped),
-			slog.Int("total", len(req.Config.Repositories)))
-	} else {
-		observability.InfoContext(ctx, "All repositories processed", slog.Int("count", len(repoPaths)))
-	}
-
-	// Stage 3: Discover documentation files
-	stageStart = time.Now()
-	ctx = observability.WithStage(ctx, "discovery")
-	observability.InfoContext(ctx, "Starting documentation discovery")
-	discovery := docs.NewDiscovery(req.Config.Repositories, &req.Config.Build)
-
-	docFiles, err := discovery.DiscoverDocs(repoPaths)
-	if err != nil {
-		result.Status = BuildStatusFailed
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncStageResult("discovery", metrics.ResultFatal)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.BuildError("discovery failed").WithContext("error", err.Error()).Build()
-	}
-	s.recorder.ObserveStageDuration("discovery", time.Since(stageStart))
-	s.recorder.IncStageResult("discovery", metrics.ResultSuccess)
-
-	if len(docFiles) == 0 {
-		observability.WarnContext(ctx, "No documentation files found in any repository")
-		result.Status = BuildStatusSuccess
-		result.FilesProcessed = 0
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeWarning)
-		s.recorder.ObserveBuildDuration(result.Duration)
-		return result, nil
-	}
-
-	result.FilesProcessed = len(docFiles)
-
-	// Log discovery summary
-	filesByRepo := discovery.GetDocFilesByRepository()
-	for repoName, files := range filesByRepo {
-		observability.DebugContext(ctx, "Documentation files by repository",
-			slog.String("repository", repoName),
-			slog.Int("files", len(files)))
-	}
-
-	// Stage 4: Generate Hugo site
-	stageStart = time.Now()
-	ctx = observability.WithStage(ctx, "hugo")
-	observability.InfoContext(ctx, "Generating Hugo site",
-		slog.String("output", req.OutputDir),
-		slog.Int("files", len(docFiles)))
-
+	// Stage 2+: Unified Site Generation (Clone -> Discovery -> Transform -> Hugo)
+	// We delegate the heavy lifting to the natively refactored hugo.Generator pipeline.
 	if s.hugoGeneratorFactory == nil {
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncStageResult("hugo", metrics.ResultFatal)
 		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.ConfigError("hugo generator factory required").Build()
 	}
 
-	generator := s.hugoGeneratorFactory(req.Config, req.OutputDir)
-
-	if err := generator.GenerateSite(docFiles); err != nil {
-		observability.ErrorContext(ctx, "Failed to generate Hugo site",
-			slog.String("error", err.Error()))
-		result.Status = BuildStatusFailed
-		result.EndTime = time.Now()
-		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.ObserveStageDuration("hugo", time.Since(stageStart))
-		s.recorder.IncStageResult("hugo", metrics.ResultFatal)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
-		return result, dberrors.HugoError("hugo generation failed").WithContext("error", err.Error()).Build()
+	// Override CloneStrategy if Incremental flag is set to ensure backward compatibility
+	// with callers (like CLI) that use the Incremental flag.
+	if req.Incremental && req.Config.Build.CloneStrategy == appcfg.CloneStrategyFresh {
+		req.Config.Build.CloneStrategy = appcfg.CloneStrategyUpdate
 	}
-	s.recorder.ObserveStageDuration("hugo", time.Since(stageStart))
-	s.recorder.IncStageResult("hugo", metrics.ResultSuccess)
 
-	observability.InfoContext(ctx, "Hugo site generated successfully",
-		slog.String("output", req.OutputDir))
+	generator := s.hugoGeneratorFactory(req.Config, req.OutputDir)
+	report, err := generator.GenerateFullSite(ctx, req.Config.Repositories, wsManager.GetPath())
 
-	result.Status = BuildStatusSuccess
+	result.Report = report
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(startTime)
+
+	if err != nil {
+		result.Status = BuildStatusFailed
+		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
+		return result, err
+	}
+
+	if report == nil {
+		result.Status = BuildStatusFailed
+		return result, errors.New("generator returned nil report without error")
+	}
+
+	// Map report back to result primitives for legacy listeners
+	result.Status = BuildStatusSuccess
+	result.Repositories = report.Repositories
+	result.FilesProcessed = report.Files
+	result.RepositoriesSkipped = report.FailedRepositories
+
 	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
 	s.recorder.ObserveBuildDuration(result.Duration)
 
@@ -390,13 +199,7 @@ func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest
 		return nil
 	}
 
-	// Convert repositories to []any for the generic interface
-	repos := make([]any, len(req.Config.Repositories))
-	for i := range req.Config.Repositories {
-		repos[i] = req.Config.Repositories[i]
-	}
-
-	skipReport, canSkip := evaluator.Evaluate(ctx, repos)
+	skipReport, canSkip := evaluator.Evaluate(ctx, req.Config.Repositories)
 	if !canSkip {
 		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")

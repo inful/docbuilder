@@ -12,7 +12,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
@@ -107,10 +106,10 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.PostHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
+		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", models.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
+		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", models.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
 	}
 	return nil
 }
