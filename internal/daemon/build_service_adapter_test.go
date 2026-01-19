@@ -8,7 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // mockBuildService is a test double for build.BuildService.
@@ -90,8 +90,8 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		if report == nil {
 			t.Fatal("expected non-nil report")
 		}
-		if report.Outcome != hugo.OutcomeSuccess {
-			t.Errorf("expected outcome %s, got %s", hugo.OutcomeSuccess, report.Outcome)
+		if report.Outcome != models.OutcomeSuccess {
+			t.Errorf("expected outcome %s, got %s", models.OutcomeSuccess, report.Outcome)
 		}
 		if report.Repositories != 2 {
 			t.Errorf("expected 2 repositories, got %d", report.Repositories)
@@ -143,8 +143,8 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if report.Outcome != hugo.OutcomeSuccess {
-			t.Errorf("expected outcome %s for skipped, got %s", hugo.OutcomeSuccess, report.Outcome)
+		if report.Outcome != models.OutcomeSuccess {
+			t.Errorf("expected outcome %s for skipped, got %s", models.OutcomeSuccess, report.Outcome)
 		}
 		if report.SkipReason != "no changes detected" {
 			t.Errorf("expected skip reason 'no changes detected', got %q", report.SkipReason)

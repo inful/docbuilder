@@ -9,7 +9,7 @@ import (
 
 	bld "git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
@@ -52,30 +52,30 @@ func (f *fakeRecorder) ObserveContentTransformDuration(string, time.Duration, bo
 func (f *fakeRecorder) getRetry() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.retries[string(hugo.StageCloneRepos)]
+	return f.retries[string(models.StageCloneRepos)]
 }
 
 func (f *fakeRecorder) getExhausted() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.exhausted[string(hugo.StageCloneRepos)]
+	return f.exhausted[string(models.StageCloneRepos)]
 }
 
 // mockBuilder allows scripted outcomes: sequence of (report,error) pairs returned per Build invocation.
 type mockBuilder struct {
 	mu  sync.Mutex
 	seq []struct {
-		rep *hugo.BuildReport
+		rep *models.BuildReport
 		err error
 	}
 	idx int
 }
 
-func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*hugo.BuildReport, error) {
+func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*models.BuildReport, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.idx >= len(m.seq) {
-		return &hugo.BuildReport{}, nil
+		return &models.BuildReport{}, nil
 	}
 	cur := m.seq[m.idx]
 	m.idx++
@@ -83,19 +83,19 @@ func (m *mockBuilder) Build(_ context.Context, _ *BuildJob) (*hugo.BuildReport, 
 }
 
 // helper to create a transient StageError in a report.
-func transientReport() (*hugo.BuildReport, error) {
+func transientReport() (*models.BuildReport, error) {
 	// Use sentinel errors from internal/build to trigger transient classification.
 	underlying := bld.ErrClone
-	se := &hugo.StageError{Stage: hugo.StageCloneRepos, Kind: hugo.StageErrorWarning, Err: underlying}
-	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[hugo.StageName]hugo.StageErrorKind{}}
+	se := &models.StageError{Stage: models.StageCloneRepos, Kind: models.StageErrorWarning, Err: underlying}
+	r := &models.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[models.StageName]models.StageErrorKind{}}
 	r.Errors = append(r.Errors, se)
 	return r, se
 }
 
 // helper to create a fatal (non-transient) StageError report.
-func fatalReport(stage hugo.StageName) (*hugo.BuildReport, error) {
-	se := &hugo.StageError{Stage: stage, Kind: hugo.StageErrorFatal, Err: errors.New("fatal")}
-	r := &hugo.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[hugo.StageName]hugo.StageErrorKind{}}
+func fatalReport(stage models.StageName) (*models.BuildReport, error) {
+	se := &models.StageError{Stage: stage, Kind: models.StageErrorFatal, Err: errors.New("fatal")}
+	r := &models.BuildReport{StageDurations: map[string]time.Duration{}, StageErrorKinds: map[models.StageName]models.StageErrorKind{}}
 	r.Errors = append(r.Errors, se)
 	return r, se
 }
@@ -110,11 +110,11 @@ func TestRetrySucceedsAfterTransient(t *testing.T) {
 	// First attempt transient failure, second succeeds
 	tr, terr := transientReport()
 	mb := &mockBuilder{seq: []struct {
-		rep *hugo.BuildReport
+		rep *models.BuildReport
 		err error
 	}{
 		{tr, terr},
-		{&hugo.BuildReport{}, nil},
+		{&models.BuildReport{}, nil},
 	}}
 	bq := NewBuildQueue(10, 1, mb)
 	bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "5ms"})
@@ -156,7 +156,7 @@ func TestRetryExhausted(t *testing.T) {
 	tr2, terr2 := transientReport()
 	tr3, terr3 := transientReport()
 	mb := &mockBuilder{seq: []struct {
-		rep *hugo.BuildReport
+		rep *models.BuildReport
 		err error
 	}{
 		{tr1, terr1}, {tr2, terr2}, {tr3, terr3},
@@ -194,9 +194,9 @@ func TestRetryExhausted(t *testing.T) {
 
 func TestNoRetryOnPermanent(t *testing.T) {
 	fr := newFakeRecorder()
-	frpt, ferr := fatalReport(hugo.StageCloneRepos)
+	frpt, ferr := fatalReport(models.StageCloneRepos)
 	mb := &mockBuilder{seq: []struct {
-		rep *hugo.BuildReport
+		rep *models.BuildReport
 		err error
 	}{{frpt, ferr}}}
 	bq := NewBuildQueue(10, 1, mb)

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
@@ -14,7 +16,7 @@ import (
 
 // copyContentFilesPipeline copies documentation files using the new fixed transform pipeline.
 // This is the new implementation that replaces the registry-based transform system.
-func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error {
+func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *models.BuildState) error {
 	slog.Info("Using new fixed transform pipeline for content processing")
 
 	// Compute isSingleRepo flag
@@ -22,7 +24,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 	if bs != nil {
 		isSingleRepo = bs.Docs.IsSingleRepo
 	} else {
-		// Fallback: compute from docFiles when BuildState is nil (e.g., in tests)
+		// Fallback: compute from docFiles when models.BuildState is nil (e.g., in tests)
 		repoSet := make(map[string]struct{})
 		for i := range docFiles {
 			repoSet[docFiles[i].Repository] = struct{}{}
@@ -100,7 +102,7 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		// Construct output path
-		outputPath := filepath.Join(g.buildRoot(), doc.Path)
+		outputPath := filepath.Join(g.BuildRoot(), doc.Path)
 
 		// Create directory if needed
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
@@ -159,7 +161,7 @@ func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
 	slog.Info("Writing static assets", slog.Int("count", len(assets)))
 
 	for _, asset := range assets {
-		outputPath := filepath.Join(g.buildRoot(), asset.Path)
+		outputPath := filepath.Join(g.BuildRoot(), asset.Path)
 
 		// Create directory if needed
 		if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
@@ -183,8 +185,8 @@ func (g *Generator) generateStaticAssets(processor *pipeline.Processor) error {
 }
 
 // buildRepositoryMetadata extracts repository metadata for pipeline generators.
-// If bs is provided, uses commit dates from BuildState.
-func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.RepositoryInfo {
+// If bs is provided, uses commit dates from models.BuildState.
+func (g *Generator) buildRepositoryMetadata(bs *models.BuildState) map[string]pipeline.RepositoryInfo {
 	metadata := make(map[string]pipeline.RepositoryInfo)
 
 	if g.config == nil || g.config.Repositories == nil {
@@ -213,9 +215,9 @@ func (g *Generator) buildRepositoryMetadata(bs *BuildState) map[string]pipeline.
 			info.DocsPaths = repo.Paths
 		}
 
-		// Get commit SHA and date from BuildState if available
+		// Get commit SHA and date from models.BuildState if available
 		if bs != nil {
-			if commitSHA, ok := bs.Git.postHeads[repo.Name]; ok {
+			if commitSHA, ok := bs.Git.PostHeads[repo.Name]; ok {
 				info.Commit = commitSHA
 			}
 			if commitDate, ok := bs.Git.GetCommitDate(repo.Name); ok {
@@ -239,7 +241,7 @@ func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 	}
 
 	// Calculate output path - assets go in same location as markdown files
-	outputPath := filepath.Join(g.buildRoot(), file.GetHugoPath(isSingleRepo))
+	outputPath := filepath.Join(g.BuildRoot(), file.GetHugoPath(isSingleRepo))
 
 	// Create directory if needed
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {

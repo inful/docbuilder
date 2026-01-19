@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
@@ -36,7 +38,7 @@ func TestGenerateSiteWithReport(t *testing.T) {
 		Content:      []byte("# TestForge Generated Content\n\nThis is realistic test documentation."),
 	}}
 
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 	rep, err := gen.GenerateSiteWithReport(files)
 	if err != nil {
 		t.Fatalf("generation failed: %v", err)
@@ -103,7 +105,7 @@ func TestMultiPlatformHugoGeneration(t *testing.T) {
 				})
 			}
 
-			gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+			gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 			rep, err := gen.GenerateSiteWithReport(files)
 			if err != nil {
 				t.Fatalf("generation failed for %s: %v", platform.name, err)
@@ -154,7 +156,7 @@ func TestTestForgeFailureScenarios(t *testing.T) {
 		Content:      []byte("# Failure Scenario Test\n\nTesting resilience with TestForge failures."),
 	}}
 
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 	rep, err := gen.GenerateSiteWithReport(files)
 	// Hugo generation should succeed despite forge failures
 	if err != nil {

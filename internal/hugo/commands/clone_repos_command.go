@@ -10,10 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 // CloneReposCommand implements the repository cloning stage.
@@ -25,12 +27,12 @@ type CloneReposCommand struct {
 func NewCloneReposCommand() *CloneReposCommand {
 	return &CloneReposCommand{
 		BaseCommand: NewBaseCommand(CommandMetadata{
-			Name:        hugo.StageCloneRepos,
+			Name:        models.StageCloneRepos,
 			Description: "Clone and update configured repositories",
-			Dependencies: []hugo.StageName{
-				hugo.StagePrepareOutput, // Depends on workspace preparation
+			Dependencies: []models.StageName{
+				models.StagePrepareOutput, // Depends on workspace preparation
 			},
-			SkipIf: func(bs *hugo.BuildState) bool {
+			SkipIf: func(bs *models.BuildState) bool {
 				return len(bs.Git.Repositories) == 0
 			},
 		}),
@@ -38,22 +40,22 @@ func NewCloneReposCommand() *CloneReposCommand {
 }
 
 // Execute runs the clone repos stage.
-func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+func (c *CloneReposCommand) Execute(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 	c.LogStageStart()
 
 	if bs.Git.WorkspaceDir == "" {
 		err := errors.New("workspace directory not set")
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	}
 
-	fetcher := hugo.NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
+	fetcher := stages.NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 
 	// Ensure workspace directory structure
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 		err = fmt.Errorf("ensure workspace: %w", err)
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	}
 
 	strategy := config.CloneStrategyFresh
@@ -64,8 +66,8 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	}
 
 	bs.Git.RepoPaths = make(map[string]string, len(bs.Git.Repositories))
-	// Note: preHeads and postHeads are private fields that should be initialized by BuildState constructor
-	// In the command pattern, we skip this initialization and rely on proper BuildState setup
+	// Note: preHeads and postHeads are private fields that should be initialized by models.BuildState constructor
+	// In the command pattern, we skip this initialization and rely on proper models.BuildState setup
 
 	concurrency := 1
 	if bs.Generator != nil && bs.Generator.Config().Build.CloneConcurrency > 0 {
@@ -125,7 +127,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 			wg.Wait()
 			err := ctx.Err()
 			c.LogStageFailure(err)
-			return hugo.ExecutionFailure(err)
+			return stages.ExecutionFailure(err)
 		default:
 		}
 		tasks <- cloneTask{repo: bs.Git.Repositories[i]}
@@ -138,7 +140,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	case <-ctx.Done():
 		err := ctx.Err()
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	default:
 	}
 
@@ -150,7 +152,7 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
 		err := fmt.Errorf("%w: all clones failed", build.ErrClone)
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	}
 
 	if bs.Report.FailedRepositories > 0 {
@@ -161,11 +163,11 @@ func (c *CloneReposCommand) Execute(ctx context.Context, bs *hugo.BuildState) hu
 	}
 
 	c.LogStageSuccess()
-	return hugo.ExecutionSuccess()
+	return stages.ExecutionSuccess()
 }
 
 // recordSuccessfulClone updates build state after a successful repository clone.
-func (c *CloneReposCommand) recordSuccessfulClone(bs *hugo.BuildState, repo config.Repository, res hugo.RepoFetchResult) {
+func (c *CloneReposCommand) recordSuccessfulClone(bs *models.BuildState, repo config.Repository, res stages.RepoFetchResult) {
 	bs.Report.ClonedRepositories++
 	bs.Git.RepoPaths[repo.Name] = res.Path
 	if res.PostHead != "" {
@@ -180,18 +182,18 @@ func (c *CloneReposCommand) recordSuccessfulClone(bs *hugo.BuildState, repo conf
 }
 
 // recordFailedClone updates build state after a failed repository clone.
-func (c *CloneReposCommand) recordFailedClone(bs *hugo.BuildState, res hugo.RepoFetchResult) {
+func (c *CloneReposCommand) recordFailedClone(bs *models.BuildState, res stages.RepoFetchResult) {
 	bs.Report.FailedRepositories++
 	if bs.Report != nil {
 		code := c.classifyGitFailure(res.Err)
 		if code != "" {
-			bs.Report.AddIssue(code, hugo.StageCloneRepos, hugo.SeverityError, res.Err.Error(), false, res.Err)
+			bs.Report.AddIssue(code, models.StageCloneRepos, models.SeverityError, res.Err.Error(), false, res.Err)
 		}
 	}
 }
 
 // classifyGitFailure inspects an error string for permanent git failure signatures.
-func (c *CloneReposCommand) classifyGitFailure(err error) hugo.ReportIssueCode {
+func (c *CloneReposCommand) classifyGitFailure(err error) models.ReportIssueCode {
 	if err == nil {
 		return ""
 	}
@@ -199,34 +201,34 @@ func (c *CloneReposCommand) classifyGitFailure(err error) hugo.ReportIssueCode {
 	// Prefer typed errors first
 	switch {
 	case errors.As(err, new(*gitpkg.AuthError)):
-		return hugo.IssueAuthFailure
+		return models.IssueAuthFailure
 	case errors.As(err, new(*gitpkg.NotFoundError)):
-		return hugo.IssueRepoNotFound
+		return models.IssueRepoNotFound
 	case errors.As(err, new(*gitpkg.UnsupportedProtocolError)):
-		return hugo.IssueUnsupportedProto
+		return models.IssueUnsupportedProto
 	case errors.As(err, new(*gitpkg.RemoteDivergedError)):
-		return hugo.IssueRemoteDiverged
+		return models.IssueRemoteDiverged
 	case errors.As(err, new(*gitpkg.RateLimitError)):
-		return hugo.IssueRateLimit
+		return models.IssueRateLimit
 	case errors.As(err, new(*gitpkg.NetworkTimeoutError)):
-		return hugo.IssueNetworkTimeout
+		return models.IssueNetworkTimeout
 	}
 
 	// Fallback heuristic for legacy untyped errors
 	l := strings.ToLower(err.Error())
 	switch {
 	case strings.Contains(l, "authentication failed") || strings.Contains(l, "authentication required") || strings.Contains(l, "invalid username or password") || strings.Contains(l, "authorization failed"):
-		return hugo.IssueAuthFailure
+		return models.IssueAuthFailure
 	case strings.Contains(l, "repository not found") || (strings.Contains(l, "not found") && strings.Contains(l, "repository")):
-		return hugo.IssueRepoNotFound
+		return models.IssueRepoNotFound
 	case strings.Contains(l, "unsupported protocol"):
-		return hugo.IssueUnsupportedProto
+		return models.IssueUnsupportedProto
 	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
-		return hugo.IssueRemoteDiverged
+		return models.IssueRemoteDiverged
 	case strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests"):
-		return hugo.IssueRateLimit
+		return models.IssueRateLimit
 	case strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout"):
-		return hugo.IssueNetworkTimeout
+		return models.IssueNetworkTimeout
 	default:
 		return ""
 	}

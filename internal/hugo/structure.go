@@ -11,8 +11,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-// createHugoStructure creates the basic Hugo directory structure.
-func (g *Generator) createHugoStructure() error {
+// CreateHugoStructure creates the basic Hugo directory structure.
+func (g *Generator) CreateHugoStructure() error {
 	dirs := []string{
 		"content",
 		"layouts",
@@ -23,7 +23,7 @@ func (g *Generator) createHugoStructure() error {
 		"assets",
 		"archetypes",
 	}
-	root := g.buildRoot()
+	root := g.BuildRoot()
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
 		if err := os.MkdirAll(path, 0o750); err != nil {

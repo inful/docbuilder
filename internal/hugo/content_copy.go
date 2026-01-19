@@ -3,6 +3,8 @@ package hugo
 import (
 	"context"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
@@ -12,7 +14,7 @@ func (g *Generator) copyContentFiles(ctx context.Context, docFiles []docs.DocFil
 	return g.copyContentFilesPipeline(ctx, docFiles, nil)
 }
 
-// copyContentFilesWithState copies documentation files with access to BuildState for metadata.
-func (g *Generator) copyContentFilesWithState(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error {
+// CopyContentFilesWithState copies documentation files with access to models.BuildState for metadata.
+func (g *Generator) CopyContentFilesWithState(ctx context.Context, docFiles []docs.DocFile, bs *models.BuildState) error {
 	return g.copyContentFilesPipeline(ctx, docFiles, bs)
 }

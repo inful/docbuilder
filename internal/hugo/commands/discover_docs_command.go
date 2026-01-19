@@ -8,9 +8,11 @@ import (
 	"log/slog"
 	"sort"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 // DiscoverDocsCommand implements the documentation discovery stage.
@@ -22,12 +24,12 @@ type DiscoverDocsCommand struct {
 func NewDiscoverDocsCommand() *DiscoverDocsCommand {
 	return &DiscoverDocsCommand{
 		BaseCommand: NewBaseCommand(CommandMetadata{
-			Name:        hugo.StageDiscoverDocs,
+			Name:        models.StageDiscoverDocs,
 			Description: "Discover documentation files in cloned repositories",
-			Dependencies: []hugo.StageName{
-				hugo.StageCloneRepos, // Must have repositories cloned first
+			Dependencies: []models.StageName{
+				models.StageCloneRepos, // Must have repositories cloned first
 			},
-			SkipIf: func(bs *hugo.BuildState) bool {
+			SkipIf: func(bs *models.BuildState) bool {
 				return len(bs.Git.RepoPaths) == 0
 			},
 		}),
@@ -35,14 +37,14 @@ func NewDiscoverDocsCommand() *DiscoverDocsCommand {
 }
 
 // Execute runs the discover docs stage.
-func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 	c.LogStageStart()
 
 	select {
 	case <-ctx.Done():
 		err := ctx.Err()
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	default:
 	}
 
@@ -51,7 +53,7 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	if err != nil {
 		err = fmt.Errorf("%w: %w", build.ErrDiscovery, err)
 		c.LogStageFailure(err)
-		return hugo.ExecutionFailure(err)
+		return stages.ExecutionFailure(err)
 	}
 
 	prevCount := len(bs.Docs.Files)
@@ -61,7 +63,7 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	bs.Docs.BuildIndexes() // Update indexes after changing files
 
 	// Detect if documentation files have changed
-	if hugo.DetectDocumentChanges(prevFiles, docFiles, bs.Docs.IsSingleRepo) || !bs.Git.AllReposUnchanged {
+	if stages.DetectDocumentChanges(prevFiles, docFiles, bs.Docs.IsSingleRepo) || !bs.Git.AllReposUnchanged {
 		// Files or repos changed - continue with build
 	} else if prevCount > 0 {
 		slog.Info("Documentation files unchanged", slog.Int("files", prevCount))
@@ -85,11 +87,11 @@ func (c *DiscoverDocsCommand) Execute(ctx context.Context, bs *hugo.BuildState) 
 	}
 
 	c.LogStageSuccess()
-	return hugo.ExecutionSuccess()
+	return stages.ExecutionSuccess()
 }
 
 // updateReportHash updates the build report with the overall documentation files hash.
-func (c *DiscoverDocsCommand) updateReportHash(bs *hugo.BuildState, docFiles []docs.DocFile) {
+func (c *DiscoverDocsCommand) updateReportHash(bs *models.BuildState, docFiles []docs.DocFile) {
 	paths := make([]string, 0, len(docFiles))
 	for i := range docFiles {
 		f := &docFiles[i]

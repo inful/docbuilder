@@ -5,21 +5,23 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // TestBuildReportGolden ensures that the serialized JSON schema for a minimal successful build
 // remains stable (excluding dynamic timestamps which are compared for presence only).
 func TestBuildReportGolden(t *testing.T) {
-	r := newBuildReport(t.Context(), 2, 5)
+	r := models.NewBuildReport(t.Context(), 2, 5)
 	r.ClonedRepositories = 2
 	r.RenderedPages = 5
 	r.StageDurations["prepare_output"] = 10 * time.Millisecond
-	r.StageErrorKinds[StagePrepareOutput] = "" // no error
-	r.recordStageResult(StagePrepareOutput, StageResultSuccess, nil)
-	r.finish()
-	r.deriveOutcome()
+	r.StageErrorKinds[models.StagePrepareOutput] = "" // no error
+	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess, nil)
+	r.Finish()
+	r.DeriveOutcome()
 
-	ser := r.sanitizedCopy()
+	ser := r.SanitizedCopy()
 	jb, err := json.MarshalIndent(ser, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal: %v", err)

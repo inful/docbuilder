@@ -1,4 +1,4 @@
-package hugo
+package stages
 
 import (
 	"context"
@@ -8,23 +8,25 @@ import (
 	"log/slog"
 	"sort"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
-func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
+func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 	if len(bs.Git.RepoPaths) == 0 {
-		return newWarnStageError(StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
+		return models.NewWarnStageError(models.StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", build.ErrDiscovery))
 	}
 	select {
 	case <-ctx.Done():
-		return newCanceledStageError(StageDiscoverDocs, ctx.Err())
+		return models.NewCanceledStageError(models.StageDiscoverDocs, ctx.Err())
 	default:
 	}
-	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.config.Build)
+	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.Config().Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		return newFatalStageError(StageDiscoverDocs, fmt.Errorf("%w: %w", build.ErrDiscovery, err))
+		return models.NewFatalStageError(models.StageDiscoverDocs, fmt.Errorf("%w: %w", build.ErrDiscovery, err))
 	}
 	prevCount := len(bs.Docs.Files)
 	prevFiles := bs.Docs.Files
@@ -47,7 +49,7 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 	}
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
-	if bs.Generator != nil && bs.Generator.stateManager != nil {
+	if bs.Generator != nil && bs.Generator.StateManager() != nil {
 		repoPaths := make(map[string][]string)
 		for i := range docFiles {
 			f := &docFiles[i]
@@ -73,9 +75,9 @@ func stageDiscoverDocs(ctx context.Context, bs *BuildState) error {
 			if repoURL == "" {
 				repoURL = repoName
 			}
-			bs.Generator.stateManager.SetRepoDocumentCount(repoURL, len(paths))
-			bs.Generator.stateManager.SetRepoDocFilesHash(repoURL, hash)
-			if setter, ok := bs.Generator.stateManager.(interface{ SetRepoDocFilePaths(string, []string) }); ok {
+			bs.Generator.StateManager().SetRepoDocumentCount(repoURL, len(paths))
+			bs.Generator.StateManager().SetRepoDocFilesHash(repoURL, hash)
+			if setter, ok := bs.Generator.StateManager().(interface{ SetRepoDocFilePaths(string, []string) }); ok {
 				setter.SetRepoDocFilePaths(repoURL, paths)
 			}
 		}

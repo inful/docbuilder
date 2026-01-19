@@ -1,4 +1,4 @@
-package hugo
+package stages
 
 // StageExecution represents the structured result of a stage execution.
 type StageExecution struct {

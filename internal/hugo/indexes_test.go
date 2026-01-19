@@ -22,7 +22,7 @@ func TestGenerateIndexPages(t *testing.T) {
 	}
 
 	// Need structure for indexes (skip full generation) -> just call generateIndexPages after structure creation
-	if err := gen.createHugoStructure(); err != nil {
+	if err := gen.CreateHugoStructure(); err != nil {
 		t.Fatalf("structure: %v", err)
 	}
 	if err := gen.generateIndexPages(files); err != nil {
@@ -80,7 +80,7 @@ func TestGenerateMainIndex_SkipsIfExists(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 
-	if err := gen.createHugoStructure(); err != nil {
+	if err := gen.CreateHugoStructure(); err != nil {
 		t.Fatalf("structure: %v", err)
 	}
 

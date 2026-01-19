@@ -1,4 +1,4 @@
-package hugo
+package stages
 
 import (
 	"bytes"
@@ -25,9 +25,6 @@ import (
 //	  renderer-level gating beyond global build.render_mode semantics)
 //
 // Errors returned are surfaced as warnings (non-fatal) unless future policy changes.
-type Renderer interface {
-	Execute(ctx context.Context, rootDir string) error
-}
 
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
@@ -261,12 +258,4 @@ type NoopRenderer struct{}
 func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 	slog.Debug("NoopRenderer skipping render", "dir", rootDir)
 	return nil
-}
-
-// WithRenderer allows tests or callers to inject a custom renderer.
-func (g *Generator) WithRenderer(r Renderer) *Generator {
-	if r != nil {
-		g.renderer = r
-	}
-	return g
 }

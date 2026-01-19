@@ -7,18 +7,19 @@ import (
 	"path/filepath"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"gopkg.in/yaml.v3"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 const autoVariant = "auto"
 
-// generateHugoConfig creates the Hugo configuration file with Relearn theme.
-func (g *Generator) generateHugoConfig() error {
-	configPath := filepath.Join(g.buildRoot(), "hugo.yaml")
+// GenerateHugoConfig creates the Hugo configuration file with Relearn theme.
+func (g *Generator) GenerateHugoConfig() error {
+	configPath := filepath.Join(g.BuildRoot(), "hugo.yaml")
 
 	// Phase 1: core defaults
 	params := map[string]any{}

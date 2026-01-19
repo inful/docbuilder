@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
@@ -36,7 +38,7 @@ func TestGenerateSite_Smoke(t *testing.T) {
 		{Repository: testRepo.Name, Name: "guide", RelativePath: "guide.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("# Guide\n")},
 	}
 
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 
 	// Act
 	if err := gen.GenerateSite(files); err != nil {
@@ -156,7 +158,7 @@ func TestGenerateSite_TestForgeRealisticWorkflow(t *testing.T) {
 		}
 	}
 
-	gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 
 	// Act - Generate the complete site
 	if err := gen.GenerateSite(files); err != nil {

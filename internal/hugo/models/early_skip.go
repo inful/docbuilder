@@ -1,4 +1,4 @@
-package hugo
+package models
 
 import (
 	"log/slog"
@@ -29,7 +29,7 @@ func SkipAfter(stage StageName, reason string) EarlySkipDecision {
 func EvaluateEarlySkip(bs *BuildState) EarlySkipDecision {
 	// Skip after clone if no repository changes and existing site is valid
 	if bs.Git.AllReposUnchanged {
-		if bs.Generator != nil && bs.Generator.existingSiteValidForSkip() {
+		if bs.Generator != nil && bs.Generator.ExistingSiteValidForSkip() {
 			slog.Info("Early skip condition met: no repository HEAD changes and existing site valid")
 			return SkipAfter(StageCloneRepos, "no_changes")
 		}

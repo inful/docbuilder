@@ -45,7 +45,7 @@ func TestHugoConfigGolden_RelearnDefaultTaxonomies(t *testing.T) {
 		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
 	}
 	g := NewGenerator(cfg, out)
-	if err := g.generateHugoConfig(); err != nil {
+	if err := g.GenerateHugoConfig(); err != nil {
 		t.Fatalf("generate: %v", err)
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))
@@ -81,7 +81,7 @@ func TestHugoConfigGolden_RelearnCustomTaxonomies(t *testing.T) {
 		Repositories: []config.Repository{{Name: "repo1", URL: "https://github.com/org/repo1.git", Branch: "main", Paths: []string{"docs"}}},
 	}
 	g := NewGenerator(cfg, out)
-	if err := g.generateHugoConfig(); err != nil {
+	if err := g.GenerateHugoConfig(); err != nil {
 		t.Fatalf("generate: %v", err)
 	}
 	actual := normalizeConfig(t, filepath.Join(out, "hugo.yaml"))

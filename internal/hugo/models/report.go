@@ -1,4 +1,4 @@
-package hugo
+package models
 
 import (
 	"context"
@@ -6,11 +6,60 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
+
+// DetectHugoVersion attempts to detect the version of the hugo binary on PATH.
+func DetectHugoVersion(ctx context.Context) string {
+	hugoPath, err := exec.LookPath("hugo")
+	if err != nil {
+		return ""
+	}
+	// #nosec G204 - hugoPath is derived from config/discovery
+	cmd := exec.CommandContext(ctx, hugoPath, "version")
+	output, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return ParseHugoVersion(string(output))
+}
+
+// ParseHugoVersion extracts the semantic version from hugo version output.
+func ParseHugoVersion(output string) string {
+	versionRegex := regexp.MustCompile(`v?(\d+\.\d+\.\d+)`)
+	matches := versionRegex.FindStringSubmatch(output)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+	simpleRegex := regexp.MustCompile(`(\d+\.\d+\.\d+)`)
+	matches = simpleRegex.FindStringSubmatch(output)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+	return ""
+}
+
+// NewBuildReport constructs a new BuildReport.
+func NewBuildReport(ctx context.Context, repos, files int) *BuildReport {
+	return &BuildReport{
+		SchemaVersion:     1,
+		Repositories:      repos,
+		Files:             files,
+		Start:             time.Now(),
+		StageDurations:    make(map[string]time.Duration),
+		StageErrorKinds:   make(map[StageName]StageErrorKind),
+		StageCounts:       make(map[StageName]StageCount),
+		IndexTemplates:    make(map[string]IndexTemplateInfo),
+		DocBuilderVersion: version.Version,
+		HugoVersion:       DetectHugoVersion(ctx),
+	}
+}
 
 // BuildOutcome is the typed enumeration of final build result states.
 type BuildOutcome string
@@ -98,14 +147,13 @@ const (
 	IssueHugoExecution     ReportIssueCode = "HUGO_EXECUTION"
 	IssueCanceled          ReportIssueCode = "BUILD_CANCELED"
 	IssueAllClonesFailed   ReportIssueCode = "ALL_CLONES_FAILED"
-	IssueGenericStageError ReportIssueCode = "GENERIC_STAGE_ERROR" // unified fallback replacing dynamic UNKNOWN_* codes
-	// IssueAuthFailure is a new granular git-related permanent failure code (non-transient) used when retry classification deems permanent.
-	IssueAuthFailure      ReportIssueCode = "AUTH_FAILURE"
-	IssueRepoNotFound     ReportIssueCode = "REPO_NOT_FOUND"
-	IssueUnsupportedProto ReportIssueCode = "UNSUPPORTED_PROTOCOL"
-	IssueRemoteDiverged   ReportIssueCode = "REMOTE_DIVERGED" // used when divergence detected and hard reset disabled
-	IssueRateLimit        ReportIssueCode = "RATE_LIMIT"
-	IssueNetworkTimeout   ReportIssueCode = "NETWORK_TIMEOUT"
+	IssueGenericStageError ReportIssueCode = "GENERIC_STAGE_ERROR"
+	IssueAuthFailure       ReportIssueCode = "AUTH_FAILURE"
+	IssueRepoNotFound      ReportIssueCode = "REPO_NOT_FOUND"
+	IssueUnsupportedProto  ReportIssueCode = "UNSUPPORTED_PROTOCOL"
+	IssueRemoteDiverged    ReportIssueCode = "REMOTE_DIVERGED"
+	IssueRateLimit         ReportIssueCode = "RATE_LIMIT"
+	IssueNetworkTimeout    ReportIssueCode = "NETWORK_TIMEOUT"
 )
 
 // IssueSeverity represents normalized severity levels.
@@ -117,7 +165,6 @@ const (
 )
 
 // ReportIssue is a structured taxonomy entry describing a discrete problem encountered.
-// Message is human-friendly; Code + Stage allow automated handling; Transient hints retry suitability.
 type ReportIssue struct {
 	Code      ReportIssueCode `json:"code"`
 	Stage     StageName       `json:"stage"`
@@ -127,14 +174,12 @@ type ReportIssue struct {
 }
 
 // IndexTemplateInfo captures the resolution details for an index template kind.
-// Source can be: "embedded" (built-in default) or "file" (user override).
-// Path is empty for embedded sources.
 type IndexTemplateInfo struct {
 	Source string `json:"source"` // embedded | file
 	Path   string `json:"path,omitempty"`
 }
 
-// StageCount aggregates counts of outcomes for a stage (future proofing if we repeat stages or add sub-steps).
+// StageCount aggregates counts of outcomes for a stage.
 type StageCount struct {
 	Success  int
 	Warning  int
@@ -142,28 +187,41 @@ type StageCount struct {
 	Canceled int
 }
 
-func newBuildReport(ctx context.Context, repos, files int) *BuildReport {
-	return &BuildReport{
-		SchemaVersion:     1,
-		Repositories:      repos,
-		Files:             files,
-		Start:             time.Now(),
-		StageDurations:    make(map[string]time.Duration),
-		StageErrorKinds:   make(map[StageName]StageErrorKind),
-		StageCounts:       make(map[StageName]StageCount),
-		IndexTemplates:    make(map[string]IndexTemplateInfo),
-		DocBuilderVersion: getDocBuilderVersion(),
-		HugoVersion:       DetectHugoVersion(ctx),
-		// ClonedRepositories starts at 0 and is incremented precisely during clone_repos stage.
+// Finish sets the end time of the report.
+func (r *BuildReport) Finish() { r.End = time.Now() }
+
+// RecordStageResult updates BuildReport counters and emits metrics (if recorder non-nil).
+func (r *BuildReport) RecordStageResult(stage StageName, res StageResult, recorder metrics.Recorder) {
+	if r.StageCounts == nil {
+		r.StageCounts = make(map[StageName]StageCount)
 	}
+	sc := r.StageCounts[stage]
+	switch res {
+	case StageResultSuccess:
+		sc.Success++
+		if recorder != nil {
+			recorder.IncStageResult(string(stage), metrics.ResultSuccess)
+		}
+	case StageResultWarning:
+		sc.Warning++
+		if recorder != nil {
+			recorder.IncStageResult(string(stage), metrics.ResultWarning)
+		}
+	case StageResultFatal:
+		sc.Fatal++
+		if recorder != nil {
+			recorder.IncStageResult(string(stage), metrics.ResultFatal)
+		}
+	case StageResultCanceled:
+		sc.Canceled++
+		if recorder != nil {
+			recorder.IncStageResult(string(stage), metrics.ResultCanceled)
+		}
+	case StageResultSkipped:
+		// No counters for skipped yet
+	}
+	r.StageCounts[stage] = sc
 }
-
-// getDocBuilderVersion returns the current docbuilder version.
-func getDocBuilderVersion() string {
-	return version.Version
-}
-
-func (r *BuildReport) finish() { r.End = time.Now() }
 
 // Summary returns a human-readable single-line summary.
 func (r *BuildReport) Summary() string {
@@ -171,8 +229,8 @@ func (r *BuildReport) Summary() string {
 	return fmt.Sprintf("repos=%d files=%d duration=%s errors=%d warnings=%d stages=%d rendered=%d outcome=%s", r.Repositories, r.Files, dur.Truncate(time.Millisecond), len(r.Errors), len(r.Warnings), len(r.StageDurations), r.RenderedPages, string(r.Outcome))
 }
 
-// deriveOutcome sets the Outcome field based on recorded errors/warnings.
-func (r *BuildReport) deriveOutcome() {
+// DeriveOutcome sets the Outcome field based on recorded errors/warnings.
+func (r *BuildReport) DeriveOutcome() {
 	if len(r.Errors) > 0 {
 		for _, e := range r.Errors {
 			var se *StageError
@@ -191,32 +249,23 @@ func (r *BuildReport) deriveOutcome() {
 	r.Outcome = OutcomeSuccess
 }
 
-// Outcome is set directly (typed); legacy string access removed.
-
-// Persist writes the report atomically into the provided root directory (final output dir, not staging).
-// It writes two files:
-//
-//	build-report.json  (machine readable)
-//	build-report.txt   (human summary)
-//
-// Best effort; errors are returned for caller logging but do not change build outcome.
+// Persist writes the report atomically into the provided root directory.
 func (r *BuildReport) Persist(root string) error {
-	if r.End.IsZero() { // ensure finished
-		r.finish()
-		r.deriveOutcome()
+	if r.End.IsZero() {
+		r.Finish()
+		r.DeriveOutcome()
 	}
 	if err := os.MkdirAll(root, 0o750); err != nil {
 		return fmt.Errorf("ensure root for report: %w", err)
 	}
 	// JSON
-	jb, err := json.MarshalIndent(r.sanitizedCopy(), "", "  ")
+	jb, err := json.MarshalIndent(r.SanitizedCopy(), "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal report json: %w", err)
 	}
 	jsonPath := filepath.Join(root, "build-report.json")
 	tmpJSON := jsonPath + ".tmp"
-	// #nosec G306 -- build report is a public artifact
-	if err := os.WriteFile(tmpJSON, jb, 0o644); err != nil {
+	if err := os.WriteFile(tmpJSON, jb, 0o600); err != nil {
 		return fmt.Errorf("write temp report json: %w", err)
 	}
 	if err := os.Rename(tmpJSON, jsonPath); err != nil {
@@ -225,8 +274,7 @@ func (r *BuildReport) Persist(root string) error {
 	// Text summary
 	summaryPath := filepath.Join(root, "build-report.txt")
 	tmpTxt := summaryPath + ".tmp"
-	// #nosec G306 -- build report is a public artifact
-	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0o600); err != nil {
 		return fmt.Errorf("write temp report summary: %w", err)
 	}
 	if err := os.Rename(tmpTxt, summaryPath); err != nil {
@@ -235,29 +283,23 @@ func (r *BuildReport) Persist(root string) error {
 	return nil
 }
 
-// sanitizedCopy returns a shallow copy with error fields converted to strings for JSON friendliness.
-func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
-	// Convert typed stage counts to string-keyed map for JSON stability.
+// SanitizedCopy returns a shallow copy with error fields converted to strings for JSON friendliness.
+func (r *BuildReport) SanitizedCopy() *BuildReportSerializable {
 	stageCounts := make(map[string]StageCount, len(r.StageCounts))
 	for k, v := range r.StageCounts {
 		stageCounts[string(k)] = v
 	}
-	// Convert typed error kinds map
 	sek := make(map[string]string, len(r.StageErrorKinds))
 	for k, v := range r.StageErrorKinds {
 		sek[string(k)] = string(v)
 	}
 
-	cloned := r.ClonedRepositories
-
-	// Ensure non-nil maps so JSON shows {} rather than null.
 	if r.StageDurations == nil {
 		r.StageDurations = map[string]time.Duration{}
 	}
 	if r.IndexTemplates == nil {
 		r.IndexTemplates = map[string]IndexTemplateInfo{}
 	}
-	// Ensure issues slice non-nil for stable JSON (empty array instead of null)
 	if r.Issues == nil {
 		r.Issues = []ReportIssue{}
 	}
@@ -272,7 +314,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		Warnings:            make([]string, len(r.Warnings)),
 		StageDurations:      r.StageDurations,
 		StageErrorKinds:     sek,
-		ClonedRepositories:  cloned,
+		ClonedRepositories:  r.ClonedRepositories,
 		FailedRepositories:  r.FailedRepositories,
 		SkippedRepositories: r.SkippedRepositories,
 		RenderedPages:       r.RenderedPages,
@@ -281,7 +323,7 @@ func (r *BuildReport) sanitizedCopy() *BuildReportSerializable {
 		StaticRendered:      r.StaticRendered,
 		Retries:             r.Retries,
 		RetriesExhausted:    r.RetriesExhausted,
-		Issues:              r.Issues, // already JSON-friendly
+		Issues:              r.Issues,
 		SkipReason:          r.SkipReason,
 		IndexTemplates:      r.IndexTemplates,
 		CloneStageSkipped:   r.CloneStageSkipped,
@@ -333,4 +375,8 @@ type BuildReportSerializable struct {
 	ConfigHash          string                       `json:"config_hash,omitempty"`
 	PipelineVersion     int                          `json:"pipeline_version,omitempty"`
 	EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
+}
+
+func GetDocBuilderVersion() string {
+	return version.Version
 }

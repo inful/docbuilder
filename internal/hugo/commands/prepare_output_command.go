@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 )
 
 // PrepareOutputCommand implements the output preparation stage.
@@ -17,15 +18,15 @@ type PrepareOutputCommand struct {
 func NewPrepareOutputCommand() *PrepareOutputCommand {
 	return &PrepareOutputCommand{
 		BaseCommand: NewBaseCommand(CommandMetadata{
-			Name:         hugo.StagePrepareOutput,
+			Name:         models.StagePrepareOutput,
 			Description:  "Prepare output directory and workspace",
-			Dependencies: []hugo.StageName{}, // No dependencies - first stage
+			Dependencies: []models.StageName{}, // No dependencies - first stage
 		}),
 	}
 }
 
 // Execute runs the prepare output stage.
-func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) hugo.StageExecution {
+func (c *PrepareOutputCommand) Execute(_ context.Context, bs *models.BuildState) stages.StageExecution {
 	c.LogStageStart()
 
 	// This is a simplified implementation for the command pattern
@@ -37,10 +38,10 @@ func (c *PrepareOutputCommand) Execute(_ context.Context, bs *hugo.BuildState) h
 		if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
 			err = fmt.Errorf("failed to create workspace directory %s: %w", bs.Git.WorkspaceDir, err)
 			c.LogStageFailure(err)
-			return hugo.ExecutionFailure(err)
+			return stages.ExecutionFailure(err)
 		}
 	}
 
 	c.LogStageSuccess()
-	return hugo.ExecutionSuccess()
+	return stages.ExecutionSuccess()
 }

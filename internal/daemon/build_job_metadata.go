@@ -2,7 +2,7 @@ package daemon
 
 import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
@@ -27,7 +27,7 @@ type BuildJobMetadata struct {
 	LiveReloadHub *LiveReloadHub `json:"-"` // Pointer to live hub
 
 	// Build report (populated after completion)
-	BuildReport *hugo.BuildReport `json:"build_report,omitempty"`
+	BuildReport *models.BuildReport `json:"build_report,omitempty"`
 }
 
 // EnsureTypedMeta returns job.TypedMeta, initializing it if nil.

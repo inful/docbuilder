@@ -14,7 +14,7 @@ func TestGeneratorConfigHashUsesSnapshot(t *testing.T) {
 		t.Fatalf("normalize: %v", err)
 	}
 	gen := NewGenerator(c, t.TempDir())
-	if gen.computeConfigHash() != c.Snapshot() {
-		t.Fatalf("generator config hash mismatch snapshot\nwant=%s\ngot=%s", c.Snapshot(), gen.computeConfigHash())
+	if gen.ComputeConfigHash() != c.Snapshot() {
+		t.Fatalf("generator config hash mismatch snapshot\nwant=%s\ngot=%s", c.Snapshot(), gen.ComputeConfigHash())
 	}
 }

@@ -5,32 +5,33 @@ import (
 	"log/slog"
 	"maps"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 )
 
 // StageCommand represents a single build stage that can be executed.
 // This interface implements the Command pattern for hugo build stages.
 type StageCommand interface {
 	// Name returns the name of this stage command
-	Name() hugo.StageName
+	Name() models.StageName
 
 	// Execute runs the stage command with the given build state
-	Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution
+	Execute(ctx context.Context, bs *models.BuildState) stages.StageExecution
 
 	// Description returns a human-readable description of what this stage does
 	Description() string
 
 	// Dependencies returns the names of stages that must complete successfully before this stage
-	Dependencies() []hugo.StageName
+	Dependencies() []models.StageName
 }
 
 // CommandMetadata provides additional information about a command.
 type CommandMetadata struct {
-	Name         hugo.StageName
+	Name         models.StageName
 	Description  string
-	Dependencies []hugo.StageName
-	Optional     bool                        // If true, failure doesn't stop the pipeline
-	SkipIf       func(*hugo.BuildState) bool // Function to determine if stage should be skipped
+	Dependencies []models.StageName
+	Optional     bool                          // If true, failure doesn't stop the pipeline
+	SkipIf       func(*models.BuildState) bool // Function to determine if stage should be skipped
 }
 
 // BaseCommand provides a common implementation for stage commands.
@@ -44,7 +45,7 @@ func NewBaseCommand(metadata CommandMetadata) BaseCommand {
 }
 
 // Name returns the stage name.
-func (c BaseCommand) Name() hugo.StageName {
+func (c BaseCommand) Name() models.StageName {
 	return c.metadata.Name
 }
 
@@ -54,7 +55,7 @@ func (c BaseCommand) Description() string {
 }
 
 // Dependencies returns the stage dependencies.
-func (c BaseCommand) Dependencies() []hugo.StageName {
+func (c BaseCommand) Dependencies() []models.StageName {
 	return c.metadata.Dependencies
 }
 
@@ -64,7 +65,7 @@ func (c BaseCommand) IsOptional() bool {
 }
 
 // ShouldSkip checks if this stage should be skipped based on build state.
-func (c BaseCommand) ShouldSkip(bs *hugo.BuildState) bool {
+func (c BaseCommand) ShouldSkip(bs *models.BuildState) bool {
 	if c.metadata.SkipIf != nil {
 		return c.metadata.SkipIf(bs)
 	}
@@ -93,13 +94,13 @@ func (c BaseCommand) LogStageFailure(err error) {
 
 // CommandRegistry manages registered stage commands.
 type CommandRegistry struct {
-	commands map[hugo.StageName]StageCommand
+	commands map[models.StageName]StageCommand
 }
 
 // NewCommandRegistry creates a new command registry.
 func NewCommandRegistry() *CommandRegistry {
 	return &CommandRegistry{
-		commands: make(map[hugo.StageName]StageCommand),
+		commands: make(map[models.StageName]StageCommand),
 	}
 }
 
@@ -109,14 +110,14 @@ func (r *CommandRegistry) Register(cmd StageCommand) {
 }
 
 // Get retrieves a command by name.
-func (r *CommandRegistry) Get(name hugo.StageName) (StageCommand, bool) {
+func (r *CommandRegistry) Get(name models.StageName) (StageCommand, bool) {
 	cmd, exists := r.commands[name]
 	return cmd, exists
 }
 
 // List returns all registered command names.
-func (r *CommandRegistry) List() []hugo.StageName {
-	names := make([]hugo.StageName, 0, len(r.commands))
+func (r *CommandRegistry) List() []models.StageName {
+	names := make([]models.StageName, 0, len(r.commands))
 	for name := range r.commands {
 		names = append(names, name)
 	}
@@ -124,8 +125,8 @@ func (r *CommandRegistry) List() []hugo.StageName {
 }
 
 // GetAll returns all registered commands.
-func (r *CommandRegistry) GetAll() map[hugo.StageName]StageCommand {
-	result := make(map[hugo.StageName]StageCommand, len(r.commands))
+func (r *CommandRegistry) GetAll() map[models.StageName]StageCommand {
+	result := make(map[models.StageName]StageCommand, len(r.commands))
 	maps.Copy(result, r.commands)
 	return result
 }
@@ -147,8 +148,8 @@ func (r *CommandRegistry) ValidateDependencies() error {
 
 // DependencyError represents a missing dependency error.
 type DependencyError struct {
-	Command    hugo.StageName
-	Dependency hugo.StageName
+	Command    models.StageName
+	Dependency models.StageName
 }
 
 func (e *DependencyError) Error() string {
@@ -157,7 +158,7 @@ func (e *DependencyError) Error() string {
 
 // ExecutionError represents a command execution error.
 type ExecutionError struct {
-	Command hugo.StageName
+	Command models.StageName
 	Cause   error
 }
 

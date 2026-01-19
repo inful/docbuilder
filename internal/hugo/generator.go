@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
@@ -25,12 +28,12 @@ type Generator struct {
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
 	recorder       metrics.Recorder
-	observer       BuildObserver // high-level observer (decouples metrics recorder)
-	renderer       Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
+	observer       models.BuildObserver // high-level observer (decouples metrics recorder)
+	renderer       models.Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
 	// indexTemplateUsage captures which index template (main/repository/section) source was used
-	indexTemplateUsage map[string]IndexTemplateInfo
+	indexTemplateUsage map[string]models.IndexTemplateInfo
 	// stateManager (optional) allows stages to persist per-repo metadata (doc counts, hashes, commits) without daemon-specific code.
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
@@ -39,11 +42,11 @@ type Generator struct {
 
 // NewGenerator creates a new Hugo site generator.
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]IndexTemplateInfo)}
-	// Renderer defaults to nil; stageRunHugo will use BinaryRenderer when needed.
+	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]models.IndexTemplateInfo)}
+	// Renderer defaults to nil; models.StageRunHugo will use BinaryRenderer when needed.
 	// Use WithRenderer to inject custom/test renderers.
 	// Default observer bridges to recorder until dedicated observers added.
-	g.observer = recorderObserver{recorder: g.recorder}
+	g.observer = models.RecorderObserver{Recorder: g.recorder}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 
@@ -119,22 +122,21 @@ func (g *Generator) existingSiteValidForSkip() bool {
 }
 
 // Config exposes the underlying configuration (read-only usage by themes).
-func (g *Generator) Config() *config.Config { return g.config }
 
 // SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.
 func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 	if r == nil {
 		g.recorder = metrics.NoopRecorder{}
-		g.observer = recorderObserver{recorder: g.recorder}
+		g.observer = models.RecorderObserver{Recorder: g.recorder}
 		return g
 	}
 	g.recorder = r
-	g.observer = recorderObserver{recorder: r}
+	g.observer = models.RecorderObserver{Recorder: r}
 	return g
 }
 
 // WithObserver overrides the BuildObserver (takes precedence over internal recorder adapter).
-func (g *Generator) WithObserver(o BuildObserver) *Generator {
+func (g *Generator) WithObserver(o models.BuildObserver) *Generator {
 	if o != nil {
 		g.observer = o
 	}
@@ -149,12 +151,12 @@ func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 
 // GenerateSiteWithReport performs site generation (background context) and returns a BuildReport with metrics.
 // Prefer GenerateSiteWithReportContext when you have a caller context supporting cancellation/timeouts.
-func (g *Generator) GenerateSiteWithReport(docFiles []docs.DocFile) (*BuildReport, error) {
+func (g *Generator) GenerateSiteWithReport(docFiles []docs.DocFile) (*models.BuildReport, error) {
 	return g.GenerateSiteWithReportContext(context.Background(), docFiles)
 }
 
 // GenerateSiteWithReportContext performs site generation honoring the provided context for cancellation.
-func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles []docs.DocFile) (*BuildReport, error) {
+func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles []docs.DocFile) (*models.BuildReport, error) {
 	slog.Info("Starting Hugo site generation", slog.String("output", g.outputDir), slog.Int("files", len(docFiles)))
 	if err := g.beginStaging(); err != nil {
 		return nil, err
@@ -164,7 +166,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		f := &docFiles[i]
 		repoSet[f.Repository] = struct{}{}
 	}
-	report := newBuildReport(ctx, len(repoSet), len(docFiles))
+	report := models.NewBuildReport(ctx, len(repoSet), len(docFiles))
 	// Populate observability enrichment fields
 	report.PipelineVersion = 1
 	report.EffectiveRenderMode = string(config.ResolveEffectiveRenderMode(g.config))
@@ -173,23 +175,23 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	// instrumentation hook to count rendered pages
 	g.onPageRendered = func() { report.RenderedPages++ }
 
-	bs := newBuildState(g, docFiles, report)
+	bs := models.NewBuildState(g, docFiles, report)
 
-	stages := NewPipeline().
-		Add(StagePrepareOutput, stagePrepareOutput).
-		Add(StageGenerateConfig, stageGenerateConfig).
-		Add(StageLayouts, stageLayouts).
-		Add(StageCopyContent, stageCopyContent).
-		Add(StageIndexes, stageIndexes).
-		Add(StageRunHugo, stageRunHugo).
-		Add(StagePostProcess, stagePostProcess).
+	pipeline := models.NewPipeline().
+		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
+		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
+		Add(models.StageLayouts, stages.StageLayouts).
+		Add(models.StageCopyContent, stages.StageCopyContent).
+		Add(models.StageIndexes, stages.StageIndexes).
+		Add(models.StageRunHugo, stages.StageRunHugo).
+		Add(models.StagePostProcess, stages.StagePostProcess).
 		Build()
 
-	if err := runStages(ctx, bs, stages); err != nil {
+	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
 		// cleanup staging dir on failure
 		g.abortStaging()
 		// If clone stage executed (presence of durations entry) flip flag.
-		if _, ok := report.StageDurations[string(StageCloneRepos)]; ok {
+		if _, ok := report.StageDurations[string(models.StageCloneRepos)]; ok {
 			report.CloneStageSkipped = false
 		}
 		return nil, err
@@ -227,8 +229,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	// Stage durations already written directly to report.
 
-	report.deriveOutcome()
-	report.finish()
+	report.DeriveOutcome()
+	report.Finish()
 	if err := g.finalizeStaging(); err != nil {
 		return nil, fmt.Errorf("finalize staging: %w", err)
 	}
@@ -257,7 +259,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 			slog.String("error", fmt.Sprintf("%v", err)))
 	}
 
-	if _, ok := report.StageDurations[string(StageCloneRepos)]; ok {
+	if _, ok := report.StageDurations[string(models.StageCloneRepos)]; ok {
 		report.CloneStageSkipped = false
 	}
 	// Persist report (best effort) inside final output directory
@@ -282,8 +284,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 // GenerateFullSite clones repositories, discovers documentation, then executes the standard generation stages.
 // repositories: list of repositories to process. workspaceDir: directory for git operations (created if missing).
-func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.Repository, workspaceDir string) (*BuildReport, error) {
-	report := newBuildReport(ctx, 0, 0) // counts filled after discovery
+func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.Repository, workspaceDir string) (*models.BuildReport, error) {
+	report := models.NewBuildReport(ctx, 0, 0) // counts filled after discovery
 	report.PipelineVersion = 1
 	report.EffectiveRenderMode = string(config.ResolveEffectiveRenderMode(g.config))
 	// By default full site path includes clone stage; mark skipped=false (may stay false)
@@ -292,35 +294,35 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		return nil, err
 	}
 	g.onPageRendered = func() { report.RenderedPages++ }
-	bs := newBuildState(g, nil, report)
-	// Compute configuration snapshot hash early; stageGenerateConfig will backfill for other paths.
-	bs.Pipeline.ConfigHash = g.computeConfigHash()
+	bs := models.NewBuildState(g, nil, report)
+	// Compute configuration snapshot hash early; stages.StageGenerateConfig will backfill for other paths.
+	bs.Pipeline.ConfigHash = g.ComputeConfigHash()
 	report.ConfigHash = bs.Pipeline.ConfigHash
 
 	bs.Git.Repositories = repositories
 	bs.Git.WorkspaceDir = filepath.Clean(workspaceDir)
 
-	stages := NewPipeline().
-		Add(StagePrepareOutput, stagePrepareOutput).
-		Add(StageCloneRepos, stageCloneRepos).
-		Add(StageDiscoverDocs, stageDiscoverDocs).
-		Add(StageGenerateConfig, stageGenerateConfig).
-		Add(StageLayouts, stageLayouts).
-		Add(StageCopyContent, stageCopyContent).
-		Add(StageIndexes, stageIndexes).
-		Add(StageRunHugo, stageRunHugo).
-		Add(StagePostProcess, stagePostProcess).
+	pipeline := models.NewPipeline().
+		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
+		Add(models.StageCloneRepos, stages.StageCloneRepos).
+		Add(models.StageDiscoverDocs, stages.StageDiscoverDocs).
+		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
+		Add(models.StageLayouts, stages.StageLayouts).
+		Add(models.StageCopyContent, stages.StageCopyContent).
+		Add(models.StageIndexes, stages.StageIndexes).
+		Add(models.StageRunHugo, stages.StageRunHugo).
+		Add(models.StagePostProcess, stages.StagePostProcess).
 		Build()
-	if err := runStages(ctx, bs, stages); err != nil {
+	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
 		// derive outcome even on error for observability; cleanup staging
-		report.deriveOutcome()
-		report.finish()
+		report.DeriveOutcome()
+		report.Finish()
 		g.abortStaging()
 		return report, err
 	}
 	// Stage durations already written directly to report.
-	report.deriveOutcome()
-	report.finish()
+	report.DeriveOutcome()
+	report.Finish()
 	if err := g.finalizeStaging(); err != nil {
 		return report, fmt.Errorf("finalize staging: %w", err)
 	}
@@ -334,10 +336,10 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	return report, nil
 }
 
-// computeConfigHash now delegates to the configuration Snapshot() which produces a
+// ComputeConfigHash now delegates to the configuration Snapshot() which produces a
 // normalized, stable hash over build-affecting fields. This replaces the previous
 // ad-hoc hashing logic to ensure a single source of truth for incremental decisions.
-func (g *Generator) computeConfigHash() string {
+func (g *Generator) ComputeConfigHash() string {
 	if g == nil || g.config == nil {
 		return ""
 	}
@@ -346,4 +348,22 @@ func (g *Generator) computeConfigHash() string {
 
 // ComputeConfigHashForPersistence exposes the internal config hash used for incremental change detection
 // without exporting lower-level implementation details.
-func (g *Generator) ComputeConfigHashForPersistence() string { return g.computeConfigHash() }
+func (g *Generator) ComputeConfigHashForPersistence() string { return g.ComputeConfigHash() }
+
+// Config returns the generator configuration.
+func (g *Generator) Config() *config.Config         { return g.config }
+func (g *Generator) ExistingSiteValidForSkip() bool { return g.existingSiteValidForSkip() }
+
+func (g *Generator) OutputDir() string                            { return g.outputDir }
+func (g *Generator) StageDir() string                             { return g.stageDir }
+func (g *Generator) Recorder() metrics.Recorder                   { return g.recorder }
+func (g *Generator) StateManager() state.RepositoryMetadataWriter { return g.stateManager }
+func (g *Generator) Observer() models.BuildObserver               { return g.observer }
+func (g *Generator) Renderer() models.Renderer                    { return g.renderer }
+
+func (g *Generator) WithRenderer(r models.Renderer) *Generator {
+	if r != nil {
+		g.renderer = r
+	}
+	return g
+}

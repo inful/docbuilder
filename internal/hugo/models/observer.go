@@ -1,4 +1,4 @@
-package hugo
+package models
 
 import (
 	"time"
@@ -22,27 +22,27 @@ func (NoopObserver) OnStageStart(_ StageName)                                   
 func (NoopObserver) OnStageComplete(_ StageName, _ time.Duration, _ StageResult) {}
 func (NoopObserver) OnBuildComplete(_ *BuildReport)                              {}
 
-// recorderObserver adapts metrics.Recorder into a BuildObserver.
-type recorderObserver struct{ recorder metrics.Recorder }
+// RecorderObserver adapts metrics.Recorder into a BuildObserver.
+type RecorderObserver struct{ Recorder metrics.Recorder }
 
-func (r recorderObserver) OnStageStart(_ StageName) {}
-func (r recorderObserver) OnStageComplete(stage StageName, d time.Duration, _ StageResult) {
-	if r.recorder != nil {
-		r.recorder.ObserveStageDuration(string(stage), d)
+func (r RecorderObserver) OnStageStart(_ StageName) {}
+func (r RecorderObserver) OnStageComplete(stage StageName, d time.Duration, _ StageResult) {
+	if r.Recorder != nil {
+		r.Recorder.ObserveStageDuration(string(stage), d)
 	}
 }
 
-func (r recorderObserver) OnBuildComplete(report *BuildReport) {
-	if r.recorder != nil {
-		r.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		r.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
+func (r RecorderObserver) OnBuildComplete(report *BuildReport) {
+	if r.Recorder != nil {
+		r.Recorder.ObserveBuildDuration(report.End.Sub(report.Start))
+		r.Recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
 		// Emit structured issues
 		for _, is := range report.Issues {
-			r.recorder.IncIssue(string(is.Code), string(is.Stage), string(is.Severity), is.Transient)
+			r.Recorder.IncIssue(string(is.Code), string(is.Stage), string(is.Severity), is.Transient)
 		}
 		// Record effective render mode if present
 		if report.EffectiveRenderMode != "" {
-			r.recorder.SetEffectiveRenderMode(report.EffectiveRenderMode)
+			r.Recorder.SetEffectiveRenderMode(report.EffectiveRenderMode)
 		}
 	}
 }

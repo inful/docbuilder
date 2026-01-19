@@ -40,7 +40,7 @@ func deriveModuleName(baseURL string) string {
 
 // ensureGoModForModules creates a minimal go.mod to allow Hugo Modules to work.
 func (g *Generator) ensureGoModForModules() error {
-	goModPath := filepath.Join(g.buildRoot(), "go.mod")
+	goModPath := filepath.Join(g.BuildRoot(), "go.mod")
 
 	if _, err := os.Stat(goModPath); err == nil { // exists
 		return g.handleExistingGoMod(goModPath)

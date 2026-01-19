@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -15,7 +17,7 @@ import (
 func TestReportPersistence_Success(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{Build: config.BuildConfig{RenderMode: "always"}}
-	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
+	gen := NewGenerator(cfg, out).WithRenderer(&stages.NoopRenderer{}) // Use stages.NoopRenderer for tests
 	files := []docs.DocFile{{Repository: "r", Name: "p", RelativePath: "p.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Hello\n")}}
 	if err := gen.GenerateSite(files); err != nil {
 		t.Fatalf("build failed: %v", err)
@@ -42,7 +44,7 @@ func TestReportPersistence_Success(t *testing.T) {
 func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	out := t.TempDir()
 	cfg := &config.Config{Build: config.BuildConfig{RenderMode: "always"}}
-	gen := NewGenerator(cfg, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
+	gen := NewGenerator(cfg, out).WithRenderer(&stages.NoopRenderer{}) // Use stages.NoopRenderer for tests
 	baseFiles := []docs.DocFile{{Repository: "r", Name: "base", RelativePath: "base.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Base\n")}}
 	if err := gen.GenerateSite(baseFiles); err != nil {
 		t.Fatalf("initial build failed: %v", err)
@@ -56,7 +58,7 @@ func TestReportPersistence_FailureDoesNotOverwrite(t *testing.T) {
 	// Now attempt a canceled build
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{}) // Use NoopRenderer for tests
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&stages.NoopRenderer{}) // Use stages.NoopRenderer for tests
 	if _, siteGenerationErr := gen2.GenerateSiteWithReportContext(ctx, []docs.DocFile{{Repository: "r", Name: "fail", RelativePath: "fail.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Fail\n")}}); siteGenerationErr == nil {
 		t.Fatalf("expected cancellation error")
 	}

@@ -12,6 +12,7 @@ import (
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -61,7 +62,7 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	}
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 	sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
-	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&hugo.NoopRenderer{})
+	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&stages.NoopRenderer{})
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()
 	report, err := gen.GenerateFullSite(ctx, []cfg.Repository{repo}, ws)

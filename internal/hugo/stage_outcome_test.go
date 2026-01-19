@@ -6,22 +6,25 @@ import (
 	"fmt"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	cfgpkg "git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
 // minimal build state helper.
-func newTestBuildState() *BuildState {
+func newTestBuildState() *models.BuildState {
 	cfg := &cfgpkg.Config{Hugo: cfgpkg.HugoConfig{Title: "T"}}
 	g := NewGenerator(cfg, "")
-	rep := newBuildReport(context.Background(), 0, 0)
-	return newBuildState(g, nil, rep)
+	rep := models.NewBuildReport(context.Background(), 0, 0)
+	return models.NewBuildState(g, nil, rep)
 }
 
 func TestClassifyStageResult_Success(t *testing.T) {
 	bs := newTestBuildState()
-	out := classifyStageResult(StageCopyContent, nil, bs)
-	if out.Result != StageResultSuccess || out.Error != nil || out.Abort {
+	out := stages.ClassifyStageResult(models.StageCopyContent, nil, bs)
+	if out.Result != models.StageResultSuccess || out.Error != nil || out.Abort {
 		t.Fatalf("unexpected outcome: %+v", out)
 	}
 }
@@ -31,12 +34,12 @@ func TestClassifyStageResult_WrappedClonePartial(t *testing.T) {
 	bs.Report.ClonedRepositories = 1
 	bs.Report.FailedRepositories = 1
 	wrapped := fmt.Errorf("wrap: %w", build.ErrClone)
-	se := newWarnStageError(StageCloneRepos, wrapped)
-	out := classifyStageResult(StageCloneRepos, se, bs)
-	if out.IssueCode != IssuePartialClone {
+	se := models.NewWarnStageError(models.StageCloneRepos, wrapped)
+	out := stages.ClassifyStageResult(models.StageCloneRepos, se, bs)
+	if out.IssueCode != models.IssuePartialClone {
 		t.Fatalf("expected partial clone, got %s", out.IssueCode)
 	}
-	if out.Result != StageResultWarning || out.Abort {
+	if out.Result != models.StageResultWarning || out.Abort {
 		t.Fatalf("expected warning non-abort: %+v", out)
 	}
 }
@@ -44,11 +47,11 @@ func TestClassifyStageResult_WrappedClonePartial(t *testing.T) {
 func TestClassifyStageResult_UnknownFatal(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("boom")
-	out := classifyStageResult(StageRunHugo, err, bs)
-	if out.IssueCode != IssueGenericStageError {
+	out := stages.ClassifyStageResult(models.StageRunHugo, err, bs)
+	if out.IssueCode != models.IssueGenericStageError {
 		t.Fatalf("expected generic code, got %s", out.IssueCode)
 	}
-	if out.Result != StageResultFatal || !out.Abort {
+	if out.Result != models.StageResultFatal || !out.Abort {
 		t.Fatalf("expected fatal abort %+v", out)
 	}
 }
@@ -59,9 +62,9 @@ func TestClassifyStageResult_AllClonesFailed(t *testing.T) {
 	bs.Report.ClonedRepositories = 0
 	bs.Report.FailedRepositories = 3
 	wrapped := fmt.Errorf("wrap: %w", build.ErrClone)
-	se := newWarnStageError(StageCloneRepos, wrapped)
-	out := classifyStageResult(StageCloneRepos, se, bs)
-	if out.IssueCode != IssueAllClonesFailed {
+	se := models.NewWarnStageError(models.StageCloneRepos, wrapped)
+	out := stages.ClassifyStageResult(models.StageCloneRepos, se, bs)
+	if out.IssueCode != models.IssueAllClonesFailed {
 		t.Fatalf("expected all clones failed, got %s", out.IssueCode)
 	}
 }
@@ -70,9 +73,9 @@ func TestClassifyStageResult_AllClonesFailed(t *testing.T) {
 func TestClassifyStageResult_CloneFailureNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other clone error")
-	se := newWarnStageError(StageCloneRepos, err)
-	out := classifyStageResult(StageCloneRepos, se, bs)
-	if out.IssueCode != IssueCloneFailure {
+	se := models.NewWarnStageError(models.StageCloneRepos, err)
+	out := stages.ClassifyStageResult(models.StageCloneRepos, se, bs)
+	if out.IssueCode != models.IssueCloneFailure {
 		t.Fatalf("expected clone failure, got %s", out.IssueCode)
 	}
 }
@@ -82,9 +85,9 @@ func TestClassifyStageResult_NoRepositories(t *testing.T) {
 	bs := newTestBuildState()
 	bs.Git.RepoPaths = make(map[string]string) // empty
 	wrapped := fmt.Errorf("wrap: %w", build.ErrDiscovery)
-	se := newWarnStageError(StageDiscoverDocs, wrapped)
-	out := classifyStageResult(StageDiscoverDocs, se, bs)
-	if out.IssueCode != IssueNoRepositories {
+	se := models.NewWarnStageError(models.StageDiscoverDocs, wrapped)
+	out := stages.ClassifyStageResult(models.StageDiscoverDocs, se, bs)
+	if out.IssueCode != models.IssueNoRepositories {
 		t.Fatalf("expected no repositories, got %s", out.IssueCode)
 	}
 }
@@ -94,9 +97,9 @@ func TestClassifyStageResult_DiscoveryFailure(t *testing.T) {
 	bs := newTestBuildState()
 	bs.Git.RepoPaths = map[string]string{"repo1": "/path/to/repo"}
 	wrapped := fmt.Errorf("wrap: %w", build.ErrDiscovery)
-	se := newWarnStageError(StageDiscoverDocs, wrapped)
-	out := classifyStageResult(StageDiscoverDocs, se, bs)
-	if out.IssueCode != IssueDiscoveryFailure {
+	se := models.NewWarnStageError(models.StageDiscoverDocs, wrapped)
+	out := stages.ClassifyStageResult(models.StageDiscoverDocs, se, bs)
+	if out.IssueCode != models.IssueDiscoveryFailure {
 		t.Fatalf("expected discovery failure, got %s", out.IssueCode)
 	}
 }
@@ -105,9 +108,9 @@ func TestClassifyStageResult_DiscoveryFailure(t *testing.T) {
 func TestClassifyStageResult_DiscoveryFailureNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other discovery error")
-	se := newWarnStageError(StageDiscoverDocs, err)
-	out := classifyStageResult(StageDiscoverDocs, se, bs)
-	if out.IssueCode != IssueDiscoveryFailure {
+	se := models.NewWarnStageError(models.StageDiscoverDocs, err)
+	out := stages.ClassifyStageResult(models.StageDiscoverDocs, se, bs)
+	if out.IssueCode != models.IssueDiscoveryFailure {
 		t.Fatalf("expected discovery failure, got %s", out.IssueCode)
 	}
 }
@@ -116,9 +119,9 @@ func TestClassifyStageResult_DiscoveryFailureNonStandard(t *testing.T) {
 func TestClassifyStageResult_HugoExecution(t *testing.T) {
 	bs := newTestBuildState()
 	wrapped := fmt.Errorf("wrap: %w", build.ErrHugo)
-	se := newWarnStageError(StageRunHugo, wrapped)
-	out := classifyStageResult(StageRunHugo, se, bs)
-	if out.IssueCode != IssueHugoExecution {
+	se := models.NewWarnStageError(models.StageRunHugo, wrapped)
+	out := stages.ClassifyStageResult(models.StageRunHugo, se, bs)
+	if out.IssueCode != models.IssueHugoExecution {
 		t.Fatalf("expected hugo execution, got %s", out.IssueCode)
 	}
 }
@@ -127,9 +130,9 @@ func TestClassifyStageResult_HugoExecution(t *testing.T) {
 func TestClassifyStageResult_HugoExecutionNonStandard(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("some other hugo error")
-	se := newWarnStageError(StageRunHugo, err)
-	out := classifyStageResult(StageRunHugo, se, bs)
-	if out.IssueCode != IssueHugoExecution {
+	se := models.NewWarnStageError(models.StageRunHugo, err)
+	out := stages.ClassifyStageResult(models.StageRunHugo, se, bs)
+	if out.IssueCode != models.IssueHugoExecution {
 		t.Fatalf("expected hugo execution, got %s", out.IssueCode)
 	}
 }
@@ -138,9 +141,9 @@ func TestClassifyStageResult_HugoExecutionNonStandard(t *testing.T) {
 func TestClassifyStageResult_Canceled(t *testing.T) {
 	bs := newTestBuildState()
 	err := errors.New("canceled")
-	se := newCanceledStageError(StageRunHugo, err)
-	out := classifyStageResult(StageRunHugo, se, bs)
-	if out.IssueCode != IssueCanceled {
+	se := models.NewCanceledStageError(models.StageRunHugo, err)
+	out := stages.ClassifyStageResult(models.StageRunHugo, se, bs)
+	if out.IssueCode != models.IssueCanceled {
 		t.Fatalf("expected canceled, got %s", out.IssueCode)
 	}
 	if !out.Abort {

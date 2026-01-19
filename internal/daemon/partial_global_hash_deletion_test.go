@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -94,7 +94,7 @@ func TestPartialBuildDeletionReflected(t *testing.T) {
 
 	// Subset report hash (only changed repoA) prior to recomposition
 	subsetHash := hashList(newRepoAPaths)
-	report := &hugo.BuildReport{DocFilesHash: subsetHash}
+	report := &models.BuildReport{DocFilesHash: subsetHash}
 
 	job := &BuildJob{
 		TypedMeta: &BuildJobMetadata{Repositories: repos},

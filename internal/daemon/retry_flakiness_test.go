@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // TestRetryFlakinessSmoke runs multiple iterations of transient-then-success and fatal-no-retry
@@ -20,9 +20,9 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 			fr := newFakeRecorder()
 			tr, terr := transientReport()
 			mb := &mockBuilder{seq: []struct {
-				rep *hugo.BuildReport
+				rep *models.BuildReport
 				err error
-			}{{tr, terr}, {&hugo.BuildReport{}, nil}}}
+			}{{tr, terr}, {&models.BuildReport{}, nil}}}
 			bq := NewBuildQueue(5, 1, mb)
 			bq.ConfigureRetry(config.BuildConfig{MaxRetries: 3, RetryBackoff: config.RetryBackoffFixed, RetryInitialDelay: "1ms", RetryMaxDelay: "2ms"})
 			bq.SetRecorder(fr)
@@ -52,9 +52,9 @@ func TestRetryFlakinessSmoke(t *testing.T) {
 	for i := range iterations {
 		t.Run("fatal_no_retry_iter_"+strconv.Itoa(i), func(t *testing.T) {
 			fr := newFakeRecorder()
-			frpt, ferr := fatalReport(hugo.StageCloneRepos)
+			frpt, ferr := fatalReport(models.StageCloneRepos)
 			mb := &mockBuilder{seq: []struct {
-				rep *hugo.BuildReport
+				rep *models.BuildReport
 				err error
 			}{{frpt, ferr}}}
 			bq := NewBuildQueue(5, 1, mb)

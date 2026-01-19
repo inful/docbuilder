@@ -27,7 +27,7 @@ func readYaml(t *testing.T, path string) map[string]any {
 func TestGenerateHugoConfig_RelearnModuleImport(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
-	if err := gen.generateHugoConfig(); err != nil {
+	if err := gen.GenerateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)
 	}
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))
@@ -50,7 +50,7 @@ func TestGenerateHugoConfig_RelearnModuleImport(t *testing.T) {
 func TestGenerateHugoConfig_RelearnParams(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
-	if err := gen.generateHugoConfig(); err != nil {
+	if err := gen.GenerateHugoConfig(); err != nil {
 		t.Fatalf("generate config: %v", err)
 	}
 	conf := readYaml(t, filepath.Join(out, "hugo.yaml"))

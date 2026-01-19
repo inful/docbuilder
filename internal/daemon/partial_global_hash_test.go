@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -59,7 +59,7 @@ func TestPartialBuildRecomposesGlobalDocFilesHash(t *testing.T) {
 
 	// Subset BuildReport (what generator would emit for changed repoA only) uses subset hash (only repoA paths)
 	subsetHash := hashPaths(newRepoAPaths) // does not include repoB yet
-	report := &hugo.BuildReport{DocFilesHash: subsetHash}
+	report := &models.BuildReport{DocFilesHash: subsetHash}
 
 	// Build job with repositories metadata
 	job := &BuildJob{
@@ -126,7 +126,7 @@ func TestPartialBuildDeletionNotReflectedYet(t *testing.T) {
 	// IMPORTANT: we DO NOT update repoB path list (still includes b2.md) to reflect current limitation.
 
 	subsetHash := hashPaths(newRepoAPaths) // what a changed-only subset would carry
-	report := &hugo.BuildReport{DocFilesHash: subsetHash}
+	report := &models.BuildReport{DocFilesHash: subsetHash}
 
 	job := &BuildJob{
 		TypedMeta: &BuildJobMetadata{Repositories: repos},

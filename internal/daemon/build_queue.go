@@ -11,7 +11,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
@@ -74,7 +74,7 @@ type BuildEventEmitter interface {
 	EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error
 	EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error
 	EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error
-	EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error
+	EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error
 }
 
 // BuildQueue manages the queue of build jobs.
@@ -330,7 +330,7 @@ func (bq *BuildQueue) emitCompletionEvents(ctx context.Context, job *BuildJob, e
 }
 
 // extractBuildReport extracts the build report from job metadata.
-func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
+func (bq *BuildQueue) extractBuildReport(job *BuildJob) *models.BuildReport {
 	if job.TypedMeta != nil && job.TypedMeta.BuildReport != nil {
 		return job.TypedMeta.BuildReport
 	}
@@ -338,7 +338,7 @@ func (bq *BuildQueue) extractBuildReport(job *BuildJob) *hugo.BuildReport {
 }
 
 // emitBuildReportEvent emits the build report event if report is available.
-func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, report *hugo.BuildReport) {
+func (bq *BuildQueue) emitBuildReportEvent(ctx context.Context, job *BuildJob, report *models.BuildReport) {
 	slog.Debug("Build queue event emit check",
 		logfields.JobID(job.ID),
 		slog.Bool("emitter_nil", bq.eventEmitter == nil),
@@ -362,7 +362,7 @@ func (bq *BuildQueue) emitBuildFailedEvent(ctx context.Context, job *BuildJob, e
 }
 
 // emitBuildCompletedEvent emits the build completed event with artifacts.
-func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob, duration time.Duration, report *hugo.BuildReport) {
+func (bq *BuildQueue) emitBuildCompletedEvent(ctx context.Context, job *BuildJob, duration time.Duration, report *models.BuildReport) {
 	artifacts := make(map[string]string)
 	// Extract artifacts from build report if available
 	if report != nil {
@@ -434,13 +434,13 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 }
 
 // findTransientError checks if report contains a transient error.
-func findTransientError(report *hugo.BuildReport) (bool, string) {
+func findTransientError(report *models.BuildReport) (bool, string) {
 	if report == nil || len(report.Errors) == 0 {
 		return false, ""
 	}
 
 	for _, e := range report.Errors {
-		var se *hugo.StageError
+		var se *models.StageError
 		if errors.As(e, &se) && se.Transient() {
 			return true, string(se.Stage)
 		}
@@ -454,7 +454,7 @@ func shouldStopRetrying(transient bool, totalRetries, maxRetries int) bool {
 }
 
 // handleRetriesExhausted logs and records exhausted retry attempts.
-func handleRetriesExhausted(job *BuildJob, report *hugo.BuildReport, transient bool, totalRetries int, transientStage string, recorder metrics.Recorder) {
+func handleRetriesExhausted(job *BuildJob, report *models.BuildReport, transient bool, totalRetries int, transientStage string, recorder metrics.Recorder) {
 	if !transient || totalRetries < 1 {
 		return
 	}
@@ -473,7 +473,7 @@ func handleRetriesExhausted(job *BuildJob, report *hugo.BuildReport, transient b
 }
 
 // extractRecorder fetches Recorder from embedded report's generator if available via type assertion on metadata (best effort).
-func extractRecorder(_ *hugo.BuildReport, fallback metrics.Recorder) metrics.Recorder {
+func extractRecorder(_ *models.BuildReport, fallback metrics.Recorder) metrics.Recorder {
 	// Currently we only have fallback; future: attempt to derive from report metadata if embedded.
 	return fallback
 }

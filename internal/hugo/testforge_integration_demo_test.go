@@ -3,6 +3,8 @@ package hugo
 import (
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
@@ -67,7 +69,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 
 		// Test Hugo generation with realistic data
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+		gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
@@ -132,7 +134,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+		gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {
@@ -173,7 +175,7 @@ func TestHugoWithTestForgeIntegration(t *testing.T) {
 		}
 
 		outDir := t.TempDir()
-		gen := NewGenerator(cfg, outDir).WithRenderer(&NoopRenderer{})
+		gen := NewGenerator(cfg, outDir).WithRenderer(&stages.NoopRenderer{})
 
 		report, err := gen.GenerateSiteWithReport(docFiles)
 		if err != nil {

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"text/template"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"gopkg.in/yaml.v3"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -95,7 +97,7 @@ func (g *Generator) generateIndexPages(docFiles []docs.DocFile) error {
 }
 
 func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
-	indexPath := filepath.Join(g.buildRoot(), "content", "_index.md")
+	indexPath := filepath.Join(g.BuildRoot(), "content", "_index.md")
 	// If a user-provided index already exists (e.g., README.md normalized to _index.md
 	// in single-repo/preview mode), do not overwrite it with the auto-generated landing page.
 	if st, err := os.Stat(indexPath); err == nil && !st.IsDir() {
@@ -154,7 +156,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 	}
 	for repoName, files := range repoGroups {
-		indexPath := filepath.Join(g.buildRoot(), "content", repoName, "_index.md")
+		indexPath := filepath.Join(g.BuildRoot(), "content", repoName, "_index.md")
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
@@ -352,10 +354,10 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 
 	// Remove the original readme.md file since we've promoted to _index.md
 	// We construct the path directly here since this function doesn't have access to
-	// BuildState.IsSingleRepo. The file was written by copyContentFiles at this exact path.
+	// models.BuildState.IsSingleRepo. The file was written by copyContentFiles at this exact path.
 	// Note: Repository is always in the path for README files, even in single-repo mode,
 	// because they're used for repository-level indexes (content/{repo}/_index.md).
-	transformedPath := filepath.Join(g.buildRoot(), "content", readmeFile.Repository, strings.ToLower(readmeFile.Name+readmeFile.Extension))
+	transformedPath := filepath.Join(g.BuildRoot(), "content", readmeFile.Repository, strings.ToLower(readmeFile.Name+readmeFile.Extension))
 	if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
 		slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
 	}
@@ -441,7 +443,7 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 		return nil
 	}
 
-	indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
+	indexPath := filepath.Join(g.BuildRoot(), "content", repoName, sectionName, "_index.md")
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 	}
@@ -547,7 +549,7 @@ func (g *Generator) assembleSectionContent(fmData []byte, body string) string {
 
 // generateIntermediateSectionIndex creates an index for sections without direct files.
 func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName string) error {
-	indexPath := filepath.Join(g.buildRoot(), "content", repoName, sectionName, "_index.md")
+	indexPath := filepath.Join(g.BuildRoot(), "content", repoName, sectionName, "_index.md")
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 	}
@@ -629,7 +631,7 @@ func (g *Generator) loadIndexTemplate(kind string) (string, error) {
 		if err == nil {
 			slog.Debug("Loaded index template override", slog.String("kind", kind), logfields.Path(p))
 			if g != nil && g.indexTemplateUsage != nil {
-				g.indexTemplateUsage[kind] = IndexTemplateInfo{Source: "file", Path: p}
+				g.indexTemplateUsage[kind] = models.IndexTemplateInfo{Source: "file", Path: p}
 			}
 			return string(b), nil
 		}
@@ -655,7 +657,7 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 	if g != nil && g.indexTemplateUsage != nil {
 		// Only set if not already recorded by file override
 		if _, exists := g.indexTemplateUsage[kind]; !exists {
-			g.indexTemplateUsage[kind] = IndexTemplateInfo{Source: "embedded"}
+			g.indexTemplateUsage[kind] = models.IndexTemplateInfo{Source: "embedded"}
 		}
 	}
 	return string(b)

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
@@ -46,9 +48,9 @@ func (c *capturingRecorder) ObserveContentTransformDuration(string, time.Duratio
 // TestMetricsRecorderIntegration ensures that recorder callbacks are invoked during a simple GenerateSiteWithReport run.
 func TestMetricsRecorderIntegration(t *testing.T) {
 	out := t.TempDir()
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Site"}}, out).SetRecorder(newCapturingRecorder()).WithRenderer(&NoopRenderer{})
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Site"}}, out).SetRecorder(newCapturingRecorder()).WithRenderer(&stages.NoopRenderer{})
 	// Ensure Hugo structure exists for index generation dirs
-	if err := g.createHugoStructure(); err != nil {
+	if err := g.CreateHugoStructure(); err != nil {
 		t.Fatalf("structure: %v", err)
 	}
 	// Create physical source files to satisfy LoadContent()

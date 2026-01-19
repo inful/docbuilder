@@ -9,7 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 const defaultSiteDir = "./site"
@@ -28,7 +28,7 @@ func NewBuildServiceAdapter(svc build.BuildService) *BuildServiceAdapter {
 }
 
 // Build implements the Builder interface by delegating to BuildService.
-func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) {
+func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*models.BuildReport, error) {
 	if job == nil {
 		return nil, errors.New("build job is nil")
 	}
@@ -82,7 +82,7 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 	}
 
 	// Convert result to BuildReport
-	report := &hugo.BuildReport{
+	report := &models.BuildReport{
 		Repositories: result.Repositories,
 		Files:        result.FilesProcessed,
 		Start:        result.StartTime,
@@ -92,14 +92,14 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*hugo.B
 	// Set outcome based on status
 	switch result.Status {
 	case build.BuildStatusSuccess:
-		report.Outcome = hugo.OutcomeSuccess
+		report.Outcome = models.OutcomeSuccess
 	case build.BuildStatusFailed:
-		report.Outcome = hugo.OutcomeFailed
+		report.Outcome = models.OutcomeFailed
 	case build.BuildStatusSkipped:
-		report.Outcome = hugo.OutcomeSuccess
+		report.Outcome = models.OutcomeSuccess
 		report.SkipReason = result.SkipReason
 	case build.BuildStatusCancelled:
-		report.Outcome = hugo.OutcomeCanceled
+		report.Outcome = models.OutcomeCanceled
 	}
 
 	// Store StageDurations

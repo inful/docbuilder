@@ -12,6 +12,7 @@ import (
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // SkipEvaluator decides whether a build can be safely skipped based on
@@ -35,7 +36,7 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 
 // Evaluate returns (report, true) when the build can be skipped, otherwise (nil, false).
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
-func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*hugo.BuildReport, bool) {
+func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*models.BuildReport, bool) {
 	vctx := Context{
 		OutDir:    se.outDir,
 		State:     se.state,
@@ -123,19 +124,19 @@ func (se *SkipEvaluator) loadPreviousReport(ctx *Context) bool {
 }
 
 // constructSkipReport creates and persists a skip report based on the previous report data.
-func (se *SkipEvaluator) constructSkipReport(ctx Context) (*hugo.BuildReport, bool) {
+func (se *SkipEvaluator) constructSkipReport(ctx Context) (*models.BuildReport, bool) {
 	if ctx.PrevReport == nil {
 		slog.Warn("Cannot construct skip report: no previous report data")
 		return nil, false
 	}
 
 	// Create skip report reusing prior counts
-	report := &hugo.BuildReport{
+	report := &models.BuildReport{
 		SchemaVersion: 1,
 		Start:         time.Now(),
 		End:           time.Now(),
 		SkipReason:    "no_changes",
-		Outcome:       hugo.OutcomeSuccess,
+		Outcome:       models.OutcomeSuccess,
 		Repositories:  ctx.PrevReport.Repositories,
 		Files:         ctx.PrevReport.Files,
 		RenderedPages: ctx.PrevReport.RenderedPages,
@@ -160,7 +161,7 @@ func (se *SkipEvaluator) constructSkipReport(ctx Context) (*hugo.BuildReport, bo
 }
 
 // updateStateAfterSkip updates the state manager with current checksums after a successful skip.
-func (se *SkipEvaluator) updateStateAfterSkip(ctx Context, report *hugo.BuildReport) {
+func (se *SkipEvaluator) updateStateAfterSkip(ctx Context, report *models.BuildReport) {
 	// Update report checksum
 	if ctx.PrevReport != nil && len(ctx.PrevReport.RawData) > 0 {
 		prevPath := filepath.Join(se.outDir, "build-report.json")

@@ -3,6 +3,8 @@ package commands
 import (
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
@@ -20,21 +22,21 @@ func TestCommandRegistry(t *testing.T) {
 	registry.Register(discoverCmd)
 
 	// Test retrieval
-	if cmd, exists := registry.Get(hugo.StageCloneRepos); !exists {
+	if cmd, exists := registry.Get(models.StageCloneRepos); !exists {
 		t.Errorf("CloneRepos command not found")
-	} else if cmd.Name() != hugo.StageCloneRepos {
+	} else if cmd.Name() != models.StageCloneRepos {
 		t.Errorf("CloneRepos command name mismatch")
 	}
 
-	if cmd, exists := registry.Get(hugo.StageDiscoverDocs); !exists {
+	if cmd, exists := registry.Get(models.StageDiscoverDocs); !exists {
 		t.Errorf("DiscoverDocs command not found")
-	} else if cmd.Name() != hugo.StageDiscoverDocs {
+	} else if cmd.Name() != models.StageDiscoverDocs {
 		t.Errorf("DiscoverDocs command name mismatch")
 	}
 
-	if cmd, exists := registry.Get(hugo.StagePrepareOutput); !exists {
+	if cmd, exists := registry.Get(models.StagePrepareOutput); !exists {
 		t.Errorf("PrepareOutput command not found")
-	} else if cmd.Name() != hugo.StagePrepareOutput {
+	} else if cmd.Name() != models.StagePrepareOutput {
 		t.Errorf("PrepareOutput command name mismatch")
 	}
 
@@ -54,8 +56,8 @@ func TestCloneReposCommand(t *testing.T) {
 	cmd := NewCloneReposCommand()
 
 	// Test metadata
-	if cmd.Name() != hugo.StageCloneRepos {
-		t.Errorf("Expected name %s, got %s", hugo.StageCloneRepos, cmd.Name())
+	if cmd.Name() != models.StageCloneRepos {
+		t.Errorf("Expected name %s, got %s", models.StageCloneRepos, cmd.Name())
 	}
 
 	if cmd.Description() == "" {
@@ -63,12 +65,12 @@ func TestCloneReposCommand(t *testing.T) {
 	}
 
 	deps := cmd.Dependencies()
-	if len(deps) != 1 || deps[0] != hugo.StagePrepareOutput {
-		t.Errorf("Expected dependency on %s, got %v", hugo.StagePrepareOutput, deps)
+	if len(deps) != 1 || deps[0] != models.StagePrepareOutput {
+		t.Errorf("Expected dependency on %s, got %v", models.StagePrepareOutput, deps)
 	}
 
 	// Test skip condition
-	buildState := &hugo.BuildState{}
+	buildState := &models.BuildState{}
 	if !cmd.ShouldSkip(buildState) {
 		t.Errorf("Should skip when no repositories configured")
 	}
@@ -83,8 +85,8 @@ func TestDiscoverDocsCommand(t *testing.T) {
 	cmd := NewDiscoverDocsCommand()
 
 	// Test metadata
-	if cmd.Name() != hugo.StageDiscoverDocs {
-		t.Errorf("Expected name %s, got %s", hugo.StageDiscoverDocs, cmd.Name())
+	if cmd.Name() != models.StageDiscoverDocs {
+		t.Errorf("Expected name %s, got %s", models.StageDiscoverDocs, cmd.Name())
 	}
 
 	if cmd.Description() == "" {
@@ -92,12 +94,12 @@ func TestDiscoverDocsCommand(t *testing.T) {
 	}
 
 	deps := cmd.Dependencies()
-	if len(deps) != 1 || deps[0] != hugo.StageCloneRepos {
-		t.Errorf("Expected dependency on %s, got %v", hugo.StageCloneRepos, deps)
+	if len(deps) != 1 || deps[0] != models.StageCloneRepos {
+		t.Errorf("Expected dependency on %s, got %v", models.StageCloneRepos, deps)
 	}
 
 	// Test skip condition
-	buildState := &hugo.BuildState{}
+	buildState := &models.BuildState{}
 	if !cmd.ShouldSkip(buildState) {
 		t.Errorf("Should skip when no repository paths available")
 	}
@@ -116,7 +118,7 @@ func TestCommandExecution(t *testing.T) {
 	ctx := t.Context()
 
 	// Test with minimal build state (should skip due to no repo paths)
-	buildState := &hugo.BuildState{}
+	buildState := &models.BuildState{}
 
 	// Check if skip condition is working
 	if cmd.ShouldSkip(buildState) {
@@ -141,18 +143,18 @@ func TestCommandExecution(t *testing.T) {
 
 func TestBaseCommand(t *testing.T) {
 	metadata := CommandMetadata{
-		Name:         hugo.StageCloneRepos,
+		Name:         models.StageCloneRepos,
 		Description:  "Test command",
-		Dependencies: []hugo.StageName{hugo.StagePrepareOutput},
+		Dependencies: []models.StageName{models.StagePrepareOutput},
 		Optional:     true,
-		SkipIf: func(bs *hugo.BuildState) bool {
+		SkipIf: func(bs *models.BuildState) bool {
 			return bs == nil
 		},
 	}
 
 	base := NewBaseCommand(metadata)
 
-	if base.Name() != hugo.StageCloneRepos {
+	if base.Name() != models.StageCloneRepos {
 		t.Errorf("Name mismatch")
 	}
 
@@ -168,7 +170,7 @@ func TestBaseCommand(t *testing.T) {
 		t.Errorf("Should skip with nil build state")
 	}
 
-	if base.ShouldSkip(&hugo.BuildState{}) {
+	if base.ShouldSkip(&models.BuildState{}) {
 		t.Errorf("Should not skip with valid build state")
 	}
 }
@@ -184,10 +186,10 @@ func TestRegisterDefaultCommands(t *testing.T) {
 		t.Errorf("Expected 3 commands in DefaultRegistry, got %d", len(commands))
 	}
 
-	expectedNames := []hugo.StageName{
-		hugo.StageCloneRepos,
-		hugo.StageDiscoverDocs,
-		hugo.StagePrepareOutput,
+	expectedNames := []models.StageName{
+		models.StageCloneRepos,
+		models.StageDiscoverDocs,
+		models.StagePrepareOutput,
 	}
 
 	for _, name := range expectedNames {

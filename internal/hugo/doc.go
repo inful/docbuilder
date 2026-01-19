@@ -4,7 +4,7 @@
 //
 // The generator composes a series of high‑level build "stages" (prepare_output,
 // generate_config, layouts, copy_content, indexes, run_hugo, post_process).
-// Each stage operates on a shared mutable BuildState that carries configuration,
+// Each stage operates on a shared mutable models.BuildState that carries configuration,
 // discovered documentation files, and timing instrumentation. Stage execution
 // order is strictly defined in generator.go and measured in stages.go; timings
 // are exported through BuildReport.StageDurations for observability.

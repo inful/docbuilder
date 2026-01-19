@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -27,7 +29,7 @@ func mustRead(t *testing.T, path string) string {
 // and leaves no staging directories behind.
 func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	outDir := t.TempDir()
-	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&stages.NoopRenderer{})
 
 	// First build v1
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version1\n")}}
@@ -42,7 +44,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 	}
 
 	// Second build v2
-	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&stages.NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Version2\n")}}
 	if err := gen2.GenerateSite(filesV2); err != nil {
 		t.Fatalf("second build failed: %v", err)
@@ -73,7 +75,7 @@ func TestAtomicStaging_SuccessPromotesNewContent(t *testing.T) {
 // and that the staging directory is cleaned up.
 func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	outDir := t.TempDir()
-	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&stages.NoopRenderer{})
 
 	// Initial successful build
 	filesV1 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Stable\n")}}
@@ -88,7 +90,7 @@ func TestAtomicStaging_FailedBuildRetainsOldContent(t *testing.T) {
 	}
 
 	// Start second build with immediate cancellation
-	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, outDir).WithRenderer(&stages.NoopRenderer{})
 	filesV2 := []docs.DocFile{{Repository: "repo", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Broken\n")}}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel() // cancel immediately

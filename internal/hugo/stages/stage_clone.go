@@ -1,4 +1,4 @@
-package hugo
+package stages
 
 import (
 	"context"
@@ -10,35 +10,37 @@ import (
 	"sync"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
-func stageCloneRepos(ctx context.Context, bs *BuildState) error {
+func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	if len(bs.Git.Repositories) == 0 {
 		return nil
 	}
 	if bs.Git.WorkspaceDir == "" {
-		return newFatalStageError(StageCloneRepos, errors.New("workspace directory not set"))
+		return models.NewFatalStageError(models.StageCloneRepos, errors.New("workspace directory not set"))
 	}
-	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.config.Build)
+	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 	// Ensure workspace directory structure (previously via git client)
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
-		return newFatalStageError(StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
+		return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
 	}
 	strategy := config.CloneStrategyFresh
 	if bs.Generator != nil {
-		if s := bs.Generator.config.Build.CloneStrategy; s != "" {
+		if s := bs.Generator.Config().Build.CloneStrategy; s != "" {
 			strategy = s
 		}
 	}
 	bs.Git.RepoPaths = make(map[string]string, len(bs.Git.Repositories))
-	bs.Git.preHeads = make(map[string]string, len(bs.Git.Repositories))
-	bs.Git.postHeads = make(map[string]string, len(bs.Git.Repositories))
+	bs.Git.PreHeads = make(map[string]string, len(bs.Git.Repositories))
+	bs.Git.PostHeads = make(map[string]string, len(bs.Git.Repositories))
 	concurrency := 1
-	if bs.Generator != nil && bs.Generator.config.Build.CloneConcurrency > 0 {
-		concurrency = bs.Generator.config.Build.CloneConcurrency
+	if bs.Generator != nil && bs.Generator.Config().Build.CloneConcurrency > 0 {
+		concurrency = bs.Generator.Config().Build.CloneConcurrency
 	}
 	if concurrency > len(bs.Git.Repositories) {
 		concurrency = len(bs.Git.Repositories)
@@ -46,8 +48,8 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	if concurrency < 1 {
 		concurrency = 1
 	}
-	if bs.Generator != nil && bs.Generator.recorder != nil {
-		bs.Generator.recorder.SetCloneConcurrency(concurrency)
+	if bs.Generator != nil && bs.Generator.Recorder() != nil {
+		bs.Generator.Recorder().SetCloneConcurrency(concurrency)
 	}
 	type cloneTask struct{ repo config.Repository }
 	tasks := make(chan cloneTask)
@@ -72,9 +74,9 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 				recordCloneFailure(bs, res)
 			}
 			mu.Unlock()
-			if bs.Generator != nil && bs.Generator.recorder != nil {
-				bs.Generator.recorder.ObserveCloneRepoDuration(task.repo.Name, dur, success)
-				bs.Generator.recorder.IncCloneRepoResult(success)
+			if bs.Generator != nil && bs.Generator.Recorder() != nil {
+				bs.Generator.Recorder().ObserveCloneRepoDuration(task.repo.Name, dur, success)
+				bs.Generator.Recorder().IncCloneRepoResult(success)
 			}
 		}
 	}
@@ -88,7 +90,7 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 		case <-ctx.Done():
 			close(tasks)
 			wg.Wait()
-			return newCanceledStageError(StageCloneRepos, ctx.Err())
+			return models.NewCanceledStageError(models.StageCloneRepos, ctx.Err())
 		default:
 		}
 		tasks <- cloneTask{repo: *r}
@@ -97,64 +99,64 @@ func stageCloneRepos(ctx context.Context, bs *BuildState) error {
 	wg.Wait()
 	select {
 	case <-ctx.Done():
-		return newCanceledStageError(StageCloneRepos, ctx.Err())
+		return models.NewCanceledStageError(models.StageCloneRepos, ctx.Err())
 	default:
 	}
 	bs.Git.AllReposUnchanged = bs.Git.AllReposUnchangedComputed()
 	if bs.Git.AllReposUnchanged {
-		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.postHeads)))
+		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.PostHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
+		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", build.ErrClone))
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return newWarnStageError(StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
+		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", build.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
 	}
 	return nil
 }
 
 // classifyGitFailure inspects an error string for permanent git failure signatures.
-func classifyGitFailure(err error) ReportIssueCode {
+func classifyGitFailure(err error) models.ReportIssueCode {
 	if err == nil {
 		return ""
 	}
 	// Prefer typed errors (Phase 4) first
 	switch {
 	case errors.As(err, new(*gitpkg.AuthError)):
-		return IssueAuthFailure
+		return models.IssueAuthFailure
 	case errors.As(err, new(*gitpkg.NotFoundError)):
-		return IssueRepoNotFound
+		return models.IssueRepoNotFound
 	case errors.As(err, new(*gitpkg.UnsupportedProtocolError)):
-		return IssueUnsupportedProto
+		return models.IssueUnsupportedProto
 	case errors.As(err, new(*gitpkg.RemoteDivergedError)):
-		return IssueRemoteDiverged
+		return models.IssueRemoteDiverged
 	case errors.As(err, new(*gitpkg.RateLimitError)):
-		return IssueRateLimit
+		return models.IssueRateLimit
 	case errors.As(err, new(*gitpkg.NetworkTimeoutError)):
-		return IssueNetworkTimeout
+		return models.IssueNetworkTimeout
 	}
 	// Fallback heuristic for legacy untyped errors
 	l := strings.ToLower(err.Error())
 	switch {
 	case strings.Contains(l, "authentication failed") || strings.Contains(l, "authentication required") || strings.Contains(l, "invalid username or password") || strings.Contains(l, "authorization failed"):
-		return IssueAuthFailure
+		return models.IssueAuthFailure
 	case strings.Contains(l, "repository not found") || (strings.Contains(l, "not found") && strings.Contains(l, "repository")):
-		return IssueRepoNotFound
+		return models.IssueRepoNotFound
 	case strings.Contains(l, "unsupported protocol"):
-		return IssueUnsupportedProto
+		return models.IssueUnsupportedProto
 	case strings.Contains(l, "diverged") && strings.Contains(l, "hard reset disabled"):
-		return IssueRemoteDiverged
+		return models.IssueRemoteDiverged
 	case strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests"):
-		return IssueRateLimit
+		return models.IssueRateLimit
 	case strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout"):
-		return IssueNetworkTimeout
+		return models.IssueNetworkTimeout
 	default:
 		return ""
 	}
 }
 
 // recordCloneSuccess updates build state after a successful repository clone.
-func recordCloneSuccess(bs *BuildState, repo config.Repository, res RepoFetchResult) {
+func recordCloneSuccess(bs *models.BuildState, repo config.Repository, res RepoFetchResult) {
 	bs.Report.ClonedRepositories++
 	bs.Git.RepoPaths[repo.Name] = res.Path
 	if res.PostHead != "" {
@@ -166,12 +168,12 @@ func recordCloneSuccess(bs *BuildState, repo config.Repository, res RepoFetchRes
 }
 
 // recordCloneFailure updates build state after a failed repository clone.
-func recordCloneFailure(bs *BuildState, res RepoFetchResult) {
+func recordCloneFailure(bs *models.BuildState, res RepoFetchResult) {
 	bs.Report.FailedRepositories++
 	if bs.Report != nil {
 		code := classifyGitFailure(res.Err)
 		if code != "" {
-			bs.Report.AddIssue(code, StageCloneRepos, SeverityError, res.Err.Error(), false, res.Err)
+			bs.Report.AddIssue(code, models.StageName("clone_repos"), models.SeverityError, res.Err.Error(), false, res.Err)
 		}
 	}
 }

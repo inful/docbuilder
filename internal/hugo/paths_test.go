@@ -16,8 +16,8 @@ func TestPathHelpers_Contract(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
 
 	// Initial (no staging)
-	if gen.buildRoot() != out {
-		t.Fatalf("expected buildRoot initial=%s got %s", out, gen.buildRoot())
+	if gen.BuildRoot() != out {
+		t.Fatalf("expected buildRoot initial=%s got %s", out, gen.BuildRoot())
 	}
 	if gen.finalRoot() != out {
 		t.Fatalf("expected finalRoot=%s got %s", out, gen.finalRoot())
@@ -35,7 +35,7 @@ func TestPathHelpers_Contract(t *testing.T) {
 	if !strings.HasSuffix(stage1, "_stage") {
 		t.Fatalf("stageDir does not have _stage suffix: %s", stage1)
 	}
-	if gen.buildRoot() != stage1 {
+	if gen.BuildRoot() != stage1 {
 		t.Fatalf("buildRoot should point to staging dir")
 	}
 	if gen.finalRoot() != out {
@@ -50,7 +50,7 @@ func TestPathHelpers_Contract(t *testing.T) {
 	if gen.stageDir != "" {
 		t.Fatalf("stageDir not cleared after abort")
 	}
-	if gen.buildRoot() != out {
+	if gen.BuildRoot() != out {
 		t.Fatalf("buildRoot should revert to outputDir after abort")
 	}
 	if _, err := os.Stat(stage1); !os.IsNotExist(err) {
@@ -67,7 +67,7 @@ func TestPathHelpers_Contract(t *testing.T) {
 	}
 	// With the new staging design, the staging path is deterministic (outputDir_stage)
 	// so stage2 will equal stage1's path (but stage1 was deleted by abort)
-	if gen.buildRoot() != stage2 {
+	if gen.BuildRoot() != stage2 {
 		t.Fatalf("buildRoot should equal staging dir before finalize")
 	}
 	if err := gen.finalizeStaging(); err != nil {
@@ -76,7 +76,7 @@ func TestPathHelpers_Contract(t *testing.T) {
 	if gen.stageDir != "" {
 		t.Fatalf("stageDir not cleared after finalize")
 	}
-	if gen.buildRoot() != out || gen.finalRoot() != out {
+	if gen.BuildRoot() != out || gen.finalRoot() != out {
 		t.Fatalf("roots not pointing to final output after finalize")
 	}
 	if _, err := os.Stat(out); err != nil {

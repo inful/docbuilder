@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/commands"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 )
 
 // Middleware represents a function that can wrap command execution.
@@ -25,11 +26,11 @@ func Chain(cmd commands.StageCommand, middlewares ...Middleware) commands.StageC
 // Command wraps another command to provide middleware functionality.
 type Command struct {
 	wrapped commands.StageCommand
-	execute func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution
+	execute func(ctx context.Context, bs *models.BuildState) stages.StageExecution
 }
 
 // NewCommand creates a new middleware command that wraps another command.
-func NewCommand(wrapped commands.StageCommand, execute func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution) *Command {
+func NewCommand(wrapped commands.StageCommand, execute func(ctx context.Context, bs *models.BuildState) stages.StageExecution) *Command {
 	return &Command{
 		wrapped: wrapped,
 		execute: execute,
@@ -37,7 +38,7 @@ func NewCommand(wrapped commands.StageCommand, execute func(ctx context.Context,
 }
 
 // Name returns the wrapped command's name.
-func (m *Command) Name() hugo.StageName {
+func (m *Command) Name() models.StageName {
 	return m.wrapped.Name()
 }
 
@@ -47,12 +48,12 @@ func (m *Command) Description() string {
 }
 
 // Dependencies returns the wrapped command's dependencies.
-func (m *Command) Dependencies() []hugo.StageName {
+func (m *Command) Dependencies() []models.StageName {
 	return m.wrapped.Dependencies()
 }
 
 // Execute runs the middleware's custom execution logic.
-func (m *Command) Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+func (m *Command) Execute(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 	return m.execute(ctx, bs)
 }
 
@@ -60,7 +61,7 @@ func (m *Command) Execute(ctx context.Context, bs *hugo.BuildState) hugo.StageEx
 // Note: This middleware depends on the metrics being recorded separately by the pipeline.
 func TimingMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			start := time.Now()
 
 			// Execute the command
@@ -79,7 +80,7 @@ func TimingMiddleware() Middleware {
 // Note: This middleware depends on the metrics being recorded separately by the pipeline.
 func ObservabilityMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			result := cmd.Execute(ctx, bs)
 
 			// Result observation is recorded by the pipeline infrastructure,
@@ -93,7 +94,7 @@ func ObservabilityMiddleware() Middleware {
 // LoggingMiddleware adds structured logging to commands.
 func LoggingMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			// Log stage start if the command supports it
 			if logger, ok := cmd.(interface{ LogStageStart() }); ok {
 				logger.LogStageStart()
@@ -121,15 +122,15 @@ func LoggingMiddleware() Middleware {
 // SkipMiddleware adds skip condition checking to commands.
 func SkipMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			// Check if command should be skipped
-			if skipper, ok := cmd.(interface{ ShouldSkip(*hugo.BuildState) bool }); ok {
+			if skipper, ok := cmd.(interface{ ShouldSkip(*models.BuildState) bool }); ok {
 				if skipper.ShouldSkip(bs) {
 					// Log skip if the command supports it
 					if logger, ok := cmd.(interface{ LogStageSkipped() }); ok {
 						logger.LogStageSkipped()
 					}
-					return hugo.ExecutionSuccessWithSkip()
+					return stages.ExecutionSuccessWithSkip()
 				}
 			}
 
@@ -141,10 +142,10 @@ func SkipMiddleware() Middleware {
 // ContextMiddleware adds context cancellation checking.
 func ContextMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			select {
 			case <-ctx.Done():
-				return hugo.ExecutionFailure(ctx.Err())
+				return stages.ExecutionFailure(ctx.Err())
 			default:
 				return cmd.Execute(ctx, bs)
 			}
@@ -155,7 +156,7 @@ func ContextMiddleware() Middleware {
 // ErrorHandlingMiddleware adds structured error handling to commands.
 func ErrorHandlingMiddleware() Middleware {
 	return func(cmd commands.StageCommand) commands.StageCommand {
-		return NewCommand(cmd, func(ctx context.Context, bs *hugo.BuildState) hugo.StageExecution {
+		return NewCommand(cmd, func(ctx context.Context, bs *models.BuildState) stages.StageExecution {
 			result := cmd.Execute(ctx, bs)
 
 			// Wrap errors with command context if not already wrapped

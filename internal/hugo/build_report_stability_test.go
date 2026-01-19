@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 const buildReportRenderMode = "auto"
@@ -15,17 +17,17 @@ const buildReportRenderMode = "auto"
 // ignore duration numeric drift by clamping to milliseconds. The golden can be updated intentionally
 // when schema additions occur (additive changes require appending keys, not removing existing ones).
 func TestBuildReportStability(t *testing.T) {
-	r := newBuildReport(t.Context(), 1, 3)
+	r := models.NewBuildReport(t.Context(), 1, 3)
 	r.ClonedRepositories = 1
 	r.RenderedPages = 3
 	r.StageDurations["prepare_output"] = 123 * time.Millisecond
-	r.recordStageResult(StagePrepareOutput, StageResultSuccess, nil)
-	r.finish()
-	r.deriveOutcome()
+	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess, nil)
+	r.Finish()
+	r.DeriveOutcome()
 	r.ConfigHash = "deadbeef" // deterministic stub
 	r.PipelineVersion = 1
 	r.EffectiveRenderMode = buildReportRenderMode
-	ser := r.sanitizedCopy()
+	ser := r.SanitizedCopy()
 	// Populate optional fields to match golden defaults
 	if ser.DocFilesHash == "" {
 		ser.DocFilesHash = ""

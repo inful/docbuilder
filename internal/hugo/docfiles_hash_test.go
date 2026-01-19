@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -13,7 +15,7 @@ import (
 // TestDocFilesHashChanges ensures BuildReport.DocFilesHash changes when the discovered doc file set changes.
 func TestDocFilesHashChanges(t *testing.T) {
 	out := t.TempDir()
-	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&stages.NoopRenderer{})
 
 	files := make([]docs.DocFile, 0, 2)
 	files = append(files, docs.DocFile{Repository: "r", Name: "a", RelativePath: "a.md", DocsBase: "docs", Extension: ".md", Content: []byte("# A\n")})
@@ -26,7 +28,7 @@ func TestDocFilesHashChanges(t *testing.T) {
 	}
 
 	// Second build with same files -> hash should remain identical
-	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
+	gen2 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&stages.NoopRenderer{})
 	if err := gen2.GenerateSite(files); err != nil {
 		t.Fatalf("second build failed: %v", err)
 	}
@@ -37,7 +39,7 @@ func TestDocFilesHashChanges(t *testing.T) {
 
 	// Third build with additional file -> hash must change
 	files = append(files, docs.DocFile{Repository: "r", Name: "b", RelativePath: "b.md", DocsBase: "docs", Extension: ".md", Content: []byte("# B\n")})
-	gen3 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
+	gen3 := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&stages.NoopRenderer{})
 	if err := gen3.GenerateSite(files); err != nil {
 		t.Fatalf("third build failed: %v", err)
 	}

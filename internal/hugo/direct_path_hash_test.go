@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -14,7 +16,7 @@ import (
 // (bypassing discovery/clone) still computes BuildReport.DocFilesHash.
 func TestGenerateSiteWithReportContextSetsDocFilesHash(t *testing.T) {
 	out := t.TempDir()
-	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&NoopRenderer{})
+	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out).WithRenderer(&stages.NoopRenderer{})
 	files := []docs.DocFile{{Repository: "r1", Name: "page", RelativePath: "page.md", DocsBase: "docs", Extension: ".md", Content: []byte("# Hi\n")}}
 	report, err := gen.GenerateSiteWithReportContext(t.Context(), files)
 	if err != nil {

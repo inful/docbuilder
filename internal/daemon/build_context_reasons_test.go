@@ -3,7 +3,7 @@ package daemon
 import (
 	"testing"
 
-	hugo2 "git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 func TestBuildContextDeltaRepoReasonsPropagation(t *testing.T) {
@@ -14,7 +14,7 @@ func TestBuildContextDeltaRepoReasonsPropagation(t *testing.T) {
 	}
 
 	// Test DeltaManager.AttachDeltaMetadata directly
-	report := &hugo2.BuildReport{}
+	report := &models.BuildReport{}
 	deltaPlan := &DeltaPlan{Decision: DeltaDecisionPartial, ChangedRepos: []string{"u1", "u2"}}
 
 	dm := NewDeltaManager()

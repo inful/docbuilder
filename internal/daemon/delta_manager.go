@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/services"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -27,7 +27,7 @@ func NewDeltaManager() *deltaManager {
 }
 
 // AttachDeltaMetadata adds delta information to the build report.
-func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan *DeltaPlan, job *BuildJob) {
+func (dm *deltaManager) AttachDeltaMetadata(report *models.BuildReport, deltaPlan *DeltaPlan, job *BuildJob) {
 	if deltaPlan == nil {
 		return
 	}
@@ -57,7 +57,7 @@ func (dm *deltaManager) AttachDeltaMetadata(report *hugo.BuildReport, deltaPlan 
 
 // RecomputeGlobalDocHash recalculates the global documentation hash for partial builds.
 func (dm *deltaManager) RecomputeGlobalDocHash(
-	report *hugo.BuildReport,
+	report *models.BuildReport,
 	deltaPlan *DeltaPlan,
 	stateMgr services.StateManager,
 	job *BuildJob,

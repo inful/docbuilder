@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // EventEmitter handles build lifecycle event emission to the event store.
@@ -73,7 +73,7 @@ func (e *EventEmitter) EmitBuildFailed(ctx context.Context, buildID, stage, erro
 }
 
 // EmitBuildReport emits a build report event with the given report data.
-func (e *EventEmitter) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+func (e *EventEmitter) EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error {
 	if report == nil {
 		return nil
 	}
@@ -96,8 +96,8 @@ func (e *EventEmitter) EmitBuildReport(ctx context.Context, buildID string, repo
 	return nil
 }
 
-// convertBuildReportToEventData converts a hugo.BuildReport to eventstore.BuildReportData.
-func convertBuildReportToEventData(report *hugo.BuildReport) eventstore.BuildReportData {
+// convertBuildReportToEventData converts a models.BuildReport to eventstore.BuildReportData.
+func convertBuildReportToEventData(report *models.BuildReport) eventstore.BuildReportData {
 	reportData := eventstore.BuildReportData{
 		Outcome:             string(report.Outcome),
 		Summary:             report.Summary(),

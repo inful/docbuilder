@@ -1,4 +1,4 @@
-package hugo
+package stages
 
 import "git.home.luguber.info/inful/docbuilder/internal/docs"
 

@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
@@ -24,7 +27,7 @@ const (
 func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 	// Check if Hugo is available
 	if _, err := exec.LookPath("hugo"); err != nil {
-		t.Skip("Hugo binary not found in PATH; skipping BinaryRenderer integration test")
+		t.Skip("Hugo binary not found in PATH; skipping stages.BinaryRenderer integration test")
 	}
 
 	dir := t.TempDir()
@@ -33,8 +36,8 @@ func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 	cfg.Hugo.BaseURL = testExampleURL
 	cfg.Build.RenderMode = testRenderModeAlways
 
-	// Use BinaryRenderer explicitly (default when no custom renderer is set)
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir) // No WithRenderer() call = uses BinaryRenderer
+	// Use stages.BinaryRenderer explicitly (default when no custom renderer is set)
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir) // No WithRenderer() call = uses stages.BinaryRenderer
 
 	doc := docs.DocFile{
 		Repository:   "test-repo",
@@ -49,8 +52,8 @@ func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 	if err != nil {
 		// Hugo execution may fail if theme modules can't be fetched (no network, etc.)
 		// This is expected in many CI environments. The key thing we're testing is
-		// that BinaryRenderer is invoked, not that Hugo succeeds.
-		t.Logf("✓ BinaryRenderer invoked (Hugo execution failed as expected without theme modules: %v)", err)
+		// that stages.BinaryRenderer is invoked, not that Hugo succeeds.
+		t.Logf("✓ stages.BinaryRenderer invoked (Hugo execution failed as expected without theme modules: %v)", err)
 		return
 	}
 
@@ -83,15 +86,15 @@ func TestBinaryRenderer_WhenHugoAvailable(t *testing.T) {
 		t.Log("✓ Hugo ran but returned error (partial render)")
 	}
 
-	// The main thing we're testing: BinaryRenderer is being invoked
-	// We can tell because the warning logs show "Renderer execution failed"
-	t.Log("✓ BinaryRenderer integration path verified (Hugo binary was invoked)")
+	// The main thing we're testing: stages.BinaryRenderer is being invoked
+	// We can tell because the warning logs show "models.Renderer execution failed"
+	t.Log("✓ stages.BinaryRenderer integration path verified (Hugo binary was invoked)")
 }
 
 // TestBinaryRenderer_MissingHugoBinary tests the behavior when Hugo is not available.
 func TestBinaryRenderer_MissingHugoBinary(t *testing.T) {
 	// This test verifies the error path when Hugo binary is missing
-	renderer := &BinaryRenderer{}
+	renderer := &stages.BinaryRenderer{}
 
 	// Create a temp directory that won't have Hugo
 	tempDir := t.TempDir()
@@ -108,7 +111,7 @@ func TestBinaryRenderer_MissingHugoBinary(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when Hugo binary is missing")
 	}
-	t.Logf("✓ BinaryRenderer properly handles missing Hugo binary: %v", err)
+	t.Logf("✓ stages.BinaryRenderer properly handles missing Hugo binary: %v", err)
 }
 
 // TestRenderMode_Never_SkipsRendering verifies that render_mode=never prevents Hugo execution.
@@ -119,7 +122,7 @@ func TestRenderMode_Never_SkipsRendering(t *testing.T) {
 	cfg.Hugo.BaseURL = testExampleURL
 	cfg.Build.RenderMode = "never" // Explicitly disable rendering
 
-	// Even with BinaryRenderer (no custom renderer), Hugo should not run
+	// Even with stages.BinaryRenderer (no custom renderer), Hugo should not run
 	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir)
 
 	doc := docs.DocFile{
@@ -158,8 +161,8 @@ func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 	cfg.Hugo.BaseURL = testExampleURL
 	cfg.Build.RenderMode = testRenderModeAlways
 
-	// Inject NoopRenderer - should take precedence even with render_mode=always
-	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir).WithRenderer(&NoopRenderer{})
+	// Inject stages.NoopRenderer - should take precedence even with render_mode=always
+	g := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: testSiteTitle, BaseURL: "/"}}, dir).WithRenderer(&stages.NoopRenderer{})
 
 	doc := docs.DocFile{
 		Repository:   "repo",
@@ -175,18 +178,18 @@ func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 		t.Fatalf("generation failed: %v", err)
 	}
 
-	// StaticRendered should be true because NoopRenderer ran (even though it does nothing)
+	// StaticRendered should be true because stages.NoopRenderer ran (even though it does nothing)
 	if !report.StaticRendered {
-		t.Error("expected report.StaticRendered=true with NoopRenderer")
+		t.Error("expected report.StaticRendered=true with stages.NoopRenderer")
 	}
 
-	// Hugo should not have created public/ directory (NoopRenderer doesn't run Hugo)
+	// Hugo should not have created public/ directory (stages.NoopRenderer doesn't run Hugo)
 	publicDir := filepath.Join(dir, "public")
 	if _, err := os.Stat(publicDir); err == nil {
-		t.Error("expected no public/ directory with NoopRenderer")
+		t.Error("expected no public/ directory with stages.NoopRenderer")
 	}
 
-	t.Log("✓ NoopRenderer takes precedence over BinaryRenderer with render_mode=always")
+	t.Log("✓ stages.NoopRenderer takes precedence over stages.BinaryRenderer with render_mode=always")
 }
 
 // TestRenderMode_Auto_WithoutEnvVars verifies auto mode doesn't run Hugo by default.
@@ -229,7 +232,7 @@ func TestRendererPrecedence(t *testing.T) {
 	tests := []struct {
 		name            string
 		renderMode      config.RenderMode
-		customRenderer  Renderer
+		customRenderer  models.Renderer
 		envRunHugo      string
 		expectRendered  bool
 		expectPublicDir bool
@@ -239,7 +242,7 @@ func TestRendererPrecedence(t *testing.T) {
 		{
 			name:            "Custom renderer with mode=never still runs",
 			renderMode:      config.RenderModeNever,
-			customRenderer:  &NoopRenderer{},
+			customRenderer:  &stages.NoopRenderer{},
 			expectRendered:  false, // render_mode=never prevents execution
 			expectPublicDir: false,
 			description:     "render_mode=never takes precedence over custom renderer",
@@ -247,7 +250,7 @@ func TestRendererPrecedence(t *testing.T) {
 		{
 			name:            "Custom renderer with mode=always runs",
 			renderMode:      config.RenderModeAlways,
-			customRenderer:  &NoopRenderer{},
+			customRenderer:  &stages.NoopRenderer{},
 			expectRendered:  true,
 			expectPublicDir: false,
 			description:     "Custom renderer executes when mode=always",
@@ -267,7 +270,7 @@ func TestRendererPrecedence(t *testing.T) {
 			expectRendered:  false, // May be false if Hugo fails (e.g., missing theme deps)
 			expectPublicDir: true,  // Hugo may still create public/ even if it fails
 			skipIfNoHugo:    true,
-			description:     "BinaryRenderer attempts to run Hugo when available",
+			description:     "stages.BinaryRenderer attempts to run Hugo when available",
 		},
 	}
 

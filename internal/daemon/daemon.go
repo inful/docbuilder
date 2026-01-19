@@ -25,6 +25,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
@@ -472,10 +473,10 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 
 // onBuildReportEmitted is called after a build report is emitted to the event store.
 // This is where we trigger post-build hooks like link verification and state updates.
-func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *models.BuildReport) error {
 	// Update state manager after successful builds
 	// This is critical for skip evaluation to work correctly on subsequent builds
-	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.stateManager != nil && d.config != nil {
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
 	}
 
@@ -490,7 +491,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 			return "N/A"
 		}(),
 		"verifier_nil", d.linkVerifier == nil)
-	if report != nil && report.Outcome == hugo.OutcomeSuccess && d.linkVerifier != nil {
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil {
 		go d.verifyLinksAfterBuild(ctx, buildID)
 	}
 
@@ -499,7 +500,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 
 // EmitBuildReport implements BuildEventEmitter for the daemon (legacy/compatibility).
 // This is now handled by EventEmitter calling onBuildReportEmitted.
-func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error {
 	// Delegate to event emitter which will call back to onBuildReportEmitted
 	if d.eventEmitter == nil {
 		return nil
@@ -509,7 +510,7 @@ func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *hu
 
 // updateStateAfterBuild updates the state manager with build metadata for skip evaluation.
 // This ensures subsequent builds can correctly detect when nothing has changed.
-func (d *Daemon) updateStateAfterBuild(report *hugo.BuildReport) {
+func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 	// Update config hash
 	if report.ConfigHash != "" {
 		d.stateManager.SetLastConfigHash(report.ConfigHash)

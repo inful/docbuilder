@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // Mock event emitter for testing.
@@ -37,7 +37,7 @@ func (m *mockEventEmitter) EmitBuildFailed(ctx context.Context, buildID, stage, 
 	return m.emitFailedErr
 }
 
-func (m *mockEventEmitter) EmitBuildReport(ctx context.Context, buildID string, report *hugo.BuildReport) error {
+func (m *mockEventEmitter) EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error {
 	m.buildReportCalls++
 	return m.emitReportErr
 }
@@ -45,10 +45,10 @@ func (m *mockEventEmitter) EmitBuildReport(ctx context.Context, buildID string, 
 // Mock builder for processJob testing.
 type mockProcessJobBuilder struct {
 	buildErr    error
-	buildReport *hugo.BuildReport
+	buildReport *models.BuildReport
 }
 
-func (m *mockProcessJobBuilder) Build(ctx context.Context, job *BuildJob) (*hugo.BuildReport, error) {
+func (m *mockProcessJobBuilder) Build(ctx context.Context, job *BuildJob) (*models.BuildReport, error) {
 	return m.buildReport, m.buildErr
 }
 
@@ -56,7 +56,7 @@ func (m *mockProcessJobBuilder) Build(ctx context.Context, job *BuildJob) (*hugo
 func TestProcessJob_SuccessWithReport(t *testing.T) {
 	emitter := &mockEventEmitter{}
 	builder := &mockProcessJobBuilder{
-		buildReport: &hugo.BuildReport{
+		buildReport: &models.BuildReport{
 			Files:        10,
 			Repositories: 2,
 		},
@@ -193,7 +193,7 @@ func TestProcessJob_FailureWithReport(t *testing.T) {
 	buildErr := errors.New("partial build failure")
 	builder := &mockProcessJobBuilder{
 		buildErr: buildErr,
-		buildReport: &hugo.BuildReport{
+		buildReport: &models.BuildReport{
 			Files:        5,
 			Repositories: 1,
 		},
@@ -234,7 +234,7 @@ func TestProcessJob_FailureWithReport(t *testing.T) {
 // TestProcessJob_NoEventEmitter tests behavior when event emitter is nil.
 func TestProcessJob_NoEventEmitter(t *testing.T) {
 	builder := &mockProcessJobBuilder{
-		buildReport: &hugo.BuildReport{
+		buildReport: &models.BuildReport{
 			Files: 10,
 		},
 	}
@@ -271,7 +271,7 @@ func TestProcessJob_EventEmitterErrors(t *testing.T) {
 		emitCompletedErr: errors.New("completed emit error"),
 	}
 	builder := &mockProcessJobBuilder{
-		buildReport: &hugo.BuildReport{Files: 10},
+		buildReport: &models.BuildReport{Files: 10},
 	}
 
 	bq := &BuildQueue{
