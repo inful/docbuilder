@@ -59,7 +59,7 @@ func (g *Generator) generateHugoConfig() error {
 
 	// Phase 5: Configure Relearn theme via Hugo Modules
 	root.Module = &models.ModuleConfig{
-		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn", Version: "v9.0.3"}},
+		Imports: []models.ModuleImport{{Path: "github.com/McShelby/hugo-theme-relearn", Version: "9.0.3"}},
 	}
 
 	// Enable math passthrough for Relearn
