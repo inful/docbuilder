@@ -1,10 +1,10 @@
 package config
 
 import (
-	"errors"
-	"fmt"
 	"path/filepath"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const defaultOutputDir = "./site"
@@ -53,7 +53,7 @@ func (cv *configurationValidator) validate() error {
 func (cv *configurationValidator) validateForges() error {
 	// If repositories are explicitly configured, forges are optional
 	if len(cv.config.Forges) == 0 && len(cv.config.Repositories) == 0 {
-		return errors.New("either forges or repositories must be configured")
+		return errors.NewError(errors.CategoryValidation, "either forges or repositories must be configured").Build()
 	}
 
 	// Skip forge validation if no forges configured (direct repository mode)
@@ -67,10 +67,12 @@ func (cv *configurationValidator) validateForges() error {
 	for _, forge := range cv.config.Forges {
 		// Validate forge name
 		if forge.Name == "" {
-			return errors.New("forge name cannot be empty")
+			return errors.NewError(errors.CategoryValidation, "forge name cannot be empty").Build()
 		}
 		if forgeNames[forge.Name] {
-			return fmt.Errorf("duplicate forge name: %s", forge.Name)
+			return errors.NewError(errors.CategoryValidation, "duplicate forge name").
+				WithContext("name", forge.Name).
+				Build()
 		}
 		forgeNames[forge.Name] = true
 
@@ -97,13 +99,17 @@ func (cv *configurationValidator) validateForges() error {
 func (cv *configurationValidator) validateForgeType(forge *ForgeConfig) error {
 	// Empty forge type is explicitly invalid
 	if forge.Type == "" {
-		return fmt.Errorf("unsupported forge type: %s", forge.Type)
+		return errors.NewError(errors.CategoryValidation, "unsupported forge type").
+			WithContext("type", string(forge.Type)).
+			Build()
 	}
 
 	// Attempt normalization - if it returns empty, the type was invalid
 	norm := NormalizeForgeType(string(forge.Type))
 	if norm == "" {
-		return fmt.Errorf("unsupported forge type: %s", forge.Type)
+		return errors.NewError(errors.CategoryValidation, "unsupported forge type").
+			WithContext("type", string(forge.Type)).
+			Build()
 	}
 
 	// Apply the normalized value (this maintains existing behavior)
@@ -115,14 +121,19 @@ func (cv *configurationValidator) validateForgeType(forge *ForgeConfig) error {
 // validateForgeAuth validates the forge authentication configuration.
 func (cv *configurationValidator) validateForgeAuth(forge *ForgeConfig) error {
 	if forge.Auth == nil {
-		return fmt.Errorf("forge %s must have authentication configured", forge.Name)
+		return errors.NewError(errors.CategoryValidation, "forge must have authentication configured").
+			WithContext("forge", forge.Name).
+			Build()
 	}
 
 	switch forge.Auth.Type {
 	case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
 		// Valid auth types - semantic checks done by individual clients
 	default:
-		return fmt.Errorf("forge %s: unsupported auth type: %s", forge.Name, forge.Auth.Type)
+		return errors.NewError(errors.CategoryValidation, "forge has unsupported auth type").
+			WithContext("forge", forge.Name).
+			WithContext("type", string(forge.Auth.Type)).
+			Build()
 	}
 
 	return nil
@@ -147,7 +158,9 @@ func (cv *configurationValidator) validateForgeScopes(forge *ForgeConfig) error 
 	}
 
 	if !allowAuto {
-		return fmt.Errorf("forge %s must have at least one organization or group configured (or set auto_discover=true)", forge.Name)
+		return errors.NewError(errors.CategoryValidation, "forge must have at least one organization or group configured (or set auto_discover=true)").
+			WithContext("forge", forge.Name).
+			Build()
 	}
 
 	return nil
@@ -172,13 +185,18 @@ func (cv *configurationValidator) validateRepoAuth(repo Repository) error {
 	case AuthTypeToken, AuthTypeSSH, AuthTypeBasic, AuthTypeNone, "":
 		// Valid auth type
 	default:
-		return fmt.Errorf("repository %s: unsupported auth type: %s", repo.Name, repo.Auth.Type)
+		return errors.NewError(errors.CategoryValidation, "unsupported auth type").
+			WithContext("repository", repo.Name).
+			WithContext("type", string(repo.Auth.Type)).
+			Build()
 	}
 
 	// Validate basic auth requirements
 	if repo.Auth.Type == AuthTypeBasic {
 		if repo.Auth.Username == "" || repo.Auth.Password == "" {
-			return fmt.Errorf("repository %s: basic auth requires username and password", repo.Name)
+			return errors.NewError(errors.CategoryValidation, "basic auth requires username and password").
+				WithContext("repository", repo.Name).
+				Build()
 		}
 	}
 
@@ -210,7 +228,10 @@ func (cv *configurationValidator) validateRetryBackoff() error {
 	case RetryBackoffFixed, RetryBackoffLinear, RetryBackoffExponential:
 		// Valid backoff strategies
 	default:
-		return fmt.Errorf("invalid retry_backoff: %s (allowed: fixed|linear|exponential)", cv.config.Build.RetryBackoff)
+		return errors.NewError(errors.CategoryValidation, "invalid retry_backoff").
+			WithContext("actual", string(cv.config.Build.RetryBackoff)).
+			WithContext("allowed", "fixed|linear|exponential").
+			Build()
 	}
 	return nil
 }
@@ -221,7 +242,10 @@ func (cv *configurationValidator) validateCloneStrategy() error {
 	case CloneStrategyFresh, CloneStrategyUpdate, CloneStrategyAuto:
 		// Valid clone strategies
 	default:
-		return fmt.Errorf("invalid clone_strategy: %s (allowed: fresh|update|auto)", cv.config.Build.CloneStrategy)
+		return errors.NewError(errors.CategoryValidation, "invalid clone_strategy").
+			WithContext("actual", string(cv.config.Build.CloneStrategy)).
+			WithContext("allowed", "fresh|update|auto").
+			Build()
 	}
 	return nil
 }
@@ -231,19 +255,25 @@ func (cv *configurationValidator) validateRetryDelays() error {
 	// Validate initial delay format
 	initDur, err := time.ParseDuration(cv.config.Build.RetryInitialDelay)
 	if err != nil {
-		return fmt.Errorf("invalid retry_initial_delay: %s: %w", cv.config.Build.RetryInitialDelay, err)
+		return errors.WrapError(err, errors.CategoryValidation, "invalid retry_initial_delay").
+			WithContext("value", cv.config.Build.RetryInitialDelay).
+			Build()
 	}
 
 	// Validate max delay format
 	maxDur, err := time.ParseDuration(cv.config.Build.RetryMaxDelay)
 	if err != nil {
-		return fmt.Errorf("invalid retry_max_delay: %s: %w", cv.config.Build.RetryMaxDelay, err)
+		return errors.WrapError(err, errors.CategoryValidation, "invalid retry_max_delay").
+			WithContext("value", cv.config.Build.RetryMaxDelay).
+			Build()
 	}
 
 	// Validate relationship between delays
 	if maxDur < initDur {
-		return fmt.Errorf("retry_max_delay (%s) must be >= retry_initial_delay (%s)",
-			cv.config.Build.RetryMaxDelay, cv.config.Build.RetryInitialDelay)
+		return errors.NewError(errors.CategoryValidation, "retry_max_delay must be >= retry_initial_delay").
+			WithContext("max_delay", cv.config.Build.RetryMaxDelay).
+			WithContext("initial_delay", cv.config.Build.RetryInitialDelay).
+			Build()
 	}
 
 	return nil
@@ -251,7 +281,9 @@ func (cv *configurationValidator) validateRetryDelays() error {
 
 func (cv *configurationValidator) validateMaxRetries() error {
 	if cv.config.Build.MaxRetries < 0 {
-		return fmt.Errorf("max_retries cannot be negative: %d", cv.config.Build.MaxRetries)
+		return errors.NewError(errors.CategoryValidation, "max_retries cannot be negative").
+			WithContext("value", cv.config.Build.MaxRetries).
+			Build()
 	}
 	return nil
 }
@@ -269,7 +301,10 @@ func (cv *configurationValidator) validatePaths() error {
 		if s != "" {
 			s = filepath.Clean(s)
 			if s != out {
-				return fmt.Errorf("daemon.storage.output_dir (%s) must match output.directory (%s)", cv.config.Daemon.Storage.OutputDir, cv.config.Output.Directory)
+				return errors.NewError(errors.CategoryValidation, "output directory mismatch").
+					WithContext("daemon_output_dir", cv.config.Daemon.Storage.OutputDir).
+					WithContext("output_directory", cv.config.Output.Directory).
+					Build()
 			}
 		}
 	}
@@ -290,13 +325,15 @@ func (cv *configurationValidator) validateVersioning() error {
 		case StrategyBranchesAndTags, StrategyBranchesOnly, StrategyTagsOnly:
 			// Valid versioning strategies
 		default:
-			return fmt.Errorf("invalid versioning strategy: %s", cv.config.Versioning.Strategy)
+			return errors.NewError(errors.CategoryValidation, "invalid versioning strategy").
+				WithContext("strategy", string(cv.config.Versioning.Strategy)).
+				Build()
 		}
 	}
 
 	// If versioning is explicitly enabled, require a strategy
 	if cv.config.Versioning.Enabled && cv.config.Versioning.Strategy == "" {
-		return errors.New("versioning.strategy is required when versioning.enabled is true")
+		return errors.NewError(errors.CategoryValidation, "versioning strategy is required when versioning is enabled").Build()
 	}
 
 	return nil

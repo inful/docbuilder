@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 )
 
@@ -128,15 +126,6 @@ func (o *OutputDefaultApplier) ApplyDefaults(cfg *Config) error {
 	// default workspace_dir to {base_directory}/workspace
 	if cfg.Output.BaseDirectory != "" && cfg.Build.WorkspaceDir == "" {
 		cfg.Build.WorkspaceDir = filepath.Join(cfg.Output.BaseDirectory, "workspace")
-	}
-
-	// Warn if user configured workspace_dir equal to output directory
-	if cfg.Build.WorkspaceDir != "" {
-		wd := filepath.Clean(cfg.Build.WorkspaceDir)
-		od := filepath.Clean(cfg.Output.Directory)
-		if wd == od {
-			fmt.Fprintf(os.Stderr, "Warning: build.workspace_dir (%s) matches output.directory (%s); this may mix git working trees with generated site artifacts. Consider using a separate directory.\n", wd, od)
-		}
 	}
 
 	return nil
