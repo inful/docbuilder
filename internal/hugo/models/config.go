@@ -49,6 +49,21 @@ func (rc *RootConfig) EnsureGoldmark() map[string]any {
 	return gm
 }
 
+func (rc *RootConfig) EnsureGoldmarkParserAttributeBlockEnabled() {
+	gm := rc.EnsureGoldmark()
+	parser, _ := gm["parser"].(map[string]any)
+	if parser == nil {
+		parser = map[string]any{}
+		gm["parser"] = parser
+	}
+	attribute, _ := parser["attribute"].(map[string]any)
+	if attribute == nil {
+		attribute = map[string]any{}
+		parser["attribute"] = attribute
+	}
+	attribute["block"] = true
+}
+
 func (rc *RootConfig) EnsureGoldmarkRendererUnsafe() {
 	gm := rc.EnsureGoldmark()
 	renderer, _ := gm["renderer"].(map[string]any)
