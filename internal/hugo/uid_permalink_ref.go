@@ -13,9 +13,9 @@ import (
 // line using the UID alias at the end of the content.
 //
 // The content parameter is the full Markdown file contents including frontmatter.
-// It returns the potentially updated content string and a boolean indicating whether
+// it returns the potentially updated content string and a boolean indicating whether
 // a permalink line was injected.
-func injectUIDPermalink(content string) (string, bool) {
+func injectUIDPermalink(content string, baseURL string) (string, bool) {
 	fm, ok := parseYAMLFrontMatter(content)
 	if !ok || fm == nil {
 		return content, false
@@ -32,17 +32,25 @@ func injectUIDPermalink(content string) (string, bool) {
 		return content, false
 	}
 
+	// Construct full URL using baseURL.
+	// baseURL might or might not have trailing slash.
+	// aliasWant always starts with leading slash.
+	fullURL := strings.TrimRight(baseURL, "/") + aliasWant
+
 	// NOTE: Hugo's ref/relref does not resolve aliases (they are redirect outputs, not pages),
 	// so linking via ref to /_uid/<uid>/ breaks real Hugo renders with REF_NOT_FOUND.
 	// Use a plain link to the stable alias instead.
-	permalinkLineBadge := fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}`+"`%s`"+`{{%% /badge %%}}`, aliasWant)
+	permalinkLineBadge := fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}`+"`%s`"+`{{%% /badge %%}}`, fullURL)
 
 	// Idempotence: don't add again if already present (either format).
 	// We check for legacy plain and ref formats as well.
 	permalinkLinePlain := fmt.Sprintf(`[Permalink](%s)`, aliasWant)
 	permalinkLineRef := fmt.Sprintf(`[Permalink]({{%% ref "%s" %%}})`, aliasWant)
+	// Also check for the badge without baseURL for robustness if it was added previously without it.
+	permalinkLineBadgeShort := fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}`+"`%s`"+`{{%% /badge %%}}`, aliasWant)
 
 	if strings.Contains(content, permalinkLineBadge) ||
+		strings.Contains(content, permalinkLineBadgeShort) ||
 		strings.Contains(content, permalinkLinePlain) ||
 		strings.Contains(content, permalinkLineRef) {
 		return content, false
