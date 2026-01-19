@@ -1,0 +1,18 @@
+version: "2.0"
+
+repositories:
+  - name: test-repo
+    url: PLACEHOLDER  # Will be replaced with temp repo path in test
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: UID Permalink Ref Test
+  description: Test uid/alias based permalink ref shortcode injection
+  base_url: http://localhost:1313/
+  theme: relearn
+
+output:
+  directory: PLACEHOLDER  # Will be replaced with temp output dir in test
+  clean: true

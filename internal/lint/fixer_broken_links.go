@@ -108,6 +108,14 @@ func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []Broke
 			continue
 		}
 
+		if isHugoShortcodeLinkTarget(linkInfo.target) {
+			continue
+		}
+
+		if isUIDAliasLinkTarget(linkInfo.target) {
+			continue
+		}
+
 		if isBrokenLink(sourceFile, linkInfo.target) {
 			broken = append(broken, BrokenLink{
 				SourceFile: sourceFile,
@@ -152,6 +160,13 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 		linkTarget = before
 	}
 	linkTarget = strings.TrimSpace(linkTarget)
+	if isHugoShortcodeLinkTarget(linkTarget) {
+		return broken
+	}
+
+	if isUIDAliasLinkTarget(linkTarget) {
+		return broken
+	}
 
 	// Skip external URLs
 	if strings.HasPrefix(linkTarget, "http://") || strings.HasPrefix(linkTarget, "https://") {
@@ -180,6 +195,16 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 	}
 
 	return broken
+}
+
+func isHugoShortcodeLinkTarget(linkTarget string) bool {
+	trim := strings.TrimSpace(linkTarget)
+	return strings.HasPrefix(trim, "{{%") || strings.HasPrefix(trim, "{{<")
+}
+
+func isUIDAliasLinkTarget(linkTarget string) bool {
+	trim := strings.TrimSpace(linkTarget)
+	return strings.HasPrefix(trim, "/_uid/")
 }
 
 // checkImageLinksBroken checks for broken image links in a line.
