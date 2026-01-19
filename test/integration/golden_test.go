@@ -37,6 +37,25 @@ func TestGolden_FrontmatterInjection(t *testing.T) {
 	)
 }
 
+// TestGolden_UIDPermalinkRef tests automatic permalink ref shortcode injection.
+// This test verifies:
+//   - If front matter contains `uid: <UID>` AND aliases includes `/_uid/<UID>/`,
+//     DocBuilder appends: [Permalink](/_uid/<UID>/) to the end of the page.
+//   - No change when uid is missing or alias does not match.
+//   - Idempotence (no duplicate lines).
+func TestGolden_UIDPermalinkRef(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	runGoldenTest(t,
+		"../../test/testdata/repos/transforms/uid-permalink-ref",
+		"../../test/testdata/configs/uid-permalink-ref.yaml",
+		"../../test/testdata/golden/uid-permalink-ref",
+		*updateGolden,
+	)
+}
+
 // TestGolden_TwoRepos tests basic multi-repository aggregation.
 // This test verifies:
 // - Multiple repositories cloned successfully

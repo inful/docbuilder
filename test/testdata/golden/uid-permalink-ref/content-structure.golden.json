@@ -1,0 +1,46 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "title": "UID Permalink Ref Test",
+        "type": "docs"
+      },
+      "contentHash": "sha256:cf10669f0e93a4fd"
+    },
+    "content/with-alias-no-uid.md": {
+      "frontmatter": {
+        "title": "With Alias No UID",
+        "type": "docs"
+      },
+      "contentHash": "sha256:89ee0579d625569e"
+    },
+    "content/with-uid-and-alias-already-has-line.md": {
+      "frontmatter": {
+        "title": "With UID and Alias Already Has Line",
+        "type": "docs"
+      },
+      "contentHash": "sha256:228330040aa9d212"
+    },
+    "content/with-uid-and-alias.md": {
+      "frontmatter": {
+        "title": "With UID and Alias",
+        "type": "docs"
+      },
+      "contentHash": "sha256:f482fd0db2eabd97"
+    },
+    "content/with-uid-wrong-alias.md": {
+      "frontmatter": {
+        "title": "With UID Wrong Alias",
+        "type": "docs"
+      },
+      "contentHash": "sha256:89ee0579d625569e"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "with-alias-no-uid.md": {},
+    "with-uid-and-alias-already-has-line.md": {},
+    "with-uid-and-alias.md": {},
+    "with-uid-wrong-alias.md": {}
+  }
+}

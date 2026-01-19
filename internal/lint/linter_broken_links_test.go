@@ -26,6 +26,9 @@ func TestLinter_LintPath_DetectsBrokenLinks(t *testing.T) {
 [OK](./guide.md)
 [Broken](./missing.md)
 ![Broken Image](./images/missing.png)
+
+[Permalink]({{% ref "/_uid/00000000-0000-4000-8000-000000001002/" %}})
+[Permalink](/_uid/00000000-0000-4000-8000-000000001002/)
 `), 0o600))
 
 	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "guide.md"), []byte("# Guide\n"), 0o600))

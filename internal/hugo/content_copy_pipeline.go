@@ -205,6 +205,10 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		contentBytes := doc.Raw
 		if strings.HasSuffix(strings.ToLower(doc.Path), ".md") {
 			original := string(contentBytes)
+			if withPermalink, changed := injectUIDPermalinkRefShortcode(original); changed {
+				original = withPermalink
+			}
+
 			updated, err := mdfp.ProcessContent(original)
 			if err != nil {
 				return fmt.Errorf("%w: failed to generate frontmatter fingerprint for %s: %w",
