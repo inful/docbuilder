@@ -8,7 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-// addRepositoryMetadata adds repository metadata to front matter.
+// addRepositoryMetadata adds repository, section, and custom metadata to front matter.
 func addRepositoryMetadata(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
 		// Add repository name
@@ -21,9 +21,21 @@ func addRepositoryMetadata(cfg *config.Config) FileTransform {
 			doc.FrontMatter["forge"] = doc.Forge
 		}
 
+		// Add section if present
+		if doc.Section != "" {
+			doc.FrontMatter["section"] = doc.Section
+		}
+
 		// Add source commit if present
 		if doc.SourceCommit != "" {
 			doc.FrontMatter["source_commit"] = doc.SourceCommit
+		}
+
+		// Metadata passthrough from discovery phase (if not already set in frontmatter)
+		for k, v := range doc.CustomMetadata {
+			if _, exists := doc.FrontMatter[k]; !exists {
+				doc.FrontMatter[k] = v
+			}
 		}
 
 		return nil, nil

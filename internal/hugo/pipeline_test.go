@@ -76,7 +76,7 @@ func TestMalformedFrontMatter(t *testing.T) {
 	}
 }
 
-// TestDateConsistency ensures BuildFrontMatter uses Now injection indirectly through builder.
+// TestDateConsistency ensures the pipeline injects the current date into front matter.
 func TestDateConsistency(t *testing.T) {
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, t.TempDir())
 	file := docs.DocFile{Repository: "repo", Name: "when", RelativePath: "when.md", Content: []byte("Body")}

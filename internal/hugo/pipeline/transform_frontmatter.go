@@ -115,11 +115,16 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 
 	// Always set title if not present
 	if _, hasTitle := doc.FrontMatter["title"]; !hasTitle {
-		// Use the filename (without extension) as title
-		if doc.Name != "" {
-			doc.FrontMatter["title"] = doc.Name
-		} else {
-			// Fallback to "Untitled" if name is empty
+		switch {
+		case doc.IsIndex:
+			// For indices, we might extract title from H1 later (extractIndexTitle).
+			// If name is present and not just "index", it's a good fallback.
+			if doc.Name != "" && doc.Name != "index" && doc.Name != "_index" {
+				doc.FrontMatter["title"] = formatTitle(doc.Name)
+			}
+		case doc.Name != "":
+			doc.FrontMatter["title"] = formatTitle(doc.Name)
+		default:
 			doc.FrontMatter["title"] = untitledDocTitle
 		}
 	}
@@ -127,9 +132,9 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 	// Ensure title is never empty (safety check)
 	if title, ok := doc.FrontMatter["title"].(string); ok && strings.TrimSpace(title) == "" {
 		if doc.Name != "" {
-			doc.FrontMatter["title"] = doc.Name
+			doc.FrontMatter["title"] = formatTitle(doc.Name)
 		} else {
-			doc.FrontMatter["title"] = "Untitled"
+			doc.FrontMatter["title"] = untitledDocTitle
 		}
 	}
 
@@ -150,17 +155,20 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		doc.FrontMatter["date"] = dateStr
 	}
 
-	// Add edit link for non-index files
-	if doc.SourceURL != "" && doc.SourceBranch != "" && doc.RelativePath != "" {
-		if _, hasEditURL := doc.FrontMatter["editURL"]; !hasEditURL {
-			editURL := generateEditURL(doc)
-			if editURL != "" {
-				doc.FrontMatter["editURL"] = editURL
-			}
-		}
-	}
-
 	return nil, nil
+}
+
+// formatTitle converts kebab-case or snake_case to Title Case.
+func formatTitle(name string) string {
+	base := strings.ReplaceAll(name, "_", "-")
+	parts := strings.Split(base, "-")
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		parts[i] = strings.ToUpper(part[:1]) + strings.ToLower(part[1:])
+	}
+	return strings.Join(parts, " ")
 }
 
 // serializeDocument converts the Document back to markdown with front matter.

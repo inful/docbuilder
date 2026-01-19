@@ -53,6 +53,11 @@ func TestAddRepositoryMetadata_Idempotent(t *testing.T) {
 				Repository:   "new-repo",
 				Forge:        "gitlab",
 				SourceCommit: "xyz789",
+				Section:      "user-guide",
+				CustomMetadata: map[string]any{
+					"tags":         []string{"doc", "guide"},
+					"custom_field": "new_value", // Should not override existing
+				},
 			},
 		},
 	}
@@ -67,6 +72,15 @@ func TestAddRepositoryMetadata_Idempotent(t *testing.T) {
 			newDocs1, err1 := transform(doc1)
 			require.NoError(t, err1)
 			assert.Nil(t, newDocs1, "should not generate new documents")
+
+			if tt.name == "existing frontmatter" {
+				assert.Equal(t, "new-repo", doc1.FrontMatter["repository"])
+				assert.Equal(t, "gitlab", doc1.FrontMatter["forge"])
+				assert.Equal(t, "xyz789", doc1.FrontMatter["source_commit"])
+				assert.Equal(t, "user-guide", doc1.FrontMatter["section"])
+				assert.Equal(t, []string{"doc", "guide"}, doc1.FrontMatter["tags"])
+				assert.Equal(t, "custom_value", doc1.FrontMatter["custom_field"])
+			}
 
 			// Capture state after first application
 			state1 := captureDocumentState(doc1)
@@ -727,11 +741,13 @@ func cloneDocument(doc *Document) *Document {
 		RelativePath:        doc.RelativePath,
 		DocsBase:            doc.DocsBase,
 		FilePath:            doc.FilePath,
+		CustomMetadata:      make(map[string]any),
 	}
 
 	// Deep copy maps
 	maps.Copy(clone.FrontMatter, doc.FrontMatter)
 	maps.Copy(clone.OriginalFrontMatter, doc.OriginalFrontMatter)
+	maps.Copy(clone.CustomMetadata, doc.CustomMetadata)
 
 	return clone
 }

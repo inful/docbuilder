@@ -27,20 +27,21 @@ type Document struct {
 	HadFrontMatter bool
 
 	// Metadata for transforms to use (read-only during transform phase)
-	Path            string    // Hugo content path (e.g., "repo-name/section/file.md")
-	IsIndex         bool      // True if this is _index.md or README.md
-	Repository      string    // Source repository name
-	Forge           string    // Optional forge namespace
-	Section         string    // Documentation section
-	IsSingleRepo    bool      // True if this is a single-repository build (skip repo namespace in links)
-	IsPreviewMode   bool      // True if running in preview/daemon mode
-	VSCodeEditLinks bool      // True if VS Code edit links are enabled (via --vscode flag)
-	EditURLBase     string    // Base URL override for edit links (from --edit-url-base flag)
-	SourceCommit    string    // Git commit SHA
-	CommitDate      time.Time // Git commit date
-	SourceURL       string    // Repository URL for edit links
-	SourceBranch    string    // Git branch name
-	Generated       bool      // True if this was generated (not discovered)
+	Path            string         // Hugo content path (e.g., "repo-name/section/file.md")
+	IsIndex         bool           // True if this is _index.md or README.md
+	Repository      string         // Source repository name
+	Forge           string         // Optional forge namespace
+	Section         string         // Documentation section
+	IsSingleRepo    bool           // True if this is a single-repository build (skip repo namespace in links)
+	IsPreviewMode   bool           // True if running in preview/daemon mode
+	VSCodeEditLinks bool           // True if VS Code edit links are enabled (via --vscode flag)
+	EditURLBase     string         // Base URL override for edit links (from --edit-url-base flag)
+	SourceCommit    string         // Git commit SHA
+	CommitDate      time.Time      // Git commit date
+	SourceURL       string         // Repository URL for edit links
+	SourceBranch    string         // Git branch name
+	Generated       bool           // True if this was generated (not discovered)
+	CustomMetadata  map[string]any // Generic metadata from discovery phase (e.g., tags)
 
 	// Internal fields (used by pipeline, not by transforms)
 	FilePath     string // Absolute path to source file (for discovered docs)
@@ -58,6 +59,11 @@ type Document struct {
 func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode bool, vscodeEditLinks bool, editURLBase string) *Document {
 	// Determine if this is an index file
 	isIndex := isIndexFileName(file.Name)
+
+	customMetadata := make(map[string]any)
+	for k, v := range file.Metadata {
+		customMetadata[k] = v
+	}
 
 	return &Document{
 		Content:             string(file.Content),
@@ -77,6 +83,7 @@ func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode 
 		SourceURL:           "", // Will be set by repository metadata injector
 		SourceBranch:        "", // Will be set by repository metadata injector
 		Generated:           false,
+		CustomMetadata:      customMetadata,
 		FilePath:            file.Path,
 		RelativePath:        file.RelativePath,
 		Extension:           file.Extension,

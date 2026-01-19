@@ -9,7 +9,7 @@
     },
     "content/invalid-yaml.md": {
       "frontmatter": {
-        "title": "Malformed Front Matter",
+        "title": "Invalid Yaml",
         "type": "docs"
       },
       "contentHash": "sha256:e463eb05ad072560"
