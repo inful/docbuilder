@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
@@ -31,28 +32,105 @@ type Renderer interface {
 // BinaryRenderer invokes the `hugo` binary present on PATH.
 type BinaryRenderer struct{}
 
+func getEnvValue(env []string, key string) (string, bool) {
+	prefix := key + "="
+	for _, kv := range env {
+		if v, ok := strings.CutPrefix(kv, prefix); ok {
+			return v, true
+		}
+	}
+
+	return "", false
+}
+
+func setEnvValue(env []string, key, value string) []string {
+	prefix := key + "="
+	newEnv := make([]string, 0, len(env)+1)
+	replaced := false
+	for _, kv := range env {
+		if strings.HasPrefix(kv, prefix) {
+			newEnv = append(newEnv, prefix+value)
+			replaced = true
+			continue
+		}
+		newEnv = append(newEnv, kv)
+	}
+	if !replaced {
+		newEnv = append(newEnv, prefix+value)
+	}
+
+	return newEnv
+}
+
+func pathContainsDir(pathValue, dir string) bool {
+	for part := range strings.SplitSeq(pathValue, string(os.PathListSeparator)) {
+		if part == dir {
+			return true
+		}
+	}
+	return false
+}
+
+func ensurePATHContainsDir(env []string, dir string) []string {
+	pathValue, ok := getEnvValue(env, "PATH")
+	if !ok || pathValue == "" {
+		return setEnvValue(env, "PATH", dir)
+	}
+	if pathContainsDir(pathValue, dir) {
+		return env
+	}
+
+	return setEnvValue(env, "PATH", dir+string(os.PathListSeparator)+pathValue)
+}
+
 func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
 	}
+	// Relearn is pulled via Hugo Modules, which shells out to `go mod ...`.
+	// If Go isn't available, fail fast with a clear message instead of Hugo's
+	// often-opaque module download error.
+	goPath, err := exec.LookPath("go")
+	if err != nil {
+		return fmt.Errorf("%w: %w", herrors.ErrGoBinaryNotFound, err)
+	}
+	goDir := filepath.Dir(goPath)
 
 	// Check staging directory exists before Hugo runs
-	if stat, err := os.Stat(rootDir); err != nil {
-		slog.Error("Staging directory missing before Hugo execution", "dir", rootDir, "error", err)
-		return fmt.Errorf("staging directory not found: %w", err)
-	} else {
-		slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
+	stat, statErr := os.Stat(rootDir)
+	if statErr != nil {
+		slog.Error("Staging directory missing before Hugo execution", "dir", rootDir, "error", statErr)
+		return fmt.Errorf("staging directory not found: %w", statErr)
 	}
+	slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 
 	// Increase log verbosity for better diagnostics
 	cmd := exec.CommandContext(ctx, "hugo", "--logLevel", "debug")
 	cmd.Dir = rootDir
+	// Be explicit about environment inheritance. Also, ensure PATH contains the
+	// resolved go binary directory so Hugo Modules can reliably execute `go`.
+	env := ensurePATHContainsDir(os.Environ(), goDir)
+	cmd.Env = env
+
+	// Lightweight debug preflight: this should be safe (no secrets) and helps
+	// diagnose environment discrepancies when Hugo Modules fails.
+	if slog.Default().Enabled(ctx, slog.LevelDebug) {
+		pre := exec.CommandContext(ctx, "go", "version")
+		pre.Dir = rootDir
+		pre.Env = env
+		if out, preErr := pre.CombinedOutput(); preErr == nil {
+			slog.Debug("go preflight ok", "go", goPath, "version", strings.TrimSpace(string(out)))
+		} else {
+			slog.Warn("go preflight failed", "go", goPath, "error", preErr.Error(), "output", strings.TrimSpace(string(out)))
+		}
+	}
+
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	slog.Debug("BinaryRenderer invoking hugo", "dir", rootDir)
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	// Always log Hugo output when non-empty to diagnose issues
 	outStr := stdout.String()

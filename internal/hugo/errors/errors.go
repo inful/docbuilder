@@ -9,6 +9,9 @@ import "errors"
 var (
 	// ErrHugoBinaryNotFound indicates the hugo executable was not detected on PATH.
 	ErrHugoBinaryNotFound = errors.New("hugo binary not found")
+	// ErrGoBinaryNotFound indicates the go executable was not detected on PATH.
+	// Hugo Modules requires the go toolchain to download/resolve module dependencies.
+	ErrGoBinaryNotFound = errors.New("go binary not found")
 	// ErrHugoExecutionFailed indicates the hugo command returned a non‑zero exit status.
 	ErrHugoExecutionFailed = errors.New("hugo execution failed")
 	// ErrConfigMarshalFailed indicates marshaling the generated Hugo configuration failed.
