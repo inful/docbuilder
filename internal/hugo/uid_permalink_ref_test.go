@@ -8,7 +8,7 @@ func TestInjectUIDPermalink_AppendsWhenUIDAndAliasMatch(t *testing.T) {
 	if !changed {
 		t.Fatalf("expected changed=true")
 	}
-	want := "{{% badge style=\"note\" title=\"permalink\" %}}/_uid/abc123/{{% /badge %}}"
+	want := "{{% badge style=\"note\" title=\"permalink\" %}}`/_uid/abc123/`{{% /badge %}}"
 	if out[len(out)-len(want)-1:len(out)-1] != want {
 		t.Fatalf("expected permalink line at end, got: %q", out)
 	}
@@ -37,7 +37,7 @@ func TestInjectUIDPermalink_NoChangeWhenAliasDoesNotMatchUID(t *testing.T) {
 }
 
 func TestInjectUIDPermalink_Idempotent(t *testing.T) {
-	in := "---\nuid: abc123\naliases: [\"/_uid/abc123/\"]\n---\n\nBody\n\n{{% badge style=\"note\" title=\"permalink\" %}}/_uid/abc123/{{% /badge %}}\n"
+	in := "---\nuid: abc123\naliases: [\"/_uid/abc123/\"]\n---\n\nBody\n\n{{% badge style=\"note\" title=\"permalink\" %}}`/_uid/abc123/`{{% /badge %}}\n"
 	out, changed := injectUIDPermalink(in)
 	if changed {
 		t.Fatalf("expected changed=false")

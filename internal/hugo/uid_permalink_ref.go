@@ -35,7 +35,7 @@ func injectUIDPermalink(content string) (string, bool) {
 	// NOTE: Hugo's ref/relref does not resolve aliases (they are redirect outputs, not pages),
 	// so linking via ref to /_uid/<uid>/ breaks real Hugo renders with REF_NOT_FOUND.
 	// Use a plain link to the stable alias instead.
-	permalinkLineBadge := fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}%s{{%% /badge %%}}`, aliasWant)
+	permalinkLineBadge := fmt.Sprintf(`{{%% badge style="note" title="permalink" %%}}`+"`%s`"+`{{%% /badge %%}}`, aliasWant)
 
 	// Idempotence: don't add again if already present (either format).
 	// We check for legacy plain and ref formats as well.
