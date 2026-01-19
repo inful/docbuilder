@@ -2,9 +2,9 @@ package hugo
 
 import "testing"
 
-func TestInjectUIDPermalinkRefShortcode_AppendsWhenUIDAndAliasMatch(t *testing.T) {
+func TestInjectUIDPermalink_AppendsWhenUIDAndAliasMatch(t *testing.T) {
 	in := "---\nuid: abc123\naliases:\n  - /_uid/abc123/\n---\n\n# Title\n\nBody\n"
-	out, changed := injectUIDPermalinkRefShortcode(in)
+	out, changed := injectUIDPermalink(in)
 	if !changed {
 		t.Fatalf("expected changed=true")
 	}
@@ -14,9 +14,9 @@ func TestInjectUIDPermalinkRefShortcode_AppendsWhenUIDAndAliasMatch(t *testing.T
 	}
 }
 
-func TestInjectUIDPermalinkRefShortcode_NoChangeWhenAliasMissing(t *testing.T) {
+func TestInjectUIDPermalink_NoChangeWhenAliasMissing(t *testing.T) {
 	in := "---\nuid: abc123\n---\n\n# Title\n"
-	out, changed := injectUIDPermalinkRefShortcode(in)
+	out, changed := injectUIDPermalink(in)
 	if changed {
 		t.Fatalf("expected changed=false")
 	}
@@ -25,9 +25,9 @@ func TestInjectUIDPermalinkRefShortcode_NoChangeWhenAliasMissing(t *testing.T) {
 	}
 }
 
-func TestInjectUIDPermalinkRefShortcode_NoChangeWhenAliasDoesNotMatchUID(t *testing.T) {
+func TestInjectUIDPermalink_NoChangeWhenAliasDoesNotMatchUID(t *testing.T) {
 	in := "---\nuid: abc123\naliases:\n  - /_uid/zzz/\n---\n\n# Title\n"
-	out, changed := injectUIDPermalinkRefShortcode(in)
+	out, changed := injectUIDPermalink(in)
 	if changed {
 		t.Fatalf("expected changed=false")
 	}
@@ -36,9 +36,9 @@ func TestInjectUIDPermalinkRefShortcode_NoChangeWhenAliasDoesNotMatchUID(t *test
 	}
 }
 
-func TestInjectUIDPermalinkRefShortcode_Idempotent(t *testing.T) {
+func TestInjectUIDPermalink_Idempotent(t *testing.T) {
 	in := "---\nuid: abc123\naliases: [\"/_uid/abc123/\"]\n---\n\nBody\n\n[Permalink](/_uid/abc123/)\n"
-	out, changed := injectUIDPermalinkRefShortcode(in)
+	out, changed := injectUIDPermalink(in)
 	if changed {
 		t.Fatalf("expected changed=false")
 	}
@@ -47,9 +47,9 @@ func TestInjectUIDPermalinkRefShortcode_Idempotent(t *testing.T) {
 	}
 }
 
-func TestInjectUIDPermalinkRefShortcode_NoOpWhenOldRefFormatAlreadyPresent(t *testing.T) {
+func TestInjectUIDPermalink_NoOpWhenOldRefFormatAlreadyPresent(t *testing.T) {
 	in := "---\nuid: abc123\naliases: [\"/_uid/abc123/\"]\n---\n\nBody\n\n[Permalink]({{% ref \"/_uid/abc123/\" %}})\n"
-	out, changed := injectUIDPermalinkRefShortcode(in)
+	out, changed := injectUIDPermalink(in)
 	if changed {
 		t.Fatalf("expected changed=false")
 	}

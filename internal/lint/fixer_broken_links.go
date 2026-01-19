@@ -197,11 +197,14 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 	return broken
 }
 
+// isHugoShortcodeLinkTarget reports whether the link target is a Hugo shortcode
+// reference (starting with `{{%` or `{{<`).
 func isHugoShortcodeLinkTarget(linkTarget string) bool {
 	trim := strings.TrimSpace(linkTarget)
 	return strings.HasPrefix(trim, "{{%") || strings.HasPrefix(trim, "{{<")
 }
 
+// isUIDAliasLinkTarget reports whether linkTarget is a UID alias path (starting with "/_uid/").
 func isUIDAliasLinkTarget(linkTarget string) bool {
 	trim := strings.TrimSpace(linkTarget)
 	return strings.HasPrefix(trim, "/_uid/")

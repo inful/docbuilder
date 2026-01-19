@@ -7,7 +7,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func injectUIDPermalinkRefShortcode(content string) (string, bool) {
+// injectUIDPermalink inspects the Markdown content's YAML frontmatter for a
+// non-empty "uid" field and a matching "/_uid/<uid>/" value in "aliases". When both are
+// present and no existing permalink line is found, it appends a plain Markdown permalink
+// line using the UID alias at the end of the content.
+//
+// The content parameter is the full Markdown file contents including frontmatter.
+// It returns the potentially updated content string and a boolean indicating whether
+// a permalink line was injected.
+func injectUIDPermalink(content string) (string, bool) {
 	fm, ok := parseYAMLFrontMatter(content)
 	if !ok || fm == nil {
 		return content, false
@@ -40,6 +48,8 @@ func injectUIDPermalinkRefShortcode(content string) (string, bool) {
 	return updated, true
 }
 
+// frontMatterHasAlias reports whether the front matter "aliases" field contains
+// the given alias value, handling both string and slice (array) formats.
 func frontMatterHasAlias(fm map[string]any, want string) bool {
 	v, exists := fm["aliases"]
 	if !exists || v == nil {
@@ -73,6 +83,10 @@ func frontMatterHasAlias(fm map[string]any, want string) bool {
 	}
 }
 
+// parseYAMLFrontMatter extracts and parses the leading YAML frontmatter block
+// from markdown content, handling both LF and CRLF line endings for the
+// `---` delimiters. It returns the parsed frontmatter and a boolean
+// indicating whether a valid frontmatter block was found and parsed.
 func parseYAMLFrontMatter(content string) (map[string]any, bool) {
 	// Support both LF and CRLF. Hugo frontmatter for markdown uses --- delimiters.
 	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
