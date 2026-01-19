@@ -20,6 +20,9 @@ markup:
                         - - \(
                           - \)
                 enable: true
+        parser:
+            attribute:
+                block: true
         renderer:
             unsafe: true
     highlight:

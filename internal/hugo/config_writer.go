@@ -34,6 +34,7 @@ func (g *Generator) generateHugoConfig() error {
 
 	// Apply default markup settings
 	root.EnsureGoldmarkRendererUnsafe()
+	root.EnsureGoldmarkParserAttributeBlockEnabled()
 	root.EnsureHighlightDefaults()
 
 	// Phase 2: Apply Relearn theme defaults
