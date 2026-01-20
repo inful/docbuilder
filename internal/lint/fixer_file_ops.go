@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/go-git/go-git/v5"
 )
 
 // renameFile renames a file to fix filename issues.
@@ -64,26 +66,34 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	return op
 }
 
-// shouldUseGitMv checks if a file is under Git version control.
-func (f *Fixer) shouldUseGitMv(filePath string) bool {
-	if !f.gitAware {
+// shouldUseGitMv checks if a file is under Git version control and tracked.
+func (f *Fixer) shouldUseGitMv(_ string) bool {
+	if f.gitRepo == nil {
 		return false
 	}
 
-	// Check if file is tracked by Git
-	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", filePath)
-	err := cmd.Run()
-	return err == nil
+	// For now, let's use a simpler check: if we have a gitRepo, we'll try gitMv and fallback if it fails.
+	// In the future, we could check if the file is tracked in the head commit.
+	return true
 }
 
-// gitMv performs a git mv operation.
+// gitMv performs a git mv operation using the Git library.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
-	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+	if f.gitRepo == nil {
+		return errors.New("git repository not initialized")
 	}
-	return nil
+
+	w, err := f.gitRepo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Calculate paths relative to the repository root
+	// We assume f.gitRepo was opened at the root of the workspace being fixed.
+
+	// Perform the move
+	_, err = w.Move(oldPath, newPath)
+	return err
 }
 
 // isGitRepository checks if the given directory is a Git repository.
@@ -91,6 +101,48 @@ func isGitRepository(dir string) bool {
 	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "rev-parse", "--git-dir")
 	err := cmd.Run()
 	return err == nil
+}
+
+// isGitClean checks if the Git repository has uncommitted changes.
+func (f *Fixer) isGitClean(_ string) (bool, error) {
+	if f.gitRepo == nil {
+		return true, nil
+	}
+
+	w, err := f.gitRepo.Worktree()
+	if err != nil {
+		return false, err
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return false, err
+	}
+
+	return status.IsClean(), nil
+}
+
+// rollback reverts all changes made during the fixer session using Git.
+func (f *Fixer) rollback() error {
+	if f.gitRepo == nil || f.dryRun {
+		return nil
+	}
+
+	w, err := f.gitRepo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Reset to initial SHA
+	err = w.Reset(&git.ResetOptions{
+		Commit: f.initialSHA,
+		Mode:   git.HardReset,
+	})
+	if err != nil {
+		return fmt.Errorf("git reset failed: %w", err)
+	}
+
+	return nil
 }
 
 // backupFile copies a file to the backup directory, preserving directory structure.

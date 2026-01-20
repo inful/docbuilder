@@ -24,6 +24,15 @@ type FingerprintUpdate struct {
 	Error    error
 }
 
+// AddLinkUpdate adds a link update to the result.
+func (f *FixResult) AddLinkUpdate(sourceFile, oldTarget, newTarget string) {
+	f.LinksUpdated = append(f.LinksUpdated, LinkUpdate{
+		SourceFile: sourceFile,
+		OldTarget:  oldTarget,
+		NewTarget:  newTarget,
+	})
+}
+
 // RenameOperation represents a file rename operation.
 type RenameOperation struct {
 	OldPath string

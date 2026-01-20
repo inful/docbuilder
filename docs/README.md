@@ -70,6 +70,11 @@ Architecture and design rationale:
 - [ADR-005: Documentation Linting](adr/adr-005-documentation-linting.md)
 - [ADR-006: Drop Local Namespace](adr/adr-006-drop-local-namespace.md)
 - [ADR-007: Merge Generate Into Build](adr/adr-007-merge-generate-into-build-command.md)
+- [ADR-008: Staged Pipeline Architecture](adr/adr-008-staged-pipeline-architecture.md)
+- [ADR-009: External Ingester Stage](adr/adr-009-external-ingester-stage.md)
+- [ADR-010: Stable Document Identity via UID Aliases](adr/adr-010-stable-uid-aliases.md)
+- [ADR-011: Set lastmod When Fingerprint Changes](adr/adr-011-lastmod-on-fingerprint-change.md)
+- [ADR-012: Link-Safe File Normalization](adr/adr-012-link-safe-file-normalization.md)
 
 ## Quick Start
 
