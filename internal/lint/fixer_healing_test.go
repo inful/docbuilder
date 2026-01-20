@@ -243,3 +243,137 @@ func TestFixer_UpdateLinkInFile(t *testing.T) {
 		assert.Equal(t, "[Inline](new.md)\n\n[id]: new.md", string(content))
 	})
 }
+
+func TestFixer_FindSameContentFile(t *testing.T) {
+	tempDir := t.TempDir()
+	repo, err := git.PlainInit(tempDir, false)
+	require.NoError(t, err)
+
+	w, err := repo.Worktree()
+	require.NoError(t, err)
+
+	signature := &object.Signature{Name: "Test", Email: "test@example.com"}
+
+	// 1. Initial commit with two files
+	f1Path := "file1.md"
+	f2Path := "file2.md"
+	content1 := []byte("Initial content")
+	content2 := []byte("Different content")
+
+	err = os.WriteFile(filepath.Join(tempDir, f1Path), content1, 0o600)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tempDir, f2Path), content2, 0o600)
+	require.NoError(t, err)
+
+	_, err = w.Add(f1Path)
+	require.NoError(t, err)
+	_, err = w.Add(f2Path)
+	require.NoError(t, err)
+
+	initialCommitHash, err := w.Commit("Initial commit", &git.CommitOptions{Author: signature})
+	require.NoError(t, err)
+
+	fixer := &Fixer{}
+
+	t.Run("finds same content file after rename", func(t *testing.T) {
+		// Second commit: Rename file1.md to renamed.md
+		newName := "renamed.md"
+		err = os.Rename(filepath.Join(tempDir, f1Path), filepath.Join(tempDir, newName))
+		require.NoError(t, err)
+
+		_, err = w.Add(f1Path)  // Delete old
+		require.NoError(t, err)
+		_, err = w.Add(newName) // Add new
+		require.NoError(t, err)
+
+		secondCommitHash, err := w.Commit("Rename file", &git.CommitOptions{Author: signature})
+		require.NoError(t, err)
+
+		secondCommit, err := repo.CommitObject(secondCommitHash)
+		require.NoError(t, err)
+
+		found := fixer.findSameContentFile(secondCommit, f1Path, tempDir)
+		assert.Equal(t, filepath.Join(tempDir, newName), found)
+	})
+
+	t.Run("returns empty if content is different", func(t *testing.T) {
+		// Rename file2.md BUT change content too
+		err = os.Rename(filepath.Join(tempDir, f2Path), filepath.Join(tempDir, "renamed2.md"))
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tempDir, "renamed2.md"), []byte("Now it's different"), 0o600)
+		require.NoError(t, err)
+
+		_, err = w.Add(f2Path)
+		require.NoError(t, err)
+		_, err = w.Add("renamed2.md")
+		require.NoError(t, err)
+
+		thirdCommitHash, err := w.Commit("Change content during rename", &git.CommitOptions{Author: signature})
+		require.NoError(t, err)
+
+		thirdCommit, err := repo.CommitObject(thirdCommitHash)
+		require.NoError(t, err)
+
+		// Search for content of file2.md as it was in initialCommit (via its parent)
+		found := fixer.findSameContentFile(thirdCommit, f2Path, tempDir)
+		assert.Empty(t, found)
+	})
+
+	t.Run("returns empty if no parent commit", func(t *testing.T) {
+		initialCommit, err := repo.CommitObject(initialCommitHash)
+		require.NoError(t, err)
+
+		found := fixer.findSameContentFile(initialCommit, f1Path, tempDir)
+		assert.Empty(t, found)
+	})
+
+	t.Run("returns empty if file not in parent", func(t *testing.T) {
+		// Create a new commit where we add a file that wasn't there before
+		err = os.WriteFile(filepath.Join(tempDir, "newfile.md"), []byte("New file content"), 0o600)
+		require.NoError(t, err)
+		_, err = w.Add("newfile.md")
+		require.NoError(t, err)
+
+		newCommitHash, err := w.Commit("Add new file", &git.CommitOptions{Author: signature})
+		require.NoError(t, err)
+
+		newCommit, err := repo.CommitObject(newCommitHash)
+		require.NoError(t, err)
+
+		// Search for a path that didn't exist in parent
+		found := fixer.findSameContentFile(newCommit, "something_else.md", tempDir)
+		assert.Empty(t, found)
+	})
+
+	t.Run("finds one among multiple copies", func(t *testing.T) {
+		// Commit two files with exact same content
+		sameContent := []byte("Identical content")
+		err = os.WriteFile(filepath.Join(tempDir, "copy1.md"), sameContent, 0o600)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tempDir, "copy2.md"), sameContent, 0o600)
+		require.NoError(t, err)
+
+		_, err = w.Add("copy1.md")
+		require.NoError(t, err)
+		_, err = w.Add("copy2.md")
+		require.NoError(t, err)
+
+		_, err = w.Commit("Base for copies", &git.CommitOptions{Author: signature})
+		require.NoError(t, err)
+
+		// Remove copy1.md in next commit
+		err = os.Remove(filepath.Join(tempDir, "copy1.md"))
+		require.NoError(t, err)
+		_, err = w.Add("copy1.md")
+		require.NoError(t, err)
+
+		nextHash, err := w.Commit("Remove copy1", &git.CommitOptions{Author: signature})
+		require.NoError(t, err)
+
+		nextCommit, err := repo.CommitObject(nextHash)
+		require.NoError(t, err)
+
+		found := fixer.findSameContentFile(nextCommit, "copy1.md", tempDir)
+		assert.Equal(t, filepath.Join(tempDir, "copy2.md"), found)
+	})
+}
