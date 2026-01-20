@@ -2,13 +2,12 @@ package lint
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"github.com/go-git/go-git/v5"
 )
 
@@ -24,7 +23,7 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	suggestedName := SuggestFilename(filename)
 
 	if suggestedName == "" || suggestedName == filename {
-		op.Error = errors.New("could not determine suggested filename or file is already correct")
+		op.Error = errors.NewError(errors.CategoryValidation, "could not determine suggested filename or file is already correct").Build()
 		return op
 	}
 
@@ -35,7 +34,9 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 
 	// Check if target already exists
 	if _, err := os.Stat(newPath); err == nil && !f.force {
-		op.Error = fmt.Errorf("target file already exists: %s", newPath)
+		op.Error = errors.NewError(errors.CategoryAlreadyExists, "target file already exists").
+			WithContext("path", newPath).
+			Build()
 		return op
 	}
 
@@ -50,14 +51,14 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 		// Use git mv to preserve history
 		err := f.gitMv(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("git mv failed: %w", err)
+			op.Error = errors.WrapError(err, errors.CategoryGit, "git mv failed").Build()
 			return op
 		}
 	} else {
 		// Use regular file system rename
 		err := os.Rename(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("rename failed: %w", err)
+			op.Error = errors.WrapError(err, errors.CategoryFileSystem, "rename failed").Build()
 			return op
 		}
 	}
@@ -80,12 +81,12 @@ func (f *Fixer) shouldUseGitMv(_ string) bool {
 // gitMv performs a git mv operation using the Git library.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
 	if f.gitRepo == nil {
-		return errors.New("git repository not initialized")
+		return errors.NewError(errors.CategoryGit, "git repository not initialized").Build()
 	}
 
 	w, err := f.gitRepo.Worktree()
 	if err != nil {
-		return err
+		return errors.WrapError(err, errors.CategoryGit, "failed to get git worktree").Build()
 	}
 
 	// Calculate paths relative to the repository root
@@ -93,7 +94,11 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 
 	// Perform the move
 	_, err = w.Move(oldPath, newPath)
-	return err
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryGit, "failed to move file in git").Build()
+	}
+
+	return nil
 }
 
 // isGitRepository checks if the given directory is a Git repository.
@@ -111,12 +116,12 @@ func (f *Fixer) isGitClean(_ string) (bool, error) {
 
 	w, err := f.gitRepo.Worktree()
 	if err != nil {
-		return false, err
+		return false, errors.WrapError(err, errors.CategoryGit, "failed to get git worktree").Build()
 	}
 
 	status, err := w.Status()
 	if err != nil {
-		return false, err
+		return false, errors.WrapError(err, errors.CategoryGit, "failed to get git status").Build()
 	}
 
 	return status.IsClean(), nil
@@ -130,7 +135,7 @@ func (f *Fixer) rollback() error {
 
 	w, err := f.gitRepo.Worktree()
 	if err != nil {
-		return err
+		return errors.WrapError(err, errors.CategoryGit, "failed to get git worktree").Build()
 	}
 
 	// Reset to initial SHA
@@ -139,7 +144,7 @@ func (f *Fixer) rollback() error {
 		Mode:   git.HardReset,
 	})
 	if err != nil {
-		return fmt.Errorf("git reset failed: %w", err)
+		return errors.WrapError(err, errors.CategoryGit, "git reset failed").Build()
 	}
 
 	return nil
