@@ -75,6 +75,53 @@ title: "Test Document"
 	assert.Contains(t, issues[0].Message, "Missing uid")
 }
 
+func TestFrontmatterUIDRule_Check_FrontmatterEdgeCases(t *testing.T) {
+	rule := &FrontmatterUIDRule{}
+	tempDir := t.TempDir()
+
+	t.Run("CRLF frontmatter is treated as missing", func(t *testing.T) {
+		filePath := filepath.Join(tempDir, "crlf.md")
+		content := "---\r\n" +
+			"uid: 550e8400-e29b-41d4-a716-446655440000\r\n" +
+			"aliases:\r\n" +
+			"  - /_uid/550e8400-e29b-41d4-a716-446655440000/\r\n" +
+			"---\r\n" +
+			"\r\n" +
+			"# Test\r\n"
+		err := os.WriteFile(filePath, []byte(content), 0o600)
+		require.NoError(t, err)
+
+		issues, err := rule.Check(filePath)
+		require.NoError(t, err)
+		require.Len(t, issues, 1)
+		assert.Contains(t, issues[0].Message, "Missing uid")
+	})
+
+	t.Run("empty frontmatter block is treated as missing", func(t *testing.T) {
+		filePath := filepath.Join(tempDir, "empty-frontmatter.md")
+		content := "---\n---\n# Test\n"
+		err := os.WriteFile(filePath, []byte(content), 0o600)
+		require.NoError(t, err)
+
+		issues, err := rule.Check(filePath)
+		require.NoError(t, err)
+		require.Len(t, issues, 1)
+		assert.Contains(t, issues[0].Message, "Missing uid")
+	})
+
+	t.Run("malformed frontmatter (missing closing delimiter) is treated as missing", func(t *testing.T) {
+		filePath := filepath.Join(tempDir, "malformed-frontmatter.md")
+		content := "---\nuid: 550e8400-e29b-41d4-a716-446655440000\n# Test\n"
+		err := os.WriteFile(filePath, []byte(content), 0o600)
+		require.NoError(t, err)
+
+		issues, err := rule.Check(filePath)
+		require.NoError(t, err)
+		require.Len(t, issues, 1)
+		assert.Contains(t, issues[0].Message, "Missing uid")
+	})
+}
+
 func TestFrontmatterUIDRule_Check_InvalidUIDFormat(t *testing.T) {
 	rule := &FrontmatterUIDRule{}
 	tempDir := t.TempDir()
