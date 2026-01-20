@@ -137,9 +137,10 @@ func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
 
 		category := errors.CategoryForge
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden:
 			category = errors.CategoryAuth
-		} else if resp.StatusCode == http.StatusNotFound {
+		case http.StatusNotFound:
 			category = errors.CategoryNotFound
 		}
 
@@ -180,9 +181,10 @@ func (b *BaseForge) DoRequestWithHeaders(req *http.Request, result any) (http.He
 		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
 
 		category := errors.CategoryForge
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		switch resp.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden:
 			category = errors.CategoryAuth
-		} else if resp.StatusCode == http.StatusNotFound {
+		case http.StatusNotFound:
 			category = errors.CategoryNotFound
 		}
 
