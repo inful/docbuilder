@@ -66,6 +66,26 @@ func TestFixResult_DetailedPreview(t *testing.T) {
 	assert.Contains(t, preview, "./missing.md (file not found)", "should show broken link target")
 }
 
+// TestFixResult_AddLinkUpdate tests adding link updates to the result.
+func TestFixResult_AddLinkUpdate(t *testing.T) {
+	result := &FixResult{}
+
+	result.AddLinkUpdate("src/index.md", "old/doc.md", "new/doc.md")
+	result.AddLinkUpdate("src/guide.md", "old/img.png", "new/img.png")
+
+	assert.Len(t, result.LinksUpdated, 2)
+
+	// Check first update
+	assert.Equal(t, "src/index.md", result.LinksUpdated[0].SourceFile)
+	assert.Equal(t, "old/doc.md", result.LinksUpdated[0].OldTarget)
+	assert.Equal(t, "new/doc.md", result.LinksUpdated[0].NewTarget)
+
+	// Check second update
+	assert.Equal(t, "src/guide.md", result.LinksUpdated[1].SourceFile)
+	assert.Equal(t, "old/img.png", result.LinksUpdated[1].OldTarget)
+	assert.Equal(t, "new/img.png", result.LinksUpdated[1].NewTarget)
+}
+
 // TestFixResult_HasChanges tests the HasChanges method.
 func TestFixResult_HasChanges(t *testing.T) {
 	tests := []struct {
