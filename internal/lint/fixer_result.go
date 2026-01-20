@@ -24,6 +24,15 @@ type FingerprintUpdate struct {
 	Error    error
 }
 
+// AddLinkUpdate adds a link update to the result.
+func (f *FixResult) AddLinkUpdate(sourceFile, oldTarget, newTarget string) {
+	f.LinksUpdated = append(f.LinksUpdated, LinkUpdate{
+		SourceFile: sourceFile,
+		OldTarget:  oldTarget,
+		NewTarget:  newTarget,
+	})
+}
+
 // RenameOperation represents a file rename operation.
 type RenameOperation struct {
 	OldPath string
@@ -42,10 +51,11 @@ type LinkUpdate struct {
 
 // BrokenLink represents a link to a non-existent file.
 type BrokenLink struct {
-	SourceFile string // File containing the broken link
-	LineNumber int    // Line number of the link
-	Target     string // Link target that doesn't exist
-	LinkType   LinkType
+	SourceFile string   // File containing the broken link
+	LineNumber int      // Line number of the link
+	Target     string   // Link target that doesn't exist
+	LinkType   LinkType // Type of link (inline, reference, image)
+	FullMatch  string   // Complete original link text for precise replacement
 }
 
 // LinkType represents the type of markdown link.

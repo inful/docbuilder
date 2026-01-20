@@ -231,7 +231,7 @@ func TestFix_ApplyLinkUpdatesError(t *testing.T) {
 	defer func() {
 		// Restore write permissions for cleanup
 		// #nosec G302 -- intentional permission change for test cleanup
-		_ = os.Chmod(linkingFile, 0o644)
+		_ = os.Chmod(linkingFile, 0o600)
 	}()
 
 	linter := NewLinter(&Config{Format: "text"})

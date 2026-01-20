@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/inful/mdfp"
 )
 
@@ -25,20 +27,33 @@ type Fixer struct {
 	dryRun      bool
 	force       bool
 	gitAware    bool
+	gitRepo     *git.Repository
+	initialSHA  plumbing.Hash
 	autoConfirm bool // Skip confirmation prompts (for CI/automated use)
 	nowFn       func() time.Time
 }
 
 // NewFixer creates a new fixer with the given linter and options.
 func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
-	return &Fixer{
+	f := &Fixer{
 		linter:      linter,
 		dryRun:      dryRun,
 		force:       force,
-		gitAware:    isGitRepository("."),
 		autoConfirm: false,
 		nowFn:       time.Now,
 	}
+
+	// Try to open git repository
+	repo, err := git.PlainOpen(".")
+	if err == nil {
+		f.gitRepo = repo
+		f.gitAware = true
+		if head, hErr := repo.Head(); hErr == nil {
+			f.initialSHA = head.Hash()
+		}
+	}
+
+	return f
 }
 
 func (f *Fixer) todayUTC() string {
@@ -52,7 +67,14 @@ func (f *Fixer) todayUTC() string {
 // Fix attempts to automatically fix issues found in the given path.
 // For interactive use with confirmation prompts, use FixWithConfirmation instead.
 func (f *Fixer) Fix(path string) (*FixResult, error) {
-	return f.fix(path)
+	result, err := f.fix(path)
+	if err != nil {
+		if rollbackErr := f.rollback(); rollbackErr != nil {
+			return nil, fmt.Errorf("fix failed: %w (rollback also failed: %w)", err, rollbackErr)
+		}
+		return nil, err
+	}
+	return result, nil
 }
 
 // FixWithConfirmation fixes issues with interactive confirmation prompts.
@@ -63,13 +85,13 @@ func (f *Fixer) Fix(path string) (*FixResult, error) {
 func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	// If in dry-run mode, no need for confirmation or backup
 	if f.dryRun {
-		return f.fix(path)
+		return f.Fix(path)
 	}
 
 	// Phase 1: Preview changes (dry-run mode internally)
 	originalDryRun := f.dryRun
 	f.dryRun = true
-	previewResult, err := f.fix(path)
+	previewResult, err := f.Fix(path)
 	f.dryRun = originalDryRun
 
 	if err != nil {
@@ -107,11 +129,29 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 	}
 
 	// Phase 4: Apply fixes
-	return f.fix(path)
+	result, err := f.fix(path)
+	if err != nil {
+		if rollbackErr := f.rollback(); rollbackErr != nil {
+			return nil, fmt.Errorf("fix failed: %w (rollback also failed: %w)", err, rollbackErr)
+		}
+		return nil, err
+	}
+	return result, nil
 }
 
 // fix is the internal implementation that actually performs the fixes.
 func (f *Fixer) fix(path string) (*FixResult, error) {
+	// If git-aware, check for uncommitted changes to ensure safe rollback
+	if f.gitAware && !f.dryRun && !f.force {
+		clean, err := f.isGitClean()
+		if err != nil {
+			return nil, fmt.Errorf("failed to check git status: %w", err)
+		}
+		if !clean {
+			return nil, errors.New("cannot fix: git repository has uncommitted changes. commit or stash them first, or use --force")
+		}
+	}
+
 	// First, run linter to find issues
 	result, err := f.linter.LintPath(path)
 	if err != nil {
@@ -178,12 +218,15 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Phase 2: add missing uid-based aliases (for files that already have valid uids).
 	f.applyUIDAliasesFixes(uidAliasTargets, uidAliasIssueCounts, fixResult, fingerprintTargets)
 
-	// Phase 3: perform renames + link updates.
+	// Phase 3: heal broken links by detecting external renames via Git history.
+	f.healBrokenLinks(fixResult, fingerprintTargets, rootPath)
+
+	// Phase 4: perform renames + link updates.
 	for filePath, issues := range fileIssues {
 		f.processFileWithIssues(filePath, issues, rootPath, fixResult, fingerprintTargets, fingerprintIssueCounts)
 	}
 
-	// Phase 4: regenerate fingerprints LAST, for all affected files.
+	// Phase 5: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)
 	f.applyFingerprintFixes(fingerprintTargets, fingerprintIssueCounts, fixResult)
 

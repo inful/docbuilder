@@ -356,7 +356,7 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 
 	// Clean up read-only file
 	// #nosec G302 -- intentional permission change for test cleanup
-	_ = os.Chmod(source2, 0o644)
+	_ = os.Chmod(source2, 0o600)
 }
 
 // TestApplyLinkUpdates_EmptyLinks tests behavior with no links to update.
@@ -595,7 +595,7 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 	require.NoError(t, os.Chmod(source2, 0o444)) // Make it read-only
 	defer func() {
 		// #nosec G302 -- intentional permission change for test cleanup
-		_ = os.Chmod(source2, 0o644) // Clean up (ignore error)
+		_ = os.Chmod(source2, 0o600) // Clean up (ignore error)
 	}()
 
 	// Create link references - source1 will succeed, source2 will fail

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -34,11 +35,7 @@ func addCommit(t *testing.T, repo *git.Repository, repoPath, filename, content, 
 }
 
 func TestIsAncestorEdgeCases(t *testing.T) {
-	tmp := t.TempDir()
-	repo, err := git.PlainInit(tmp, false)
-	if err != nil {
-		t.Fatalf("init: %v", err)
-	}
+	repo, _, tmp := helpers.SetupTestGitRepo(t)
 
 	// Create a simple linear history: A -> B -> C
 	a := addCommit(t, repo, tmp, "a.txt", "A", "A")

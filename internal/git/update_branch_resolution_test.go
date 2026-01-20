@@ -12,6 +12,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 )
 
 const (
@@ -41,11 +42,7 @@ func addSimpleCommit(t *testing.T, repo *git.Repository, repoPath, name string) 
 }
 
 func TestResolveTargetBranchExplicit(t *testing.T) {
-	tmp := t.TempDir()
-	repo, err := git.PlainInit(tmp, false)
-	if err != nil {
-		t.Fatalf("init: %v", err)
-	}
+	repo, _, tmp := helpers.SetupTestGitRepo(t)
 	addSimpleCommit(t, repo, tmp, "a.txt")
 	cfg := appcfg.Repository{Name: "r", URL: "https://example/repo.git", Branch: "feature-x"}
 	// explicit branch should always win
@@ -56,11 +53,7 @@ func TestResolveTargetBranchExplicit(t *testing.T) {
 }
 
 func TestResolveTargetBranchFromHead(t *testing.T) {
-	tmp := t.TempDir()
-	repo, err := git.PlainInit(tmp, false)
-	if err != nil {
-		t.Fatalf("init: %v", err)
-	}
+	repo, _, tmp := helpers.SetupTestGitRepo(t)
 	addSimpleCommit(t, repo, tmp, "a.txt")
 	cfg := appcfg.Repository{Name: "r", URL: "https://example/repo.git"}
 	b := resolveTargetBranch(repo, cfg)

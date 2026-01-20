@@ -122,6 +122,7 @@ func checkInlineLinksBroken(line string, lineNum int, sourceFile string) []Broke
 				LineNumber: lineNum,
 				Target:     linkInfo.target,
 				LinkType:   LinkTypeInline,
+				FullMatch:  line[linkInfo.start : linkInfo.end+1],
 			})
 		}
 	}
@@ -191,6 +192,7 @@ func checkReferenceLinksBroken(line string, lineNum int, sourceFile string) []Br
 			LineNumber: lineNum,
 			Target:     linkTarget,
 			LinkType:   LinkTypeReference,
+			FullMatch:  line,
 		})
 	}
 
@@ -233,6 +235,7 @@ func checkImageLinksBroken(line string, lineNum int, sourceFile string) []Broken
 				LineNumber: lineNum,
 				Target:     linkInfo.target,
 				LinkType:   LinkTypeImage,
+				FullMatch:  line[linkInfo.start : linkInfo.end+1],
 			})
 		}
 	}
