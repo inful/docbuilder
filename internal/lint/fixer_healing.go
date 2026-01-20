@@ -41,7 +41,7 @@ func (f *Fixer) healBrokenLinks(fixResult *FixResult, _ map[string]struct{}, roo
 				// Normalize for Markdown
 				relLink = filepath.ToSlash(relLink)
 
-				err = f.updateLinkInFile(bl.SourceFile, bl.Target, relLink)
+				err = f.updateLinkInFile(bl, relLink)
 				if err == nil {
 					fixResult.AddLinkUpdate(bl.SourceFile, bl.Target, relLink)
 				}
@@ -50,30 +50,44 @@ func (f *Fixer) healBrokenLinks(fixResult *FixResult, _ map[string]struct{}, roo
 	}
 }
 
-// updateLinkInFile replaces an old link with a new one in a file.
-func (f *Fixer) updateLinkInFile(sourcePath, oldLink, newLink string) error {
-	// #nosec G304 -- sourcePath is from discovery walkFiles, not user input
-	content, err := os.ReadFile(sourcePath)
+// updateLinkInFile replaces a broken link target with a new one in the source file.
+// It uses precise replacement based on the FullMatch metadata to avoid corrupting
+// non-link content or link text.
+func (f *Fixer) updateLinkInFile(bl BrokenLink, newRelTarget string) error {
+	// #nosec G304 -- bl.SourceFile is from discovery walkFiles, not user input
+	content, err := os.ReadFile(bl.SourceFile)
 	if err != nil {
 		return errors.WrapError(err, errors.CategoryFileSystem, "failed to read file").
-			WithContext("file", sourcePath).
+			WithContext("file", bl.SourceFile).
 			Build()
 	}
 
-	newContent := strings.ReplaceAll(string(content), "("+oldLink+")", "("+newLink+")")
-	newContent = strings.ReplaceAll(newContent, "["+oldLink+"]", "["+newLink+"]")
+	// Preserve fragment if present in original target
+	newLinkWithFragment := newRelTarget
+	if idx := strings.Index(bl.Target, "#"); idx != -1 {
+		newLinkWithFragment += bl.Target[idx:]
+	}
+
+	// Calculate the precise new full match
+	// We replace the target part within the full markdown link syntax.
+	newFullMatch := strings.Replace(bl.FullMatch, bl.Target, newLinkWithFragment, 1)
+
+	// Replace the old full match with the new one in the content.
+	// We use ReplaceAll because if the same exact link match appears multiple times in the file,
+	// they should all be healed.
+	newContent := strings.ReplaceAll(string(content), bl.FullMatch, newFullMatch)
 
 	if newContent == string(content) {
 		return errors.NewError(errors.CategoryNotFound, "link not found in file").
-			WithContext("file", sourcePath).
-			WithContext("link", oldLink).
+			WithContext("file", bl.SourceFile).
+			WithContext("match", bl.FullMatch).
 			Build()
 	}
 
-	err = os.WriteFile(sourcePath, []byte(newContent), 0o600)
+	err = os.WriteFile(bl.SourceFile, []byte(newContent), 0o600)
 	if err != nil {
 		return errors.WrapError(err, errors.CategoryFileSystem, "failed to write file").
-			WithContext("file", sourcePath).
+			WithContext("file", bl.SourceFile).
 			Build()
 	}
 	return nil
@@ -113,7 +127,7 @@ func (f *Fixer) findMovedFileInHistory(targetPath string, root string) (string, 
 
 		stats, sErr := c.Stats()
 		if sErr != nil {
-			return nil // Skip this commit on error
+			return errors.WrapError(sErr, errors.CategoryGit, "failed to get commit stats").Build()
 		}
 
 		// Check if targetPath was deleted or renamed in this commit

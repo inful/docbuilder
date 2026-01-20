@@ -24,7 +24,7 @@ func TestFixer_HealBrokenLinks(t *testing.T) {
 
 	// 1. Create a file and commit it
 	oldFile := filepath.Join(tempDir, "target.md")
-	err = os.WriteFile(oldFile, []byte("# Target File\nContent"), 0o644)
+	err = os.WriteFile(oldFile, []byte("# Target File\nContent"), 0o600)
 	require.NoError(t, err)
 
 	_, err = w.Add("target.md")
@@ -52,7 +52,7 @@ func TestFixer_HealBrokenLinks(t *testing.T) {
 
 	// 3. Create a file with a broken link to the old path
 	sourceFile := filepath.Join(tempDir, "index.md")
-	err = os.WriteFile(sourceFile, []byte("# Index\n[Link](./target.md)"), 0o644)
+	err = os.WriteFile(sourceFile, []byte("# Index\n[Link](./target.md)"), 0o600)
 	require.NoError(t, err)
 
 	// 4. Initialize Fixer in the temp directory
@@ -70,6 +70,7 @@ func TestFixer_HealBrokenLinks(t *testing.T) {
 	fixer.healBrokenLinks(result, nil, tempDir)
 
 	// 6. Verify link was updated
+	// #nosec G304 -- sourceFile is deterministic in tests
 	content, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
 	assert.Contains(t, string(content), "[Link](moved_target.md)")

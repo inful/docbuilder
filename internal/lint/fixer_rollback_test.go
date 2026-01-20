@@ -24,7 +24,7 @@ func TestFixer_Rollback(t *testing.T) {
 
 	// 1. Create a file and commit it (Initial State)
 	file1 := filepath.Join(tempDir, "file1.md")
-	err = os.WriteFile(file1, []byte("Content 1"), 0o644)
+	err = os.WriteFile(file1, []byte("Content 1"), 0o600)
 	require.NoError(t, err)
 
 	_, err = w.Add("file1.md")
@@ -43,11 +43,11 @@ func TestFixer_Rollback(t *testing.T) {
 	}
 
 	// 3. Make some "fixes"
-	err = os.WriteFile(file1, []byte("Modified Content"), 0o644)
+	err = os.WriteFile(file1, []byte("Modified Content"), 0o600)
 	require.NoError(t, err)
 
 	newFile := filepath.Join(tempDir, "file2.md")
-	err = os.WriteFile(newFile, []byte("New File"), 0o644)
+	err = os.WriteFile(newFile, []byte("New File"), 0o600)
 	require.NoError(t, err)
 
 	// 4. Perform rollback
