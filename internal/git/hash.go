@@ -31,23 +31,34 @@ type RepoTree struct {
 func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 	repo, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return "", fmt.Errorf("open repository: %w", err)
+		return "", GitError("failed to open repository").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 
 	// Resolve commit
 	hash, err := repo.ResolveRevision(plumbing.Revision(commit))
 	if err != nil {
-		return "", fmt.Errorf("resolve commit %s: %w", commit, err)
+		return "", GitError("failed to resolve commit").
+			WithCause(err).
+			WithContext("commit", commit).
+			Build()
 	}
 
 	commitObj, err := repo.CommitObject(*hash)
 	if err != nil {
-		return "", fmt.Errorf("get commit object: %w", err)
+		return "", GitError("failed to get commit object").
+			WithCause(err).
+			WithContext("hash", hash.String()).
+			Build()
 	}
 
 	tree, err := commitObj.Tree()
 	if err != nil {
-		return "", fmt.Errorf("get tree: %w", err)
+		return "", GitError("failed to get git tree").
+			WithCause(err).
+			Build()
 	}
 
 	// Build list of files to hash
@@ -135,7 +146,10 @@ func ComputeRepoHashFromWorkdir(repoPath string, paths []string) (string, error)
 			if os.IsNotExist(err) {
 				continue // Path doesn't exist, skip
 			}
-			return "", fmt.Errorf("stat %s: %w", fullPath, err)
+			return "", GitError("failed to stat path").
+				WithCause(err).
+				WithContext("path", fullPath).
+				Build()
 		}
 
 		if info.IsDir() {
@@ -180,7 +194,10 @@ func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
 		// #nosec G304 - p is from filepath.Walk, within controlled directory
 		content, err := os.ReadFile(p)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", p, err)
+			return GitError("failed to read file").
+				WithCause(err).
+				WithContext("path", p).
+				Build()
 		}
 
 		h := sha256.Sum256(content)
@@ -189,7 +206,10 @@ func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("walk %s: %w", dirPath, err)
+		return GitError("failed to walk directory").
+			WithCause(err).
+			WithContext("path", dirPath).
+			Build()
 	}
 	return nil
 }
@@ -199,7 +219,10 @@ func hashSingleFile(repoPath, filePath string, fileHashes *[]string) error {
 	// #nosec G304 - filePath is validated and within controlled directory
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		return fmt.Errorf("read %s: %w", filePath, err)
+		return GitError("failed to read file").
+			WithCause(err).
+			WithContext("path", filePath).
+			Build()
 	}
 
 	h := sha256.Sum256(content)

@@ -48,7 +48,7 @@ func (a *HTTPErrorAdapter) StatusCodeFor(err error) int {
 			return http.StatusConflict
 		case CategoryNetwork, CategoryGit, CategoryForge:
 			return http.StatusBadGateway
-		case CategoryBuild, CategoryHugo:
+		case CategoryBuild, CategoryHugo, CategoryDocs, CategoryEventStore:
 			return http.StatusUnprocessableEntity
 		case CategoryFileSystem:
 			return http.StatusInternalServerError

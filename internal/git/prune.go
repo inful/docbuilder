@@ -1,12 +1,12 @@
 package git
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) error {
@@ -30,7 +30,10 @@ func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) er
 	denyPatterns := c.buildCfg.PruneDeny
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
-		return fmt.Errorf("readdir: %w", err)
+		return errors.NewError(errors.CategoryFileSystem, "failed to read directory for pruning").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 	matchesAny := func(name string, patterns []string) bool {
 		for _, pat := range patterns {
@@ -56,7 +59,10 @@ func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) er
 		}
 		if matchesAny(name, denyPatterns) {
 			if err := os.RemoveAll(filepath.Join(repoPath, name)); err != nil {
-				return fmt.Errorf("remove denied %s: %w", name, err)
+				return errors.NewError(errors.CategoryFileSystem, "failed to remove denied path").
+					WithCause(err).
+					WithContext("path", name).
+					Build()
 			}
 			continue
 		}
@@ -64,7 +70,10 @@ func (c *Client) pruneNonDocTopLevel(repoPath string, repo appcfg.Repository) er
 			continue
 		}
 		if err := os.RemoveAll(filepath.Join(repoPath, name)); err != nil {
-			return fmt.Errorf("remove %s: %w", name, err)
+			return errors.NewError(errors.CategoryFileSystem, "failed to remove path").
+				WithCause(err).
+				WithContext("path", name).
+				Build()
 		}
 	}
 	return nil

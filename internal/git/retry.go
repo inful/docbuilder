@@ -1,21 +1,16 @@
 package git
 
 import (
-	"errors"
-	"fmt"
+	stdErrors "errors"
 	"log/slog"
 	"net"
 	"strings"
 	"time"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
-)
-
-const (
-	transientTypeRateLimit      = "rate_limit"
-	transientTypeNetworkTimeout = "network_timeout"
 )
 
 // withRetry wraps an operation with retry logic based on build configuration.
@@ -33,10 +28,10 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 	}
 	pol := retry.NewPolicy(appcfg.RetryBackoffMode(strings.ToLower(string(c.buildCfg.RetryBackoff))), initial, maxDelay, c.buildCfg.MaxRetries)
 
-	// Adaptive delay multipliers keyed by error classification (transient types)
+	// Adaptive delay multipliers keyed by retry strategy
 	const (
-		multRateLimit      = 3.0
-		multNetworkTimeout = 1.0
+		multRateLimit = 3.0
+		multBackoff   = 1.0
 	)
 	var lastErr error
 	for attempt := 0; attempt <= c.buildCfg.MaxRetries; attempt++ {
@@ -58,16 +53,25 @@ func (c *Client) withRetry(op, repoName string, fn func() (string, error)) (stri
 			break
 		}
 		delay := pol.Delay(attempt + 1) // base delay
-		// Adjust delay for typed transient errors
-		switch classifyTransientType(err) {
-		case transientTypeRateLimit:
-			delay = time.Duration(float64(delay) * multRateLimit)
-		case transientTypeNetworkTimeout:
-			delay = time.Duration(float64(delay) * multNetworkTimeout)
+		// Adjust delay based on retry strategy
+		if ce, ok := errors.AsClassified(err); ok {
+			switch ce.RetryStrategy() {
+			case errors.RetryRateLimit:
+				delay = time.Duration(float64(delay) * multRateLimit)
+			case errors.RetryBackoff:
+				delay = time.Duration(float64(delay) * multBackoff)
+			case errors.RetryNever, errors.RetryImmediate, errors.RetryUserAction:
+				// Other strategies use base delay
+			}
 		}
+
 		time.Sleep(delay)
 	}
-	return "", fmt.Errorf("git %s failed after retries: %w", op, lastErr)
+	return "", GitError("git operation failed after retries").
+		WithCause(lastErr).
+		WithContext("op", op).
+		WithContext("repo", repoName).
+		Build()
 }
 
 // withRetryMetadata wraps an operation returning CloneResult with retry logic.
@@ -86,8 +90,8 @@ func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, 
 	pol := retry.NewPolicy(appcfg.RetryBackoffMode(strings.ToLower(string(c.buildCfg.RetryBackoff))), initial, maxDelay, c.buildCfg.MaxRetries)
 
 	const (
-		multRateLimit      = 3.0
-		multNetworkTimeout = 1.0
+		multRateLimit = 3.0
+		multBackoff   = 1.0
 	)
 	var lastErr error
 	for attempt := 0; attempt <= c.buildCfg.MaxRetries; attempt++ {
@@ -109,21 +113,35 @@ func (c *Client) withRetryMetadata(op, repoName string, fn func() (CloneResult, 
 			break
 		}
 		delay := pol.Delay(attempt + 1)
-		switch classifyTransientType(err) {
-		case "rate_limit":
-			delay = time.Duration(float64(delay) * multRateLimit)
-		case "network_timeout":
-			delay = time.Duration(float64(delay) * multNetworkTimeout)
+		// Adjust delay based on retry strategy
+		if ce, ok := errors.AsClassified(err); ok {
+			switch ce.RetryStrategy() {
+			case errors.RetryRateLimit:
+				delay = time.Duration(float64(delay) * multRateLimit)
+			case errors.RetryBackoff:
+				delay = time.Duration(float64(delay) * multBackoff)
+			case errors.RetryNever, errors.RetryImmediate, errors.RetryUserAction:
+				// Other strategies use base delay
+			}
 		}
 		time.Sleep(delay)
 	}
-	return CloneResult{}, fmt.Errorf("git %s failed after retries: %w", op, lastErr)
+	return CloneResult{}, GitError("git operation failed after retries").
+		WithCause(lastErr).
+		WithContext("op", op).
+		WithContext("repo", repoName).
+		Build()
 }
 
 func isPermanentGitError(err error) bool {
 	if err == nil {
 		return false
 	}
+	// Prefer structured strategy if available
+	if ce, ok := errors.AsClassified(err); ok {
+		return ce.RetryStrategy() == errors.RetryNever
+	}
+
 	msg := strings.ToLower(err.Error())
 	if strings.Contains(msg, "auth") || strings.Contains(msg, "permission") || strings.Contains(msg, "denied") {
 		return true
@@ -135,7 +153,7 @@ func isPermanentGitError(err error) bool {
 		return true
 	}
 	var nerr net.Error
-	if errors.As(err, &nerr) {
+	if stdErrors.As(err, &nerr) {
 		return !nerr.Timeout()
 	}
 	return false
@@ -143,17 +161,3 @@ func isPermanentGitError(err error) bool {
 
 // IsPermanentGitError is exposed for tests within package.
 var IsPermanentGitError = isPermanentGitError
-
-// classifyTransientType returns a short string key for known transient typed errors; empty if unknown.
-func classifyTransientType(err error) string {
-	if err == nil {
-		return ""
-	}
-	switch {
-	case errors.As(err, new(*RateLimitError)):
-		return "rate_limit"
-	case errors.As(err, new(*NetworkTimeoutError)):
-		return "network_timeout"
-	}
-	return ""
-}

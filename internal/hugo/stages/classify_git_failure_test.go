@@ -14,12 +14,12 @@ func TestClassifyGitFailureTyped(t *testing.T) {
 		err  error
 		want models.ReportIssueCode
 	}{
-		{"auth", &gitpkg.AuthError{Op: "clone", URL: "u", Err: errors.New("auth")}, models.IssueAuthFailure},
-		{"notfound", &gitpkg.NotFoundError{Op: "clone", URL: "u", Err: errors.New("not found")}, models.IssueRepoNotFound},
-		{"unsupported", &gitpkg.UnsupportedProtocolError{Op: "clone", URL: "u", Err: errors.New("unsupported protocol")}, models.IssueUnsupportedProto},
-		{"diverged", &gitpkg.RemoteDivergedError{Op: "update", URL: "u", Branch: "main", Err: errors.New("diverged branch")}, models.IssueRemoteDiverged},
-		{"ratelimit", &gitpkg.RateLimitError{Op: "clone", URL: "u", Err: errors.New("rate limit exceeded")}, models.IssueRateLimit},
-		{"timeout", &gitpkg.NetworkTimeoutError{Op: "clone", URL: "u", Err: errors.New("network timeout")}, models.IssueNetworkTimeout},
+		{"auth", gitpkg.ClassifyGitError(errors.New("authentication failed"), "clone", "u"), models.IssueAuthFailure},
+		{"notfound", gitpkg.ClassifyGitError(errors.New("repository not found"), "clone", "u"), models.IssueRepoNotFound},
+		{"unsupported", gitpkg.ClassifyGitError(errors.New("unsupported protocol"), "clone", "u"), models.IssueUnsupportedProto},
+		{"diverged", gitpkg.ClassifyGitError(errors.New("local branch diverged"), "update", "u"), models.IssueRemoteDiverged},
+		{"ratelimit", gitpkg.ClassifyGitError(errors.New("rate limit exceeded"), "clone", "u"), models.IssueRateLimit},
+		{"timeout", gitpkg.ClassifyGitError(errors.New("network timeout"), "clone", "u"), models.IssueNetworkTimeout},
 	}
 	for _, c := range cases {
 		if got := classifyGitFailure(c.err); got != c.want {

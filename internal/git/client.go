@@ -1,12 +1,9 @@
 package git
 
 import (
-	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -56,6 +53,17 @@ func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
 	return result.Path, nil
 }
 
+// UpdateRepo updates an existing repository in the workspace.
+// If retry is enabled, it wraps the operation with retry logic.
+func (c *Client) UpdateRepo(repo appcfg.Repository) (string, error) {
+	if c.inRetry {
+		return c.updateOnce(repo)
+	}
+	return c.withRetry("update", repo.Name, func() (string, error) {
+		return c.updateOnce(repo)
+	})
+}
+
 // CloneRepoWithMetadata clones a repository and returns metadata including commit date.
 // If retry is enabled, it wraps the operation with retry logic.
 func (c *Client) CloneRepoWithMetadata(repo appcfg.Repository) (CloneResult, error) {
@@ -71,7 +79,10 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 	if err := os.RemoveAll(repoPath); err != nil {
-		return "", fmt.Errorf("failed to remove existing directory: %w", err)
+		return "", GitError("failed to remove existing directory").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
@@ -96,18 +107,15 @@ func (c *Client) cloneOnce(repo appcfg.Repository) (string, error) {
 	if repo.Auth != nil {
 		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return "", fmt.Errorf("failed to setup authentication: %w", err)
+			return "", GitError("failed to setup authentication").
+				WithCause(err).
+				Build()
 		}
 		cloneOptions.Auth = auth
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
 	if err != nil {
-		classified := classifyCloneError(repo.URL, err)
-		var authErr *AuthError
-		if errors.As(classified, &authErr) {
-			logCloneAuthContext(repo, authErr)
-		}
-		return "", classified
+		return "", ClassifyGitError(err, "clone", repo.URL)
 	}
 	if ref, herr := repository.Head(); herr == nil {
 		slog.Info("Repository cloned successfully", logfields.Name(repo.Name), logfields.URL(repo.URL), slog.String("commit", ref.Hash().String()[:8]), logfields.Path(repoPath))
@@ -126,7 +134,10 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	repoPath := filepath.Join(c.workspaceDir, repo.Name)
 	slog.Debug("Cloning repository", logfields.URL(repo.URL), logfields.Name(repo.Name), slog.String("branch", repo.Branch), logfields.Path(repoPath))
 	if err := os.RemoveAll(repoPath); err != nil {
-		return CloneResult{}, fmt.Errorf("failed to remove existing directory: %w", err)
+		return CloneResult{}, GitError("failed to remove existing directory").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 
 	cloneOptions := &git.CloneOptions{URL: repo.URL, Tags: git.NoTags}
@@ -150,18 +161,15 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 	if repo.Auth != nil {
 		auth, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return CloneResult{}, fmt.Errorf("failed to setup authentication: %w", err)
+			return CloneResult{}, GitError("failed to setup authentication").
+				WithCause(err).
+				Build()
 		}
 		cloneOptions.Auth = auth
 	}
 	repository, err := git.PlainClone(repoPath, false, cloneOptions)
 	if err != nil {
-		classified := classifyCloneError(repo.URL, err)
-		var authErr *AuthError
-		if errors.As(classified, &authErr) {
-			logCloneAuthContext(repo, authErr)
-		}
-		return CloneResult{}, classified
+		return CloneResult{}, ClassifyGitError(err, "clone", repo.URL)
 	}
 
 	// Get commit metadata
@@ -195,85 +203,6 @@ func (c *Client) cloneOnceWithMetadata(repo appcfg.Repository) (CloneResult, err
 		}
 	}
 	return result, nil
-}
-
-func logCloneAuthContext(repo appcfg.Repository, authErr *AuthError) {
-	authCfg := repo.Auth
-	attrs := []any{
-		logfields.Name(repo.Name),
-		logfields.URL(repo.URL),
-		slog.Bool("auth_present", authCfg != nil),
-	}
-	if authCfg != nil {
-		attrs = append(attrs, slog.String("auth_type", string(authCfg.Type)))
-
-		if authCfg.Username != "" {
-			attrs = append(attrs, slog.String("auth_username", authCfg.Username))
-		}
-
-		tokenValue := ""
-		switch authCfg.Type {
-		case appcfg.AuthTypeToken:
-			tokenValue = authCfg.Token
-		case appcfg.AuthTypeBasic:
-			tokenValue = authCfg.Password
-		case appcfg.AuthTypeSSH, appcfg.AuthTypeNone:
-			// No token value to log.
-		}
-		if tokenValue != "" {
-			attrs = append(attrs,
-				slog.String("auth_token_prefix", tokenPrefix(tokenValue, 4)),
-				slog.Int("auth_token_len", len(tokenValue)),
-			)
-		}
-
-		if authCfg.Type == appcfg.AuthTypeSSH {
-			attrs = append(attrs, slog.String("auth_key_path", authCfg.KeyPath))
-		}
-	}
-	attrs = append(attrs, slog.String("error", authErr.Error()))
-
-	slog.Error("Git clone authentication failed (auth context)", attrs...)
-}
-
-func tokenPrefix(token string, n int) string {
-	if n <= 0 || token == "" {
-		return ""
-	}
-	if len(token) <= n {
-		return token
-	}
-	return token[:n]
-}
-
-func classifyCloneError(url string, err error) error {
-	l := strings.ToLower(err.Error())
-	// Heuristic mapping (Phase 4 start). These types allow downstream classification without string parsing.
-	if strings.Contains(l, "authentication") || strings.Contains(l, "auth fail") || strings.Contains(l, "invalid username or password") {
-		return &AuthError{Op: "clone", URL: url, Err: err}
-	}
-	if strings.Contains(l, "not found") || strings.Contains(l, "repository does not exist") {
-		return &NotFoundError{Op: "clone", URL: url, Err: err}
-	}
-	if strings.Contains(l, "unsupported protocol") || strings.Contains(l, "protocol not supported") {
-		return &UnsupportedProtocolError{Op: "clone", URL: url, Err: err}
-	}
-	if strings.Contains(l, "rate limit") || strings.Contains(l, "too many requests") {
-		return &RateLimitError{Op: "clone", URL: url, Err: err}
-	}
-	if strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout") {
-		return &NetworkTimeoutError{Op: "clone", URL: url, Err: err}
-	}
-	return fmt.Errorf("failed to clone repository %s: %w", url, err)
-}
-
-// UpdateRepo updates an existing repository or clones it if missing.
-// If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) UpdateRepo(repo appcfg.Repository) (string, error) {
-	if c.inRetry {
-		return c.updateOnce(repo)
-	}
-	return c.withRetry("update", repo.Name, func() (string, error) { return c.updateOnce(repo) })
 }
 
 func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {

@@ -1,7 +1,7 @@
 package git
 
 import (
-	"errors"
+	stdErrors "errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -17,12 +17,18 @@ import (
 func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (string, error) {
 	repository, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return "", fmt.Errorf("open repo: %w", err)
+		return "", GitError("failed to open repository").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 	slog.Info("Updating repository", logfields.Name(repo.Name), slog.String("path", repoPath))
 	wt, err := repository.Worktree()
 	if err != nil {
-		return "", fmt.Errorf("worktree: %w", err)
+		return "", GitError("failed to get worktree").
+			WithCause(err).
+			WithContext("path", repoPath).
+			Build()
 	}
 
 	// Resolve target branch early
@@ -58,7 +64,7 @@ func (c *Client) updateExistingRepo(repoPath string, repo appcfg.Repository) (st
 	if err := c.syncWithRemote(repository, wt, repo, branch, localRef, remoteRef); err != nil {
 		// Divergence without hard reset is treated as permanent (REMOTE_DIVERGED)
 		if strings.Contains(strings.ToLower(err.Error()), "diverged") {
-			return "", &RemoteDivergedError{Op: "update", URL: repo.URL, Branch: branch, Err: err}
+			return "", ClassifyGitError(err, "update", repo.URL)
 		}
 		return "", err
 	}
@@ -98,8 +104,8 @@ func (c *Client) fetchOrigin(repository *git.Repository, repo appcfg.Repository,
 		}
 		fetchOpts.Auth = auth
 	}
-	if err := repository.Fetch(fetchOpts); err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		return fmt.Errorf("fetch: %w", err)
+	if err := repository.Fetch(fetchOpts); err != nil && !stdErrors.Is(err, git.NoErrAlreadyUpToDate) {
+		return ClassifyGitError(err, "fetch", repo.URL)
 	}
 	return nil
 }
@@ -125,17 +131,26 @@ func checkoutAndGetRefs(repository *git.Repository, wt *git.Worktree, branch str
 	remoteBranchRef := plumbing.NewRemoteReferenceName("origin", branch)
 	remoteRef, err = repository.Reference(remoteBranchRef, true)
 	if err != nil {
-		return nil, nil, fmt.Errorf("remote ref: %w", err)
+		return nil, nil, GitError("failed to get remote reference").
+			WithCause(err).
+			WithContext("ref", remoteBranchRef.String()).
+			Build()
 	}
 	localRef, lerr := repository.Reference(localBranchRef, true)
 	if lerr != nil { // create local branch
 		if err = wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Create: true, Force: true}); err != nil {
-			return nil, nil, fmt.Errorf("checkout new branch: %w", err)
+			return nil, nil, GitError("failed to checkout new branch").
+				WithCause(err).
+				WithContext("branch", branch).
+				Build()
 		}
 		localRef, _ = repository.Reference(localBranchRef, true)
 	} else {
 		if err = wt.Checkout(&git.CheckoutOptions{Branch: localBranchRef, Force: true}); err != nil {
-			return nil, nil, fmt.Errorf("checkout existing branch: %w", err)
+			return nil, nil, GitError("failed to checkout existing branch").
+				WithCause(err).
+				WithContext("branch", branch).
+				Build()
 		}
 	}
 	return localRef, remoteRef, nil
@@ -150,7 +165,9 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 	if fastForwardPossible {
 		currentHead, _ := repository.Head()
 		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
-			return fmt.Errorf("fast-forward reset: %w", err)
+			return GitError("failed to reset for fast-forward").
+				WithCause(err).
+				Build()
 		}
 		if currentHead != nil && currentHead.Hash() == remoteRef.Hash() {
 			slog.Info("Repository already up-to-date", logfields.Name(repo.Name), slog.String("branch", branch), slog.String("commit", remoteRef.Hash().String()[:8]))
@@ -163,11 +180,15 @@ func (c *Client) syncWithRemote(repository *git.Repository, wt *git.Worktree, re
 	if hardReset {
 		slog.Warn("diverged branch, hard resetting", logfields.Name(repo.Name), slog.String("branch", branch))
 		if err := wt.Reset(&git.ResetOptions{Commit: remoteRef.Hash(), Mode: git.HardReset}); err != nil {
-			return fmt.Errorf("hard reset: %w", err)
+			return GitError("failed to reset for hard-reset").
+				WithCause(err).
+				Build()
 		}
 		return nil
 	}
-	return errors.New("local branch diverged from remote (enable hard_reset_on_diverge to override)")
+	return GitError("local branch diverged from remote").
+		WithContext("hint", "enable hard_reset_on_diverge to override").
+		Build()
 }
 
 // postUpdateCleanup applies optional workspace hygiene, such as cleaning untracked files and pruning non-doc paths.
@@ -191,7 +212,7 @@ func resolveRemoteDefaultBranch(repo *git.Repository) (string, error) {
 	}
 	target := ref.Target()
 	if target == "" {
-		return "", errors.New("origin/HEAD target empty")
+		return "", GitError("origin/HEAD target empty").Build()
 	}
 	return target.Short(), nil
 }
@@ -226,7 +247,7 @@ func (c *Client) performFetch(repository *git.Repository, repo appcfg.Repository
 	logFetchOperation(repo.Name, branch, remoteSHA)
 
 	if fetchErr := c.fetchOrigin(repository, repo, branch); fetchErr != nil {
-		return classifyFetchError(repo.URL, fetchErr)
+		return ClassifyGitError(fetchErr, "fetch", repo.URL)
 	}
 
 	// Update cache with new remote HEAD

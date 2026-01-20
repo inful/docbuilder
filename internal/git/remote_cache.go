@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -71,7 +72,9 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 	if repo.Auth != nil {
 		a, err := c.getAuth(repo.Auth)
 		if err != nil {
-			return "", fmt.Errorf("authentication: %w", err)
+			return "", GitError("failed to setup authentication").
+				WithCause(err).
+				Build()
 		}
 		auth = a
 	}
@@ -83,7 +86,7 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 
 	refs, err := rem.List(listOpts)
 	if err != nil {
-		return "", fmt.Errorf("ls-remote: %w", err)
+		return "", ClassifyGitError(err, "ls-remote", repo.URL)
 	}
 
 	// Look for the specific branch
@@ -176,16 +179,24 @@ func (c *RemoteHeadCache) Save() error {
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o750); err != nil {
-		return fmt.Errorf("create cache dir: %w", err)
+		return errors.NewError(errors.CategoryFileSystem, "failed to create cache directory").
+			WithCause(err).
+			WithContext("path", filepath.Dir(c.path)).
+			Build()
 	}
 
 	data, err := json.MarshalIndent(c.entries, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal cache: %w", err)
+		return GitError("failed to marshal cache").
+			WithCause(err).
+			Build()
 	}
 
 	if err := os.WriteFile(c.path, data, 0o600); err != nil {
-		return fmt.Errorf("write cache: %w", err)
+		return errors.NewError(errors.CategoryFileSystem, "failed to write cache file").
+			WithCause(err).
+			WithContext("path", c.path).
+			Build()
 	}
 
 	return nil
@@ -206,7 +217,9 @@ func (c *RemoteHeadCache) load() error {
 	defer c.mu.Unlock()
 
 	if err := json.Unmarshal(data, &c.entries); err != nil {
-		return fmt.Errorf("unmarshal cache: %w", err)
+		return GitError("failed to unmarshal cache").
+			WithCause(err).
+			Build()
 	}
 
 	return nil

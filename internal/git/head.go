@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ReadRepoHead returns the current HEAD commit hash for a git repository.
@@ -13,7 +15,10 @@ func ReadRepoHead(repoPath string) (string, error) {
 	// #nosec G304 - headPath is internal git metadata, repoPath is controlled
 	data, err := os.ReadFile(headPath)
 	if err != nil {
-		return "", err
+		return "", errors.NewError(errors.CategoryFileSystem, "failed to read HEAD").
+			WithCause(err).
+			WithContext("path", headPath).
+			Build()
 	}
 
 	line := strings.TrimSpace(string(data))

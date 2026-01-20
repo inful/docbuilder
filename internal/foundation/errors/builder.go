@@ -42,6 +42,12 @@ func (b *ErrorBuilder) WithSeverity(severity ErrorSeverity) *ErrorBuilder {
 	return b
 }
 
+// WithCategory sets the error category.
+func (b *ErrorBuilder) WithCategory(category ErrorCategory) *ErrorBuilder {
+	b.category = category
+	return b
+}
+
 // WithRetry sets the retry strategy.
 func (b *ErrorBuilder) WithRetry(strategy RetryStrategy) *ErrorBuilder {
 	b.retry = strategy

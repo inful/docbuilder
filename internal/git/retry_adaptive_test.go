@@ -1,7 +1,6 @@
 package git
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ func TestAdaptiveRetryRateLimit(t *testing.T) {
 	_, err := c.withRetry("clone", "repo", func() (string, error) {
 		calls++
 		if calls < 3 { // fail first two attempts
-			return "", &RateLimitError{Op: "clone", URL: "u", Err: errors.New("rate limit exceeded")}
+			return "", GitError("rate limit exceeded").RateLimit().Build()
 		}
 		return "path", nil
 	})

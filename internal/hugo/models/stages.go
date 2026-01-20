@@ -2,10 +2,10 @@ package models
 
 import (
 	"context"
-	"errors"
+	stdErrors "errors"
 	"fmt"
 
-	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Stage is a discrete unit of work in the site build.
@@ -55,14 +55,14 @@ func (e *StageError) Transient() bool {
 		return false
 	}
 	cause := e.Err
-	isSentinel := func(target error) bool { return errors.Is(cause, target) }
+	isSentinel := func(target error) bool { return stdErrors.Is(cause, target) }
 	switch e.Stage {
 	case StageCloneRepos:
 		if isSentinel(ErrClone) {
 			return true
 		}
-		// Typed transient git errors
-		if errors.As(cause, new(*gitpkg.RateLimitError)) || errors.As(cause, new(*gitpkg.NetworkTimeoutError)) {
+		// Use structured classification for transient errors
+		if ce, ok := errors.AsClassified(cause); ok && ce.RetryStrategy() != errors.RetryNever {
 			return true
 		}
 	case StageRunHugo:

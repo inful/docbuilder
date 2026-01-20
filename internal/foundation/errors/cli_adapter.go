@@ -54,7 +54,7 @@ func (a *CLIErrorAdapter) exitCodeFromClassified(err *ClassifiedError) int {
 		return 1 // General error (conflict)
 	case CategoryNetwork, CategoryGit, CategoryForge:
 		return 8 // External system error
-	case CategoryBuild, CategoryHugo, CategoryFileSystem:
+	case CategoryBuild, CategoryHugo, CategoryFileSystem, CategoryDocs, CategoryEventStore:
 		return 11 // Build error
 	case CategoryDaemon, CategoryRuntime:
 		return 12 // Runtime error

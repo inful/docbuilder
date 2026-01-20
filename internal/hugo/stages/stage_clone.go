@@ -2,7 +2,7 @@ package stages
 
 import (
 	"context"
-	"errors"
+	stdErrors "errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
@@ -21,7 +21,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 		return nil
 	}
 	if bs.Git.WorkspaceDir == "" {
-		return models.NewFatalStageError(models.StageCloneRepos, errors.New("workspace directory not set"))
+		return models.NewFatalStageError(models.StageCloneRepos, stdErrors.New("workspace directory not set"))
 	}
 	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 	// Ensure workspace directory structure (previously via git client)
@@ -119,21 +119,32 @@ func classifyGitFailure(err error) models.ReportIssueCode {
 	if err == nil {
 		return ""
 	}
-	// Prefer typed errors (Phase 4) first
-	switch {
-	case errors.As(err, new(*gitpkg.AuthError)):
-		return models.IssueAuthFailure
-	case errors.As(err, new(*gitpkg.NotFoundError)):
-		return models.IssueRepoNotFound
-	case errors.As(err, new(*gitpkg.UnsupportedProtocolError)):
-		return models.IssueUnsupportedProto
-	case errors.As(err, new(*gitpkg.RemoteDivergedError)):
-		return models.IssueRemoteDiverged
-	case errors.As(err, new(*gitpkg.RateLimitError)):
-		return models.IssueRateLimit
-	case errors.As(err, new(*gitpkg.NetworkTimeoutError)):
-		return models.IssueNetworkTimeout
+
+	// Use structured error classification (ADR-000)
+	if ce, ok := errors.AsClassified(err); ok {
+		switch ce.Category() {
+		case errors.CategoryAuth:
+			return models.IssueAuthFailure
+		case errors.CategoryNotFound:
+			return models.IssueRepoNotFound
+		case errors.CategoryConfig:
+			return models.IssueUnsupportedProto
+		case errors.CategoryNetwork:
+			if ce.RetryStrategy() == errors.RetryRateLimit {
+				return models.IssueRateLimit
+			}
+			return models.IssueNetworkTimeout
+		case errors.CategoryValidation, errors.CategoryAlreadyExists, errors.CategoryGit,
+			errors.CategoryForge, errors.CategoryBuild, errors.CategoryHugo, errors.CategoryFileSystem,
+			errors.CategoryDocs, errors.CategoryEventStore, errors.CategoryRuntime,
+			errors.CategoryDaemon, errors.CategoryInternal:
+			// Other categories use heuristic handling below
+		}
+		if diverged, ok := ce.Context().Get("diverged"); ok && diverged == true {
+			return models.IssueRemoteDiverged
+		}
 	}
+
 	// Fallback heuristic for legacy untyped errors
 	l := strings.ToLower(err.Error())
 	switch {

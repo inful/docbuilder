@@ -24,8 +24,8 @@ func TestStageErrorTransient(t *testing.T) {
 		{models.StageGenerateConfig, errors.New("cfg"), models.StageErrorFatal, false},
 		{models.StageCopyContent, errors.New("io"), models.StageErrorFatal, false},
 		// Typed transient git errors
-		{models.StageCloneRepos, &gitpkg.RateLimitError{Op: "fetch", URL: "u", Err: errors.New("rate limit exceeded")}, models.StageErrorWarning, true},
-		{models.StageCloneRepos, &gitpkg.NetworkTimeoutError{Op: "fetch", URL: "u", Err: errors.New("timeout")}, models.StageErrorWarning, true},
+		{models.StageCloneRepos, gitpkg.ClassifyGitError(errors.New("rate limit exceeded"), "fetch", "u"), models.StageErrorWarning, true},
+		{models.StageCloneRepos, gitpkg.ClassifyGitError(errors.New("network timeout"), "fetch", "u"), models.StageErrorWarning, true},
 	}
 	for i, c := range cases {
 		se := &models.StageError{Stage: c.stage, Err: c.err, Kind: c.kind}

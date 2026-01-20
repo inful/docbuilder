@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -44,7 +43,7 @@ func (c *Client) ListRemoteReferences(repoURL string) ([]*RemoteReference, error
 
 	refs, err := remote.List(listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list remote references: %w", err)
+		return nil, ClassifyGitError(err, "list", repoURL)
 	}
 
 	remoteRefs := make([]*RemoteReference, 0, len(refs))
@@ -100,7 +99,9 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 	if authConfig != nil {
 		auth, err := c.getAuth(authConfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to setup authentication: %w", err)
+			return nil, GitError("failed to setup authentication").
+				WithCause(err).
+				Build()
 		}
 		listOptions.Auth = auth
 	}
@@ -108,7 +109,7 @@ func (c *Client) ListRemoteReferencesWithAuth(repoURL string, authConfig *appcfg
 	// List references
 	refs, err := remote.List(listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list remote references: %w", err)
+		return nil, ClassifyGitError(err, "list", repoURL)
 	}
 
 	remoteRefs := make([]*RemoteReference, 0, len(refs))
