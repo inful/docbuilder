@@ -78,3 +78,168 @@ func TestFixer_HealBrokenLinks(t *testing.T) {
 	assert.Equal(t, "./target.md", result.LinksUpdated[0].OldTarget)
 	assert.Equal(t, "moved_target.md", result.LinksUpdated[0].NewTarget)
 }
+
+func TestFixer_UpdateLinkInFile(t *testing.T) {
+	tempDir := t.TempDir()
+	fixer := &Fixer{}
+
+	t.Run("successful update", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "source.md")
+		originalContent := "# Title\n[Link](old.md)\nSome more text."
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		bl := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Link](old.md)",
+		}
+
+		err = fixer.updateLinkInFile(bl, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "# Title\n[Link](new.md)\nSome more text.", string(content))
+	})
+
+	t.Run("multiple occurrences of exactly same match", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "multiple_exact.md")
+		originalContent := "[Link](old.md) and another [Link](old.md)."
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		bl := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Link](old.md)",
+		}
+
+		err = fixer.updateLinkInFile(bl, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "[Link](new.md) and another [Link](new.md).", string(content))
+	})
+
+	t.Run("multiple occurrences with different text", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "multiple_diff.md")
+		originalContent := "[Link1](old.md) and [Link2](old.md)."
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		// First match
+		bl1 := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Link1](old.md)",
+		}
+		err = fixer.updateLinkInFile(bl1, "new.md")
+		require.NoError(t, err)
+
+		// Second match
+		bl2 := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Link2](old.md)",
+		}
+		err = fixer.updateLinkInFile(bl2, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "[Link1](new.md) and [Link2](new.md).", string(content))
+	})
+
+	t.Run("preserve fragment", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "fragment.md")
+		originalContent := "[Link](old.md#section)"
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		bl := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md#section",
+			FullMatch:  "[Link](old.md#section)",
+		}
+
+		err = fixer.updateLinkInFile(bl, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "[Link](new.md#section)", string(content))
+	})
+
+	t.Run("link not found error", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "notfound.md")
+		originalContent := "[Link](other.md)"
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		bl := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Link](old.md)",
+		}
+
+		err = fixer.updateLinkInFile(bl, "new.md")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "link not found in file")
+	})
+
+	t.Run("reference-style link", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "reference.md")
+		originalContent := "# Ref\n[id]: old.md\n"
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		bl := BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[id]: old.md",
+			LinkType:   LinkTypeReference,
+		}
+
+		err = fixer.updateLinkInFile(bl, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "# Ref\n[id]: new.md\n", string(content))
+	})
+
+	t.Run("mixed styles in one file", func(t *testing.T) {
+		sourceFile := filepath.Join(tempDir, "mixed.md")
+		originalContent := "[Inline](old.md)\n\n[id]: old.md"
+		err := os.WriteFile(sourceFile, []byte(originalContent), 0o600)
+		require.NoError(t, err)
+
+		// Fix inline
+		err = fixer.updateLinkInFile(BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[Inline](old.md)",
+		}, "new.md")
+		require.NoError(t, err)
+
+		// Fix reference
+		err = fixer.updateLinkInFile(BrokenLink{
+			SourceFile: sourceFile,
+			Target:     "old.md",
+			FullMatch:  "[id]: old.md",
+		}, "new.md")
+		require.NoError(t, err)
+
+		// #nosec G304 -- test file
+		content, err := os.ReadFile(sourceFile)
+		require.NoError(t, err)
+		assert.Equal(t, "[Inline](new.md)\n\n[id]: new.md", string(content))
+	})
+}
