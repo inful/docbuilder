@@ -78,13 +78,13 @@ For any “checkpoint” commit during this ADR implementation:
 - [x] Implement `ParseYAML` using `gopkg.in/yaml.v3`
 
 - [ ] Decide determinism strategy for `SerializeYAML` (TDD via golden assertions)
-  - [ ] Option A (simpler): marshal via `yaml.v3` with stable formatting conventions (accepts key re-ordering)
+  - [x] Option A (simpler): deterministic output by sorting keys and encoding via `yaml.Node` (accepts key re-ordering)
   - [ ] Option B (better diffs): keep order using `yaml.Node` and preserve existing order when editing (requires extra work)
 - [ ] Write failing tests for `SerializeYAML` covering:
-  - [ ] stable output across runs for same input
-  - [ ] newline style matches `Style`
-  - [ ] ends with newline (or preserves prior behavior)
-- [ ] Implement `SerializeYAML` until tests pass
+  - [x] stable output across runs for same input
+  - [x] newline style matches `Style`
+  - [x] ends with newline (or preserves prior behavior)
+- [x] Implement `SerializeYAML` until tests pass
 
 ### 2) Migrate one consumer first: `internal/linkverify`
 
