@@ -75,6 +75,18 @@ This is the body.`,
 			expectContent: "# Content\n\nThis is the body.",
 		},
 		{
+			name: "valid front matter (CRLF)",
+			content: "---\r\n" +
+				"title: Test Page\r\n" +
+				"description: Test description\r\n" +
+				"---\r\n" +
+				"# Content\r\n\r\n" +
+				"This is the body.",
+			expectFM:      true,
+			expectTitle:   "Test Page",
+			expectContent: "# Content\r\n\r\nThis is the body.",
+		},
+		{
 			name:          "no front matter",
 			content:       "# Just Content\n\nNo front matter here.",
 			expectFM:      false,
@@ -89,6 +101,32 @@ This is the body.`,
 			expectFM:      false,
 			expectTitle:   "",
 			expectContent: "# Content",
+		},
+		{
+			name:          "empty front matter (CRLF)",
+			content:       "---\r\n---\r\n# Content",
+			expectFM:      false,
+			expectTitle:   "",
+			expectContent: "# Content",
+		},
+		{
+			name: "malformed front matter (missing closing delimiter)",
+			content: "---\n" +
+				"title: Test Page\n" +
+				"# Content\n",
+			expectFM:      false,
+			expectTitle:   "",
+			expectContent: "---\n" + "title: Test Page\n" + "# Content\n",
+		},
+		{
+			name: "invalid YAML front matter (treated as no front matter, body preserved)",
+			content: "---\n" +
+				"title: [\n" +
+				"---\n" +
+				"# Content\n",
+			expectFM:      false,
+			expectTitle:   "",
+			expectContent: "# Content\n",
 		},
 	}
 

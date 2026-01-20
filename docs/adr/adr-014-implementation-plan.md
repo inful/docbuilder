@@ -33,9 +33,9 @@ For any “checkpoint” commit during this ADR implementation:
 
 ### 0) Baseline + guardrails
 
-- [ ] Capture current behaviors with characterization tests (before refactor)
-  - [ ] Add tests around current frontmatter edge cases (no frontmatter, empty, malformed, CRLF)
-  - [ ] Ensure tests cover both lint + pipeline paths that touch frontmatter
+- [x] Capture current behaviors with characterization tests (before refactor)
+  - [x] Add tests around current frontmatter edge cases (no frontmatter, empty, malformed, CRLF)
+  - [x] Ensure tests cover both lint + pipeline paths that touch frontmatter
 - [ ] Ensure module dependency is pinned
   - [x] `github.com/inful/mdfp` is `v1.2.0` in `go.mod`
 
