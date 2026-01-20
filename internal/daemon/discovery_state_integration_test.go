@@ -14,6 +14,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 )
 
 // TestDiscoveryStagePersistsPerRepoDocFilesHash exercises the public GenerateFullSite API
@@ -32,20 +33,12 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	}
 
 	// Initialize a local git repository with one markdown file in docs/.
-	remote := filepath.Join(tmp, "remote-repo-one")
+	_, wt, remote := helpers.SetupTestGitRepo(t)
 	if err := os.MkdirAll(filepath.Join(remote, "docs"), 0o750); err != nil {
 		t.Fatalf("mkdir docs: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(remote, "docs", "page.md"), []byte("# Page\n"), 0o600); err != nil {
 		t.Fatalf("write page: %v", err)
-	}
-	repo, err := git.PlainInit(remote, false)
-	if err != nil {
-		t.Fatalf("init repo: %v", err)
-	}
-	wt, err := repo.Worktree()
-	if err != nil {
-		t.Fatalf("worktree: %v", err)
 	}
 	if _, addErr := wt.Add("docs/page.md"); addErr != nil {
 		t.Fatalf("add: %v", addErr)

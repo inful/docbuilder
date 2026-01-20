@@ -5,19 +5,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 func TestComputeRepoHashConsistency(t *testing.T) {
 	// Create a temporary repository
-	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-
-	repo, err := git.PlainInit(repoPath, false)
-	if err != nil {
-		t.Fatalf("Failed to init repo: %v", err)
-	}
+	repo, _, repoPath := helpers.SetupTestGitRepo(t)
 
 	// Create test files
 	testFile := filepath.Join(repoPath, "test.txt")
@@ -78,13 +73,7 @@ func TestComputeRepoHashConsistency(t *testing.T) {
 
 func TestComputeRepoHashWithPaths(t *testing.T) {
 	// Create a temporary repository
-	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-
-	repo, err := git.PlainInit(repoPath, false)
-	if err != nil {
-		t.Fatalf("Failed to init repo: %v", err)
-	}
+	repo, _, repoPath := helpers.SetupTestGitRepo(t)
 
 	// Create multiple directories
 	dirs := []string{"docs", "src", "config"}
@@ -152,13 +141,7 @@ func TestComputeRepoHashWithPaths(t *testing.T) {
 }
 
 func TestComputeRepoHashChangesWithContent(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-
-	repo, err := git.PlainInit(repoPath, false)
-	if err != nil {
-		t.Fatalf("Failed to init repo: %v", err)
-	}
+	repo, _, repoPath := helpers.SetupTestGitRepo(t)
 
 	testFile := filepath.Join(repoPath, "test.txt")
 	if writeFileErr := os.WriteFile(testFile, []byte("version 1"), 0o600); writeFileErr != nil {
@@ -259,13 +242,7 @@ func TestComputeRepoHashFromWorkdir(t *testing.T) {
 }
 
 func TestGetRepoTree(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-
-	repo, err := git.PlainInit(repoPath, false)
-	if err != nil {
-		t.Fatalf("Failed to init repo: %v", err)
-	}
+	repo, _, repoPath := helpers.SetupTestGitRepo(t)
 
 	testFile := filepath.Join(repoPath, "test.txt")
 	if writeFileErr := os.WriteFile(testFile, []byte("test"), 0o600); writeFileErr != nil {
@@ -315,13 +292,7 @@ func TestGetRepoTree(t *testing.T) {
 }
 
 func TestComputeRepoHashNonexistentPath(t *testing.T) {
-	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-
-	repo, err := git.PlainInit(repoPath, false)
-	if err != nil {
-		t.Fatalf("Failed to init repo: %v", err)
-	}
+	repo, _, repoPath := helpers.SetupTestGitRepo(t)
 
 	testFile := filepath.Join(repoPath, "test.txt")
 	if writeErr := os.WriteFile(testFile, []byte("test"), 0o600); writeErr != nil {

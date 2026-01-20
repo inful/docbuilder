@@ -9,22 +9,17 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 )
 
 func TestFixer_Rollback(t *testing.T) {
-	// Setup temporary directory for git repo
-	tempDir := t.TempDir()
-
-	// Init Git repo
-	repo, err := git.PlainInit(tempDir, false)
-	require.NoError(t, err)
-
-	w, err := repo.Worktree()
-	require.NoError(t, err)
+	// Setup temporary directory and git repo
+	repo, w, tempDir := helpers.SetupTestGitRepo(t)
 
 	// 1. Create a file and commit it (Initial State)
 	file1 := filepath.Join(tempDir, "file1.md")
-	err = os.WriteFile(file1, []byte("Content 1"), 0o600)
+	err := os.WriteFile(file1, []byte("Content 1"), 0o600)
 	require.NoError(t, err)
 
 	_, err = w.Add("file1.md")

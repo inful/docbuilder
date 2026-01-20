@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	helpers "git.home.luguber.info/inful/docbuilder/internal/testutil/testutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
@@ -12,19 +13,12 @@ import (
 )
 
 func TestFixer_HealBrokenLinks(t *testing.T) {
-	// Setup temporary directory for git repo
-	tempDir := t.TempDir()
-
-	// Init Git repo
-	repo, err := git.PlainInit(tempDir, false)
-	require.NoError(t, err)
-
-	w, err := repo.Worktree()
-	require.NoError(t, err)
+	// Setup temporary directory and git repo
+	repo, w, tempDir := helpers.SetupTestGitRepo(t)
 
 	// 1. Create a file and commit it
 	oldFile := filepath.Join(tempDir, "target.md")
-	err = os.WriteFile(oldFile, []byte("# Target File\nContent"), 0o600)
+	err := os.WriteFile(oldFile, []byte("# Target File\nContent"), 0o600)
 	require.NoError(t, err)
 
 	_, err = w.Add("target.md")
@@ -245,12 +239,7 @@ func TestFixer_UpdateLinkInFile(t *testing.T) {
 }
 
 func TestFixer_FindSameContentFile(t *testing.T) {
-	tempDir := t.TempDir()
-	repo, err := git.PlainInit(tempDir, false)
-	require.NoError(t, err)
-
-	w, err := repo.Worktree()
-	require.NoError(t, err)
+	repo, w, tempDir := helpers.SetupTestGitRepo(t)
 
 	signature := &object.Signature{Name: "Test", Email: "test@example.com"}
 
@@ -260,7 +249,7 @@ func TestFixer_FindSameContentFile(t *testing.T) {
 	content1 := []byte("Initial content")
 	content2 := []byte("Different content")
 
-	err = os.WriteFile(filepath.Join(tempDir, f1Path), content1, 0o600)
+	err := os.WriteFile(filepath.Join(tempDir, f1Path), content1, 0o600)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tempDir, f2Path), content2, 0o600)
 	require.NoError(t, err)
@@ -281,7 +270,7 @@ func TestFixer_FindSameContentFile(t *testing.T) {
 		err = os.Rename(filepath.Join(tempDir, f1Path), filepath.Join(tempDir, newName))
 		require.NoError(t, err)
 
-		_, err = w.Add(f1Path)  // Delete old
+		_, err = w.Add(f1Path) // Delete old
 		require.NoError(t, err)
 		_, err = w.Add(newName) // Add new
 		require.NoError(t, err)
