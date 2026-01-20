@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"github.com/go-git/go-git/v5"
@@ -68,14 +69,37 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 }
 
 // shouldUseGitMv checks if a file is under Git version control and tracked.
-func (f *Fixer) shouldUseGitMv(_ string) bool {
+func (f *Fixer) shouldUseGitMv(filePath string) bool {
 	if f.gitRepo == nil {
 		return false
 	}
 
-	// For now, let's use a simpler check: if we have a gitRepo, we'll try gitMv and fallback if it fails.
-	// In the future, we could check if the file is tracked in the head commit.
-	return true
+	// Use the git index to check if the file is tracked.
+	// Only tracked files can be moved with 'git mv'.
+	idx, err := f.gitRepo.Storer.Index()
+	if err != nil {
+		return false
+	}
+
+	// Git paths in the index are always relative to the repository root and use forward slashes.
+	// We assume f.gitRepo was opened at the root of the workspace being fixed (.).
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return false
+	}
+	root, err := filepath.Abs(".")
+	if err != nil {
+		return false
+	}
+
+	relPath, err := filepath.Rel(root, absPath)
+	if err != nil || strings.HasPrefix(relPath, "..") {
+		return false // Path is outside repository
+	}
+
+	relPath = filepath.ToSlash(relPath)
+	_, err = idx.Entry(relPath)
+	return err == nil
 }
 
 // gitMv performs a git mv operation using the Git library.
@@ -89,11 +113,32 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 		return errors.WrapError(err, errors.CategoryGit, "failed to get git worktree").Build()
 	}
 
-	// Calculate paths relative to the repository root
-	// We assume f.gitRepo was opened at the root of the workspace being fixed.
+	// Calculate paths relative to the repository root (.)
+	root, err := filepath.Abs(".")
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to get absolute path of current directory").Build()
+	}
 
-	// Perform the move
-	_, err = w.Move(oldPath, newPath)
+	absOld, err := filepath.Abs(oldPath)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to get absolute path of old file").Build()
+	}
+	relOld, err := filepath.Rel(root, absOld)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to get relative path of old file").Build()
+	}
+
+	absNew, err := filepath.Abs(newPath)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to get absolute path of new file").Build()
+	}
+	relNew, err := filepath.Rel(root, absNew)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to get relative path of new file").Build()
+	}
+
+	// Perform the move using repository-relative paths
+	_, err = w.Move(filepath.ToSlash(relOld), filepath.ToSlash(relNew))
 	if err != nil {
 		return errors.WrapError(err, errors.CategoryGit, "failed to move file in git").Build()
 	}
@@ -109,7 +154,7 @@ func isGitRepository(dir string) bool {
 }
 
 // isGitClean checks if the Git repository has uncommitted changes.
-func (f *Fixer) isGitClean(_ string) (bool, error) {
+func (f *Fixer) isGitClean() (bool, error) {
 	if f.gitRepo == nil {
 		return true, nil
 	}

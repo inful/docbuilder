@@ -143,7 +143,7 @@ func (f *Fixer) FixWithConfirmation(path string) (*FixResult, error) {
 func (f *Fixer) fix(path string) (*FixResult, error) {
 	// If git-aware, check for uncommitted changes to ensure safe rollback
 	if f.gitAware && !f.dryRun && !f.force {
-		clean, err := f.isGitClean(path)
+		clean, err := f.isGitClean()
 		if err != nil {
 			return nil, fmt.Errorf("failed to check git status: %w", err)
 		}
