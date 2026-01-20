@@ -24,6 +24,13 @@ Introduce a single internal component for YAML frontmatter splitting/parsing/wri
 
 ## Tracking Checklist (TDD-first)
 
+## Commit checkpoints (required)
+
+For any “checkpoint” commit during this ADR implementation:
+
+- [ ] `go test ./... -count=1` passes
+- [ ] `golangci-lint run --fix` followed by `golangci-lint run` passes
+
 ### 0) Baseline + guardrails
 
 - [ ] Capture current behaviors with characterization tests (before refactor)
@@ -49,26 +56,26 @@ Introduce a single internal component for YAML frontmatter splitting/parsing/wri
 
 #### 1.1 Split / Join
 
-- [ ] Write failing unit tests for `Split` in `internal/frontmatter/frontmatter_test.go`
-  - [ ] No frontmatter: content starts without `---`
-  - [ ] YAML frontmatter: `---\n<yaml>\n---\n<body>`
-  - [ ] CRLF variant: `---\r\n...` and ensure round-trip preserves CRLF
-  - [ ] Empty frontmatter block: `---\n---\n<body>` (define expected `had` and `frontmatter` content)
-  - [ ] Malformed: starts with `---` but missing closing delimiter (must return an error)
+- [x] Write failing unit tests for `Split` in `internal/frontmatter/frontmatter_test.go`
+  - [x] No frontmatter: content starts without `---`
+  - [x] YAML frontmatter: `---\n<yaml>\n---\n<body>`
+  - [x] CRLF variant: `---\r\n...` and ensure round-trip preserves CRLF
+  - [x] Empty frontmatter block: `---\n---\n<body>` (define expected `had` and `frontmatter` content)
+  - [x] Malformed: starts with `---` but missing closing delimiter (must return an error)
   - [ ] Leading BOM (optional): treat BOM as part of body unless we explicitly decide otherwise
-- [ ] Implement minimal `Split` until tests pass
-- [ ] Write failing unit tests for `Join`
-  - [ ] Round-trip property: `Join(Split(x)) == x` for representative inputs
+- [x] Implement minimal `Split` until tests pass
+- [x] Write failing unit tests for `Join`
+  - [x] Round-trip property: `Join(Split(x)) == x` for representative inputs
   - [ ] Preserve trailing newline behavior
-- [ ] Implement `Join` until tests pass
+- [x] Implement `Join` until tests pass
 
 #### 1.2 Parse / Serialize
 
-- [ ] Write failing unit tests for `ParseYAML`
-  - [ ] Valid YAML maps
-  - [ ] Empty frontmatter YAML (should return empty map)
-  - [ ] Invalid YAML (returns error)
-- [ ] Implement `ParseYAML` using `gopkg.in/yaml.v3`
+- [x] Write failing unit tests for `ParseYAML`
+  - [x] Valid YAML maps
+  - [x] Empty frontmatter YAML (should return empty map)
+  - [x] Invalid YAML (returns error)
+- [x] Implement `ParseYAML` using `gopkg.in/yaml.v3`
 
 - [ ] Decide determinism strategy for `SerializeYAML` (TDD via golden assertions)
   - [ ] Option A (simpler): marshal via `yaml.v3` with stable formatting conventions (accepts key re-ordering)
