@@ -1,16 +1,17 @@
 package lint
 
 import (
-	"errors"
+	stdErrors "errors"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-var errStop = errors.New("stop iteration")
+var errStop = errors.NewError(errors.CategoryInternal, "stop iteration").Build()
 
 // healBrokenLinks attempts to fix links that were broken by external renames/moves
 // using Git history to find where the files went.
@@ -54,29 +55,40 @@ func (f *Fixer) updateLinkInFile(sourcePath, oldLink, newLink string) error {
 	// #nosec G304 -- sourcePath is from discovery walkFiles, not user input
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
-		return err
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to read file").
+			WithContext("file", sourcePath).
+			Build()
 	}
 
 	newContent := strings.ReplaceAll(string(content), "("+oldLink+")", "("+newLink+")")
 	newContent = strings.ReplaceAll(newContent, "["+oldLink+"]", "["+newLink+"]")
 
 	if newContent == string(content) {
-		return errors.New("link not found in file")
+		return errors.NewError(errors.CategoryNotFound, "link not found in file").
+			WithContext("file", sourcePath).
+			WithContext("link", oldLink).
+			Build()
 	}
 
-	return os.WriteFile(sourcePath, []byte(newContent), 0o600)
+	err = os.WriteFile(sourcePath, []byte(newContent), 0o600)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to write file").
+			WithContext("file", sourcePath).
+			Build()
+	}
+	return nil
 }
 
 // findMovedFileInHistory searches Git logs to find a rename or move of the target path.
 func (f *Fixer) findMovedFileInHistory(targetPath string, root string) (string, error) {
 	ref, err := f.gitRepo.Head()
 	if err != nil {
-		return "", err
+		return "", errors.WrapError(err, errors.CategoryGit, "failed to get head ref").Build()
 	}
 
 	cIter, err := f.gitRepo.Log(&git.LogOptions{From: ref.Hash()})
 	if err != nil {
-		return "", err
+		return "", errors.WrapError(err, errors.CategoryGit, "failed to get git log").Build()
 	}
 
 	// We only look back a few commits to avoid heavy processing
@@ -85,7 +97,10 @@ func (f *Fixer) findMovedFileInHistory(targetPath string, root string) (string, 
 
 	relativeTarget, err := filepath.Rel(root, targetPath)
 	if err != nil {
-		return "", err
+		return "", errors.WrapError(err, errors.CategoryFileSystem, "failed to calculate relative path").
+			WithContext("root", root).
+			WithContext("target", targetPath).
+			Build()
 	}
 	relativeTarget = filepath.ToSlash(relativeTarget)
 
@@ -130,7 +145,7 @@ func (f *Fixer) findMovedFileInHistory(targetPath string, root string) (string, 
 		return nil
 	})
 
-	if err != nil && !errors.Is(err, errStop) {
+	if err != nil && !stdErrors.Is(err, errStop) {
 		return "", err
 	}
 
