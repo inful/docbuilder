@@ -3,7 +3,6 @@ package forge
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const defaultMainBranch = "main"
@@ -27,7 +27,10 @@ type GitLabClient struct {
 // NewGitLabClient creates a new GitLab client.
 func NewGitLabClient(fg *Config) (*GitLabClient, error) {
 	if fg.Type != cfg.ForgeGitLab {
-		return nil, fmt.Errorf("invalid forge type for GitLab client: %s", fg.Type)
+		return nil, errors.ForgeError("invalid forge type for GitLab client").
+			WithContext("type", fg.Type).
+			Fatal().
+			Build()
 	}
 
 	// Set default URLs if not provided
@@ -160,7 +163,10 @@ func (c *GitLabClient) ListRepositories(ctx context.Context, groups []string) ([
 	for i, group := range groups {
 		res := results[i]
 		if res.Err != nil {
-			return nil, fmt.Errorf("failed to get projects for group %s: %w", group, res.Err)
+			return nil, errors.ForgeError("failed to get projects for GitLab group").
+				WithCause(res.Err).
+				WithContext("group", group).
+				Build()
 		}
 		allRepos = append(allRepos, res.Value...)
 	}
@@ -246,10 +252,16 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 		if branch == defaultMainBranch && repo.DefaultBranch == "" {
 			hasDocs, err = c.checkPathExists(ctx, projectID, "docs", "master")
 			if err != nil {
-				return fmt.Errorf("failed to check docs folder: %w", err)
+				return errors.ForgeError("failed to check docs folder existence on GitLab").
+					WithCause(err).
+					WithContext("repo", repo.FullName).
+					Build()
 			}
 		} else {
-			return fmt.Errorf("failed to check docs folder: %w", err)
+			return errors.ForgeError("failed to check docs folder existence on GitLab").
+				WithCause(err).
+				WithContext("repo", repo.FullName).
+				Build()
 		}
 	}
 	repo.HasDocs = hasDocs
@@ -259,7 +271,10 @@ func (c *GitLabClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	if hasDocs {
 		hasDocIgnore, err := c.checkPathExists(ctx, projectID, ".docignore", branch)
 		if err != nil {
-			return fmt.Errorf("failed to check .docignore file: %w", err)
+			return errors.ForgeError("failed to check .docignore existence on GitLab").
+				WithCause(err).
+				WithContext("repo", repo.FullName).
+				Build()
 		}
 		repo.HasDocIgnore = hasDocIgnore
 	} else {
@@ -298,7 +313,12 @@ func (c *GitLabClient) checkPathExists(ctx context.Context, projectID, filePath,
 	if resp.StatusCode != http.StatusOK {
 		// Log the full error for debugging
 		body, _ := io.ReadAll(resp.Body)
-		return false, fmt.Errorf("unexpected status code %d: %s (endpoint: %s)", resp.StatusCode, string(body), endpoint)
+		return false, errors.ForgeError("unexpected status code from GitLab").
+			WithContext("status", resp.Status).
+			WithContext("code", resp.StatusCode).
+			WithContext("response", string(body)).
+			WithContext("endpoint", endpoint).
+			Build()
 	}
 
 	// Check if we got any results (directory exists and has content)
@@ -323,7 +343,9 @@ func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 	case "repository", "Repository Update Hook":
 		return c.parseRepositoryEvent(payload)
 	default:
-		return nil, fmt.Errorf("unsupported event type: %s", eventType)
+		return nil, errors.ForgeError("unsupported event type from GitLab").
+			WithContext("type", eventType).
+			Build()
 	}
 }
 
@@ -366,10 +388,12 @@ type gitlabRepository struct {
 func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent gitlabPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal GitLab push event").
+			WithCause(err).
+			Build()
 	}
 	if pushEvent.Project.ID == 0 { // zero value detection via ID
-		return nil, errors.New("missing project in push event")
+		return nil, errors.ForgeError("missing project in GitLab push event").Build()
 	}
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
 	commits := make([]WebhookCommit, 0, len(pushEvent.Commits))
@@ -399,10 +423,12 @@ func (c *GitLabClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent gitlabPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal GitLab tag push event").
+			WithCause(err).
+			Build()
 	}
 	if pushEvent.Project.ID == 0 {
-		return nil, errors.New("missing project in tag push event")
+		return nil, errors.ForgeError("missing project in GitLab tag push event").Build()
 	}
 	// Extract tag name from ref (refs/tags/v1.0.0 -> v1.0.0)
 	tag := strings.TrimPrefix(pushEvent.Ref, "refs/tags/")
@@ -419,7 +445,9 @@ func (c *GitLabClient) parseTagPushEvent(payload []byte) (*WebhookEvent, error) 
 func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
 	var repoEvent map[string]any
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal GitLab repository event").
+			WithCause(err).
+			Build()
 	}
 
 	event := &WebhookEvent{Type: WebhookEventRepository, Timestamp: time.Now(), Changes: make(map[string]string), Metadata: make(map[string]string)}
@@ -431,7 +459,7 @@ func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 			}
 		}
 	} else {
-		return nil, errors.New("missing project in repository event")
+		return nil, errors.ForgeError("missing project in GitLab repository event").Build()
 	}
 	return event, nil
 }
@@ -439,7 +467,9 @@ func (c *GitLabClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 // RegisterWebhook registers a webhook for a project.
 func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
-		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
+		return errors.ForgeError("webhook not configured for GitLab forge").
+			WithContext("name", c.config.Name).
+			Build()
 	}
 
 	endpoint := fmt.Sprintf("/projects/%s/hooks", url.PathEscape(repo.FullName))

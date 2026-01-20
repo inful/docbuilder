@@ -2,13 +2,13 @@ package forge
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // DiscoveryService handles repository discovery across multiple forges.
@@ -113,7 +113,9 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([]*Repository, []*Organization, []*Repository, error) {
 	forgeConfig := ds.forgeManager.GetForgeConfigs()[client.GetName()]
 	if forgeConfig == nil {
-		return nil, nil, nil, fmt.Errorf("forge configuration not found for %s", client.GetName())
+		return nil, nil, nil, errors.ConfigError("forge configuration not found").
+			WithContext("name", client.GetName()).
+			Build()
 	}
 
 	// Determine which organizations/groups to scan.
@@ -134,7 +136,10 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		slog.Info("Entering auto-discovery mode (no organizations/groups configured)", "forge", client.GetName())
 		orgs, err := client.ListOrganizations(ctx)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to list organizations: %w", err)
+			return nil, nil, nil, errors.ForgeError("failed to list organizations during auto-discovery").
+				WithCause(err).
+				WithContext("forge", client.GetName()).
+				Build()
 		}
 		organizations = orgs
 		hasPrelistedOrgs = true
@@ -168,7 +173,10 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 		organizations = make([]*Organization, 0)
 	}
 	if repositoriesErr != nil {
-		return nil, organizations, nil, fmt.Errorf("failed to list repositories: %w", repositoriesErr)
+		return nil, organizations, nil, errors.ForgeError("failed to list repositories for forge").
+			WithCause(repositoriesErr).
+			WithContext("forge", client.GetName()).
+			Build()
 	}
 
 	// Ensure repository metadata includes forge identity for downstream conversion (auth, namespacing, edit links).

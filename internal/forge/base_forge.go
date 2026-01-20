@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"path"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // BaseForge provides common HTTP operations for forge clients.
@@ -61,7 +63,10 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 
 	u, err := url.Parse(b.apiURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse API URL: %w", err)
+		return nil, errors.ForgeError("failed to parse API URL").
+			WithCause(err).
+			WithContext("api_url", b.apiURL).
+			Build()
 	}
 
 	// Join paths while preserving base path
@@ -77,17 +82,27 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 		var jsonBody []byte
 		jsonBody, err = json.Marshal(body)
 		if err != nil {
-			return nil, fmt.Errorf("marshal request body: %w", err)
+			return nil, errors.ForgeError("failed to marshal request body").
+				WithCause(err).
+				Build()
 		}
 		req, err = http.NewRequestWithContext(ctx, method, u.String(), bytes.NewReader(jsonBody))
 		if err != nil {
-			return nil, fmt.Errorf("create request: %w", err)
+			return nil, errors.ForgeError("failed to create request").
+				WithCause(err).
+				WithContext("method", method).
+				WithContext("url", u.String()).
+				Build()
 		}
 		req.Header.Set("Content-Type", "application/json")
 	} else {
 		req, err = http.NewRequestWithContext(ctx, method, u.String(), http.NoBody)
 		if err != nil {
-			return nil, fmt.Errorf("create request: %w", err)
+			return nil, errors.ForgeError("failed to create request").
+				WithCause(err).
+				WithContext("method", method).
+				WithContext("url", u.String()).
+				Build()
 		}
 	}
 
@@ -108,7 +123,11 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("execute request: %w", err)
+		return errors.NetworkError("failed to execute forge request").
+			WithCause(err).
+			WithContext("method", req.Method).
+			WithContext("url", req.URL.String()).
+			Build()
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -116,12 +135,27 @@ func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 		// Read limited body for diagnostics
 		limitedBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
-		return fmt.Errorf("API error: %s url=%s body=%q", resp.Status, req.URL.String(), bodyStr)
+
+		category := errors.CategoryForge
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			category = errors.CategoryAuth
+		} else if resp.StatusCode == http.StatusNotFound {
+			category = errors.CategoryNotFound
+		}
+
+		return errors.NewError(category, fmt.Sprintf("forge API error: %s", resp.Status)).
+			WithContext("status", resp.Status).
+			WithContext("code", resp.StatusCode).
+			WithContext("url", req.URL.String()).
+			WithContext("response", bodyStr).
+			Build()
 	}
 
 	if result != nil {
 		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-			return fmt.Errorf("decode response: %w", err)
+			return errors.ForgeError("failed to decode response").
+				WithCause(err).
+				Build()
 		}
 	}
 
@@ -133,19 +167,38 @@ func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 func (b *BaseForge) DoRequestWithHeaders(req *http.Request, result any) (http.Header, error) {
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("execute request: %w", err)
+		return nil, errors.NetworkError("failed to execute forge request").
+			WithCause(err).
+			WithContext("method", req.Method).
+			WithContext("url", req.URL.String()).
+			Build()
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 400 {
 		limitedBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		bodyStr := strings.ReplaceAll(string(limitedBody), "\n", " ")
-		return nil, fmt.Errorf("API error: %s url=%s body=%q", resp.Status, req.URL.String(), bodyStr)
+
+		category := errors.CategoryForge
+		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			category = errors.CategoryAuth
+		} else if resp.StatusCode == http.StatusNotFound {
+			category = errors.CategoryNotFound
+		}
+
+		return nil, errors.NewError(category, "forge API error").
+			WithContext("status", resp.Status).
+			WithContext("code", resp.StatusCode).
+			WithContext("url", req.URL.String()).
+			WithContext("response", bodyStr).
+			Build()
 	}
 
 	if result != nil {
 		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-			return nil, fmt.Errorf("decode response: %w", err)
+			return nil, errors.ForgeError("failed to decode response").
+				WithCause(err).
+				Build()
 		}
 	}
 

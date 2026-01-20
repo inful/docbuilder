@@ -1,9 +1,8 @@
 package forge
 
 import (
-	"fmt"
-
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // NewForgeClient creates a new forge client based on the configuration.
@@ -18,7 +17,10 @@ func NewForgeClient(config *Config) (Client, error) {
 	case cfg.ForgeLocal:
 		return NewLocalClient(config)
 	default:
-		return nil, fmt.Errorf("unsupported forge type: %s", config.Type)
+		return nil, errors.ConfigError("unsupported forge type").
+			WithContext("type", config.Type).
+			Fatal().
+			Build()
 	}
 }
 
@@ -29,7 +31,10 @@ func CreateForgeManager(configs []*Config) (*Manager, error) {
 	for _, config := range configs {
 		client, err := NewForgeClient(config)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create forge client for %s: %w", config.Name, err)
+			return nil, errors.ForgeError("failed to create forge client").
+				WithCause(err).
+				WithContext("name", config.Name).
+				Build()
 		}
 
 		manager.AddForge(config, client)

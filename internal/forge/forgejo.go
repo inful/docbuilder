@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ForgejoClient implements ForgeClient for Forgejo (Gitea-compatible API).
@@ -28,7 +28,10 @@ type ForgejoClient struct {
 // NewForgejoClient creates a new Forgejo client.
 func NewForgejoClient(fg *Config) (*ForgejoClient, error) {
 	if fg.Type != cfg.ForgeForgejo {
-		return nil, fmt.Errorf("invalid forge type for Forgejo client: %s", fg.Type)
+		return nil, errors.ForgeError("invalid forge type for Forgejo client").
+			WithContext("type", fg.Type).
+			Fatal().
+			Build()
 	}
 
 	// Extract token from auth config
@@ -249,14 +252,20 @@ func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository
 	// Check for docs folder
 	hasDocs, err := c.checkPathExists(ctx, owner, repoName, "docs", repo.DefaultBranch)
 	if err != nil {
-		return fmt.Errorf("failed to check docs folder: %w", err)
+		return errors.ForgeError("failed to check docs folder existence on Forgejo").
+			WithCause(err).
+			WithContext("repo", repo.FullName).
+			Build()
 	}
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
 	hasDocIgnore, err := c.checkPathExists(ctx, owner, repoName, ".docignore", repo.DefaultBranch)
 	if err != nil {
-		return fmt.Errorf("failed to check .docignore file: %w", err)
+		return errors.ForgeError("failed to check .docignore existence on Forgejo").
+			WithCause(err).
+			WithContext("repo", repo.FullName).
+			Build()
 	}
 	repo.HasDocIgnore = hasDocIgnore
 
@@ -283,7 +292,11 @@ func (c *ForgejoClient) checkPathExists(ctx context.Context, owner, repo, path, 
 		return false, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return false, errors.ForgeError("unexpected status code from Forgejo").
+			WithContext("status", resp.Status).
+			WithContext("code", resp.StatusCode).
+			WithContext("url", req.URL.String()).
+			Build()
 	}
 
 	return true, nil
@@ -325,7 +338,9 @@ func (c *ForgejoClient) ParseWebhookEvent(payload []byte, eventType string) (*We
 	case string(WebhookEventRepository):
 		return c.parseRepositoryEvent(payload)
 	default:
-		return nil, fmt.Errorf("unsupported event type: %s", eventType)
+		return nil, errors.ForgeError("unsupported event type from Forgejo").
+			WithContext("type", eventType).
+			Build()
 	}
 }
 
@@ -360,16 +375,20 @@ type forgejoCommit struct {
 func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	var pushEvent forgejoPushEvent
 	if err := json.Unmarshal(payload, &pushEvent); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal Forgejo push event").
+			WithCause(err).
+			Build()
 	}
 
 	if len(pushEvent.Repository) == 0 {
-		return nil, errors.New("missing repository in push event")
+		return nil, errors.ForgeError("missing repository in Forgejo push event").Build()
 	}
 
 	var repoMap map[string]any
 	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal repository in Forgejo push event").
+			WithCause(err).
+			Build()
 	}
 	if rawID, ok := repoMap["id"].(string); ok {
 		if intID, convErr := strconv.Atoi(rawID); convErr == nil {
@@ -378,11 +397,15 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 	repoBytes, marshalErr := json.Marshal(repoMap)
 	if marshalErr != nil {
-		return nil, marshalErr
+		return nil, errors.ForgeError("failed to marshal normalized repository for Forgejo push event").
+			WithCause(marshalErr).
+			Build()
 	}
 	var repo forgejoRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal normalized repository for Forgejo push event").
+			WithCause(err).
+			Build()
 	}
 
 	branch := strings.TrimPrefix(pushEvent.Ref, "refs/heads/")
@@ -419,7 +442,9 @@ func (c *ForgejoClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, error) {
 	var repoEvent map[string]any
 	if err := json.Unmarshal(payload, &repoEvent); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal Forgejo repository event").
+			WithCause(err).
+			Build()
 	}
 
 	event := &WebhookEvent{
@@ -451,7 +476,9 @@ func (c *ForgejoClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, err
 // RegisterWebhook registers a webhook for a repository.
 func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
-		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
+		return errors.ForgeError("webhook not configured for forge").
+			WithContext("name", c.config.Name).
+			Build()
 	}
 
 	owner, repoName := c.splitFullName(repo.FullName)

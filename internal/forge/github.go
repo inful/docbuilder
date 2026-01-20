@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // GitHubClient implements ForgeClient for GitHub.
@@ -27,7 +27,10 @@ type GitHubClient struct {
 // NewGitHubClient creates a new GitHub client.
 func NewGitHubClient(fg *Config) (*GitHubClient, error) {
 	if fg.Type != cfg.ForgeGitHub {
-		return nil, fmt.Errorf("invalid forge type for GitHub client: %s", fg.Type)
+		return nil, errors.ForgeError("invalid forge type for GitHub client").
+			WithContext("type", fg.Type).
+			Fatal().
+			Build()
 	}
 
 	// Set default URLs if not provided
@@ -92,7 +95,9 @@ func (c *GitHubClient) ListOrganizations(ctx context.Context) ([]*Organization, 
 	// Get user's organizations
 	userOrgs, err := c.getUserOrganizations(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user organizations: %w", err)
+		return nil, errors.ForgeError("failed to list GitHub organizations").
+			WithCause(err).
+			Build()
 	}
 
 	orgs := make([]*Organization, 0, len(userOrgs))
@@ -148,7 +153,10 @@ func (c *GitHubClient) ListRepositories(ctx context.Context, organizations []str
 	for i, org := range organizations {
 		res := results[i]
 		if res.Err != nil {
-			return nil, fmt.Errorf("failed to get repositories for org %s: %w", org, res.Err)
+			return nil, errors.ForgeError("failed to get repositories for GitHub organization").
+				WithCause(res.Err).
+				WithContext("org", org).
+				Build()
 		}
 		allRepos = append(allRepos, res.Value...)
 	}
@@ -198,14 +206,20 @@ func (c *GitHubClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	// Check for docs folder
 	hasDocs, err := c.checkPathExists(ctx, owner, repoName, "docs", repo.DefaultBranch)
 	if err != nil {
-		return fmt.Errorf("failed to check docs folder: %w", err)
+		return errors.ForgeError("failed to check docs folder existence on GitHub").
+			WithCause(err).
+			WithContext("repo", repo.FullName).
+			Build()
 	}
 	repo.HasDocs = hasDocs
 
 	// Check for .docignore file
 	hasDocIgnore, err := c.checkPathExists(ctx, owner, repoName, ".docignore", repo.DefaultBranch)
 	if err != nil {
-		return fmt.Errorf("failed to check .docignore file: %w", err)
+		return errors.ForgeError("failed to check .docignore existence on GitHub").
+			WithCause(err).
+			WithContext("repo", repo.FullName).
+			Build()
 	}
 	repo.HasDocIgnore = hasDocIgnore
 
@@ -230,7 +244,11 @@ func (c *GitHubClient) checkPathExists(ctx context.Context, owner, repo, path, b
 		return false, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return false, errors.ForgeError("unexpected status code from GitHub").
+			WithContext("status", resp.Status).
+			WithContext("code", resp.StatusCode).
+			WithContext("url", req.URL.String()).
+			Build()
 	}
 
 	return true, nil
@@ -271,7 +289,9 @@ func (c *GitHubClient) ParseWebhookEvent(payload []byte, eventType string) (*Web
 	case string(WebhookEventRepository):
 		return c.parseRepositoryEvent(payload)
 	default:
-		return nil, fmt.Errorf("unsupported event type: %s", eventType)
+		return nil, errors.ForgeError("unsupported event type from GitHub").
+			WithContext("type", eventType).
+			Build()
 	}
 }
 
@@ -305,13 +325,15 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 
 	if len(pushEvent.Repository) == 0 {
-		return nil, errors.New("missing repository in push event")
+		return nil, errors.ForgeError("missing repository in push event from GitHub").Build()
 	}
 
 	// Decode repository allowing id to be string or int
 	var repoMap map[string]any
 	if err := json.Unmarshal(pushEvent.Repository, &repoMap); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal repository in GitHub push event").
+			WithCause(err).
+			Build()
 	}
 	// Normalize id to int if it's a string
 	if rawID, ok := repoMap["id"].(string); ok {
@@ -321,11 +343,15 @@ func (c *GitHubClient) parsePushEvent(payload []byte) (*WebhookEvent, error) {
 	}
 	repoBytes, marshalErr := json.Marshal(repoMap)
 	if marshalErr != nil {
-		return nil, marshalErr
+		return nil, errors.ForgeError("failed to marshal normalized repository for GitHub push event").
+			WithCause(marshalErr).
+			Build()
 	}
 	var repo githubRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal normalized repository for GitHub push event").
+			WithCause(err).
+			Build()
 	}
 
 	// Extract branch name from ref (refs/heads/main -> main)
@@ -380,12 +406,14 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 	}
 
 	if len(repoEvent.Repository) == 0 {
-		return nil, errors.New("missing repository in repository event")
+		return nil, errors.ForgeError("missing repository in repository event from GitHub").Build()
 	}
 
 	var repoMap map[string]any
 	if err := json.Unmarshal(repoEvent.Repository, &repoMap); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal repository in GitHub repository event").
+			WithCause(err).
+			Build()
 	}
 	if rawID, ok := repoMap["id"].(string); ok {
 		if intID, convErr := strconv.Atoi(rawID); convErr == nil {
@@ -394,11 +422,15 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 	}
 	repoBytes, marshalErr := json.Marshal(repoMap)
 	if marshalErr != nil {
-		return nil, marshalErr
+		return nil, errors.ForgeError("failed to marshal normalized repository for GitHub repository event").
+			WithCause(marshalErr).
+			Build()
 	}
 	var repo githubRepo
 	if err := json.Unmarshal(repoBytes, &repo); err != nil {
-		return nil, err
+		return nil, errors.ForgeError("failed to unmarshal normalized repository for GitHub repository event").
+			WithCause(err).
+			Build()
 	}
 
 	event := &WebhookEvent{
@@ -423,7 +455,9 @@ func (c *GitHubClient) parseRepositoryEvent(payload []byte) (*WebhookEvent, erro
 // RegisterWebhook registers a webhook for a repository.
 func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	if c.config.Webhook == nil {
-		return fmt.Errorf("webhook not configured for forge %s", c.config.Name)
+		return errors.ForgeError("webhook not configured for GitHub forge").
+			WithContext("name", c.config.Name).
+			Build()
 	}
 
 	owner, repoName := c.splitFullName(repo.FullName)
