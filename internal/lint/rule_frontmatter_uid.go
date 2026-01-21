@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v3"
 )
 
 type FrontmatterUIDRule struct{}
@@ -39,16 +39,21 @@ func (r *FrontmatterUIDRule) Check(filePath string) ([]Issue, error) {
 		return nil, err
 	}
 
-	fm, ok := extractFrontmatter(string(data))
-	if !ok {
+	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
+	if splitErr != nil {
+		//nolint:nilerr // reported as lint issue, not a hard error
+		return []Issue{r.missingIssue(filePath)}, nil
+	}
+	if !had {
 		return []Issue{r.missingIssue(filePath)}, nil
 	}
 
-	var obj map[string]any
-	if err := yaml.Unmarshal([]byte(fm), &obj); err != nil {
+	obj, parseErr := frontmatter.ParseYAML(fmBytes)
+	if parseErr != nil {
 		// If frontmatter exists but isn't valid YAML, other rules may report it,
 		// but uid can't be validated either.
-		return []Issue{r.missingIssue(filePath)}, nil //nolint:nilerr // reported as lint issue, not a hard error
+		//nolint:nilerr // reported as lint issue, not a hard error
+		return []Issue{r.missingIssue(filePath)}, nil
 	}
 
 	uidAny, hasUID := obj["uid"]
@@ -153,17 +158,4 @@ func (r *FrontmatterUIDRule) missingAliasIssue(filePath, uid string) Issue {
 		Fix:  "Run: docbuilder lint --fix (adds missing uid-based aliases)",
 		Line: 0,
 	}
-}
-
-// extractFrontmatter returns the YAML frontmatter (without delimiters) if present.
-func extractFrontmatter(content string) (string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
-		return "", false
-	}
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
-		return "", false
-	}
-	frontmatter := content[4 : endIdx+4]
-	return frontmatter, true
 }
