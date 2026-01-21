@@ -61,7 +61,7 @@ tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance
     - `internal/hugo/indexes.go`, `internal/hugo/models/typed_transformers.go`, `internal/hugo/pipeline/transform_frontmatter.go` (split/join workflows)
 - [x] Confirm initial migration target(s): start with `internal/lint` (fixer + broken-links) to freeze line-number behavior early.
 
-**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `82195fa`
 
 **Commit message**: `docs(plan): note ADR-015 migration targets`
 
