@@ -154,16 +154,16 @@ Approach:
 
 ### 6) Delete duplicated implementations
 
-- [ ] Identify and remove old frontmatter helpers (only after all migrations are complete)
-- [ ] Ensure no other packages parse frontmatter ad-hoc
+- [x] Identify and remove old frontmatter helpers (only after all migrations are complete)
+- [x] Ensure no other packages parse frontmatter ad-hoc
 
 ### 7) Verification checklist (must stay green)
 
 - [ ] `gofmt ./...`
-- [ ] `go test ./... -count=1`
-- [ ] `go test ./test/integration -v` (golden tests)
-- [ ] `golangci-lint run --fix`
-- [ ] `golangci-lint run`
+- [x] `go test ./... -count=1`
+- [x] `go test ./test/integration -v` (golden tests)
+- [x] `golangci-lint run --fix`
+- [x] `golangci-lint run`
 
 ## Notes / Decisions to record during implementation
 
