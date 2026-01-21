@@ -7,7 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"gopkg.in/yaml.v3"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 // TestUseReadmeAsIndex_WithExistingFrontMatter tests README with valid front matter.
@@ -53,12 +53,15 @@ This is a test repository.
 	}
 
 	// Parse front matter to verify fields
-	var fm map[string]any
-	parts := splitFrontMatter(contentStr)
-	if len(parts) < 2 {
+	fmRaw, _, had, _, err := frontmatter.Split([]byte(contentStr))
+	if err != nil {
+		t.Fatalf("failed to split front matter: %v", err)
+	}
+	if !had {
 		t.Fatal("no front matter found")
 	}
-	if err := yaml.Unmarshal([]byte(parts[0]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		t.Fatalf("failed to parse front matter: %v", err)
 	}
 
@@ -115,12 +118,15 @@ This is a test repository without front matter.
 	}
 
 	// Parse front matter
-	var fm map[string]any
-	parts := splitFrontMatter(contentStr)
-	if len(parts) < 2 {
+	fmRaw, body, had, _, err := frontmatter.Split([]byte(contentStr))
+	if err != nil {
+		t.Fatalf("failed to split front matter: %v", err)
+	}
+	if !had {
 		t.Fatal("no front matter found")
 	}
-	if err := yaml.Unmarshal([]byte(parts[0]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		t.Fatalf("failed to parse front matter: %v", err)
 	}
 
@@ -139,7 +145,7 @@ This is a test repository without front matter.
 	}
 
 	// Verify content is preserved
-	if len(parts) < 2 || parts[1] == "" {
+	if len(body) == 0 {
 		t.Error("expected content body to be preserved")
 	}
 }
@@ -230,12 +236,15 @@ title: "Partial Front Matter"
 	}
 
 	// Parse front matter
-	var fm map[string]any
-	parts := splitFrontMatter(string(content))
-	if len(parts) < 2 {
+	fmRaw, _, had, _, err := frontmatter.Split(content)
+	if err != nil {
+		t.Fatalf("failed to split front matter: %v", err)
+	}
+	if !had {
 		t.Fatal("no front matter found")
 	}
-	if err := yaml.Unmarshal([]byte(parts[0]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		t.Fatalf("failed to parse front matter: %v", err)
 	}
 
@@ -292,12 +301,15 @@ date: "2023-12-01T00:00:00Z"
 	}
 
 	// Parse front matter
-	var fm map[string]any
-	parts := splitFrontMatter(string(content))
-	if len(parts) < 2 {
+	fmRaw, _, had, _, err := frontmatter.Split(content)
+	if err != nil {
+		t.Fatalf("failed to split front matter: %v", err)
+	}
+	if !had {
 		t.Fatal("no front matter found")
 	}
-	if err := yaml.Unmarshal([]byte(parts[0]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		t.Fatalf("failed to parse front matter: %v", err)
 	}
 
@@ -308,51 +320,4 @@ date: "2023-12-01T00:00:00Z"
 	if fm["repository"] != "existing-repo" {
 		t.Errorf("expected repository='existing-repo', got %v", fm["repository"])
 	}
-}
-
-// splitFrontMatter splits content into front matter and body
-// Returns [frontMatter, body] or empty slices if no front matter found.
-func splitFrontMatter(content string) []string {
-	if !hasFrontMatter(content) {
-		return []string{}
-	}
-
-	// Split on "---\n", expecting: "", frontMatter, body
-	parts := splitN(content, "---\n", 3)
-	if len(parts) < 3 {
-		return []string{}
-	}
-
-	return []string{parts[1], parts[2]}
-}
-
-// hasFrontMatter checks if content starts with front matter delimiter.
-func hasFrontMatter(content string) bool {
-	return len(content) > 4 && content[:4] == "---\n"
-}
-
-// splitN is a helper that splits a string on a delimiter.
-func splitN(s, sep string, n int) []string {
-	result := make([]string, 0, n)
-	for range n - 1 {
-		idx := indexOf(s, sep)
-		if idx == -1 {
-			result = append(result, s)
-			return result
-		}
-		result = append(result, s[:idx])
-		s = s[idx+len(sep):]
-	}
-	result = append(result, s)
-	return result
-}
-
-// indexOf returns the index of the first occurrence of sep in s, or -1.
-func indexOf(s, sep string) int {
-	for i := 0; i <= len(s)-len(sep); i++ {
-		if s[i:i+len(sep)] == sep {
-			return i
-		}
-	}
-	return -1
 }

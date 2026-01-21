@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
+
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -279,56 +280,31 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 }
 
 func stripFingerprintFrontmatter(content string) string {
-	if !strings.HasPrefix(content, "---\n") {
+	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	if err != nil || !had {
 		return content
 	}
 
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
+	fields, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		return content
 	}
 
-	frontmatter := content[4 : endIdx+4]
-	body := content[endIdx+9:]
+	delete(fields, "fingerprint")
+	delete(fields, "lastmod")
+	delete(fields, "uid")
+	delete(fields, "aliases")
 
-	lines := strings.Split(frontmatter, "\n")
-	kept := make([]string, 0, len(lines))
-	inAliases := false
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		if strings.HasPrefix(trim, "fingerprint:") {
-			continue
-		}
-		if strings.HasPrefix(trim, "lastmod:") {
-			continue
-		}
-		if strings.HasPrefix(trim, "uid:") {
-			continue
-		}
-		if strings.HasPrefix(trim, "aliases:") {
-			inAliases = true
-			continue
-		}
-		if inAliases && strings.HasPrefix(trim, "- ") {
-			continue // Skip alias items
-		}
-		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") && !strings.HasPrefix(trim, "- ") {
-			inAliases = false // End of aliases section
-		}
-		if trim == "" {
-			// keep empty lines for stable formatting unless we drop entire frontmatter
-			kept = append(kept, line)
-			continue
-		}
-		kept = append(kept, line)
+	if len(fields) == 0 {
+		return string(body)
 	}
 
-	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
-	if newFM == "" {
-		return body
+	fmYAML, err := frontmatter.SerializeYAML(fields, style)
+	if err != nil {
+		return content
 	}
 
-	return "---\n" + newFM + "\n---\n" + body
+	return string(frontmatter.Join(fmYAML, body, true, style))
 }
 
 // FixResultForGolden is a normalized version of FixResult for golden file comparison.
