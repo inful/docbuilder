@@ -309,10 +309,10 @@ func stripFingerprintFrontmatter(content string) string {
 			inAliases = true
 			continue
 		}
-		if inAliases && isAliasItem(trim) {
+		if inAliases && strings.HasPrefix(trim, "- ") {
 			continue // Skip alias items
 		}
-		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") && !isAliasItem(trim) {
+		if inAliases && trim != "" && !strings.HasPrefix(trim, "#") && !strings.HasPrefix(trim, "- ") {
 			inAliases = false // End of aliases section
 		}
 		if trim == "" {

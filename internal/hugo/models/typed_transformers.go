@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 // FrontMatterParserV2 is a strongly-typed front matter parser.
@@ -82,7 +82,7 @@ func (t *FrontMatterParserV2) CanTransform(page *ContentPage, _ *TransformContex
 	}
 
 	content := page.GetContent()
-	return strings.HasPrefix(content, "---\n")
+	return strings.HasPrefix(content, "---\n") || strings.HasPrefix(content, "---\r\n")
 }
 
 // RequiredContext returns the required context keys.
@@ -96,24 +96,25 @@ func (t *FrontMatterParserV2) Transform(page *ContentPage, _ *TransformContext) 
 	result := NewTransformationResult()
 
 	content := page.GetContent()
-	if !strings.HasPrefix(content, "---\n") {
+	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
 		// No front matter to parse
 		return result.SetSuccess().SetDuration(time.Since(startTime)), nil
 	}
 
-	// Find the end of front matter
-	search := content[4:] // Skip initial "---\n"
-	before, after, ok := strings.Cut(search, "\n---\n")
-	if !ok {
+	fmRaw, body, had, _, err := frontmatter.Split([]byte(content))
+	if err != nil {
+		//nolint:nilerr // this transformer reports failures via TransformationResult, not the Go error return.
 		return result.SetError(errors.New("unterminated front matter")).SetDuration(time.Since(startTime)), nil
 	}
+	if !had {
+		// Shouldn't happen given prefix check, but be defensive.
+		return result.SetSuccess().SetDuration(time.Since(startTime)), nil
+	}
 
-	frontMatterContent := before
-	remainingContent := after // Skip "\n---\n"
+	remainingContent := string(body)
 
-	// Parse YAML front matter
-	var frontMatterMap map[string]any
-	if err := yaml.Unmarshal([]byte(frontMatterContent), &frontMatterMap); err != nil {
+	frontMatterMap, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		if t.config.FailOnError {
 			return result.SetError(fmt.Errorf("failed to parse front matter: %w", err)).SetDuration(time.Since(startTime)), nil
 		}

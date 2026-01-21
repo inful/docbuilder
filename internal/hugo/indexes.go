@@ -11,9 +11,8 @@ import (
 	"strings"
 	"text/template"
 
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-
-	"gopkg.in/yaml.v3"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -116,7 +115,8 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
 	// Add cascade for all themes to ensure type: docs propagates to children
 	frontMatter["cascade"] = map[string]any{"type": "docs"}
-	fmData, err := yaml.Marshal(frontMatter)
+	style := frontmatter.Style{Newline: "\n"}
+	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)
 	}
@@ -200,7 +200,8 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 
 		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": "2024-01-01T00:00:00Z"}
-		fmData, err := yaml.Marshal(frontMatter)
+		style := frontmatter.Style{Newline: "\n"}
+		fmData, err := frontmatter.SerializeYAML(frontMatter, style)
 		if err != nil {
 			return fmt.Errorf("failed to marshal front matter: %w", err)
 		}
@@ -449,7 +450,8 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
-	fmData, err := yaml.Marshal(frontMatter)
+	style := frontmatter.Style{Newline: "\n"}
+	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
 	if err != nil {
 		return fmt.Errorf("failed to marshal front matter: %w", err)
 	}
@@ -555,7 +557,8 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
-	fmData, err := yaml.Marshal(frontMatter)
+	style := frontmatter.Style{Newline: "\n"}
+	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
 	if err != nil {
 		return fmt.Errorf("failed to marshal front matter: %w", err)
 	}
@@ -667,21 +670,24 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 // Returns (frontMatter map, body string, error).
 // If no front matter exists, returns (nil, originalContent, nil).
 func parseFrontMatterFromContent(content string) (map[string]any, string, error) {
-	if !strings.HasPrefix(content, "---\n") {
+	fmRaw, body, had, _, err := frontmatter.Split([]byte(content))
+	if err != nil {
+		//nolint:nilerr // index template inputs may contain malformed frontmatter; treat it as absent.
 		return nil, content, nil
 	}
-
-	parts := strings.SplitN(content, "---\n", 3)
-	if len(parts) < 3 {
+	if !had {
 		return nil, content, nil
 	}
+	if len(bytes.TrimSpace(fmRaw)) == 0 {
+		return map[string]any{}, string(body), nil
+	}
 
-	var fm map[string]any
-	if err := yaml.Unmarshal([]byte(parts[1]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		return nil, "", fmt.Errorf("failed to parse front matter: %w", err)
 	}
 
-	return fm, parts[2], nil
+	return fm, string(body), nil
 }
 
 // ensureRequiredIndexFields adds missing required fields to front matter.
@@ -700,10 +706,11 @@ func ensureRequiredIndexFields(fm map[string]any, repoName string) {
 
 // reconstructContentWithFrontMatter rebuilds content string from front matter and body.
 func reconstructContentWithFrontMatter(fm map[string]any, body string) (string, error) {
-	fmData, err := yaml.Marshal(fm)
+	style := frontmatter.Style{Newline: "\n"}
+	fmData, err := frontmatter.SerializeYAML(fm, style)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal front matter: %w", err)
 	}
 
-	return fmt.Sprintf("---\n%s---\n%s", string(fmData), body), nil
+	return string(frontmatter.Join(fmData, []byte(body), true, style)), nil
 }

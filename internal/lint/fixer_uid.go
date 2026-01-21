@@ -1,12 +1,16 @@
 package lint
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 
 	"github.com/google/uuid"
 )
@@ -25,27 +29,26 @@ func preserveUIDAcrossContentRewrite(original, updated string) string {
 }
 
 func extractUIDFromFrontmatter(content string) (string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
+	fmRaw, _, had, _, err := frontmatter.Split([]byte(content))
+	if err != nil || !had {
 		return "", false
 	}
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
+
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		return "", false
 	}
-	frontmatter := content[4 : endIdx+4]
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		trim := strings.TrimSpace(line)
-		after, ok := strings.CutPrefix(trim, "uid:")
-		if !ok {
-			continue
-		}
-		val := strings.TrimSpace(after)
-		if val != "" {
-			return val, true
-		}
+
+	val, ok := fm["uid"]
+	if !ok {
 		return "", false
 	}
-	return "", false
+
+	s := strings.TrimSpace(fmt.Sprint(val))
+	if s == "" {
+		return "", false
+	}
+	return s, true
 }
 
 func addUIDIfMissingWithValue(content, uid string) (string, bool) {
@@ -53,59 +56,39 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 		return content, false
 	}
 
-	if !strings.HasPrefix(content, "---\n") {
-		fm := "---\nuid: " + uid + "\n---\n\n"
-		return fm + content, true
-	}
-
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
+	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	if err != nil {
 		return content, false
 	}
 
-	frontmatter := content[4 : endIdx+4]
-	body := content[endIdx+9:]
-
-	lines := make([]string, 0, 8)
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		lines = append(lines, line)
-		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "uid:"); ok {
+	fields := map[string]any{}
+	if had {
+		fields, err = frontmatter.ParseYAML(fmRaw)
+		if err != nil {
 			return content, false
 		}
 	}
 
-	kept := make([]string, 0, len(lines)+1)
-	inserted := false
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		kept = append(kept, line)
-		if !inserted && strings.HasPrefix(trim, "fingerprint:") {
-			kept = append(kept, "uid: "+uid)
-			inserted = true
-		}
+	if _, ok := fields["uid"]; ok {
+		return content, false
 	}
-	if !inserted {
-		out := make([]string, 0, len(kept)+1)
-		added := false
-		for _, line := range kept {
-			trim := strings.TrimSpace(line)
-			if !added && trim != "" {
-				out = append(out, "uid: "+uid)
-				added = true
-			}
-			out = append(out, line)
-		}
-		if !added {
-			out = append(out, "uid: "+uid)
-		}
-		kept = out
+	fields["uid"] = uid
+
+	fmYAML, err := frontmatter.SerializeYAML(fields, style)
+	if err != nil {
+		return content, false
 	}
 
-	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
-	if newFM == "" {
-		newFM = "uid: " + uid
+	if !had {
+		had = true
+		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
+			body = append([]byte(style.Newline), body...)
+		} else if len(body) == 0 {
+			body = append([]byte(style.Newline), body...)
+		}
 	}
-	return "---\n" + newFM + "\n---\n" + body, true
+
+	return string(frontmatter.Join(fmYAML, body, had, style)), true
 }
 
 func (f *Fixer) applyUIDFixes(targets map[string]struct{}, uidIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -186,99 +169,100 @@ func addUIDIfMissing(content string) (string, bool) {
 }
 
 func addUIDAndAliasIfMissing(content, uid string, includeAlias bool) (string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
-		lines := []string{"uid: " + uid}
-		if includeAlias {
-			lines = append(lines, "aliases:", "  - /_uid/"+uid+"/")
-		}
-		fm := "---\n" + strings.Join(lines, "\n") + "\n---\n\n"
-		return fm + content, true
-	}
-
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
+	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	if err != nil {
 		// Malformed frontmatter; don't try to guess.
 		return content, false
 	}
 
-	frontmatter := content[4 : endIdx+4]
-	body := content[endIdx+9:]
-
-	lines := make([]string, 0, 8)
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		lines = append(lines, line)
-		if _, ok := strings.CutPrefix(strings.TrimSpace(line), "uid:"); ok {
+	fields := map[string]any{}
+	if had {
+		fields, err = frontmatter.ParseYAML(fmRaw)
+		if err != nil {
+			// Malformed YAML; don't try to guess.
 			return content, false
 		}
 	}
 
-	// Insert uid near the top, after any existing fingerprint line if present,
-	// to keep frontmatter stable and readable.
-	kept, _ := insertUIDInFrontmatter(lines, uid, includeAlias)
+	if _, ok := fields["uid"]; ok {
+		return content, false
+	}
 
-	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
-	if newFM == "" {
-		if includeAlias {
-			newFM = "uid: " + uid + "\naliases:\n  - /_uid/" + uid + "/"
-		} else {
-			newFM = "uid: " + uid
+	fields["uid"] = uid
+	if includeAlias {
+		_ = ensureUIDAlias(fields, uid)
+	}
+
+	fmYAML, err := frontmatter.SerializeYAML(fields, style)
+	if err != nil {
+		return content, false
+	}
+
+	if !had {
+		had = true
+		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
+			body = append([]byte(style.Newline), body...)
+		} else if len(body) == 0 {
+			body = append([]byte(style.Newline), body...)
 		}
 	}
-	return "---\n" + newFM + "\n---\n" + body, true
+
+	return string(frontmatter.Join(fmYAML, body, had, style)), true
 }
 
-// insertUIDInFrontmatter inserts uid (and optionally aliases) into frontmatter lines.
-func insertUIDInFrontmatter(lines []string, uid string, includeAlias bool) ([]string, bool) {
-	kept := make([]string, 0, len(lines)+2)
-	inserted := false
+func ensureUIDAlias(fields map[string]any, uid string) bool {
+	expected := "/_uid/" + uid + "/"
 
-	// Try to insert after fingerprint line
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		kept = append(kept, line)
-		if !inserted && strings.HasPrefix(trim, "fingerprint:") {
-			kept = append(kept, "uid: "+uid)
-			if includeAlias {
-				kept = append(kept, "aliases:", "  - /_uid/"+uid+"/")
-			}
-			inserted = true
+	aliases, ok := fields["aliases"]
+	if !ok || aliases == nil {
+		fields["aliases"] = []string{expected}
+		return true
+	}
+
+	set := func(list []string) (bool, []string) {
+		if slices.Contains(list, expected) {
+			return false, list
 		}
+		return true, append(list, expected)
 	}
 
-	if inserted {
-		return kept, true
-	}
-
-	// No fingerprint line found, insert at top after any leading empties
-	return insertUIDAtTop(kept, uid, includeAlias)
-}
-
-// insertUIDAtTop inserts uid at the top of frontmatter, after any leading empty lines.
-func insertUIDAtTop(lines []string, uid string, includeAlias bool) ([]string, bool) {
-	out := make([]string, 0, len(lines)+2)
-	added := false
-
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		if !added && trim != "" {
-			out = append(out, "uid: "+uid)
-			if includeAlias {
-				out = append(out, "aliases:", "  - /_uid/"+uid+"/")
-			}
-			added = true
+	switch v := aliases.(type) {
+	case []string:
+		changed, out := set(v)
+		if changed {
+			fields["aliases"] = out
 		}
-		out = append(out, line)
-	}
-
-	if !added {
-		out = append(out, "uid: "+uid)
-		if includeAlias {
-			out = append(out, "aliases:", "  - /_uid/"+uid+"/")
+		return changed
+	case []any:
+		out := make([]string, 0, len(v)+1)
+		for _, item := range v {
+			out = append(out, fmt.Sprint(item))
 		}
-		added = true
+		changed, out := set(out)
+		if changed {
+			fields["aliases"] = out
+		}
+		return changed
+	case string:
+		if v == expected {
+			fields["aliases"] = []string{v}
+			return false
+		}
+		fields["aliases"] = []string{v, expected}
+		return true
+	default:
+		s := strings.TrimSpace(fmt.Sprint(v))
+		if s == "" {
+			fields["aliases"] = []string{expected}
+			return true
+		}
+		if s == expected {
+			fields["aliases"] = []string{s}
+			return false
+		}
+		fields["aliases"] = []string{s, expected}
+		return true
 	}
-
-	return out, added
 }
 
 func (f *Fixer) applyUIDAliasesFixes(targets map[string]struct{}, uidAliasIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -356,123 +340,23 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 }
 
 func addUIDAliasIfMissing(content, uid string) (string, bool) {
-	if !strings.HasPrefix(content, "---\n") {
+	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	if err != nil || !had {
 		return content, false
 	}
 
-	endIdx := strings.Index(content[4:], "\n---\n")
-	if endIdx == -1 {
+	fields, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		return content, false
 	}
 
-	frontmatter := content[4 : endIdx+4]
-	body := content[endIdx+9:]
-
-	expectedAlias := "/_uid/" + uid + "/"
-	lines := make([]string, 0, 16)
-	hasAliases := false
-	aliasesIndent := "  "
-
-	for line := range strings.SplitSeq(frontmatter, "\n") {
-		lines = append(lines, line)
-		trim := strings.TrimSpace(line)
-		if strings.HasPrefix(trim, "aliases:") {
-			hasAliases = true
-		}
-	}
-
-	// Check if alias already exists
-	for _, line := range lines {
-		trim := strings.TrimSpace(line)
-		if after, ok := strings.CutPrefix(trim, "- "); ok {
-			alias := strings.TrimSpace(after)
-			if alias == expectedAlias {
-				return content, false // Already has the alias
-			}
-		}
-	}
-
-	// Add the alias
-	var kept []string
-	var inserted bool
-
-	if !hasAliases {
-		kept, inserted = insertAliasesField(lines, expectedAlias, aliasesIndent)
-	} else {
-		kept, inserted = appendToExistingAliases(lines, expectedAlias, aliasesIndent)
-	}
-
-	if !inserted {
+	if changed := ensureUIDAlias(fields, uid); !changed {
 		return content, false
 	}
 
-	newFM := strings.TrimSpace(strings.Join(kept, "\n"))
-	return "---\n" + newFM + "\n---\n" + body, true
-}
-
-// insertAliasesField creates a new aliases field after the uid line.
-func insertAliasesField(lines []string, expectedAlias, aliasesIndent string) ([]string, bool) {
-	kept := make([]string, 0, len(lines)+3)
-	inserted := false
-
-	for _, line := range lines {
-		kept = append(kept, line)
-		trim := strings.TrimSpace(line)
-		if !inserted && strings.HasPrefix(trim, "uid:") {
-			kept = append(kept, "aliases:", aliasesIndent+"- "+expectedAlias)
-			inserted = true
-		}
+	fmYAML, err := frontmatter.SerializeYAML(fields, style)
+	if err != nil {
+		return content, false
 	}
-
-	if !inserted {
-		// Add at end of frontmatter
-		kept = append(kept, "aliases:", aliasesIndent+"- "+expectedAlias)
-		inserted = true
-	}
-
-	return kept, inserted
-}
-
-// isAliasItem returns true if the trimmed line is an alias list item.
-func isAliasItem(trimmedLine string) bool {
-	return strings.HasPrefix(trimmedLine, "- ")
-}
-
-// appendToExistingAliases adds an alias to an existing aliases field.
-func appendToExistingAliases(lines []string, expectedAlias, aliasesIndent string) ([]string, bool) {
-	aliasesLineIdx := -1
-	lastAliasLineIdx := -1
-
-	// Find aliases section and last alias in it
-AliasLoop:
-	for i, line := range lines {
-		trim := strings.TrimSpace(line)
-		switch {
-		case strings.HasPrefix(trim, "aliases:"):
-			aliasesLineIdx = i
-		case aliasesLineIdx >= 0 && isAliasItem(trim):
-			lastAliasLineIdx = i
-		case aliasesLineIdx >= 0 && lastAliasLineIdx >= 0 && trim != "" && !strings.HasPrefix(trim, "#") && !isAliasItem(trim):
-			// Hit a non-alias field after we found aliases - stop scanning
-			break AliasLoop
-		}
-	}
-
-	if aliasesLineIdx < 0 {
-		return nil, false
-	}
-
-	// Insert after last alias (or after "aliases:" if no aliases yet)
-	insertIdx := lastAliasLineIdx
-	if insertIdx < 0 {
-		insertIdx = aliasesLineIdx
-	}
-
-	// Build result with alias inserted
-	kept := make([]string, 0, len(lines)+1)
-	kept = append(kept, lines[:insertIdx+1]...)
-	kept = append(kept, aliasesIndent+"- "+expectedAlias)
-	kept = append(kept, lines[insertIdx+1:]...)
-
-	return kept, true
+	return string(frontmatter.Join(fmYAML, body, had, style)), true
 }
