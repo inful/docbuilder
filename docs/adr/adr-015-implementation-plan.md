@@ -92,11 +92,11 @@ Write failing unit tests for a new package `internal/docmodel`:
 
 Implement `internal/docmodel` using existing primitives:
 
-- [ ] Use `internal/frontmatter.Split` and `internal/frontmatter.Join`.
-- [ ] Provide `Parse` and `ParseFile`.
-- [ ] Keep the API minimal and internal-only.
+- [x] Use `internal/frontmatter.Split` and `internal/frontmatter.Join`.
+- [x] Provide `Parse` and `ParseFile`.
+- [x] Keep the API minimal and internal-only.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `4a35836`
 
 **Commit message**: `feat(docmodel): add ParsedDoc with frontmatter split/join`
 
