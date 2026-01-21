@@ -89,3 +89,34 @@ func TestDetectBrokenLinks_CaseInsensitive(t *testing.T) {
 		t.Log("No broken links detected (likely running on case-insensitive filesystem)")
 	}
 }
+
+func TestDetectBrokenLinks_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
+	// This test codifies an existing limitation in the legacy line-scanner:
+	// it only recognizes ``` fences, not ~~~ fences. With Goldmark-based
+	// extraction we should ignore links inside fenced code blocks.
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := `# Index
+
+~~~go
+[Broken In Code](./missing-in-code.md)
+~~~
+
+[Broken](./missing.md)
+`
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
+	require.NoError(t, err)
+
+	broken, err := detectBrokenLinks(docsDir)
+	require.NoError(t, err)
+
+	// Only the normal link should be considered; the link in the tilde-fenced
+	// code block must be ignored.
+	assert.Len(t, broken, 1)
+	assert.Equal(t, "./missing.md", broken[0].Target)
+}
