@@ -80,7 +80,7 @@ For any “checkpoint” commit during this ADR implementation:
 - [ ] Decide determinism strategy for `SerializeYAML` (TDD via golden assertions)
   - [x] Option A (simpler): deterministic output by sorting keys and encoding via `yaml.Node` (accepts key re-ordering)
   - [ ] Option B (better diffs): keep order using `yaml.Node` and preserve existing order when editing (requires extra work)
-- [ ] Write failing tests for `SerializeYAML` covering:
+- [x] Write failing tests for `SerializeYAML` covering:
   - [x] stable output across runs for same input
   - [x] newline style matches `Style`
   - [x] ends with newline (or preserves prior behavior)
@@ -90,9 +90,9 @@ For any “checkpoint” commit during this ADR implementation:
 
 Goal: reduce risk by migrating a read-only consumer first.
 
-- [ ] Add a failing test in `internal/linkverify` that exercises frontmatter extraction behavior currently used
-- [ ] Refactor `internal/linkverify/service.go` to use `internal/frontmatter.Split` + `ParseYAML`
-- [ ] Ensure tests pass
+- [x] Add a failing test in `internal/linkverify` that exercises frontmatter extraction behavior currently used
+- [x] Refactor `internal/linkverify/service.go` to use `internal/frontmatter.Split` + `ParseYAML`
+- [x] Ensure tests pass
 
 ### 3) Migrate build pipeline frontmatter transform
 
