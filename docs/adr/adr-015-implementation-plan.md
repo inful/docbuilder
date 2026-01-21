@@ -5,7 +5,7 @@ version: "1.0"
 date_created: "2026-01-21"
 last_updated: "2026-01-21"
 owner: "DocBuilder Core Team"
-status: "Planned"
+status: "In Progress"
 tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance"]
 ---
 
@@ -116,21 +116,21 @@ Implement `internal/docmodel` using existing primitives:
 
 ### Step 2.1 — RED: lazy frontmatter fields parsing tests
 
-- [ ] Add tests for `FrontmatterFields()` (or equivalent) that:
+- [x] Add tests for `FrontmatterFields()` (or equivalent) that:
   - returns empty map when no frontmatter / empty frontmatter
   - returns parsed fields for valid YAML
   - returns error for invalid YAML
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `8000c4e`
 
 **Commit message**: `test(docmodel): add frontmatter fields parsing tests`
 
 ### Step 2.2 — GREEN: implement frontmatter fields parsing
 
-- [ ] Implement using `frontmatter.ParseYAML`.
-- [ ] Prefer lazy evaluation (parse only when fields are requested), with optional eager mode via `Options` if needed.
+- [x] Implement using `frontmatter.ParseYAML`.
+- [x] Prefer lazy evaluation (parse only when fields are requested), with optional eager mode via `Options` if needed.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `8000c4e`
 
 **Commit message**: `feat(docmodel): add frontmatter fields parsing`
 
