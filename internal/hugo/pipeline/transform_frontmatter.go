@@ -1,10 +1,11 @@
 package pipeline
 
 import (
+	"bytes"
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 const untitledDocTitle = "Untitled"
@@ -18,10 +19,19 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	content := doc.Content
-
-	// Check for YAML front matter (--- ... ---)
-	if !strings.HasPrefix(content, "---\n") && !strings.HasPrefix(content, "---\r\n") {
+	fmRaw, body, had, _, err := frontmatter.Split([]byte(doc.Content))
+	if err != nil {
+		// Malformed front matter (missing closing delimiter): treat as no front matter
+		// and do not modify content.
+		doc.HadFrontMatter = false
+		doc.OriginalFrontMatter = make(map[string]any)
+		// Preserve any pre-populated frontmatter (e.g., from generators).
+		if len(doc.FrontMatter) == 0 {
+			doc.FrontMatter = make(map[string]any)
+		}
+		return nil, nil
+	}
+	if !had {
 		// No front matter
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
@@ -32,33 +42,11 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	// Determine line ending
-	var lineEnd string
-	var startLen int
-	if strings.HasPrefix(content, "---\r\n") {
-		lineEnd = "\r\n"
-		startLen = 5
-	} else {
-		lineEnd = "\n"
-		startLen = 4
-	}
+	// Always remove front matter delimiters from content, even if empty/invalid.
+	doc.Content = string(body)
 
-	// Find end of front matter (search for closing ---\n or ---\r\n)
-	endMarker := lineEnd + "---" + lineEnd
-	endIdx := strings.Index(content[startLen:], endMarker)
-
-	if endIdx == -1 {
-		// Try to find just "---" followed by line ending (for content like "---\n---\n...")
-		altMarker := "---" + lineEnd
-		endIdx = strings.Index(content[startLen:], altMarker)
-		if endIdx != -1 {
-			// Adjust for the different marker length
-			endMarker = altMarker
-		}
-	}
-
-	if endIdx == -1 {
-		// Malformed front matter - no closing delimiter
+	if len(bytes.TrimSpace(fmRaw)) == 0 {
+		// Empty front matter - no fields but delimiters were present.
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
 		// Preserve any pre-populated frontmatter (e.g., from generators).
@@ -68,28 +56,9 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	// Extract front matter YAML
-	fmYAML := content[startLen : startLen+endIdx]
-	bodyStart := startLen + endIdx + len(endMarker)
-
-	// Always remove front matter delimiters from content, even if empty
-	doc.Content = content[bodyStart:]
-
-	// Parse YAML (handle empty front matter)
-	if strings.TrimSpace(fmYAML) == "" {
-		// Empty front matter - no fields but delimiters were present
-		doc.HadFrontMatter = false
-		doc.OriginalFrontMatter = make(map[string]any)
-		// Preserve any pre-populated frontmatter (e.g., from generators).
-		if len(doc.FrontMatter) == 0 {
-			doc.FrontMatter = make(map[string]any)
-		}
-		return nil, nil
-	}
-
-	var fm map[string]any
-	if err := yaml.Unmarshal([]byte(fmYAML), &fm); err != nil {
-		// Invalid YAML - treat as no front matter but content already stripped
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
+		// Invalid YAML - treat as no front matter but content already stripped.
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
 		// Preserve any pre-populated frontmatter (e.g., from generators).
@@ -179,25 +148,20 @@ func serializeDocument(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	var result strings.Builder
+	// Pipeline output uses LF newlines.
+	style := frontmatter.Style{Newline: "\n"}
+	had := len(doc.FrontMatter) > 0
 
-	// Write front matter if present
-	if len(doc.FrontMatter) > 0 {
-		result.WriteString("---\n")
-		yamlData, err := yaml.Marshal(doc.FrontMatter)
-		if err != nil {
-			return nil, err
-		}
-		result.Write(yamlData)
-		result.WriteString("---\n")
+	fmYAML, err := frontmatter.SerializeYAML(doc.FrontMatter, style)
+	if err != nil {
+		return nil, err
 	}
 
-	// Write content
-	result.WriteString(doc.Content)
+	out := frontmatter.Join(fmYAML, []byte(doc.Content), had, style)
 
 	// Update both Content and Raw
-	doc.Content = result.String()
-	doc.Raw = []byte(doc.Content)
+	doc.Content = string(out)
+	doc.Raw = out
 
 	return nil, nil
 }
