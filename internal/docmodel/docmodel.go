@@ -7,6 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // Options controls parsing behavior for ParsedDoc.
@@ -29,6 +30,10 @@ type ParsedDoc struct {
 	fieldsOnce sync.Once
 	fields     map[string]any
 	fieldsErr  error
+
+	linksOnce sync.Once
+	links     []markdown.Link
+	linksErr  error
 }
 
 // Parse parses raw file content into a ParsedDoc.
