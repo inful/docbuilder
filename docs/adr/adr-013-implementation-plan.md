@@ -154,9 +154,14 @@ Notes (Step 4):
 
 ### 5) Remove duplicated scanners once parity is achieved
 
-- [ ] Identify obsolete ad-hoc scanners (internal/lint/*link* and any shared helpers)
-- [ ] Delete or deprecate them, keeping public behavior the same
-- [ ] Ensure all tests still pass and coverage remains strong
+- [x] Identify obsolete ad-hoc scanners (internal/lint/*link* and any shared helpers)
+- [x] Delete or deprecate them, keeping public behavior the same
+- [x] Ensure all tests still pass and coverage remains strong
+
+Notes (Step 5):
+- Removed the fixer’s duplicated per-line link scanners from `internal/lint` and relied on `internal/markdown.ExtractLinks`.
+- Added a small permissive fallback in `internal/markdown` to cover whitespace destinations (historical “minimal surprise” behavior).
+- Updated link discovery line-number mapping to avoid attributing matches to fenced/indented code lines.
 
 **Commit checkpoint:** `refactor(markdown): remove legacy link scanners after goldmark parity`
 

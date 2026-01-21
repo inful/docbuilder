@@ -51,5 +51,11 @@ func ExtractLinks(body []byte, opts Options) ([]Link, error) {
 		links = append(links, Link{Kind: LinkKindReferenceDefinition, Destination: string(ref.Destination())})
 	}
 
+	// Goldmark follows CommonMark strictly. DocBuilder historically relied on
+	// permissive destination parsing in some fixer workflows (e.g., destinations
+	// containing spaces). Add a best-effort permissive pass to retain
+	// minimal-surprise behavior for internal analysis.
+	links = append(links, extractPermissiveLinks(body)...)
+
 	return links, nil
 }
