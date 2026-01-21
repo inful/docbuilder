@@ -120,3 +120,15 @@ func TestDetectBrokenLinks_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
 	assert.Len(t, broken, 1)
 	assert.Equal(t, "./missing.md", broken[0].Target)
 }
+
+func TestFindLineNumberForTarget_SkipsCodeBlocksAndInlineCode(t *testing.T) {
+	body := "" +
+		"```sh\n" +
+		"echo ./missing.md\n" +
+		"```\n" +
+		"Use `./missing.md` as an example.\n" +
+		"Real link: [Missing](./missing.md)\n"
+
+	line := findLineNumberForTarget(body, "./missing.md")
+	assert.Equal(t, 5, line)
+}
