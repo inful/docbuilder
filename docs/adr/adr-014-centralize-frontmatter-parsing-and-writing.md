@@ -16,7 +16,7 @@ tags:
 
 # ADR-014: Centralize frontmatter parsing and writing
 
-**Status**: Proposed  
+**Status**: Accepted 
 **Date**: 2026-01-20  
 **Decision Makers**: DocBuilder Core Team
 
