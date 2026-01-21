@@ -13,6 +13,7 @@ require (
 	github.com/nats-io/nats.go v1.47.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
+	github.com/yuin/goldmark v1.7.16
 	golang.org/x/net v0.48.0
 	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1

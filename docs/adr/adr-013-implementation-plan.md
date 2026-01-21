@@ -79,14 +79,19 @@ Where `Link` minimally captures:
 TDD steps:
 
 - [ ] Write failing unit tests for parsing a Markdown body and extracting:
-  - [ ] Inline links: `[text](dest)`
-  - [ ] Images: `![alt](dest)`
-  - [ ] Autolinks: `<https://...>`
-  - [ ] Reference link usages: `[text][ref]` and `[ref]`
-  - [ ] Reference definitions: `[ref]: dest "title"`
-  - [ ] Ensure links in code blocks / inline code are excluded
-- [ ] Implement parser + visitor(s) to satisfy tests
-- [ ] Ensure parsing options mirror DocBuilder’s Hugo Goldmark config as needed
+- [x] Write failing unit tests for parsing a Markdown body and extracting:
+  - [x] Inline links: `[text](dest)`
+  - [x] Images: `![alt](dest)`
+  - [x] Autolinks: `<https://...>`
+  - [x] Reference link usages: `[text][ref]` and `[ref]` (resolved to Link nodes with destinations)
+  - [x] Reference definitions: `[ref]: dest "title"` (extracted from Goldmark parser context)
+  - [x] Ensure links in code blocks / inline code are excluded
+- [x] Implement parser + visitor(s) to satisfy tests
+- [x] Ensure parsing options mirror DocBuilder’s Hugo Goldmark config as needed (note: link parsing relies on CommonMark semantics; Hugo-specific renderer settings are not relevant at this step)
+
+Notes (Step 1):
+- Added `internal/markdown` with `ParseBody` and `ExtractLinks`.
+- Goldmark does not represent reference definitions as AST nodes; they are retrieved from the parse context (`parser.Context.References()`).
 
 **Commit checkpoint:** `feat(markdown): add goldmark-based body parser and link extraction`
 
