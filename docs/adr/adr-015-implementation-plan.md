@@ -52,10 +52,16 @@ tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance
 
 ### Step 0.2 — Identify duplication hotspots (parsing workflow)
 
-- [ ] Locate current call sites doing: read → `frontmatter.Split` → `markdown.ExtractLinks` → line mapping/skip rules.
-- [ ] Confirm initial migration target(s): start with `internal/lint` (fixer + broken-links).
+- [x] Locate current call sites doing: read → `frontmatter.Split` → `markdown.ExtractLinks` → line mapping/skip rules.
+  - Primary hotspots to consolidate first:
+    - `internal/lint/fixer_link_detection.go` (split + ExtractLinks + skippable lines + lineOffset)
+    - `internal/lint/fixer_broken_links.go` (split + ExtractLinks + line attribution)
+  - Other consumers (later phases):
+    - `internal/linkverify/service.go` (frontmatter awareness)
+    - `internal/hugo/indexes.go`, `internal/hugo/models/typed_transformers.go`, `internal/hugo/pipeline/transform_frontmatter.go` (split/join workflows)
+- [x] Confirm initial migration target(s): start with `internal/lint` (fixer + broken-links) to freeze line-number behavior early.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
 
 **Commit message**: `docs(plan): note ADR-015 migration targets`
 
