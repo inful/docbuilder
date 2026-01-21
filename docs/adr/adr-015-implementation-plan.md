@@ -106,7 +106,7 @@ Implement `internal/docmodel` using existing primitives:
 - [x] Ensure errors include context (path when using `ParseFile`).
 - [x] Keep dependencies one-way: `docmodel` may depend on `frontmatter` + `markdown`; not the reverse.
 
-**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `9be21f3`
 
 **Commit message**: `refactor(docmodel): harden API and error contracts`
 
