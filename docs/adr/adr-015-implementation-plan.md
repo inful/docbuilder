@@ -41,12 +41,12 @@ tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance
 
 ### Step 0.1 — Verify baseline (tests + lint)
 
-- [ ] Run `go test ./...` and `golangci-lint run` on branch `central-doc`.
-- [ ] If baseline fails due to *unrelated* issues, stop and decide whether to:
+- [x] Run `go test ./...` and `golangci-lint run` on branch `central-doc`.
+- [x] If baseline fails due to *unrelated* issues, stop and decide whether to:
   - fix them first (with a dedicated commit), or
   - defer and adjust the branch strategy.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
 
 **Commit message**: `chore: verify baseline for ADR-015 work` (or omit if no repo changes)
 
