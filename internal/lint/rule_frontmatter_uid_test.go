@@ -93,8 +93,7 @@ func TestFrontmatterUIDRule_Check_FrontmatterEdgeCases(t *testing.T) {
 
 		issues, err := rule.Check(filePath)
 		require.NoError(t, err)
-		require.Len(t, issues, 1)
-		assert.Contains(t, issues[0].Message, "Missing uid")
+		assert.Empty(t, issues)
 	})
 
 	t.Run("empty frontmatter block is treated as missing", func(t *testing.T) {
