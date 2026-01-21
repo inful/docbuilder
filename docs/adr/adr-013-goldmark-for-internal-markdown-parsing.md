@@ -36,7 +36,7 @@ Today, most of this logic uses hand-rolled scanning (string search + heuristics 
 
 Hugo itself uses Goldmark for Markdown rendering (and DocBuilder already configures Hugo’s `markup.goldmark` settings in the generated config), so adopting Goldmark internally may also reduce semantic mismatch.
 
-Separately, frontmatter parsing/writing is already implemented in multiple subsystems today. DocBuilder treats frontmatter as **YAML-only** using `---` delimiters. This ADR focuses on Markdown body parsing; frontmatter should remain a dedicated concern (see [ADR-014](adr-014-centralize-frontmatter-parsing-and-writing.md)).
+Frontmatter parsing/writing is now centralized and treated as **YAML-only** using `---` delimiters (see [ADR-014](adr-014-centralize-frontmatter-parsing-and-writing.md)). This ADR focuses on Markdown **body** parsing; frontmatter remains a dedicated concern.
 
 ## Decision
 
@@ -45,6 +45,8 @@ Introduce a single, shared internal Markdown parsing layer based on **Goldmark**
 - Goldmark will be used for **analysis** (link discovery, code-block skipping, structured transforms), not for generating Hugo-rendered HTML.
 - Migration will be **incremental**, starting with link discovery/broken-link detection where correctness benefits are highest.
 - Any behavior that must align with Hugo should aim to mirror Hugo’s Goldmark configuration where relevant.
+- Goldmark parsing should operate on the Markdown **body only** (split from YAML frontmatter via the centralized frontmatter component from ADR-014, implemented as `internal/frontmatter`).
+- For link rewriting, prefer **minimal-diff edits** (byte-range patches targeted to link destinations/definitions) to avoid reformatting and minimize surprise.
 
 ## Options Considered
 
@@ -143,16 +145,16 @@ Because DocBuilder already has extensive unit tests around link detection and li
 
 ## Migration Plan
 
-0. **(Recommended prerequisite)** Centralize frontmatter splitting/parsing/writing so Markdown-body parsing can operate on the body only ([ADR-014](adr-014-centralize-frontmatter-parsing-and-writing.md)).
+0. **(Done via ADR-014)** Use centralized frontmatter splitting/parsing/writing (via `internal/frontmatter`) so Markdown-body parsing operates on the body only ([ADR-014](adr-014-centralize-frontmatter-parsing-and-writing.md)).
 1. **Introduce a new internal package** `internal/markdown`:
    - `Parse(source []byte) (*ast.Node, error)` wrapper
    - Visitors for “extract links” and “extract reference definitions”
    - Clear decisions about which extensions are enabled
 2. **Swap broken-link detection** to use this package.
 3. **Adopt AST-driven link discovery** for fixer operations (used by link healing).
-4. **Evaluate rewriting strategy**:
-   - If AST node segments are sufficient for stable rewrites, proceed.
-   - If not, keep rewrite-by-line for now and scope Goldmark usage to detection/analysis.
+4. **Implement minimal-diff link rewriting**:
+  - Use Goldmark AST nodes/segments to locate link destinations and reference definitions.
+  - Apply targeted byte-range patches to the original source to keep diffs small.
 5. **Delete duplicated scanners** once parity is achieved.
 
 ## Acceptance Criteria
@@ -173,10 +175,13 @@ Because DocBuilder already has extensive unit tests around link detection and li
 ### Cons
 
 - Migration cost, especially for safe round-trip rewrites.
-- A new parsing layer that must be maintained and versioned.
+- Adds a new internal parsing subsystem (and Goldmark dependency) that must be maintained/versioned, even though it centralizes Markdown-aware behavior and makes it easier to reason about.
 
 ## Open Questions
 
-- Which Goldmark extensions should be enabled for internal parsing (minimum set vs mirroring Hugo)?
-- Do we want internal parsing to intentionally match Hugo defaults, or the DocBuilder-generated Hugo config?
-- For link rewriting, do we require minimal diffs (byte-range patches), or is normalized output acceptable?
+(None at this time.)
+
+## Resolved
+
+- Internal parsing should intentionally match the DocBuilder-generated Hugo Goldmark configuration (the effective configuration Hugo renders with), including enabling the same Goldmark extensions/settings configured in `markup.goldmark`.
+- For link rewriting, we prefer minimal-diff edits (byte-range patches) over re-rendering/normalizing Markdown output.
