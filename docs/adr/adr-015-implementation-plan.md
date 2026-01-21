@@ -102,11 +102,11 @@ Implement `internal/docmodel` using existing primitives:
 
 ### Step 1.3 — REFACTOR: tighten API + error contracts
 
-- [ ] Ensure `ParsedDoc` does not expose mutable slices directly (document immutability policy).
-- [ ] Ensure errors include context (path when using `ParseFile`).
-- [ ] Keep dependencies one-way: `docmodel` may depend on `frontmatter` + `markdown`; not the reverse.
+- [x] Ensure `ParsedDoc` does not expose mutable slices directly (document immutability policy).
+- [x] Ensure errors include context (path when using `ParseFile`).
+- [x] Keep dependencies one-way: `docmodel` may depend on `frontmatter` + `markdown`; not the reverse.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
 
 **Commit message**: `refactor(docmodel): harden API and error contracts`
 

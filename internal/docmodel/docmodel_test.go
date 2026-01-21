@@ -61,3 +61,22 @@ func TestParseFile_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, content, doc.Bytes())
 }
+
+func TestParsedDoc_DoesNotExposeMutableBytes_NoFrontmatter(t *testing.T) {
+	content := []byte("# Hello\n\nBody\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+
+	buf := doc.Bytes()
+	require.Equal(t, byte('#'), buf[0])
+	buf[0] = 'X'
+
+	// Re-reading bytes should not reflect mutation.
+	buf2 := doc.Bytes()
+	require.Equal(t, byte('#'), buf2[0])
+
+	// Body should also remain unchanged.
+	body := doc.Body()
+	require.Equal(t, byte('#'), body[0])
+}

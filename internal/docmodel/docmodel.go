@@ -115,5 +115,8 @@ func (d *ParsedDoc) Bytes() []byte {
 		fm = nil
 	}
 	// frontmatter.Join returns body as-is when had is false.
-	return frontmatter.Join(fm, d.body, d.hadFM, d.style)
+	joined := frontmatter.Join(fm, d.body, d.hadFM, d.style)
+	out := make([]byte, len(joined))
+	copy(out, joined)
+	return out
 }
