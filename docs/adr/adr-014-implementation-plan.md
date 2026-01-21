@@ -103,8 +103,8 @@ Target files:
 - [ ] Add failing tests for the transform (prefer existing test patterns in `internal/hugo/pipeline`)
   - [ ] Ensure frontmatter is preserved/normalized as expected
   - [ ] Ensure behavior is unchanged for “no frontmatter” files
-- [ ] Refactor transform to use `internal/frontmatter` package
-- [ ] Ensure tests pass
+- [x] Refactor transform to use `internal/frontmatter` package
+- [x] Ensure tests pass
 
 ### 4) Migrate fingerprint transform to parts-based API (mdfp v1.2.0)
 
