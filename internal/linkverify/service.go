@@ -1,6 +1,7 @@
 package linkverify
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -12,10 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/yaml.v3"
-
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 // ErrNoFrontMatter is returned when content has no front matter.
@@ -403,27 +403,22 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 // ParseFrontMatter extracts front matter from transformed content.
 // Returns ErrNoFrontMatter if content has no front matter.
 func ParseFrontMatter(content []byte) (map[string]any, error) {
-	if !hasFrontMatter(content) {
+	fmRaw, _, had, _, err := frontmatter.Split(content)
+	if err != nil {
 		return nil, ErrNoFrontMatter
 	}
-
-	// Extract front matter between --- delimiters
-	parts := strings.SplitN(string(content), "---", 3)
-	if len(parts) < 3 {
+	if !had {
 		return nil, ErrNoFrontMatter
 	}
+	if len(bytes.TrimSpace(fmRaw)) == 0 {
+		return map[string]any{}, nil
+	}
 
-	var fm map[string]any
-	if err := yaml.Unmarshal([]byte(parts[1]), &fm); err != nil {
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
-
 	return fm, nil
-}
-
-// hasFrontMatter checks if content has front matter.
-func hasFrontMatter(content []byte) bool {
-	return len(content) > 4 && string(content[0:3]) == "---"
 }
 
 // Close closes the verification service and releases resources.
