@@ -59,3 +59,16 @@ func TestExtractLinks_SkipsInlineCodeAndCodeBlocks(t *testing.T) {
 	require.Len(t, links, 1)
 	require.Equal(t, "./real.md", links[0].Destination)
 }
+
+func TestExtractLinks_PermissiveDestinationWithSpaces(t *testing.T) {
+	src := []byte("See [Manual](./User Manual.md) for details.\n")
+	links, err := ExtractLinks(src, Options{})
+	require.NoError(t, err)
+
+	// Goldmark follows CommonMark strictly and does not treat destinations with
+	// spaces as valid. DocBuilder historically relied on permissive parsing for
+	// fixer link updates, so internal analysis retains this behavior.
+	require.Len(t, links, 1)
+	require.Equal(t, LinkKindInline, links[0].Kind)
+	require.Equal(t, "./User Manual.md", links[0].Destination)
+}
