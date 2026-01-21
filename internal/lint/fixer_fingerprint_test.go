@@ -13,6 +13,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func mustExtractFrontmatterLastmod(t *testing.T, content string) (string, bool) {
+	t.Helper()
+
+	fmRaw, _, had, _, err := frontmatter.Split([]byte(content))
+	require.NoError(t, err)
+	require.True(t, had)
+
+	fields, err := frontmatter.ParseYAML(fmRaw)
+	require.NoError(t, err)
+
+	val, ok := fields["lastmod"]
+	if !ok {
+		return "", false
+	}
+
+	switch v := val.(type) {
+	case string:
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return "", false
+		}
+		return v, true
+	case time.Time:
+		return v.UTC().Format("2006-01-02"), true
+	default:
+		return "", false
+	}
+}
+
 func buildDocWithFingerprint(t *testing.T, fields map[string]any, body string) string {
 	t.Helper()
 
@@ -117,7 +146,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_SetsLastmodWhenMissingFingerprint(t
 	require.NoError(t, checkErr)
 	require.Empty(t, issues)
 
-	lastmod, ok := extractLastmodFromFrontmatter(updatedStr)
+	lastmod, ok := mustExtractFrontmatterLastmod(t, updatedStr)
 	require.True(t, ok)
 	require.Equal(t, "2026-01-15", lastmod)
 }
@@ -155,7 +184,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_UpdatesLastmodWhenFingerprintChange
 	require.NoError(t, checkErr)
 	require.Empty(t, issues)
 
-	lastmod, ok := extractLastmodFromFrontmatter(updatedStr)
+	lastmod, ok := mustExtractFrontmatterLastmod(t, updatedStr)
 	require.True(t, ok)
 	require.Equal(t, "2026-01-15", lastmod)
 }
@@ -176,7 +205,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprint
 	issues, checkErr := rule.Check(path)
 	require.NoError(t, checkErr)
 	require.Empty(t, issues)
-	lastmodBefore, ok := extractLastmodFromFrontmatter(seed)
+	lastmodBefore, ok := mustExtractFrontmatterLastmod(t, seed)
 	require.True(t, ok)
 	require.Equal(t, "2000-01-01", lastmodBefore)
 
@@ -200,7 +229,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprint
 	require.Empty(t, issues)
 
 	// CRITICAL: lastmod should remain unchanged because fingerprint didn't change
-	lastmodAfter, ok := extractLastmodFromFrontmatter(updatedStr)
+	lastmodAfter, ok := mustExtractFrontmatterLastmod(t, updatedStr)
 	require.True(t, ok)
 	require.Equal(t, "2000-01-01", lastmodAfter, "lastmod should not be updated when fingerprint is unchanged")
 }
