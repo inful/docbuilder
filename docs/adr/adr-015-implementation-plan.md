@@ -46,7 +46,7 @@ tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance
   - fix them first (with a dedicated commit), or
   - defer and adjust the branch strategy.
 
-**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `78ee4e7`
 
 **Commit message**: `chore: verify baseline for ADR-015 work` (or omit if no repo changes)
 
