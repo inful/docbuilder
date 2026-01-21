@@ -84,7 +84,7 @@ Write failing unit tests for a new package `internal/docmodel`:
   - missing closing delimiter error matches `frontmatter.ErrMissingClosingDelimiter`
 - [x] Round-trip join: no edits → output equals original bytes.
 
-**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `4a35836`
 
 **Commit message**: `test(docmodel): add parse and split/join contract tests`
 
