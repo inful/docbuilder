@@ -192,21 +192,21 @@ Goal: make line-number attribution consistent across consumers.
 
 ### Step 3.1 — RED: apply edits round-trip and boundary tests
 
-- [ ] Add tests that applying edits:
+- [x] Add tests that applying edits:
   - only changes specified byte ranges in the body
   - preserves frontmatter bytes exactly
   - produces identical output when edits are empty
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `d6f68dd`
 
 **Commit message**: `test(docmodel): add apply-edits tests`
 
 ### Step 3.2 — GREEN: implement `ApplyBodyEdits`/`ApplyEdits`
 
-- [ ] Use `markdown.ApplyEdits` on body bytes.
-- [ ] Re-join with `frontmatter.Join`.
+- [x] Use `markdown.ApplyEdits` on body bytes.
+- [x] Re-join with `frontmatter.Join`.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `d6f68dd`
 
 **Commit message**: `feat(docmodel): support minimal-diff body edits`
 
