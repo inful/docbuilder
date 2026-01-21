@@ -35,6 +35,21 @@ func TestApplyEdits_MultipleReplacements(t *testing.T) {
 	require.Equal(t, "A: ./new.md\nB: ./new.md#frag\n", string(out))
 }
 
+func TestApplyEdits_CRLFInputPreserved(t *testing.T) {
+	src := []byte("A: ./old.md\r\nB: ./old.md\r\n")
+
+	idx := bytes.Index(src, []byte("./old.md"))
+	require.NotEqual(t, -1, idx)
+
+	out, err := ApplyEdits(src, []Edit{{
+		Start:       idx,
+		End:         idx + len("./old.md"),
+		Replacement: []byte("./new.md"),
+	}})
+	require.NoError(t, err)
+	require.Equal(t, "A: ./new.md\r\nB: ./old.md\r\n", string(out))
+}
+
 func TestApplyEdits_ReferenceDefinitionReplacement(t *testing.T) {
 	src := []byte("Reference: [api][1]\n\n[1]: ./api-guide.md \"Title\"\n")
 	old := []byte("./api-guide.md")
