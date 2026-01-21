@@ -99,9 +99,14 @@ Notes (Step 1):
 
 Scope: switch broken-link detection to use `internal/markdown` link extraction rather than ad-hoc scanning.
 
-- [ ] Add failing tests that reproduce at least one known scanner bug (edge case) and verify Goldmark-based detection fixes it
-- [ ] Update broken-link detection codepaths to use `internal/frontmatter.Split` → parse body via `internal/markdown`
-- [ ] Keep output stable (same error format, same file/line reporting where applicable)
+- [x] Add failing tests that reproduce at least one known scanner bug (edge case) and verify Goldmark-based detection fixes it
+- [x] Update broken-link detection codepaths to use `internal/frontmatter.Split` → parse body via `internal/markdown`
+- [x] Keep output stable (same error format, same file/line reporting where applicable)
+
+Notes (Step 2):
+- `detectBrokenLinksInFile` now uses `internal/frontmatter.Split` and `internal/markdown.ExtractLinks`.
+- Added coverage that ensures links inside `~~~` fenced code blocks are ignored.
+- Updated the former “known limitation” characterization tests (tilde fences, nested parentheses, escaped link text) to the new intended behavior.
 
 **Commit checkpoint:** `fix(lint): use goldmark for broken-link detection`
 
