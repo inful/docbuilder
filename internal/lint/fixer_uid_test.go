@@ -323,7 +323,7 @@ Some **bold** and *italic* text.
 	assert.Contains(t, contentStr, "Some **bold** and *italic* text.")
 
 	// Verify other frontmatter fields are preserved
-	assert.Contains(t, contentStr, "title: \"Test Document\"")
+	assert.Contains(t, contentStr, "title: Test Document")
 	assert.Contains(t, contentStr, "date: 2024-01-01")
 	assert.Contains(t, contentStr, "tags:")
 	assert.Contains(t, contentStr, "- documentation")
@@ -371,13 +371,13 @@ related:
 
 	contentStr := string(modifiedContent)
 	assert.Contains(t, contentStr, "author:")
-	assert.Contains(t, contentStr, "name: \"John Doe\"")
-	assert.Contains(t, contentStr, "email: \"john@example.com\"")
+	assert.Contains(t, contentStr, "name: John Doe")
+	assert.Contains(t, contentStr, "email: john@example.com")
 	assert.Contains(t, contentStr, "metadata:")
-	assert.Contains(t, contentStr, "category: \"testing\"")
+	assert.Contains(t, contentStr, "category: testing")
 	assert.Contains(t, contentStr, "priority: high")
 	assert.Contains(t, contentStr, "related:")
-	assert.Contains(t, contentStr, "- link: \"/doc1\"")
+	assert.Contains(t, contentStr, "link: /doc1")
 
 	// Verify uid and aliases were added
 	assert.Contains(t, contentStr, "uid:")

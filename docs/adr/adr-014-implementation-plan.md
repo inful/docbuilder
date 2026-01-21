@@ -121,14 +121,14 @@ Goals:
 - Compute fingerprint via `mdfp.CalculateFingerprintFromParts(frontmatter, body)`
 - Update **only** the YAML `fingerprint` field (and `lastmod` via ADR-011 policy where applicable)
 
-- [ ] Add failing tests covering:
-  - [ ] adding fingerprint to docs with no fingerprint
-  - [ ] updating fingerprint when body changes
-  - [ ] ensuring non-fingerprint YAML fields remain unchanged
-  - [ ] ensuring body is unchanged
-- [ ] Implement by:
-  - [ ] `Split` → `ParseYAML` → compute fingerprint via `CalculateFingerprintFromParts` → set `fingerprint` → `SerializeYAML` → `Join`
-- [ ] Ensure tests pass
+- [x] Add failing tests covering:
+  - [x] adding fingerprint to docs with no fingerprint
+  - [x] updating fingerprint when body changes
+  - [x] ensuring non-fingerprint YAML fields remain unchanged
+  - [x] ensuring body is unchanged
+- [x] Implement by:
+  - [x] `Split` → `ParseYAML` → compute fingerprint via `CalculateFingerprintFromParts` → set `fingerprint` → `SerializeYAML` → `Join`
+- [x] Ensure tests pass
 
 ### 5) Migrate lint/fixer frontmatter helpers
 
@@ -143,8 +143,8 @@ Approach:
 - migrate rule-by-rule, keeping behavior stable
 
 - [ ] Fingerprint rule first
-  - [ ] Add failing tests for lint rule behavior (verify + fix)
-  - [ ] Refactor to use `internal/frontmatter` + `mdfp.CalculateFingerprintFromParts`
+  - [x] Add failing tests for lint rule behavior (verify + fix)
+  - [x] Refactor to use `internal/frontmatter` + `mdfp.CalculateFingerprintFromParts`
 - [ ] UID rule(s)
   - [ ] Add failing tests ensuring UID insertion/preservation stays stable
   - [ ] Refactor to use `internal/frontmatter`

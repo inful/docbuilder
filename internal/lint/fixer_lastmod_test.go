@@ -120,7 +120,7 @@ lastmod: "2026-01-15"
 ---
 Body`,
 			field:     "lastmod",
-			wantValue: `"2026-01-15"`,
+			wantValue: "2026-01-15",
 			wantOK:    true,
 		},
 		{
@@ -130,7 +130,7 @@ lastmod: '2026-01-15'
 ---
 Body`,
 			field:     "lastmod",
-			wantValue: `'2026-01-15'`,
+			wantValue: "2026-01-15",
 			wantOK:    true,
 		},
 		{
