@@ -1,7 +1,9 @@
 package docmodel
 
 import (
+	"maps"
 	"os"
+	"sync"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
@@ -23,6 +25,10 @@ type ParsedDoc struct {
 	body     []byte
 	hadFM    bool
 	style    frontmatter.Style
+
+	fieldsOnce sync.Once
+	fields     map[string]any
+	fieldsErr  error
 }
 
 // Parse parses raw file content into a ParsedDoc.
@@ -106,6 +112,32 @@ func (d *ParsedDoc) Body() []byte {
 // Style returns the detected formatting style from frontmatter splitting.
 func (d *ParsedDoc) Style() frontmatter.Style {
 	return d.style
+}
+
+// FrontmatterFields parses YAML frontmatter (if present) into a map.
+//
+// Results are cached per ParsedDoc instance.
+func (d *ParsedDoc) FrontmatterFields() (map[string]any, error) {
+	d.fieldsOnce.Do(func() {
+		if !d.hadFM {
+			d.fields = map[string]any{}
+			return
+		}
+		fields, err := frontmatter.ParseYAML(d.fmRaw)
+		if err != nil {
+			d.fieldsErr = errors.WrapError(err, errors.CategoryValidation, "failed to parse frontmatter YAML").Build()
+			return
+		}
+		d.fields = fields
+	})
+
+	if d.fieldsErr != nil {
+		return nil, d.fieldsErr
+	}
+
+	out := make(map[string]any, len(d.fields))
+	maps.Copy(out, d.fields)
+	return out, nil
 }
 
 // Bytes re-joins frontmatter and body into full document bytes.

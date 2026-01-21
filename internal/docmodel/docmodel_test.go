@@ -80,3 +80,63 @@ func TestParsedDoc_DoesNotExposeMutableBytes_NoFrontmatter(t *testing.T) {
 	body := doc.Body()
 	require.Equal(t, byte('#'), body[0])
 }
+
+func TestFrontmatterFields_NoFrontmatter_ReturnsEmptyMap(t *testing.T) {
+	content := []byte("# Hello\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+
+	fields, err := doc.FrontmatterFields()
+	require.NoError(t, err)
+	require.Empty(t, fields)
+}
+
+func TestFrontmatterFields_EmptyFrontmatter_ReturnsEmptyMap(t *testing.T) {
+	content := []byte("---\n---\n# Hello\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+	require.True(t, doc.HadFrontmatter())
+
+	fields, err := doc.FrontmatterFields()
+	require.NoError(t, err)
+	require.Empty(t, fields)
+}
+
+func TestFrontmatterFields_ValidYAML_ReturnsMap(t *testing.T) {
+	content := []byte("---\nkey: value\nnum: 3\n---\n# Hello\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+
+	fields, err := doc.FrontmatterFields()
+	require.NoError(t, err)
+	require.Equal(t, "value", fields["key"])
+	require.Equal(t, 3, fields["num"])
+}
+
+func TestFrontmatterFields_InvalidYAML_ReturnsError(t *testing.T) {
+	content := []byte("---\nkey: [unterminated\n---\n# Hello\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+
+	_, err = doc.FrontmatterFields()
+	require.Error(t, err)
+}
+
+func TestFrontmatterFields_ReturnsCopy(t *testing.T) {
+	content := []byte("---\nkey: value\n---\n# Hello\n")
+
+	doc, err := Parse(content, Options{})
+	require.NoError(t, err)
+
+	fieldsA, err := doc.FrontmatterFields()
+	require.NoError(t, err)
+	fieldsA["key"] = "mutated"
+
+	fieldsB, err := doc.FrontmatterFields()
+	require.NoError(t, err)
+	require.Equal(t, "value", fieldsB["key"])
+}
