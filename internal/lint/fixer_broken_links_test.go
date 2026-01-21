@@ -121,14 +121,48 @@ func TestDetectBrokenLinks_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
 	assert.Equal(t, "./missing.md", broken[0].Target)
 }
 
-func TestFindLineNumberForTarget_SkipsCodeBlocksAndInlineCode(t *testing.T) {
-	body := "" +
+func TestDetectBrokenLinksInFile_SkipsCodeBlocksAndInlineCode_ForLineNumbers(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	indexFile := filepath.Join(docsDir, "index.md")
+	content := "" +
 		"```sh\n" +
 		"echo ./missing.md\n" +
 		"```\n" +
 		"Use `./missing.md` as an example.\n" +
 		"Real link: [Missing](./missing.md)\n"
+	err = os.WriteFile(indexFile, []byte(content), 0o600)
+	require.NoError(t, err)
 
-	line := findLineNumberForTarget(body, "./missing.md")
-	assert.Equal(t, 5, line)
+	broken, err := detectBrokenLinksInFile(indexFile)
+	require.NoError(t, err)
+	require.Len(t, broken, 1)
+	assert.Equal(t, 5, broken[0].LineNumber)
+}
+
+func TestDetectBrokenLinksInFile_WithFrontmatter_ReportsFileLineNumber(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := "---\n" +
+		"title: x\n" +
+		"---\n" +
+		"[Broken](./missing.md)\n"
+	err = os.WriteFile(indexFile, []byte(indexContent), 0o600)
+	require.NoError(t, err)
+
+	broken, err := detectBrokenLinksInFile(indexFile)
+	require.NoError(t, err)
+	require.Len(t, broken, 1)
+
+	// The link appears on line 4 of the original file (after frontmatter).
+	assert.Equal(t, 4, broken[0].LineNumber)
 }
