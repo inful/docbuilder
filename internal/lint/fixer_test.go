@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/inful/mdfp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -109,9 +108,10 @@ func TestFixer_RenameFile(t *testing.T) {
 	require.True(t, hasUID)
 	_, parseErr := uuid.Parse(uid)
 	require.NoError(t, parseErr)
-	ok, verr := mdfp.VerifyFingerprint(string(updatedBytes))
-	require.NoError(t, verr)
-	require.True(t, ok)
+	rule := &FrontmatterFingerprintRule{}
+	issues, err := rule.Check(expectedNewFile)
+	require.NoError(t, err)
+	require.Empty(t, issues)
 }
 
 // TestFixer_RenameMultipleFiles tests renaming multiple files.

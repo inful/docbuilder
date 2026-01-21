@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"github.com/inful/mdfp"
 )
 
@@ -330,15 +331,63 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
-	updated, err := mdfp.ProcessContent(string(data))
-	if err != nil {
+	original := string(data)
+
+	frontmatterBytes, bodyBytes, _, style, splitErr := frontmatter.Split(data)
+	if splitErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("compute fingerprint update: %w", err)
+		op.Error = fmt.Errorf("split frontmatter for fingerprint update: %w", splitErr)
 		return op
 	}
 
-	// mdfp may rewrite frontmatter; ensure stable uid is preserved.
-	original := string(data)
+	fields, parseErr := frontmatter.ParseYAML(frontmatterBytes)
+	if parseErr != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("parse YAML frontmatter for fingerprint update: %w", parseErr)
+		return op
+	}
+
+	fieldsForHash := make(map[string]any, len(fields))
+	for k, v := range fields {
+		if k == mdfp.FingerprintField {
+			continue
+		}
+		if k == "lastmod" {
+			continue
+		}
+		if k == "uid" {
+			continue
+		}
+		if k == "aliases" {
+			continue
+		}
+		fieldsForHash[k] = v
+	}
+
+	frontmatterForHash := ""
+	if len(fieldsForHash) > 0 {
+		hashStyle := frontmatter.Style{Newline: "\n"}
+		serialized, serializeErr := frontmatter.SerializeYAML(fieldsForHash, hashStyle)
+		if serializeErr != nil {
+			op.Success = false
+			op.Error = fmt.Errorf("serialize frontmatter for fingerprint update: %w", serializeErr)
+			return op
+		}
+		frontmatterForHash = strings.TrimSuffix(string(serialized), "\n")
+	}
+
+	fields[mdfp.FingerprintField] = mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
+
+	updatedFrontmatter, serializeErr := frontmatter.SerializeYAML(fields, style)
+	if serializeErr != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("serialize YAML frontmatter for fingerprint update: %w", serializeErr)
+		return op
+	}
+
+	updated := string(frontmatter.Join(updatedFrontmatter, bodyBytes, true, style))
+
+	// The fixer historically preserves uid across any rewrite; keep that behavior.
 	updated = preserveUIDAcrossContentRewrite(original, updated)
 
 	// ADR-011: If fingerprint changes, update lastmod (YYYY-MM-DD, UTC).

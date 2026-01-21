@@ -3,8 +3,10 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"github.com/inful/mdfp"
 	"github.com/stretchr/testify/require"
 )
@@ -28,9 +30,23 @@ func TestFrontmatterFingerprintRule_Check(t *testing.T) {
 		tmpDir := t.TempDir()
 		path := filepath.Join(tmpDir, "doc.md")
 
-		content, err := mdfp.ProcessContent("# Title\n\nHello\n")
+		body := "# Title\n\nHello\n"
+		fields := map[string]any{
+			"title": "My Title",
+			"tags":  []string{"one", "two"},
+		}
+
+		hashStyle := frontmatter.Style{Newline: "\n"}
+		frontmatterForHashBytes, err := frontmatter.SerializeYAML(fields, hashStyle)
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+		frontmatterForHash := strings.TrimSuffix(string(frontmatterForHashBytes), "\n")
+
+		fields[mdfp.FingerprintField] = mdfp.CalculateFingerprintFromParts(frontmatterForHash, body)
+		frontmatterBytes, err := frontmatter.SerializeYAML(fields, hashStyle)
+		require.NoError(t, err)
+
+		contentBytes := frontmatter.Join(frontmatterBytes, []byte(body), true, frontmatter.Style{Newline: "\n"})
+		require.NoError(t, os.WriteFile(path, contentBytes, 0o600))
 
 		issues, err := rule.Check(path)
 		require.NoError(t, err)

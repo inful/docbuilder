@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"github.com/inful/mdfp"
 )
 
@@ -19,6 +20,12 @@ import (
 type FrontmatterFingerprintRule struct{}
 
 const frontmatterFingerprintRuleName = "frontmatter-fingerprint"
+
+const (
+	frontmatterFingerprintHashKeyAliases = "aliases"
+	frontmatterFingerprintHashKeyLastmod = "lastmod"
+	frontmatterFingerprintHashKeyUID     = "uid"
+)
 
 func (r *FrontmatterFingerprintRule) Name() string {
 	return frontmatterFingerprintRuleName
@@ -35,17 +42,133 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 		return nil, fmt.Errorf("read file: %w", err)
 	}
 
-	ok, verifyErr := mdfp.VerifyFingerprint(string(data))
-	if ok {
+	frontmatterBytes, bodyBytes, hadFrontmatter, _, splitErr := frontmatter.Split(data)
+	if splitErr != nil {
+		//nolint:nilerr // Split failures are reported as lint issues, not fatal errors.
+		return []Issue{
+			{
+				FilePath: filePath,
+				Severity: SeverityError,
+				Rule:     r.Name(),
+				Message:  splitErr.Error(),
+				Explanation: strings.TrimSpace(strings.Join([]string{
+					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+					"DocBuilder uses these fingerprints to detect content changes reliably.",
+					"",
+					"This check is powered by github.com/inful/mdfp.",
+				}, "\n")),
+				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			},
+		}, nil
+	}
+
+	if !hadFrontmatter {
+		return []Issue{
+			{
+				FilePath: filePath,
+				Severity: SeverityError,
+				Rule:     r.Name(),
+				Message:  "Missing or invalid fingerprint in frontmatter",
+				Explanation: strings.TrimSpace(strings.Join([]string{
+					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+					"DocBuilder uses these fingerprints to detect content changes reliably.",
+					"",
+					"This check is powered by github.com/inful/mdfp.",
+				}, "\n")),
+				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			},
+		}, nil
+	}
+
+	fields, parseErr := frontmatter.ParseYAML(frontmatterBytes)
+	if parseErr != nil {
+		return []Issue{
+			{
+				FilePath: filePath,
+				Severity: SeverityError,
+				Rule:     r.Name(),
+				Message:  fmt.Sprintf("invalid YAML frontmatter: %v", parseErr),
+				Explanation: strings.TrimSpace(strings.Join([]string{
+					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+					"DocBuilder uses these fingerprints to detect content changes reliably.",
+					"",
+					"This check is powered by github.com/inful/mdfp.",
+				}, "\n")),
+				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			},
+		}, nil
+	}
+
+	currentAny, ok := fields[mdfp.FingerprintField]
+	if !ok {
+		return []Issue{
+			{
+				FilePath: filePath,
+				Severity: SeverityError,
+				Rule:     r.Name(),
+				Message:  "Missing or invalid fingerprint in frontmatter",
+				Explanation: strings.TrimSpace(strings.Join([]string{
+					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+					"DocBuilder uses these fingerprints to detect content changes reliably.",
+					"",
+					"This check is powered by github.com/inful/mdfp.",
+				}, "\n")),
+				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			},
+		}, nil
+	}
+
+	currentFingerprint, ok := currentAny.(string)
+	if !ok || strings.TrimSpace(currentFingerprint) == "" {
+		return []Issue{
+			{
+				FilePath: filePath,
+				Severity: SeverityError,
+				Rule:     r.Name(),
+				Message:  "Missing or invalid fingerprint in frontmatter",
+				Explanation: strings.TrimSpace(strings.Join([]string{
+					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+					"DocBuilder uses these fingerprints to detect content changes reliably.",
+					"",
+					"This check is powered by github.com/inful/mdfp.",
+				}, "\n")),
+				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			},
+		}, nil
+	}
+
+	fieldsForHash := make(map[string]any, len(fields))
+	for k, v := range fields {
+		if k == mdfp.FingerprintField {
+			continue
+		}
+		if k == frontmatterFingerprintHashKeyLastmod {
+			continue
+		}
+		if k == frontmatterFingerprintHashKeyUID {
+			continue
+		}
+		if k == frontmatterFingerprintHashKeyAliases {
+			continue
+		}
+		fieldsForHash[k] = v
+	}
+
+	frontmatterForHash := ""
+	if len(fieldsForHash) > 0 {
+		serialized, serializeErr := frontmatter.SerializeYAML(fieldsForHash, frontmatter.Style{Newline: "\n"})
+		if serializeErr != nil {
+			return nil, fmt.Errorf("serialize frontmatter for fingerprint check: %w", serializeErr)
+		}
+		frontmatterForHash = strings.TrimSuffix(string(serialized), "\n")
+	}
+
+	expected := mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
+	if expected == currentFingerprint {
 		return nil, nil
 	}
 
-	// mdfp uses errors to signal both missing and mismatched fingerprints.
-	// Treat all verification failures as a fixable error.
 	message := "Missing or invalid fingerprint in frontmatter"
-	if verifyErr != nil {
-		message = verifyErr.Error()
-	}
 
 	return []Issue{
 		{
