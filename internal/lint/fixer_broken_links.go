@@ -51,10 +51,7 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	}
 
 	body := content
-	fmRaw, fmBody, had, style, splitErr := frontmatter.Split(content)
-	_ = fmRaw
-	_ = had
-	_ = style
+	_, fmBody, _, _, splitErr := frontmatter.Split(content)
 	if splitErr == nil {
 		body = fmBody
 	}
@@ -134,9 +131,29 @@ func findLineNumberForTarget(body, target string) int {
 		return 1
 	}
 	lines := strings.Split(body, "\n")
+	skippable := computeSkippableLines(lines)
+
 	for i, line := range lines {
-		if strings.Contains(line, target) {
-			return i + 1
+		if i >= 0 && i < len(skippable) && skippable[i] {
+			continue
+		}
+
+		// The body can contain the same destination string in code blocks or inline
+		// code spans. We must avoid attributing link line numbers to those matches.
+		searchFrom := 0
+		for {
+			idx := strings.Index(line[searchFrom:], target)
+			if idx == -1 {
+				break
+			}
+			idx = searchFrom + idx
+			if !isInsideInlineCode(line, idx) {
+				return i + 1
+			}
+			searchFrom = idx + 1
+			if searchFrom >= len(line) {
+				break
+			}
 		}
 	}
 	return 1
