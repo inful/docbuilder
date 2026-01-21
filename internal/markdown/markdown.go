@@ -43,6 +43,13 @@ func ExtractLinks(body []byte, opts Options) ([]Link, error) {
 	})
 
 	// Reference definitions are stored in the parse context (not represented as AST nodes).
+	// Goldmark does not provide source positions or a reliable “document order” for these
+	// references via the context API (they are effectively collected in an unordered set).
+	//
+	// To keep DocBuilder’s analysis deterministic across runs (and across Go map iteration
+	// order changes), we sort reference definitions by label before appending them.
+	//
+	// Callers should not rely on reference-definition ordering matching document order.
 	refs := ctx.References()
 	sort.Slice(refs, func(i, j int) bool {
 		return string(refs[i].Label()) < string(refs[j].Label())
@@ -55,6 +62,12 @@ func ExtractLinks(body []byte, opts Options) ([]Link, error) {
 	// permissive destination parsing in some fixer workflows (e.g., destinations
 	// containing spaces). Add a best-effort permissive pass to retain
 	// minimal-surprise behavior for internal analysis.
+	//
+	// Note: this API intentionally returns links as a multi-set (duplicates are
+	// expected when the same destination appears multiple times in a document).
+	// We do NOT deduplicate by Kind+Destination here because Link currently does
+	// not carry source position data, and collapsing duplicates would break
+	// callers that need to update multiple occurrences.
 	links = append(links, extractPermissiveLinks(body)...)
 
 	return links, nil
