@@ -142,12 +142,12 @@ Approach:
 
 - migrate rule-by-rule, keeping behavior stable
 
-- [ ] Fingerprint rule first
+- [x] Fingerprint rule first
   - [x] Add failing tests for lint rule behavior (verify + fix)
   - [x] Refactor to use `internal/frontmatter` + `mdfp.CalculateFingerprintFromParts`
 - [ ] UID rule(s)
-  - [ ] Add failing tests ensuring UID insertion/preservation stays stable
-  - [ ] Refactor to use `internal/frontmatter`
+  - [x] Add failing tests ensuring UID insertion/preservation stays stable
+  - [x] Refactor to use `internal/frontmatter`
 - [ ] lastmod rule(s)
   - [ ] Add failing tests per ADR-011 interaction
   - [ ] Refactor to use `internal/frontmatter`
