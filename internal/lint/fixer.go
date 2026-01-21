@@ -347,6 +347,8 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
+	oldFP, _ := fields[mdfp.FingerprintField].(string)
+
 	fieldsForHash := make(map[string]any, len(fields))
 	for k, v := range fields {
 		if k == mdfp.FingerprintField {
@@ -376,7 +378,13 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		frontmatterForHash = strings.TrimSuffix(string(serialized), "\n")
 	}
 
-	fields[mdfp.FingerprintField] = mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
+	computedFP := mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
+	fields[mdfp.FingerprintField] = computedFP
+
+	// ADR-011: If fingerprint changes, update lastmod (YYYY-MM-DD, UTC).
+	if computedFP != "" && strings.TrimSpace(computedFP) != strings.TrimSpace(oldFP) {
+		fields["lastmod"] = f.todayUTC()
+	}
 
 	updatedFrontmatter, serializeErr := frontmatter.SerializeYAML(fields, style)
 	if serializeErr != nil {
@@ -389,13 +397,6 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 
 	// The fixer historically preserves uid across any rewrite; keep that behavior.
 	updated = preserveUIDAcrossContentRewrite(original, updated)
-
-	// ADR-011: If fingerprint changes, update lastmod (YYYY-MM-DD, UTC).
-	oldFP, _ := extractFingerprintFromFrontmatter(original)
-	newFP, _ := extractFingerprintFromFrontmatter(updated)
-	if newFP != "" && newFP != oldFP {
-		updated = setOrUpdateLastmodInFrontmatter(updated, f.todayUTC())
-	}
 
 	if updated == original {
 		return op

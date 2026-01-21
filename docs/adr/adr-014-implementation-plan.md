@@ -149,8 +149,8 @@ Approach:
   - [x] Add failing tests ensuring UID insertion/preservation stays stable
   - [x] Refactor to use `internal/frontmatter`
 - [ ] lastmod rule(s)
-  - [ ] Add failing tests per ADR-011 interaction
-  - [ ] Refactor to use `internal/frontmatter`
+  - [x] Add failing tests per ADR-011 interaction
+  - [x] Refactor to use `internal/frontmatter`
 
 ### 6) Delete duplicated implementations
 
