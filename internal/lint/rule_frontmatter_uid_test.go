@@ -79,7 +79,7 @@ func TestFrontmatterUIDRule_Check_FrontmatterEdgeCases(t *testing.T) {
 	rule := &FrontmatterUIDRule{}
 	tempDir := t.TempDir()
 
-	t.Run("CRLF frontmatter is treated as missing", func(t *testing.T) {
+	t.Run("CRLF frontmatter is recognized", func(t *testing.T) {
 		filePath := filepath.Join(tempDir, "crlf.md")
 		content := "---\r\n" +
 			"uid: 550e8400-e29b-41d4-a716-446655440000\r\n" +
