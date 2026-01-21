@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
@@ -44,26 +44,19 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 
 // detectBrokenLinksInFile scans a single markdown file for broken links.
 func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
-	// #nosec G304 -- sourceFile is from discovery walkFiles, not user input
-	content, err := os.ReadFile(sourceFile)
+	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to parse file: %w", err)
 	}
 
-	body := content
-	_, fmBody, _, _, splitErr := frontmatter.Split(content)
-	if splitErr == nil {
-		body = fmBody
+	refs, err := doc.LinkRefs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse markdown links: %w", err)
 	}
 
-	links, parseErr := markdown.ExtractLinks(body, markdown.Options{})
-	if parseErr != nil {
-		return nil, fmt.Errorf("failed to parse markdown links: %w", parseErr)
-	}
-
-	bodyStr := string(body)
 	brokenLinks := make([]BrokenLink, 0)
-	for _, link := range links {
+	for _, ref := range refs {
+		link := ref.Link
 		target := strings.TrimSpace(link.Destination)
 		if target == "" {
 			continue
@@ -88,7 +81,7 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 			continue
 		}
 
-		lineNum := findLineNumberForTarget(bodyStr, target)
+		lineNum := ref.FileLine
 
 		switch link.Kind {
 		case markdown.LinkKindImage:
@@ -124,39 +117,6 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	}
 
 	return brokenLinks, nil
-}
-
-func findLineNumberForTarget(body, target string) int {
-	if body == "" || target == "" {
-		return 1
-	}
-	lines := strings.Split(body, "\n")
-	skippable := computeSkippableLines(lines)
-
-	for i, line := range lines {
-		if i >= 0 && i < len(skippable) && skippable[i] {
-			continue
-		}
-
-		// The body can contain the same destination string in code blocks or inline
-		// code spans. We must avoid attributing link line numbers to those matches.
-		searchFrom := 0
-		for {
-			idx := strings.Index(line[searchFrom:], target)
-			if idx == -1 {
-				break
-			}
-			idx = searchFrom + idx
-			if !isInsideInlineCode(line, idx) {
-				return i + 1
-			}
-			searchFrom = idx + 1
-			if searchFrom >= len(line) {
-				break
-			}
-		}
-	}
-	return 1
 }
 
 // isBrokenLink checks if a link target points to a non-existent file.

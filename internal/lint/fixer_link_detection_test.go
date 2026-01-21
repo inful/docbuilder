@@ -45,3 +45,37 @@ func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
 	// even though they have different cases
 	assert.GreaterOrEqual(t, len(links), 3, "should find links with case-insensitive matching")
 }
+
+func TestFixer_findLinksInFile_SkipsInlineCodeAndOffsetsFrontmatter(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	targetFile := filepath.Join(docsDir, "guide.md")
+	err = os.WriteFile(targetFile, []byte("# Guide\n"), 0o600)
+	require.NoError(t, err)
+
+	sourceFile := filepath.Join(docsDir, "index.md")
+	src := "---\n" +
+		"title: x\n" +
+		"---\n" +
+		"Inline code `./guide.md` should be ignored.\n" +
+		"Real link: [Guide](./guide.md)\n"
+	err = os.WriteFile(sourceFile, []byte(src), 0o600)
+	require.NoError(t, err)
+
+	absTarget, err := filepath.Abs(targetFile)
+	require.NoError(t, err)
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	links, err := fixer.findLinksInFile(sourceFile, absTarget)
+	require.NoError(t, err)
+	require.Len(t, links, 1)
+
+	// The real link is on file line 5 (frontmatter is 3 lines).
+	assert.Equal(t, 5, links[0].LineNumber)
+}
