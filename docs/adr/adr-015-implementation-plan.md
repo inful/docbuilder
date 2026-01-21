@@ -138,7 +138,7 @@ Implement `internal/docmodel` using existing primitives:
 
 Goal: make line-number attribution consistent across consumers.
 
-- [ ] Add tests for docmodel line mapping that cover:
+- [x] Add tests for docmodel line mapping that cover:
   - correct line offset when YAML frontmatter is present (opening + closing delimiter + fmRaw lines)
   - skipping fenced code blocks (``` and ~~~) and indented code blocks
   - skipping inline-code spans when searching for a destination
@@ -146,20 +146,20 @@ Goal: make line-number attribution consistent across consumers.
 
 (These tests should be based on current behavior in `internal/lint` to avoid breaking workflows.)
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `aa72624`
 
 **Commit message**: `test(docmodel): add line mapping and skippable rules tests`
 
 ### Step 2.4 — GREEN: implement line mapping helpers in docmodel
 
-- [ ] Implement a small, reusable line index API, e.g.:
+- [x] Implement a small, reusable line index API, e.g.:
   - `LineOffset()` (from original file start to body start)
   - `FindNextLineContaining(target string, startLine int) int` (skips code blocks + inline code)
-- [ ] Ensure functions operate on the **body** but return line numbers in either:
+- [x] Ensure functions operate on the **body** but return line numbers in either:
   - body coordinates, plus a helper to convert to file coordinates, or
   - file coordinates directly (preferred for consumers).
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `aa72624`
 
 **Commit message**: `feat(docmodel): add shared line mapping helpers`
 
