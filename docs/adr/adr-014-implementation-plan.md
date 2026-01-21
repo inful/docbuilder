@@ -106,6 +106,9 @@ Target files:
 - [x] Refactor transform to use `internal/frontmatter` package
 - [x] Ensure tests pass
 
+**Note (process deviation):** For Part 3 we proceeded without adding *new* transform-specific tests.
+We treated the existing characterization coverage in `internal/hugo/pipeline/pipeline_test.go` (which asserts `parseFrontMatter` behavior across frontmatter edge cases) as satisfying the intent of the “add failing tests” checkbox, and continued to avoid duplicating coverage.
+
 ### 4) Migrate fingerprint transform to parts-based API (mdfp v1.2.0)
 
 Target file:
