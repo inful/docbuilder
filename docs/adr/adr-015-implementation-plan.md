@@ -165,24 +165,24 @@ Goal: make line-number attribution consistent across consumers.
 
 ### Step 2.5 — RED: links extraction parity tests (body-only)
 
-- [ ] Add tests that `ParsedDoc.Links()` matches `markdown.ExtractLinks(doc.Body(), markdown.Options{})` for:
+- [x] Add tests that `ParsedDoc.Links()` matches `markdown.ExtractLinks(doc.Body(), markdown.Options{})` for:
   - inline links, images, autolinks, reference defs
   - permissive destinations with spaces
   - links inside inline code / fenced code are not returned
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `992918b`
 
 **Commit message**: `test(docmodel): add links extraction parity tests`
 
 ### Step 2.6 — GREEN: implement `Links()` and `LinkRefs()` (links + line numbers)
 
-- [ ] Implement `Links()` as a thin wrapper around `markdown.ExtractLinks(body)`.
-- [ ] Add `LinkRefs()` (or similar) that enriches extracted links with line numbers via docmodel line mapping.
-- [ ] Preserve existing lint fixer behavior:
+- [x] Implement `Links()` as a thin wrapper around `markdown.ExtractLinks(body)`.
+- [x] Add `LinkRefs()` (or similar) that enriches extracted links with line numbers via docmodel line mapping.
+- [x] Preserve existing lint fixer behavior:
   - only include kinds that are updateable/searchable (inline, image, reference_definition)
   - ignore external URLs, fragment-only links, and empty destinations
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `992918b`
 
 **Commit message**: `feat(docmodel): add links with line attribution`
 
