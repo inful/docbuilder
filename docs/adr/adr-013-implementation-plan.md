@@ -136,17 +136,21 @@ Key correctness requirements:
 
 TDD steps:
 
-- [ ] Add failing unit tests for `ApplyEdits(source []byte, edits []Edit) ([]byte, error)`
-  - [ ] Single inline link destination replacement
-  - [ ] Multiple replacements (ensure reverse-order patching or offset adjustment)
-  - [ ] Reference definition destination replacement
-  - [ ] Preserve fragments `#...` and relative path prefixes `./` `../`
-  - [ ] CRLF input preserved when joining with frontmatter (via `internal/frontmatter.Style`)
-- [ ] Implement edit application logic
-- [ ] Integrate into link healing/update path(s)
-- [ ] Add integration-ish tests around `docbuilder lint --fix` link healing behavior if applicable in current test structure
+- [x] Add failing unit tests for `ApplyEdits(source []byte, edits []Edit) ([]byte, error)`
+  - [x] Single inline link destination replacement
+  - [x] Multiple replacements (ensure reverse-order patching or offset adjustment)
+  - [x] Reference definition destination replacement
+  - [x] Preserve fragments `#...` and relative path prefixes `./` `../`
+  - [x] CRLF input preserved when joining with frontmatter (via `internal/frontmatter.Style`)
+- [x] Implement edit application logic
+- [x] Integrate into link healing/update path(s)
+- [x] Add integration-ish tests around `docbuilder lint --fix` link healing behavior if applicable in current test structure
 
-**Commit checkpoint:** `feat(lint): minimal-diff link rewriting using goldmark source ranges`
+Notes (Step 4):
+- Added `internal/markdown.ApplyEdits` for safe, non-overlapping byte-range replacements.
+- `applyLinkUpdates` now patches bytes in-place (no line splitting/joining), preserving original formatting/newlines and keeping frontmatter untouched.
+
+**Commit checkpoint:** `feat(lint): minimal-diff link rewriting using byte-range patches`
 
 ### 5) Remove duplicated scanners once parity is achieved
 

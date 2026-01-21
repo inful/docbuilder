@@ -1,10 +1,13 @@
 package lint
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // applyLinkUpdates applies link updates to markdown files atomically.
@@ -30,7 +33,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			return nil, fmt.Errorf("failed to read %s: %w", sourceFile, err)
 		}
 
-		lines := strings.Split(string(content), "\n")
+		originalContent := append([]byte(nil), content...)
 		modified := false
 
 		// Sort links by line number in reverse order to maintain line offsets
@@ -47,8 +50,8 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 
 		// Apply updates to each link
 		for _, link := range sortedLinks {
-			lineIdx := link.LineNumber - 1
-			if lineIdx < 0 || lineIdx >= len(lines) {
+			lineStart, lineEnd, ok := findLineByteRange(content, link.LineNumber)
+			if !ok {
 				continue
 			}
 
@@ -62,30 +65,38 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 				continue // No change needed
 			}
 
-			// Replace the old link text with the new target in the line
-			oldLine := lines[lineIdx]
-			newLine := strings.Replace(oldLine, oldLinkText, newTarget, 1)
-
-			if newLine != oldLine {
-				lines[lineIdx] = newLine
-				modified = true
-
-				updates = append(updates, LinkUpdate{
-					SourceFile: sourceFile,
-					LineNumber: link.LineNumber,
-					OldTarget:  oldLinkText,
-					NewTarget:  newTarget,
-				})
+			line := content[lineStart:lineEnd]
+			idx := bytes.Index(line, []byte(oldLinkText))
+			if idx == -1 {
+				continue
 			}
+
+			updated, err := markdown.ApplyEdits(content, []markdown.Edit{{
+				Start:       lineStart + idx,
+				End:         lineStart + idx + len(oldLinkText),
+				Replacement: []byte(newTarget),
+			}})
+			if err != nil {
+				f.rollbackLinkUpdates(backupPaths)
+				return nil, fmt.Errorf("failed to apply link updates to %s: %w", sourceFile, err)
+			}
+
+			content = updated
+			modified = true
+
+			updates = append(updates, LinkUpdate{
+				SourceFile: sourceFile,
+				LineNumber: link.LineNumber,
+				OldTarget:  oldLinkText,
+				NewTarget:  newTarget,
+			})
 		}
 
 		// Write updated content if modified
 		if modified {
-			newContent := strings.Join(lines, "\n")
-
 			// Create backup before writing
 			backupPath := sourceFile + ".backup"
-			err := os.WriteFile(backupPath, content, 0o600)
+			err := os.WriteFile(backupPath, originalContent, 0o600)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
@@ -94,7 +105,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			backupPaths = append(backupPaths, backupPath)
 
 			// Write updated content
-			err = os.WriteFile(sourceFile, []byte(newContent), 0o600)
+			err = os.WriteFile(sourceFile, content, 0o600)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
@@ -109,6 +120,29 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 	}
 
 	return updates, nil
+}
+
+func findLineByteRange(content []byte, lineNumber int) (int, int, bool) {
+	if lineNumber <= 0 {
+		return 0, 0, false
+	}
+
+	start := 0
+	current := 1
+	for current < lineNumber {
+		idx := bytes.IndexByte(content[start:], '\n')
+		if idx == -1 {
+			return 0, 0, false
+		}
+		start = start + idx + 1
+		current++
+	}
+
+	endRel := bytes.IndexByte(content[start:], '\n')
+	if endRel == -1 {
+		return start, len(content), true
+	}
+	return start, start + endRel, true
 }
 
 // updateLinkTarget generates a new link target for a renamed file.
