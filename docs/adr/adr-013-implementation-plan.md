@@ -114,8 +114,13 @@ Notes (Step 2):
 
 Scope: adopt AST-driven link discovery for fixer operations (e.g., ADR-012 link healing) without rewriting yet.
 
-- [ ] Add failing tests covering discovery parity with current fixer (mixed link types)
-- [ ] Switch fixer link discovery to use `internal/markdown` extracted links
+- [x] Add failing tests covering discovery parity with current fixer (mixed link types)
+- [x] Switch fixer link discovery to use `internal/markdown` extracted links
+
+Notes (Step 3):
+- Uses Goldmark extraction as the primary source of links (robustly skips both ``` and ~~~ fenced code blocks).
+- Supplements with a body-only legacy scan to preserve existing “minimal surprise” behavior where tests rely on permissive parsing (notably destinations containing spaces).
+- Applies a frontmatter line offset so discovered link line numbers match original file positions for edit operations.
 
 **Commit checkpoint:** `refactor(lint): use goldmark for fixer link discovery`
 

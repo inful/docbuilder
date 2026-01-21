@@ -447,3 +447,35 @@ Regular text continues here with [link](api.md).
 		assert.NotEqual(t, 11, link.LineNumber)
 	}
 }
+
+func TestLinkDiscovery_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create source file with a tilde-fenced code block containing valid link syntax.
+	sourceFile := filepath.Join(tmpDir, "guide.md")
+	sourceContent := `# Guide
+
+~~~md
+[API](api.md)
+~~~
+`
+	err := os.WriteFile(sourceFile, []byte(sourceContent), 0o600)
+	require.NoError(t, err)
+
+	// Create target file.
+	targetFile := filepath.Join(tmpDir, "api.md")
+	err = os.WriteFile(targetFile, []byte("# API\n"), 0o600)
+	require.NoError(t, err)
+
+	absSource, err := filepath.Abs(sourceFile)
+	require.NoError(t, err)
+	absTarget, err := filepath.Abs(targetFile)
+	require.NoError(t, err)
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	links, err := fixer.findLinksInFile(absSource, absTarget)
+	require.NoError(t, err)
+	assert.Empty(t, links)
+}

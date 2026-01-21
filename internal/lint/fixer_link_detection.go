@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
 // findLinksToFile finds all markdown links that reference the given target file.
@@ -66,30 +69,160 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
-	var links []LinkReference
-	lines := strings.Split(string(content), "\n")
+	body := content
+	lineOffset := 0
+	fmRaw, fmBody, had, style, splitErr := frontmatter.Split(content)
+	_ = style
+	if splitErr == nil {
+		body = fmBody
+		if had {
+			// frontmatter.Split removes:
+			// - opening delimiter line
+			// - fmRaw (which may span multiple lines)
+			// - closing delimiter line
+			// We need link line numbers to refer to the *original file* so that
+			// applyLinkUpdates edits the correct line.
+			lineOffset = 2 + strings.Count(string(fmRaw), "\n")
+		}
+	}
 
-	for lineNum, line := range lines {
-		// Skip code blocks (simple heuristic: lines starting with spaces/tabs or in fenced blocks)
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+	bodyStr := string(body)
+
+	links, seen, parseErr := findLinksInBodyWithGoldmark(body, bodyStr, sourceFile, targetPath, lineOffset)
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	// Goldmark follows CommonMark strictly. Historically, DocBuilder's fixer link
+	// discovery was more permissive (e.g., it treated destinations containing
+	// spaces like "./User Manual.md" as valid). To preserve minimal-surprise
+	// behavior, run the legacy per-line scanner over the body as a supplement.
+	//
+	// This scan is body-only (frontmatter excluded) and uses improved fenced
+	// code-block skipping for both ``` and ~~~ fences.
+	supplementLinksInBodyWithLegacyScanner(bodyStr, sourceFile, targetPath, lineOffset, &links, seen)
+
+	return links, nil
+}
+
+func findLinksInBodyWithGoldmark(body []byte, bodyStr string, sourceFile, targetPath string, lineOffset int) ([]LinkReference, map[string]struct{}, error) {
+	parsedLinks, parseErr := markdown.ExtractLinks(body, markdown.Options{})
+	if parseErr != nil {
+		return nil, nil, fmt.Errorf("failed to parse markdown links: %w", parseErr)
+	}
+
+	links := make([]LinkReference, 0)
+	seen := make(map[string]struct{})
+
+	for _, link := range parsedLinks {
+		// Maintain parity with the current fixer: only inline links, images, and
+		// reference definitions are discoverable for updates.
+		var linkType LinkType
+		switch link.Kind {
+		case markdown.LinkKindInline:
+			linkType = LinkTypeInline
+		case markdown.LinkKindImage:
+			linkType = LinkTypeImage
+		case markdown.LinkKindReferenceDefinition:
+			linkType = LinkTypeReference
+		case markdown.LinkKindAuto, markdown.LinkKindReference:
 			continue
 		}
 
-		// Find inline links: [text](path)
-		inlineLinks := findInlineLinks(line, lineNum+1, sourceFile, targetPath)
-		links = append(links, inlineLinks...)
+		dest := strings.TrimSpace(link.Destination)
+		if dest == "" {
+			continue
+		}
+		if isExternalURL(dest) {
+			continue
+		}
+		if strings.HasPrefix(dest, "#") {
+			continue
+		}
 
-		// Find reference-style links: [id]: path
-		refLinks := findReferenceLinks(line, lineNum+1, sourceFile, targetPath)
-		links = append(links, refLinks...)
+		resolved, err := resolveRelativePath(sourceFile, dest)
+		if err != nil {
+			continue
+		}
+		if !pathsEqualCaseInsensitive(resolved, targetPath) {
+			continue
+		}
 
-		// Find image links: ![alt](path)
-		imageLinks := findImageLinks(line, lineNum+1, sourceFile, targetPath)
-		links = append(links, imageLinks...)
+		fragment := ""
+		targetNoFrag := dest
+		if idx := strings.Index(dest, "#"); idx != -1 {
+			fragment = dest[idx:]
+			targetNoFrag = dest[:idx]
+		}
+
+		ref := LinkReference{
+			SourceFile: sourceFile,
+			LineNumber: lineOffset + findLineNumberForTarget(bodyStr, dest),
+			LinkType:   linkType,
+			Target:     targetNoFrag,
+			Fragment:   fragment,
+			FullMatch:  "",
+		}
+		key := linkRefKey(ref)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		links = append(links, ref)
 	}
 
-	return links, nil
+	return links, seen, nil
+}
+
+func supplementLinksInBodyWithLegacyScanner(bodyStr, sourceFile, targetPath string, lineOffset int, links *[]LinkReference, seen map[string]struct{}) {
+	lines := strings.Split(bodyStr, "\n")
+	inCodeBlock := false
+	fence := ""
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			inCodeBlock, fence = toggleFencedBlock(inCodeBlock, fence, "```")
+			continue
+		}
+		if strings.HasPrefix(trimmed, "~~~") {
+			inCodeBlock, fence = toggleFencedBlock(inCodeBlock, fence, "~~~")
+			continue
+		}
+
+		if inCodeBlock || strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+			continue
+		}
+
+		lineNum := lineOffset + i + 1
+		appendLinkRefsWithDedupe(links, seen, findInlineLinks(line, lineNum, sourceFile, targetPath))
+		appendLinkRefsWithDedupe(links, seen, findReferenceLinks(line, lineNum, sourceFile, targetPath))
+		appendLinkRefsWithDedupe(links, seen, findImageLinks(line, lineNum, sourceFile, targetPath))
+	}
+}
+
+func toggleFencedBlock(inCodeBlock bool, activeFence string, fence string) (bool, string) {
+	if !inCodeBlock {
+		return true, fence
+	}
+	if activeFence == fence {
+		return false, ""
+	}
+	return inCodeBlock, activeFence
+}
+
+func appendLinkRefsWithDedupe(dst *[]LinkReference, seen map[string]struct{}, refs []LinkReference) {
+	for _, ref := range refs {
+		key := linkRefKey(ref)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		*dst = append(*dst, ref)
+	}
+}
+
+func linkRefKey(ref LinkReference) string {
+	return fmt.Sprintf("%s:%d:%d:%s:%s", ref.SourceFile, ref.LineNumber, ref.LinkType, ref.Target, ref.Fragment)
 }
 
 // inlineLinkInfo contains extracted inline link information.
