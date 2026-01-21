@@ -73,18 +73,18 @@ tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance
 
 Write failing unit tests for a new package `internal/docmodel`:
 
-- [ ] `Parse([]byte, Options)` returns a `ParsedDoc` with:
+- [x] `Parse([]byte, Options)` returns a `ParsedDoc` with:
   - original bytes
   - frontmatter raw bytes (no delimiters)
   - body bytes
   - hadFrontmatter + `frontmatter.Style`
-- [ ] Frontmatter cases:
+- [x] Frontmatter cases:
   - no frontmatter
   - empty frontmatter block (`---\n---\n`)
   - missing closing delimiter error matches `frontmatter.ErrMissingClosingDelimiter`
-- [ ] Round-trip join: no edits → output equals original bytes.
+- [x] Round-trip join: no edits → output equals original bytes.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `_____`
 
 **Commit message**: `test(docmodel): add parse and split/join contract tests`
 
