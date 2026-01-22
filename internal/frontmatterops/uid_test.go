@@ -68,7 +68,7 @@ func TestEnsureUIDAlias_AliasesString_NoChangeWhenAlreadyExpected(t *testing.T) 
 	changed, err := EnsureUIDAlias(fields, "abc")
 	require.NoError(t, err)
 	require.False(t, changed)
-	require.Equal(t, "/_uid/abc/", fields["aliases"])
+	require.Equal(t, []string{"/_uid/abc/"}, fields["aliases"])
 }
 
 func TestEnsureUIDAlias_AliasesString_AppendsWhenDifferent(t *testing.T) {
@@ -78,6 +78,31 @@ func TestEnsureUIDAlias_AliasesString_AppendsWhenDifferent(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, changed)
 	require.Equal(t, []string{"/existing/", "/_uid/abc/"}, fields["aliases"])
+}
+
+func TestEnsureUIDValue_Missing_SetsValue(t *testing.T) {
+	fields := map[string]any{}
+
+	changed, err := EnsureUIDValue(fields, "abc")
+	require.NoError(t, err)
+	require.True(t, changed)
+	require.Equal(t, "abc", fields["uid"])
+}
+
+func TestEnsureUIDValue_AlreadyPresent_DoesNotChange(t *testing.T) {
+	fields := map[string]any{"uid": "existing"}
+
+	changed, err := EnsureUIDValue(fields, "abc")
+	require.NoError(t, err)
+	require.False(t, changed)
+	require.Equal(t, "existing", fields["uid"])
+}
+
+func TestEnsureUIDValue_Empty_ReturnsError(t *testing.T) {
+	fields := map[string]any{}
+
+	_, err := EnsureUIDValue(fields, "")
+	require.Error(t, err)
 }
 
 func TestEnsureUIDAlias_InvalidUID_ReturnsError(t *testing.T) {
