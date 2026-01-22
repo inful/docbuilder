@@ -1,4 +1,4 @@
-package daemon
+package preview
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
@@ -39,7 +40,7 @@ func (bs *buildStatus) setSuccess() {
 	bs.hasGoodBuild = true
 }
 
-func (bs *buildStatus) getStatus() (hasError bool, err error, hasGoodBuild bool) {
+func (bs *buildStatus) GetStatus() (hasError bool, err error, hasGoodBuild bool) {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
 	return bs.lastError != nil, bs.lastError, bs.hasGoodBuild
@@ -55,9 +56,9 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	}
 
 	buildStat := &buildStatus{}
-	daemon := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
+	previewDaemon := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
 
-	httpServer, err := startHTTPServer(ctx, cfg, daemon, port)
+	httpServer, err := startHTTPServer(ctx, cfg, previewDaemon, port)
 	if err != nil {
 		return err
 	}
@@ -69,7 +70,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	defer func() { _ = watcher.Close() }()
 
 	rebuildReq, trigger := setupRebuildDebouncer()
-	startRebuildWorker(ctx, cfg, absDocs, daemon, buildStat, rebuildReq)
+	startRebuildWorker(ctx, cfg, absDocs, previewDaemon, buildStat, rebuildReq)
 
 	return runPreviewLoop(ctx, watcher, trigger, rebuildReq, httpServer, tempOutputDir)
 }
@@ -94,7 +95,7 @@ func validateAndResolveDocsDir(cfg *config.Config) (string, error) {
 }
 
 // initializePreviewDaemon performs initial build and creates daemon instance.
-func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) *Daemon {
+func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) *daemon.Daemon {
 	// Initial build
 	if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
@@ -103,21 +104,12 @@ func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs st
 		buildStat.setSuccess()
 	}
 
-	// Create minimal daemon with HTTP server
-	daemon := &Daemon{
-		config:     cfg,
-		startTime:  time.Now(),
-		metrics:    NewMetricsCollector(),
-		liveReload: NewLiveReloadHub(nil), // nil metrics collector for LiveReload
-	}
-	daemon.status.Store(StatusRunning)
-	daemon.buildStatus = buildStat
-	return daemon
+	return daemon.NewPreviewDaemon(cfg, buildStat)
 }
 
 // startHTTPServer initializes and starts the HTTP server.
-func startHTTPServer(ctx context.Context, cfg *config.Config, daemon *Daemon, port int) (*HTTPServer, error) {
-	httpServer := NewHTTPServer(cfg, daemon)
+func startHTTPServer(ctx context.Context, cfg *config.Config, previewDaemon *daemon.Daemon, port int) (*daemon.HTTPServer, error) {
+	httpServer := daemon.NewHTTPServer(cfg, previewDaemon)
 	if err := httpServer.Start(ctx); err != nil {
 		return nil, fmt.Errorf("failed to start HTTP server: %w", err)
 	}
@@ -162,7 +154,7 @@ func setupRebuildDebouncer() (chan struct{}, func()) {
 }
 
 // startRebuildWorker starts background goroutine to process rebuild requests.
-func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string, daemon *Daemon, buildStat *buildStatus, rebuildReq chan struct{}) {
+func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string, previewDaemon *daemon.Daemon, buildStat *buildStatus, rebuildReq chan struct{}) {
 	var mu sync.Mutex
 	running := false
 	pending := false
@@ -185,7 +177,7 @@ func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string,
 				running = true
 				mu.Unlock()
 
-				processRebuild(ctx, cfg, absDocs, daemon, buildStat)
+				processRebuild(ctx, cfg, absDocs, previewDaemon, buildStat)
 
 				mu.Lock()
 				running = false
@@ -205,24 +197,24 @@ func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string,
 }
 
 // processRebuild performs the actual rebuild and notifies browsers.
-func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, daemon *Daemon, buildStat *buildStatus) {
+func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, previewDaemon *daemon.Daemon, buildStat *buildStatus) {
 	slog.Info("Change detected; rebuilding site")
 	if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Warn("rebuild failed", "error", err)
 		buildStat.setError(err)
-		if daemon.liveReload != nil {
-			daemon.liveReload.Broadcast(fmt.Sprintf("error:%d", time.Now().UnixNano()))
+		if lr := previewDaemon.LiveReloadHub(); lr != nil {
+			lr.Broadcast(fmt.Sprintf("error:%d", time.Now().UnixNano()))
 		}
 	} else {
 		buildStat.setSuccess()
-		if daemon.liveReload != nil {
-			daemon.liveReload.Broadcast(strconv.FormatInt(time.Now().UnixNano(), 10))
+		if lr := previewDaemon.LiveReloadHub(); lr != nil {
+			lr.Broadcast(strconv.FormatInt(time.Now().UnixNano(), 10))
 		}
 	}
 }
 
 // runPreviewLoop handles filesystem events and graceful shutdown.
-func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), rebuildReq chan struct{}, httpServer *HTTPServer, tempOutputDir string) error {
+func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), rebuildReq chan struct{}, httpServer *daemon.HTTPServer, tempOutputDir string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -242,7 +234,7 @@ func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func
 }
 
 // handleShutdown performs graceful shutdown cleanup.
-func handleShutdown(ctx context.Context, httpServer *HTTPServer, rebuildReq chan struct{}, tempOutputDir string) error {
+func handleShutdown(ctx context.Context, httpServer *daemon.HTTPServer, rebuildReq chan struct{}, tempOutputDir string) error {
 	slog.Info("Shutting down preview server...")
 
 	// Create a timeout context for graceful shutdown
