@@ -69,7 +69,7 @@ Add failing unit tests (new package) covering:
   - `had=false` returns body as-is
   - `had=true` emits deterministic YAML + joins with correct newlines
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `n/a` (local changes, not committed yet)
+**Completion**: _date:_ 2026-01-22  _commit:_ `152dc12`
 
 ### Step 1.2 — GREEN: implement `Read`/`Write`
 
@@ -83,7 +83,7 @@ Constraints:
 - Delegate splitting/parsing/serializing/joining to `internal/frontmatter`.
 - Prefer minimal behavior differences vs existing call sites.
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `n/a` (local changes, not committed yet)
+**Completion**: _date:_ 2026-01-22  _commit:_ `152dc12`
 
 ---
 
@@ -100,7 +100,7 @@ Add failing tests for:
   - `aliases: string`
   - `aliases: null` / missing
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `n/a` (local changes, not committed yet)
+**Completion**: _date:_ 2026-01-22  _commit:_ `152dc12`
 
 ### Step 2.2 — GREEN: implement UID helpers
 
@@ -109,7 +109,7 @@ Implement:
 - `EnsureUID(fields map[string]any) (uid string, changed bool, err error)`
 - `EnsureUIDAlias(fields map[string]any, uid string) (changed bool, err error)`
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `n/a` (local changes, not committed yet)
+**Completion**: _date:_ 2026-01-22  _commit:_ `152dc12`
 
 ### Step 2.3 — RED: required Hugo base fields helpers
 
