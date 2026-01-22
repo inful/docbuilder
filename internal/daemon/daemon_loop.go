@@ -70,12 +70,12 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-ticker.C:
 			d.updateStatus()
 		case <-initialDiscoveryTimer.C:
-			go d.discoveryRunner.SafeRun(ctx, d.GetStatus)
+			go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
 		case <-discoveryTicker.C:
 			slog.Info("Scheduled tick", slog.Duration("interval", discoveryInterval))
 			// For forge-based discovery, run discovery
 			if len(d.config.Forges) > 0 {
-				go d.discoveryRunner.SafeRun(ctx, d.GetStatus)
+				go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
 			}
 			// For explicit repositories, trigger a build to check for updates
 			if len(d.config.Repositories) > 0 {

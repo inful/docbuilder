@@ -125,6 +125,8 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 **Target**: discovery orchestration independent of daemon.
 
+**Status**: Completed (2026-01-22)
+
 - Create `internal/forge/discoveryrunner` (or `internal/services/discovery`).
 - Move:
   - discovery runner orchestration
@@ -135,6 +137,11 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 - Daemon calls runner service via explicit methods.
 - Status can use cache snapshots without deep daemon locks.
+
+**Notes / Deviations**
+
+- Implemented as `internal/forge/discoveryrunner` with unit tests.
+- Preserved daemon-level API by converting `internal/daemon/discovery_cache.go` and `internal/daemon/discovery_runner.go` into thin type aliases.
 
 ### 5) Relocate status view model
 
