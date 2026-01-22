@@ -251,8 +251,8 @@ Plan:
 
 ### Step 5.2 — Final verification
 
-- [ ] `go test ./... -count=1`
-- [ ] `go test ./test/integration -v`
-- [ ] `golangci-lint run --fix` then `golangci-lint run`
+- [x] `go test ./... -count=1`
+- [x] `go test ./test/integration -v`
+- [x] `golangci-lint run --fix` then `golangci-lint run`
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `627d644`
