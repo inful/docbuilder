@@ -147,6 +147,8 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 **Target**: make status rendering a server concern.
 
+**Status**: Completed (2026-01-22)
+
 - Move status DTOs and HTML rendering helpers into server/admin handler package.
 - Provide a minimal `StatusProvider` interface for daemon/preview.
 
@@ -154,6 +156,12 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 - Status handler composes data from interfaces/caches.
 - Daemon no longer owns UI rendering code.
+
+**Notes / Deviations**
+
+- Implemented status data generation + HTML/JSON handler in `internal/server/handlers` and rewired the daemon to pass the handler via `httpserver.Options.StatusHandle`.
+- `*daemon.Daemon` now satisfies a small `StatusProvider` interface via `internal/daemon/status_provider.go`.
+- Legacy files `internal/daemon/status.go` and `internal/daemon/status_test.go` were reduced to stubs (logic/tests moved) to avoid churn while the refactor is still in-flight.
 
 ### 6) Move delta bookkeeping out of daemon
 
