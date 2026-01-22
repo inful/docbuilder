@@ -219,7 +219,7 @@ Plan:
 - [ ] Add failing tests if coverage is missing.
 - [ ] Refactor to route all UID/alias mutation through ops.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `3a60f1e`
 
 ### Step 4.4 — Migrate index generation helpers
 
