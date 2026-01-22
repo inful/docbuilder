@@ -247,7 +247,7 @@ Plan:
 
 **Completion**: _date:_ ____  _commit:_ `____`
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `TBD`
+**Completion**: _date:_ 2026-01-22  _commit:_ `cfb3765`
 
 ### Step 5.2 — Final verification
 
