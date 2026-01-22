@@ -19,6 +19,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/server/handlers"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
@@ -212,6 +213,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	if daemon.metrics != nil {
 		detailedMetrics = daemon.metrics.MetricsHandler
 	}
+	statusHandlers := handlers.NewStatusPageHandlers(daemon)
 	daemon.httpServer = httpserver.New(cfg, daemon, httpserver.Options{
 		ForgeClients:          forgeClients,
 		WebhookConfigs:        webhookConfigs,
@@ -219,7 +221,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		EnhancedHealthHandle:  daemon.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(),
-		StatusHandle:          daemon.StatusHandler,
+		StatusHandle:          statusHandlers.HandleStatusPage,
 	})
 
 	// Initialize link verification service if enabled
