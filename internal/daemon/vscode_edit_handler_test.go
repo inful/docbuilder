@@ -684,32 +684,47 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 	}
 
 	srv := &HTTPServer{config: cfg}
+	srv.vscodeFindCLI = func(ctx context.Context) string { return "/tmp/code" }
+	srv.vscodeFindIPCSocket = func() string { return "/tmp/vscode-ipc-test.sock" }
+	srv.vscodeRunCLI = func(ctx context.Context, codeCmd string, args []string, env []string) (string, string, error) {
+		return "", "", nil
+	}
+	srv.vscodeOpenBackoffs = []time.Duration{}
 	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
+	req.URL.Path = "/_edit/test.md"
 	req.Header.Set("Referer", "http://localhost:1314/docs/")
 	w := httptest.NewRecorder()
 
 	srv.handleVSCodeEdit(w, req)
 
-	// If VS Code is running, we get 303 redirect (success)
-	// If VS Code is not running, we get 503 (service unavailable)
-	if w.Code != http.StatusSeeOther && w.Code != http.StatusServiceUnavailable {
-		t.Errorf("Expected 303 (success) or 503 (no VS Code), got %d: %s", w.Code, w.Body.String())
+	if w.Code != http.StatusSeeOther {
+		t.Errorf("Expected 303 (success), got %d: %s", w.Code, w.Body.String())
 	}
 }
 
 // TestExecuteVSCodeOpen_NoSocket tests execution behavior (may find socket if VS Code running).
 func TestExecuteVSCodeOpen_NoSocket(t *testing.T) {
 	srv := &HTTPServer{}
-	err := srv.executeVSCodeOpen(t.Context(), "/tmp/nonexistent.md")
+	srv.vscodeFindCLI = func(ctx context.Context) string { return "/tmp/code" }
+	srv.vscodeFindIPCSocket = func() string { return "" }
+	srv.vscodeRunCLI = func(ctx context.Context, codeCmd string, args []string, env []string) (string, string, error) {
+		t.Fatal("run should not be called when socket not found")
+		return "", "", nil
+	}
+	srv.vscodeOpenBackoffs = []time.Duration{}
 
-	// If VS Code is running, we might get a different error (file execution)
-	// If VS Code is not running, we get socket not found error
+	err := srv.executeVSCodeOpen(t.Context(), "/tmp/does-not-matter.md")
 	if err == nil {
-		t.Log("VS Code command succeeded (VS Code is running)")
-		return
+		t.Fatal("expected error")
 	}
 
-	t.Logf("Got expected error (VS Code not running or file issues): %v", err)
+	var editErr *editError
+	if !errors.As(err, &editErr) {
+		t.Fatalf("expected editError, got %T", err)
+	}
+	if editErr.statusCode != http.StatusServiceUnavailable {
+		t.Fatalf("expected status %d, got %d", http.StatusServiceUnavailable, editErr.statusCode)
+	}
 }
 
 func TestIsRetriableVSCodeOpenFailure(t *testing.T) {
