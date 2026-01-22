@@ -265,10 +265,10 @@ Example: run broken-link detection and link-detection (for updates) over the sam
 
 Likely targets (confirm during Step 0.2):
 
-- `internal/hugo` transforms/indexing
-- `internal/linkverify` markdown frontmatter awareness
+- `internal/linkverify` markdown frontmatter awareness (`ParseFrontMatter`)
+- `internal/hugo` frontmatter transforms (pipeline stage)
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `_____`
 
 **Commit message**: `docs(plan): select next ADR-015 migration target`
 
