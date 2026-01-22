@@ -143,7 +143,7 @@ Add tests that lock the canonical hashing form:
 - Hashing uses LF serialization and trims a single trailing newline.
 - Fingerprint is stable across key ordering differences.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ### Step 3.2 — GREEN: implement `ComputeFingerprint`
 
@@ -156,7 +156,7 @@ Notes:
 - Use `internal/frontmatter.SerializeYAML` for canonical serialization.
 - Use `mdfp.CalculateFingerprintFromParts(frontmatter, body)` for hashing.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ### Step 3.3 — RED: fingerprint upsert + ADR-011 lastmod tests
 
@@ -166,7 +166,7 @@ Add tests for:
 - When fingerprint changes, sets/updates `lastmod` to today’s UTC date (`YYYY-MM-DD`) per ADR-011.
 - When fingerprint does not change, `lastmod` remains unchanged.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ### Step 3.4 — GREEN: implement fingerprint upsert
 
@@ -174,7 +174,7 @@ Implement:
 
 - `UpsertFingerprintAndMaybeLastmod(fields map[string]any, body []byte, now time.Time) (changed bool, err error)`
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ---
 
@@ -192,7 +192,7 @@ Plan:
 - [ ] Refactor to call `frontmatterops.ComputeFingerprint` / `UpsertFingerprintAndMaybeLastmod`.
 - [ ] Ensure no output differences vs current tests.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ### Step 4.2 — Migrate lint fingerprint rule + fixer
 
@@ -206,7 +206,7 @@ Plan:
 - [ ] Add failing tests if coverage is missing.
 - [ ] Refactor to use the shared ops helpers.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
 ### Step 4.3 — Migrate lint UID insertion + alias preservation
 
