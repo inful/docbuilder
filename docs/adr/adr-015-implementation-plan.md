@@ -3,9 +3,9 @@ goal: "Implement ADR-015: central parsed document model (frontmatter + Markdown 
 adr: "docs/adr/adr-015-centralize-parsed-doc-model.md"
 version: "1.0"
 date_created: "2026-01-21"
-last_updated: "2026-01-21"
+last_updated: "2026-01-22"
 owner: "DocBuilder Core Team"
-status: "In Progress"
+status: "Done"
 tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance"]
 ---
 
@@ -287,10 +287,10 @@ Likely targets (confirm during Step 0.2):
 
 ### Step 6.1 — Run full suite, lint, and tidy up
 
-- [ ] `go test ./... -count=1`
-- [ ] `golangci-lint run --fix` then `golangci-lint run`
-- [ ] Ensure new package has clear, minimal API and no import cycles.
+- [x] `go test ./... -count=1`
+- [x] `golangci-lint run --fix` then `golangci-lint run`
+- [x] Ensure new package has clear, minimal API and no import cycles.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `aa88ac6`
 
 **Commit message**: `chore: final polish for ADR-015`
