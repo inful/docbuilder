@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
 // ErrNoFrontMatter is returned when content has no front matter.
@@ -403,18 +403,20 @@ func (s *VerificationService) handleBrokenLink(ctx context.Context, absoluteURL 
 // ParseFrontMatter extracts front matter from transformed content.
 // Returns ErrNoFrontMatter if content has no front matter.
 func ParseFrontMatter(content []byte) (map[string]any, error) {
-	fmRaw, _, had, _, err := frontmatter.Split(content)
+	doc, err := docmodel.Parse(content, docmodel.Options{})
 	if err != nil {
+		// Preserve legacy behavior: a frontmatter split/parse failure is treated as
+		// "no front matter" for link verification metadata.
 		return nil, ErrNoFrontMatter
 	}
-	if !had {
+	if !doc.HadFrontmatter() {
 		return nil, ErrNoFrontMatter
 	}
-	if len(bytes.TrimSpace(fmRaw)) == 0 {
+	if len(bytes.TrimSpace(doc.FrontmatterRaw())) == 0 {
 		return map[string]any{}, nil
 	}
 
-	fm, err := frontmatter.ParseYAML(fmRaw)
+	fm, err := doc.FrontmatterFields()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse front matter: %w", err)
 	}
