@@ -166,3 +166,20 @@ func TestDetectBrokenLinksInFile_WithFrontmatter_ReportsFileLineNumber(t *testin
 	// The link appears on line 4 of the original file (after frontmatter).
 	assert.Equal(t, 4, broken[0].LineNumber)
 }
+
+func TestDetectBrokenLinks_IgnoresFootnotes(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	mdFile := filepath.Join(docsDir, "index.md")
+	content := "That's some text with a footnote.[^1]\n\n[^1]: And that's the footnote.\n"
+	err = os.WriteFile(mdFile, []byte(content), 0o600)
+	require.NoError(t, err)
+
+	broken, err := detectBrokenLinksInFile(mdFile)
+	require.NoError(t, err)
+	assert.Empty(t, broken)
+}

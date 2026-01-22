@@ -192,12 +192,15 @@ func extractReferenceDefinitionsPermissive(line string) []Link {
 		return nil
 	}
 
-	_, after, ok := strings.Cut(trimmed, "]: ")
+	label, after, ok := strings.Cut(trimmed, "]:")
 	if !ok {
-		_, after, ok = strings.Cut(trimmed, "]:")
-		if !ok {
-			return nil
-		}
+		return nil
+	}
+
+	// Footnote definitions look like: [^1]: ...
+	// They are not Markdown reference link definitions and must not be treated as links.
+	if strings.HasPrefix(strings.TrimSpace(label), "[^") {
+		return nil
 	}
 
 	rest := strings.TrimSpace(after)
