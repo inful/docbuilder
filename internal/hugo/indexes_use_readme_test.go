@@ -1,9 +1,9 @@
 package hugo
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -201,9 +201,9 @@ invalid: [yaml
 	}
 }
 
-// TestUseReadmeAsIndex_MalformedFrontMatter_TreatedAsAbsent ensures unterminated front matter
-// does not fail index generation (treated as absent, like legacy behavior).
-func TestUseReadmeAsIndex_MalformedFrontMatter_TreatedAsAbsent(t *testing.T) {
+// TestUseReadmeAsIndex_MalformedFrontMatter_ReturnsHelpfulError ensures unterminated front matter
+// fails with a clear error message under strict parsing.
+func TestUseReadmeAsIndex_MalformedFrontMatter_ReturnsHelpfulError(t *testing.T) {
 	tmpDir := t.TempDir()
 	g := &Generator{
 		config:    &config.Config{},
@@ -221,17 +221,15 @@ func TestUseReadmeAsIndex_MalformedFrontMatter_TreatedAsAbsent(t *testing.T) {
 
 	indexPath := filepath.Join(tmpDir, "content", "test", "_index.md")
 	err := g.useReadmeAsIndex(readmeFile, indexPath, "test-repo")
-	if err != nil {
-		t.Fatalf("unexpected error for malformed front matter: %v", err)
+	if err == nil {
+		t.Fatal("expected error for malformed/unterminated front matter")
 	}
-
-	// #nosec G304 -- test utility reading from test output directory
-	content, err := os.ReadFile(indexPath)
-	if err != nil {
-		t.Fatalf("failed to read index file: %v", err)
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "front matter") {
+		t.Fatalf("expected error to mention front matter, got: %s", errMsg)
 	}
-	if !bytes.Contains(content, []byte("title:")) {
-		t.Fatalf("expected generated front matter to include title, got: %s", string(content))
+	if !strings.Contains(errMsg, "test/README.md") {
+		t.Fatalf("expected error to mention source path, got: %s", errMsg)
 	}
 }
 
