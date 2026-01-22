@@ -268,7 +268,7 @@ Likely targets (confirm during Step 0.2):
 - `internal/linkverify` markdown frontmatter awareness (`ParseFrontMatter`)
 - `internal/hugo` frontmatter transforms (pipeline stage)
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `81bffc2`
 
 **Commit message**: `docs(plan): select next ADR-015 migration target`
 
