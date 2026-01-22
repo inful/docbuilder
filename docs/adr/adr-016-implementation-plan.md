@@ -5,7 +5,7 @@ version: "1.0"
 date_created: "2026-01-22"
 last_updated: "2026-01-22"
 owner: "DocBuilder Core Team"
-status: "Draft"
+status: "Complete"
 tags: ["adr", "tdd", "refactor", "frontmatter", "hugo", "lint", "fingerprint", "uid"]
 uid: "6df43140-ba90-4590-b923-0847aabee743"
 ---
@@ -188,9 +188,9 @@ Targets:
 
 Plan:
 
-- [ ] Add a failing test demonstrating current behavior that must remain stable.
-- [ ] Refactor to call `frontmatterops.ComputeFingerprint` / `UpsertFingerprintAndMaybeLastmod`.
-- [ ] Ensure no output differences vs current tests.
+- [x] Add a failing test demonstrating current behavior that must remain stable (covered by existing tests).
+- [x] Refactor to call `frontmatterops.ComputeFingerprint` / `UpsertFingerprintAndMaybeLastmod`.
+- [x] Ensure no output differences vs current tests.
 
 **Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
@@ -203,8 +203,8 @@ Targets:
 
 Plan:
 
-- [ ] Add failing tests if coverage is missing.
-- [ ] Refactor to use the shared ops helpers.
+- [x] Add failing tests if coverage is missing (covered by existing tests).
+- [x] Refactor to use the shared ops helpers.
 
 **Completion**: _date:_ 2026-01-22  _commit:_ `a802ce5`
 
@@ -216,8 +216,8 @@ Targets:
 
 Plan:
 
-- [ ] Add failing tests if coverage is missing.
-- [ ] Refactor to route all UID/alias mutation through ops.
+- [x] Add failing tests if coverage is missing (covered by existing tests).
+- [x] Refactor to route all UID/alias mutation through ops.
 
 **Completion**: _date:_ 2026-01-22  _commit:_ `3a60f1e`
 
@@ -229,10 +229,8 @@ Targets:
 
 Plan:
 
-- [ ] Add a characterization test if needed.
-- [ ] Replace ad-hoc field setting + serialize/join with ops helpers.
-
-**Completion**: _date:_ ____  _commit:_ `____`
+- [x] Add a characterization test if needed (covered by existing tests).
+- [x] Replace ad-hoc field setting + serialize/join with ops helpers.
 
 **Completion**: _date:_ 2026-01-22  _commit:_ `149a660`
 
@@ -242,10 +240,8 @@ Plan:
 
 ### Step 5.1 — Remove duplicated helpers
 
-- [ ] Identify any remaining ad-hoc split/parse/mutate/serialize/join loops for the fields covered by ops.
-- [ ] Remove or refactor them to use `internal/frontmatterops`.
-
-**Completion**: _date:_ ____  _commit:_ `____`
+- [x] Identify any remaining ad-hoc split/parse/mutate/serialize/join loops for the fields covered by ops.
+- [x] Remove or refactor them to use `internal/frontmatterops`.
 
 **Completion**: _date:_ 2026-01-22  _commit:_ `cfb3765`
 
@@ -255,4 +251,5 @@ Plan:
 - [x] `go test ./test/integration -v`
 - [x] `golangci-lint run --fix` then `golangci-lint run`
 
-**Completion**: _date:_ 2026-01-22  _commit:_ `627d644`
+**Completion**: _date:_ 2026-01-22  _commit:_ `e95b442`
+
