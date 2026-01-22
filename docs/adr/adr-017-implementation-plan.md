@@ -167,6 +167,8 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 **Target**: delta/hash logic belongs to build.
 
+**Status**: Completed (2026-01-22)
+
 - Move delta manager helpers to `internal/build/delta` (or the appropriate build-stage package).
 - Keep state interactions behind `internal/state` interfaces.
 
@@ -174,6 +176,12 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 - No delta logic remains in daemon.
 - Golden/integration tests for partial builds continue to pass.
+
+**Notes / Deviations**
+
+- Implemented delta report helpers in `internal/build/delta/manager.go` with unit tests.
+- Converted `internal/daemon/delta_manager.go` into a thin compatibility wrapper delegating to `internal/build/delta`.
+- Legacy daemon-scoped delta tests were reduced to stubs; canonical tests now live under `internal/build/delta`.
 
 ## Validation Checklist
 
