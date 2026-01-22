@@ -1,15 +1,16 @@
 ---
-uid: c9a38b75-67d0-498f-ab60-e00dfd70e8ae
 aliases:
   - /_uid/c9a38b75-67d0-498f-ab60-e00dfd70e8ae/
-title: "Architecture Overview"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: 8b9f5b27af1bb63da6301959722d2676909e0774a3f5d2a59d229000d7bbc147
+lastmod: "2026-01-22"
 tags:
   - architecture
   - design
-fingerprint: 6ae22676dae4626c8cdccf94db26bca28ce70633b66e37fe49c8806678b03d51
+title: Architecture Overview
+uid: c9a38b75-67d0-498f-ab60-e00dfd70e8ae
 ---
 
 # Architecture Overview

@@ -1,17 +1,18 @@
 ---
-uid: aad82557-a8ca-417e-9da3-e5cec27f80df
 aliases:
   - /_uid/aad82557-a8ca-417e-9da3-e5cec27f80df/
-title: "How To: Use Relearn Theme"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+description: Relearn theme overview
+fingerprint: cad2b47a3afbbaf3e8f319d590ab1cf4d438535b3359485a2f8ca82a61db435e
+lastmod: "2026-01-22"
 tags:
   - themes
   - relearn
   - hugo
-fingerprint: 1b025b380fd5ae47565278a5a78ac4f4bdcebec9db59f61dc9b2976856271c9d
-description: Relearn theme overview
+title: 'How To: Use Relearn Theme'
+uid: aad82557-a8ca-417e-9da3-e5cec27f80df
 ---
 
 # Hugo Relearn Theme Support

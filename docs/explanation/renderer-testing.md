@@ -1,15 +1,16 @@
 ---
-uid: 1575ffc4-7bf0-46df-a8b2-904e93f95031
 aliases:
   - /_uid/1575ffc4-7bf0-46df-a8b2-904e93f95031/
-title: "Renderer Testing"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: 3e440bc336112219a5cf004d4d113fda878ae98e0c503b0c9726c0cbd14fe1f2
+lastmod: "2026-01-22"
 tags:
   - testing
   - renderer
-fingerprint: 1193625675d0289d92d95ee2323275dd943fcdb57987b6a5d6516745758ebc82
+title: Renderer Testing
+uid: 1575ffc4-7bf0-46df-a8b2-904e93f95031
 ---
 
 # Hugo Renderer Testing Strategy

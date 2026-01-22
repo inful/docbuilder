@@ -1,16 +1,17 @@
 ---
-uid: 23db9b8b-6c79-4e9d-b8e6-6afe9251dc94
 aliases:
   - /_uid/23db9b8b-6c79-4e9d-b8e6-6afe9251dc94/
-title: "Namespacing Rationale"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: ad3360abc55ded35015adf53f1fcdb4c8553a7b40490e29ce12e0380842108fe
+lastmod: "2026-01-22"
 tags:
   - architecture
   - namespacing
   - design-decisions
-fingerprint: 35117f27a95b148b7226b78a9397850c23e042e2ab285cc599459c0f39bb673a
+title: Namespacing Rationale
+uid: 23db9b8b-6c79-4e9d-b8e6-6afe9251dc94
 ---
 
 # Forge Namespacing Rationale

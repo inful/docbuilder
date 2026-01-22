@@ -1,16 +1,17 @@
 ---
-uid: a8161eb4-7b61-46e5-81c8-cfa763e8d26e
 aliases:
   - /_uid/a8161eb4-7b61-46e5-81c8-cfa763e8d26e/
-title: "How To: Configure Forge Namespacing"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: 3adea9e83bbb8a570efaf476d302c27dd653b4237ed14be0b3a1119a47d48b66
+lastmod: "2026-01-22"
 tags:
   - forge
   - namespacing
   - configuration
-fingerprint: 276024d5a15e75b9bc62761763a6d47f82f201a8295cbf4c5116ff47976e7fa8
+title: 'How To: Configure Forge Namespacing'
+uid: a8161eb4-7b61-46e5-81c8-cfa763e8d26e
 ---
 
 # How To: Configure Forge Namespacing

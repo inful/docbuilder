@@ -1,3 +1,11 @@
+---
+aliases:
+  - /_uid/a9e71794-752f-49d3-9d90-a32f76189670/
+fingerprint: 411fd71b7f7de5e7bd371e8dcf8021fdeffe17ef3494432e23455281bcd78ba8
+lastmod: "2026-01-22"
+uid: a9e71794-752f-49d3-9d90-a32f76189670
+---
+
 # Plan: Implement ADR-014 (Centralize YAML frontmatter parsing/writing)
 
 - Status: Draft / Tracking

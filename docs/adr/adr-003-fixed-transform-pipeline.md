@@ -1,18 +1,19 @@
 ---
-uid: 8bccb937-22a1-4828-a6ef-ab7b74a1a6bc
 aliases:
   - /_uid/8bccb937-22a1-4828-a6ef-ab7b74a1a6bc/
-title: "ADR-003: Fixed Transform Pipeline"
-date: 2025-12-16
 categories:
   - architecture-decisions
+date: 2025-12-16T00:00:00Z
+fingerprint: c37c4c66abef415b29a4bc380546e80d5af0dc7597bf1381c3d1716efdae7c57
+lastmod: "2026-01-22"
 tags:
   - pipeline
   - transforms
   - architecture
   - simplification
+title: 'ADR-003: Fixed Transform Pipeline'
+uid: 8bccb937-22a1-4828-a6ef-ab7b74a1a6bc
 weight: 4
-fingerprint: e5c3362654ffb59567a628bffc1e6ffbe56fceda78dddb20a37c482e5a7178e8
 ---
 
 # ADR-003: Fixed Transform Pipeline

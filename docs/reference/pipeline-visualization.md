@@ -1,16 +1,17 @@
 ---
-uid: 447486d8-8ee9-4b20-a69a-12497dbb8b92
 aliases:
   - /_uid/447486d8-8ee9-4b20-a69a-12497dbb8b92/
-title: "Pipeline Visualization"
-date: 2025-12-15
 categories:
   - reference
+date: 2025-12-15T00:00:00Z
+fingerprint: 9052a6da1ba323ee1afafad8d44be21611ea0d8eb7a6cdb6ea867e55ff8eae73
+lastmod: "2026-01-22"
 tags:
   - pipeline
   - visualization
   - diagrams
-fingerprint: af80f39a69b311452b35ae06b991139b1d57dde2307da0ab092b85a708a0c4ee
+title: Pipeline Visualization
+uid: 447486d8-8ee9-4b20-a69a-12497dbb8b92
 ---
 
 # Pipeline Visualization

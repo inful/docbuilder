@@ -1,17 +1,18 @@
 ---
-uid: 36766002-6e10-4a98-9c90-981b15fa6f99
 aliases:
   - /_uid/36766002-6e10-4a98-9c90-981b15fa6f99/
-title: "Component Interactions Diagrams"
-date: 2026-01-04
 categories:
   - explanation
   - architecture
+date: 2026-01-04T00:00:00Z
+fingerprint: 15700ccee9a59acfde7bec960d3b7bac8d3c347aea994194e7f13811a3109147
+lastmod: "2026-01-22"
 tags:
   - components
   - interactions
   - integration
-fingerprint: 4a1996a364d54dd26bbf5e19e82e1b1c7087e238846e3e5e647eb8e62c8ea7a2
+title: Component Interactions Diagrams
+uid: 36766002-6e10-4a98-9c90-981b15fa6f99
 ---
 
 # Component Interactions Diagrams

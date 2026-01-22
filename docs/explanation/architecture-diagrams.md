@@ -1,16 +1,17 @@
 ---
-uid: b43f4ed6-21cb-4a80-9cdd-3304d03cca05
 aliases:
   - /_uid/b43f4ed6-21cb-4a80-9cdd-3304d03cca05/
-title: "Architecture Diagrams Index"
-date: 2026-01-04
 categories:
   - explanation
+date: 2026-01-04T00:00:00Z
+fingerprint: e11bd76b4727ee2e3bd196f5ed2a233d569d04f5d1f1d1f0a7dcf4a4e16ff2c1
+lastmod: "2026-01-22"
 tags:
   - architecture
   - diagrams
   - visualization
-fingerprint: 302233a0095b0c12f7ecba9aa9cf635dd01e6b3f6c5fe8cb23594ddbaee28060
+title: Architecture Diagrams Index
+uid: b43f4ed6-21cb-4a80-9cdd-3304d03cca05
 ---
 
 # Architecture Diagrams Index

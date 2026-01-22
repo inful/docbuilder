@@ -1,17 +1,18 @@
 ---
-uid: 93f56604-829d-4753-a7dc-9e7447a7af4f
 aliases:
   - /_uid/93f56604-829d-4753-a7dc-9e7447a7af4f/
-title: "ADR-001: Golden Testing Strategy for Output Verification"
-date: 2025-12-12
 categories:
   - architecture-decisions
+date: 2025-12-12T00:00:00Z
+fingerprint: c994db999a8a6572ed1399327e307dedece4a203ff866f6cd5793ff1585f07da
+lastmod: "2026-01-22"
 tags:
   - testing
   - golden-tests
   - quality-assurance
+title: 'ADR-001: Golden Testing Strategy for Output Verification'
+uid: 93f56604-829d-4753-a7dc-9e7447a7af4f
 weight: 2
-fingerprint: e4be1d7d554d77c1003c02d90480b631b5d3cc0c50a92ee097723a141e1ddb9a
 ---
 
 # ADR-001: Golden Testing Strategy for Output Verification

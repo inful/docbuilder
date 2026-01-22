@@ -1,16 +1,17 @@
 ---
-uid: 56876591-4835-49a5-a63e-494590a557d5
 aliases:
   - /_uid/56876591-4835-49a5-a63e-494590a557d5/
-title: "How To: Prune Workspace Size"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: cde4319931551f9681d70d5cd64b149abc1e1c5c2b9c342bc4eaf6208de96d62
+lastmod: "2026-01-22"
 tags:
   - optimization
   - workspace
   - performance
-fingerprint: ca08c6ee51f0b1144fc49079311c845b0f40bcdea0ead31952810835103411fe
+title: 'How To: Prune Workspace Size'
+uid: 56876591-4835-49a5-a63e-494590a557d5
 ---
 
 # How To: Prune Workspace Size

@@ -1,17 +1,18 @@
 ---
-uid: 13690187-bce4-4683-a34a-3743ba03d7ac
 aliases:
   - /_uid/13690187-bce4-4683-a34a-3743ba03d7ac/
-title: "Data Flow Diagrams"
-date: 2026-01-04
 categories:
   - explanation
   - architecture
+date: 2026-01-04T00:00:00Z
+fingerprint: c561063e90f8c3e8c8675dc6772a7e823d9bc0fb2cac9aef2f392199659a53f7
+lastmod: "2026-01-22"
 tags:
   - data-flow
   - sequences
   - state
-fingerprint: 7c0b3548c805280f0b85920cfc3f48b71f7ddc9aba4cf53c475fd7ff628fa9f9
+title: Data Flow Diagrams
+uid: 13690187-bce4-4683-a34a-3743ba03d7ac
 ---
 
 # Data Flow Diagrams

@@ -1,17 +1,18 @@
 ---
-uid: fd65129c-5904-4cef-bc9b-6cdae00b8891
 aliases:
   - /_uid/fd65129c-5904-4cef-bc9b-6cdae00b8891/
-title: "Pipeline Flow Diagrams"
-date: 2026-01-04
 categories:
   - explanation
   - architecture
+date: 2026-01-04T00:00:00Z
+fingerprint: 421bf9ea107f1b488c580345890772f190c11a8bbe9565a5654a3b92300edb5c
+lastmod: "2026-01-22"
 tags:
   - pipeline
   - stages
   - workflow
-fingerprint: e84cec78ff2fb59b0166174db9454a7b02f5d6f58323affb8331f0f2e7e5b106
+title: Pipeline Flow Diagrams
+uid: fd65129c-5904-4cef-bc9b-6cdae00b8891
 ---
 
 # Pipeline Flow Diagrams

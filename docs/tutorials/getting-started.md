@@ -1,16 +1,17 @@
 ---
-uid: 4a61e911-03a6-4769-9e15-63d304572860
 aliases:
   - /_uid/4a61e911-03a6-4769-9e15-63d304572860/
-title: "Getting Started Tutorial"
-date: 2025-12-15
 categories:
   - tutorials
+date: 2025-12-15T00:00:00Z
+fingerprint: 4fda25da6f4c96800845aadeb52ae6d8fc07f71a6e24006286417ce46c8ad208
+lastmod: "2026-01-22"
 tags:
   - getting-started
   - quickstart
   - introduction
-fingerprint: ade9697ebf967a691e2637784f3def13a9665052bc223d06b6889d7dfb432d78
+title: Getting Started Tutorial
+uid: 4a61e911-03a6-4769-9e15-63d304572860
 ---
 
 # Getting Started with DocBuilder

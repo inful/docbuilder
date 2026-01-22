@@ -1,18 +1,18 @@
 ---
-uid: f94cf6fb-b200-44e5-9177-0daf24be4367
 aliases:
   - /_uid/f94cf6fb-b200-44e5-9177-0daf24be4367/
-title: "ADR-011: Set lastmod When Fingerprint Changes"
-date: 2026-01-15
 categories:
   - architecture-decisions
+date: 2026-01-15T00:00:00Z
+fingerprint: 2c9cc8f32005572f619cdc0469f79851f5443f4cf95d950e69385d5cdc8dcce4
+lastmod: "2026-01-22"
 tags:
   - frontmatter
   - fingerprint
   - lastmod
   - hugo
-fingerprint: 70ae5c0d1d00e8f9f5dcda4baa30f080c396b3f12ad429e2b1c0b6be03b9e112
-lastmod: 2026-01-15
+title: 'ADR-011: Set lastmod When Fingerprint Changes'
+uid: f94cf6fb-b200-44e5-9177-0daf24be4367
 ---
 
 # ADR-011: Set lastmod When Fingerprint Changes

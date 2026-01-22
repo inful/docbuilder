@@ -1,17 +1,18 @@
 ---
-uid: 591c7ad3-3af8-47f8-9d01-531da3233a5d
 aliases:
   - /_uid/591c7ad3-3af8-47f8-9d01-531da3233a5d/
-title: "Release Process"
-date: 2026-01-01
 categories:
   - development
   - ci-cd
+date: 2026-01-01T00:00:00Z
+fingerprint: 7a9ca7186836135fd3b4ec05a1c38dfaa66e76e531a3ef8af674c5bec8656171
+lastmod: "2026-01-22"
 tags:
   - releases
   - devcontainer
   - github-actions
-fingerprint: d13e9f4dc79989f2727f0d7129449acddd0d7940e38c871e9dd89c02cb6d8c8e
+title: Release Process
+uid: 591c7ad3-3af8-47f8-9d01-531da3233a5d
 ---
 
 # Release Process

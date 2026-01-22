@@ -1,16 +1,17 @@
 ---
-uid: 1bc938b7-2e2c-47d1-8192-06e2300d09aa
 aliases:
   - /_uid/1bc938b7-2e2c-47d1-8192-06e2300d09aa/
-title: "How To: Write Cross-Document Links"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: 133f32ce73b9bc219f69a930da6bba04925d2822c27cfcbb1df8a780ecfd0c63
+lastmod: "2026-01-22"
 tags:
   - documentation
   - links
   - markdown
-fingerprint: 58297ba3725d544262e634420d2be6c48746393f73cdeee48bdcae462d7fa6a8
+title: 'How To: Write Cross-Document Links'
+uid: 1bc938b7-2e2c-47d1-8192-06e2300d09aa
 ---
 
 # How to Write Cross-Document Links

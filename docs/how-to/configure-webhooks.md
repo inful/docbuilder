@@ -1,16 +1,17 @@
 ---
-uid: a32222c2-182c-47b4-9744-2a0dd1794367
 aliases:
   - /_uid/a32222c2-182c-47b4-9744-2a0dd1794367/
-title: "Configure Webhooks for Automatic Rebuilds"
-date: 2025-12-17
 categories:
   - how-to
+date: 2025-12-17T00:00:00Z
+fingerprint: a8556dd330afc2e3fd41e1e9f244c4212e5110204be409c141244b1c71e03cce
+lastmod: "2026-01-22"
 tags:
   - webhooks
   - automation
   - ci-cd
-fingerprint: e995fb66760bc69aca9fc92cd41b9a72e39e1bf9ba518ea65ba67b747264eff2
+title: Configure Webhooks for Automatic Rebuilds
+uid: a32222c2-182c-47b4-9744-2a0dd1794367
 ---
 
 # Configure Webhooks for Automatic Rebuilds

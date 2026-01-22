@@ -1,17 +1,17 @@
 ---
-uid: 86afd906-d6c4-4013-bc06-02f90e716825
 aliases:
   - /_uid/86afd906-d6c4-4013-bc06-02f90e716825/
-title: "Comprehensive Architecture"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: 19ea4e1b7c101a29fb67ef2c01c3744d7b5318d5d064ee4e362edde5c359451e
+lastmod: "2026-01-22"
 tags:
   - architecture
   - design
   - deep-dive
-fingerprint: 9489b2eefa9ddbee94adb7a50b01390d960afc14359d684ac88b0c64050a4310
-lastmod: 2026-01-15
+title: Comprehensive Architecture
+uid: 86afd906-d6c4-4013-bc06-02f90e716825
 ---
 
 # Comprehensive Architecture Documentation

@@ -1,18 +1,18 @@
 ---
-uid: 96c8f654-7ff8-4022-b290-cbc2c2c5fbe7
 aliases:
   - /_uid/96c8f654-7ff8-4022-b290-cbc2c2c5fbe7/
-title: "ADR-010: Stable Document Identity via UID Aliases"
-date: 2026-01-14
 categories:
   - architecture-decisions
+date: 2026-01-14T00:00:00Z
+fingerprint: 3572a5b8963a9f86f9e2de63c22dedf1d902a9111426527962f9cbfb1d8403e2
+lastmod: "2026-01-22"
 tags:
   - document-identity
   - redirects
   - hugo-aliases
   - urls
-fingerprint: 1fa210ae6f652d0875d255516f5512befa56569957fa4ae33574bda658c5c9a3
-lastmod: 2026-01-15
+title: 'ADR-010: Stable Document Identity via UID Aliases'
+uid: 96c8f654-7ff8-4022-b290-cbc2c2c5fbe7
 ---
 
 # ADR-010: Stable Document Identity via UID Aliases

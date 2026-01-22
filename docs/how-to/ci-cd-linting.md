@@ -1,18 +1,19 @@
 ---
-uid: a89ff86e-31ab-43b5-b751-05c37768b0ba
 aliases:
   - /_uid/a89ff86e-31ab-43b5-b751-05c37768b0ba/
-title: "How To: CI/CD Linting Integration"
-date: 2025-12-29
 categories:
   - how-to
+date: 2025-12-29T00:00:00Z
+fingerprint: 353995dbe6d099953fd10c0cc256ebea079f85f0014d193dc476df4599846209
+lastmod: "2026-01-22"
 tags:
   - ci-cd
   - linting
   - automation
   - github-actions
   - gitlab-ci
-fingerprint: b56a60f533d006be042e2f3c7658a14aaea5c35452ce3965443a216364493a4d
+title: 'How To: CI/CD Linting Integration'
+uid: a89ff86e-31ab-43b5-b751-05c37768b0ba
 ---
 
 # CI/CD Linting Integration

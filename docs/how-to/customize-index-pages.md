@@ -1,15 +1,16 @@
 ---
-uid: 5cec1e52-55f5-4c51-a64f-a34da2482cea
 aliases:
   - /_uid/5cec1e52-55f5-4c51-a64f-a34da2482cea/
-title: "How To: Customize Index Pages"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: ef5416b0f9e4db7b9a00cf04bbff8f54d571d6ee6697b9515751f0acf0abba4c
+lastmod: "2026-01-22"
 tags:
   - customization
   - index-pages
-fingerprint: e8d4fae923072e3cffbb3a86a4db16f9d2e8cb662442333dc20d93eca7c11548
+title: 'How To: Customize Index Pages'
+uid: 5cec1e52-55f5-4c51-a64f-a34da2482cea
 ---
 
 # How To: Customize Index Pages
