@@ -274,10 +274,10 @@ Likely targets (confirm during Step 0.2):
 
 ### Step 5.2 — Migrate and remove duplication
 
-- [ ] Migrate chosen consumer(s) to `docmodel`.
-- [ ] Delete duplicated helper code where safe.
+- [x] Migrate chosen consumer(s) to `docmodel`.
+- [x] Delete duplicated helper code where safe.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `55fc33b`, `d517e3f`
 
 **Commit message**: `refactor: migrate <consumer> to docmodel`
 
