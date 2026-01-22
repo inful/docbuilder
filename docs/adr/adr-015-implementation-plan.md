@@ -216,10 +216,10 @@ Goal: make line-number attribution consistent across consumers.
 
 ### Step 4.1 — RED: lock current lint behavior with regression tests
 
-- [ ] Add/extend tests so that link detection + broken link detection behavior is frozen before refactor.
-- [ ] Include frontmatter + repeated links + code-block edge cases.
+- [x] Add/extend tests so that link detection + broken link detection behavior is frozen before refactor.
+- [x] Include frontmatter + repeated links + code-block edge cases.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `1501ef5`
 
 **Commit message**: `test(lint): add regression coverage before docmodel migration`
 
@@ -227,10 +227,10 @@ Goal: make line-number attribution consistent across consumers.
 
 Target: `detectBrokenLinksInFile`.
 
-- [ ] Replace ad-hoc split + extract with `docmodel.ParseFile` and `doc.LinkRefs()` / `doc.Links()` as appropriate.
-- [ ] Ensure reported line numbers are unchanged.
+- [x] Replace ad-hoc split + extract with `docmodel.ParseFile` and `doc.LinkRefs()` / `doc.Links()` as appropriate.
+- [x] Ensure reported line numbers are unchanged.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `1501ef5`
 
 **Commit message**: `refactor(lint): use docmodel for broken link detection`
 
@@ -238,22 +238,22 @@ Target: `detectBrokenLinksInFile`.
 
 Target: `Fixer.findLinksInFile` / `findLinksInBodyWithGoldmark`.
 
-- [ ] Replace ad-hoc split/extract/lineOffset/skip logic with `docmodel`.
-- [ ] Ensure edit workflows still use line numbers compatible with `applyLinkUpdates`.
+- [x] Replace ad-hoc split/extract/lineOffset/skip logic with `docmodel`.
+- [x] Ensure edit workflows still use line numbers compatible with `applyLinkUpdates`.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `1501ef5`
 
 **Commit message**: `refactor(lint): use docmodel for link detection and attribution`
 
 ### Step 4.4 — Drift-prevention test (multi-consumer scenario)
 
-- [ ] Add a test that exercises **two consumers** on the same input and asserts they agree on:
+- [x] Add a test that exercises **two consumers** on the same input and asserts they agree on:
   - destinations found
   - line numbers (file coordinates)
 
 Example: run broken-link detection and link-detection (for updates) over the same file and ensure shared line mapping rules are applied consistently.
 
-**Completion**: _date:_ _____  _commit:_ `_____`
+**Completion**: _date:_ 2026-01-21  _commit:_ `2e5059f`
 
 **Commit message**: `test: add multi-consumer docmodel parity regression`
 
