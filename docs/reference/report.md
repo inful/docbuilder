@@ -1,16 +1,17 @@
 ---
-uid: 48b52695-0104-48d5-a91c-4698b031113e
 aliases:
   - /_uid/48b52695-0104-48d5-a91c-4698b031113e/
-title: "Build Reports Reference"
-date: 2025-12-15
 categories:
   - reference
+date: 2025-12-15T00:00:00Z
+fingerprint: 1d0fb0ac453f50e879a1a4dd82ea2999a613f8acaaa9b2cdf608572f94b6db7e
+lastmod: "2026-01-22"
 tags:
   - reports
   - builds
   - output
-fingerprint: 42591efb30008410395aec489e2daf73f957e888398e9c6792662ab49d7c5b6c
+title: Build Reports Reference
+uid: 48b52695-0104-48d5-a91c-4698b031113e
 ---
 
 # Build Report Reference

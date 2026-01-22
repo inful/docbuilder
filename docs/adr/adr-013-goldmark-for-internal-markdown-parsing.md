@@ -1,16 +1,18 @@
 ---
-uid: 1f1a9e2c-3a7e-4d8f-b35e-60c9d78d0a4c
 aliases:
   - /_uid/1f1a9e2c-3a7e-4d8f-b35e-60c9d78d0a4c/
-date: 2026-01-20
 categories:
   - architecture-decisions
+date: 2026-01-20T00:00:00Z
+fingerprint: ecbafb24b55170dbaab1bc19a9d81c7668f369088f6490bfd9b4a2c6a969d0a3
+lastmod: "2026-01-22"
 tags:
   - markdown
   - parsing
   - linting
   - links
   - hugo
+uid: 1f1a9e2c-3a7e-4d8f-b35e-60c9d78d0a4c
 ---
 
 # ADR-013: Use Goldmark for internal Markdown parsing

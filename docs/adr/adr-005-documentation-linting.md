@@ -1,18 +1,19 @@
 ---
-uid: ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1
 aliases:
   - /_uid/ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1/
-title: "ADR-005: Documentation Linting for Pre-Commit Validation"
-date: 2025-12-29
 categories:
   - architecture-decisions
+date: 2025-12-29T00:00:00Z
+fingerprint: 9a35e9b71ccd72444ba4ae61431c68fa0c9c72ebc58ceb3a3ea590a461034276
+lastmod: "2026-01-22"
 tags:
   - linting
   - validation
   - documentation
   - developer-experience
+title: 'ADR-005: Documentation Linting for Pre-Commit Validation'
+uid: ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1
 weight: 5
-fingerprint: fef7ce0192902f54bb39dd3681eb3c97351cfc6de91ca7caf3f5ecbb3aceab74
 ---
 
 # ADR-005: Documentation Linting for Pre-Commit Validation

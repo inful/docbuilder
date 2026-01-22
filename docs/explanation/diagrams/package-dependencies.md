@@ -1,17 +1,18 @@
 ---
-uid: a12d6319-3e23-4e1f-a276-920b402b50d6
 aliases:
   - /_uid/a12d6319-3e23-4e1f-a276-920b402b50d6/
-title: "Package Dependencies Diagram"
-date: 2026-01-04
 categories:
   - explanation
   - architecture
+date: 2026-01-04T00:00:00Z
+fingerprint: 3aa5826db4df7277d1b0d1dd39b7c7f307f1c9d4f52230d13eafc98756e0979f
+lastmod: "2026-01-22"
 tags:
   - packages
   - dependencies
   - structure
-fingerprint: 3c3292d61bf660b0c33038e1ad843ed52aed8021d420e9666813389432612090
+title: Package Dependencies Diagram
+uid: a12d6319-3e23-4e1f-a276-920b402b50d6
 ---
 
 # Package Dependencies Diagram

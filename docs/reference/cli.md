@@ -1,17 +1,17 @@
 ---
-uid: dad2de36-18a1-42e4-b066-7bd353246c9b
 aliases:
   - /_uid/dad2de36-18a1-42e4-b066-7bd353246c9b/
-title: "CLI Reference"
-date: 2025-12-15
 categories:
   - reference
+date: 2025-12-15T00:00:00Z
+fingerprint: 2308fc0201713954f78a0896498f97aac5c0cf300b78f5c362f443f80c345e91
+lastmod: "2026-01-22"
 tags:
   - cli
   - commands
   - usage
-fingerprint: 98643d1931cbcf9c9a989dbf25e76c80313dbe1e5a4b24e7d3e75727c4a9944b
-lastmod: 2026-01-15
+title: CLI Reference
+uid: dad2de36-18a1-42e4-b066-7bd353246c9b
 ---
 
 # CLI Reference

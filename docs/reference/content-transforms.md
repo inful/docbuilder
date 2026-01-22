@@ -1,16 +1,17 @@
 ---
-uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
 aliases:
   - /_uid/3e530ceb-32d7-45fe-888b-6a9309ffb6c4/
-title: "Content Transforms Reference (DEPRECATED)"
-date: 2025-12-15
 categories:
   - reference
+date: 2025-12-15T00:00:00Z
+fingerprint: 97bfd93dfcd16f0381440c8a527559380d552f005c63fc607438bdce3bd2157e
+lastmod: "2026-01-22"
 tags:
   - transforms
   - content-processing
   - deprecated
-fingerprint: 5d9d47c53b791c8f8f523d8478204ac3ee0b12c33e72fb20dc7ee39813875cf9
+title: Content Transforms Reference (DEPRECATED)
+uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
 ---
 
 # Content Transform Pipeline (DEPRECATED)

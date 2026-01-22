@@ -1,13 +1,25 @@
 ---
-goal: "Implement ADR-016: centralize frontmatter mutations (map-based ops)"
-adr: "docs/adr/adr-016-centralize-frontmatter-mutations.md"
-version: "1.0"
+adr: docs/adr/adr-016-centralize-frontmatter-mutations.md
+aliases:
+  - /_uid/6df43140-ba90-4590-b923-0847aabee743/
 date_created: "2026-01-22"
+fingerprint: 4824d5692343ce613ebfefb6e44f64946a7556ae29e78ef24ae4fc6f7d2d74bb
+goal: 'Implement ADR-016: centralize frontmatter mutations (map-based ops)'
 last_updated: "2026-01-22"
-owner: "DocBuilder Core Team"
-status: "Complete"
-tags: ["adr", "tdd", "refactor", "frontmatter", "hugo", "lint", "fingerprint", "uid"]
-uid: "6df43140-ba90-4590-b923-0847aabee743"
+lastmod: "2026-01-22"
+owner: DocBuilder Core Team
+status: Complete
+tags:
+  - adr
+  - tdd
+  - refactor
+  - frontmatter
+  - hugo
+  - lint
+  - fingerprint
+  - uid
+uid: 6df43140-ba90-4590-b923-0847aabee743
+version: "1.0"
 ---
 
 # ADR-016 Implementation Plan: Centralize frontmatter mutations (map-based ops)

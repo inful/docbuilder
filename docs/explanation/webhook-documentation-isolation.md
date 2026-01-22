@@ -1,16 +1,17 @@
 ---
-uid: 58cfc94a-28b1-40af-b149-0ccb52a0b58a
 aliases:
   - /_uid/58cfc94a-28b1-40af-b149-0ccb52a0b58a/
-title: "Webhook and Documentation Isolation Strategy"
-date: 2025-12-17
 categories:
   - explanation
+date: 2025-12-17T00:00:00Z
+fingerprint: 12aacd7f502cabb5753f7e11f69b079a805c4011e274e3db0262c7b9ec1fc5b4
+lastmod: "2026-01-22"
 tags:
   - architecture
   - webhooks
   - security
-fingerprint: e41f2f940d2f55f75737292699ae761784af723af8cf211da02deaf935985556
+title: Webhook and Documentation Isolation Strategy
+uid: 58cfc94a-28b1-40af-b149-0ccb52a0b58a
 ---
 
 # Webhook and Documentation Isolation Strategy

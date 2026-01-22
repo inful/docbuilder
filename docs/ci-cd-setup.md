@@ -1,15 +1,16 @@
 ---
-uid: d7da54f5-3864-4e53-b004-d8d3ae551f98
 aliases:
   - /_uid/d7da54f5-3864-4e53-b004-d8d3ae551f98/
-title: "CI/CD Setup"
-date: 2025-12-15
 categories:
   - ci-cd
+date: 2025-12-15T00:00:00Z
+fingerprint: dde9b8ba47d933ad837ef8277474e7b26e28f82b29e283c05e6a2039a8f3c80d
+lastmod: "2026-01-22"
 tags:
   - continuous-integration
   - docker
-fingerprint: e2145298145f73b9adff03b579235d6c836be5ec20d5eebf53eeaffae474b815
+title: CI/CD Setup
+uid: d7da54f5-3864-4e53-b004-d8d3ae551f98
 ---
 
 # CI/CD Setup

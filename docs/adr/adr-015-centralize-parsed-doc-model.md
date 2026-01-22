@@ -1,10 +1,11 @@
 ---
-uid: 4b11a5c2-8bcb-4fd0-9b0e-1c5e9a7c2d1b
 aliases:
   - /_uid/4b11a5c2-8bcb-4fd0-9b0e-1c5e9a7c2d1b/
-date: 2026-01-21
 categories:
   - architecture-decisions
+date: 2026-01-21T00:00:00Z
+fingerprint: 7319e55ba9f5655f635dd228e8af463efad796e554ed246620b4580509b1b6b5
+lastmod: "2026-01-22"
 tags:
   - markdown
   - frontmatter
@@ -12,6 +13,7 @@ tags:
   - linting
   - performance
   - refactor
+uid: 4b11a5c2-8bcb-4fd0-9b0e-1c5e9a7c2d1b
 ---
 
 # ADR-015: Centralize parsed document model (frontmatter + Markdown body)

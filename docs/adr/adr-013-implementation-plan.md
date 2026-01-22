@@ -1,3 +1,11 @@
+---
+aliases:
+  - /_uid/56d0f48e-5ebc-47c1-b781-63027faf0a52/
+fingerprint: 92418ac8f4af0f23eb0f234746bdd32a3b5af28880ec24b76281abae6d0cd992
+lastmod: "2026-01-22"
+uid: 56d0f48e-5ebc-47c1-b781-63027faf0a52
+---
+
 # Plan: Implement ADR-013 (Use Goldmark for internal Markdown parsing)
 
 - Status: Draft / Tracking

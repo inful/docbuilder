@@ -1,17 +1,17 @@
 ---
-uid: cb491357-fc40-4fee-bddc-f68fee69c437
 aliases:
   - /_uid/cb491357-fc40-4fee-bddc-f68fee69c437/
-title: "Lint Rules Reference"
-date: 2025-12-29
 categories:
   - reference
+date: 2025-12-29T00:00:00Z
+fingerprint: 463a9db13e57b5a8cf74a9e1202ea2d9b4dbc5c808ba1d11c57774a135af85dc
+lastmod: "2026-01-22"
 tags:
   - linting
   - validation
   - rules
-fingerprint: a4122cdebff06ed85490c4ddaf5b66591d297f0501f08aaa56b577513b3f5777
-lastmod: 2026-01-15
+title: Lint Rules Reference
+uid: cb491357-fc40-4fee-bddc-f68fee69c437
 ---
 
 # Lint Rules Reference

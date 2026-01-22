@@ -1,15 +1,16 @@
 ---
-uid: a8168637-9de1-47a2-9d96-76d1bbf2deb5
 aliases:
   - /_uid/a8168637-9de1-47a2-9d96-76d1bbf2deb5/
-title: "Skip Evaluation Logic"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: c8d87df311c0519a90c4324fac8f957d5e41d381871f0187b48aaee203129098
+lastmod: "2026-01-22"
 tags:
   - optimization
   - performance
-fingerprint: a7697302e7c84c616d6dccf59b916857231e0f70f248f182e0f3ef56a07f4591
+title: Skip Evaluation Logic
+uid: a8168637-9de1-47a2-9d96-76d1bbf2deb5
 ---
 
 # Skip Evaluation System

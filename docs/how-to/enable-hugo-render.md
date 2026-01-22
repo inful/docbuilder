@@ -1,16 +1,17 @@
 ---
-uid: 6549b7d7-c578-4b52-a202-d290d19be13c
 aliases:
   - /_uid/6549b7d7-c578-4b52-a202-d290d19be13c/
-title: "How To: Enable Hugo Rendering"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: f1f297d9390decda15571e957020e413644931cb9e41083363cc8ed3f1064104
+lastmod: "2026-01-22"
 tags:
   - hugo
   - rendering
   - static-sites
-fingerprint: 5dc3aeeac1b07d1b89f4a43c4bd5444caf637d0b1b64855c0573099bb696354e
+title: 'How To: Enable Hugo Rendering'
+uid: 6549b7d7-c578-4b52-a202-d290d19be13c
 ---
 
 # How To: Enable Hugo Rendering

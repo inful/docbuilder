@@ -1,15 +1,16 @@
 ---
-uid: 98165082-c567-4857-bb4e-12757cdae01e
 aliases:
   - /_uid/98165082-c567-4857-bb4e-12757cdae01e/
-title: "How To: Enable Multi-Version Documentation"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: 5f75d9e8f7a2be3190a74174d1c368f320861dc0aa0423eded6dce5b95c7bd05
+lastmod: "2026-01-22"
 tags:
   - versioning
   - documentation
-fingerprint: 1c986eac56cf62e048f8fe41006217ed2b755a54c58b9f3b7240c1f74000f017
+title: 'How To: Enable Multi-Version Documentation'
+uid: 98165082-c567-4857-bb4e-12757cdae01e
 ---
 
 # How to Enable Multi-Version Documentation

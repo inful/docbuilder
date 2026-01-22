@@ -1,17 +1,17 @@
 ---
-uid: 93bcd5b0-7d17-48c0-ac61-e41e2ae93baf
 aliases:
   - /_uid/93bcd5b0-7d17-48c0-ac61-e41e2ae93baf/
-date: 2026-01-20
 categories:
   - architecture-decisions
+date: 2026-01-20T00:00:00Z
+fingerprint: b268ba1564258800f28d157f1e8949412aa6d3d8fd6269bd3a0ead1d062ceb94
+lastmod: "2026-01-22"
 tags:
   - linting
   - refactor
   - file-system
   - links
-fingerprint: 77b435d1d6a32e5d38ef388679752e8e8308d6fd8640e950ba3cde8bad676713
-lastmod: 2026-01-20
+uid: 93bcd5b0-7d17-48c0-ac61-e41e2ae93baf
 ---
 
 # ADR-012: Autoheal links to files moved

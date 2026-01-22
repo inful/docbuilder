@@ -1,16 +1,17 @@
 ---
-uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
 aliases:
   - /_uid/771a70f5-88cb-4508-9b69-baebfdf90b48/
-title: "How To: Enable Page Transitions"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: 080a69d86bd28ec4de582541baa62e5c4f629d9582d5b418a91ea0050776d002
+lastmod: "2026-01-22"
 tags:
   - ui
   - transitions
   - relearn
-fingerprint: cc1cc1fc134dc6baf41f39c87d50e74046d3eaec14164e3d041717bb5b1c9d23
+title: 'How To: Enable Page Transitions'
+uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
 ---
 
 # Enable Page Transitions

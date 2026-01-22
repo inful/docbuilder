@@ -1,18 +1,18 @@
 ---
-uid: 4f6c6944-e4de-4f09-ae84-1d566bb00277
 aliases:
   - /_uid/4f6c6944-e4de-4f09-ae84-1d566bb00277/
-title: "ADR-002: Fix Index Stage Pipeline Bypass"
-date: 2025-12-13
 categories:
   - architecture-decisions
+date: 2025-12-13T00:00:00Z
+fingerprint: d574512f7d9ac9abac91f19f2120da9109028b6b84731ddd9c19aac294a8587c
+lastmod: "2026-01-22"
 tags:
   - pipeline
   - content-processing
   - architecture
   - performance
+uid: 4f6c6944-e4de-4f09-ae84-1d566bb00277
 weight: 3
-fingerprint: 0b95837283f980669122a9d9aa633afb9a22777b82bfb1c783d153d76db739f4
 ---
 
 # ADR-002: Fix Index Stage Pipeline Bypass
@@ -311,7 +311,6 @@ If issues discovered:
 - [Index generation](../../internal/hugo/indexes.go)
 - [DocFile struct](../../internal/docs/discovery.go)
 - [Transform pipeline design](../reference/content-transforms.md)
-- [BuildState architecture](../../internal/hugo/build_state.go)
 
 ## Related Issues
 

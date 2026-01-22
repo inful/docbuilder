@@ -1,12 +1,24 @@
 ---
-goal: "Implement ADR-015: central parsed document model (frontmatter + Markdown body)"
-adr: "docs/adr/adr-015-centralize-parsed-doc-model.md"
-version: "1.0"
+adr: docs/adr/adr-015-centralize-parsed-doc-model.md
+aliases:
+  - /_uid/722ac346-6481-4ff0-ab00-93dd6b5e8c70/
 date_created: "2026-01-21"
+fingerprint: 477428273e879612e43e1e9d0a5073246437f993d246e6f92e198449a9c9c1e6
+goal: 'Implement ADR-015: central parsed document model (frontmatter + Markdown body)'
 last_updated: "2026-01-22"
-owner: "DocBuilder Core Team"
-status: "Done"
-tags: ["adr", "tdd", "refactor", "markdown", "frontmatter", "lint", "performance"]
+lastmod: "2026-01-22"
+owner: DocBuilder Core Team
+status: Done
+tags:
+  - adr
+  - tdd
+  - refactor
+  - markdown
+  - frontmatter
+  - lint
+  - performance
+uid: 722ac346-6481-4ff0-ab00-93dd6b5e8c70
+version: "1.0"
 ---
 
 # ADR-015 Implementation Plan: Centralize parsed document model

@@ -1,18 +1,18 @@
 ---
-uid: d81afd2a-5a6f-4721-ab3a-d8c4950bd162
 aliases:
   - /_uid/d81afd2a-5a6f-4721-ab3a-d8c4950bd162/
-title: "ADR-000: Uniform Error Handling"
-date: 2025-10-03
-lastmod: 2025-12-14
 categories:
   - architecture-decisions
+date: 2025-10-03T00:00:00Z
+fingerprint: 41efe11b9c3cec375070b036024f1877b4d27a41c0098f78e650441271929ff5
+lastmod: "2026-01-22"
 tags:
   - error-handling
   - foundation
   - architecture
+title: 'ADR-000: Uniform Error Handling'
+uid: d81afd2a-5a6f-4721-ab3a-d8c4950bd162
 weight: 1
-fingerprint: eb631918ec2f00f5bac3f316e1e96005e0497a0f19d3876e1f0d178f83595b3c
 ---
 
 # ADR-000: Uniform Error Handling Across DocBuilder

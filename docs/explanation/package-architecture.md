@@ -1,16 +1,17 @@
 ---
-uid: 53887282-d86e-4d04-9062-abfe344d81e1
 aliases:
   - /_uid/53887282-d86e-4d04-9062-abfe344d81e1/
-title: "Package Architecture"
-date: 2025-12-15
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: c0245dbf7e412af7301da3f5702f577ed8eb0f861a0eec931e4642a3a6612856
+lastmod: "2026-01-22"
 tags:
   - architecture
   - packages
   - code-organization
-fingerprint: f17ab2c5af6799236bb9aeeea0704469fa31aa746aaf8b19061cd3e47b87be51
+title: Package Architecture
+uid: 53887282-d86e-4d04-9062-abfe344d81e1
 ---
 
 # Package Architecture Guide

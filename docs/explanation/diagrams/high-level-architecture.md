@@ -1,17 +1,18 @@
 ---
-uid: 663991b1-bfe7-4c55-bd54-8f09e1120e06
 aliases:
   - /_uid/663991b1-bfe7-4c55-bd54-8f09e1120e06/
-title: "High-Level System Architecture"
-date: 2026-01-04
 categories:
   - explanation
   - architecture
+date: 2026-01-04T00:00:00Z
+fingerprint: e0930feaae293ab682ab1f82f81a6fcb1727905643295ba504ced507f36078d5
+lastmod: "2026-01-22"
 tags:
   - architecture
   - diagrams
   - layers
-fingerprint: 9ad1053797762a182b32821347db400f31a600b493dcb2a1846e9e01070a81c9
+title: High-Level System Architecture
+uid: 663991b1-bfe7-4c55-bd54-8f09e1120e06
 ---
 
 # High-Level System Architecture

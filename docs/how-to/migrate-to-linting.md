@@ -1,16 +1,17 @@
 ---
-uid: f589369a-b003-410b-87ff-86e976e787ce
 aliases:
   - /_uid/f589369a-b003-410b-87ff-86e976e787ce/
-title: "How To: Migrate Existing Repository to Linting"
-date: 2025-12-29
 categories:
   - how-to
+date: 2025-12-29T00:00:00Z
+fingerprint: 5b2f8b4cf22d5e3e30ea086ea2a1512354477788da632ef3d040416264f9875b
+lastmod: "2026-01-22"
 tags:
   - linting
   - migration
   - cleanup
-fingerprint: 45c8570b8ab2741965cb650fad431ae6b46b901a812f2776eff8c78ec3617b2d
+title: 'How To: Migrate Existing Repository to Linting'
+uid: f589369a-b003-410b-87ff-86e976e787ce
 ---
 
 # Migrate Existing Repository to Linting

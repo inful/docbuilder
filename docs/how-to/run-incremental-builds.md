@@ -1,16 +1,17 @@
 ---
-uid: 8a4a0ee2-d35b-45e0-8199-955e88ec3c84
 aliases:
   - /_uid/8a4a0ee2-d35b-45e0-8199-955e88ec3c84/
-title: "How To: Run Incremental Builds"
-date: 2025-12-15
 categories:
   - how-to
+date: 2025-12-15T00:00:00Z
+fingerprint: 62c0a94f8e4aeff85d4d420cbe0c4fd351f9e78e2296771746f1d691d1c87d2c
+lastmod: "2026-01-22"
 tags:
   - performance
   - incremental
   - builds
-fingerprint: 8d070be6585d78257b76566ba7b01b060ec81c3895958ec11a6760e4121b890c
+title: 'How To: Run Incremental Builds'
+uid: 8a4a0ee2-d35b-45e0-8199-955e88ec3c84
 ---
 
 # How To: Run Incremental Builds

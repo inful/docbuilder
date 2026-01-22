@@ -1,18 +1,19 @@
 ---
-uid: 138c1d38-5a96-4820-8a74-dbb45c94a0e3
 aliases:
   - /_uid/138c1d38-5a96-4820-8a74-dbb45c94a0e3/
-title: "ADR-004: Forge-Specific Markdown Support"
-date: 2025-12-18
-status: "proposed"
 categories:
   - architecture
+date: 2025-12-18T00:00:00Z
+fingerprint: d6f1d74f5bdd59c20b6139da505245c1f85623e2a5611ff3e8d5044114d9fefa
+lastmod: "2026-01-22"
+status: proposed
 tags:
   - adr
   - markdown
   - forges
   - content-processing
-fingerprint: cbc9bbfc42b17372c3309bdeb741518af0808c713c30b88588e593e8297e470b
+title: 'ADR-004: Forge-Specific Markdown Support'
+uid: 138c1d38-5a96-4820-8a74-dbb45c94a0e3
 ---
 
 # ADR-004: Forge-Specific Markdown Support
