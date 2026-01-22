@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -115,11 +116,6 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	frontMatter := map[string]any{"title": g.config.Hugo.Title, "description": g.config.Hugo.Description, "date": "2024-01-01T00:00:00Z", "type": "docs"}
 	// Add cascade for all themes to ensure type: docs propagates to children
 	frontMatter["cascade"] = map[string]any{"type": "docs"}
-	style := frontmatter.Style{Newline: "\n"}
-	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
-	if err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)
-	}
 	// File-based template overrides
 	tplRaw := g.mustIndexTemplate("main")
 	ctx := buildIndexTemplateContext(g, docFiles, repoGroups, frontMatter)
@@ -128,15 +124,13 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 		return fmt.Errorf("parse main index template: %w", err)
 	}
 	var buf bytes.Buffer
-	if err := tpl.Execute(&buf, ctx); err != nil {
-		return fmt.Errorf("exec main index template: %w", err)
+	if execErr := tpl.Execute(&buf, ctx); execErr != nil {
+		return fmt.Errorf("exec main index template: %w", execErr)
 	}
 	body := buf.String()
-	var content string
-	if !strings.HasPrefix(body, "---\n") {
-		content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body)
-	} else {
-		content = body
+	content, err := buildIndexContent(frontMatter, body)
+	if err != nil {
+		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)
 	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
@@ -200,11 +194,6 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 
 		frontMatter := map[string]any{"title": titleCase(repoName), "repository": repoName, "type": "docs", "date": "2024-01-01T00:00:00Z"}
-		style := frontmatter.Style{Newline: "\n"}
-		fmData, err := frontmatter.SerializeYAML(frontMatter, style)
-		if err != nil {
-			return fmt.Errorf("failed to marshal front matter: %w", err)
-		}
 		sectionGroups := make(map[string][]docs.DocFile)
 		for i := range files {
 			file := &files[i]
@@ -240,15 +229,13 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 			return fmt.Errorf("parse repository index template: %w", err)
 		}
 		var buf bytes.Buffer
-		if err := tpl.Execute(&buf, ctx); err != nil {
-			return fmt.Errorf("exec repository index template: %w", err)
+		if execErr := tpl.Execute(&buf, ctx); execErr != nil {
+			return fmt.Errorf("exec repository index template: %w", execErr)
 		}
 		body := buf.String()
-		var content string
-		if !strings.HasPrefix(body, "---\n") {
-			content = fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body)
-		} else {
-			content = body
+		content, err := buildIndexContent(frontMatter, body)
+		if err != nil {
+			return fmt.Errorf("failed to marshal front matter: %w", err)
 		}
 		// #nosec G306 -- index pages are public content
 		if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
@@ -358,9 +345,11 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	// models.BuildState.IsSingleRepo. The file was written by copyContentFiles at this exact path.
 	// Note: Repository is always in the path for README files, even in single-repo mode,
 	// because they're used for repository-level indexes (content/{repo}/_index.md).
-	transformedPath := filepath.Join(g.BuildRoot(), "content", readmeFile.Repository, strings.ToLower(readmeFile.Name+readmeFile.Extension))
-	if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
-		slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
+	if readmeFile.Repository != "" && readmeFile.Name != "" && readmeFile.Extension != "" {
+		transformedPath := filepath.Join(g.BuildRoot(), "content", readmeFile.Repository, strings.ToLower(readmeFile.Name+readmeFile.Extension))
+		if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
+			slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
+		}
 	}
 
 	return nil
@@ -450,11 +439,6 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
-	style := frontmatter.Style{Newline: "\n"}
-	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
-	if err != nil {
-		return fmt.Errorf("failed to marshal front matter: %w", err)
-	}
 
 	subsections := g.findImmediateChildSections(sectionName, allSections)
 	body, err := g.renderSectionTemplate(files, repoName, sectionName, subsections, frontMatter)
@@ -462,7 +446,10 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 		return err
 	}
 
-	content := g.assembleSectionContent(fmData, body)
+	content, err := buildIndexContent(frontMatter, body)
+	if err != nil {
+		return fmt.Errorf("failed to marshal front matter: %w", err)
+	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write section index: %w", err)
@@ -541,12 +528,17 @@ func (g *Generator) renderSectionTemplate(files []docs.DocFile, repoName, sectio
 	return buf.String(), nil
 }
 
-// assembleSectionContent combines front matter and body into final content.
-func (g *Generator) assembleSectionContent(fmData []byte, body string) string {
-	if !strings.HasPrefix(body, "---\n") {
-		return fmt.Sprintf("---\n%s---\n\n%s", string(fmData), body)
+func buildIndexContent(frontMatter map[string]any, body string) (string, error) {
+	if strings.HasPrefix(body, "---\n") {
+		return body, nil
 	}
-	return body
+
+	style := frontmatter.Style{Newline: "\n"}
+	contentBytes, err := frontmatterops.Write(frontMatter, []byte("\n\n"+body), true, style)
+	if err != nil {
+		return "", err
+	}
+	return string(contentBytes), nil
 }
 
 // generateIntermediateSectionIndex creates an index for sections without direct files.
@@ -557,11 +549,6 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
-	style := frontmatter.Style{Newline: "\n"}
-	fmData, err := frontmatter.SerializeYAML(frontMatter, style)
-	if err != nil {
-		return fmt.Errorf("failed to marshal front matter: %w", err)
-	}
 
 	// Render template with empty file list for intermediate sections
 	tplRaw := g.mustIndexTemplate("section")
@@ -580,11 +567,14 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 	}
 
 	var buf bytes.Buffer
-	if err := tpl.Execute(&buf, ctx); err != nil {
-		return fmt.Errorf("exec section index template: %w", err)
+	if execErr := tpl.Execute(&buf, ctx); execErr != nil {
+		return fmt.Errorf("exec section index template: %w", execErr)
 	}
 
-	content := g.assembleSectionContent(fmData, buf.String())
+	content, err := buildIndexContent(frontMatter, buf.String())
+	if err != nil {
+		return fmt.Errorf("failed to marshal front matter: %w", err)
+	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("failed to write intermediate section index: %w", err)
@@ -670,21 +660,12 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 // Returns (frontMatter map, body string, error).
 // If no front matter exists, returns (nil, originalContent, nil).
 func parseFrontMatterFromContent(content string) (map[string]any, string, error) {
-	fmRaw, body, had, _, err := frontmatter.Split([]byte(content))
+	fm, body, had, _, err := frontmatterops.Read([]byte(content))
 	if err != nil {
-		//nolint:nilerr // index template inputs may contain malformed frontmatter; treat it as absent.
-		return nil, content, nil
+		return nil, "", err
 	}
 	if !had {
 		return nil, content, nil
-	}
-	if len(bytes.TrimSpace(fmRaw)) == 0 {
-		return map[string]any{}, string(body), nil
-	}
-
-	fm, err := frontmatter.ParseYAML(fmRaw)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to parse front matter: %w", err)
 	}
 
 	return fm, string(body), nil
@@ -693,9 +674,7 @@ func parseFrontMatterFromContent(content string) (map[string]any, string, error)
 // ensureRequiredIndexFields adds missing required fields to front matter.
 // Modifies the provided map in place.
 func ensureRequiredIndexFields(fm map[string]any, repoName string) {
-	if fm["type"] == nil {
-		fm["type"] = "docs"
-	}
+	frontmatterops.EnsureTypeDocs(fm)
 	if fm["repository"] == nil {
 		fm["repository"] = repoName
 	}
@@ -707,10 +686,9 @@ func ensureRequiredIndexFields(fm map[string]any, repoName string) {
 // reconstructContentWithFrontMatter rebuilds content string from front matter and body.
 func reconstructContentWithFrontMatter(fm map[string]any, body string) (string, error) {
 	style := frontmatter.Style{Newline: "\n"}
-	fmData, err := frontmatter.SerializeYAML(fm, style)
+	out, err := frontmatterops.Write(fm, []byte(body), true, style)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal front matter: %w", err)
 	}
-
-	return string(frontmatter.Join(fmData, []byte(body), true, style)), nil
+	return string(out), nil
 }
