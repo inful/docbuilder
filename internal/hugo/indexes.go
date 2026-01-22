@@ -309,7 +309,7 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	// Parse front matter if it exists
 	fm, body, err := parseFrontMatterFromContent(contentStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse front matter in README.md: %w", err)
+		return fmt.Errorf("failed to parse front matter in %s: %w", readmeFile.RelativePath, err)
 	}
 
 	// If no front matter exists, create it
@@ -660,21 +660,12 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 // Returns (frontMatter map, body string, error).
 // If no front matter exists, returns (nil, originalContent, nil).
 func parseFrontMatterFromContent(content string) (map[string]any, string, error) {
-	fmRaw, body, had, _, err := frontmatter.Split([]byte(content))
+	fm, body, had, _, err := frontmatterops.Read([]byte(content))
 	if err != nil {
-		//nolint:nilerr // index template inputs may contain malformed/unterminated frontmatter; treat it as absent.
-		return nil, content, nil
+		return nil, "", err
 	}
 	if !had {
 		return nil, content, nil
-	}
-	if len(bytes.TrimSpace(fmRaw)) == 0 {
-		return map[string]any{}, string(body), nil
-	}
-
-	fm, err := frontmatter.ParseYAML(fmRaw)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to parse front matter: %w", err)
 	}
 
 	return fm, string(body), nil
