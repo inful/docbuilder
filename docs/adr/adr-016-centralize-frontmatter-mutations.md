@@ -18,11 +18,13 @@ tags:
 
 # ADR-016: Centralize frontmatter mutations (map-based ops)
 
-**Status**: Proposed  
+**Status**: Implemented  
 **Date**: 2026-01-22  
 **Decision Makers**: DocBuilder Core Team
 
 **Implementation Plan**: [adr-016-implementation-plan.md](adr-016-implementation-plan.md)
+
+**Implementation Completed**: 2026-01-22 (plan completion commit: `e95b442`)
 
 ## Context and Problem Statement
 
