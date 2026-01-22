@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 // executeVSCodeOpen finds the VS Code CLI and IPC socket, then opens the file.
-func (s *HTTPServer) executeVSCodeOpen(parentCtx context.Context, absPath string) error {
+func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) error {
 	// Allow some time for transient VS Code IPC reconnects.
 	ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 	defer cancel()

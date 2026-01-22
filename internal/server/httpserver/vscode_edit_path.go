@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"log/slog"
@@ -9,7 +9,7 @@ import (
 )
 
 // validateAndResolveEditPath extracts the file path from the URL and validates it.
-func (s *HTTPServer) validateAndResolveEditPath(urlPath string) (string, error) {
+func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 	// Extract file path from URL
 	const editPrefix = "/_edit/"
 	if !strings.HasPrefix(urlPath, editPrefix) {
@@ -74,7 +74,7 @@ func (s *HTTPServer) validateAndResolveEditPath(urlPath string) (string, error) 
 }
 
 // validateMarkdownFile checks that the file exists, is regular, and is markdown.
-func (s *HTTPServer) validateMarkdownFile(path string) error {
+func (s *Server) validateMarkdownFile(path string) error {
 	// Use Lstat to detect symlinks (Stat would follow them)
 	fileInfo, err := os.Lstat(path)
 	if err != nil {
@@ -138,13 +138,13 @@ func (s *HTTPServer) validateMarkdownFile(path string) error {
 
 // getDocsDirectory returns the docs directory for preview mode edit operations.
 // VS Code edit links are only supported in preview mode, not daemon mode.
-func (s *HTTPServer) getDocsDirectory() string {
-	if s.config == nil || len(s.config.Repositories) == 0 {
+func (s *Server) getDocsDirectory() string {
+	if s.cfg == nil || len(s.cfg.Repositories) == 0 {
 		return ""
 	}
 
 	// In preview mode (single repository), the repository URL is the local docs directory
-	docsDir := s.config.Repositories[0].URL
+	docsDir := s.cfg.Repositories[0].URL
 
 	// Ensure absolute path
 	if !filepath.IsAbs(docsDir) {

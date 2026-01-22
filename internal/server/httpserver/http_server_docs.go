@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -53,8 +53,8 @@ func parseHugoError(errStr string) string {
 }
 
 // resolveAbsoluteOutputDir resolves the output directory to an absolute path.
-func (s *HTTPServer) resolveAbsoluteOutputDir() string {
-	out := s.config.Output.Directory
+func (s *Server) resolveAbsoluteOutputDir() string {
+	out := s.cfg.Output.Directory
 	if out == "" {
 		out = defaultSiteDir
 	}
@@ -67,7 +67,7 @@ func (s *HTTPServer) resolveAbsoluteOutputDir() string {
 }
 
 // shouldShowStatusPage checks if we should show a status page instead of serving files.
-func (s *HTTPServer) shouldShowStatusPage(root string) bool {
+func (s *Server) shouldShowStatusPage(root string) bool {
 	out := s.resolveAbsoluteOutputDir()
 	if root != out {
 		return false
@@ -78,10 +78,10 @@ func (s *HTTPServer) shouldShowStatusPage(root string) bool {
 }
 
 // handleStatusPage determines which status page to show and renders it.
-func (s *HTTPServer) handleStatusPage(w http.ResponseWriter, r *http.Request, root string) {
+func (s *Server) handleStatusPage(w http.ResponseWriter, r *http.Request, root string) {
 	// Check if there's a build error
-	if s.daemon != nil && s.daemon.buildStatus != nil {
-		if hasError, buildErr, hasGoodBuild := s.daemon.buildStatus.GetStatus(); hasError && !hasGoodBuild {
+	if s.opts.BuildStatus != nil {
+		if hasError, buildErr, hasGoodBuild := s.opts.BuildStatus.GetStatus(); hasError && !hasGoodBuild {
 			// Build failed - show error page
 			s.renderBuildErrorPage(w, buildErr)
 			return
@@ -99,7 +99,7 @@ func (s *HTTPServer) handleStatusPage(w http.ResponseWriter, r *http.Request, ro
 }
 
 // renderBuildErrorPage renders an error page when build fails.
-func (s *HTTPServer) renderBuildErrorPage(w http.ResponseWriter, buildErr error) {
+func (s *Server) renderBuildErrorPage(w http.ResponseWriter, buildErr error) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
 
@@ -114,7 +114,7 @@ func (s *HTTPServer) renderBuildErrorPage(w http.ResponseWriter, buildErr error)
 }
 
 // renderBuildPendingPage renders a page shown while build is in progress.
-func (s *HTTPServer) renderBuildPendingPage(w http.ResponseWriter) {
+func (s *Server) renderBuildPendingPage(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
 
@@ -124,15 +124,18 @@ func (s *HTTPServer) renderBuildPendingPage(w http.ResponseWriter) {
 }
 
 // getLiveReloadScript returns the livereload script tag if enabled, empty string otherwise.
-func (s *HTTPServer) getLiveReloadScript() string {
-	if !s.config.Build.LiveReload {
+func (s *Server) getLiveReloadScript() string {
+	if !s.cfg.Build.LiveReload {
 		return ""
 	}
-	return fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script>`, s.config.Daemon.HTTP.LiveReloadPort)
+	if s.opts.LiveReloadHub == nil {
+		return ""
+	}
+	return fmt.Sprintf(`<script src="http://localhost:%d/livereload.js"></script>`, s.cfg.Daemon.HTTP.LiveReloadPort)
 }
 
 // startDocsServerWithListener allows injecting a pre-bound listener (for coordinated bind checks).
-func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Listener) error {
+func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 	// Health/readiness endpoints on docs port as well for compatibility with common probe configs
 	mux.HandleFunc("/health", s.monitoringHandlers.HandleHealthCheck)
@@ -194,8 +197,8 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 
 	// Wrap with LiveReload injection middleware if enabled
 	rootWithMiddleware := rootWithCaching
-	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithCaching, s.config.Daemon.HTTP.LiveReloadPort)
+	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil {
+		rootWithMiddleware = s.injectLiveReloadScriptWithPort(rootWithCaching, s.cfg.Daemon.HTTP.LiveReloadPort)
 	}
 
 	mux.Handle("/", s.mchain(rootWithMiddleware))
@@ -211,14 +214,14 @@ func (s *HTTPServer) startDocsServerWithListener(_ context.Context, ln net.Liste
 // resolveDocsRoot picks the directory to serve. Preference order:
 // 1. <outputDir>/public if it exists (Hugo static render completed)
 // 2. <outputDir> (Hugo project scaffold / in-progress).
-func (s *HTTPServer) resolveDocsRoot() string {
-	out := s.config.Output.Directory
+func (s *Server) resolveDocsRoot() string {
+	out := s.cfg.Output.Directory
 	if out == "" {
 		out = defaultSiteDir
 	}
 	// Combine with base_directory if set and path is relative
-	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
-		out = filepath.Join(s.config.Output.BaseDirectory, out)
+	if s.cfg.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
+		out = filepath.Join(s.cfg.Output.BaseDirectory, out)
 	}
 	// Normalize to absolute path once; failures just return original path
 	if !filepath.IsAbs(out) {
@@ -260,7 +263,7 @@ func (s *HTTPServer) resolveDocsRoot() string {
 }
 
 // findNearestValidParent walks up the URL path hierarchy to find the nearest existing page.
-func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
+func (s *Server) findNearestValidParent(root, urlPath string) string {
 	// Clean the path
 	urlPath = filepath.Clean(urlPath)
 
@@ -299,7 +302,7 @@ func (s *HTTPServer) findNearestValidParent(root, urlPath string) string {
 // - Immutable assets (CSS, JS, fonts, images): 1 year (31536000s)
 // - HTML pages: no cache (to ensure content updates are immediately visible)
 // - Other assets: short cache (5 minutes).
-func (s *HTTPServer) addCacheControlHeaders(next http.Handler) http.Handler {
+func (s *Server) addCacheControlHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 

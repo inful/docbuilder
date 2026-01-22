@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net.Listener) error {
+func (s *Server) startLiveReloadServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// CORS middleware for LiveReload server (allows cross-origin requests from docs port)
@@ -30,8 +30,8 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
 	}
 
 	// LiveReload SSE endpoint
-	if s.daemon != nil && s.daemon.liveReload != nil {
-		mux.Handle("/livereload", corsMiddleware(s.daemon.liveReload))
+	if s.opts.LiveReloadHub != nil {
+		mux.Handle("/livereload", corsMiddleware(s.opts.LiveReloadHub))
 		mux.HandleFunc("/livereload.js", func(w http.ResponseWriter, _ *http.Request) {
 			// Add CORS headers for script loading
 			w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -47,7 +47,7 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
     es.onerror = ()=>{ console.warn('[docbuilder] livereload error - retrying'); es.close(); setTimeout(connect,2000); };
   }
   connect();
-})();`, s.config.Daemon.HTTP.LiveReloadPort)
+})();`, s.cfg.Daemon.HTTP.LiveReloadPort)
 			if _, err := w.Write([]byte(script)); err != nil {
 				slog.Error("failed to write livereload script", "error", err)
 			}
@@ -62,7 +62,7 @@ func (s *HTTPServer) startLiveReloadServerWithListener(_ context.Context, ln net
 
 // injectLiveReloadScriptWithPort is a middleware that injects the LiveReload client script
 // into HTML responses, configured to connect to the specified port.
-func (s *HTTPServer) injectLiveReloadScriptWithPort(next http.Handler, port int) http.Handler {
+func (s *Server) injectLiveReloadScriptWithPort(next http.Handler, port int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Only inject into HTML pages (not assets, API endpoints, etc.)
 		path := r.URL.Path

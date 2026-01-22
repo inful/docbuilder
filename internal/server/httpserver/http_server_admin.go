@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -9,35 +9,32 @@ import (
 	"time"
 )
 
-func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.Listener) error {
+func (s *Server) startAdminServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Health check endpoint
-	mux.HandleFunc(s.config.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
+	mux.HandleFunc(s.cfg.Monitoring.Health.Path, s.monitoringHandlers.HandleHealthCheck)
 	mux.HandleFunc("/healthz", s.monitoringHandlers.HandleHealthCheck) // Kubernetes-style alias
 	// Readiness endpoint: only ready when a rendered site exists under <output>/public
 	mux.HandleFunc("/ready", s.handleReadiness)
 	mux.HandleFunc("/readyz", s.handleReadiness) // Kubernetes-style alias
 	// Add enhanced health check endpoint (if daemon is available)
-	if s.daemon != nil {
-		mux.HandleFunc("/health/detailed", s.daemon.EnhancedHealthHandler)
+	if s.opts.EnhancedHealthHandle != nil {
+		mux.HandleFunc("/health/detailed", s.opts.EnhancedHealthHandle)
 	} else {
-		// Fallback for refactored daemon
 		mux.HandleFunc("/health/detailed", s.monitoringHandlers.HandleHealthCheck)
 	}
 
 	// Metrics endpoint
-	if s.config.Monitoring.Metrics.Enabled {
-		mux.HandleFunc(s.config.Monitoring.Metrics.Path, s.monitoringHandlers.HandleMetrics)
-		// Add detailed metrics endpoint (if daemon is available)
-		if s.daemon != nil && s.daemon.metrics != nil {
-			mux.HandleFunc("/metrics/detailed", s.daemon.metrics.MetricsHandler)
+	if s.cfg.Monitoring.Metrics.Enabled {
+		mux.HandleFunc(s.cfg.Monitoring.Metrics.Path, s.monitoringHandlers.HandleMetrics)
+		if s.opts.DetailedMetricsHandle != nil {
+			mux.HandleFunc("/metrics/detailed", s.opts.DetailedMetricsHandle)
 		} else {
-			// Fallback for refactored daemon
 			mux.HandleFunc("/metrics/detailed", s.monitoringHandlers.HandleMetrics)
 		}
-		if h := prometheusOptionalHandler(); h != nil {
-			mux.Handle("/metrics/prometheus", h)
+		if s.opts.PrometheusHandler != nil {
+			mux.Handle("/metrics/prometheus", s.opts.PrometheusHandler)
 		}
 	}
 
@@ -50,20 +47,22 @@ func (s *HTTPServer) startAdminServerWithListener(_ context.Context, ln net.List
 	mux.HandleFunc("/api/repositories", s.buildHandlers.HandleRepositories)
 
 	// Status page endpoint (HTML and JSON)
-	mux.HandleFunc("/status", s.daemon.StatusHandler)
+	if s.opts.StatusHandle != nil {
+		mux.HandleFunc("/status", s.opts.StatusHandle)
+	}
 
 	s.adminServer = &http.Server{Handler: s.mchain(mux), ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 120 * time.Second}
 	return s.startServerWithListener("admin", s.adminServer, ln)
 }
 
-func (s *HTTPServer) handleReadiness(w http.ResponseWriter, _ *http.Request) {
-	out := s.config.Output.Directory
+func (s *Server) handleReadiness(w http.ResponseWriter, _ *http.Request) {
+	out := s.cfg.Output.Directory
 	if out == "" {
 		out = defaultSiteDir
 	}
 	// Combine with base_directory if set and path is relative
-	if s.config.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
-		out = filepath.Join(s.config.Output.BaseDirectory, out)
+	if s.cfg.Output.BaseDirectory != "" && !filepath.IsAbs(out) {
+		out = filepath.Join(s.cfg.Output.BaseDirectory, out)
 	}
 	if !filepath.IsAbs(out) {
 		if abs, err := filepath.Abs(out); err == nil {

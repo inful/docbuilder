@@ -1,8 +1,9 @@
 ---
-uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
 aliases:
   - /_uid/4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7/
-fingerprint: 7aecb8a52a32e5f3f4867190e5a5456eb545d84aadd46266bdfa247dc541920b
+fingerprint: 55984b3453b9761e72ed5412a09cbed1abedb82b6e99d553f9e41ae043576c29
+lastmod: "2026-01-22"
+uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
 ---
 
 # VS Code Edit Link Integration for Preview Mode
@@ -48,7 +49,7 @@ Then navigate to the documentation site at `http://localhost:1316`. All "Edit th
    - Handles "vscode" forge type
    - Generates `/_edit/<filepath>` URLs
 
-3. **HTTP Handler** (`internal/daemon/vscode_edit_handler.go`)
+3. **HTTP Handler** (`internal/server/httpserver/vscode_edit_handler.go`)
    - Registered at `/_edit/` endpoint
    - Validates paths against docs directory
    - Executes `code` command with timeout

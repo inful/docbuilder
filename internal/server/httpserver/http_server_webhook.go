@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (s *HTTPServer) startWebhookServerWithListener(_ context.Context, ln net.Listener) error {
+func (s *Server) startWebhookServerWithListener(_ context.Context, ln net.Listener) error {
 	mux := http.NewServeMux()
 
 	// Webhook endpoints for each forge type

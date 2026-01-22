@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: 19a69b053f8763852da0f901eb92ee8650940785775164d7e90639121a4538a5
+fingerprint: c9937c835e27979ba5dfdcd89eb195bae44a32e54709ded4d5f14af5171c2874
 lastmod: "2026-01-22"
 tags:
   - daemon
@@ -19,7 +19,7 @@ uid: 9a3b1d41-7504-4c45-9a93-f18b4d6ccf1b
 
 # ADR-017 Implementation Plan: Split daemon responsibilities
 
-**Status**: Proposed  
+**Status**: In Progress  
 **Date**: 2026-01-22  
 **Decision Makers**: DocBuilder Core Team
 
@@ -65,13 +65,15 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 **Notes / Deviations**
 
 - Preview entrypoint moved to `internal/preview` and CLI now calls it.
-- Preview still reuses daemon HTTP server wiring (`daemon.NewHTTPServer`) until Step 2.
+- Preview initially reused daemon HTTP server wiring (`daemon.NewHTTPServer`) until Step 2.
 - Introduced `daemon.NewPreviewDaemon(...)` to construct the minimal daemon required by the HTTP server.
 - Exported the build status method (`GetStatus`) so preview build status can be implemented outside `internal/daemon`.
 
 ### 2) Extract HTTP server wiring
 
 **Target**: separate HTTP runtime wiring from daemon lifecycle.
+
+**Status**: Completed (2026-01-22)
 
 - Create `internal/server/httpserver` (name can change) to own:
   - `HTTPServer` start/stop
@@ -86,6 +88,13 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 - Daemon uses `httpserver.New(...)` instead of owning HTTP server internals.
 - Preview can reuse the HTTP server wiring with a different adapter.
 - HTTP-related tests continue to pass.
+
+**Notes / Deviations**
+
+- Implemented as `internal/server/httpserver` with `httpserver.New(cfg, runtime, opts)` and a `Runtime` interface.
+- Preview and daemon now both construct the server via `httpserver.New(...)`.
+- Build-status and LiveReload behavior in the docs server is driven via injected options (`Options.BuildStatus`, `Options.LiveReloadHub`) instead of direct daemon references.
+- Moved VS Code edit handler into the new httpserver package so preview/daemon wiring stays centralized.
 
 ### 3) Extract build queue + job model
 

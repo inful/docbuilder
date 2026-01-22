@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -16,14 +16,16 @@ import (
 	smw "git.home.luguber.info/inful/docbuilder/internal/server/middleware"
 )
 
-// HTTPServer manages HTTP endpoints (docs, webhooks, admin) for the daemon.
-type HTTPServer struct {
+const defaultSiteDir = "./site"
+
+// Server manages HTTP endpoints (docs, webhooks, admin).
+type Server struct {
 	docsServer       *http.Server
 	webhookServer    *http.Server
 	adminServer      *http.Server
 	liveReloadServer *http.Server
-	config           *config.Config
-	daemon           *Daemon // Reference to main daemon service
+	cfg              *config.Config
+	opts             Options
 	errorAdapter     *derrors.HTTPErrorAdapter
 
 	// VS Code edit link behavior dependencies (injected for tests).
@@ -43,42 +45,30 @@ type HTTPServer struct {
 	mchain func(http.Handler) http.Handler
 }
 
-// NewHTTPServer creates a new HTTP server instance with the specified configuration.
-func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
-	s := &HTTPServer{
-		config:              cfg,
-		daemon:              daemon,
+// New constructs a new HTTP server wiring instance.
+func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
+	if opts.ForgeClients == nil {
+		opts.ForgeClients = map[string]forge.Client{}
+	}
+	if opts.WebhookConfigs == nil {
+		opts.WebhookConfigs = map[string]*config.WebhookConfig{}
+	}
+
+	s := &Server{
+		cfg:                 cfg,
+		opts:                opts,
 		errorAdapter:        derrors.NewHTTPErrorAdapter(slog.Default()),
 		vscodeFindCLI:       findCodeCLI,
 		vscodeFindIPCSocket: findVSCodeIPCSocket,
 	}
 
-	// Create adapter for interfaces that need it
-	adapter := &daemonAdapter{daemon: daemon}
+	adapter := &runtimeAdapter{runtime: runtime}
 
 	// Initialize handler modules
 	s.monitoringHandlers = handlers.NewMonitoringHandlers(adapter)
 	s.apiHandlers = handlers.NewAPIHandlers(cfg, adapter)
 	s.buildHandlers = handlers.NewBuildHandlers(adapter)
-
-	// Extract webhook configs and forge clients for webhook handlers
-	webhookConfigs := make(map[string]*config.WebhookConfig)
-	forgeClients := make(map[string]forge.Client)
-	if daemon != nil && daemon.forgeManager != nil {
-		for forgeName := range daemon.forgeManager.GetAllForges() {
-			client := daemon.forgeManager.GetForge(forgeName)
-			if client != nil {
-				forgeClients[forgeName] = client
-			}
-		}
-	}
-	for _, forge := range cfg.Forges {
-		if forge.Webhook != nil {
-			webhookConfigs[forge.Name] = forge.Webhook
-		}
-	}
-
-	s.webhookHandlers = handlers.NewWebhookHandlers(adapter, forgeClients, webhookConfigs)
+	s.webhookHandlers = handlers.NewWebhookHandlers(adapter, opts.ForgeClients, opts.WebhookConfigs)
 
 	// Initialize middleware chain
 	s.mchain = smw.Chain(slog.Default(), s.errorAdapter)
@@ -86,87 +76,27 @@ func NewHTTPServer(cfg *config.Config, daemon *Daemon) *HTTPServer {
 	return s
 }
 
-// daemonAdapter adapts Daemon to handler interfaces.
-type daemonAdapter struct {
-	daemon *Daemon
+type runtimeAdapter struct {
+	runtime Runtime
 }
 
-func (a *daemonAdapter) GetStatus() string {
-	return string(a.daemon.GetStatus())
+func (a *runtimeAdapter) GetStatus() string             { return a.runtime.GetStatus() }
+func (a *runtimeAdapter) GetActiveJobs() int            { return a.runtime.GetActiveJobs() }
+func (a *runtimeAdapter) GetStartTime() time.Time       { return a.runtime.GetStartTime() }
+func (a *runtimeAdapter) HTTPRequestsTotal() int        { return a.runtime.HTTPRequestsTotal() }
+func (a *runtimeAdapter) RepositoriesTotal() int        { return a.runtime.RepositoriesTotal() }
+func (a *runtimeAdapter) LastDiscoveryDurationSec() int { return a.runtime.LastDiscoveryDurationSec() }
+func (a *runtimeAdapter) LastBuildDurationSec() int     { return a.runtime.LastBuildDurationSec() }
+func (a *runtimeAdapter) TriggerDiscovery() string      { return a.runtime.TriggerDiscovery() }
+func (a *runtimeAdapter) TriggerBuild() string          { return a.runtime.TriggerBuild() }
+func (a *runtimeAdapter) TriggerWebhookBuild(r, b string) string {
+	return a.runtime.TriggerWebhookBuild(r, b)
 }
-
-func (a *daemonAdapter) GetActiveJobs() int {
-	return a.daemon.GetActiveJobs()
-}
-
-func (a *daemonAdapter) GetStartTime() time.Time {
-	return a.daemon.GetStartTime()
-}
-
-// HTTPRequestsTotal is a metrics bridge for MonitoringHandlers.
-func (a *daemonAdapter) HTTPRequestsTotal() int {
-	if a.daemon == nil || a.daemon.metrics == nil {
-		return 0
-	}
-	snap := a.daemon.metrics.GetSnapshot()
-	if v, ok := snap.Counters["http_requests_total"]; ok {
-		return int(v)
-	}
-	return 0
-}
-
-func (a *daemonAdapter) RepositoriesTotal() int {
-	if a.daemon == nil || a.daemon.metrics == nil {
-		return 0
-	}
-	snap := a.daemon.metrics.GetSnapshot()
-	if v, ok := snap.Gauges["repositories_discovered"]; ok {
-		return int(v)
-	}
-	return 0
-}
-
-func (a *daemonAdapter) LastDiscoveryDurationSec() int {
-	if a.daemon == nil || a.daemon.metrics == nil {
-		return 0
-	}
-	snap := a.daemon.metrics.GetSnapshot()
-	if h, ok := snap.Histograms["discovery_duration_seconds"]; ok {
-		return int(h.Mean)
-	}
-	return 0
-}
-
-func (a *daemonAdapter) LastBuildDurationSec() int {
-	if a.daemon == nil || a.daemon.metrics == nil {
-		return 0
-	}
-	snap := a.daemon.metrics.GetSnapshot()
-	if h, ok := snap.Histograms["build_duration_seconds"]; ok {
-		return int(h.Mean)
-	}
-	return 0
-}
-
-func (a *daemonAdapter) TriggerDiscovery() string {
-	return a.daemon.TriggerDiscovery()
-}
-
-func (a *daemonAdapter) TriggerBuild() string {
-	return a.daemon.TriggerBuild()
-}
-
-func (a *daemonAdapter) TriggerWebhookBuild(repoFullName, branch string) string {
-	return a.daemon.TriggerWebhookBuild(repoFullName, branch)
-}
-
-func (a *daemonAdapter) GetQueueLength() int {
-	return a.daemon.GetQueueLength()
-}
+func (a *runtimeAdapter) GetQueueLength() int { return a.runtime.GetQueueLength() }
 
 // Start initializes and starts all HTTP servers.
-func (s *HTTPServer) Start(ctx context.Context) error {
-	if s.config.Daemon == nil {
+func (s *Server) Start(ctx context.Context) error {
+	if s.cfg.Daemon == nil {
 		return errors.New("daemon configuration required for HTTP servers")
 	}
 
@@ -178,13 +108,13 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 		ln   net.Listener
 	}
 	binds := []preBind{
-		{name: "docs", port: s.config.Daemon.HTTP.DocsPort},
-		{name: "webhook", port: s.config.Daemon.HTTP.WebhookPort},
-		{name: "admin", port: s.config.Daemon.HTTP.AdminPort},
+		{name: "docs", port: s.cfg.Daemon.HTTP.DocsPort},
+		{name: "webhook", port: s.cfg.Daemon.HTTP.WebhookPort},
+		{name: "admin", port: s.cfg.Daemon.HTTP.AdminPort},
 	}
 	// Add LiveReload port if LiveReload is enabled
-	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil {
-		binds = append(binds, preBind{name: "livereload", port: s.config.Daemon.HTTP.LiveReloadPort})
+	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil {
+		binds = append(binds, preBind{name: "livereload", port: s.cfg.Daemon.HTTP.LiveReloadPort})
 	}
 	var bindErrs []error
 	lc := net.ListenConfig{}
@@ -219,26 +149,26 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 	}
 
 	// Start LiveReload server if enabled
-	if s.config.Build.LiveReload && s.daemon != nil && s.daemon.liveReload != nil && len(binds) > 3 {
+	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil && len(binds) > 3 {
 		if err := s.startLiveReloadServerWithListener(ctx, binds[3].ln); err != nil {
 			return fmt.Errorf("failed to start livereload server: %w", err)
 		}
 		slog.Info("HTTP servers started",
-			slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
-			slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
-			slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort),
-			slog.Int("livereload_port", s.config.Daemon.HTTP.LiveReloadPort))
+			slog.Int("docs_port", s.cfg.Daemon.HTTP.DocsPort),
+			slog.Int("webhook_port", s.cfg.Daemon.HTTP.WebhookPort),
+			slog.Int("admin_port", s.cfg.Daemon.HTTP.AdminPort),
+			slog.Int("livereload_port", s.cfg.Daemon.HTTP.LiveReloadPort))
 	} else {
 		slog.Info("HTTP servers started",
-			slog.Int("docs_port", s.config.Daemon.HTTP.DocsPort),
-			slog.Int("webhook_port", s.config.Daemon.HTTP.WebhookPort),
-			slog.Int("admin_port", s.config.Daemon.HTTP.AdminPort))
+			slog.Int("docs_port", s.cfg.Daemon.HTTP.DocsPort),
+			slog.Int("webhook_port", s.cfg.Daemon.HTTP.WebhookPort),
+			slog.Int("admin_port", s.cfg.Daemon.HTTP.AdminPort))
 	}
 	return nil
 }
 
 // Stop gracefully shuts down all HTTP servers.
-func (s *HTTPServer) Stop(ctx context.Context) error {
+func (s *Server) Stop(ctx context.Context) error {
 	var errs []error
 
 	// Stop servers in reverse order
@@ -276,7 +206,7 @@ func (s *HTTPServer) Stop(ctx context.Context) error {
 
 // startServerWithListener launches an http.Server on a pre-bound listener or binds itself.
 // It standardizes goroutine startup and error logging across server types.
-func (s *HTTPServer) startServerWithListener(kind string, srv *http.Server, ln net.Listener) error {
+func (s *Server) startServerWithListener(kind string, srv *http.Server, ln net.Listener) error {
 	go func() {
 		var err error
 		if ln != nil {

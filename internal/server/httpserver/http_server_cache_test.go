@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"net/http"
@@ -55,13 +55,9 @@ func TestCacheControlHeaders(t *testing.T) {
 		{"/idx.search.json", ""},
 	}
 
-	// Create a minimal HTTP server instance
-	cfg := &config.Config{
-		Daemon: &config.DaemonConfig{},
-	}
-	srv := &HTTPServer{
-		config: cfg,
-	}
+	// Create a minimal server instance
+	cfg := &config.Config{Daemon: &config.DaemonConfig{}}
+	srv := &Server{cfg: cfg}
 
 	// Simple handler that just returns 200 OK
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -81,8 +77,7 @@ func TestCacheControlHeaders(t *testing.T) {
 
 			gotCache := rec.Header().Get("Cache-Control")
 			if gotCache != tt.expectedCache {
-				t.Errorf("path %s: expected Cache-Control %q, got %q",
-					tt.path, tt.expectedCache, gotCache)
+				t.Errorf("path %s: expected Cache-Control %q, got %q", tt.path, tt.expectedCache, gotCache)
 			}
 		})
 	}
@@ -92,13 +87,9 @@ func TestCacheControlHeaders(t *testing.T) {
 func TestCacheControlNoInterferenceWithLiveReload(t *testing.T) {
 	cfg := &config.Config{
 		Daemon: &config.DaemonConfig{},
-		Build: config.BuildConfig{
-			LiveReload: true,
-		},
+		Build:  config.BuildConfig{LiveReload: true},
 	}
-	srv := &HTTPServer{
-		config: cfg,
-	}
+	srv := &Server{cfg: cfg}
 
 	simpleHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set a custom header to verify the handler was called
