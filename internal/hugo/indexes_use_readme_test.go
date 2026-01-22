@@ -1,6 +1,7 @@
 package hugo
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -197,6 +198,40 @@ invalid: [yaml
 	err := g.useReadmeAsIndex(readmeFile, indexPath, "test-repo")
 	if err == nil {
 		t.Fatal("expected error for invalid YAML")
+	}
+}
+
+// TestUseReadmeAsIndex_MalformedFrontMatter_TreatedAsAbsent ensures unterminated front matter
+// does not fail index generation (treated as absent, like legacy behavior).
+func TestUseReadmeAsIndex_MalformedFrontMatter_TreatedAsAbsent(t *testing.T) {
+	tmpDir := t.TempDir()
+	g := &Generator{
+		config:    &config.Config{},
+		outputDir: tmpDir,
+	}
+
+	// Missing closing front matter delimiter
+	readmeContent := "---\ntitle: test\n\n# Body\n"
+
+	readmeFile := &docs.DocFile{
+		Path:             "/test/README.md",
+		RelativePath:     "test/README.md",
+		TransformedBytes: []byte(readmeContent),
+	}
+
+	indexPath := filepath.Join(tmpDir, "content", "test", "_index.md")
+	err := g.useReadmeAsIndex(readmeFile, indexPath, "test-repo")
+	if err != nil {
+		t.Fatalf("unexpected error for malformed front matter: %v", err)
+	}
+
+	// #nosec G304 -- test utility reading from test output directory
+	content, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("failed to read index file: %v", err)
+	}
+	if !bytes.Contains(content, []byte("title:")) {
+		t.Fatalf("expected generated front matter to include title, got: %s", string(content))
 	}
 }
 

@@ -660,12 +660,21 @@ func (g *Generator) mustIndexTemplate(kind string) string {
 // Returns (frontMatter map, body string, error).
 // If no front matter exists, returns (nil, originalContent, nil).
 func parseFrontMatterFromContent(content string) (map[string]any, string, error) {
-	fm, body, had, _, err := frontmatterops.Read([]byte(content))
+	fmRaw, body, had, _, err := frontmatter.Split([]byte(content))
 	if err != nil {
-		return nil, "", err
+		//nolint:nilerr // index template inputs may contain malformed/unterminated frontmatter; treat it as absent.
+		return nil, content, nil
 	}
 	if !had {
 		return nil, content, nil
+	}
+	if len(bytes.TrimSpace(fmRaw)) == 0 {
+		return map[string]any{}, string(body), nil
+	}
+
+	fm, err := frontmatter.ParseYAML(fmRaw)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to parse front matter: %w", err)
 	}
 
 	return fm, string(body), nil
