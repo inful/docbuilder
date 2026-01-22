@@ -222,17 +222,17 @@ func shouldShowBuildError(srv *HTTPServer, root, out string) bool {
 		return false
 	}
 
-	hasError, _, hasGoodBuild := srv.daemon.buildStatus.getStatus()
+	hasError, _, hasGoodBuild := srv.daemon.buildStatus.GetStatus()
 	return hasError && !hasGoodBuild
 }
 
 // serveBuildErrorPage writes a build error page to the response.
-func serveBuildErrorPage(w http.ResponseWriter, status interface{ getStatus() (bool, error, bool) }) {
+func serveBuildErrorPage(w http.ResponseWriter, status interface{ GetStatus() (bool, error, bool) }) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusServiceUnavailable)
 
 	errorMsg := "Unknown error"
-	if _, buildErr, _ := status.getStatus(); buildErr != nil {
+	if _, buildErr, _ := status.GetStatus(); buildErr != nil {
 		errorMsg = buildErr.Error()
 	}
 
@@ -307,6 +307,6 @@ type buildStatusTracker struct {
 	hasGoodBuild bool
 }
 
-func (b *buildStatusTracker) getStatus() (hasError bool, lastErr error, hasGoodBuild bool) {
+func (b *buildStatusTracker) GetStatus() (hasError bool, lastErr error, hasGoodBuild bool) {
 	return b.hasError, b.lastErr, b.hasGoodBuild
 }

@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/daemon"
+	"git.home.luguber.info/inful/docbuilder/internal/preview"
 )
 
 const configVersion = "2.0"
@@ -120,5 +120,5 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 		Paths:  []string{"."},
 	}}
 
-	return daemon.StartLocalPreview(sigctx, cfg, p.Port, tempOut)
+	return preview.StartLocalPreview(sigctx, cfg, p.Port, tempOut)
 }

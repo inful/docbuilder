@@ -81,7 +81,7 @@ func (s *HTTPServer) shouldShowStatusPage(root string) bool {
 func (s *HTTPServer) handleStatusPage(w http.ResponseWriter, r *http.Request, root string) {
 	// Check if there's a build error
 	if s.daemon != nil && s.daemon.buildStatus != nil {
-		if hasError, buildErr, hasGoodBuild := s.daemon.buildStatus.getStatus(); hasError && !hasGoodBuild {
+		if hasError, buildErr, hasGoodBuild := s.daemon.buildStatus.GetStatus(); hasError && !hasGoodBuild {
 			// Build failed - show error page
 			s.renderBuildErrorPage(w, buildErr)
 			return
