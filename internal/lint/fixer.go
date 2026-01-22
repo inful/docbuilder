@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -325,18 +324,22 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 
 	original := string(data)
 
-	frontmatterBytes, bodyBytes, _, style, splitErr := frontmatter.Split(data)
-	if splitErr != nil {
+	fields, bodyBytes, had, style, readErr := frontmatterops.Read(data)
+	if readErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("split frontmatter for fingerprint update: %w", splitErr)
+		op.Error = fmt.Errorf("read frontmatter for fingerprint update: %w", readErr)
 		return op
 	}
-
-	fields, parseErr := frontmatter.ParseYAML(frontmatterBytes)
-	if parseErr != nil {
-		op.Success = false
-		op.Error = fmt.Errorf("parse YAML frontmatter for fingerprint update: %w", parseErr)
-		return op
+	if style.Newline == "" {
+		style.Newline = "\n"
+	}
+	if fields == nil {
+		fields = map[string]any{}
+	}
+	if !had {
+		// Keep legacy behavior: ensure fingerprint fixer always writes frontmatter.
+		had = true
+		bodyBytes = data
 	}
 
 	nowFn := f.nowFn
@@ -351,14 +354,13 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
-	updatedFrontmatter, serializeErr := frontmatter.SerializeYAML(fields, style)
-	if serializeErr != nil {
+	updatedBytes, writeErr := frontmatterops.Write(fields, bodyBytes, had, style)
+	if writeErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("serialize YAML frontmatter for fingerprint update: %w", serializeErr)
+		op.Error = fmt.Errorf("write frontmatter for fingerprint update: %w", writeErr)
 		return op
 	}
-
-	updated := string(frontmatter.Join(updatedFrontmatter, bodyBytes, true, style))
+	updated := string(updatedBytes)
 
 	// The fixer historically preserves uid across any rewrite; keep that behavior.
 	updated = preserveUIDAcrossContentRewrite(original, updated)

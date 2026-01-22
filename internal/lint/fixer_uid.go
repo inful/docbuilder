@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strings"
 
-	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -27,17 +26,12 @@ func preserveUIDAcrossContentRewrite(original, updated string) string {
 }
 
 func extractUIDFromFrontmatter(content string) (string, bool) {
-	fmRaw, _, had, _, err := frontmatter.Split([]byte(content))
+	fields, _, had, _, err := frontmatterops.Read([]byte(content))
 	if err != nil || !had {
 		return "", false
 	}
 
-	fm, err := frontmatter.ParseYAML(fmRaw)
-	if err != nil {
-		return "", false
-	}
-
-	val, ok := fm["uid"]
+	val, ok := fields["uid"]
 	if !ok {
 		return "", false
 	}
@@ -54,17 +48,15 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 		return content, false
 	}
 
-	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	fields, body, had, style, err := frontmatterops.Read([]byte(content))
 	if err != nil {
 		return content, false
 	}
-
-	fields := map[string]any{}
-	if had {
-		fields, err = frontmatter.ParseYAML(fmRaw)
-		if err != nil {
-			return content, false
-		}
+	if style.Newline == "" {
+		style.Newline = "\n"
+	}
+	if fields == nil {
+		fields = map[string]any{}
 	}
 
 	uidChanged, err := frontmatterops.EnsureUIDValue(fields, uid)
@@ -72,11 +64,6 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 		return content, false
 	}
 	if !uidChanged {
-		return content, false
-	}
-
-	fmYAML, err := frontmatter.SerializeYAML(fields, style)
-	if err != nil {
 		return content, false
 	}
 
@@ -89,7 +76,11 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 		}
 	}
 
-	return string(frontmatter.Join(fmYAML, body, had, style)), true
+	out, err := frontmatterops.Write(fields, body, had, style)
+	if err != nil {
+		return content, false
+	}
+	return string(out), true
 }
 
 func (f *Fixer) applyUIDFixes(targets map[string]struct{}, uidIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -165,19 +156,16 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 }
 
 func addUIDIfMissing(content string) (string, bool) {
-	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	fields, body, had, style, err := frontmatterops.Read([]byte(content))
 	if err != nil {
 		// Malformed frontmatter; don't try to guess.
 		return content, false
 	}
-
-	fields := map[string]any{}
-	if had {
-		fields, err = frontmatter.ParseYAML(fmRaw)
-		if err != nil {
-			// Malformed YAML; don't try to guess.
-			return content, false
-		}
+	if style.Newline == "" {
+		style.Newline = "\n"
+	}
+	if fields == nil {
+		fields = map[string]any{}
 	}
 
 	uid, uidChanged, err := frontmatterops.EnsureUID(fields)
@@ -188,11 +176,6 @@ func addUIDIfMissing(content string) (string, bool) {
 	// Best-effort: if this fails, keep UID but skip alias.
 	_, _ = frontmatterops.EnsureUIDAlias(fields, uid)
 
-	fmYAML, err := frontmatter.SerializeYAML(fields, style)
-	if err != nil {
-		return content, false
-	}
-
 	if !had {
 		had = true
 		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
@@ -202,7 +185,11 @@ func addUIDIfMissing(content string) (string, bool) {
 		}
 	}
 
-	return string(frontmatter.Join(fmYAML, body, had, style)), true
+	out, err := frontmatterops.Write(fields, body, had, style)
+	if err != nil {
+		return content, false
+	}
+	return string(out), true
 }
 
 func (f *Fixer) applyUIDAliasesFixes(targets map[string]struct{}, uidAliasIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -280,14 +267,12 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 }
 
 func addUIDAliasIfMissing(content, uid string) (string, bool) {
-	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
+	fields, body, had, style, err := frontmatterops.Read([]byte(content))
 	if err != nil || !had {
 		return content, false
 	}
-
-	fields, err := frontmatter.ParseYAML(fmRaw)
-	if err != nil {
-		return content, false
+	if style.Newline == "" {
+		style.Newline = "\n"
 	}
 
 	changed, err := frontmatterops.EnsureUIDAlias(fields, uid)
@@ -295,9 +280,9 @@ func addUIDAliasIfMissing(content, uid string) (string, bool) {
 		return content, false
 	}
 
-	fmYAML, err := frontmatter.SerializeYAML(fields, style)
+	out, err := frontmatterops.Write(fields, body, had, style)
 	if err != nil {
 		return content, false
 	}
-	return string(frontmatter.Join(fmYAML, body, had, style)), true
+	return string(out), true
 }
