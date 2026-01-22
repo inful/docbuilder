@@ -119,7 +119,7 @@ Add tests for:
 - `EnsureTitle(fields, fallback)` sets title only when missing/empty.
 - `EnsureDate(fields, commitDate, now)` sets date only when missing; preserves existing string/time shapes.
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `14db03c`
 
 ### Step 2.4 — GREEN: implement base fields helpers
 
@@ -129,7 +129,7 @@ Implement:
 - `EnsureTitle(fields map[string]any, fallback string) (changed bool)`
 - `EnsureDate(fields map[string]any, commitDate time.Time, now time.Time) (changed bool)`
 
-**Completion**: _date:_ ____  _commit:_ `____`
+**Completion**: _date:_ 2026-01-22  _commit:_ `14db03c`
 
 ---
 
