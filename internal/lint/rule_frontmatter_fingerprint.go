@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"github.com/inful/mdfp"
 )
 
@@ -20,12 +21,6 @@ import (
 type FrontmatterFingerprintRule struct{}
 
 const frontmatterFingerprintRuleName = "frontmatter-fingerprint"
-
-const (
-	frontmatterFingerprintHashKeyAliases = "aliases"
-	frontmatterFingerprintHashKeyLastmod = "lastmod"
-	frontmatterFingerprintHashKeyUID     = "uid"
-)
 
 func (r *FrontmatterFingerprintRule) Name() string {
 	return frontmatterFingerprintRuleName
@@ -137,33 +132,10 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 		}, nil
 	}
 
-	fieldsForHash := make(map[string]any, len(fields))
-	for k, v := range fields {
-		if k == mdfp.FingerprintField {
-			continue
-		}
-		if k == frontmatterFingerprintHashKeyLastmod {
-			continue
-		}
-		if k == frontmatterFingerprintHashKeyUID {
-			continue
-		}
-		if k == frontmatterFingerprintHashKeyAliases {
-			continue
-		}
-		fieldsForHash[k] = v
+	expected, err := frontmatterops.ComputeFingerprint(fields, bodyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("compute fingerprint for check: %w", err)
 	}
-
-	frontmatterForHash := ""
-	if len(fieldsForHash) > 0 {
-		serialized, serializeErr := frontmatter.SerializeYAML(fieldsForHash, frontmatter.Style{Newline: "\n"})
-		if serializeErr != nil {
-			return nil, fmt.Errorf("serialize frontmatter for fingerprint check: %w", serializeErr)
-		}
-		frontmatterForHash = strings.TrimSuffix(string(serialized), "\n")
-	}
-
-	expected := mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
 	if expected == currentFingerprint {
 		return nil, nil
 	}

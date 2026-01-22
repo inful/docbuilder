@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
-	"github.com/inful/mdfp"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
 const (
@@ -40,14 +40,6 @@ func NewFixer(linter *Linter, dryRun, force bool) *Fixer {
 		autoConfirm: false,
 		nowFn:       time.Now,
 	}
-}
-
-func (f *Fixer) todayUTC() string {
-	nowFn := f.nowFn
-	if nowFn == nil {
-		nowFn = time.Now
-	}
-	return nowFn().UTC().Format("2006-01-02")
 }
 
 // Fix attempts to automatically fix issues found in the given path.
@@ -347,43 +339,16 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
-	oldFP, _ := fields[mdfp.FingerprintField].(string)
-
-	fieldsForHash := make(map[string]any, len(fields))
-	for k, v := range fields {
-		if k == mdfp.FingerprintField {
-			continue
-		}
-		if k == "lastmod" {
-			continue
-		}
-		if k == "uid" {
-			continue
-		}
-		if k == "aliases" {
-			continue
-		}
-		fieldsForHash[k] = v
+	nowFn := f.nowFn
+	if nowFn == nil {
+		nowFn = time.Now
 	}
 
-	frontmatterForHash := ""
-	if len(fieldsForHash) > 0 {
-		hashStyle := frontmatter.Style{Newline: "\n"}
-		serialized, serializeErr := frontmatter.SerializeYAML(fieldsForHash, hashStyle)
-		if serializeErr != nil {
-			op.Success = false
-			op.Error = fmt.Errorf("serialize frontmatter for fingerprint update: %w", serializeErr)
-			return op
-		}
-		frontmatterForHash = strings.TrimSuffix(string(serialized), "\n")
-	}
-
-	computedFP := mdfp.CalculateFingerprintFromParts(frontmatterForHash, string(bodyBytes))
-	fields[mdfp.FingerprintField] = computedFP
-
-	// ADR-011: If fingerprint changes, update lastmod (YYYY-MM-DD, UTC).
-	if computedFP != "" && strings.TrimSpace(computedFP) != strings.TrimSpace(oldFP) {
-		fields["lastmod"] = f.todayUTC()
+	_, _, upsertErr := frontmatterops.UpsertFingerprintAndMaybeLastmod(fields, bodyBytes, nowFn())
+	if upsertErr != nil {
+		op.Success = false
+		op.Error = fmt.Errorf("upsert fingerprint: %w", upsertErr)
+		return op
 	}
 
 	updatedFrontmatter, serializeErr := frontmatter.SerializeYAML(fields, style)
