@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
-
-	"github.com/google/uuid"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
 func preserveUIDAcrossContentRewrite(original, updated string) string {
@@ -69,10 +67,13 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 		}
 	}
 
-	if _, ok := fields["uid"]; ok {
+	uidChanged, err := frontmatterops.EnsureUIDValue(fields, uid)
+	if err != nil {
 		return content, false
 	}
-	fields["uid"] = uid
+	if !uidChanged {
+		return content, false
+	}
 
 	fmYAML, err := frontmatter.SerializeYAML(fields, style)
 	if err != nil {
@@ -164,11 +165,6 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 }
 
 func addUIDIfMissing(content string) (string, bool) {
-	uid := uuid.NewString()
-	return addUIDAndAliasIfMissing(content, uid, true)
-}
-
-func addUIDAndAliasIfMissing(content, uid string, includeAlias bool) (string, bool) {
 	fmRaw, body, had, style, err := frontmatter.Split([]byte(content))
 	if err != nil {
 		// Malformed frontmatter; don't try to guess.
@@ -184,14 +180,13 @@ func addUIDAndAliasIfMissing(content, uid string, includeAlias bool) (string, bo
 		}
 	}
 
-	if _, ok := fields["uid"]; ok {
+	uid, uidChanged, err := frontmatterops.EnsureUID(fields)
+	if err != nil || !uidChanged {
 		return content, false
 	}
 
-	fields["uid"] = uid
-	if includeAlias {
-		_ = ensureUIDAlias(fields, uid)
-	}
+	// Best-effort: if this fails, keep UID but skip alias.
+	_, _ = frontmatterops.EnsureUIDAlias(fields, uid)
 
 	fmYAML, err := frontmatter.SerializeYAML(fields, style)
 	if err != nil {
@@ -208,61 +203,6 @@ func addUIDAndAliasIfMissing(content, uid string, includeAlias bool) (string, bo
 	}
 
 	return string(frontmatter.Join(fmYAML, body, had, style)), true
-}
-
-func ensureUIDAlias(fields map[string]any, uid string) bool {
-	expected := "/_uid/" + uid + "/"
-
-	aliases, ok := fields["aliases"]
-	if !ok || aliases == nil {
-		fields["aliases"] = []string{expected}
-		return true
-	}
-
-	set := func(list []string) (bool, []string) {
-		if slices.Contains(list, expected) {
-			return false, list
-		}
-		return true, append(list, expected)
-	}
-
-	switch v := aliases.(type) {
-	case []string:
-		changed, out := set(v)
-		if changed {
-			fields["aliases"] = out
-		}
-		return changed
-	case []any:
-		out := make([]string, 0, len(v)+1)
-		for _, item := range v {
-			out = append(out, fmt.Sprint(item))
-		}
-		changed, out := set(out)
-		if changed {
-			fields["aliases"] = out
-		}
-		return changed
-	case string:
-		if v == expected {
-			fields["aliases"] = []string{v}
-			return false
-		}
-		fields["aliases"] = []string{v, expected}
-		return true
-	default:
-		s := strings.TrimSpace(fmt.Sprint(v))
-		if s == "" {
-			fields["aliases"] = []string{expected}
-			return true
-		}
-		if s == expected {
-			fields["aliases"] = []string{s}
-			return false
-		}
-		fields["aliases"] = []string{s, expected}
-		return true
-	}
 }
 
 func (f *Fixer) applyUIDAliasesFixes(targets map[string]struct{}, uidAliasIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -350,7 +290,8 @@ func addUIDAliasIfMissing(content, uid string) (string, bool) {
 		return content, false
 	}
 
-	if changed := ensureUIDAlias(fields, uid); !changed {
+	changed, err := frontmatterops.EnsureUIDAlias(fields, uid)
+	if err != nil || !changed {
 		return content, false
 	}
 

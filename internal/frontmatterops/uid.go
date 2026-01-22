@@ -26,6 +26,27 @@ func EnsureUID(fields map[string]any) (uidStr string, changed bool, err error) {
 	return uidStr, true, nil
 }
 
+// EnsureUIDValue ensures fields contains a uid with the provided value.
+//
+// It only sets the uid when the key is missing.
+func EnsureUIDValue(fields map[string]any, uidStr string) (changed bool, err error) {
+	if fields == nil {
+		return false, errors.New("fields map is nil")
+	}
+
+	uidStr = strings.TrimSpace(uidStr)
+	if uidStr == "" {
+		return false, errors.New("uid is empty")
+	}
+
+	if _, ok := fields["uid"]; ok {
+		return false, nil
+	}
+
+	fields["uid"] = uidStr
+	return true, nil
+}
+
 // EnsureUIDAlias ensures fields.aliases contains "/_uid/<uid>/".
 //
 // It follows the existing lint/fix semantics closely: if aliases already contains
@@ -74,6 +95,8 @@ func EnsureUIDAlias(fields map[string]any, uid string) (changed bool, err error)
 		return aliasesChanged, nil
 	case string:
 		if strings.TrimSpace(v) == expected {
+			// Preserve existing lint/fix behavior: normalize to list, even if not counted as a change.
+			fields["aliases"] = []string{expected}
 			return false, nil
 		}
 		fields["aliases"] = []string{v, expected}
@@ -85,6 +108,7 @@ func EnsureUIDAlias(fields map[string]any, uid string) (changed bool, err error)
 			return true, nil
 		}
 		if s == expected {
+			fields["aliases"] = []string{expected}
 			return false, nil
 		}
 		fields["aliases"] = []string{s, expected}
