@@ -14,7 +14,10 @@ import (
 // Scheduler wraps gocron scheduler for managing periodic tasks.
 type Scheduler struct {
 	scheduler gocron.Scheduler
-	daemon    *Daemon // back-reference for injecting metadata into jobs
+	enqueuer  interface {
+		Enqueue(job *BuildJob) error
+	}
+	metaFactory func() *BuildJobMetadata
 }
 
 // NewScheduler creates a new scheduler instance.
@@ -29,8 +32,11 @@ func NewScheduler() (*Scheduler, error) {
 	}, nil
 }
 
-// SetDaemon injects a daemon reference post-construction to avoid an import cycle.
-func (s *Scheduler) SetDaemon(d *Daemon) { s.daemon = d }
+// SetEnqueuer injects the queue/job enqueuer.
+func (s *Scheduler) SetEnqueuer(e interface{ Enqueue(job *BuildJob) error }) { s.enqueuer = e }
+
+// SetMetaFactory injects a factory for per-job metadata.
+func (s *Scheduler) SetMetaFactory(f func() *BuildJobMetadata) { s.metaFactory = f }
 
 // Start begins the scheduler.
 func (s *Scheduler) Start(ctx context.Context) {
@@ -61,8 +67,12 @@ func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildT
 
 // executeBuild is called by gocron to execute a scheduled build.
 func (s *Scheduler) executeBuild(jobType BuildType, repos []any) {
-	if s.daemon == nil {
-		slog.Error("Daemon reference not set in scheduler")
+	if s.enqueuer == nil {
+		slog.Error("Scheduler enqueuer not set")
+		return
+	}
+	if s.metaFactory == nil {
+		slog.Error("Scheduler metadata factory not set")
 		return
 	}
 
@@ -76,14 +86,10 @@ func (s *Scheduler) executeBuild(jobType BuildType, repos []any) {
 		Type:      jobType,
 		Priority:  PriorityNormal,
 		CreatedAt: time.Now(),
-		TypedMeta: &BuildJobMetadata{
-			V2Config:      s.daemon.config,
-			StateManager:  s.daemon.stateManager,
-			LiveReloadHub: s.daemon.liveReload,
-		},
+		TypedMeta: s.metaFactory(),
 	}
 
-	if err := s.daemon.buildQueue.Enqueue(job); err != nil {
+	if err := s.enqueuer.Enqueue(job); err != nil {
 		slog.Error("Failed to enqueue scheduled build",
 			logfields.JobID(jobID),
 			logfields.Error(err))

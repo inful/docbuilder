@@ -1,13 +1,21 @@
 package daemon
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
+
+type noopBuilder struct{}
+
+func (noopBuilder) Build(context.Context, *BuildJob) (*models.BuildReport, error) {
+	return &models.BuildReport{}, nil
+}
 
 // Helper function to create a minimal daemon for status testing.
 func newTestDaemon() *Daemon {
@@ -75,14 +83,14 @@ func TestGenerateStatusData_NoConfigFile(t *testing.T) {
 
 // TestGenerateStatusData_WithBuildQueue tests with build queue present.
 func TestGenerateStatusData_WithBuildQueue(t *testing.T) {
-	bq := &BuildQueue{
-		jobs:    make(chan *BuildJob, 5),
-		maxSize: 10,
-		active:  make(map[string]*BuildJob),
+	bq := NewBuildQueue(10, 1, noopBuilder{})
+	// Add some jobs to queue (do not start workers; keep queued)
+	if err := bq.Enqueue(&BuildJob{ID: "job1"}); err != nil {
+		t.Fatalf("enqueue job1: %v", err)
 	}
-	// Add some jobs to queue
-	bq.jobs <- &BuildJob{ID: "job1"}
-	bq.jobs <- &BuildJob{ID: "job2"}
+	if err := bq.Enqueue(&BuildJob{ID: "job2"}); err != nil {
+		t.Fatalf("enqueue job2: %v", err)
+	}
 
 	d := newTestDaemon()
 	d.buildQueue = bq

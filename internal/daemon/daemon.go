@@ -149,8 +149,15 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		return nil, fmt.Errorf("failed to create scheduler: %w", err)
 	}
 	daemon.scheduler = scheduler
-	// Provide back-reference so scheduler can inject metadata (live reload hub, config, state)
-	daemon.scheduler.SetDaemon(daemon)
+	// Provide injected dependencies so scheduler can enqueue jobs without a daemon back-reference.
+	daemon.scheduler.SetEnqueuer(daemon.buildQueue)
+	daemon.scheduler.SetMetaFactory(func() *BuildJobMetadata {
+		return &BuildJobMetadata{
+			V2Config:      daemon.config,
+			StateManager:  daemon.stateManager,
+			LiveReloadHub: daemon.liveReload,
+		}
+	})
 
 	// Initialize state manager using the typed state.Service wrapped in ServiceAdapter.
 	// This bridges the new typed state system with the daemon's interface requirements.

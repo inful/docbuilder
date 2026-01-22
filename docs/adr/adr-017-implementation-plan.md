@@ -100,6 +100,8 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 
 **Target**: make build queue a reusable service with stable APIs.
 
+**Status**: Completed (2026-01-22)
+
 - Create `internal/build/queue`.
 - Move:
   - `BuildQueue`, `BuildJob`, type/priority/status enums
@@ -112,6 +114,12 @@ Reduce the scope of `internal/daemon` to a lifecycle + wiring composition root b
 - Daemon depends on `internal/build/queue`.
 - Queue package has unit tests for retry/backoff and worker behavior.
 - No `internal/build/queue` code imports `internal/daemon`.
+
+**Notes / Deviations**
+
+- Implemented `internal/build/queue` as the canonical queue implementation with queue-internal tests moved from daemon to keep coverage meaningful.
+- Added `internal/daemon/build_queue_aliases.go` to preserve existing daemon-level type names and minimize churn during the extraction.
+- Scheduler no longer holds a `*Daemon` reference; it now uses injected dependencies (enqueuer + metadata factory).
 
 ### 4) Extract discovery runner + cache
 
