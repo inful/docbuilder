@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func TestHandleVSCodeEdit_FeatureDisabled(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
 	w := httptest.NewRecorder()
 
@@ -49,7 +49,7 @@ func TestHandleVSCodeEdit_DaemonMode(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
 	w := httptest.NewRecorder()
 
@@ -71,7 +71,7 @@ func TestValidateAndResolveEditPath_InvalidPrefix(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	_, err := srv.validateAndResolveEditPath("/wrong/prefix/test.md")
 
 	if err == nil {
@@ -95,7 +95,7 @@ func TestValidateAndResolveEditPath_EmptyPath(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	_, err := srv.validateAndResolveEditPath("/_edit/")
 
 	if err == nil {
@@ -120,7 +120,7 @@ func TestValidateAndResolveEditPath_PathTraversal(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 
 	// Try to escape the docs directory
 	_, err := srv.validateAndResolveEditPath("/_edit/../../../etc/passwd")
@@ -154,7 +154,7 @@ func TestValidateAndResolveEditPath_Success(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	absPath, err := srv.validateAndResolveEditPath("/_edit/test.md")
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
@@ -167,7 +167,7 @@ func TestValidateAndResolveEditPath_Success(t *testing.T) {
 
 // TestValidateMarkdownFile_NotFound tests file not found handling.
 func TestValidateMarkdownFile_NotFound(t *testing.T) {
-	srv := &HTTPServer{}
+	srv := &Server{}
 	err := srv.validateMarkdownFile("/nonexistent/file.md")
 
 	if err == nil {
@@ -186,7 +186,7 @@ func TestValidateMarkdownFile_NotFound(t *testing.T) {
 // TestValidateMarkdownFile_Directory tests rejection of directories.
 func TestValidateMarkdownFile_Directory(t *testing.T) {
 	tmpDir := t.TempDir()
-	srv := &HTTPServer{}
+	srv := &Server{}
 	err := srv.validateMarkdownFile(tmpDir)
 
 	if err == nil {
@@ -213,7 +213,7 @@ func TestValidateMarkdownFile_NonMarkdown(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	srv := &HTTPServer{}
+	srv := &Server{}
 	err := srv.validateMarkdownFile(testFile)
 
 	if err == nil {
@@ -246,7 +246,7 @@ func TestValidateMarkdownFile_Success(t *testing.T) {
 		{"mixed case", "test.Markdown"},
 	}
 
-	srv := &HTTPServer{}
+	srv := &Server{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -278,7 +278,7 @@ func TestEditError_Error(t *testing.T) {
 
 // TestHandleEditError_EditError tests error handling for editError type.
 func TestHandleEditError_EditError(t *testing.T) {
-	srv := &HTTPServer{}
+	srv := &Server{}
 	w := httptest.NewRecorder()
 
 	err := &editError{
@@ -299,7 +299,7 @@ func TestHandleEditError_EditError(t *testing.T) {
 
 // TestHandleEditError_UnexpectedError tests error handling for unknown error types.
 func TestHandleEditError_UnexpectedError(t *testing.T) {
-	srv := &HTTPServer{}
+	srv := &Server{}
 	w := httptest.NewRecorder()
 
 	err := errors.New("unexpected error")
@@ -362,7 +362,7 @@ func TestValidateMarkdownFile_Symlink(t *testing.T) {
 		t.Skip("Cannot create symlinks on this system")
 	}
 
-	srv := &HTTPServer{}
+	srv := &Server{}
 	err := srv.validateMarkdownFile(symlinkFile)
 
 	if err == nil {
@@ -568,7 +568,7 @@ func TestGetDocsDirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			srv := &HTTPServer{config: tt.cfg}
+			srv := &Server{cfg: tt.cfg}
 			result := srv.getDocsDirectory()
 
 			switch {
@@ -683,7 +683,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 		},
 	}
 
-	srv := &HTTPServer{config: cfg}
+	srv := &Server{cfg: cfg}
 	srv.vscodeFindCLI = func(ctx context.Context) string { return "/tmp/code" }
 	srv.vscodeFindIPCSocket = func() string { return "/tmp/vscode-ipc-test.sock" }
 	srv.vscodeRunCLI = func(ctx context.Context, codeCmd string, args []string, env []string) (string, string, error) {
@@ -704,7 +704,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 
 // TestExecuteVSCodeOpen_NoSocket tests execution behavior (may find socket if VS Code running).
 func TestExecuteVSCodeOpen_NoSocket(t *testing.T) {
-	srv := &HTTPServer{}
+	srv := &Server{}
 	srv.vscodeFindCLI = func(ctx context.Context) string { return "/tmp/code" }
 	srv.vscodeFindIPCSocket = func() string { return "" }
 	srv.vscodeRunCLI = func(ctx context.Context, codeCmd string, args []string, env []string) (string, string, error) {

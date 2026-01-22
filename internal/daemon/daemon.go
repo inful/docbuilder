@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
+	"net/http"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
@@ -17,12 +19,16 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
+	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // Status represents the current state of the daemon.
-type Status string
+//
+// Note: this is a type alias (not a distinct type) so that Daemon.GetStatus()
+// satisfies interfaces that expect a plain string status.
+type Status = string
 
 const (
 	StatusStopped  Status = "stopped"
@@ -45,7 +51,7 @@ type Daemon struct {
 	forgeManager *forge.Manager
 	discovery    *forge.DiscoveryService
 	metrics      *MetricsCollector
-	httpServer   *HTTPServer
+	httpServer   *httpserver.Server
 	scheduler    *Scheduler
 	buildQueue   *BuildQueue
 	stateManager state.DaemonStateManager
@@ -69,9 +75,6 @@ type Daemon struct {
 
 	// Link verification service
 	linkVerifier *linkverify.VerificationService
-
-	// Build status tracker for preview mode (optional, used by local preview)
-	buildStatus interface{ GetStatus() (bool, error, bool) }
 }
 
 // NewDaemon creates a new daemon instance
@@ -113,9 +116,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
-
-	// Initialize HTTP server
-	daemon.httpServer = NewHTTPServer(cfg, daemon)
 
 	// Create canonical BuildService (Phase D - Single Execution Pipeline)
 	buildService := build.NewBuildService().
@@ -186,6 +186,34 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
 		slog.Info("LiveReload hub initialized")
 	}
+
+	// Initialize HTTP server wiring (extracted package)
+	webhookConfigs := make(map[string]*config.WebhookConfig)
+	for _, forgeCfg := range cfg.Forges {
+		if forgeCfg == nil {
+			continue
+		}
+		if forgeCfg.Webhook != nil {
+			webhookConfigs[forgeCfg.Name] = forgeCfg.Webhook
+		}
+	}
+	forgeClients := make(map[string]forge.Client)
+	if daemon.forgeManager != nil {
+		maps.Copy(forgeClients, daemon.forgeManager.GetAllForges())
+	}
+	var detailedMetrics http.HandlerFunc
+	if daemon.metrics != nil {
+		detailedMetrics = daemon.metrics.MetricsHandler
+	}
+	daemon.httpServer = httpserver.New(cfg, daemon, httpserver.Options{
+		ForgeClients:          forgeClients,
+		WebhookConfigs:        webhookConfigs,
+		LiveReloadHub:         daemon.liveReload,
+		EnhancedHealthHandle:  daemon.EnhancedHealthHandler,
+		DetailedMetricsHandle: detailedMetrics,
+		PrometheusHandler:     prometheusOptionalHandler(),
+		StatusHandle:          daemon.StatusHandler,
+	})
 
 	// Initialize link verification service if enabled
 	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {

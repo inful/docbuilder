@@ -1,4 +1,4 @@
-package daemon
+package httpserver
 
 import (
 	"errors"
@@ -9,9 +9,9 @@ import (
 // handleVSCodeEdit handles requests to open files in VS Code.
 // URL format: /_edit/<relative-path-to-file>
 // This handler opens the file in VS Code and redirects back to the referer.
-func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	// Check if VS Code edit links are enabled (requires --vscode flag)
-	if s.config == nil || !s.config.Build.VSCodeEditLinks {
+	if s.cfg == nil || !s.cfg.Build.VSCodeEditLinks {
 		slog.Warn("VS Code edit handler: feature not enabled - use --vscode flag",
 			slog.String("path", r.URL.Path))
 		http.Error(w, "VS Code edit links not enabled. Use --vscode flag with preview command.", http.StatusNotFound)
@@ -19,7 +19,7 @@ func (s *HTTPServer) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// VS Code edit handler is only for preview mode (single local repository)
-	if s.config.Daemon != nil && s.config.Daemon.Storage.RepoCacheDir != "" {
+	if s.cfg.Daemon != nil && s.cfg.Daemon.Storage.RepoCacheDir != "" {
 		slog.Warn("VS Code edit handler called in daemon mode - this endpoint is for preview mode only",
 			slog.String("path", r.URL.Path))
 		http.Error(w, "VS Code edit links are only available in preview mode", http.StatusNotImplemented)
@@ -62,7 +62,7 @@ func (e *editError) Error() string {
 }
 
 // handleEditError logs and responds with the appropriate error.
-func (s *HTTPServer) handleEditError(w http.ResponseWriter, err error) {
+func (s *Server) handleEditError(w http.ResponseWriter, err error) {
 	var editErr *editError
 	if ok := errors.As(err, &editErr); ok {
 		if editErr.logLevel == "error" {

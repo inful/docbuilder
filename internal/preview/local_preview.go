@@ -18,6 +18,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 )
 
 // buildStatus tracks the current build state for error display.
@@ -58,7 +59,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	buildStat := &buildStatus{}
 	previewDaemon := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
 
-	httpServer, err := startHTTPServer(ctx, cfg, previewDaemon, port)
+	httpServer, err := startHTTPServer(ctx, cfg, previewDaemon, port, buildStat)
 	if err != nil {
 		return err
 	}
@@ -104,12 +105,15 @@ func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs st
 		buildStat.setSuccess()
 	}
 
-	return daemon.NewPreviewDaemon(cfg, buildStat)
+	return daemon.NewPreviewDaemon(cfg)
 }
 
 // startHTTPServer initializes and starts the HTTP server.
-func startHTTPServer(ctx context.Context, cfg *config.Config, previewDaemon *daemon.Daemon, port int) (*daemon.HTTPServer, error) {
-	httpServer := daemon.NewHTTPServer(cfg, previewDaemon)
+func startHTTPServer(ctx context.Context, cfg *config.Config, previewDaemon *daemon.Daemon, port int, buildStat *buildStatus) (*httpserver.Server, error) {
+	httpServer := httpserver.New(cfg, previewDaemon, httpserver.Options{
+		LiveReloadHub: previewDaemon.LiveReloadHub(),
+		BuildStatus:   buildStat,
+	})
 	if err := httpServer.Start(ctx); err != nil {
 		return nil, fmt.Errorf("failed to start HTTP server: %w", err)
 	}
@@ -214,7 +218,7 @@ func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, pre
 }
 
 // runPreviewLoop handles filesystem events and graceful shutdown.
-func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), rebuildReq chan struct{}, httpServer *daemon.HTTPServer, tempOutputDir string) error {
+func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func(), rebuildReq chan struct{}, httpServer *httpserver.Server, tempOutputDir string) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -234,7 +238,7 @@ func runPreviewLoop(ctx context.Context, watcher *fsnotify.Watcher, trigger func
 }
 
 // handleShutdown performs graceful shutdown cleanup.
-func handleShutdown(ctx context.Context, httpServer *daemon.HTTPServer, rebuildReq chan struct{}, tempOutputDir string) error {
+func handleShutdown(ctx context.Context, httpServer *httpserver.Server, rebuildReq chan struct{}, tempOutputDir string) error {
 	slog.Info("Shutting down preview server...")
 
 	// Create a timeout context for graceful shutdown
