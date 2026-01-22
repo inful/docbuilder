@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
-	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
 
@@ -53,15 +52,14 @@ func fingerprintContent(doc *Document) ([]*Document, error) {
 
 	fields["fingerprint"] = computed
 
-	style := frontmatter.Style{Newline: "\n"}
-	fmOut, err := frontmatter.SerializeYAML(fields, style)
+	out, err := frontmatterops.Write(fields, parsed.Body(), true, parsed.Style())
 	if err != nil {
-		slog.Error("Failed to serialize frontmatter for fingerprinting",
+		slog.Error("Failed to write frontmatter for fingerprinting",
 			slog.String("path", doc.Path),
 			slog.Any("error", err))
 		return nil, nil
 	}
 
-	doc.Raw = frontmatter.Join(fmOut, parsed.Body(), true, style)
+	doc.Raw = out
 	return nil, nil
 }
