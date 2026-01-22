@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
@@ -19,7 +20,7 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	fmRaw, body, had, _, err := frontmatter.Split([]byte(doc.Content))
+	parsed, err := docmodel.Parse([]byte(doc.Content), docmodel.Options{})
 	if err != nil {
 		// Malformed front matter (missing closing delimiter): treat as no front matter
 		// and do not modify content.
@@ -31,7 +32,7 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		}
 		return nil, nil
 	}
-	if !had {
+	if !parsed.HadFrontmatter() {
 		// No front matter
 		doc.HadFrontMatter = false
 		doc.OriginalFrontMatter = make(map[string]any)
@@ -43,7 +44,8 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 	}
 
 	// Always remove front matter delimiters from content, even if empty/invalid.
-	doc.Content = string(body)
+	doc.Content = string(parsed.Body())
+	fmRaw := parsed.FrontmatterRaw()
 
 	if len(bytes.TrimSpace(fmRaw)) == 0 {
 		// Empty front matter - no fields but delimiters were present.
@@ -56,7 +58,7 @@ func parseFrontMatter(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	fm, err := frontmatter.ParseYAML(fmRaw)
+	fm, err := parsed.FrontmatterFields()
 	if err != nil {
 		// Invalid YAML - treat as no front matter but content already stripped.
 		doc.HadFrontMatter = false

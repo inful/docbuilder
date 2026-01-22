@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"github.com/inful/mdfp"
 )
@@ -17,7 +18,7 @@ func fingerprintContent(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	fmRaw, body, had, _, err := frontmatter.Split(doc.Raw)
+	parsed, err := docmodel.Parse(doc.Raw, docmodel.Options{})
 	if err != nil {
 		slog.Error("Failed to generate content fingerprint",
 			slog.String("path", doc.Path),
@@ -27,8 +28,8 @@ func fingerprintContent(doc *Document) ([]*Document, error) {
 	}
 
 	var fields map[string]any
-	if had {
-		fields, err = frontmatter.ParseYAML(fmRaw)
+	if parsed.HadFrontmatter() {
+		fields, err = parsed.FrontmatterFields()
 		if err != nil {
 			slog.Error("Failed to parse frontmatter for fingerprinting",
 				slog.String("path", doc.Path),
@@ -58,7 +59,7 @@ func fingerprintContent(doc *Document) ([]*Document, error) {
 	}
 
 	fmForHash := trimSingleTrailingNewline(string(frontmatterForHash))
-	computed := mdfp.CalculateFingerprintFromParts(fmForHash, string(body))
+	computed := mdfp.CalculateFingerprintFromParts(fmForHash, string(parsed.Body()))
 	if existing, ok := fields["fingerprint"].(string); ok && existing == computed {
 		return nil, nil
 	}
@@ -73,7 +74,7 @@ func fingerprintContent(doc *Document) ([]*Document, error) {
 		return nil, nil
 	}
 
-	doc.Raw = frontmatter.Join(fmOut, body, true, style)
+	doc.Raw = frontmatter.Join(fmOut, parsed.Body(), true, style)
 	return nil, nil
 }
 
