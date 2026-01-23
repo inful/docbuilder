@@ -119,14 +119,16 @@ This is the key functional delta versus current link updates.
 
 ### 4) Healing strategy: focus on broken links
 
-- [ ] Use existing broken-link detection output as the primary worklist.
-- [ ] For each broken link, resolve the absolute target (existing `resolveRelativePath` behavior) and match against rename mappings.
-- [ ] Apply link updates via existing edit machinery (minimal diffs; no Markdown reformatting).
-- [ ] Ensure fingerprint refresh is triggered for updated files (consistent with current fixer behavior).
+- [x] Use existing broken-link detection output as the primary worklist.
+- [x] For each broken link, resolve the absolute target (existing `resolveRelativePath` behavior) and match against rename mappings.
+- [x] Apply link updates via existing edit machinery (minimal diffs; no Markdown reformatting).
+- [x] Ensure fingerprint refresh is triggered for updated files (consistent with current fixer behavior).
 
 **Definition of Done**
 
 - A new healing phase runs during `lint --fix` and produces `LinksUpdated` entries, without requiring the fixer to have performed the rename itself.
+
+**Completion**: 2026-01-23 — branch: `shaman-healer`
 
 ### 5) Git history detection (since last push)
 
@@ -155,8 +157,8 @@ This is the key functional delta versus current link updates.
 
 ### 7) Verification gate
 
-- [ ] `go test ./... -count=1`
-- [ ] `golangci-lint run --fix` then `golangci-lint run`
+- [x] `go test ./... -count=1`
+- [x] `golangci-lint run --fix` then `golangci-lint run`
 
 ## Notes / Risks
 
