@@ -135,7 +135,7 @@ This is the key functional delta versus current link updates.
 - [x] Detect upstream tracking branch if present.
 - [x] Extract rename mappings for commits “since last push” (HEAD vs upstream).
 - [x] Provide bounded fallback when upstream is absent.
-- [ ] Tests:
+- [x] Tests:
   - [x] uses upstream range when available
   - [x] bounded fallback works without upstream
 
@@ -147,20 +147,22 @@ This is the key functional delta versus current link updates.
 
 ### 6) Ambiguity + safety
 
-- [ ] Multiple-candidate handling:
-  - [ ] if a broken target maps to multiple plausible new targets, do not rewrite; emit a warning/result entry.
-- [ ] Scope enforcement:
-  - [ ] only heal within configured docs roots
-  - [ ] do not rewrite external links, UID alias links, or Hugo shortcodes
+- [x] Multiple-candidate handling:
+  - [x] if a broken target maps to multiple plausible new targets, do not rewrite; emit a warning/result entry.
+- [x] Scope enforcement:
+  - [x] only heal within configured docs roots
+  - [x] do not rewrite external links, UID alias links, or Hugo shortcodes
 
 **Definition of Done**
 
 - Healer never rewrites links to out-of-scope targets.
 
+**Completion**: 2026-01-23 — branch: `shaman-healer`
+
 ### 7) Verification gate
 
-- [ ] `go test ./... -count=1`
-- [ ] `golangci-lint run --fix` then `golangci-lint run`
+- [x] `go test ./... -count=1`
+- [x] `golangci-lint run --fix` then `golangci-lint run`
 
 ## Notes / Risks
 

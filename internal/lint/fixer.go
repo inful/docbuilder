@@ -115,6 +115,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		LinksUpdated: make([]LinkUpdate, 0),
 		Fingerprints: make([]FingerprintUpdate, 0),
 		BrokenLinks:  make([]BrokenLink, 0),
+		HealSkipped:  make([]BrokenLinkHealSkip, 0),
 		Errors:       make([]error, 0),
 	}
 
