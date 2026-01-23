@@ -57,57 +57,65 @@ If the final implementation deviates, update this plan and ADR-012 accordingly.
 
 ### 0) Baseline characterization (no behavior change)
 
-- [ ] Add tests that characterize existing rename + link update behavior:
-  - [ ] filename normalization rename (case/spaces) updates links correctly
-  - [ ] link updates preserve fragments (`#...`) and relative prefixes (`./`, `../`)
-  - [ ] link updates do not touch code blocks / inline code
+- [x] Add tests that characterize existing rename + link update behavior:
+  - [x] filename normalization rename (case/spaces) updates links correctly
+  - [x] link updates preserve fragments (`#...`) and relative prefixes (`./`, `../`)
+  - [x] link updates do not touch code blocks / inline code
 
 **Definition of Done**
 
 - Tests pass and clearly document current behavior and limitations.
 
+**Completion**: 2026-01-23 — commit: `41ba5d7`
+
 ### 1) Introduce rename mapping type + plumbing hooks
 
-- [ ] Add a small internal type (or reuse existing) that represents `oldAbs -> newAbs` mappings and can be fed into the link update path.
-- [ ] Add unit tests for:
-  - [ ] mapping normalization (absolute paths, docs-root scoping)
-  - [ ] de-duplication and deterministic ordering
+- [x] Add a small internal type (or reuse existing) that represents `oldAbs -> newAbs` mappings and can be fed into the link update path.
+- [x] Add unit tests for:
+  - [x] mapping normalization (absolute paths, docs-root scoping)
+  - [x] de-duplication and deterministic ordering
 
 **Definition of Done**
 
 - There is a single representation of renames used by both fixer-driven renames and Git-derived renames.
 
+**Completion**: 2026-01-23 — commit: `c664cd1`
+
 ### 2) Git rename detection (uncommitted)
 
 **Intent**: catch the common “pre-commit rename broke links” workflow.
 
-- [ ] Implement/introduce `GitRenameDetector` for uncommitted renames:
-  - [ ] staged renames
-  - [ ] unstaged renames
-- [ ] Ensure it is safe when not in a git repo: returns `(nil, nil)`.
-- [ ] Tests:
-  - [ ] returns mappings for a repo with a `git mv` rename
-  - [ ] ignores non-doc-root renames
+- [x] Implement/introduce `GitRenameDetector` for uncommitted renames:
+  - [x] staged renames
+  - [x] unstaged renames
+- [x] Ensure it is safe when not in a git repo: returns `(nil, nil)`.
+- [x] Tests:
+  - [x] returns mappings for a repo with a `git mv` rename
+  - [x] ignores non-doc-root renames
 
 **Definition of Done**
 
 - We can produce a reliable set of `(oldAbs, newAbs)` mappings for working tree/index.
 
+**Completion**: 2026-01-23 — commit: `ac7a996`
+
 ### 3) Correct link target rewriting for moved files
 
 This is the key functional delta versus current link updates.
 
-- [ ] Implement `computeUpdatedLinkTarget(sourceFile, originalTarget, oldAbs, newAbs)`.
-- [ ] Unit tests must cover:
-  - [ ] relative link targets (`../a/b.md`) moved across directories
-  - [ ] same-dir links remain minimal
-  - [ ] site-absolute links (`/docs/foo`) stay site-absolute and update correctly
-  - [ ] extension style preserved (`foo` stays `foo` if originally extensionless; `foo.md` stays `.md`)
-  - [ ] fragments preserved (`#section`)
+- [x] Implement `computeUpdatedLinkTarget(sourceFile, originalTarget, oldAbs, newAbs)`.
+- [x] Unit tests must cover:
+  - [x] relative link targets (`../a/b.md`) moved across directories
+  - [x] same-dir links remain minimal
+  - [x] site-absolute links (`/docs/foo`) stay site-absolute and update correctly
+  - [x] extension style preserved (`foo` stays `foo` if originally extensionless; `foo.md` stays `.md`)
+  - [x] fragments preserved (`#section`)
 
 **Definition of Done**
 
 - For moved targets, the updated destination resolves to `newAbs` when interpreted from `sourceFile`.
+
+**Completion**: 2026-01-23 — commit: `8c76205`
 
 ### 4) Healing strategy: focus on broken links
 
