@@ -67,16 +67,24 @@ func gitTopLevelOrSelf(ctx context.Context, dir string) string {
 }
 
 func detectScopedGitRenames(ctx context.Context, repoDir string, docsRoot string) ([]RenameMapping, error) {
-	detector := &GitUncommittedRenameDetector{}
-	mappings, err := detector.DetectRenames(ctx, repoDir)
+	uncommittedDetector := &GitUncommittedRenameDetector{}
+	uncommitted, err := uncommittedDetector.DetectRenames(ctx, repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to detect git renames: %w", err)
+		return nil, fmt.Errorf("failed to detect git uncommitted renames: %w", err)
 	}
-	if len(mappings) == 0 {
+
+	historyDetector := &GitHistoryRenameDetector{}
+	history, err := historyDetector.DetectRenames(ctx, repoDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to detect git history renames: %w", err)
+	}
+
+	combined := append(append([]RenameMapping(nil), uncommitted...), history...)
+	if len(combined) == 0 {
 		return nil, nil
 	}
 
-	normalized, err := NormalizeRenameMappings(mappings, []string{docsRoot})
+	normalized, err := NormalizeRenameMappings(combined, []string{docsRoot})
 	if err != nil {
 		return nil, fmt.Errorf("failed to normalize rename mappings: %w", err)
 	}
