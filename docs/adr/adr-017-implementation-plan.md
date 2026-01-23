@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: c9937c835e27979ba5dfdcd89eb195bae44a32e54709ded4d5f14af5171c2874
-lastmod: "2026-01-22"
+fingerprint: bdad0c609d039430a4b618f3d4522f03de56086b7d5d48936564750f79f10849
+lastmod: "2026-01-23"
 tags:
   - daemon
   - refactor

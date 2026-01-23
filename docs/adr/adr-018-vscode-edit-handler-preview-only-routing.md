@@ -1,10 +1,10 @@
-````markdown
 ---
 aliases:
   - /_uid/6b9c3b0c-1f76-45fb-8d3b-7bc8d0d8ab2b/
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
+fingerprint: 16664189e38f1c60b592da8f3bbc762ff896ccd24400c8e43ba606240b648639
 lastmod: "2026-01-23"
 tags:
   - vscode
@@ -112,5 +112,3 @@ We should keep handler-side validation as defense-in-depth (path validation, sym
 ## Related Documents
 
 - ADR-017: Split daemon responsibilities (package boundaries)
-
-````
