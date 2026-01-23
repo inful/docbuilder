@@ -66,7 +66,9 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			}
 
 			line := content[lineStart:lineEnd]
-			idx := bytes.Index(line, []byte(oldLinkText))
+			// Use the last occurrence on the line to avoid accidentally
+			// rewriting link labels or other earlier occurrences (e.g. inline code).
+			idx := bytes.LastIndex(line, []byte(oldLinkText))
 			if idx == -1 {
 				continue
 			}

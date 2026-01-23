@@ -49,6 +49,126 @@ func TestFixer_HealsBrokenLinks_FromGitUncommittedRename(t *testing.T) {
 	require.NotEmpty(t, res.LinksUpdated)
 }
 
+func TestFixer_HealsBrokenLinks_RenameBackRoundTrip(t *testing.T) {
+	for _, newName := range []string{"HubbaBubba.md", "something.md"} {
+		t.Run(newName, func(t *testing.T) {
+			repoDir := initGitRepo(t)
+			docsDir := filepath.Join(repoDir, "docs")
+			require.NoError(t, os.MkdirAll(docsDir, 0o750))
+
+			target := filepath.Join(docsDir, "test.md")
+			linkFile := filepath.Join(docsDir, "link.md")
+
+			require.NoError(t, os.WriteFile(target, []byte("# Test\n"), 0o600))
+			require.NoError(t, os.WriteFile(linkFile, []byte("[Test](test.md)\n"), 0o600))
+
+			git(t, repoDir, "add", "docs/test.md", "docs/link.md")
+			git(t, repoDir, "commit", "-m", "add docs")
+
+			// User moves the file (staged git rename) and forgets to update links.
+			// Staging ensures rename detection remains reliable even if the fixer
+			// modifies the destination file contents during other fix phases.
+			git(t, repoDir, "mv", "docs/test.md", "docs/"+newName)
+
+			linter := NewLinter(&Config{Format: "text"})
+			fixer := NewFixer(linter, false, true)
+
+			// First run: healer should update link to point at the renamed file.
+			res, err := fixer.fix(docsDir)
+			require.NoError(t, err)
+			require.Empty(t, res.BrokenLinks)
+
+			// The fixer may further normalize the renamed filename (e.g. casing).
+			// Resolve the current name on disk by finding the non-link markdown file.
+			entries, err := os.ReadDir(docsDir)
+			require.NoError(t, err)
+			finalName := ""
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				name := e.Name()
+				if name == "link.md" {
+					continue
+				}
+				if filepath.Ext(name) != ".md" {
+					continue
+				}
+				finalName = name
+				break
+			}
+			require.NotEmpty(t, finalName, "expected renamed target markdown file to exist")
+			require.FileExists(t, filepath.Join(docsDir, finalName))
+
+			// #nosec G304 -- test reads from a tempdir path
+			data, err := os.ReadFile(linkFile)
+			require.NoError(t, err)
+			require.Contains(t, string(data), "[Test]("+finalName+")")
+
+			// Clear staged changes so the subsequent rename-back produces no
+			// uncommitted rename mappings (exercises the HEAD fallback behavior).
+			git(t, repoDir, "reset")
+
+			// User renames the file back (filesystem rename) and again forgets to update links.
+			require.NoError(t, os.Rename(filepath.Join(docsDir, finalName), filepath.Join(docsDir, "test.md")))
+
+			// Second run: healer should update link back to test.md.
+			res2, err := fixer.fix(docsDir)
+			require.NoError(t, err)
+			require.Empty(t, res2.BrokenLinks)
+
+			// #nosec G304 -- test reads from a tempdir path
+			data2, err := os.ReadFile(linkFile)
+			require.NoError(t, err)
+			require.Contains(t, string(data2), "[Test](test.md)")
+		})
+	}
+}
+
+func TestFixer_HealsBrokenLinks_PreservesLabelWhenLabelEqualsOldDestination(t *testing.T) {
+	repoDir := initGitRepo(t)
+	docsDir := filepath.Join(repoDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+
+	target := filepath.Join(docsDir, "file.md")
+	linkFile := filepath.Join(docsDir, "link.md")
+
+	require.NoError(t, os.WriteFile(target, []byte("# File\n"), 0o600))
+	require.NoError(t, os.WriteFile(linkFile, []byte("[file.md](file.md)\n"), 0o600))
+
+	git(t, repoDir, "add", "docs/file.md", "docs/link.md")
+	git(t, repoDir, "commit", "-m", "add docs")
+
+	// User renames the file and forgets to update the link.
+	git(t, repoDir, "mv", "docs/file.md", "docs/file-rename.md")
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, true)
+
+	res, err := fixer.fix(docsDir)
+	require.NoError(t, err)
+	require.Empty(t, res.BrokenLinks)
+
+	// #nosec G304 -- test reads from a tempdir path
+	data, err := os.ReadFile(linkFile)
+	require.NoError(t, err)
+	require.Contains(t, string(data), "[file.md](file-rename.md)")
+	require.NotContains(t, string(data), "[file-rename.md](file-rename.md)")
+
+	// User renames the file back and forgets to update the link.
+	git(t, repoDir, "mv", "docs/file-rename.md", "docs/file.md")
+
+	res2, err := fixer.fix(docsDir)
+	require.NoError(t, err)
+	require.Empty(t, res2.BrokenLinks)
+
+	// #nosec G304 -- test reads from a tempdir path
+	data2, err := os.ReadFile(linkFile)
+	require.NoError(t, err)
+	require.Contains(t, string(data2), "[file.md](file.md)")
+	require.NotContains(t, string(data2), "[file.md](file-rename.md)")
+}
+
 func TestFixer_SkipsBrokenLinkHealing_WhenRenameMappingIsAmbiguous(t *testing.T) {
 	repoDir := initGitRepo(t)
 	docsDir := filepath.Join(repoDir, "docs")

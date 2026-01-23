@@ -541,13 +541,12 @@ Indented code (should NOT be updated):
 	assert.Contains(t, content, "[API](<./API Guide.md>)", "code blocks should remain unchanged")
 }
 
-func TestApplyLinkUpdates_CharacterizesKnownLimitation_FirstMatchOnLineMayHitInlineCode(t *testing.T) {
+func TestApplyLinkUpdates_UpdatesDestinationNotInlineCode(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourceFile := filepath.Join(tmpDir, "source.md")
 
 	// Both inline code and a real link exist on the same line.
-	// applyLinkUpdates currently replaces the first occurrence of the old target on that line,
-	// which can update the inline code portion instead of the actual link destination.
+	// applyLinkUpdates should update the real link destination, not the inline code.
 	sourceContent := "# Title\nInline code: `./api-guide.md` and real link: [API](./api-guide.md)\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
@@ -571,8 +570,44 @@ func TestApplyLinkUpdates_CharacterizesKnownLimitation_FirstMatchOnLineMayHitInl
 	require.NoError(t, err)
 	updatedText := string(updated)
 
-	assert.Contains(t, updatedText, "`./api_guide.md`", "inline code was updated (known limitation)")
-	assert.Contains(t, updatedText, "[API](./api-guide.md)", "real link destination may remain unchanged (known limitation)")
+	assert.Contains(t, updatedText, "`./api-guide.md`", "inline code should remain unchanged")
+	assert.Contains(t, updatedText, "[API](./api_guide.md)", "real link destination should be updated")
+}
+
+func TestApplyLinkUpdates_DoesNotRewriteLabelWhenLabelContainsOldTarget(t *testing.T) {
+	tmpDir := t.TempDir()
+	sourceFile := filepath.Join(tmpDir, "source.md")
+
+	// The old target appears in both the label and the destination.
+	// Only the destination should change.
+	sourceContent := "[file.md](file.md)\n"
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
+
+	// Create the target files so resolution logic can match oldPath.
+	oldPath := filepath.Join(tmpDir, "file.md")
+	newPath := filepath.Join(tmpDir, "something.md")
+	require.NoError(t, os.WriteFile(oldPath, []byte("# file"), 0o600))
+	require.NoError(t, os.WriteFile(newPath, []byte("# something"), 0o600))
+
+	links := []LinkReference{{
+		SourceFile: sourceFile,
+		LineNumber: 1,
+		Target:     "file.md",
+		LinkType:   LinkTypeInline,
+	}}
+
+	fixer := &Fixer{}
+	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
+	require.NoError(t, err)
+	require.Len(t, updates, 1)
+
+	// #nosec G304 -- test utility reading from test output directory
+	updated, err := os.ReadFile(sourceFile)
+	require.NoError(t, err)
+	updatedText := string(updated)
+
+	assert.Contains(t, updatedText, "[file.md](something.md)")
+	assert.NotContains(t, updatedText, "[something.md](something.md)")
 }
 
 // TestApplyLinkUpdates_PreservesAnchorFragments tests that anchor fragments (#section) are preserved.
