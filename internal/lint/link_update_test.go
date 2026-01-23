@@ -491,6 +491,90 @@ Check [API](../API_Guide.md).
 	assert.Contains(t, summary, "README.md")
 }
 
+func TestIntegration_RenameWithLinkUpdates_SpacesInFilename_SkipsInlineCodeAndCodeBlocks(t *testing.T) {
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+
+	// Create a file that violates naming conventions due to spaces and uppercase.
+	badDoc := filepath.Join(docsDir, "API Guide.md")
+	require.NoError(t, os.WriteFile(badDoc, []byte("# API Guide\n"), 0o600))
+
+	indexFile := filepath.Join(docsDir, "index.md")
+	indexContent := `# Index
+
+Real link (should be updated): [API](<./API Guide.md>)
+
+Inline code (should NOT be updated): ` + "`./API Guide.md`" + `
+
+Fenced code block (should NOT be updated):
+` + "```md" + `
+[API](<./API Guide.md>)
+` + "```" + `
+
+Indented code (should NOT be updated):
+    [API](<./API Guide.md>)
+`
+	require.NoError(t, os.WriteFile(indexFile, []byte(indexContent), 0o600))
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false)
+
+	result, err := fixer.Fix(docsDir)
+	require.NoError(t, err)
+	require.Empty(t, result.Errors, "fix should succeed")
+
+	// Verify file was renamed.
+	expectedNew := filepath.Join(docsDir, "api-guide.md")
+	_, err = os.Stat(expectedNew)
+	require.NoError(t, err, "renamed file should exist")
+
+	// Verify the real link was updated.
+	// #nosec G304 -- test utility reading from test output directory
+	updatedIndex, err := os.ReadFile(indexFile)
+	require.NoError(t, err)
+	content := string(updatedIndex)
+	assert.Contains(t, content, "[API](<./api-guide.md>)")
+
+	// Verify inline code and code blocks were not modified.
+	assert.Contains(t, content, "`./API Guide.md`", "inline code should remain unchanged")
+	assert.Contains(t, content, "[API](<./API Guide.md>)", "code blocks should remain unchanged")
+}
+
+func TestApplyLinkUpdates_CharacterizesKnownLimitation_FirstMatchOnLineMayHitInlineCode(t *testing.T) {
+	tmpDir := t.TempDir()
+	sourceFile := filepath.Join(tmpDir, "source.md")
+
+	// Both inline code and a real link exist on the same line.
+	// applyLinkUpdates currently replaces the first occurrence of the old target on that line,
+	// which can update the inline code portion instead of the actual link destination.
+	sourceContent := "# Title\nInline code: `./api-guide.md` and real link: [API](./api-guide.md)\n"
+	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
+
+	links := []LinkReference{{
+		SourceFile: sourceFile,
+		LineNumber: 2,
+		Target:     "./api-guide.md",
+		LinkType:   LinkTypeInline,
+	}}
+
+	fixer := &Fixer{}
+	oldPath := filepath.Join(tmpDir, "api-guide.md")
+	newPath := filepath.Join(tmpDir, "api_guide.md")
+
+	updates, err := fixer.applyLinkUpdates(links, oldPath, newPath)
+	require.NoError(t, err)
+	require.Len(t, updates, 1)
+
+	// #nosec G304 -- test utility reading from test output directory
+	updated, err := os.ReadFile(sourceFile)
+	require.NoError(t, err)
+	updatedText := string(updated)
+
+	assert.Contains(t, updatedText, "`./api_guide.md`", "inline code was updated (known limitation)")
+	assert.Contains(t, updatedText, "[API](./api-guide.md)", "real link destination may remain unchanged (known limitation)")
+}
+
 // TestApplyLinkUpdates_PreservesAnchorFragments tests that anchor fragments (#section) are preserved.
 func TestApplyLinkUpdates_PreservesAnchorFragments(t *testing.T) {
 	tmpDir := t.TempDir()
