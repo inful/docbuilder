@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-20T00:00:00Z
-fingerprint: b268ba1564258800f28d157f1e8949412aa6d3d8fd6269bd3a0ead1d062ceb94
-lastmod: "2026-01-22"
+fingerprint: 91708ad3fdd3f61bfe157d93c11eccba1d751dae493c8bd73f9e35ebfc4a5c5c
+lastmod: "2026-01-23"
 tags:
   - linting
   - refactor
@@ -20,15 +20,28 @@ uid: 93bcd5b0-7d17-48c0-ac61-e41e2ae93baf
 **Date**: 2026-01-20  
 **Decision Makers**: DocBuilder Core Team  
 
+**Implementation Plan**: [adr-012-implementation-plan.md](adr-012-implementation-plan.md)
+
 ## Context and Problem Statement
 
 DocBuilder's linting system ([ADR-005](adr-005-documentation-linting.md)) identifies violations of filename conventions (e.g., spaces, uppercase characters, non-kebab-case names). Users often rename files manually or via other tools to fix these violations, which frequently breaks internal relatives links pointing to those files.
+
+DocBuilder already performs **some** safe, mechanical file renames as part of `docbuilder lint --fix` (notably normalizing filenames by lowercasing and replacing spaces) and then **updates links** that refer to the renamed files. This existing “rename + link update” capability is valuable infrastructure and should be treated as the baseline behavior.
+
+What is missing is a way to heal links when the rename was performed **outside** DocBuilder (e.g., the user ran `git mv` manually, or a bulk-rename tool was used) and the linter later encounters broken relative links.
 
 To maintain a healthy documentation set, we need a system that detects these structural changes and automatically heals the broken links, rather than forcing the user to manually hunt down every reference.
 
 ## Decision
 
-We will implement a link-aware self-healing system integrated into the existing `docbuilder lint --fix` command. This system will utilize Git history to detect file renames and heal broken links.
+We will implement a link-aware self-healing system integrated into the existing `docbuilder lint --fix` command. This system will utilize Git state/history to detect file renames that happened outside DocBuilder and heal broken links.
+
+This feature will **reuse the existing fixer infrastructure** that already:
+
+- Renames files for naming normalization fixes (e.g., lowercasing and removing spaces)
+- Updates in-repo links that reference renamed files
+
+The Git-based healing will extend that mechanism by supplying additional rename mappings derived from Git state/history.
 
 To maintain consistency with the rest of the DocBuilder codebase, the implementation will:
 - Use the `internal/foundation/errors` package for uniform error reporting ([ADR-000](adr-000-uniform-error-handling.md)).
@@ -47,7 +60,7 @@ The `docbuilder lint --fix` command will focus on maintaining referential integr
 - **Git-Based Detection**: The system relies on Git state and history to determine if a missing file was actually moved.
 - **Uncommitted Renames**: Healing should work for renames that have not been committed yet (e.g., `git mv` in the working tree/index), which is the common case when running `docbuilder lint --fix` in a pre-commit workflow.
 - **No Git Access**: If no Git repository is found, the link healing phase is skipped. Other fixes (like frontmatter updates) proceed as normal.
-- **No Automated Renaming**: The system does NOT proactively rename files that violate naming conventions. It only reacts to renames that have already occurred.
+- **No additional renaming in the healing phase**: The Git-based healing phase does not introduce new rename behavior. It only heals links based on rename information. (Filename normalization renames may still occur as part of the existing `lint --fix` workflow.)
 - **No Rollback**: The system does not attempt to automatically rollback changes on failure. It relies on the user to manage their git state.
 
 #### History Horizon (Pre-Commit Oriented)
@@ -110,11 +123,67 @@ The healing logic operates by consulting Git history when a dead relative link i
 
 ### Implementation and Reuse Strategy
 
-DocBuilder already possesses significant infrastructure for file operations and link detection. The implementation will heavily reuse and refactor existing components rather than building from scratch.
+DocBuilder already possesses significant infrastructure for file rename operations and link detection/rewriting (including the existing filename normalization fixes that rename files and then update links). The implementation will heavily reuse and refactor existing components rather than building from scratch.
 
 - **`internal/lint/fixer.go`**: Reused as the central orchestration point. Existing `gitAware` logic will be enhanced to use `internal/git`.
 - **`internal/lint/fixer_healing.go`**: New (or refactored) component dedicated to the healing logic and history inspection.
 - **`internal/lint/fixer_link_updates.go`**: Existing logic for rewriting links will be leveraged to handle content updates.
+
+Where possible, the healing phase should produce the same kind of “rename mapping” already used by the fixer (old path → new path) so that link updates flow through a single, consistent update mechanism.
+
+### Concrete API Sketch (for implementation)
+
+The goal is to reuse the existing “rename + update links” workflow by representing Git-detected renames in the same form as fixer-driven renames, and then running link updates through the same link discovery + edit application pipeline.
+
+Proposed internal types/functions (package `internal/lint`, exact filenames TBD):
+
+```go
+// RenameSource records where a rename mapping came from.
+type RenameSource string
+
+const (
+  // Existing behavior: rename produced by the fixer (SuggestFilename + git mv/os.Rename).
+  RenameSourceFixer RenameSource = "fixer"
+
+  // New behavior: rename detected from git index/working tree.
+  RenameSourceGitUncommitted RenameSource = "git-uncommitted"
+
+  // New behavior: rename detected from git history within a bounded range.
+  RenameSourceGitHistory RenameSource = "git-history"
+)
+
+// RenameMapping represents a single old->new path mapping.
+// Paths are absolute on disk.
+type RenameMapping struct {
+  OldAbs string
+  NewAbs string
+  Source RenameSource
+}
+
+// GitRenameDetector provides rename mappings for a repository.
+// It must be safe to call when not in a git repo (return empty + nil).
+type GitRenameDetector interface {
+  DetectRenames(ctx context.Context, repoRoot string) ([]RenameMapping, error)
+}
+
+// BrokenLinkHealer rewrites broken link targets using known rename mappings.
+// It should focus on broken links (not a full repo-wide scan) to keep it fast.
+type BrokenLinkHealer interface {
+  HealBrokenLinks(ctx context.Context, broken []BrokenLink, mappings []RenameMapping) ([]LinkUpdate, error)
+}
+
+// computeUpdatedLinkTarget computes the new link destination text.
+// It must preserve:
+// - link style (site-absolute vs relative)
+// - extension style ("foo" vs "foo.md")
+// - fragment "#..."
+func computeUpdatedLinkTarget(sourceFile string, originalTarget string, oldAbs string, newAbs string) (newTarget string, changed bool, err error)
+```
+
+Notes:
+
+- The current link update logic is optimized for filename-only renames (same directory). For moved files, `computeUpdatedLinkTarget` must compute a new relative (or site-absolute) path from `sourceFile` to `newAbs`.
+- The healer should reuse existing edit application (`applyLinkUpdates` / `markdown.ApplyEdits`) and should only change the destination string in-place (minimal diffs).
 
 ## Implementation References
 
