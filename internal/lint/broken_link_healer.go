@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -36,13 +37,53 @@ func (f *Fixer) healBrokenLinksFromGitRenames(rootPath string, brokenLinks []Bro
 		return
 	}
 
-	byOld := indexRenamesByOld(mappings)
-	linksByMapping := collectLinksByMapping(f, brokenLinks, byOld)
+	// If the fixer already renamed files in this run (e.g., filename normalization),
+	// make sure we heal links directly to the final on-disk destination.
+	mappings = applyFixerRenameDestinations(mappings, fixResult)
+
+	index := indexRenamesByOld(mappings)
+	linksByMapping := collectLinksByMapping(f, brokenLinks, index, fixResult)
 	if len(linksByMapping) == 0 {
 		return
 	}
 
 	applyHealedLinkUpdates(f, linksByMapping, fixResult, fingerprintTargets)
+}
+
+func applyFixerRenameDestinations(mappings []RenameMapping, fixResult *FixResult) []RenameMapping {
+	if fixResult == nil || len(fixResult.FilesRenamed) == 0 || len(mappings) == 0 {
+		return mappings
+	}
+
+	byOld := make(map[string]string, len(fixResult.FilesRenamed))
+	for _, op := range fixResult.FilesRenamed {
+		if !op.Success {
+			continue
+		}
+		byOld[strings.ToLower(normalizePathKey(op.OldPath))] = op.NewPath
+	}
+	if len(byOld) == 0 {
+		return mappings
+	}
+
+	out := make([]RenameMapping, 0, len(mappings))
+	for _, m := range mappings {
+		m.NewAbs = resolveRenameChain(byOld, m.NewAbs)
+		out = append(out, m)
+	}
+	return out
+}
+
+func resolveRenameChain(byOld map[string]string, startAbs string) string {
+	cur := startAbs
+	for range 10 {
+		next, ok := byOld[strings.ToLower(normalizePathKey(cur))]
+		if !ok {
+			break
+		}
+		cur = next
+	}
+	return cur
 }
 
 func docsRootFromPath(path string) string {
@@ -91,26 +132,62 @@ func detectScopedGitRenames(ctx context.Context, repoDir string, docsRoot string
 	return normalized, nil
 }
 
-func indexRenamesByOld(mappings []RenameMapping) map[string]RenameMapping {
-	byOld := make(map[string]RenameMapping, len(mappings))
-	for _, m := range mappings {
-		byOld[strings.ToLower(filepath.ToSlash(filepath.Clean(m.OldAbs)))] = m
-	}
-	return byOld
+type renameIndex struct {
+	exact  map[string][]RenameMapping
+	folded map[string][]RenameMapping
 }
 
-func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, byOld map[string]RenameMapping) map[mappingKey][]LinkReference {
+func indexRenamesByOld(mappings []RenameMapping) renameIndex {
+	idx := renameIndex{
+		exact:  make(map[string][]RenameMapping, len(mappings)),
+		folded: make(map[string][]RenameMapping, len(mappings)),
+	}
+	for _, m := range mappings {
+		key := normalizePathKey(m.OldAbs)
+		idx.exact[key] = append(idx.exact[key], m)
+		idx.folded[strings.ToLower(key)] = append(idx.folded[strings.ToLower(key)], m)
+	}
+	return idx
+}
+
+func normalizePathKey(absPath string) string {
+	return filepath.ToSlash(filepath.Clean(absPath))
+}
+
+func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, idx renameIndex, fixResult *FixResult) map[mappingKey][]LinkReference {
 	linksByMapping := make(map[mappingKey][]LinkReference)
 	linkCache := make(map[string][]LinkReference)
 
 	for _, bl := range brokenLinks {
+		// Safety: broken link detection should have already filtered these, but
+		// keep the healer defensive.
+		if isHugoShortcodeLinkTarget(bl.Target) || isUIDAliasLinkTarget(bl.Target) {
+			continue
+		}
+		if strings.HasPrefix(bl.Target, "http://") || strings.HasPrefix(bl.Target, "https://") || strings.HasPrefix(bl.Target, "mailto:") || strings.HasPrefix(bl.Target, "#") {
+			continue
+		}
+
 		resolved, err := resolveRelativePath(bl.SourceFile, bl.Target)
 		if err != nil {
 			continue
 		}
 
-		mapping, ok := lookupRenameMapping(byOld, resolved)
+		mapping, ok, candidates := lookupUnambiguousRenameMapping(idx, resolved)
 		if !ok {
+			continue
+		}
+		if len(candidates) > 0 {
+			fixResult.HealSkipped = append(fixResult.HealSkipped, BrokenLinkHealSkip{
+				SourceFile: bl.SourceFile,
+				LineNumber: bl.LineNumber,
+				Target:     bl.Target,
+				Reason:     "ambiguous git rename mapping",
+				Candidates: candidates,
+			})
+			continue
+		}
+		if mapping.OldAbs == "" || mapping.NewAbs == "" {
 			continue
 		}
 
@@ -134,16 +211,68 @@ func collectLinksByMapping(f *Fixer, brokenLinks []BrokenLink, byOld map[string]
 	return linksByMapping
 }
 
-func lookupRenameMapping(byOld map[string]RenameMapping, resolvedAbs string) (RenameMapping, bool) {
-	candidates := candidateOldPaths(resolvedAbs)
-	for _, c := range candidates {
-		key := strings.ToLower(filepath.ToSlash(filepath.Clean(c)))
-		m, ok := byOld[key]
-		if ok {
-			return m, true
+// lookupUnambiguousRenameMapping returns a single mapping if it can identify a
+// unique destination. If multiple distinct destinations match, candidates will
+// be non-empty and the caller should skip applying a rewrite for safety.
+func lookupUnambiguousRenameMapping(idx renameIndex, resolvedAbs string) (mapping RenameMapping, ok bool, candidates []string) {
+	// Prefer exact matches to avoid false ambiguity when two files differ only
+	// by case on case-sensitive filesystems.
+	exact := lookupRenameMappings(idx.exact, resolvedAbs, false)
+	if len(exact) > 0 {
+		return selectUnambiguous(exact)
+	}
+
+	folded := lookupRenameMappings(idx.folded, resolvedAbs, true)
+	if len(folded) > 0 {
+		return selectUnambiguous(folded)
+	}
+
+	return RenameMapping{}, false, nil
+}
+
+func lookupRenameMappings(byOld map[string][]RenameMapping, resolvedAbs string, isFolded bool) []RenameMapping {
+	var matches []RenameMapping
+	seen := make(map[string]struct{})
+	for _, c := range candidateOldPaths(resolvedAbs) {
+		key := normalizePathKey(c)
+		if isFolded {
+			key = strings.ToLower(key)
+		}
+		for _, m := range byOld[key] {
+			id := normalizePathKey(m.OldAbs) + "\x00" + normalizePathKey(m.NewAbs) + "\x00" + string(m.Source)
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			matches = append(matches, m)
 		}
 	}
-	return RenameMapping{}, false
+	return matches
+}
+
+func selectUnambiguous(matches []RenameMapping) (RenameMapping, bool, []string) {
+	if len(matches) == 0 {
+		return RenameMapping{}, false, nil
+	}
+
+	uniqueNew := make(map[string]RenameMapping)
+	for _, m := range matches {
+		uniqueNew[normalizePathKey(m.NewAbs)] = m
+	}
+
+	if len(uniqueNew) == 1 {
+		for _, m := range uniqueNew {
+			return m, true, nil
+		}
+	}
+
+	// Ambiguous: multiple candidate destinations.
+	outs := make([]string, 0, len(uniqueNew))
+	for newAbs := range uniqueNew {
+		outs = append(outs, newAbs)
+	}
+	sort.Strings(outs)
+	return RenameMapping{}, true, outs
 }
 
 func candidateOldPaths(resolvedAbs string) []string {

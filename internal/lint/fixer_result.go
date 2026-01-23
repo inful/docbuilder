@@ -12,9 +12,20 @@ type FixResult struct {
 	LinksUpdated  []LinkUpdate
 	Fingerprints  []FingerprintUpdate
 	BrokenLinks   []BrokenLink // Links to non-existent files
+	HealSkipped   []BrokenLinkHealSkip
 	ErrorsFixed   int
 	WarningsFixed int
 	Errors        []error
+}
+
+// BrokenLinkHealSkip records when the broken-link healer intentionally
+// skipped applying a change for safety.
+type BrokenLinkHealSkip struct {
+	SourceFile string
+	LineNumber int
+	Target     string
+	Reason     string
+	Candidates []string
 }
 
 // FingerprintUpdate represents an update to a markdown file's frontmatter fingerprint.
@@ -126,6 +137,16 @@ func (fr *FixResult) Summary() string {
 			}
 			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s (broken %s)\n",
 				broken.SourceFile, broken.LineNumber, linkTypeStr, broken.Target, linkTypeStr))
+		}
+	}
+
+	if len(fr.HealSkipped) > 0 {
+		b.WriteString(fmt.Sprintf("\nBroken link heals skipped: %d\n", len(fr.HealSkipped)))
+		for _, s := range fr.HealSkipped {
+			b.WriteString(fmt.Sprintf("  • %s:%d: %s (reason: %s)\n", s.SourceFile, s.LineNumber, s.Target, s.Reason))
+			if len(s.Candidates) > 0 {
+				b.WriteString(fmt.Sprintf("    candidates: %s\n", strings.Join(s.Candidates, ", ")))
+			}
 		}
 	}
 
