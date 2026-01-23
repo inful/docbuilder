@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 96840c5836e1074e3ec0b5506aeccc0ba24b75e1fc9ed68330e3253a6dd77875
+fingerprint: 1a4342592c6e4fc14af21742a13769445493e0cc36c536effaa1a8f99b0dbe46
 lastmod: "2026-01-23"
 tags:
   - linting
