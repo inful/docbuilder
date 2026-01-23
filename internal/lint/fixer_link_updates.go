@@ -151,20 +151,22 @@ func findLineByteRange(content []byte, lineNumber int) (int, int, bool) {
 // - Anchor fragments (#section)
 // - Link style (relative vs absolute within repo).
 func (f *Fixer) updateLinkTarget(link LinkReference, oldPath, newPath string) string {
-	// Get the new filename
+	originalTarget := link.Target + link.Fragment
+	resolved, resErr := resolveRelativePath(link.SourceFile, originalTarget)
+	if resErr == nil && pathsEqualCaseInsensitive(resolved, oldPath) {
+		updated, changed, err := computeUpdatedLinkTarget(link.SourceFile, originalTarget, oldPath, newPath)
+		if err == nil && changed {
+			return updated
+		}
+	}
+
+	// Fallback: keep legacy behavior (filename-only replacement).
 	newFilename := filepath.Base(newPath)
-
-	// Preserve relative path structure
 	oldFilename := filepath.Base(oldPath)
-
-	// Replace only the filename portion, keeping the directory path
 	newTarget := strings.Replace(link.Target, oldFilename, newFilename, 1)
-
-	// Preserve anchor fragment if present
 	if link.Fragment != "" {
 		newTarget += link.Fragment
 	}
-
 	return newTarget
 }
 
