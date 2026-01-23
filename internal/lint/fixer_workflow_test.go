@@ -3,6 +3,7 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -128,6 +129,63 @@ func TestFix_RenameFailure(t *testing.T) {
 	// Even if rename fails, other fixable issues (like fingerprints) may still be applied.
 	if result.ErrorsFixed == 0 {
 		t.Errorf("expected ErrorsFixed > 0, got %d", result.ErrorsFixed)
+	}
+}
+
+func TestFix_RenameCollision_CaseOnly_DoesNotOverwrite(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// On case-sensitive filesystems (like Linux), these are two distinct files.
+	// Renaming Test.md -> test.md would overwrite an existing file and must be refused.
+	upper := filepath.Join(tmpDir, "Test.md")
+	lower := filepath.Join(tmpDir, "test.md")
+	if err := os.WriteFile(upper, []byte("# Upper\n"), 0o600); err != nil {
+		t.Fatalf("failed to create upper file: %v", err)
+	}
+	if err := os.WriteFile(lower, []byte("# Lower\n"), 0o600); err != nil {
+		t.Fatalf("failed to create lower file: %v", err)
+	}
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false) // force=false to avoid overwriting
+
+	result, err := fixer.fix(tmpDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(result.FilesRenamed) != 1 {
+		t.Fatalf("expected 1 rename operation, got %d", len(result.FilesRenamed))
+	}
+	if result.FilesRenamed[0].Success {
+		t.Fatalf("expected rename to fail due to collision")
+	}
+	if result.FilesRenamed[0].Error == nil {
+		t.Fatalf("expected rename operation to have an error")
+	}
+
+	// User should be warned: the fixer records the error.
+	if len(result.Errors) == 0 {
+		t.Fatalf("expected error to be recorded")
+	}
+
+	// Ensure neither file was overwritten. The fixer may legitimately add
+	// frontmatter/uid/fingerprint, so validate the original page bodies remain distinct.
+	// #nosec G304 -- test reads from a tempdir path
+	upperData, readErr := os.ReadFile(upper)
+	if readErr != nil {
+		t.Fatalf("failed to read upper file: %v", readErr)
+	}
+	// #nosec G304 -- test reads from a tempdir path
+	lowerData, readErr := os.ReadFile(lower)
+	if readErr != nil {
+		t.Fatalf("failed to read lower file: %v", readErr)
+	}
+	if !strings.Contains(string(upperData), "# Upper") {
+		t.Fatalf("expected upper file to still contain its heading")
+	}
+	if !strings.Contains(string(lowerData), "# Lower") {
+		t.Fatalf("expected lower file to still contain its heading")
 	}
 }
 
