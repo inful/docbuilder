@@ -132,16 +132,18 @@ This is the key functional delta versus current link updates.
 
 ### 5) Git history detection (since last push)
 
-- [ ] Detect upstream tracking branch if present.
-- [ ] Extract rename mappings for commits “since last push” (HEAD vs upstream).
-- [ ] Provide bounded fallback when upstream is absent.
+- [x] Detect upstream tracking branch if present.
+- [x] Extract rename mappings for commits “since last push” (HEAD vs upstream).
+- [x] Provide bounded fallback when upstream is absent.
 - [ ] Tests:
-  - [ ] uses upstream range when available
-  - [ ] bounded fallback works without upstream
+  - [x] uses upstream range when available
+  - [x] bounded fallback works without upstream
 
 **Definition of Done**
 
 - Broken links can be healed even when the rename was already committed locally.
+
+**Completion**: 2026-01-23 — branch: `shaman-healer`
 
 ### 6) Ambiguity + safety
 
@@ -157,8 +159,8 @@ This is the key functional delta versus current link updates.
 
 ### 7) Verification gate
 
-- [x] `go test ./... -count=1`
-- [x] `golangci-lint run --fix` then `golangci-lint run`
+- [ ] `go test ./... -count=1`
+- [ ] `golangci-lint run --fix` then `golangci-lint run`
 
 ## Notes / Risks
 
