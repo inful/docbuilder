@@ -138,3 +138,55 @@ func TestFixer_HealsBrokenLinks_ToFinalPath_WhenFixerAlsoRenamesDestination(t *t
 	// And the broken link worklist should be fully healed.
 	require.Empty(t, res.BrokenLinks)
 }
+
+func TestFixer_WarnsOnRenameCollision_WhenHistoryRenameCreatesCaseOnlyConflict(t *testing.T) {
+	repoDir := initGitRepo(t)
+	docsDir := filepath.Join(repoDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+
+	// Existing canonical file.
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "test.md"), []byte("# Test\n"), 0o600))
+
+	// File that will be renamed (committed) to a conflicting case variant.
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "test2.md"), []byte("# Test2\n"), 0o600))
+
+	// Link still points at the old name after the rename.
+	indexFile := filepath.Join(docsDir, "index.md")
+	require.NoError(t, os.WriteFile(indexFile, []byte("[Go](test2.md)\n"), 0o600))
+
+	git(t, repoDir, "add", "docs/test.md", "docs/test2.md", "docs/index.md")
+	git(t, repoDir, "commit", "-m", "add docs")
+
+	// User performs a committed rename that introduces a case-only collision potential:
+	// docs/test2.md -> docs/Test.md, while docs/test.md already exists.
+	git(t, repoDir, "mv", "docs/test2.md", "docs/Test.md")
+	git(t, repoDir, "commit", "-m", "rename test2 to Test")
+
+	// Sanity: link is currently broken.
+	before, err := detectBrokenLinks(docsDir)
+	require.NoError(t, err)
+	require.Len(t, before, 1)
+
+	linter := NewLinter(&Config{Format: "text"})
+	fixer := NewFixer(linter, false, false) // force=false: must refuse overwrite
+	res, err := fixer.fix(docsDir)
+	require.NoError(t, err)
+
+	// The broken link should be healed using history-derived rename mappings.
+	require.Empty(t, res.BrokenLinks)
+	require.NotEmpty(t, res.LinksUpdated)
+
+	// But filename normalization (Test.md -> test.md) must fail due to collision,
+	// and the user must be warned (error recorded).
+	require.NotEmpty(t, res.FilesRenamed)
+	require.False(t, res.FilesRenamed[0].Success)
+	require.NotNil(t, res.FilesRenamed[0].Error)
+	require.NotEmpty(t, res.Errors)
+
+	// The link should point to the existing on-disk destination (Test.md), since
+	// normalization could not be applied.
+	// #nosec G304 -- test reads from a tempdir path
+	data, err := os.ReadFile(indexFile)
+	require.NoError(t, err)
+	require.Contains(t, string(data), "[Go](Test.md)")
+}
