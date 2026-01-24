@@ -1,0 +1,67 @@
+baseURL: http://localhost:1313/
+defaultContentLanguage: en
+description: Testing daemon public-only filtering
+enableGitInfo: false
+languages:
+    en:
+        languageName: English
+        weight: 1
+markup:
+    goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                enable: true
+        parser:
+            attribute:
+                block: true
+        renderer:
+            unsafe: true
+    highlight:
+        lineNos: true
+        noClasses: false
+        style: github
+        tabWidth: 4
+module:
+    imports:
+        - path: github.com/McShelby/hugo-theme-relearn
+          version: 9.0.3
+outputs:
+    home:
+        - HTML
+        - RSS
+        - JSON
+params:
+    alwaysopen: false
+    collapsibleMenu: true
+    disableBreadcrumb: false
+    disableGeneratorVersion: false
+    disableLandingPageButton: true
+    disableLanguageSwitchingButton: true
+    disableShortcutsTitle: false
+    disableTagHiddenPages: false
+    editURL: {}
+    math:
+        enable: true
+    mermaid:
+        enable: true
+    showVisitedLinks: true
+    themeVariant:
+        - auto
+        - zen-light
+        - zen-dark
+    themeVariantAuto:
+        - zen-light
+        - zen-dark
+taxonomies:
+    category: categories
+    tag: tags
+title: Public Filter Demo
