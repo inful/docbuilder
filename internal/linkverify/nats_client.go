@@ -163,32 +163,52 @@ func (c *NATSClient) ensureConnected(ctx context.Context) error {
 	return c.connectWithContext(ctx)
 }
 
+func cacheBucketTTL(cfg *config.LinkVerificationConfig) time.Duration {
+	if cfg == nil {
+		return 24 * time.Hour
+	}
+
+	successTTL, err := time.ParseDuration(cfg.CacheTTL)
+	if err != nil {
+		successTTL = 0
+	}
+
+	failureTTL, err := time.ParseDuration(cfg.CacheTTLFailures)
+	if err != nil {
+		failureTTL = 0
+	}
+
+	if successTTL <= 0 && failureTTL <= 0 {
+		return 24 * time.Hour
+	}
+	if failureTTL > successTTL {
+		return failureTTL
+	}
+	return successTTL
+}
+
 // initKVBucket creates or gets the KV bucket for link cache.
 func (c *NATSClient) initKVBucket(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	// Try to get existing bucket
-	kv, err := c.js.KeyValue(timeoutCtx, c.kvBucket)
-	if err == nil {
-		c.kv = kv
-		return nil
-	}
+	// Use KV bucket TTL so JetStream can evict old entries and storage shrinks over time.
+	// Note: this TTL applies to all keys in the bucket (link cache + page hashes).
+	ttl := cacheBucketTTL(c.cfg)
 
-	// Create new bucket if it doesn't exist
-	kv, err = c.js.CreateKeyValue(timeoutCtx, jetstream.KeyValueConfig{
+	kv, err := c.js.CreateOrUpdateKeyValue(timeoutCtx, jetstream.KeyValueConfig{
 		Bucket:      c.kvBucket,
 		Description: "Link verification cache for DocBuilder",
 		MaxBytes:    100 * 1024 * 1024, // 100MB max
 		History:     1,                 // Keep only latest value
-		TTL:         0,                 // Per-key TTL
+		TTL:         ttl,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create KV bucket: %w", err)
+		return fmt.Errorf("failed to create or update KV bucket: %w", err)
 	}
 
 	c.kv = kv
-	slog.Info("Created KV bucket for link cache", "bucket", c.kvBucket)
+	slog.Info("Initialized KV bucket for link cache", "bucket", c.kvBucket, "ttl", ttl.String())
 	return nil
 }
 

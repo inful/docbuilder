@@ -19,6 +19,8 @@ The `linkverify` package provides background link verification that runs after e
 
 The system uses a two-level caching approach in NATS KV:
 
+**Bucket expiry:** The KV bucket is configured with a JetStream TTL so old keys expire automatically and storage shrinks over time. The bucket TTL is set to the larger of `cache_ttl` and `cache_ttl_failures`.
+
 1. **Link-level cache**: Stores verification results per URL (MD5 hash of URL as key)
    - Successful checks cached for `cache_ttl` (default: 24h)
    - Failed checks cached for `cache_ttl_failures` (default: 1h)
@@ -188,7 +190,7 @@ sub, _ := nc.Subscribe("docbuilder.links.broken", func(m *nats.Msg) {
 
 1. **Set appropriate TTLs** based on your content update frequency
 2. **Adjust rate limits** to avoid overwhelming external sites
-3. **Monitor NATS KV size** - old entries may need pruning
+3. **Monitor NATS KV size** - it should shrink over time due to bucket TTL; consider raising limits if you still hit max bytes
 4. **Subscribe to events** for automated issue creation
 5. **Track failure counts** to identify persistent issues
 
