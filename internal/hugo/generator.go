@@ -335,6 +335,22 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		g.abortStaging()
 		return report, err
 	}
+	// IMPORTANT: stages.RunStages may return nil after an early skip (e.g. no repo
+	// HEAD changes and existing output is valid). In that case, we must not promote
+	// the staging directory, otherwise we could replace a valid site with an empty
+	// scaffold and cause the daemon to start serving 404s.
+	if report.SkipReason == "no_changes" {
+		g.abortStaging()
+		// best-effort: persist updated report into existing output dir
+		if err := report.Persist(g.outputDir); err != nil {
+			slog.Warn("Failed to persist build report", "error", err)
+		}
+		if g.recorder != nil {
+			g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
+			g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
+		}
+		return report, nil
+	}
 	// Stage durations already written directly to report.
 	report.DeriveOutcome()
 	report.Finish()
