@@ -18,6 +18,7 @@ import (
 // This is the new implementation that replaces the registry-based transform system.
 func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *models.BuildState) error {
 	slog.Info("Using new fixed transform pipeline for content processing")
+	publicOnly := isDaemonPublicOnlyEnabled(g.config)
 
 	// Compute isSingleRepo flag
 	var isSingleRepo bool
@@ -61,12 +62,18 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 
 	// Convert DocFiles to pipeline Documents
 	discovered := make([]*pipeline.Document, 0, len(markdownFiles))
+	excluded := 0
 	for i := range markdownFiles {
 		file := &markdownFiles[i]
 		// Load content
 		if err := file.LoadContent(); err != nil {
 			return fmt.Errorf("%w: failed to load content for %s: %w",
 				herrors.ErrContentTransformFailed, file.Path, err)
+		}
+
+		if publicOnly && !isPublicMarkdown(file.Content) {
+			excluded++
+			continue
 		}
 
 		// Convert to pipeline Document
@@ -77,6 +84,11 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 	slog.Info("Converted discovered files to pipeline documents",
 		slog.Int("markdown", len(discovered)),
 		slog.Int("assets", len(assetFiles)))
+	if publicOnly {
+		slog.Info("Daemon public-only filter applied",
+			slog.Int("excluded_markdown", excluded),
+			slog.Int("included_markdown", len(discovered)))
+	}
 
 	// Build repository metadata for generators
 	repoMetadata := g.buildRepositoryMetadata(bs)
