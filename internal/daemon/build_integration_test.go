@@ -61,7 +61,6 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
-	sm.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
 	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&stages.NoopRenderer{})
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()

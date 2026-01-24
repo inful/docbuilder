@@ -13,9 +13,17 @@ type ContentIntegrityRule struct{}
 func (r ContentIntegrityRule) Name() string { return "content_integrity" }
 
 func (r ContentIntegrityRule) Validate(ctx context.Context, vctx Context) Result {
-	// Only validate if there were files in the previous build
-	if vctx.PrevReport == nil || vctx.PrevReport.Files == 0 {
-		return Success() // Skip validation for empty previous builds
+	// If the previous build discovered zero files, skipping is unsafe when there are
+	// repositories configured for this build. Otherwise the daemon can get stuck
+	// serving an empty site forever.
+	if vctx.PrevReport == nil {
+		return Success()
+	}
+	if vctx.PrevReport.Files == 0 {
+		if len(vctx.Repos) > 0 {
+			return Failure("previous build had zero documentation files")
+		}
+		return Success()
 	}
 
 	contentDir := filepath.Join(vctx.OutDir, "content")

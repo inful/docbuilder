@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"sort"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -48,39 +49,7 @@ func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 	}
 	bs.Report.Repositories = len(repoSet)
 	bs.Report.Files = len(docFiles)
-	if bs.Generator != nil && bs.Generator.StateManager() != nil {
-		repoPaths := make(map[string][]string)
-		for i := range docFiles {
-			f := &docFiles[i]
-			p := f.GetHugoPath(bs.Docs.IsSingleRepo)
-			repoPaths[f.Repository] = append(repoPaths[f.Repository], p)
-		}
-		for repoName, paths := range repoPaths {
-			sort.Strings(paths)
-			h := sha256.New()
-			for _, p := range paths {
-				_, _ = h.Write([]byte(p))
-				_, _ = h.Write([]byte{0})
-			}
-			hash := hex.EncodeToString(h.Sum(nil))
-			var repoURL string
-			for i := range bs.Git.Repositories {
-				r := &bs.Git.Repositories[i]
-				if r.Name == repoName {
-					repoURL = r.URL
-					break
-				}
-			}
-			if repoURL == "" {
-				repoURL = repoName
-			}
-			bs.Generator.StateManager().SetRepoDocumentCount(repoURL, len(paths))
-			bs.Generator.StateManager().SetRepoDocFilesHash(repoURL, hash)
-			if setter, ok := bs.Generator.StateManager().(interface{ SetRepoDocFilePaths(string, []string) }); ok {
-				setter.SetRepoDocFilePaths(repoURL, paths)
-			}
-		}
-	}
+	persistDiscoveredDocsToState(bs, docFiles)
 	if bs.Report != nil {
 		paths := make([]string, 0, len(docFiles))
 		for i := range docFiles {
@@ -96,4 +65,54 @@ func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 		bs.Report.DocFilesHash = hex.EncodeToString(h.Sum(nil))
 	}
 	return nil
+}
+
+func persistDiscoveredDocsToState(bs *models.BuildState, docFiles []docs.DocFile) {
+	if bs.Generator == nil {
+		return
+	}
+	sm := bs.Generator.StateManager()
+	if sm == nil {
+		return
+	}
+
+	repoCfgByName := make(map[string]config.Repository, len(bs.Git.Repositories))
+	for i := range bs.Git.Repositories {
+		r := &bs.Git.Repositories[i]
+		repoCfgByName[r.Name] = *r
+	}
+	init, _ := sm.(interface {
+		EnsureRepositoryState(url, name, branch string)
+	})
+	pathsByRepo := make(map[string][]string)
+	for i := range docFiles {
+		f := &docFiles[i]
+		p := f.GetHugoPath(bs.Docs.IsSingleRepo)
+		pathsByRepo[f.Repository] = append(pathsByRepo[f.Repository], p)
+	}
+	for repoName, paths := range pathsByRepo {
+		sort.Strings(paths)
+		h := sha256.New()
+		for _, p := range paths {
+			_, _ = h.Write([]byte(p))
+			_, _ = h.Write([]byte{0})
+		}
+		hash := hex.EncodeToString(h.Sum(nil))
+		repoURL := repoName
+		repoBranch := ""
+		if cfg, ok := repoCfgByName[repoName]; ok {
+			if cfg.URL != "" {
+				repoURL = cfg.URL
+			}
+			repoBranch = cfg.Branch
+		}
+		if init != nil {
+			init.EnsureRepositoryState(repoURL, repoName, repoBranch)
+		}
+		sm.SetRepoDocumentCount(repoURL, len(paths))
+		sm.SetRepoDocFilesHash(repoURL, hash)
+		if setter, ok := sm.(interface{ SetRepoDocFilePaths(string, []string) }); ok {
+			setter.SetRepoDocFilePaths(repoURL, paths)
+		}
+	}
 }
