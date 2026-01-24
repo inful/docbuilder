@@ -115,7 +115,15 @@ func (d *Daemon) verifyLinksAfterBuild(ctx context.Context, buildID string) {
 // collectPageMetadata collects metadata for all pages in the build.
 func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata, error) {
 	outputDir := d.config.Daemon.Storage.OutputDir
-	publicDir := filepath.Join(outputDir, "public")
+	publicDir, ok := resolvePublicDirForVerification(outputDir)
+	if !ok {
+		slog.Warn("No public directory available for link verification; skipping page metadata collection",
+			"build_id", buildID,
+			"output_dir", outputDir,
+			"expected_public", filepath.Join(outputDir, "public"),
+			"expected_backup", outputDir+".prev/public or "+outputDir+"_prev/public")
+		return nil, nil
+	}
 
 	var pages []*linkverify.PageMetadata
 
@@ -187,7 +195,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk public directory: %w", err)
+		return nil, fmt.Errorf("failed to walk public directory %s: %w", publicDir, err)
 	}
 
 	slog.Debug("Collected page metadata for link verification",
@@ -195,6 +203,23 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		"page_count", len(pages))
 
 	return pages, nil
+}
+
+// resolvePublicDirForVerification mirrors the HTTP server docs-root selection.
+// It prefers the primary rendered output (<output>/public). If that doesn't exist,
+// it falls back to the previous backup directory used during atomic promotion.
+func resolvePublicDirForVerification(outputDir string) (string, bool) {
+	primary := filepath.Join(outputDir, "public")
+	if st, err := os.Stat(primary); err == nil && st.IsDir() {
+		return primary, true
+	}
+	for _, prev := range []string{outputDir + ".prev", outputDir + "_prev"} {
+		prevPublic := filepath.Join(prev, "public")
+		if st, err := os.Stat(prevPublic); err == nil && st.IsDir() {
+			return prevPublic, true
+		}
+	}
+	return "", false
 }
 
 // extractRepoFromPath attempts to extract repository name from rendered path.
