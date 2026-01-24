@@ -71,6 +71,8 @@ Configuration for daemon mode operation, including link verification, sync sched
 
 Automated link validation using NATS for caching and event publishing. Requires NATS server with JetStream enabled.
 
+DocBuilder stores link verification results and page hashes in a JetStream KV bucket. The bucket is configured with a TTL so JetStream can automatically expire old entries and reclaim space over time. The bucket TTL is set to the larger of `cache_ttl` and `cache_ttl_failures`.
+
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | enabled | bool | true | Enable automatic link verification after builds. |
