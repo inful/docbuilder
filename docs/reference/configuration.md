@@ -409,6 +409,27 @@ This prevents unnecessary rebuilds when daemon polls/watches for changes but rep
 
 For CLI mode, simply don't run `docbuilder build` if you don't want a build. No caching is needed.
 
+## Content Policies (Daemon Mode)
+
+The daemon can apply global content filters to the documentation site.
+
+### Public-Only Filter
+
+When enabled, only documents explicitly marked as public are included in the generated site.
+
+```yaml
+daemon:
+  content:
+    public_only: true
+```
+
+**Guardrails & Behavior:**
+
+1.  **Strict Boolean Check**: Documents must have `public: true` in their YAML frontmatter. `public: "true"` (string) or missing keys are treated as `false` and excluded.
+2.  **Structural Scoping**: If a repository or section contains no public documents, that entire navigation branch/section index is omitted from the generated site to prevent "ghost" links.
+3.  **Cross-Repo Consistency**: This is a global setting. If enabled, it applies to all repositories fetched by the daemon instance.
+4.  **Content Discovery**: Assets (images, PDFs) adjacent to filtered Markdown files are still copied if they are within a documentation path, as they may be referenced by other public documents.
+
 ## Recommendations
 
 - Use `clone_strategy: auto` for most CI and daemon scenarios.
