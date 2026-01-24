@@ -227,6 +227,7 @@ Goal: lock behavior with a realistic repo and expected output structure.
 ## Ambiguities / Decisions Log
 
 - 2026-01-23: Decided to keep asset copying as-is — assets may be shared between public and private documents, and discovering "only used" assets is out of scope for this filter.
+- 2026-01-23: Refactored `isDaemonPublicOnlyEnabled` from duplicated package-level functions to a method on `config.Config`. (SHA: 64211fd)
 
 ## Final Verification Evidence (2026-01-23)
 
