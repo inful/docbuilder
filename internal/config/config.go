@@ -58,7 +58,14 @@ type DaemonConfig struct {
 	HTTP             HTTPConfig              `yaml:"http"`
 	Sync             SyncConfig              `yaml:"sync"`
 	Storage          StorageConfig           `yaml:"storage"`
+	Content          DaemonContentConfig     `yaml:"content,omitempty"`
 	LinkVerification *LinkVerificationConfig `yaml:"link_verification,omitempty"`
+}
+
+// DaemonContentConfig represents daemon-specific content policies.
+type DaemonContentConfig struct {
+	// PublicOnly enables opt-in publishing based on per-page frontmatter `public: true`.
+	PublicOnly bool `yaml:"public_only"`
 }
 
 // HTTPConfig represents HTTP server configuration for the daemon, including ports for docs, webhooks, and admin endpoints.
