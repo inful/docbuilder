@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 func TestResolvePublicDirForVerification_Primary(t *testing.T) {
@@ -50,5 +52,17 @@ func TestResolvePublicDirForVerification_Missing(t *testing.T) {
 	}
 	if got != "" {
 		t.Fatalf("expected empty path, got %q", got)
+	}
+}
+
+func TestShouldRunLinkVerification_SkipNoChanges(t *testing.T) {
+	if shouldRunLinkVerification(&models.BuildReport{SkipReason: "no_changes"}) {
+		t.Fatalf("expected link verification to be skipped for no_changes")
+	}
+}
+
+func TestShouldRunLinkVerification_RunWhenNotSkipped(t *testing.T) {
+	if !shouldRunLinkVerification(&models.BuildReport{SkipReason: ""}) {
+		t.Fatalf("expected link verification to run when not skipped")
 	}
 }

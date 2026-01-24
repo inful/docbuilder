@@ -112,6 +112,16 @@ func (d *Daemon) verifyLinksAfterBuild(ctx context.Context, buildID string) {
 	slog.Info("Link verification completed successfully", "build_id", buildID)
 }
 
+// shouldRunLinkVerification returns true when it makes sense to run link verification.
+// If the build was short-circuited due to no changes, the rendered output is unchanged
+// and re-verifying links is wasted work.
+func shouldRunLinkVerification(report *models.BuildReport) bool {
+	if report == nil {
+		return false
+	}
+	return report.SkipReason != "no_changes"
+}
+
 // collectPageMetadata collects metadata for all pages in the build.
 func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata, error) {
 	outputDir := d.config.Daemon.Storage.OutputDir

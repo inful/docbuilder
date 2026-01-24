@@ -51,6 +51,15 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 // onBuildReportEmitted is called after a build report is emitted to the event store.
 // This is where we trigger post-build hooks like link verification and state updates.
 func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *models.BuildReport) error {
+	// Decide whether to run link verification before updating state so the decision
+	// can be based on what actually happened in this build.
+	shouldVerify := report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil && shouldRunLinkVerification(report)
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil && !shouldVerify {
+		slog.Debug("Skipping post-build link verification",
+			"build_id", buildID,
+			"skip_reason", report.SkipReason)
+	}
+
 	// Update state manager after successful builds.
 	// This is critical for skip evaluation to work correctly on subsequent builds.
 	if report != nil && report.Outcome == models.OutcomeSuccess && d.stateManager != nil && d.config != nil {
@@ -68,7 +77,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 			return "N/A"
 		}(),
 		"verifier_nil", d.linkVerifier == nil)
-	if report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil {
+	if shouldVerify {
 		go d.verifyLinksAfterBuild(ctx, buildID)
 	}
 
