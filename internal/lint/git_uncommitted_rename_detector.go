@@ -161,7 +161,7 @@ func detectUnstagedRenamesFromDeletedPlusUntracked(ctx context.Context, repoRoot
 		untrackedByHash[h] = append(untrackedByHash[h], rel)
 	}
 
-	var mappings []RenameMapping
+	mappings := make([]RenameMapping, 0, len(deletedRel))
 	for _, oldRel := range deletedRel {
 		oldContent, err := gitShowIndexFile(ctx, repoRoot, oldRel)
 		if err != nil {
