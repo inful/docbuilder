@@ -1,0 +1,47 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "public": true,
+        "title": "Public Filter Demo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:4dcc102ebcca0d7b"
+    },
+    "content/other/_index.md": {
+      "frontmatter": {
+        "public": true,
+        "title": "other",
+        "type": "docs"
+      },
+      "contentHash": "sha256:3c6de64cfc078135"
+    },
+    "content/other/nested-public.md": {
+      "frontmatter": {
+        "public": true,
+        "title": "Nested Public",
+        "type": "docs"
+      },
+      "contentHash": "sha256:f1490da339a0c27a"
+    },
+    "content/public-page.md": {
+      "frontmatter": {
+        "public": true,
+        "title": "Public Page",
+        "type": "docs"
+      },
+      "contentHash": "sha256:01c2f86f1f5de12f"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "assets": {
+      "logo.png": {}
+    },
+    "other": {
+      "_index.md": {},
+      "nested-public.md": {}
+    },
+    "public-page.md": {}
+  }
+}

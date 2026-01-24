@@ -228,6 +228,7 @@ func normalizeFrontMatter(fm map[string]any) {
 		"url":       true,
 		"cascade":   true,
 		"menu":      true,
+		"public":    true, // Filter applied by daemon mode
 	}
 
 	// Keep only structural keys; delete all others (metadata, timestamps, hashes, etc.)

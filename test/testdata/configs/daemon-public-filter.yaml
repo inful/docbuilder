@@ -1,0 +1,21 @@
+version: "2.0"
+
+daemon:
+  content:
+    public_only: true
+
+repositories:
+  - name: public-filter-repo
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Public Filter Demo"
+  description: "Testing daemon public-only filtering"
+  base_url: "http://localhost:1313/"
+
+output:
+  directory: PLACEHOLDER
+  clean: true
