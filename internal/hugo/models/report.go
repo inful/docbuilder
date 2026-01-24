@@ -334,6 +334,8 @@ func (r *BuildReport) SanitizedCopy() *BuildReportSerializable {
 		ConfigHash:          r.ConfigHash,
 		PipelineVersion:     r.PipelineVersion,
 		EffectiveRenderMode: r.EffectiveRenderMode,
+		DocBuilderVersion:   r.DocBuilderVersion,
+		HugoVersion:         r.HugoVersion,
 	}
 	for i, e := range r.Errors {
 		s.Errors[i] = e.Error()
@@ -375,6 +377,8 @@ type BuildReportSerializable struct {
 	ConfigHash          string                       `json:"config_hash,omitempty"`
 	PipelineVersion     int                          `json:"pipeline_version,omitempty"`
 	EffectiveRenderMode string                       `json:"effective_render_mode,omitempty"`
+	DocBuilderVersion   string                       `json:"docbuilder_version,omitempty"`
+	HugoVersion         string                       `json:"hugo_version,omitempty"`
 }
 
 func GetDocBuilderVersion() string {

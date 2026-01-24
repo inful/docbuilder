@@ -32,6 +32,7 @@ type Metrics interface {
 // StateManager is the minimal interface used for persistence and discovery bookkeeping.
 type StateManager interface {
 	services.StateManager
+	EnsureRepositoryState(url, name, branch string)
 	RecordDiscovery(repoURL string, documentCount int)
 }
 
@@ -152,6 +153,13 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	if r.stateManager != nil {
 		for _, repo := range result.Repositories {
+			// Record discovered repositories in state so the daemon can surface them
+			// even before a build has produced per-repo doc metadata.
+			if init, ok := r.stateManager.(interface {
+				EnsureRepositoryState(url, name, branch string)
+			}); ok {
+				init.EnsureRepositoryState(repo.CloneURL, repo.Name, repo.DefaultBranch)
+			}
 			// For now, record with 0 documents as we don't have that info from forge discovery.
 			r.stateManager.RecordDiscovery(repo.CloneURL, 0)
 		}

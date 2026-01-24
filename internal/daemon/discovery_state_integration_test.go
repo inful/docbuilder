@@ -64,7 +64,6 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
-	sm.EnsureRepositoryState(repository.URL, repository.Name, repository.Branch)
 	gen := hugo.NewGenerator(conf, outputDir).WithStateManager(sm).WithRenderer(&stages.NoopRenderer{})
 
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -19,8 +20,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
+	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
 )
+
+const skipReasonNoChanges = "no_changes"
 
 // Generator handles Hugo site generation with Relearn theme.
 type Generator struct {
@@ -90,37 +94,119 @@ func (g *Generator) WithKeepStaging(keep bool) *Generator {
 //
 // Failing any check returns false, forcing the pipeline to continue so content is regenerated.
 func (g *Generator) existingSiteValidForSkip() bool {
-	reportPath := filepath.Join(g.outputDir, "build-report.json")
-	if fi, err := os.Stat(reportPath); err != nil || fi.IsDir() {
+	prev, ok := g.readPreviousBuildReport()
+	if !ok {
 		return false
 	}
+	if !g.previousReportAllowsSkip(prev) {
+		return false
+	}
+	if !g.outputHasPublicIndex() {
+		return false
+	}
+	return g.outputHasNonRootMarkdownContent()
+}
+
+func (g *Generator) readPreviousBuildReport() (*models.BuildReportSerializable, bool) {
+	reportPath := filepath.Join(g.outputDir, "build-report.json")
+	if fi, err := os.Stat(reportPath); err != nil || fi.IsDir() {
+		return nil, false
+	}
+	// Parse the previous build report to validate it's compatible with the current
+	// binary/config. If we cannot parse the report, treat the output as unsafe to
+	// skip (we'd rather rebuild than serve an empty/partial site).
+	var prev models.BuildReportSerializable
+	// #nosec G304 -- reportPath is derived from the configured output directory.
+	b, err := os.ReadFile(reportPath)
+	if err != nil {
+		return nil, false
+	}
+	if err := json.Unmarshal(b, &prev); err != nil {
+		return nil, false
+	}
+	return &prev, true
+}
+
+func (g *Generator) previousReportAllowsSkip(prev *models.BuildReportSerializable) bool {
+	// Only consider skipping if the previous build wasn't a failure.
+	if prev.Outcome != string(models.OutcomeSuccess) && prev.Outcome != string(models.OutcomeWarning) {
+		return false
+	}
+	// Do not early-skip when the previous build discovered zero documentation files.
+	// An empty prior build is frequently a sign of misconfiguration or a transient discovery
+	// issue; skipping would cause the daemon to keep serving an empty site forever.
+	if prev.Files <= 0 {
+		return false
+	}
+	// If the prior report recorded a config hash, it must match current.
+	// Missing hash is treated as unsafe (forces rebuild after older versions).
+	currentHash := g.ComputeConfigHash()
+	if currentHash == "" || prev.ConfigHash == "" || prev.ConfigHash != currentHash {
+		return false
+	}
+	// If the prior report recorded tool versions, ensure they still match.
+	// Missing versions are treated as unsafe to avoid skipping across upgrades.
+	if prev.DocBuilderVersion == "" || prev.DocBuilderVersion != version.Version {
+		return false
+	}
+	if prev.HugoVersion != "" {
+		if cur := models.DetectHugoVersion(context.Background()); cur != "" && cur != prev.HugoVersion {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *Generator) outputHasPublicIndex() bool {
 	publicDir := filepath.Join(g.outputDir, "public")
 	if fi, err := os.Stat(publicDir); err != nil || !fi.IsDir() {
 		return false
 	}
-	if entries, err := os.ReadDir(publicDir); err != nil || len(entries) == 0 {
+	// Require a real rendered entrypoint; public/ containing only directories or
+	// temporary artifacts can cause 404s for "/".
+	if fi, err := os.Stat(filepath.Join(publicDir, "index.html")); err != nil || fi.IsDir() {
 		return false
 	}
+	entries, err := os.ReadDir(publicDir)
+	if err != nil || len(entries) == 0 {
+		return false
+	}
+	return true
+}
+
+func (g *Generator) outputHasNonRootMarkdownContent() bool {
 	contentDir := filepath.Join(g.outputDir, "content")
 	if fi, err := os.Stat(contentDir); err != nil || !fi.IsDir() {
 		return false
 	}
-	found := false
-	if werr := filepath.WalkDir(contentDir, func(_ string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	foundAny := false
+	foundNonRoot := false
+	if err := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
 		}
-		if found {
+		if foundAny && foundNonRoot {
 			return nil
 		}
-		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-			found = true
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			return nil
+		}
+		foundAny = true
+		// Reject an output that only contains the global scaffold content/_index.md.
+		// A real docs build should have at least one repo/section/page markdown file.
+		rel := strings.TrimPrefix(path, contentDir+string(os.PathSeparator))
+		rel = filepath.ToSlash(rel)
+		if rel != "_index.md" {
+			foundNonRoot = true
 		}
 		return nil
-	}); werr != nil {
+	}); err != nil {
 		return false
 	}
-	return found
+	return foundAny && foundNonRoot
 }
 
 // Config exposes the underlying configuration (read-only usage by themes).
@@ -317,6 +403,18 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		}
 	}
 
+	// Ensure per-repository state exists before stages that attempt to persist metadata
+	// (doc counts/hashes) run. This is especially important for discovery-triggered builds
+	// where the daemon may not have pre-initialized repository state entries.
+	if initializer, ok := any(g.stateManager).(interface {
+		EnsureRepositoryState(url, name, branch string)
+	}); ok {
+		for i := range bs.Git.Repositories {
+			r := &bs.Git.Repositories[i]
+			initializer.EnsureRepositoryState(r.URL, r.Name, r.Branch)
+		}
+	}
+
 	pipeline := models.NewPipeline().
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
 		Add(models.StageCloneRepos, stages.StageCloneRepos).
@@ -339,7 +437,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	// HEAD changes and existing output is valid). In that case, we must not promote
 	// the staging directory, otherwise we could replace a valid site with an empty
 	// scaffold and cause the daemon to start serving 404s.
-	if report.SkipReason == "no_changes" {
+	if report.SkipReason == skipReasonNoChanges {
 		g.abortStaging()
 		// best-effort: persist updated report into existing output dir
 		if err := report.Persist(g.outputDir); err != nil {
