@@ -38,15 +38,23 @@ func TestPublicOnly_FiltersMarkdownButKeepsAssetsAndScopesIndexes(t *testing.T) 
 	if _, err := os.Stat(publicOut); err != nil {
 		t.Fatalf("expected public page to exist at %s: %v", publicOut, err)
 	}
+	// #nosec G304 -- test file reading from controlled test output
+	publicBytes, err := os.ReadFile(publicOut)
+	if err != nil {
+		t.Fatalf("read public page: %v", err)
+	}
+	if containsAll(string(publicBytes), []string{"editURL:"}) {
+		t.Fatalf("expected public-only mode to omit editURL, got: %s", string(publicBytes))
+	}
 
 	privateOut := filepath.Join(gen.BuildRoot(), privateDoc.GetHugoPath(isSingleRepo))
-	if _, err := os.Stat(privateOut); err == nil {
+	if _, statErr := os.Stat(privateOut); statErr == nil {
 		t.Fatalf("expected private page to be excluded, but exists at %s", privateOut)
 	}
 
 	assetOut := filepath.Join(gen.BuildRoot(), asset.GetHugoPath(isSingleRepo))
-	if _, err := os.Stat(assetOut); err != nil {
-		t.Fatalf("expected asset to be copied at %s: %v", assetOut, err)
+	if _, statErr := os.Stat(assetOut); statErr != nil {
+		t.Fatalf("expected asset to be copied at %s: %v", assetOut, statErr)
 	}
 
 	rootIdx := filepath.Join(gen.BuildRoot(), "content", "_index.md")

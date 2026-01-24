@@ -48,7 +48,6 @@ params:
     disableLanguageSwitchingButton: true
     disableShortcutsTitle: false
     disableTagHiddenPages: false
-    editURL: {}
     math:
         enable: true
     mermaid:

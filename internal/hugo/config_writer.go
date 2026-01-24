@@ -201,10 +201,15 @@ func (g *Generator) applyRelearnThemeDefaults(params map[string]any) {
 	}
 
 	// Edit link configuration - per-page editURLs in frontmatter are enabled by default
-	// Only set this if not already configured by user (to avoid suppressing per-page links)
-	if _, ok := params["editURL"]; !ok {
-		// Empty object enables edit link UI without suppressing per-page URLs
-		params["editURL"] = map[string]any{}
+	// Only set this if not already configured by user (to avoid suppressing per-page links).
+	// In daemon public-only mode, we explicitly disable edit link UI.
+	if g.config != nil && g.config.IsDaemonPublicOnlyEnabled() {
+		delete(params, "editURL")
+	} else {
+		if _, ok := params["editURL"]; !ok {
+			// Empty object enables edit link UI without suppressing per-page URLs
+			params["editURL"] = map[string]any{}
+		}
 	}
 
 	// Math support (using MathJax by default in Relearn)

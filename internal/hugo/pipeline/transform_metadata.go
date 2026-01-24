@@ -45,6 +45,13 @@ func addRepositoryMetadata(cfg *config.Config) FileTransform {
 // addEditLink generates edit URL for the document using forge-specific patterns.
 func addEditLink(cfg *config.Config) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
+		// In daemon public-only mode, do not emit edit links.
+		// Rationale: public-only is typically used for unauthenticated/public publishing,
+		// and edit links often point at authenticated endpoints.
+		if cfg != nil && cfg.IsDaemonPublicOnlyEnabled() {
+			return nil, nil
+		}
+
 		// Skip if edit URL already exists
 		if _, exists := doc.FrontMatter["editURL"]; exists {
 			return nil, nil
