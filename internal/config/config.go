@@ -31,6 +31,11 @@ type Config struct {
 	Repositories []Repository `yaml:"repositories,omitempty"`
 }
 
+// IsDaemonPublicOnlyEnabled returns true if the daemon is configured and public-only mode is enabled.
+func (c *Config) IsDaemonPublicOnlyEnabled() bool {
+	return c != nil && c.Daemon != nil && c.Daemon.Content.PublicOnly
+}
+
 // ForgeConfig represents configuration for a specific forge instance (e.g., GitHub, GitLab, Forgejo).
 type ForgeConfig struct {
 	Name          string         `yaml:"name"`          // Friendly name for this forge

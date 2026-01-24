@@ -1,13 +1,8 @@
 package hugo
 
 import (
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 )
-
-func isDaemonPublicOnlyEnabled(cfg *config.Config) bool {
-	return cfg != nil && cfg.Daemon != nil && cfg.Daemon.Content.PublicOnly
-}
 
 // isPublicMarkdown returns true if and only if the input has YAML frontmatter
 // with a boolean field `public: true`.

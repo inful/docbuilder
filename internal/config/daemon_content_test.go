@@ -61,6 +61,9 @@ output:
 	if cfg.Daemon.Content.PublicOnly {
 		t.Fatalf("expected daemon.content.public_only default false")
 	}
+	if cfg.IsDaemonPublicOnlyEnabled() {
+		t.Fatalf("expected IsDaemonPublicOnlyEnabled() to be false")
+	}
 }
 
 func TestDaemonPublicOnly_ParsesTrue(t *testing.T) {
@@ -120,5 +123,8 @@ output:
 	}
 	if !cfg.Daemon.Content.PublicOnly {
 		t.Fatalf("expected daemon.content.public_only true")
+	}
+	if !cfg.IsDaemonPublicOnlyEnabled() {
+		t.Fatalf("expected IsDaemonPublicOnlyEnabled() to be true")
 	}
 }
