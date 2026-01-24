@@ -4,7 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-lastmod: "2026-01-23"
+fingerprint: 435cc7b0a266fcd63889fc50daeb9c5d548ea10c08974fdaffe73ea1dbb4e15f
+lastmod: "2026-01-24"
 tags:
   - daemon
   - security
@@ -20,7 +21,7 @@ uid: 7cdb5485-fbbb-4d2c-8ff2-1e5aa5d8f1b1
 **Date**: 2026-01-23  
 **Decision Makers**: DocBuilder Core Team
 
-This plan implements the decision in [docs/adr/adr-019-daemon-public-frontmatter-filter.md](docs/adr/adr-019-daemon-public-frontmatter-filter.md).
+This plan implements the decision in [docs/adr/adr-019-daemon-public-frontmatter-filter.md](adr-019-daemon-public-frontmatter-filter.md).
 
 ## Scope
 
