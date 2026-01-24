@@ -18,7 +18,7 @@ import (
 // This is the new implementation that replaces the registry-based transform system.
 func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []docs.DocFile, bs *models.BuildState) error {
 	slog.Info("Using new fixed transform pipeline for content processing")
-	publicOnly := isDaemonPublicOnlyEnabled(g.config)
+	publicOnly := g.config.IsDaemonPublicOnlyEnabled()
 
 	// Compute isSingleRepo flag
 	var isSingleRepo bool

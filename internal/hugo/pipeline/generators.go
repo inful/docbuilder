@@ -4,18 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
-
-func isDaemonPublicOnlyEnabled(cfg *config.Config) bool {
-	return cfg != nil && cfg.Daemon != nil && cfg.Daemon.Content.PublicOnly
-}
 
 // generateMainIndex creates the site root _index.md if it doesn't exist.
 func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	// In daemon public-only mode, publish an empty site when no public pages exist.
-	if isDaemonPublicOnlyEnabled(ctx.Config) && len(ctx.Discovered) == 0 {
+	if ctx.Config.IsDaemonPublicOnlyEnabled() && len(ctx.Discovered) == 0 {
 		return nil, nil
 	}
 
@@ -50,7 +44,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 		Repository: "",
 		Section:    "",
 	}
-	if isDaemonPublicOnlyEnabled(ctx.Config) {
+	if ctx.Config.IsDaemonPublicOnlyEnabled() {
 		doc.FrontMatter["public"] = true
 	}
 
@@ -110,7 +104,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 					"type":        "docs",
 				},
 			}
-			if isDaemonPublicOnlyEnabled(ctx.Config) {
+			if ctx.Config.IsDaemonPublicOnlyEnabled() {
 				doc.FrontMatter["public"] = true
 			}
 			generated = append(generated, doc)
@@ -208,7 +202,7 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 				"type":        "docs",
 			},
 		}
-		if isDaemonPublicOnlyEnabled(ctx.Config) {
+		if ctx.Config.IsDaemonPublicOnlyEnabled() {
 			doc.FrontMatter["public"] = true
 		}
 		generated = append(generated, doc)
