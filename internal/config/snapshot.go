@@ -44,6 +44,10 @@ func (c *Config) Snapshot() string {
 	}
 	// Output
 	w("output.directory", c.Output.Directory)
+	// Daemon content policies (build-affecting when daemon config is present)
+	if c.Daemon != nil {
+		w("daemon.content.public_only", boolToString(c.Daemon.Content.PublicOnly))
+	}
 	// Filtering patterns (order-insensitive after normalization). These affect which repos/docs are included.
 	if c.Filtering != nil {
 		if len(c.Filtering.IncludePatterns) > 0 {
@@ -76,3 +80,5 @@ func (c *Config) Snapshot() string {
 }
 
 func intToString(i int) string { return strconv.Itoa(i) }
+
+func boolToString(b bool) string { return strconv.FormatBool(b) }
