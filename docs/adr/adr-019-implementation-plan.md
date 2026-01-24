@@ -125,13 +125,13 @@ Goal: add config support without behavior change (public-only still off by defau
 - [x] 1.1 Add failing tests for config parsing of `daemon.content.public_only`.
   - Where: `internal/config/*_test.go`.
   - Cover: default false when missing, true when present.
-  - Commit: `test(config): add daemon public_only parsing tests`
+  - Commit: `test(config): add daemon public_only parsing tests` (SHA: 7364a57)
 
 - [x] 1.2 Implement config structs + YAML tags.
   - Where: `internal/config/config.go`.
   - Add: `DaemonConfig.Content` (new nested struct) with `PublicOnly bool`.
   - Ensure zero-value/default behavior keeps feature disabled.
-  - Commit: `feat(config): add daemon content public_only flag`
+  - Commit: `feat(config): add daemon content public_only flag` (SHA: 7364a57)
 
 - [x] 1.3 Validation run + plan update.
   - Record: `go test ./...` result, `golangci-lint run` result.
@@ -144,12 +144,12 @@ Goal: implement a pure, well-tested function that decides whether a Markdown pag
 - [x] 2.1 Write failing unit tests for public detection.
   - New helper target: `isPublicMarkdown(content []byte) bool`.
   - Where: `internal/hugo/public_only_test.go`.
-  - Commit: `test(hugo): add public frontmatter detection tests`
+  - Commit: `test(hugo): add public frontmatter detection tests` (SHA: 99dba1a)
 
 - [x] 2.2 Implement the helper using `internal/docmodel` (or `frontmatterops.Read`) and strict boolean semantics.
   - Must not mutate content.
   - Must treat parse errors as not public.
-  - Commit: `feat(hugo): add public frontmatter detection helper`
+  - Commit: `feat(hugo): add public frontmatter detection helper` (SHA: 99dba1a)
 
 - [x] 2.3 Validation run + plan update.
 
@@ -159,7 +159,7 @@ Goal: ensure filtered pages are not written into `content/` in daemon public-onl
 
 - [x] 3.1 Add failing tests demonstrating that non-public pages are excluded when enabled.
   - Best level: unit/integration-ish in `internal/hugo/public_only_pipeline_test.go`.
-  - Commit: `test(hugo): enforce daemon public-only filtering`
+  - Commit: `test(hugo): enforce daemon public-only filtering` (SHA: 1f2728c)
 
 - [x] 3.2 Implement filtering at the chosen pipeline location.
   - Requirements:
@@ -167,7 +167,7 @@ Goal: ensure filtered pages are not written into `content/` in daemon public-onl
     - Filters Markdown pages only; assets remain copied.
     - Uses per-page parsing only (no inheritance).
   - Insertion point: `internal/hugo/content_copy_pipeline.go`.
-  - Commit: `feat(daemon): filter non-public pages from rendered site`
+  - Commit: `feat(daemon): filter non-public pages from rendered site` (SHA: 1f2728c)
 
 - [x] 3.3 Validation run + plan update.
 
@@ -182,7 +182,7 @@ Goal: generated indexes only appear for public scopes; generated indexes include
     - At least one public page => indexes generated (and include `public: true`)
     - Zero public pages overall => no root index generated; build succeeds
   - Location: `internal/hugo/public_only_pipeline_test.go`.
-  - Commit: `test(hugo): add public-scoped index generation tests`
+  - Commit: `test(hugo): add public-scoped index generation tests` (SHA: b93ade0)
 
 - [x] 4.2 Implement generator updates.
   - Where: `internal/hugo/pipeline/generators.go`.
@@ -190,7 +190,7 @@ Goal: generated indexes only appear for public scopes; generated indexes include
     - Generate `content/_index.md` only if at least one public page exists.
     - Generate repo/section indexes only for repos/sections that contain public pages.
     - Inject `public: true` into generated index frontmatter.
-  - Commit: `feat(hugo): generate indexes only for public scopes`
+  - Commit: `feat(hugo): generate indexes only for public scopes` (SHA: b93ade0)
 
 - [x] 4.3 Validation run + plan update.
 
@@ -200,21 +200,21 @@ Goal: lock behavior with a realistic repo and expected output structure.
 
 - [x] 5.1 Add integration testdata repo with mixed public/private docs.
   - Location: `test/testdata/repos/public-filter`.
-  - Commit: `test(integration): add public-only test repository`
+  - Commit: `test(integration): add public-only test repository` (SHA: c4c8686)
 
 - [x] 5.2 Add config YAML enabling daemon public-only.
   - Location: `test/testdata/configs/daemon-public-filter.yaml`.
-  - Commit: `test(integration): add daemon public-only config`
+  - Commit: `test(integration): add daemon public-only config` (SHA: c4c8686)
 
 - [x] 5.3 Add golden integration test + golden files.
   - Test: `test/integration/public_filter_golden_test.go`.
-  - Commit: `test(integration): add golden test for daemon public-only`
+  - Commit: `test(integration): add golden test for daemon public-only` (SHA: c4c8686)
 
 - [x] 5.4 Run golden tests and refresh golden outputs if needed.
   - Commands:
     - `go test ./test/integration -v -update-golden`
     - `go test ./test/integration -v`
-  - Commit: `test(integration): update golden outputs for public-only`
+  - Commit: `test(integration): update golden outputs for public-only` (SHA: c4c8686)
 
 ## Phase 6 — Docs and Operational Notes
 
@@ -222,6 +222,7 @@ Goal: lock behavior with a realistic repo and expected output structure.
 
   - Likely file: `docs/reference/configuration.md`.
   - Commit: `docs(config): document daemon public_only flag`  
+  - SHA: 6010b7d
 
 ## Ambiguities / Decisions Log
 
