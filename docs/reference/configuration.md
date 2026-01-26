@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: b447de06a78a252e8e5d50fc67f8a75dfef9491787628e6f2e1f0fce9bd62712
-lastmod: "2026-01-24"
+fingerprint: 96a78e9b2b43ab6b4679328bfc9593bc1c7313a01fa4ebfe520bab45650b33bd
+lastmod: "2026-01-26"
 tags:
   - configuration
   - yaml
@@ -181,7 +181,11 @@ jetstream {
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| schedule | string | */5 * * * * | Cron expression for periodic repository sync. |
+| schedule | string | 0 */4 * * * | Cron expression for periodic repository sync. |
+
+The schedule is a standard 5-field cron expression (`minute hour day-of-month month day-of-week`) and is evaluated in the daemon process's local time (see `TZ`). Seconds are not supported.
+
+`@every <duration>` expressions are not supported.
 
 ### Storage Configuration
 

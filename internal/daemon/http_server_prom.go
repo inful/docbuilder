@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	prom "github.com/prometheus/client_golang/prometheus"
 	promcollect "github.com/prometheus/client_golang/prometheus/collectors"
@@ -92,13 +91,5 @@ func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }
 // prometheusOptionalHandler returns handler and periodically syncs daemon metrics.
 func prometheusOptionalHandler() http.Handler {
 	registerBaseCollectors()
-	go func() {
-		for {
-			if defaultDaemonInstance != nil { // global pointer we establish in daemon init
-				updateDaemonPromMetrics(defaultDaemonInstance)
-			}
-			time.Sleep(5 * time.Second)
-		}
-	}()
 	return m.HTTPHandler(promRegistry)
 }

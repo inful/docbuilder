@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -50,6 +51,44 @@ func (s *Scheduler) Stop(ctx context.Context) error {
 	return s.scheduler.Shutdown()
 }
 
+// ScheduleEvery schedules a duration-based job.
+//
+// The job runs in singleton mode to avoid overlapping executions.
+func (s *Scheduler) ScheduleEvery(name string, interval time.Duration, task func()) (string, error) {
+	if interval <= 0 {
+		return "", errors.New("interval must be greater than zero")
+	}
+
+	job, err := s.scheduler.NewJob(
+		gocron.DurationJob(interval),
+		gocron.NewTask(task),
+		gocron.WithName(name),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create duration job: %w", err)
+	}
+
+	return job.ID().String(), nil
+}
+
+// ScheduleCron schedules a cron-based job.
+//
+// The job runs in singleton mode to avoid overlapping executions.
+func (s *Scheduler) ScheduleCron(name, expression string, task func()) (string, error) {
+	job, err := s.scheduler.NewJob(
+		gocron.CronJob(expression, false),
+		gocron.NewTask(task),
+		gocron.WithName(name),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create cron job: %w", err)
+	}
+
+	return job.ID().String(), nil
+}
+
 // SchedulePeriodicBuild schedules a periodic build job
 // Returns the job ID for later management.
 func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildType, repos []any) (string, error) {
@@ -57,6 +96,7 @@ func (s *Scheduler) SchedulePeriodicBuild(interval time.Duration, jobType BuildT
 		gocron.DurationJob(interval),
 		gocron.NewTask(s.executeBuild, jobType, repos),
 		gocron.WithName(fmt.Sprintf("%s-build", jobType)),
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 	)
 	if err != nil {
 		return "", fmt.Errorf("failed to create periodic build job: %w", err)

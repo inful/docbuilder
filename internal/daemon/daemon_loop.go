@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -16,24 +14,6 @@ import (
 
 // mainLoop runs the main daemon processing loop.
 func (d *Daemon) mainLoop(ctx context.Context) {
-	ticker := time.NewTicker(30 * time.Second) // Status update interval
-	defer ticker.Stop()
-
-	// Discovery schedule: run initial after short delay, then every configured interval (default 10m).
-	discoveryInterval := 10 * time.Minute
-	if d.config != nil && d.config.Daemon != nil {
-		if expr := strings.TrimSpace(d.config.Daemon.Sync.Schedule); expr != "" {
-			if parsed, ok := parseDiscoverySchedule(expr); ok {
-				discoveryInterval = parsed
-				slog.Info("Configured discovery schedule", slog.String("expression", expr), slog.Duration("interval", discoveryInterval))
-			} else {
-				slog.Warn("Unrecognized discovery schedule expression; falling back to default", slog.String("expression", expr), slog.Duration("fallback_interval", discoveryInterval))
-			}
-		}
-	}
-	discoveryTicker := time.NewTicker(discoveryInterval)
-	defer discoveryTicker.Stop()
-
 	initialDiscoveryTimer := time.NewTimer(3 * time.Second)
 	defer initialDiscoveryTimer.Stop()
 
@@ -67,70 +47,10 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-d.stopChan:
 			slog.Info("Main loop stopped by stop signal")
 			return
-		case <-ticker.C:
-			d.updateStatus()
 		case <-initialDiscoveryTimer.C:
 			go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
-		case <-discoveryTicker.C:
-			slog.Info("Scheduled tick", slog.Duration("interval", discoveryInterval))
-			// For forge-based discovery, run discovery
-			if len(d.config.Forges) > 0 {
-				go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
-			}
-			// For explicit repositories, trigger a build to check for updates
-			if len(d.config.Repositories) > 0 {
-				go d.triggerScheduledBuildForExplicitRepos()
-			}
 		}
 	}
-}
-
-// parseDiscoverySchedule parses a schedule expression into an approximate interval.
-// Supported forms:
-//
-//   - @every <duration>   (same semantics as Go duration parsing, e.g. @every 5m, @every 1h30m)
-//   - Standard 5-field cron patterns (minute hour day month weekday) for a few common forms:
-//     */5 * * * *   -> 5m
-//     */15 * * * *  -> 15m
-//     0 * * * *     -> 1h (top of every hour)
-//     0 0 * * *     -> 24h (midnight daily)
-//     */30 * * * *  -> 30m
-//
-// If expression not recognized returns (0,false).
-func parseDiscoverySchedule(expr string) (time.Duration, bool) {
-	// @every form
-	if after, ok := strings.CutPrefix(expr, "@every "); ok {
-		rem := strings.TrimSpace(after)
-		if d, err := time.ParseDuration(rem); err == nil && d > 0 {
-			return d, true
-		}
-		return 0, false
-	}
-	parts := strings.Fields(expr)
-	if len(parts) != 5 { // not a simplified cron pattern we support
-		return 0, false
-	}
-	switch expr {
-	case "*/5 * * * *":
-		return 5 * time.Minute, true
-	case "*/15 * * * *":
-		return 15 * time.Minute, true
-	case "*/30 * * * *":
-		return 30 * time.Minute, true
-	case "0 * * * *":
-		return time.Hour, true
-	case "0 0 * * *":
-		return 24 * time.Hour, true
-	default:
-		// Attempt to parse expressions like "*/10 * * * *"
-		if after, ok := strings.CutPrefix(parts[0], "*/"); ok {
-			val := after
-			if n, err := strconv.Atoi(val); err == nil && n > 0 && n < 60 {
-				return time.Duration(n) * time.Minute, true
-			}
-		}
-	}
-	return 0, false
 }
 
 // updateStatus updates runtime status and metrics.

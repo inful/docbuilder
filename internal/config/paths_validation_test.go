@@ -18,14 +18,20 @@ func TestValidatePaths_Unified(t *testing.T) {
 
 	// Case 2: Matching output dir → ok
 	withDaemonMatch := base
-	withDaemonMatch.Daemon = &DaemonConfig{Storage: StorageConfig{OutputDir: base.Output.Directory}}
+	withDaemonMatch.Daemon = &DaemonConfig{
+		Storage: StorageConfig{OutputDir: base.Output.Directory},
+		Sync:    SyncConfig{Schedule: "0 */4 * * *"},
+	}
 	if err := validateConfig(&withDaemonMatch); err != nil {
 		t.Fatalf("unexpected error with matching output dirs: %v", err)
 	}
 
 	// Case 3: Mismatch should error
 	withDaemonMismatch := base
-	withDaemonMismatch.Daemon = &DaemonConfig{Storage: StorageConfig{OutputDir: "./different"}}
+	withDaemonMismatch.Daemon = &DaemonConfig{
+		Storage: StorageConfig{OutputDir: "./different"},
+		Sync:    SyncConfig{Schedule: "0 */4 * * *"},
+	}
 	if err := validateConfig(&withDaemonMismatch); err == nil {
 		t.Fatalf("expected error on mismatched output dirs, got nil")
 	}
