@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -71,6 +72,12 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 		}
 	}
 
+	// If the repository was not explicitly configured, try matching against the
+	// most recently discovered repositories.
+	if len(targetRepos) == 0 {
+		targetRepos = d.discoveredReposForWebhook(repoFullName, branch)
+	}
+
 	if len(targetRepos) == 0 {
 		slog.Warn("No matching repositories found for webhook",
 			"repo_full_name", repoFullName,
@@ -109,6 +116,40 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 
 	atomic.AddInt32(&d.queueLength, 1)
 	return jobID
+}
+
+func (d *Daemon) discoveredReposForWebhook(repoFullName, branch string) []config.Repository {
+	discovered, err := d.GetDiscoveryResult()
+	if err != nil || discovered == nil {
+		return nil
+	}
+	if d.discovery == nil {
+		return nil
+	}
+
+	for _, repo := range discovered.Repositories {
+		if repo == nil {
+			continue
+		}
+		if repo.FullName != repoFullName && !matchesRepoURL(repo.CloneURL, repoFullName) && !matchesRepoURL(repo.SSHURL, repoFullName) {
+			continue
+		}
+
+		converted := d.discovery.ConvertToConfigRepositories([]*forge.Repository{repo}, d.forgeManager)
+		for i := range converted {
+			if branch != "" {
+				converted[i].Branch = branch
+			}
+		}
+
+		slog.Info("Webhook matched discovered repository",
+			"repo", repo.Name,
+			"full_name", repoFullName,
+			"branch", branch)
+		return converted
+	}
+
+	return nil
 }
 
 // matchesRepoURL checks if a repository URL matches the given full name (owner/repo).
