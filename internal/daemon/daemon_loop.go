@@ -48,7 +48,11 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 			slog.Info("Main loop stopped by stop signal")
 			return
 		case <-initialDiscoveryTimer.C:
-			go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+			workCtx, cancel := d.workContext(ctx)
+			go func() {
+				defer cancel()
+				d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
+			}()
 		}
 	}
 }

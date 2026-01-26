@@ -21,6 +21,17 @@ func (f *fakeDiscovery) DiscoverAll(ctx context.Context) (*forge.DiscoveryResult
 	return f.result, nil
 }
 
+type blockingDiscovery struct{}
+
+func (b *blockingDiscovery) DiscoverAll(ctx context.Context) (*forge.DiscoveryResult, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+func (b *blockingDiscovery) ConvertToConfigRepositories(repos []*forge.Repository, forgeManager *forge.Manager) []config.Repository {
+	return nil
+}
+
 func (f *fakeDiscovery) ConvertToConfigRepositories(repos []*forge.Repository, forgeManager *forge.Manager) []config.Repository {
 	converted := make([]config.Repository, 0, len(repos))
 	for _, repo := range repos {
@@ -74,6 +85,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		})
 
 		d := &Daemon{config: cfg, discoveryRunner: runner}
+		d.stopChan = make(chan struct{})
 		d.status.Store(StatusStopped)
 
 		d.runScheduledSyncTick(context.Background(), "0 */4 * * *")
@@ -105,6 +117,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		})
 
 		d := &Daemon{config: cfg, discoveryRunner: runner}
+		d.stopChan = make(chan struct{})
 		d.status.Store(StatusRunning)
 
 		d.runScheduledSyncTick(context.Background(), "0 */4 * * *")
@@ -123,11 +136,47 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		ctx := context.Background()
 
 		cfg := &config.Config{Daemon: &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}}}
-		d := &Daemon{config: cfg, scheduler: s}
+		d := &Daemon{config: cfg, scheduler: s, stopChan: make(chan struct{})}
 		err = d.schedulePeriodicJobs(ctx)
 		require.NoError(t, err)
 
 		s.Start(ctx)
 		require.NoError(t, s.Stop(ctx))
+	})
+
+	t.Run("cancels in-flight discovery promptly when context is canceled", func(t *testing.T) {
+		cfg := &config.Config{
+			Daemon: &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}},
+			Forges: []*config.ForgeConfig{{Name: "forge-1", Type: config.ForgeForgejo}},
+		}
+
+		fakeQ := &fakeBuildQueue{}
+		runner := NewDiscoveryRunner(DiscoveryRunnerConfig{
+			Discovery:      &blockingDiscovery{},
+			ForgeManager:   nil,
+			DiscoveryCache: discoveryrunner.NewCache(),
+			Metrics:        nil,
+			StateManager:   nil,
+			BuildQueue:     fakeQ,
+			LiveReload:     nil,
+			Config:         cfg,
+		})
+
+		d := &Daemon{config: cfg, discoveryRunner: runner}
+		d.status.Store(StatusRunning)
+
+		done := make(chan struct{})
+		go func() {
+			d.runScheduledSyncTick(context.Background(), "0 */4 * * *")
+			close(done)
+		}()
+
+		close(d.stopChan)
+		select {
+		case <-done:
+			// ok
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("scheduled tick did not return promptly after context cancellation")
+		}
 	})
 }
