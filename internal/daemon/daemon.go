@@ -416,6 +416,22 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 	return nil
 }
 
+func (d *Daemon) workContext(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+
+	// Tie this context to daemon shutdown without storing a context on the daemon
+	// itself (see linters: containedctx/contextcheck).
+	go func() {
+		select {
+		case <-d.stopChan:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	return ctx, cancel
+}
+
 func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 	// Avoid running scheduled work when daemon is not running.
 	if d.GetStatus() != StatusRunning {
@@ -429,7 +445,9 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
-			d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+			workCtx, cancel := d.workContext(ctx)
+			defer cancel()
+			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
 	}
 
