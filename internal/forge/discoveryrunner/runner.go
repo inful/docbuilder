@@ -165,11 +165,22 @@ func (r *Runner) Run(ctx context.Context) error {
 		}
 	}
 
-	if len(result.Repositories) > 0 {
+	if len(result.Repositories) > 0 && r.shouldBuildOnDiscovery() {
 		r.triggerBuildForDiscoveredRepos(result)
 	}
 
 	return nil
+}
+
+func (r *Runner) shouldBuildOnDiscovery() bool {
+	// Preserve historical behavior: discovery enqueues a build by default.
+	if r.config == nil || r.config.Daemon == nil {
+		return true
+	}
+	if r.config.Daemon.Sync.BuildOnDiscovery == nil {
+		return true
+	}
+	return *r.config.Daemon.Sync.BuildOnDiscovery
 }
 
 func (r *Runner) triggerBuildForDiscoveredRepos(result *forge.DiscoveryResult) {

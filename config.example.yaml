@@ -31,6 +31,14 @@ build:
   # For documentation sites, shallow clones are typically sufficient and much faster/lower memory.
   # Set to 0 to disable shallow cloning.
   shallow_depth: 1
+
+# Optional daemon configuration (enables scheduled sync/discovery and admin/webhook servers)
+daemon:
+  sync:
+    schedule: "0 */4 * * *"         # Cron schedule (5-field)
+    build_on_discovery: true        # Set false to discover without enqueuing builds
+  storage:
+    repo_cache_dir: "./daemon-data/repos"
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"

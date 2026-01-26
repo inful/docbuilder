@@ -86,6 +86,9 @@ type SyncConfig struct {
 	Schedule         string `yaml:"schedule"`          // Cron expression for discovery
 	ConcurrentBuilds int    `yaml:"concurrent_builds"` // Max parallel repository builds
 	QueueSize        int    `yaml:"queue_size"`        // Max queued build requests
+	// BuildOnDiscovery controls whether a forge discovery run should enqueue a
+	// build for discovered repositories. When unset, defaults to true.
+	BuildOnDiscovery *bool `yaml:"build_on_discovery,omitempty"`
 }
 
 // StorageConfig represents storage configuration for state, repository cache, and output directories.

@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 96a78e9b2b43ab6b4679328bfc9593bc1c7313a01fa4ebfe520bab45650b33bd
+fingerprint: 4e2022e5c19a74b09b5efa4483c3af02207dd10439b11e954d5680b630f75c06
 lastmod: "2026-01-26"
 tags:
   - configuration
@@ -182,6 +182,7 @@ jetstream {
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | schedule | string | 0 */4 * * * | Cron expression for periodic repository sync. |
+| build_on_discovery | bool | true | When discovery finds repositories, enqueue a build for them. Set to false for discovery-only operation. |
 
 The schedule is a standard 5-field cron expression (`minute hour day-of-month month day-of-week`) and is evaluated in the daemon process's local time (see `TZ`). Seconds are not supported.
 
@@ -204,6 +205,7 @@ daemon:
     cache_ttl: "24h"
   sync:
     schedule: "*/10 * * * *"  # Sync every 10 minutes
+    build_on_discovery: true  # Default: enqueue builds for discovered repositories
   storage:
     repo_cache_dir: "./daemon-data/repos"
 ```

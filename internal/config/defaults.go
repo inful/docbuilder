@@ -172,6 +172,10 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	if cfg.Daemon.Sync.Schedule == "" {
 		cfg.Daemon.Sync.Schedule = "0 */4 * * *" // Every 4 hours
 	}
+	if cfg.Daemon.Sync.BuildOnDiscovery == nil {
+		v := true
+		cfg.Daemon.Sync.BuildOnDiscovery = &v
+	}
 	if cfg.Daemon.Sync.ConcurrentBuilds == 0 {
 		cfg.Daemon.Sync.ConcurrentBuilds = 3
 	}
