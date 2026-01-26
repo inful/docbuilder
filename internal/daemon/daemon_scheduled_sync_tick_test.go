@@ -163,6 +163,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		})
 
 		d := &Daemon{config: cfg, discoveryRunner: runner}
+		d.stopChan = make(chan struct{})
 		d.status.Store(StatusRunning)
 
 		done := make(chan struct{})
