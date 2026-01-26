@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
@@ -164,6 +166,44 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 		if report.SkipReason != "no changes detected" {
 			t.Errorf("expected skip reason 'no changes detected', got %q", report.SkipReason)
 		}
+	})
+
+	t.Run("webhook uses typed repositories", func(t *testing.T) {
+		svc := &mockBuildService{
+			runFunc: func(ctx context.Context, req build.BuildRequest) (*build.BuildResult, error) {
+				if req.Config == nil {
+					t.Fatal("expected non-nil config")
+				}
+				if len(req.Config.Repositories) != 1 {
+					t.Fatalf("expected 1 repository, got %d", len(req.Config.Repositories))
+				}
+				if req.Config.Repositories[0].Name != "go-test-project" {
+					t.Fatalf("unexpected repo name: %q", req.Config.Repositories[0].Name)
+				}
+				return &build.BuildResult{Status: build.BuildStatusSuccess, Report: &models.BuildReport{Outcome: models.OutcomeSuccess}}, nil
+			},
+		}
+
+		adapter := NewBuildServiceAdapter(svc)
+		job := &BuildJob{
+			ID:   "test-job",
+			Type: BuildTypeWebhook,
+			TypedMeta: &BuildJobMetadata{
+				V2Config: &config.Config{},
+				Repositories: []config.Repository{{
+					Name:   "go-test-project",
+					URL:    "https://git.home.luguber.info/inful/go-test-project.git",
+					Branch: "main",
+					Paths:  []string{"docs"},
+				}},
+			},
+		}
+
+		report, err := adapter.Build(t.Context(), job)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		require.NotNil(t, report)
 	})
 }
 
