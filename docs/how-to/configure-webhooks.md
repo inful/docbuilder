@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: a8556dd330afc2e3fd41e1e9f244c4212e5110204be409c141244b1c71e03cce
-lastmod: "2026-01-22"
+fingerprint: 851ec4e1a4126cf0998d179de8cf46bccb2bc0f6184384bad793149f8c87531f
+lastmod: "2026-01-26"
 tags:
   - webhooks
   - automation
@@ -29,6 +29,10 @@ When configured, DocBuilder:
 
 **Important**: Webhook-triggered builds only refetch and rebuild the specific repository mentioned in the webhook event, not all configured repositories. This provides fast, efficient updates.
 
+**Important**: Webhooks do **not** perform repository discovery. They only trigger builds for repositories DocBuilder already knows about (i.e. repositories already discovered by the daemon or explicitly configured).
+
+To discover new repositories, rely on scheduled discovery (`daemon.sync.schedule`) or manually trigger discovery via the admin API: `POST http://your-docbuilder-host:<admin_port>/api/discovery/trigger`.
+
 ## Configuration
 
 ### 0. Understanding Port Isolation
@@ -40,13 +44,19 @@ When configured, DocBuilder:
 
 Example URLs:
 - Documentation: `http://your-server:8080/docs/guide/`
-- Webhooks: `http://your-server:8081/webhooks/github`
+- Webhooks: `http://your-server:8081/webhooks/github` (default path for a GitHub forge)
 
 See [Webhook and Documentation Isolation](../explanation/webhook-documentation-isolation.md) for detailed architecture information.
 
 ### 1. Add Webhook Configuration to Your Forge
 
-In your `config.yaml`, add webhook configuration to each forge:
+In your `config.yaml`, add webhook configuration to each forge.
+
+Notes:
+- Webhook routing is per **configured forge instance** (`forges[].name`).
+- The webhook endpoint path can be customized per forge via `forges[].webhook.path`.
+- If `forges[].webhook.path` is omitted, DocBuilder uses a default path of `/webhooks/<forge-type>` (e.g. `/webhooks/github`).
+- Webhooks are not supported for `type: local`.
 
 ```yaml
 forges:
@@ -64,7 +74,7 @@ forges:
         - push
         - repository
   
-  - name: gitlab
+    - name: gitlab
     type: gitlab
     base_url: "https://gitlab.com"
     api_url: "https://gitlab.com/api/v4"
@@ -78,7 +88,7 @@ forges:
         - push
         - tag_push
   
-  - name: forgejo
+    - name: forgejo
     type: forgejo
     base_url: "https://git.home.luguber.info"
     api_url: "https://git.home.luguber.info/api/v1"
@@ -90,6 +100,22 @@ forges:
       path: "/webhooks/forgejo"
       events:
         - push
+```
+
+If you run multiple forges of the same type, give them distinct names and distinct paths:
+
+```yaml
+forges:
+  - name: company-github
+    type: github
+    base_url: "https://github.com"
+    api_url: "https://api.github.com"
+    auth:
+      type: token
+      token: "${GITHUB_TOKEN}"
+    webhook:
+      secret: "${COMPANY_GITHUB_WEBHOOK_SECRET}"
+      path: "/webhooks/company-github"  # custom per-instance path
 ```
 
 ### 2. Configure Daemon HTTP Ports
@@ -141,7 +167,7 @@ openssl rand -hex 32
 ### GitHub
 
 1. Go to your repository settings → Webhooks → Add webhook
-2. Set **Payload URL** to: `http://your-docbuilder-host:8081/webhooks/github`
+2. Set **Payload URL** to your configured webhook path, e.g. `http://your-docbuilder-host:8081/webhooks/github`
 3. Set **Content type** to: `application/json`
 4. Set **Secret** to the same value as `GITHUB_WEBHOOK_SECRET`
 5. Select events:
@@ -155,7 +181,7 @@ openssl rand -hex 32
 ### GitLab
 
 1. Go to your project settings → Webhooks
-2. Set **URL** to: `http://your-docbuilder-host:8081/webhooks/gitlab`
+2. Set **URL** to your configured webhook path, e.g. `http://your-docbuilder-host:8081/webhooks/gitlab`
 3. Set **Secret token** to the same value as `GITLAB_WEBHOOK_SECRET`
 4. Select trigger events:
    - **Push events**
@@ -168,7 +194,7 @@ openssl rand -hex 32
 ### Forgejo (Gitea)
 
 1. Go to your repository settings → Webhooks → Add webhook → Gitea
-2. Set **Target URL** to: `http://your-docbuilder-host:8081/webhooks/forgejo`
+2. Set **Target URL** to your configured webhook path, e.g. `http://your-docbuilder-host:8081/webhooks/forgejo`
 3. Set **HTTP Method** to: `POST`
 4. Set **POST Content Type** to: `application/json`
 5. Set **Secret** to the same value as `FORGEJO_WEBHOOK_SECRET`
@@ -182,14 +208,18 @@ openssl rand -hex 32
 
 ## Webhook Endpoints
 
-DocBuilder provides these webhook endpoints:
+DocBuilder provides webhook endpoints based on your configured forges.
 
-| Endpoint | Forge | Signature Header | Event Header |
-|----------|-------|------------------|--------------|
+- If `forges[].webhook.path` is set, that exact path is used.
+- If it is not set, a default path of `/webhooks/<forge-type>` is used.
+
+| Default Endpoint | Forge Type | Signature Header | Event Header |
+|------------------|-----------|------------------|--------------|
 | `/webhooks/github` | GitHub | `X-Hub-Signature-256` | `X-GitHub-Event` |
 | `/webhooks/gitlab` | GitLab | `X-Gitlab-Token` | `X-Gitlab-Event` |
 | `/webhooks/forgejo` | Forgejo | `X-Hub-Signature-256` | `X-Forgejo-Event` or `X-Gitea-Event` |
-| `/webhook` | Generic | Auto-detected | Auto-detected |
+
+`/webhook` is a generic acknowledgment endpoint and does not trigger builds.
 
 ## Webhook Flow
 
@@ -235,7 +265,7 @@ Monitor DocBuilder daemon logs for webhook events:
 
 ```bash
 # Successful webhook with build trigger
-INFO Webhook signature validated forge=github
+INFO Webhook signature validated forge=company-github
 INFO Webhook matched repository repo=docbuilder full_name=inful/docbuilder branch=main
 INFO Webhook build triggered job_id=webhook-1734433800 repo=inful/docbuilder branch=main target_count=1
 
@@ -335,7 +365,7 @@ webhook:
     - repository    # Repository events (create, delete, rename)
 ```
 
-**Note**: Currently, DocBuilder acknowledges all configured events but only triggers builds for push events affecting configured repositories.
+**Note**: `webhook.events` is currently treated as informational/forge-side configuration. DocBuilder validates and parses the incoming event and triggers a build when it can extract a repository + branch that matches your configured repositories.
 
 ## Related Documentation
 

@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: c0245dbf7e412af7301da3f5702f577ed8eb0f861a0eec931e4642a3a6612856
-lastmod: "2026-01-22"
+fingerprint: e685b3daa914b82f8295cfa38a77519acad31d133f83b7e709ab1494661a7afe
+lastmod: "2026-01-26"
 tags:
   - architecture
   - packages
@@ -933,7 +933,7 @@ func (cmd *BuildCmd) Run(ctx *Context) error {
 
 ### `internal/server`
 
-**Purpose:** HTTP server for API and webhooks.
+**Purpose:** HTTP server wiring for docs/admin/webhook endpoints.
 
 **Package Structure:**
 
@@ -966,12 +966,9 @@ type Server struct {
 
 func (s *Server) Start(ctx context.Context) error {
     // Register routes
-    s.router.HandleFunc("/api/v1/build", s.handleBuild)
-    s.router.HandleFunc("/api/v1/status", s.handleStatus)
-    s.router.HandleFunc("/webhook/github", s.handleGitHubWebhook)
-    s.router.HandleFunc("/webhook/gitlab", s.handleGitLabWebhook)
-    s.router.HandleFunc("/webhook/forgejo", s.handleForgejoWebhook)
-    s.router.HandleFunc("/metrics", s.handleMetrics)
+    // - Docs server routes (static files, /health, /ready)
+    // - Admin server routes (admin API, /metrics)
+    // - Webhook server routes (config-driven per-forge paths)
     
     // Apply middleware
     handler := s.applyMiddleware(s.router)
@@ -984,27 +981,7 @@ func (s *Server) Start(ctx context.Context) error {
 **Webhook Handling:**
 
 ```go
-func handleForgeWebhook(
-    w http.ResponseWriter,
-    r *http.Request,
-    eventHeader string,
-    source string,
-) {
-    // Read event type
-    eventType := r.Header.Get(eventHeader)
-    
-    // Parse payload
-    var payload WebhookPayload
-    json.NewDecoder(r.Body).Decode(&payload)
-    
-    // Trigger build if relevant event
-    if isPushEvent(eventType) {
-        buildService.Build(context.Background())
-    }
-    
-    // Respond
-    w.WriteHeader(http.StatusOK)
-}
+Webhook endpoints are registered from configuration (`forges[].webhook.path`, defaulting to `/webhooks/<forge-type>`). Incoming events are validated and parsed by the configured forge client, then routed to `TriggerWebhookBuild(repoFullName, branch)`.
 ```
 
 **Design Rationale:**

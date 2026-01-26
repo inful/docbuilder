@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-17T00:00:00Z
-fingerprint: 12aacd7f502cabb5753f7e11f69b079a805c4011e274e3db0262c7b9ec1fc5b4
-lastmod: "2026-01-22"
+fingerprint: d2089d740932977799d8695fa4b93d62d33475cb1f82cb4a2eb5e776405155e5
+lastmod: "2026-01-26"
 tags:
   - architecture
   - webhooks
@@ -32,9 +32,9 @@ DocBuilder uses a **defense-in-depth approach** with multiple isolated HTTP serv
 │  │  Port: 8080    │  │  Port: 8081    │                │
 │  ├────────────────┤  ├────────────────┤                │
 │  │ GET  /         │  │ POST /webhooks/│                │
-│  │ GET  /docs/*   │  │      github    │                │
-│  │ GET  /search/  │  │ POST /webhooks/│                │
-│  │      index.json│  │      gitlab    │                │
+│  │ GET  /docs/*   │  │   <configured> │                │
+│  │ GET  /search/  │  │   webhook paths│                │
+│  │      index.json│  │   (per forge)  │                │
 │  └────────────────┘  │ POST /webhooks/│                │
 │                      │      forgejo   │                │
 │  ┌────────────────┐  └────────────────┘                │
@@ -91,10 +91,8 @@ func (s *HTTPServer) Start(ctx context.Context) error {
 
 Even if servers were combined (they're not), webhook paths use reserved prefixes:
 
-- `/webhooks/github`
-- `/webhooks/gitlab`
-- `/webhooks/forgejo`
-- `/webhook` (generic)
+- `/webhooks/...` (default prefix)
+- Any custom per-forge path configured via `forges[].webhook.path`
 
 These paths are unlikely to exist in Hugo documentation because:
 - Hugo content typically lives in `/docs/`, `/blog/`, etc.
@@ -105,15 +103,7 @@ These paths are unlikely to exist in Hugo documentation because:
 
 Webhook handlers **only accept POST requests**:
 
-```go
-func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        // Return 405 Method Not Allowed
-        return
-    }
-    // Process webhook...
-}
-```
+DocBuilder also exposes `/webhook` as a generic acknowledgement endpoint; it does not trigger builds.
 
 Documentation requests use **GET**, so even if a collision occurred:
 - `GET /webhooks/github` → Documentation server (404 or docs file)

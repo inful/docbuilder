@@ -36,6 +36,43 @@ func NewWebhookHandlers(trigger WebhookTrigger, forgeClients map[string]forge.Cl
 	}
 }
 
+// HandleForgeWebhook handles a webhook for a specific configured forge instance.
+//
+// The forgeName is the configured forge instance name (config.forges[].name),
+// not the forge type (github/gitlab/forgejo).
+func (h *WebhookHandlers) HandleForgeWebhook(w http.ResponseWriter, r *http.Request, forgeName string, forgeType config.ForgeType) {
+	switch forgeType {
+	case config.ForgeGitHub:
+		h.handleForgeWebhookWithValidation(w, r, "X-GitHub-Event", "X-Hub-Signature-256", forgeName)
+		return
+	case config.ForgeGitLab:
+		h.handleForgeWebhookWithValidation(w, r, "X-Gitlab-Event", "X-Gitlab-Token", forgeName)
+		return
+	case config.ForgeForgejo:
+		// Forgejo uses X-Forgejo-Event or X-Gitea-Event
+		eventHeader := "X-Forgejo-Event"
+		if r.Header.Get(eventHeader) == "" {
+			eventHeader = "X-Gitea-Event"
+		}
+		h.handleForgeWebhookWithValidation(w, r, eventHeader, "X-Hub-Signature-256", forgeName)
+		return
+	case config.ForgeLocal:
+		err := errors.ValidationError("webhooks are not supported for local forge").
+			WithContext("forge", forgeName).
+			WithContext("type", string(forgeType)).
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
+	default:
+		err := errors.ValidationError("unsupported forge type for webhook handler").
+			WithContext("forge", forgeName).
+			WithContext("type", string(forgeType)).
+			Build()
+		h.errorAdapter.WriteErrorResponse(w, r, err)
+		return
+	}
+}
+
 // HandleWebhook receives generic webhook payloads (e.g., GitHub/GitLab)
 // and returns a simple acknowledgement. Signature/secret validation can
 // be added in middleware or here in future passes.
