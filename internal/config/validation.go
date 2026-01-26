@@ -2,7 +2,10 @@ package config
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/go-co-op/gocron/v2"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
@@ -40,12 +43,47 @@ func (cv *configurationValidator) validate() error {
 	if err := cv.validateBuild(); err != nil {
 		return err
 	}
+	if err := cv.validateDaemon(); err != nil {
+		return err
+	}
 	if err := cv.validatePaths(); err != nil {
 		return err
 	}
 	if err := cv.validateVersioning(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (cv *configurationValidator) validateDaemon() error {
+	if cv.config.Daemon == nil {
+		return nil
+	}
+
+	expr := strings.TrimSpace(cv.config.Daemon.Sync.Schedule)
+	if expr == "" {
+		return errors.NewError(errors.CategoryValidation, "daemon sync schedule cannot be empty").Build()
+	}
+
+	// Validate cron expression via gocron parser by attempting to create a cron job.
+	// Note: scheduler is not started; we only want parse/validation.
+	scheduler, err := gocron.NewScheduler()
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryValidation, "failed to create scheduler for schedule validation").Build()
+	}
+	defer func() { _ = scheduler.Shutdown() }()
+
+	_, err = scheduler.NewJob(
+		gocron.CronJob(expr, false),
+		gocron.NewTask(func() {}),
+		gocron.WithName("daemon-sync-validation"),
+	)
+	if err != nil {
+		return errors.WrapError(err, errors.CategoryValidation, "invalid daemon sync schedule").
+			WithContext("schedule", cv.config.Daemon.Sync.Schedule).
+			Build()
+	}
+
 	return nil
 }
 

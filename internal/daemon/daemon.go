@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -67,6 +68,11 @@ type Daemon struct {
 	activeJobs  int32
 	queueLength int32
 	lastBuild   *time.Time
+
+	// Scheduled job IDs (for observability and tests)
+	syncJobID   string
+	statusJobID string
+	promJobID   string
 
 	// Discovery cache for fast status queries
 	discoveryCache *DiscoveryCache
@@ -295,6 +301,13 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Start build queue processing
 	d.buildQueue.Start(ctx)
 
+	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
+	if err := d.schedulePeriodicJobs(ctx); err != nil {
+		d.status.Store(StatusError)
+		d.mu.Unlock()
+		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
+	}
+
 	// Start scheduler
 	d.scheduler.Start(ctx)
 
@@ -352,6 +365,82 @@ func (d *Daemon) Start(ctx context.Context) error {
 	slog.Info("Main loop exited, daemon stopping")
 
 	return nil
+}
+
+func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
+	if d.scheduler == nil {
+		return errors.New("scheduler not initialized")
+	}
+	if d.config == nil || d.config.Daemon == nil {
+		return nil
+	}
+
+	expr := strings.TrimSpace(d.config.Daemon.Sync.Schedule)
+	if expr == "" {
+		// Defaults should prevent this, but keep it defensive.
+		return errors.New("daemon sync schedule is empty")
+	}
+
+	syncJobID, err := d.scheduler.ScheduleCron("daemon-sync", expr, func() {
+		d.runScheduledSyncTick(ctx, expr)
+	})
+	if err != nil {
+		return err
+	}
+	d.syncJobID = syncJobID
+
+	statusJobID, err := d.scheduler.ScheduleEvery("daemon-status", 30*time.Second, func() {
+		if d.GetStatus() != StatusRunning {
+			return
+		}
+		d.updateStatus()
+	})
+	if err != nil {
+		return err
+	}
+	d.statusJobID = statusJobID
+
+	// Prometheus counter bridge sync (used by /metrics handler). This replaces the
+	// previous global goroutine+sleep loop so the daemon owns the periodic work.
+	promJobID, err := d.scheduler.ScheduleEvery("daemon-prom-sync", 5*time.Second, func() {
+		if d.GetStatus() != StatusRunning {
+			return
+		}
+		updateDaemonPromMetrics(d)
+	})
+	if err != nil {
+		return err
+	}
+	d.promJobID = promJobID
+
+	return nil
+}
+
+func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
+	// Avoid running scheduled work when daemon is not running.
+	if d.GetStatus() != StatusRunning {
+		return
+	}
+
+	slog.Info("Scheduled sync tick", slog.String("expression", expression))
+
+	// For forge-based discovery, run discovery.
+	if len(d.config.Forges) > 0 {
+		if d.discoveryRunner == nil {
+			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
+		} else {
+			d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+		}
+	}
+
+	// For explicit repositories, trigger a build to check for updates.
+	if len(d.config.Repositories) > 0 {
+		if d.buildQueue == nil {
+			slog.Warn("Skipping scheduled build: build queue not initialized")
+		} else {
+			d.triggerScheduledBuildForExplicitRepos()
+		}
+	}
 }
 
 // Stop gracefully shuts down the daemon.
