@@ -52,37 +52,65 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 		return ""
 	}
 
-	// Find matching repository in config
-	var targetRepos []config.Repository
-	for i := range d.config.Repositories {
-		repo := &d.config.Repositories[i]
-		// Match by name or full name extracted from URL
-		// GitHub URL format: https://github.com/owner/repo.git or git@github.com:owner/repo.git
-		// GitLab URL format: https://gitlab.com/owner/repo.git or git@gitlab.com:owner/repo.git
-		// Forgejo URL format: https://git.home.luguber.info/owner/repo.git or git@git.home.luguber.info:owner/repo.git
-		if repo.Name == repoFullName || matchesRepoURL(repo.URL, repoFullName) {
-			// If branch is specified, only rebuild if it matches the configured branch
-			if branch == "" || repo.Branch == branch {
-				targetRepos = append(targetRepos, *repo)
-				slog.Info("Webhook matched repository",
-					"repo", repo.Name,
-					"full_name", repoFullName,
-					"branch", branch)
-			}
+	// A webhook build should rebuild the full site with the currently known repository
+	// set. The webhook payload only determines whether we trigger, and which repository
+	// we annotate as changed.
+	//
+	// In explicit-repo mode (config.repositories provided) use the configured list.
+	// In discovery-only mode, use the most recently discovered repository list.
+	var reposForBuild []config.Repository
+	if len(d.config.Repositories) > 0 {
+		reposForBuild = append([]config.Repository{}, d.config.Repositories...)
+	} else {
+		discovered, err := d.GetDiscoveryResult()
+		if err == nil && discovered != nil && d.discovery != nil {
+			reposForBuild = d.discovery.ConvertToConfigRepositories(discovered.Repositories, d.forgeManager)
 		}
 	}
 
-	// If the repository was not explicitly configured, try matching against the
-	// most recently discovered repositories.
-	if len(targetRepos) == 0 {
-		targetRepos = d.discoveredReposForWebhook(repoFullName, branch)
+	// Determine whether the webhook matches any currently known repository.
+	matched := false
+	matchedRepoURL := ""
+	for i := range reposForBuild {
+		repo := &reposForBuild[i]
+		if repo.Name != repoFullName && !matchesRepoURL(repo.URL, repoFullName) {
+			continue
+		}
+
+		// In explicit-repo mode, honor configured branch filters.
+		if len(d.config.Repositories) > 0 {
+			if branch != "" && repo.Branch != branch {
+				continue
+			}
+		}
+
+		matched = true
+		matchedRepoURL = repo.URL
+		if branch != "" {
+			repo.Branch = branch
+		}
+		slog.Info("Webhook matched repository",
+			"repo", repo.Name,
+			"full_name", repoFullName,
+			"branch", branch)
 	}
 
-	if len(targetRepos) == 0 {
+	if !matched {
 		slog.Warn("No matching repositories found for webhook",
 			"repo_full_name", repoFullName,
 			"branch", branch)
 		return ""
+	}
+	if len(reposForBuild) == 0 {
+		slog.Warn("No repositories available for webhook build; falling back to target-only build",
+			"repo_full_name", repoFullName,
+			"branch", branch)
+		// Best-effort: keep previous behavior as a fallback.
+		reposForBuild = d.discoveredReposForWebhook(repoFullName, branch)
+		if len(reposForBuild) == 0 {
+			return ""
+		}
+		matchedRepoURL = reposForBuild[0].URL
 	}
 
 	jobID := fmt.Sprintf("webhook-%d", time.Now().Unix())
@@ -94,11 +122,11 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 		CreatedAt: time.Now(),
 		TypedMeta: &BuildJobMetadata{
 			V2Config:      d.config,
-			Repositories:  targetRepos,
+			Repositories:  reposForBuild,
 			StateManager:  d.stateManager,
 			LiveReloadHub: d.liveReload,
 			DeltaRepoReasons: map[string]string{
-				repoFullName: fmt.Sprintf("webhook push to %s", branch),
+				matchedRepoURL: fmt.Sprintf("webhook push to %s", branch),
 			},
 		},
 	}
@@ -112,7 +140,8 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 		logfields.JobID(jobID),
 		slog.String("repo", repoFullName),
 		slog.String("branch", branch),
-		slog.Int("target_count", len(targetRepos)))
+		slog.Int("target_count", 1),
+		slog.Int("repositories", len(reposForBuild)))
 
 	atomic.AddInt32(&d.queueLength, 1)
 	return jobID

@@ -82,6 +82,13 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 		SSHURL:        "ssh://git@git.home.luguber.info/inful/go-test-project.git",
 		DefaultBranch: "main",
 		Metadata:      map[string]string{"forge_name": "forge-1"},
+	}, {
+		Name:          "other-project",
+		FullName:      "inful/other-project",
+		CloneURL:      "https://git.home.luguber.info/inful/other-project.git",
+		SSHURL:        "ssh://git@git.home.luguber.info/inful/other-project.git",
+		DefaultBranch: "main",
+		Metadata:      map[string]string{"forge_name": "forge-1"},
 	}}})
 
 	jobID := d.TriggerWebhookBuild("inful/go-test-project", "main")
@@ -100,7 +107,17 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	require.NotNil(t, job)
 	require.Equal(t, queue.BuildTypeWebhook, job.Type)
 	require.NotNil(t, job.TypedMeta)
-	require.Len(t, job.TypedMeta.Repositories, 1)
-	require.Equal(t, "go-test-project", job.TypedMeta.Repositories[0].Name)
-	require.Equal(t, "main", job.TypedMeta.Repositories[0].Branch)
+	require.Len(t, job.TypedMeta.Repositories, 2)
+
+	// Target repo should be present and use the webhook branch.
+	var target *config.Repository
+	for i := range job.TypedMeta.Repositories {
+		r := &job.TypedMeta.Repositories[i]
+		if r.Name == "go-test-project" {
+			target = r
+			break
+		}
+	}
+	require.NotNil(t, target)
+	require.Equal(t, "main", target.Branch)
 }
