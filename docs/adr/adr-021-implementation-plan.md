@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: af142648c79406cfaa6edc6a68ee3a7624b35d21c6e10b4931697be466569f6b
+fingerprint: 66377f1117abd466a20fa154979380823d6455ac9d4b4f841a07ffa30edea389
 lastmod: "2026-01-27"
 tags:
   - daemon
