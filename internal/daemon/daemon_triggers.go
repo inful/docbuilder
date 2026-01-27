@@ -48,8 +48,11 @@ func (d *Daemon) TriggerBuild() string {
 	return jobID
 }
 
-// TriggerWebhookBuild triggers a build for specific repositories from a webhook event.
-// This allows targeted rebuilds without refetching all repositories.
+// TriggerWebhookBuild processes a webhook event and requests an orchestrated build.
+//
+// The webhook payload is used to decide whether a build should be requested and which
+// repository should be treated as "changed", but it does not narrow the site scope:
+// the build remains a canonical full-site build.
 func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string {
 	if d.GetStatus() != StatusRunning {
 		return ""
