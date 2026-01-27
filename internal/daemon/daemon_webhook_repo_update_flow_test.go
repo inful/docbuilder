@@ -86,6 +86,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
+
 	jobID := d.TriggerWebhookBuild("", "org/repo", "main", []string{"docs/README.md"})
 	require.NotEmpty(t, jobID)
 
@@ -94,7 +99,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 		require.Equal(t, jobID, got.JobID)
 		require.True(t, got.Changed)
 		require.Equal(t, "deadbeef", got.CommitSHA)
-	case <-time.After(2 * time.Second):
+	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for RepoUpdated")
 	}
 
@@ -167,6 +172,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for debouncer ready")
 	}
+
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
 
 	jobID := d.TriggerWebhookBuild("", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
