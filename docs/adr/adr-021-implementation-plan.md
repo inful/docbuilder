@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: e364edcb68e3cde0d647c4ee0598a59331eb871ec68b96fd767ab3ef00c12a44
+fingerprint: 1453e3f2c1c7f28bbaf417694cacd4c7e51b8c5df31945f21f9ced04a77edb4e
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -23,6 +23,36 @@ This plan intentionally evolves the daemon without a big-bang rewrite.
 - Webhook handling never narrows the rendered/published site scope.
 - A webhook updates one repo (when possible), but the build renders the full site.
 - Triggers publish events; update/build logic lives in workers.
+
+## Documentation updates (cross-cutting)
+
+In addition to code changes, this ADR introduces new operator-facing behavior (debounce timing, update-one/rebuild-all, eventual consistency). We should document these changes explicitly.
+
+Planned doc touchpoints:
+
+- Configuration reference: `docs/reference/configuration.md`
+  - Document any new daemon settings for build debouncing (e.g., quiet window and max delay).
+  - Clarify semantics:
+    - “update one, rebuild all” (targeted update does not narrow site scope)
+    - “build uses branch HEAD at build time” (eventual consistency)
+
+- Webhook setup guide: `docs/how-to/configure-webhooks.md`
+  - Explain the new flow:
+    - webhook publishes `RepoUpdateRequested`
+    - repo update detects SHA movement and only then requests a build
+    - build requests are debounced/coalesced
+  - Add an operator note: a webhook does not necessarily produce an immediate build (quiet window).
+
+- CLI / ops reference (as applicable): `docs/reference/cli.md`
+  - If we add debug flags, commands, or event/bus introspection, document them.
+
+- Observability / metrics docs (as applicable)
+  - If we add metrics (coalesce count, time-to-build, queue depth), document names and meaning.
+
+Acceptance criteria:
+
+- Operators can answer “why didn’t a webhook build immediately?” from docs.
+- New config knobs and semantics are documented in the configuration reference.
 
 ## Phase 0: Document invariants (no code)
 
