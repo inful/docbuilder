@@ -61,7 +61,7 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 		jobID = fmt.Sprintf("initial-build-%d", time.Now().UnixNano())
 	}
 
-	err := d.orchestrationBus.Publish(ctx, events.BuildRequested{
+	err := d.publishOrchestrationEvent(ctx, events.BuildRequested{
 		JobID:       jobID,
 		Immediate:   true,
 		Reason:      "initial build",
