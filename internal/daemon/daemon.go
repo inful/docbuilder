@@ -49,6 +49,7 @@ type Daemon struct {
 	status         atomic.Value // DaemonStatus
 	startTime      time.Time
 	stopChan       chan struct{}
+	runCancel      context.CancelFunc
 	mu             sync.RWMutex
 
 	// Core components
@@ -367,43 +368,53 @@ func (d *Daemon) Start(ctx context.Context) error {
 		slog.Warn("Failed to load state", "error", err)
 	}
 
+	// Create a derived run context that is canceled on daemon shutdown.
+	runCtx, runCancel := d.workContext(ctx)
+	d.runCancel = runCancel
+
 	// Start HTTP servers
-	if err := d.httpServer.Start(ctx); err != nil {
+	if err := d.httpServer.Start(runCtx); err != nil {
 		d.status.Store(StatusError)
+		d.runCancel = nil
+		runCancel()
 		d.mu.Unlock()
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
 	// Start build queue processing
-	d.buildQueue.Start(ctx)
+	d.buildQueue.Start(runCtx)
 
 	if d.orchestrationBus != nil {
 		go func() {
-			d.runBuildNowConsumer(ctx)
+			d.runBuildNowConsumer(runCtx)
 		}()
 		go func() {
-			d.runWebhookReceivedConsumer(ctx)
+			d.runWebhookReceivedConsumer(runCtx)
 		}()
 		go func() {
-			d.runRepoRemovedConsumer(ctx)
+			d.runRepoRemovedConsumer(runCtx)
 		}()
 	}
 
 	if d.buildDebouncer != nil {
 		go func() {
-			_ = d.buildDebouncer.Run(ctx)
+			_ = d.buildDebouncer.Run(runCtx)
 		}()
 	}
 
 	if d.repoUpdater != nil {
 		go func() {
-			d.repoUpdater.Run(ctx)
+			d.repoUpdater.Run(runCtx)
 		}()
 	}
 
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
-	if err := d.schedulePeriodicJobs(ctx); err != nil {
+	if err := d.schedulePeriodicJobs(runCtx); err != nil {
 		d.status.Store(StatusError)
+		if d.runCancel != nil {
+			d.runCancel()
+			d.runCancel = nil
+		}
 		d.mu.Unlock()
 		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
 	}
@@ -458,7 +469,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Unlock()
 
 	// Run main daemon loop (blocks until stopped)
-	d.mainLoop(ctx)
+	d.mainLoop(runCtx)
 
 	// When mainLoop exits, we're stopping
 	d.status.Store(StatusStopping)
@@ -573,6 +584,12 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 	d.status.Store(StatusStopping)
 	slog.Info("Stopping DocBuilder daemon")
+
+	// Cancel the run context to stop all background workers.
+	if d.runCancel != nil {
+		d.runCancel()
+		d.runCancel = nil
+	}
 
 	// Signal stop to all components (only if not already closed)
 	select {
