@@ -15,6 +15,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
@@ -59,6 +60,9 @@ type Daemon struct {
 	stateManager state.DaemonStateManager
 	liveReload   *LiveReloadHub
 
+	// Orchestration event bus (ADR-021; in-process control flow)
+	orchestrationBus *events.Bus
+
 	// Event sourcing components (Phase B)
 	eventStore      eventstore.Store
 	buildProjection *eventstore.BuildHistoryProjection
@@ -101,11 +105,12 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 
 	daemon := &Daemon{
-		config:         cfg,
-		configFilePath: configFilePath,
-		stopChan:       make(chan struct{}),
-		metrics:        NewMetricsCollector(),
-		discoveryCache: NewDiscoveryCache(),
+		config:           cfg,
+		configFilePath:   configFilePath,
+		stopChan:         make(chan struct{}),
+		metrics:          NewMetricsCollector(),
+		discoveryCache:   NewDiscoveryCache(),
+		orchestrationBus: events.NewBus(),
 	}
 
 	daemon.status.Store(StatusStopped)
@@ -483,6 +488,10 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	}
 
 	// Stop components in reverse order
+	if d.orchestrationBus != nil {
+		d.orchestrationBus.Close()
+	}
+
 	if d.scheduler != nil {
 		if err := d.scheduler.Stop(ctx); err != nil {
 			slog.Error("Failed to stop scheduler", logfields.Error(err))
