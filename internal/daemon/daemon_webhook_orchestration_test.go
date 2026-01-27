@@ -87,6 +87,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runBuildNowConsumer(ctx)
+	go d.runWebhookReceivedConsumer(ctx)
 	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
@@ -102,7 +103,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
-	jobID := d.TriggerWebhookBuild("org/go-test-project", "feature-branch", nil)
+	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "feature-branch", nil)
 	require.NotEmpty(t, jobID)
 
 	require.Eventually(t, func() bool {
@@ -177,6 +178,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runBuildNowConsumer(ctx)
+	go d.runWebhookReceivedConsumer(ctx)
 	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
@@ -199,8 +201,8 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 		return ok && planned == "job-seeded"
 	}, 250*time.Millisecond, 5*time.Millisecond)
 
-	jobID1 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
-	jobID2 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
+	jobID1 := d.TriggerWebhookBuild("", "org/go-test-project", "main", nil)
+	jobID2 := d.TriggerWebhookBuild("", "org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID1)
 	require.Equal(t, jobID1, jobID2)
 	require.Equal(t, "job-seeded", jobID1)

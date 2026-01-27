@@ -7,13 +7,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
 func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
-	buildCtx := t.Context()
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
 
 	cfg := &config.Config{
 		Version: "2.0",
@@ -36,32 +37,45 @@ func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
 	forgeManager := forge.NewForgeManager()
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
+	bus := events.NewBus()
+	defer bus.Close()
+
 	d := &Daemon{
-		config:         cfg,
-		stopChan:       make(chan struct{}),
-		forgeManager:   forgeManager,
-		discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache: NewDiscoveryCache(),
-		buildQueue:     queue.NewBuildQueue(10, 1, noOpBuilder{}),
+		config:           cfg,
+		stopChan:         make(chan struct{}),
+		orchestrationBus: bus,
+		forgeManager:     forgeManager,
+		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		discoveryCache:   NewDiscoveryCache(),
 	}
 	d.status.Store(StatusRunning)
 
-	d.buildQueue.Start(buildCtx)
-	defer d.buildQueue.Stop(context.Background())
+	repoUpdateCh, unsubRepoUpdate := events.Subscribe[events.RepoUpdateRequested](bus, 10)
+	defer unsubRepoUpdate()
+
+	go d.runWebhookReceivedConsumer(ctx)
 
 	// Change outside docs path should not trigger a build.
-	jobID := d.TriggerWebhookBuild("org/repo", "main", []string{"src/config.yaml"})
-	require.Empty(t, jobID)
-
-	// Change within docs path should trigger a build.
-	jobID = d.TriggerWebhookBuild("org/repo", "main", []string{"docs/README.md"})
+	jobID := d.TriggerWebhookBuild("forge-1", "org/repo", "main", []string{"src/config.yaml"})
 	require.NotEmpty(t, jobID)
 
-	require.Eventually(t, func() bool {
-		job, ok := d.buildQueue.JobSnapshot(jobID)
-		if !ok {
-			return false
-		}
-		return job.Status == queue.BuildStatusCompleted
-	}, 2*time.Second, 10*time.Millisecond)
+	select {
+	case <-repoUpdateCh:
+		t.Fatal("expected no RepoUpdateRequested for non-docs change")
+	case <-time.After(150 * time.Millisecond):
+		// ok
+	}
+
+	// Change within docs path should request a repo update.
+	jobID = d.TriggerWebhookBuild("forge-1", "org/repo", "main", []string{"docs/README.md"})
+	require.NotEmpty(t, jobID)
+
+	select {
+	case got := <-repoUpdateCh:
+		require.Equal(t, jobID, got.JobID)
+		require.Equal(t, "https://gitlab.example.com/org/repo.git", got.RepoURL)
+		require.Equal(t, "main", got.Branch)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for RepoUpdateRequested")
+	}
 }

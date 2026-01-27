@@ -392,6 +392,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 			d.runBuildNowConsumer(ctx)
 		}()
 		go func() {
+			d.runWebhookReceivedConsumer(ctx)
+		}()
+		go func() {
 			d.runRepoRemovedConsumer(ctx)
 		}()
 	}

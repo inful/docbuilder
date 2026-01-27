@@ -89,8 +89,8 @@ func (a *runtimeAdapter) LastDiscoveryDurationSec() int { return a.runtime.LastD
 func (a *runtimeAdapter) LastBuildDurationSec() int     { return a.runtime.LastBuildDurationSec() }
 func (a *runtimeAdapter) TriggerDiscovery() string      { return a.runtime.TriggerDiscovery() }
 func (a *runtimeAdapter) TriggerBuild() string          { return a.runtime.TriggerBuild() }
-func (a *runtimeAdapter) TriggerWebhookBuild(r, b string, changedFiles []string) string {
-	return a.runtime.TriggerWebhookBuild(r, b, changedFiles)
+func (a *runtimeAdapter) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
+	return a.runtime.TriggerWebhookBuild(forgeName, repoFullName, branch, changedFiles)
 }
 func (a *runtimeAdapter) GetQueueLength() int { return a.runtime.GetQueueLength() }
 

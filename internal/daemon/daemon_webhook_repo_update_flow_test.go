@@ -70,6 +70,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 	repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
 	defer unsubRepoUpdated()
 
+	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
 	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
@@ -85,7 +86,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
-	jobID := d.TriggerWebhookBuild("org/repo", "main", nil)
+	jobID := d.TriggerWebhookBuild("", "org/repo", "main", []string{"docs/README.md"})
 	require.NotEmpty(t, jobID)
 
 	select {
@@ -151,6 +152,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 	buildRequestedCh, unsubBuildRequested := events.Subscribe[events.BuildRequested](bus, 10)
 	defer unsubBuildRequested()
 
+	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
 	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
@@ -166,7 +168,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
-	jobID := d.TriggerWebhookBuild("org/repo", "main", nil)
+	jobID := d.TriggerWebhookBuild("", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
 
 	select {
@@ -256,6 +258,7 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 	buildRequestedCh, unsubBuildRequested := events.Subscribe[events.BuildRequested](bus, 10)
 	defer unsubBuildRequested()
 
+	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
 	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
@@ -271,7 +274,7 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
-	jobID := d.TriggerWebhookBuild("org/repo", "main", nil)
+	jobID := d.TriggerWebhookBuild("forge-1", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
 
 	select {
