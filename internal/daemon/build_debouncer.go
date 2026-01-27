@@ -39,16 +39,17 @@ type BuildDebouncer struct {
 	readyOnce sync.Once
 	ready     chan struct{}
 
-	pending         bool
-	pendingAfterRun bool
-	firstRequestAt  time.Time
-	lastRequestAt   time.Time
-	lastReason      string
-	lastRepoURL     string
-	lastBranch      string
-	lastJobID       string
-	requestCount    int
-	pollingAfterRun bool
+	pending          bool
+	pendingAfterRun  bool
+	firstRequestAt   time.Time
+	lastRequestAt    time.Time
+	lastReason       string
+	lastRepoURL      string
+	lastBranch       string
+	lastJobID        string
+	lastEmittedJobID string
+	requestCount     int
+	pollingAfterRun  bool
 }
 
 // PlannedJobID returns the JobID that will be used for the next BuildNow emission,
@@ -218,6 +219,12 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
+	if req.JobID != "" && req.JobID == d.lastEmittedJobID && !d.pending {
+		// This JobID has already been emitted as a BuildNow, and there is no
+		// currently pending build. Treat as a duplicate request.
+		return
+	}
+
 	now := req.RequestedAt
 	if now.IsZero() {
 		now = time.Now()
@@ -273,6 +280,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	d.pending = false
 	d.pendingAfterRun = false
 	d.pollingAfterRun = false
+	d.lastEmittedJobID = jobID
 	d.mu.Unlock()
 
 	evt := events.BuildNow{

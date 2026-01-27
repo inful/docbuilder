@@ -143,15 +143,14 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles [
 		jobID = fmt.Sprintf("webhook-%d", time.Now().Unix())
 	}
 	if d.orchestrationBus != nil {
-		_ = d.orchestrationBus.Publish(context.Background(), events.BuildRequested{
+		_ = d.orchestrationBus.Publish(context.Background(), events.RepoUpdateRequested{
 			JobID:       jobID,
 			Immediate:   true,
-			Reason:      "webhook",
 			RepoURL:     matchedRepoURL,
 			Branch:      branch,
 			RequestedAt: time.Now(),
 		})
-		slog.Info("Webhook build requested",
+		slog.Info("Webhook repo update requested",
 			logfields.JobID(jobID),
 			slog.String("repo", repoFullName),
 			slog.String("branch", branch),

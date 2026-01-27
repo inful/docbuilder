@@ -10,8 +10,15 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"github.com/stretchr/testify/require"
 )
+
+type alwaysChangedRemoteHeadChecker struct{}
+
+func (alwaysChangedRemoteHeadChecker) CheckRemoteChanged(_ *git.RemoteHeadCache, _ config.Repository, _ string) (bool, string, error) {
+	return true, "deadbeef", nil
+}
 
 func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOverride(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
@@ -75,8 +82,19 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	require.NoError(t, err)
 	d.buildDebouncer = debouncer
 
+	cache, err := git.NewRemoteHeadCache("")
+	require.NoError(t, err)
+	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
+
 	go d.runBuildNowConsumer(ctx)
+	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-d.repoUpdater.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for repo updater ready")
+	}
 
 	select {
 	case <-debouncer.Ready():
@@ -154,8 +172,19 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 	require.NoError(t, err)
 	d.buildDebouncer = debouncer
 
+	cache, err := git.NewRemoteHeadCache("")
+	require.NoError(t, err)
+	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
+
 	go d.runBuildNowConsumer(ctx)
+	go d.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-d.repoUpdater.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for repo updater ready")
+	}
 
 	select {
 	case <-debouncer.Ready():
@@ -163,10 +192,18 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
+	// Seed a pending (coalesced) build so PlannedJobID is available.
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{JobID: "job-seeded", Reason: "seed"}))
+	require.Eventually(t, func() bool {
+		planned, ok := d.buildDebouncer.PlannedJobID()
+		return ok && planned == "job-seeded"
+	}, 250*time.Millisecond, 5*time.Millisecond)
+
 	jobID1 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
 	jobID2 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID1)
 	require.Equal(t, jobID1, jobID2)
+	require.Equal(t, "job-seeded", jobID1)
 
 	running.Store(false)
 
