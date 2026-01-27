@@ -79,7 +79,9 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 			if !cfg.FollowRedirects {
 				return http.ErrUseLastResponse
 			}
-			if len(via) >= cfg.MaxRedirects {
+			// len(via) is the number of previous requests already made.
+			// If MaxRedirects is 3, we should allow 3 redirects (i.e., 4 total requests).
+			if len(via) > cfg.MaxRedirects {
 				return fmt.Errorf("stopped after %d redirects", cfg.MaxRedirects)
 			}
 			return nil
