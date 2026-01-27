@@ -14,6 +14,9 @@ type BuildDebouncerConfig struct {
 	QuietWindow time.Duration
 	MaxDelay    time.Duration
 
+	// Metrics (optional) is used to emit debouncer runtime metrics.
+	Metrics *MetricsCollector
+
 	// CheckBuildRunning reports whether a build is currently running.
 	// When true, the debouncer will avoid emitting BuildNow and will instead
 	// schedule exactly one follow-up build after the running build finishes.
@@ -33,8 +36,9 @@ type BuildDebouncerConfig struct {
 //
 // It is safe to run as a single goroutine.
 type BuildDebouncer struct {
-	bus *events.Bus
-	cfg BuildDebouncerConfig
+	bus     *events.Bus
+	cfg     BuildDebouncerConfig
+	metrics *MetricsCollector
 
 	mu        sync.Mutex
 	readyOnce sync.Once
@@ -94,7 +98,7 @@ func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebounc
 		cfg.PollInterval = 250 * time.Millisecond
 	}
 
-	return &BuildDebouncer{bus: bus, cfg: cfg, ready: make(chan struct{})}, nil
+	return &BuildDebouncer{bus: bus, cfg: cfg, metrics: cfg.Metrics, ready: make(chan struct{})}, nil
 }
 
 // Ready is closed once Run has fully initialized and subscribed to events.
@@ -219,11 +223,14 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 
 func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 
 	if req.JobID != "" && req.JobID == d.lastEmittedJobID && !d.pending {
 		// This JobID has already been emitted as a BuildNow, and there is no
 		// currently pending build. Treat as a duplicate request.
+		d.mu.Unlock()
+		if d.metrics != nil {
+			d.metrics.IncrementCounter("debouncer_build_requests_deduped_total")
+		}
 		return
 	}
 
@@ -245,6 +252,7 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.lastBranch = req.Branch
 	d.lastJobID = req.JobID
 	d.requestCount++
+	requestCount := d.requestCount
 	if len(req.Snapshot) > 0 {
 		if d.snapshot == nil {
 			d.snapshot = make(map[string]string, len(req.Snapshot))
@@ -255,6 +263,20 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 			}
 			d.snapshot[k] = v
 		}
+	}
+
+	pendingAfterRun := d.pendingAfterRun
+	d.mu.Unlock()
+
+	if d.metrics != nil {
+		d.metrics.IncrementCounter("debouncer_build_requests_total")
+		d.metrics.SetGauge("debouncer_pending", 1)
+		if pendingAfterRun {
+			d.metrics.SetGauge("debouncer_pending_after_run", 1)
+		} else {
+			d.metrics.SetGauge("debouncer_pending_after_run", 0)
+		}
+		d.metrics.SetGauge("debouncer_planned_request_count", int64(requestCount))
 	}
 }
 
@@ -288,7 +310,14 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 
 	if d.cfg.CheckBuildRunning() {
 		d.pendingAfterRun = true
+		pendingAfterRun := d.pendingAfterRun
 		d.mu.Unlock()
+		if d.metrics != nil {
+			d.metrics.SetGauge("debouncer_pending", 1)
+			if pendingAfterRun {
+				d.metrics.SetGauge("debouncer_pending_after_run", 1)
+			}
+		}
 		return false
 	}
 
@@ -298,6 +327,20 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	d.lastEmittedJobID = jobID
 	d.snapshot = nil
 	d.mu.Unlock()
+
+	if d.metrics != nil {
+		d.metrics.IncrementCounter("debouncer_builds_emitted_total")
+		if count > 1 {
+			d.metrics.AddCounter("debouncer_coalesced_requests_total", int64(count-1))
+		}
+		if !first.IsZero() {
+			d.metrics.RecordHistogram("debouncer_time_to_build_seconds", time.Since(first).Seconds())
+		}
+		d.metrics.SetGauge("debouncer_pending", 0)
+		d.metrics.SetGauge("debouncer_pending_after_run", 0)
+		d.metrics.SetGauge("debouncer_planned_request_count", 0)
+		d.metrics.SetCustomMetric("debouncer_last_debounce_cause", cause)
+	}
 
 	var snapshotCopy map[string]string
 	if len(snapshot) > 0 {
