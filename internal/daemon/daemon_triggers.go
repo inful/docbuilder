@@ -1,6 +1,7 @@
 package daemon
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
@@ -270,12 +272,26 @@ func matchesRepoURL(repoURL, fullName string) bool {
 }
 
 // triggerScheduledBuildForExplicitRepos triggers a scheduled build for explicitly configured repositories.
-func (d *Daemon) triggerScheduledBuildForExplicitRepos() {
+func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if d.GetStatus() != StatusRunning {
+		return
+	}
+	if ctx == nil {
 		return
 	}
 
 	jobID := fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
+	if d.orchestrationBus != nil {
+		_ = d.orchestrationBus.Publish(ctx, events.BuildRequested{
+			JobID:       jobID,
+			Reason:      "scheduled build",
+			RequestedAt: time.Now(),
+		})
+		slog.Info("Scheduled build requested",
+			logfields.JobID(jobID),
+			slog.Int("repositories", len(d.config.Repositories)))
+		return
+	}
 
 	slog.Info("Triggering scheduled build for explicit repositories",
 		logfields.JobID(jobID),

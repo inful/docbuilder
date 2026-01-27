@@ -46,18 +46,13 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*models
 		return nil, errors.New("build job has no configuration")
 	}
 
-	// For builds that target a specific set of repositories (discovery/webhook),
-	// use job repositories instead of cfg.Repositories.
+	// If the job carries an explicit repository set, prefer it over cfg.Repositories.
+	// This enables orchestration flows (ADR-021) to enqueue canonical full-site builds
+	// in forge mode where cfg.Repositories may be empty.
 	if job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
-		switch job.Type {
-		case BuildTypeDiscovery, BuildTypeWebhook:
-			// Create a copy of the config to avoid modifying the original
-			cfgCopy := *cfg
-			cfgCopy.Repositories = job.TypedMeta.Repositories
-			cfg = &cfgCopy
-		case BuildTypeManual, BuildTypeScheduled:
-			// Use cfg.Repositories for non-targeted builds.
-		}
+		cfgCopy := *cfg
+		cfgCopy.Repositories = job.TypedMeta.Repositories
+		cfg = &cfgCopy
 	}
 
 	// Extract output directory and combine with base_directory if set
