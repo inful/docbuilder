@@ -53,7 +53,7 @@ output: {}          # Output directory behavior
 | prune_non_doc_paths | bool | false | Remove non-doc top-level directories after clone. |
 | prune_allow | []string | [] | Keep-listed directories/files (glob). |
 | prune_deny | []string | [] | Force-remove directories/files (glob) except .git. |
-| hard_reset_on_diverge | bool | false | Force align local branch to remote on divergence. |
+| hard_reset_on_diverge | bool | true | Force align local branch to remote on divergence. |
 | clean_untracked | bool | false | Remove untracked files after successful update. |
 | max_retries | int | 2 | Retry attempts for transient clone/update failures. |
 | retry_backoff | enum | linear | Backoff strategy: `fixed`, `linear`, or `exponential`. |

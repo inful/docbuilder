@@ -6,10 +6,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestDetectDeletionsDefaultEnabled(t *testing.T) {
-	// Field omitted -> default should set true
-	raw := `version: 2.0
+const minimalV2ConfigOmittingBuildSection = `version: 2.0
 forges:
+
   - name: f
     type: github
     api_url: https://api.github.com
@@ -20,6 +19,10 @@ output:
 hugo:
   theme: relearn
 `
+
+func TestDetectDeletionsDefaultEnabled(t *testing.T) {
+	// Field omitted -> default should set true
+	raw := minimalV2ConfigOmittingBuildSection
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -60,18 +63,7 @@ hugo:
 }
 
 func TestShallowDepthDefaultIsOneWhenOmitted(t *testing.T) {
-	raw := `version: 2.0
-forges:
-  - name: f
-    type: github
-    api_url: https://api.github.com
-    base_url: https://github.com
-    organizations: [x]
-output:
-  directory: ./site
-hugo:
-  theme: relearn
-`
+	raw := minimalV2ConfigOmittingBuildSection
 	var cfg Config
 	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
 		t.Fatalf("unmarshal: %v", err)
@@ -108,5 +100,47 @@ hugo:
 	}
 	if cfg.Build.ShallowDepth != 0 {
 		t.Fatalf("expected ShallowDepth remain 0 when explicitly set, got %d", cfg.Build.ShallowDepth)
+	}
+}
+
+func TestHardResetOnDivergeDefaultEnabled(t *testing.T) {
+	// Field omitted -> default should set true
+	raw := minimalV2ConfigOmittingBuildSection
+	var cfg Config
+	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := applyDefaults(&cfg); err != nil {
+		t.Fatalf("defaults: %v", err)
+	}
+	if !cfg.Build.HardResetOnDiverge {
+		t.Fatalf("expected HardResetOnDiverge default true when omitted")
+	}
+}
+
+func TestHardResetOnDivergeExplicitFalsePreserved(t *testing.T) {
+	raw := `version: 2.0
+build:
+  hard_reset_on_diverge: false
+forges:
+  - name: f
+    type: github
+    api_url: https://api.github.com
+    base_url: https://github.com
+    organizations: [x]
+output:
+  directory: ./site
+hugo:
+  theme: relearn
+`
+	var cfg Config
+	if err := yaml.Unmarshal([]byte(raw), &cfg); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := applyDefaults(&cfg); err != nil {
+		t.Fatalf("defaults: %v", err)
+	}
+	if cfg.Build.HardResetOnDiverge {
+		t.Fatalf("expected HardResetOnDiverge remain false when explicitly set")
 	}
 }

@@ -59,6 +59,11 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Build.DetectDeletions = true
 	}
 
+	// Divergence handling default: hard reset on diverge unless user explicitly set the field.
+	if !cfg.Build.hardResetOnDivergeSpecified && !cfg.Build.HardResetOnDiverge {
+		cfg.Build.HardResetOnDiverge = true
+	}
+
 	// Clone strategy default: fresh (explicit destructive clone) unless user supplied a valid strategy.
 	if cfg.Build.CloneStrategy == "" {
 		cfg.Build.CloneStrategy = CloneStrategyFresh

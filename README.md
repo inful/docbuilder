@@ -613,7 +613,7 @@ Supported fields:
 | `prune_non_doc_paths` | bool | false | Remove top‑level entries not part of any configured docs path segment (plus those allowed via `prune_allow`). Reduces workspace size. |
 | `prune_allow` | []string | (empty) | Extra top‑level names or glob patterns to always keep when pruning (e.g. `LICENSE*`, `README.*`, `assets`). |
 | `prune_deny` | []string | (empty) | Top‑level names or glob patterns to always remove (except `.git`). Takes precedence over allow + docs roots. |
-| `hard_reset_on_diverge` | bool | false | If true and local branch diverged from origin, perform hard reset to remote head; else update fails with divergence error. |
+| `hard_reset_on_diverge` | bool | true | If true and local branch diverged from origin, perform hard reset to remote head; else update fails with divergence error. |
 | `clean_untracked` | bool | false | After a successful fast‑forward or hard reset, remove untracked files/dirs (like `git clean -fdx` sans ignored semantics). |
 | `max_retries` | int | 2 | Extra retry attempts for transient clone/update failures (see retry settings below). |
 | `retry_backoff` | enum | `linear` | Backoff mode: `fixed`, `linear`, or `exponential`. |

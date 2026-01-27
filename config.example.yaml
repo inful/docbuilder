@@ -31,6 +31,9 @@ build:
   # For documentation sites, shallow clones are typically sufficient and much faster/lower memory.
   # Set to 0 to disable shallow cloning.
   shallow_depth: 1
+  # If true and local branch diverged from origin, perform hard reset to remote head.
+  # Default: true (set false if you prefer divergence to fail the build).
+  hard_reset_on_diverge: true
 
 # Optional daemon configuration (enables scheduled sync/discovery and admin/webhook servers)
 daemon:

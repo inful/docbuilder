@@ -33,6 +33,9 @@ type BuildConfig struct {
 	// shallowDepthSpecified is set internally during load when the YAML explicitly sets shallow_depth.
 	// This lets defaults apply (e.g., 1) only when user omitted the field entirely.
 	shallowDepthSpecified bool `yaml:"-"`
+	// hardResetOnDivergeSpecified is set internally during load when the YAML explicitly sets hard_reset_on_diverge.
+	// This lets defaults apply (true) only when user omitted the field entirely.
+	hardResetOnDivergeSpecified bool `yaml:"-"`
 }
 
 // UnmarshalYAML is a custom unmarshal to detect if detect_deletions was explicitly set by user.
@@ -53,6 +56,9 @@ func (b *BuildConfig) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		if _, ok := m["shallow_depth"]; ok {
 			b.shallowDepthSpecified = true
+		}
+		if _, ok := m["hard_reset_on_diverge"]; ok {
+			b.hardResetOnDivergeSpecified = true
 		}
 	}
 	return nil
