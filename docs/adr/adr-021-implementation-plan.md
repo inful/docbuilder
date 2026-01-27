@@ -231,6 +231,8 @@ Planned simplifications:
 - Centralize shutdown behavior
   - Avoid bespoke goroutine lifecycles per trigger; use dispatcher/worker shutdown semantics.
 
+  Status: implemented.
+
 Acceptance criteria:
 
 - No trigger path calls update/build logic directly.
