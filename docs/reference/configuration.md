@@ -275,6 +275,11 @@ daemon:
 Semantics:
 
 - “Update one, rebuild all”: webhook-triggered activity may update/check a single repository, but the build renders and publishes the full site (all configured/discovered repositories).
+- Debounce timing:
+  - `Immediate: true` requests bypass the quiet window and try to trigger a build as soon as possible.
+  - `Immediate: false` requests wait for a quiet period (`quiet_window`), but a build will still fire by `max_delay`.
+- Build-running behavior: if a build is already running, DocBuilder will not start a concurrent build; it coalesces all requests into at most one follow-up build after the running build completes.
+- Job IDs under coalescing: when multiple requests map to one build, DocBuilder reuses the debouncer’s planned job ID so logs and webhook responses remain stable across bursts.
 - Eventual consistency: by default, builds use the HEAD of each configured branch at build time. DocBuilder may optionally pin repositories to specific commit SHAs for stricter “what was built” semantics (snapshot builds).
 
 ### Storage Configuration
