@@ -116,6 +116,25 @@ func Subscribe[T any](b *Bus, buffer int) (<-chan T, func()) {
 	return ch, unsubscribe
 }
 
+// SubscriberCount returns the number of active subscribers for events of type T.
+//
+// This is primarily intended for tests and diagnostics.
+func SubscriberCount[T any](b *Bus) int {
+	if b == nil {
+		return 0
+	}
+
+	eventType := reflect.TypeFor[T]()
+
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	if typeSubs, ok := b.subs[eventType]; ok {
+		return len(typeSubs)
+	}
+	return 0
+}
+
 // Publish delivers an event to all matching subscribers.
 //
 // Backpressure: Publish blocks until each subscriber has accepted the event, or the

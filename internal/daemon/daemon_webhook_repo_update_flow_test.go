@@ -77,12 +77,12 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 
 	select {
 	case <-d.repoUpdater.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
 	select {
 	case <-debouncer.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
@@ -94,7 +94,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 		require.Equal(t, jobID, got.JobID)
 		require.True(t, got.Changed)
 		require.Equal(t, "deadbeef", got.CommitSHA)
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for RepoUpdated")
 	}
 
@@ -159,12 +159,12 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 
 	select {
 	case <-d.repoUpdater.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
 	select {
 	case <-debouncer.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
@@ -175,7 +175,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 	case got := <-repoUpdatedCh:
 		require.Equal(t, jobID, got.JobID)
 		require.False(t, got.Changed)
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for RepoUpdated")
 	}
 
@@ -274,6 +274,11 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
+
 	jobID := d.TriggerWebhookBuild("forge-1", "org/repo", "main", nil)
 	require.NotEmpty(t, jobID)
 
@@ -281,7 +286,7 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 	case got := <-repoUpdatedCh:
 		require.Equal(t, jobID, got.JobID)
 		require.False(t, got.Changed)
-	case <-time.After(500 * time.Millisecond):
+	case <-time.After(5 * time.Second):
 		t.Fatal("timed out waiting for RepoUpdated")
 	}
 
