@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: dbccf8e85d29a4bd058f292d2d13ee7ed638ee3f4d2050a1370d0c985ec1a11d
+fingerprint: 5d2d238dd2bb1b39779353b02b5984f5dc177fec67259c71ff7fdd3b985d9cd8
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -109,8 +109,9 @@ Acceptance criteria:
 
 This phase was implemented incrementally using a “path of least resistance” approach.
 
-- Webhook handler publishes `BuildRequested` directly (for now):
-  - `BuildRequested{Immediate:true, RepoURL, Branch}`
+- Webhook handler publishes `RepoUpdateRequested` (implemented):
+  - `RepoUpdateRequested{Immediate:true, RepoURL, Branch}`
+  - `RepoUpdater` detects remote HEAD movement and only then requests a build.
   - Consumers still perform a full-site build (scope is never narrowed).
   - The `Immediate:true` flag bypasses the quiet window but still respects “build running → emit one follow-up”.
 
@@ -120,9 +121,8 @@ This phase was implemented incrementally using a “path of least resistance” 
 - Discovery completion publishes `BuildRequested` (forge mode):
   - `BuildRequested{Reason:"discovery"}`
 
-Note: the intended longer-term flow remains:
-`RepoUpdateRequested` → (RepoUpdater updates that repo) → `RepoUpdated(changed=true)` → `BuildRequested`.
-We deferred `RepoUpdateRequested`/`RepoUpdater` to reduce risk while wiring the debounced build path first.
+Note: the intended longer-term flow is now in place:
+`RepoUpdateRequested` → (RepoUpdater checks/updates that repo) → `RepoUpdated(changed=true)` → `BuildRequested`.
 
 - Ensure discovery diffs publish removal events:
   - `RepoRemoved` (or equivalent)
@@ -135,8 +135,8 @@ Acceptance criteria:
 ## Phase 4: Repository update worker
 
 - Implement `RepoUpdater`:
-  - Full update: refresh known clones; emit `RepoUpdated` per repo
-  - Single update: refresh one repo; emit `RepoUpdated`
+  - Full update: refresh known clones or check remote heads; emit `RepoUpdated` per repo
+  - Single update: refresh/check one repo; emit `RepoUpdated`
   - Determine “changed” primarily via commit SHA movement (eventual consistency; HEAD-of-branch)
   - Optionally determine `docsChanged` using cheap signals (quick hash), and treat it as an optimization hint
 - Wire `RepoUpdated(changed=true)` → `BuildRequested`
