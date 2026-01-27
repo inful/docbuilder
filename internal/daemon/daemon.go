@@ -62,6 +62,7 @@ type Daemon struct {
 
 	// Orchestration event bus (ADR-021; in-process control flow)
 	orchestrationBus *events.Bus
+	buildDebouncer   *BuildDebouncer
 
 	// Event sourcing components (Phase B)
 	eventStore      eventstore.Store
@@ -195,8 +196,8 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.eventEmitter.daemon = daemon // Wire back reference for hooks
 
 	// Rebuild projection from existing events
-	if err := daemon.buildProjection.Rebuild(context.Background()); err != nil {
-		slog.Warn("Failed to rebuild build history projection", logfields.Error(err))
+	if rebuildErr := daemon.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
+		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
 		// Non-fatal: projection will start empty
 	}
 
@@ -237,10 +238,10 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Initialize link verification service if enabled
 	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
-		linkVerifier, err := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
-		if err != nil {
+		linkVerifier, linkVerifierErr := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
+		if linkVerifierErr != nil {
 			slog.Warn("Failed to initialize link verification service",
-				logfields.Error(err),
+				logfields.Error(linkVerifierErr),
 				slog.Bool("enabled", false))
 		} else {
 			daemon.linkVerifier = linkVerifier
@@ -264,6 +265,23 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		LiveReload:     daemon.liveReload,
 		Config:         cfg,
 	})
+
+	// Initialize build debouncer (ADR-021 Phase 2).
+	// Note: this is passive until components start publishing BuildRequested events.
+	debouncer, err := NewBuildDebouncer(daemon.orchestrationBus, BuildDebouncerConfig{
+		QuietWindow: 10 * time.Second,
+		MaxDelay:    60 * time.Second,
+		CheckBuildRunning: func() bool {
+			if daemon.buildQueue == nil {
+				return false
+			}
+			return len(daemon.buildQueue.GetActiveJobs()) > 0
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create build debouncer: %w", err)
+	}
+	daemon.buildDebouncer = debouncer
 
 	return daemon, nil
 }
@@ -305,6 +323,12 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	// Start build queue processing
 	d.buildQueue.Start(ctx)
+
+	if d.buildDebouncer != nil {
+		go func() {
+			_ = d.buildDebouncer.Run(ctx)
+		}()
+	}
 
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
 	if err := d.schedulePeriodicJobs(ctx); err != nil {
