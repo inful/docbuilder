@@ -464,12 +464,47 @@ type gitlabAuthor struct {
 
 // gitlabRepository represents a GitLab repository in webhook.
 type gitlabRepository struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Homepage    string `json:"homepage"`
-	GitHTTPURL  string `json:"git_http_url"`
-	GitSSHURL   string `json:"git_ssh_url"`
-	Visibility  string `json:"visibility_level"`
+	Name        string                `json:"name"`
+	Description string                `json:"description"`
+	Homepage    string                `json:"homepage"`
+	GitHTTPURL  string                `json:"git_http_url"`
+	GitSSHURL   string                `json:"git_ssh_url"`
+	Visibility  gitlabVisibilityLevel `json:"visibility_level"`
+}
+
+// gitlabVisibilityLevel is inconsistent across GitLab webhook types/versions.
+// Some payloads encode visibility_level as a number (e.g. 20) while others use a string.
+type gitlabVisibilityLevel string
+
+func (v *gitlabVisibilityLevel) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 || string(data) == "null" {
+		*v = ""
+		return nil
+	}
+
+	switch data[0] {
+	case '"':
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		*v = gitlabVisibilityLevel(s)
+		return nil
+	default:
+		// Fall back to number (or other JSON scalar) and stringify.
+		var n json.Number
+		if err := json.Unmarshal(data, &n); err == nil {
+			*v = gitlabVisibilityLevel(n.String())
+			return nil
+		}
+		// Last-resort: try int.
+		var i int
+		if err := json.Unmarshal(data, &i); err != nil {
+			return err
+		}
+		*v = gitlabVisibilityLevel(strconv.Itoa(i))
+		return nil
+	}
 }
 
 // parsePushEvent parses a GitLab push event.

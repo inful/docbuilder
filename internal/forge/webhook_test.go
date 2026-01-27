@@ -219,6 +219,30 @@ func TestGitLabWebhookParsing(t *testing.T) {
 			expectedType: WebhookEventPush,
 		},
 		{
+			name:      "System Hook push (numeric visibility_level)",
+			eventType: "System Hook",
+			payload: `{
+				"object_kind": "push",
+				"event_name": "push",
+				"ref": "refs/heads/main",
+				"project": {
+					"id": 322,
+					"name": "repo",
+					"namespace": "org",
+					"path_with_namespace": "org/repo",
+					"web_url": "https://gitlab.example.com/org/repo",
+					"default_branch": "main"
+				},
+				"repository": {
+					"name": "repo",
+					"homepage": "https://gitlab.example.com/org/repo",
+					"visibility_level": 20
+				}
+			}`,
+			expectedRepo: "org/repo",
+			expectedType: WebhookEventPush,
+		},
+		{
 			name:      "Push Hook",
 			eventType: "Push Hook",
 			payload: `{
