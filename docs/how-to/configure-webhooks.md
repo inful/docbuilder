@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: a59a06bba66ea3e1aee20687e7bf4bf84f21ff5abf84142f170f24af352bf65a
+fingerprint: d196c00d7a8ca244b711458dcbb773182be071d7f157df7929087d0154759475
 lastmod: "2026-01-27"
 tags:
   - webhooks
@@ -24,10 +24,17 @@ When configured, DocBuilder:
 1. Receives webhook events from your forge (GitHub/GitLab/Forgejo)
 2. Validates the webhook signature for security
 3. Parses the event to extract repository and branch information
-4. Triggers a **targeted rebuild** for only the affected repository
-5. Returns an acknowledgment with the build job ID
+4. Requests a repo update/check for the affected repository
+5. If the repository changed, enqueues a rebuild of the **full site** (all configured repositories)
+6. Returns an acknowledgment with a planned job ID
 
-**Important**: Webhook-triggered builds only refetch and rebuild the specific repository mentioned in the webhook event, not all configured repositories. This provides fast, efficient updates.
+**Important**: A webhook does **not** narrow the site. DocBuilder may **update/check one repository**, but it still builds and publishes a coherent site from the daemon’s full repository set (“update one, rebuild all”).
+
+**Important**: A webhook may not result in a build:
+- If the webhook payload indicates no docs-relevant changes, DocBuilder can ignore the event.
+- If DocBuilder determines the repository’s branch HEAD did not move, no build is requested.
+
+**Note**: Webhook-triggered build requests are treated as “immediate” signals, but DocBuilder still coalesces work when a build is already running (at most one follow-up build is queued).
 
 **Important**: For push-style webhooks that include changed file paths (GitLab/Forgejo/GitHub), DocBuilder only triggers a rebuild when at least one changed file is under one of the repository’s configured `paths` (defaults to `docs`). This avoids unnecessary rebuilds when unrelated code changes happen.
 
@@ -234,6 +241,8 @@ DocBuilder provides webhook endpoints based on your configured forges.
 sequenceDiagram
     participant Forge as GitHub/GitLab/Forgejo
     participant DocBuilder as DocBuilder Daemon
+  participant RepoUpdater as RepoUpdater
+  participant Debouncer as Build Debouncer
     participant BuildQueue as Build Queue
     participant Hugo as Hugo Generator
 
@@ -241,8 +250,11 @@ sequenceDiagram
     Note over DocBuilder: Validate signature
     DocBuilder->>DocBuilder: Parse webhook event
     Note over DocBuilder: Extract repo + branch
-    DocBuilder->>BuildQueue: Enqueue webhook build
-    BuildQueue->>Hugo: Build specific repository
+    DocBuilder->>RepoUpdater: Request repo update/check
+    RepoUpdater-->>DocBuilder: Repo updated? (SHA moved)
+    DocBuilder->>Debouncer: BuildRequested (if changed)
+    Debouncer->>BuildQueue: BuildNow (coalesced)
+    BuildQueue->>Hugo: Build full site (canonical build)
     Hugo-->>BuildQueue: Build complete
     BuildQueue-->>DocBuilder: Job finished
     DocBuilder->>Forge: 202 Accepted (job_id)

@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: a09ea1fa5c94a21316243481fa04362dc794f6238c86251b3b5534c6c13127ce
+fingerprint: eaa05c8d0420964dd15139ff38feae39519aec3b286b8ca2f44d2d1b6624910f
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -29,7 +29,7 @@ DocBuilder daemon will become event-driven internally.
 - Introduce a small, typed, in-process orchestration event bus (single daemon; no external broker).
 - Separate responsibilities explicitly: discovery, repo update, and build are distinct workflows.
 - Webhooks/schedules/admin endpoints only publish events; they do not run update/build logic directly.
-- Debounce builds (quiet window + max delay) to coalesce webhook storms.
+- Debounce builds to coalesce bursts (quiet window + max delay for non-immediate triggers; immediate triggers still coalesce while a build is running).
 - Correctness model is eventual consistency: builds render the current branch HEAD at build time.
 - Coherent-site-first output: update one repository if needed, but rebuild and publish the full site.
 
@@ -143,9 +143,11 @@ This ADR explicitly supports the following scenario:
 
 1. The daemon receives a webhook for a specific repository.
 2. The webhook handler validates/parses the payload and publishes `RepoUpdateRequested(repoURL, branch)`.
-3. `RepoUpdater` refreshes only that repository (fetch/fast-forward to branch HEAD).
+3. `RepoUpdater` refreshes (or checks) only that repository and determines whether the branch HEAD moved.
 4. If the updater detects a change (`oldSHA != newSHA`), it publishes `RepoUpdated(...changed=true...)` and then `BuildRequested(reason=webhook, repoURL=...)`.
-5. `BuildDebouncer` coalesces bursts and emits a single `BuildNow` once quiet (or max delay is reached).
+5. `BuildDebouncer` coalesces bursts and emits `BuildNow` when appropriate.
+   - For non-immediate triggers, this means “once quiet” (or when max delay is reached).
+   - For webhook triggers (typically immediate), this means “now unless a build is already running”, in which case exactly one follow-up build is emitted.
 6. The build renders the **full site** for the daemon’s repo set and publishes atomically.
 
 ## Rationale
