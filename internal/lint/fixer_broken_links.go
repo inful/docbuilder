@@ -80,6 +80,11 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 		if strings.HasPrefix(target, "mailto:") {
 			continue
 		}
+		// Bare email addresses (often from Markdown autolinks like <user@example.com>)
+		// are not local files.
+		if isBareEmailAddress(target) {
+			continue
+		}
 
 		lineNum := ref.FileLine
 
@@ -117,6 +122,34 @@ func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	}
 
 	return brokenLinks, nil
+}
+
+func isBareEmailAddress(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return false
+	}
+	// If it already looks like a scheme or a path, it's not a bare email.
+	if strings.Contains(s, "://") || strings.Contains(s, "/") || strings.Contains(s, "\\") {
+		return false
+	}
+	// Basic shape: local@domain
+	local, domain, ok := strings.Cut(s, "@")
+	if !ok {
+		return false
+	}
+	if local == "" || domain == "" {
+		return false
+	}
+	// Avoid obvious non-emails.
+	if strings.ContainsAny(s, " <>\t\n\r") {
+		return false
+	}
+	// Require a dot in the domain to reduce false positives.
+	if !strings.Contains(domain, ".") {
+		return false
+	}
+	return true
 }
 
 // isBrokenLink checks if a link target points to a non-existent file.

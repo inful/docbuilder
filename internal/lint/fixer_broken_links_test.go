@@ -183,3 +183,21 @@ func TestDetectBrokenLinks_IgnoresFootnotes(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, broken)
 }
+
+func TestDetectBrokenLinks_IgnoresBareEmailAutolinks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	docsDir := filepath.Join(tmpDir, "docs")
+	err := os.MkdirAll(docsDir, 0o750)
+	require.NoError(t, err)
+
+	mdFile := filepath.Join(docsDir, "incident_reporting.md")
+	content := "- Avdeling for medisinsk genetikk (`Org:MGM`)\n" +
+		"  <HBE_MGM@helse-bergen.no>\n"
+	err = os.WriteFile(mdFile, []byte(content), 0o600)
+	require.NoError(t, err)
+
+	broken, err := detectBrokenLinksInFile(mdFile)
+	require.NoError(t, err)
+	assert.Empty(t, broken)
+}
