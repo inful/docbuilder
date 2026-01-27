@@ -294,6 +294,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	debouncer, err := NewBuildDebouncer(daemon.orchestrationBus, BuildDebouncerConfig{
 		QuietWindow: quietWindow,
 		MaxDelay:    maxDelay,
+		Metrics:     daemon.metrics,
 		CheckBuildRunning: func() bool {
 			if daemon.buildQueue == nil {
 				return false

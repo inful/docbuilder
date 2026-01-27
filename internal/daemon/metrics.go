@@ -81,17 +81,29 @@ func NewMetricsCollector() *MetricsCollector {
 	}
 }
 
-// IncrementCounter increments a counter metric.
-func (mc *MetricsCollector) IncrementCounter(name string) {
+// AddCounter increments a counter metric by delta.
+//
+// Delta values <= 0 are ignored.
+func (mc *MetricsCollector) AddCounter(name string, delta int64) {
+	if delta <= 0 {
+		return
+	}
+
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
 
 	if counter, exists := mc.counters[name]; exists {
-		atomic.AddInt64(counter, 1)
-	} else {
-		var val int64 = 1
-		mc.counters[name] = &val
+		atomic.AddInt64(counter, delta)
+		return
 	}
+
+	val := delta
+	mc.counters[name] = &val
+}
+
+// IncrementCounter increments a counter metric.
+func (mc *MetricsCollector) IncrementCounter(name string) {
+	mc.AddCounter(name, 1)
 }
 
 // SetGauge sets a gauge metric value.

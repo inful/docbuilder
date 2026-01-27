@@ -13,11 +13,13 @@ import (
 func TestBuildDebouncer_BurstCoalescesToSingleBuild(t *testing.T) {
 	bus := events.NewBus()
 	defer bus.Close()
+	metrics := NewMetricsCollector()
 
 	var running atomic.Bool
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
 		QuietWindow:       25 * time.Millisecond,
 		MaxDelay:          200 * time.Millisecond,
+		Metrics:           metrics,
 		CheckBuildRunning: running.Load,
 		PollInterval:      10 * time.Millisecond,
 	})
@@ -54,6 +56,12 @@ func TestBuildDebouncer_BurstCoalescesToSingleBuild(t *testing.T) {
 	case <-time.After(75 * time.Millisecond):
 		// ok
 	}
+
+	snap := metrics.GetSnapshot()
+	require.Equal(t, int64(5), snap.Counters["debouncer_build_requests_total"])
+	require.Equal(t, int64(1), snap.Counters["debouncer_builds_emitted_total"])
+	require.Equal(t, int64(4), snap.Counters["debouncer_coalesced_requests_total"])
+	require.Equal(t, int64(0), snap.Gauges["debouncer_pending"])
 }
 
 func TestBuildDebouncer_MaxDelayForcesBuild(t *testing.T) {

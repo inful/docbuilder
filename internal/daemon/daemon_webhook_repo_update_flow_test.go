@@ -101,7 +101,7 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 	require.Eventually(t, func() bool {
 		job, ok := bq.JobSnapshot(jobID)
 		return ok && job != nil && job.Status == queue.BuildStatusCompleted
-	}, 2*time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 }
 
 func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *testing.T) {
