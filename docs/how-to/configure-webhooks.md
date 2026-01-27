@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: df2d0bb5f533c9c0872091ac2aa937620909ee2defc4e2245c943e7f52fca99e
+fingerprint: f742a32f91e45e284a2866f5a1f057821e13b3d2ec8b639f0c6615d9f9d7710d
 lastmod: "2026-01-27"
 tags:
   - webhooks
@@ -35,6 +35,10 @@ When configured, DocBuilder:
 - If DocBuilder determines the repository’s branch HEAD did not move, no build is requested.
 
 **Note**: Webhook-triggered build requests default to “immediate” signals, but DocBuilder still coalesces work when a build is already running (at most one follow-up build is queued). You can change this behavior with `daemon.build_debounce.webhook_immediate`.
+
+When `daemon.build_debounce.webhook_immediate` is `false`, webhook-triggered builds follow the standard debouncer timing: DocBuilder waits for `daemon.build_debounce.quiet_window` with no new activity (up to `daemon.build_debounce.max_delay`) before starting a build.
+
+For stricter “what was built” semantics, DocBuilder may attach a snapshot (repo URL → commit SHA) observed during the remote update check so the subsequent build can be pinned to those commits.
 
 **Important**: For push-style webhooks that include changed file paths (GitLab/Forgejo/GitHub), DocBuilder only triggers a rebuild when at least one changed file is under one of the repository’s configured `paths` (defaults to `docs`). This avoids unnecessary rebuilds when unrelated code changes happen.
 
