@@ -262,8 +262,18 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		Metrics:        daemon.metrics,
 		StateManager:   daemon.stateManager,
 		BuildQueue:     daemon.buildQueue,
-		LiveReload:     daemon.liveReload,
-		Config:         cfg,
+		BuildRequester: func(ctx context.Context, jobID, reason string) {
+			if daemon.orchestrationBus == nil || ctx == nil {
+				return
+			}
+			_ = daemon.orchestrationBus.Publish(ctx, events.BuildRequested{
+				JobID:       jobID,
+				Reason:      reason,
+				RequestedAt: time.Now(),
+			})
+		},
+		LiveReload: daemon.liveReload,
+		Config:     cfg,
 	})
 
 	// Initialize build debouncer (ADR-021 Phase 2).

@@ -41,6 +41,12 @@ type Enqueuer interface {
 	Enqueue(job *queue.BuildJob) error
 }
 
+// BuildRequester is an optional hook used to request a build without directly
+// enqueueing a build job. This supports higher-level orchestration (ADR-021).
+//
+// If set, the runner will call it instead of enqueuing a queue.BuildJob.
+type BuildRequester func(ctx context.Context, jobID, reason string)
+
 // Config holds the dependencies for creating a Runner.
 type Config struct {
 	Discovery      Discovery
@@ -49,6 +55,7 @@ type Config struct {
 	Metrics        Metrics
 	StateManager   StateManager
 	BuildQueue     Enqueuer
+	BuildRequester BuildRequester
 	LiveReload     queue.LiveReloadHub
 	Config         *config.Config
 
@@ -67,6 +74,7 @@ type Runner struct {
 	metrics        Metrics
 	stateManager   StateManager
 	buildQueue     Enqueuer
+	buildRequester BuildRequester
 	liveReload     queue.LiveReloadHub
 	config         *config.Config
 
@@ -96,6 +104,7 @@ func New(cfg Config) *Runner {
 		metrics:        cfg.Metrics,
 		stateManager:   cfg.StateManager,
 		buildQueue:     cfg.BuildQueue,
+		buildRequester: cfg.BuildRequester,
 		liveReload:     cfg.LiveReload,
 		config:         cfg.Config,
 		now:            now,
@@ -166,7 +175,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 
 	if len(result.Repositories) > 0 && r.shouldBuildOnDiscovery() {
-		r.triggerBuildForDiscoveredRepos(result)
+		r.triggerBuildForDiscoveredRepos(ctx, result)
 	}
 
 	return nil
@@ -183,14 +192,24 @@ func (r *Runner) shouldBuildOnDiscovery() bool {
 	return *r.config.Daemon.Sync.BuildOnDiscovery
 }
 
-func (r *Runner) triggerBuildForDiscoveredRepos(result *forge.DiscoveryResult) {
+func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *forge.DiscoveryResult) {
+	if ctx == nil {
+		return
+	}
+
+	jobID := r.newJobID()
+	if r.buildRequester != nil {
+		r.buildRequester(ctx, jobID, "discovery")
+		return
+	}
+
 	if r.buildQueue == nil {
 		return
 	}
 
 	converted := r.discovery.ConvertToConfigRepositories(result.Repositories, r.forgeManager)
 	job := &queue.BuildJob{
-		ID:        r.newJobID(),
+		ID:        jobID,
 		Type:      queue.BuildTypeDiscovery,
 		Priority:  queue.PriorityNormal,
 		CreatedAt: r.now(),
