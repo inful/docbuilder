@@ -50,13 +50,19 @@ Planned doc touchpoints:
 - CLI / ops reference (as applicable): `docs/reference/cli.md`
   - If we add debug flags, commands, or event/bus introspection, document them.
 
+  Status: N/A (no new CLI debug flags or event/bus introspection surface was added for ADR-021).
+
 - Observability / metrics docs (as applicable)
   - If we add metrics (coalesce count, time-to-build, queue depth), document names and meaning.
+
+  Status: implemented (see debouncer + daemon metrics documentation in `docs/reference/configuration.md`).
 
 Acceptance criteria:
 
 - Operators can answer “why didn’t a webhook build immediately?” from docs.
 - New config knobs and semantics are documented in the configuration reference.
+
+Status: implemented.
 
 ## Phase 0: Document invariants (no code)
 
@@ -75,6 +81,8 @@ Acceptance criteria:
 
 - ADR-021 invariants are explicitly documented in the codebase (docs).
 
+Status: implemented (see `docs/adr/adr-021-event-driven-daemon-updates.md`).
+
 ## Phase 1: Introduce an in-process event bus (foundation)
 
 - Add `internal/daemon/events` (lightweight in-process pub/sub), integrated with `internal/eventstore` for optional auditing:
@@ -92,6 +100,8 @@ Acceptance criteria:
 - Event bus supports clean shutdown and bounded buffering.
 - Tests cover publish/subscribe and backpressure.
 
+Status: implemented (`internal/daemon/events` + unit tests).
+
 ## Phase 2: Build debouncer / coalescer
 
 - Implement `BuildDebouncer`:
@@ -108,6 +118,8 @@ Acceptance criteria:
 
 - Given N build requests within the quiet window, exactly one build trigger fires.
 - Given continuous requests, a build still fires by maxDelay.
+
+Status: implemented (`internal/daemon/build_debouncer.go` + tests).
 
 ## Phase 3: Event wiring (triggers)
 
@@ -137,6 +149,8 @@ Acceptance criteria:
 - Webhook handlers only parse/validate and publish orchestration events.
 - Removal is represented as a first-class event.
 
+Status: implemented.
+
 ## Phase 4: Repository update worker
 
 - Implement `RepoUpdater`:
@@ -153,6 +167,8 @@ Acceptance criteria:
 - A webhook-triggered repo update publishes `RepoUpdated(changed=true)` only when SHA moves.
 - A build request is emitted only after change detection.
 
+Status: implemented (`internal/daemon/repo_updater.go` + tests).
+
 ## Phase 5: Build execution remains canonical
 
 - When debouncer emits `BuildNow`, enqueue a normal build job using the full repo set.
@@ -164,6 +180,8 @@ Acceptance criteria:
 
 - Builds triggered from webhooks render/publish the full repo set.
 - Site output remains coherent (search/index/taxonomies consistent).
+
+Status: implemented (BuildNow consumer enqueues canonical full-site builds).
 
 ### Job IDs under coalescing (operational semantics)
 
@@ -191,6 +209,8 @@ Acceptance criteria:
 
 - Snapshot builds (if implemented) can pin repo → SHA for strict “what was built”.
 
+Status: implemented for webhook-triggered orchestration (snapshot is carried via `BuildRequested.Snapshot` → `BuildNow.Snapshot`).
+
 ## Rollout strategy
 
 - Start with the debounced build path only for webhooks (biggest storm source).
@@ -200,10 +220,14 @@ Acceptance criteria:
   - time-to-build after first trigger
   - repos updated per cycle
 
+Status: implemented (debouncer metrics exist; see `docs/reference/configuration.md`).
+
 ## Migration / compatibility
 
 - Preserve existing config fields and HTTP endpoints.
 - Keep the build pipeline untouched initially; only rewire triggers into events.
+
+Status: implemented.
 
 ## Cleanup / simplification tasks (planned removals)
 
