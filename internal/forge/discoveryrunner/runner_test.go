@@ -129,6 +129,59 @@ func TestRunner_Run_WhenBuildOnDiscoveryDisabled_UpdatesCacheAndDoesNotEnqueueBu
 	require.Equal(t, 0, enq.calls)
 }
 
+func TestRunner_Run_WhenBuildRequesterProvided_DoesNotEnqueueBuild(t *testing.T) {
+	const jobID = "job-1"
+
+	cache := NewCache()
+	metrics := &fakeMetrics{}
+	enq := &fakeEnqueuer{}
+	appCfg := &config.Config{Version: "2.0"}
+
+	r1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
+
+	discovery := &fakeDiscovery{
+		result: &forge.DiscoveryResult{
+			Repositories: []*forge.Repository{r1},
+			Filtered:     []*forge.Repository{},
+			Errors:       map[string]error{},
+			Timestamp:    time.Unix(100, 0).UTC(),
+			Duration:     2 * time.Second,
+		},
+		converted: []config.Repository{{Name: "r1"}},
+	}
+
+	var (
+		called     bool
+		gotJobID   string
+		gotReason  string
+		calledWith context.Context
+	)
+
+	r := New(Config{
+		Discovery:      discovery,
+		DiscoveryCache: cache,
+		Metrics:        metrics,
+		BuildQueue:     enq,
+		BuildRequester: func(ctx context.Context, jobID, reason string) {
+			called = true
+			calledWith = ctx
+			gotJobID = jobID
+			gotReason = reason
+		},
+		Now:      func() time.Time { return time.Unix(123, 0).UTC() },
+		NewJobID: func() string { return jobID },
+		Config:   appCfg,
+	})
+
+	err := r.Run(context.Background())
+	require.NoError(t, err)
+	require.True(t, called)
+	require.NotNil(t, calledWith)
+	require.Equal(t, jobID, gotJobID)
+	require.Equal(t, "discovery", gotReason)
+	require.Equal(t, 0, enq.calls)
+}
+
 type fakeDiscovery struct {
 	result    *forge.DiscoveryResult
 	err       error
