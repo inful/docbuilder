@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: 5d2d238dd2bb1b39779353b02b5984f5dc177fec67259c71ff7fdd3b985d9cd8
+fingerprint: e6b39fdc9b0173e20f760c5f722b6320132956ee7e742e7585919d490c9336a3
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -125,7 +125,8 @@ Note: the intended longer-term flow is now in place:
 `RepoUpdateRequested` → (RepoUpdater checks/updates that repo) → `RepoUpdated(changed=true)` → `BuildRequested`.
 
 - Ensure discovery diffs publish removal events:
-  - `RepoRemoved` (or equivalent)
+  - `RepoRemoved` (implemented)
+  - Best-effort cleanup on removal: prune remote-head cache entries and delete repo cache directory (implemented)
 
 Acceptance criteria:
 

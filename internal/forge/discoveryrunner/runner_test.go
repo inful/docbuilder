@@ -182,6 +182,58 @@ func TestRunner_Run_WhenBuildRequesterProvided_DoesNotEnqueueBuild(t *testing.T)
 	require.Equal(t, 0, enq.calls)
 }
 
+func TestRunner_Run_WhenRepoRemoved_InvokesRepoRemovedNotifier(t *testing.T) {
+	cache := NewCache()
+	metrics := &fakeMetrics{}
+	enq := &fakeEnqueuer{}
+	appCfg := &config.Config{Version: "2.0"}
+
+	prev1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git"}
+	prev2 := &forge.Repository{Name: "r2", CloneURL: "https://example.com/r2.git"}
+	cache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{prev1, prev2}})
+
+	cur1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
+	discovery := &fakeDiscovery{
+		result: &forge.DiscoveryResult{
+			Repositories: []*forge.Repository{cur1},
+			Filtered:     []*forge.Repository{},
+			Errors:       map[string]error{},
+			Timestamp:    time.Unix(100, 0).UTC(),
+			Duration:     2 * time.Second,
+		},
+		converted: []config.Repository{{Name: "r1"}},
+	}
+
+	var (
+		calls    int
+		gotURL   string
+		gotName  string
+		calledCt context.Context
+	)
+
+	r := New(Config{
+		Discovery:      discovery,
+		DiscoveryCache: cache,
+		Metrics:        metrics,
+		BuildQueue:     enq,
+		RepoRemoved: func(ctx context.Context, repoURL, repoName string) {
+			calls++
+			calledCt = ctx
+			gotURL = repoURL
+			gotName = repoName
+		},
+		Now:    func() time.Time { return time.Unix(123, 0).UTC() },
+		Config: appCfg,
+	})
+
+	err := r.Run(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 1, calls)
+	require.NotNil(t, calledCt)
+	require.Equal(t, "https://example.com/r2.git", gotURL)
+	require.Equal(t, "r2", gotName)
+}
+
 type fakeDiscovery struct {
 	result    *forge.DiscoveryResult
 	err       error

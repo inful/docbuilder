@@ -47,6 +47,13 @@ type Enqueuer interface {
 // If set, the runner will call it instead of enqueuing a queue.BuildJob.
 type BuildRequester func(ctx context.Context, jobID, reason string)
 
+// RepoRemovedNotifier is an optional hook invoked when a repository that existed
+// in the previous discovery result is missing from the latest one.
+//
+// This supports higher-level orchestration (ADR-021) without hard-coupling the
+// discovery runner to the daemon package.
+type RepoRemovedNotifier func(ctx context.Context, repoURL, repoName string)
+
 // Config holds the dependencies for creating a Runner.
 type Config struct {
 	Discovery      Discovery
@@ -56,6 +63,7 @@ type Config struct {
 	StateManager   StateManager
 	BuildQueue     Enqueuer
 	BuildRequester BuildRequester
+	RepoRemoved    RepoRemovedNotifier
 	LiveReload     queue.LiveReloadHub
 	Config         *config.Config
 
@@ -75,6 +83,7 @@ type Runner struct {
 	stateManager   StateManager
 	buildQueue     Enqueuer
 	buildRequester BuildRequester
+	repoRemoved    RepoRemovedNotifier
 	liveReload     queue.LiveReloadHub
 	config         *config.Config
 
@@ -105,6 +114,7 @@ func New(cfg Config) *Runner {
 		stateManager:   cfg.StateManager,
 		buildQueue:     cfg.BuildQueue,
 		buildRequester: cfg.BuildRequester,
+		repoRemoved:    cfg.RepoRemoved,
 		liveReload:     cfg.LiveReload,
 		config:         cfg.Config,
 		now:            now,
@@ -119,6 +129,20 @@ func New(cfg Config) *Runner {
 func (r *Runner) Run(ctx context.Context) error {
 	if r.discovery == nil {
 		return nil
+	}
+
+	var prevDiscovered map[string]string
+	if r.discoveryCache != nil {
+		prev := r.discoveryCache.GetResult()
+		if prev != nil && len(prev.Repositories) > 0 {
+			prevDiscovered = make(map[string]string, len(prev.Repositories))
+			for _, repo := range prev.Repositories {
+				if repo == nil || repo.CloneURL == "" {
+					continue
+				}
+				prevDiscovered[repo.CloneURL] = repo.Name
+			}
+		}
 	}
 
 	start := time.Now()
@@ -152,6 +176,22 @@ func (r *Runner) Run(ctx context.Context) error {
 
 	if r.discoveryCache != nil {
 		r.discoveryCache.Update(result)
+	}
+
+	if r.repoRemoved != nil && len(prevDiscovered) > 0 {
+		current := make(map[string]struct{}, len(result.Repositories))
+		for _, repo := range result.Repositories {
+			if repo == nil || repo.CloneURL == "" {
+				continue
+			}
+			current[repo.CloneURL] = struct{}{}
+		}
+		for url, name := range prevDiscovered {
+			if _, ok := current[url]; ok {
+				continue
+			}
+			r.repoRemoved(ctx, url, name)
+		}
 	}
 
 	slog.Info("Repository discovery completed",

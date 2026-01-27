@@ -40,6 +40,18 @@ type RepoUpdated struct {
 	Immediate bool
 }
 
+// RepoRemoved is emitted when a previously discovered repository is no longer present
+// in the latest discovery result.
+//
+// This is an orchestration event used by the daemon's in-process control flow.
+// It is not durable and is not written to internal/eventstore.
+type RepoRemoved struct {
+	RepoURL    string
+	RepoName   string
+	RemovedAt  time.Time
+	Discovered bool // true when removal was detected via forge discovery
+}
+
 // BuildNow is emitted by the BuildDebouncer once it decides to start a build.
 // Consumers should enqueue a canonical full-site build job.
 type BuildNow struct {
