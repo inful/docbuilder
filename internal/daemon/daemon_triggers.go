@@ -133,7 +133,15 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles [
 		matchedRepoURL = reposForBuild[0].URL
 	}
 
-	jobID := fmt.Sprintf("webhook-%d", time.Now().Unix())
+	jobID := ""
+	if d.buildDebouncer != nil {
+		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+			jobID = planned
+		}
+	}
+	if jobID == "" {
+		jobID = fmt.Sprintf("webhook-%d", time.Now().Unix())
+	}
 	if d.orchestrationBus != nil {
 		_ = d.orchestrationBus.Publish(context.Background(), events.BuildRequested{
 			JobID:       jobID,
