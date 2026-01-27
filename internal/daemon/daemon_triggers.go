@@ -140,6 +140,7 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles [
 			Immediate:   true,
 			Reason:      "webhook",
 			RepoURL:     matchedRepoURL,
+			Branch:      branch,
 			RequestedAt: time.Now(),
 		})
 		slog.Info("Webhook build requested",
