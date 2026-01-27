@@ -254,7 +254,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		DiscoveryCache: daemon.discoveryCache,
 		Metrics:        daemon.metrics,
 		StateManager:   daemon.stateManager,
-		BuildQueue:     daemon.buildQueue,
 		BuildRequester: func(ctx context.Context, jobID, reason string) {
 			if daemon.orchestrationBus == nil || ctx == nil {
 				return
