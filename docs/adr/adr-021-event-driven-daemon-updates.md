@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: 3fdf49c4ca4e864f46520fc5c444683eeb451a731bb46949a8a16725a39203c8
+fingerprint: a09ea1fa5c94a21316243481fa04362dc794f6238c86251b3b5534c6c13127ce
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -154,6 +154,29 @@ This ADR explicitly supports the following scenario:
 - Performance: rebuild storms coalesce into a single build.
 - Extensibility: update-only, discovery-only, or other workflows can exist without coupling.
 - Right-sized complexity: in-process events capture the architecture without requiring a broker.
+
+## Simplifications enabled (intended deletions)
+
+This ADR is not meant to be “add-only”. The event bus and debouncer exist to remove duplicated orchestration and reduce special-casing.
+
+Once this architecture is in place, we should be able to simplify the daemon by:
+
+- Keeping triggers thin
+   - Webhook/schedule/admin code should only validate inputs and publish events.
+   - Remove any trigger-specific logic that decides repo sets, build scope, or coalescing.
+
+- Establishing a single build gate
+   - Only the debouncer (or a single build gate component) should decide when to start builds.
+   - Remove scattered “don’t build too often” logic from elsewhere in the daemon.
+
+- Converging on one canonical build entry point
+   - Avoid multiple pathways that “kick the build pipeline” with slightly different semantics.
+   - Ensure “update one, rebuild all” is enforced by the centralized build runner.
+
+- Centralizing shutdown behavior
+   - A single dispatcher/worker model makes it easier to reliably stop accepting work, drain queues, and cancel in-flight operations.
+
+These simplifications should be tracked explicitly as cleanup tasks in the implementation plan.
 
 ## Consequences
 
