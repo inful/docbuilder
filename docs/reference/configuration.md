@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 29ccc214f37488ef676b52a3b6adb237017788243d4c8016d116b504d2d2cfbe
+fingerprint: 7959cd33099bc3416f976f81b30f16a401de4faf82c51a2d04d1eebf29b1b5ec
 lastmod: "2026-01-27"
 tags:
   - configuration
@@ -209,6 +209,11 @@ daemon:
     max_delay: "2m"
     webhook_immediate: false
 ```
+
+Semantics:
+
+- “Update one, rebuild all”: webhook-triggered activity may update/check a single repository, but the build renders and publishes the full site (all configured/discovered repositories).
+- Eventual consistency: by default, builds use the HEAD of each configured branch at build time. DocBuilder may optionally pin repositories to specific commit SHAs for stricter “what was built” semantics (snapshot builds).
 
 ### Storage Configuration
 
