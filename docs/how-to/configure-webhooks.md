@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: f742a32f91e45e284a2866f5a1f057821e13b3d2ec8b639f0c6615d9f9d7710d
+fingerprint: 10895057fbd9d196ea73922773fec323e0988e1f6de9da5370b43681b7d8be8d
 lastmod: "2026-01-27"
 tags:
   - webhooks
