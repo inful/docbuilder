@@ -44,6 +44,15 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		return
 	}
 
+	if evt.LastRepoURL != "" && evt.LastBranch != "" {
+		for i := range reposForBuild {
+			repo := &reposForBuild[i]
+			if repo.URL == evt.LastRepoURL {
+				repo.Branch = evt.LastBranch
+			}
+		}
+	}
+
 	jobID := evt.JobID
 	if jobID == "" {
 		jobID = fmt.Sprintf("orchestrated-build-%d", time.Now().UnixNano())
@@ -56,14 +65,28 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		LiveReloadHub: d.liveReload,
 	}
 	if evt.LastRepoURL != "" && evt.LastReason != "" {
-		meta.DeltaRepoReasons = map[string]string{
-			evt.LastRepoURL: fmt.Sprintf("%s (%s)", evt.LastReason, evt.DebounceCause),
+		reason := evt.LastReason
+		if evt.LastBranch != "" {
+			reason = fmt.Sprintf("%s:%s", evt.LastReason, evt.LastBranch)
 		}
+		meta.DeltaRepoReasons = map[string]string{
+			evt.LastRepoURL: fmt.Sprintf("%s (%s)", reason, evt.DebounceCause),
+		}
+	}
+
+	jobType := BuildTypeManual
+	switch evt.LastReason {
+	case "webhook":
+		jobType = BuildTypeWebhook
+	case "discovery":
+		jobType = BuildTypeDiscovery
+	case "scheduled build":
+		jobType = BuildTypeScheduled
 	}
 
 	job := &BuildJob{
 		ID:        jobID,
-		Type:      BuildTypeManual,
+		Type:      jobType,
 		Priority:  PriorityHigh,
 		CreatedAt: time.Now(),
 		TypedMeta: meta,

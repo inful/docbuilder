@@ -11,6 +11,7 @@ type BuildRequested struct {
 	Immediate   bool
 	Reason      string
 	RepoURL     string
+	Branch      string
 	RequestedAt time.Time
 }
 
@@ -22,6 +23,7 @@ type BuildNow struct {
 	RequestCount  int
 	LastReason    string
 	LastRepoURL   string
+	LastBranch    string
 	FirstRequest  time.Time
 	LastRequest   time.Time
 	DebounceCause string // "quiet" or "max_delay" or "after_running"

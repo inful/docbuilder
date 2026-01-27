@@ -45,6 +45,7 @@ type BuildDebouncer struct {
 	lastRequestAt   time.Time
 	lastReason      string
 	lastRepoURL     string
+	lastBranch      string
 	lastJobID       string
 	requestCount    int
 	pollingAfterRun bool
@@ -138,6 +139,14 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 				if d.tryEmit(ctx, "immediate") {
 					quietC = nil
 					maxC = nil
+					continue
+				}
+
+				// Build is currently running; ensure we start polling so we can emit a
+				// single follow-up BuildNow once the running build completes.
+				if d.shouldPollAfterRun() && pollC == nil {
+					resetTimer(pollTimer, d.cfg.PollInterval)
+					pollC = pollTimer.C
 				}
 				continue
 			}
@@ -200,6 +209,7 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.lastRequestAt = now
 	d.lastReason = req.Reason
 	d.lastRepoURL = req.RepoURL
+	d.lastBranch = req.Branch
 	d.lastJobID = req.JobID
 	d.requestCount++
 }
@@ -224,6 +234,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	count := d.requestCount
 	reason := d.lastReason
 	repoURL := d.lastRepoURL
+	branch := d.lastBranch
 	jobID := d.lastJobID
 	if !pending {
 		d.mu.Unlock()
@@ -247,6 +258,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		RequestCount:  count,
 		LastReason:    reason,
 		LastRepoURL:   repoURL,
+		LastBranch:    branch,
 		FirstRequest:  first,
 		LastRequest:   last,
 		DebounceCause: cause,
