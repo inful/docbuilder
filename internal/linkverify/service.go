@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -403,6 +404,9 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 	if err == nil {
 		return status, nil
 	}
+	if isTimeoutError(err) {
+		return status, nil
+	}
 
 	// Treat rate limiting as "not broken". These responses indicate the URL likely exists,
 	// but the remote site is asking us to slow down.
@@ -418,6 +422,9 @@ func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL str
 	case http.StatusNotFound, http.StatusBadRequest:
 		statusGet, errGet := s.doExternalRequest(ctx, http.MethodGet, linkURL)
 		if errGet == nil {
+			return statusGet, nil
+		}
+		if isTimeoutError(errGet) {
 			return statusGet, nil
 		}
 		if isRateLimited(statusGet) {
@@ -487,6 +494,20 @@ func isAuthError(statusCode int) bool {
 
 func isRateLimited(statusCode int) bool {
 	return statusCode == http.StatusTooManyRequests
+}
+
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var nerr net.Error
+	if errors.As(err, &nerr) {
+		return nerr.Timeout()
+	}
+	return false
 }
 
 // handleBrokenLink creates and publishes a broken link event.

@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestVerificationService_CheckExternalLink_FallsBackToGETWhenHeadIsNotFound(t *testing.T) {
@@ -78,5 +79,23 @@ func TestVerificationService_CheckExternalLink_ReportsServerErrors(t *testing.T)
 	}
 	if status != http.StatusInternalServerError {
 		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, status)
+	}
+}
+
+func TestVerificationService_CheckExternalLink_TreatsTimeoutAsValid(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(srv.Close)
+
+	client := srv.Client()
+	client.Timeout = 10 * time.Millisecond
+
+	svc := &VerificationService{httpClient: client}
+
+	status, err := svc.checkExternalLink(context.Background(), srv.URL+"/slow")
+	if err != nil {
+		t.Fatalf("expected no error, got %v (status %d)", err, status)
 	}
 }
