@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"maps"
 	"sync"
 	"time"
 
@@ -50,6 +51,7 @@ type BuildDebouncer struct {
 	lastEmittedJobID string
 	requestCount     int
 	pollingAfterRun  bool
+	snapshot         map[string]string
 }
 
 // PlannedJobID returns the JobID that will be used for the next BuildNow emission,
@@ -234,6 +236,7 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 		d.pending = true
 		d.firstRequestAt = now
 		d.requestCount = 0
+		d.snapshot = nil
 	}
 
 	d.lastRequestAt = now
@@ -242,6 +245,17 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.lastBranch = req.Branch
 	d.lastJobID = req.JobID
 	d.requestCount++
+	if len(req.Snapshot) > 0 {
+		if d.snapshot == nil {
+			d.snapshot = make(map[string]string, len(req.Snapshot))
+		}
+		for k, v := range req.Snapshot {
+			if k == "" || v == "" {
+				continue
+			}
+			d.snapshot[k] = v
+		}
+	}
 }
 
 func (d *BuildDebouncer) shouldStartMaxTimer() bool {
@@ -266,6 +280,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	repoURL := d.lastRepoURL
 	branch := d.lastBranch
 	jobID := d.lastJobID
+	snapshot := d.snapshot
 	if !pending {
 		d.mu.Unlock()
 		return true
@@ -281,7 +296,14 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	d.pendingAfterRun = false
 	d.pollingAfterRun = false
 	d.lastEmittedJobID = jobID
+	d.snapshot = nil
 	d.mu.Unlock()
+
+	var snapshotCopy map[string]string
+	if len(snapshot) > 0 {
+		snapshotCopy = make(map[string]string, len(snapshot))
+		maps.Copy(snapshotCopy, snapshot)
+	}
 
 	evt := events.BuildNow{
 		JobID:         jobID,
@@ -290,6 +312,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		LastReason:    reason,
 		LastRepoURL:   repoURL,
 		LastBranch:    branch,
+		Snapshot:      snapshotCopy,
 		FirstRequest:  first,
 		LastRequest:   last,
 		DebounceCause: cause,

@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: e6b39fdc9b0173e20f760c5f722b6320132956ee7e742e7585919d490c9336a3
+fingerprint: af142648c79406cfaa6edc6a68ee3a7624b35d21c6e10b4931697be466569f6b
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -176,6 +176,10 @@ When requests are coalesced, multiple triggers may map to a single build job. To
   - checkout exact SHAs
   - skip `fetch` if already at desired SHA
 - This enables strict “build corresponds to event state” semantics.
+
+Status:
+
+- Implemented for webhook-triggered orchestration: repo updates emit a `{repoURL: commitSHA}` snapshot and the build pipeline checks out pinned commits when provided.
 
 Note: snapshot builds are optional because Phase 0 explicitly accepts eventual consistency.
 

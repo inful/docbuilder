@@ -26,6 +26,10 @@ type BuildJobMetadata struct {
 	V2Config     *config.Config      `json:"v2_config,omitempty"`
 	Repositories []config.Repository `json:"repositories,omitempty"`
 
+	// RepoSnapshot optionally pins repositories to specific commits for this build.
+	// Keys are repository URLs.
+	RepoSnapshot map[string]string `json:"repo_snapshot,omitempty"`
+
 	// Delta analysis
 	DeltaRepoReasons map[string]string `json:"delta_repo_reasons,omitempty"`
 

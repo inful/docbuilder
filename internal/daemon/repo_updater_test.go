@@ -77,6 +77,7 @@ func TestRepoUpdater_WhenRemoteChanges_PublishesRepoUpdatedAndBuildRequested(t *
 		require.Equal(t, "webhook", got.Reason)
 		require.Equal(t, "https://example.invalid/repo-1.git", got.RepoURL)
 		require.Equal(t, "main", got.Branch)
+		require.Equal(t, map[string]string{"https://example.invalid/repo-1.git": "deadbeef"}, got.Snapshot)
 	case <-time.After(250 * time.Millisecond):
 		t.Fatal("timed out waiting for BuildRequested")
 	}

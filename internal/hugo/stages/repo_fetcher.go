@@ -51,6 +51,13 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	if f.buildCfg != nil {
 		client = client.WithBuildConfig(f.buildCfg)
 	}
+
+	// Snapshot builds: if a specific commit SHA is pinned for this repo, ensure the
+	// working copy is checked out at that exact commit.
+	if repo.PinnedCommit != "" {
+		return f.fetchPinnedCommit(client, strategy, repo)
+	}
+
 	attemptUpdate := false
 	var preHead string
 	switch strategy {
@@ -61,7 +68,7 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 		// We replicate minimal logic; detailed head read happens after successful op.
 		// Use same path logic as client.
 		repoPath := filepath.Join(f.workspace, repo.Name)
-		if _, err := gitStatRepo(repoPath); err == nil {
+		if err := gitStatRepo(repoPath); err == nil {
 			attemptUpdate = true
 			if h, herr := readRepoHead(repoPath); herr == nil {
 				preHead = h
@@ -93,6 +100,63 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	}
 	// Updated determination: if cloning (preHead empty) or heads differ
 	res.Updated = preHead == "" || (preHead != "" && res.PostHead != "" && preHead != res.PostHead)
+	return res
+}
+
+func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
+	res := RepoFetchResult{Name: repo.Name}
+	repoPath := filepath.Join(f.workspace, repo.Name)
+
+	preHead, _ := readRepoHead(repoPath)
+	res.PreHead = preHead
+
+	// If we already have the desired commit checked out, skip fetch/update entirely.
+	if preHead != "" && preHead == repo.PinnedCommit {
+		res.Path = repoPath
+		res.PostHead = repo.PinnedCommit
+		res.CommitDate = getCommitDate(repoPath, repo.PinnedCommit)
+		res.Updated = false
+		return res
+	}
+
+	// Ensure repo exists locally.
+	attemptUpdate := false
+	switch strategy {
+	case config.CloneStrategyUpdate:
+		attemptUpdate = true
+	case config.CloneStrategyAuto:
+		if err := gitStatRepo(repoPath); err == nil {
+			attemptUpdate = true
+		}
+	case config.CloneStrategyFresh:
+		attemptUpdate = false
+	}
+
+	var path string
+	var err error
+	var commitDate time.Time
+	if attemptUpdate {
+		path, commitDate, err = f.performUpdate(client, repo)
+	} else {
+		path, commitDate, err = f.performClone(client, repo, &res)
+	}
+	res.Path = path
+	res.CommitDate = commitDate
+	if err != nil {
+		res.Err = err
+		return res
+	}
+
+	// Checkout exact pinned SHA (detached HEAD).
+	checkedOutAt, cerr := checkoutExactCommit(path, repo.PinnedCommit)
+	if cerr != nil {
+		res.Err = cerr
+		return res
+	}
+
+	res.PostHead = repo.PinnedCommit
+	res.CommitDate = checkedOutAt
+	res.Updated = preHead == "" || preHead != repo.PinnedCommit
 	return res
 }
 
@@ -128,15 +192,15 @@ func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Reposi
 }
 
 // gitStatRepo isolates os.Stat dependency (simple indirection aids test stubbing later).
-func gitStatRepo(path string) (bool, error) {
+func gitStatRepo(path string) error {
 	// minimal existence check reused from stage logic previously
 	if fi, err := os.Stat(path); err != nil || !fi.IsDir() { // missing or not dir
-		return false, err
+		return err
 	}
 	if _, err := os.Stat(path + "/.git"); err != nil { // missing .git
-		return false, fmt.Errorf("no git dir: %w", err)
+		return fmt.Errorf("no git dir: %w", err)
 	}
-	return true, nil
+	return nil
 }
 
 // getCommitDate retrieves the commit date for a given commit hash in a repository.
@@ -152,4 +216,24 @@ func getCommitDate(repoPath, commitSHA string) time.Time {
 		return time.Time{}
 	}
 	return commit.Author.When
+}
+
+func checkoutExactCommit(repoPath, commitSHA string) (time.Time, error) {
+	repo, err := ggit.PlainOpen(repoPath)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("open repo for checkout: %w", err)
+	}
+	wt, err := repo.Worktree()
+	if err != nil {
+		return time.Time{}, fmt.Errorf("get worktree for checkout: %w", err)
+	}
+	h := plumbing.NewHash(commitSHA)
+	if checkoutErr := wt.Checkout(&ggit.CheckoutOptions{Hash: h, Force: true}); checkoutErr != nil {
+		return time.Time{}, fmt.Errorf("checkout commit %s: %w", commitSHA, checkoutErr)
+	}
+	commit, _ := repo.CommitObject(h)
+	if commit == nil {
+		return time.Time{}, nil
+	}
+	return commit.Author.When, nil
 }
