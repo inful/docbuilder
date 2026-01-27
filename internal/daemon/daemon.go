@@ -77,6 +77,9 @@ type Daemon struct {
 	queueLength int32
 	lastBuild   *time.Time
 
+	// Background worker tracking (started in Start, awaited in Stop).
+	workers sync.WaitGroup
+
 	// Scheduled job IDs (for observability and tests)
 	syncJobID   string
 	statusJobID string
@@ -385,29 +388,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Start build queue processing
 	d.buildQueue.Start(runCtx)
 
-	if d.orchestrationBus != nil {
-		go func() {
-			d.runBuildNowConsumer(runCtx)
-		}()
-		go func() {
-			d.runWebhookReceivedConsumer(runCtx)
-		}()
-		go func() {
-			d.runRepoRemovedConsumer(runCtx)
-		}()
-	}
-
-	if d.buildDebouncer != nil {
-		go func() {
-			_ = d.buildDebouncer.Run(runCtx)
-		}()
-	}
-
-	if d.repoUpdater != nil {
-		go func() {
-			d.repoUpdater.Run(runCtx)
-		}()
-	}
+	d.startWorkers(runCtx)
 
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
@@ -576,77 +557,106 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 // Stop gracefully shuts down the daemon.
 func (d *Daemon) Stop(ctx context.Context) error {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	currentStatus := d.GetStatus()
 	if currentStatus == StatusStopped || currentStatus == StatusStopping {
+		d.mu.Unlock()
 		return nil
 	}
 
 	d.status.Store(StatusStopping)
 	slog.Info("Stopping DocBuilder daemon")
 
+	// Snapshot pointers so we can stop without holding the daemon mutex.
+	runCancel := d.runCancel
+	d.runCancel = nil
+	stopChan := d.stopChan
+	bus := d.orchestrationBus
+	scheduler := d.scheduler
+	buildQueue := d.buildQueue
+	httpServer := d.httpServer
+	liveReload := d.liveReload
+	linkVerifier := d.linkVerifier
+	stateManager := d.stateManager
+	eventStore := d.eventStore
+	d.mu.Unlock()
+
 	// Cancel the run context to stop all background workers.
-	if d.runCancel != nil {
-		d.runCancel()
-		d.runCancel = nil
+	if runCancel != nil {
+		runCancel()
 	}
 
 	// Signal stop to all components (only if not already closed)
-	select {
-	case <-d.stopChan:
-		// Channel already closed
-	default:
-		close(d.stopChan)
+	if stopChan != nil {
+		select {
+		case <-stopChan:
+			// Channel already closed
+		default:
+			close(stopChan)
+		}
 	}
 
 	// Stop components in reverse order
-	if d.orchestrationBus != nil {
-		d.orchestrationBus.Close()
+	if bus != nil {
+		bus.Close()
 	}
 
-	if d.scheduler != nil {
-		if err := d.scheduler.Stop(ctx); err != nil {
+	if scheduler != nil {
+		if err := scheduler.Stop(ctx); err != nil {
 			slog.Error("Failed to stop scheduler", logfields.Error(err))
 		}
 	}
 
-	if d.buildQueue != nil {
-		d.buildQueue.Stop(ctx)
+	if buildQueue != nil {
+		buildQueue.Stop(ctx)
 	}
 
-	if d.httpServer != nil {
-		if err := d.httpServer.Stop(ctx); err != nil {
+	if httpServer != nil {
+		if err := httpServer.Stop(ctx); err != nil {
 			slog.Error("Failed to stop HTTP server", "error", err)
 		}
 	}
 
-	if d.liveReload != nil {
-		d.liveReload.Shutdown()
+	if liveReload != nil {
+		liveReload.Shutdown()
 	}
 
 	// Close link verification service
-	if d.linkVerifier != nil {
-		if err := d.linkVerifier.Close(); err != nil {
+	if linkVerifier != nil {
+		if err := linkVerifier.Close(); err != nil {
 			slog.Error("Failed to close link verifier", logfields.Error(err))
 		}
 	}
 
 	// Save state
-	if d.stateManager != nil {
-		if err := d.stateManager.Save(); err != nil {
+	if stateManager != nil {
+		if err := stateManager.Save(); err != nil {
 			slog.Error("Failed to save state", "error", err)
 		}
 	}
 
 	// Close event store (Phase B)
-	if d.eventStore != nil {
-		if err := d.eventStore.Close(); err != nil {
+	if eventStore != nil {
+		if err := eventStore.Close(); err != nil {
 			slog.Error("Failed to close event store", logfields.Error(err))
 		}
 	}
 
+	// Wait for daemon-owned background workers to exit.
+	done := make(chan struct{})
+	go func() {
+		d.workers.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		// ok
+	case <-ctx.Done():
+		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(ctx.Err()))
+	}
+
+	d.mu.Lock()
 	d.status.Store(StatusStopped)
+	d.mu.Unlock()
 
 	uptime := time.Since(d.startTime)
 	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
