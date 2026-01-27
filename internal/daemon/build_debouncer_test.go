@@ -149,3 +149,38 @@ func TestBuildDebouncer_BuildRunningQueuesOneFollowUp(t *testing.T) {
 		// ok
 	}
 }
+
+func TestBuildDebouncer_ImmediateEmitsBuildNow(t *testing.T) {
+	bus := events.NewBus()
+	defer bus.Close()
+
+	var running atomic.Bool
+	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+		QuietWindow:       200 * time.Millisecond,
+		MaxDelay:          500 * time.Millisecond,
+		CheckBuildRunning: running.Load,
+		PollInterval:      10 * time.Millisecond,
+	})
+	require.NoError(t, err)
+
+	buildNowCh, unsub := events.Subscribe[events.BuildNow](bus, 10)
+	defer unsub()
+
+	ctx := t.Context()
+	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-debouncer.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for debouncer ready")
+	}
+
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{Reason: "webhook", Immediate: true}))
+
+	select {
+	case got := <-buildNowCh:
+		require.Equal(t, "immediate", got.DebounceCause)
+	case <-time.After(200 * time.Millisecond):
+		t.Fatal("timed out waiting for immediate BuildNow")
+	}
+}

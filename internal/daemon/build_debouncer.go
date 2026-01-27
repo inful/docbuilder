@@ -134,6 +134,14 @@ func (d *BuildDebouncer) Run(ctx context.Context) error {
 			}
 			d.onRequest(req)
 
+			if req.Immediate {
+				if d.tryEmit(ctx, "immediate") {
+					quietC = nil
+					maxC = nil
+				}
+				continue
+			}
+
 			resetTimer(quietTimer, d.cfg.QuietWindow)
 			quietC = quietTimer.C
 

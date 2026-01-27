@@ -8,6 +8,7 @@ import "time"
 // It is not a durable event and is not written to internal/eventstore.
 type BuildRequested struct {
 	JobID       string
+	Immediate   bool
 	Reason      string
 	RepoURL     string
 	RequestedAt time.Time
