@@ -9,6 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,29 +26,43 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 
 	cfg := &config.Config{
 		Version: "2.0",
-		Repositories: []config.Repository{
-			{
-				Name:   "org/go-test-project",
-				URL:    "https://forgejo.example.com/org/go-test-project.git",
-				Branch: "main",
-				Paths:  []string{"docs"},
-			},
-			{
-				Name:   "org/other-project",
-				URL:    "https://forgejo.example.com/org/other-project.git",
-				Branch: "main",
-				Paths:  []string{"docs"},
-			},
-		},
+		Daemon:  &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}},
+		Forges: []*config.ForgeConfig{{
+			Name:    "forge-1",
+			Type:    config.ForgeForgejo,
+			BaseURL: "https://forgejo.example.com",
+		}},
 	}
+
+	forgeManager := forge.NewForgeManager()
+	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
 		config:           cfg,
 		stopChan:         make(chan struct{}),
 		orchestrationBus: bus,
 		buildQueue:       bq,
+		forgeManager:     forgeManager,
+		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		discoveryCache:   NewDiscoveryCache(),
 	}
 	d.status.Store(StatusRunning)
+
+	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+		Name:          "go-test-project",
+		FullName:      "org/go-test-project",
+		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
+		SSHURL:        "ssh://git@forgejo.example.com/org/go-test-project.git",
+		DefaultBranch: "main",
+		Metadata:      map[string]string{"forge_name": "forge-1"},
+	}, {
+		Name:          "other-project",
+		FullName:      "org/other-project",
+		CloneURL:      "https://forgejo.example.com/org/other-project.git",
+		SSHURL:        "ssh://git@forgejo.example.com/org/other-project.git",
+		DefaultBranch: "main",
+		Metadata:      map[string]string{"forge_name": "forge-1"},
+	}}})
 
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
 		QuietWindow: 200 * time.Millisecond,
@@ -87,7 +102,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	var target *config.Repository
 	for i := range job.TypedMeta.Repositories {
 		r := &job.TypedMeta.Repositories[i]
-		if r.Name == "org/go-test-project" {
+		if r.Name == "go-test-project" {
 			target = r
 			break
 		}

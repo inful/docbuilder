@@ -107,15 +107,22 @@ Acceptance criteria:
 
 ## Phase 3: Event wiring (triggers)
 
-- Webhook handler publishes:
-  - `RepoUpdateRequested(repoURL, branch)`
-  - (webhooks are just an event source; they should not run update/build logic directly)
+This phase was implemented incrementally using a “path of least resistance” approach.
 
-Note: webhook handlers should generally not publish `BuildRequested` directly. The intended flow is:
+- Webhook handler publishes `BuildRequested` directly (for now):
+  - `BuildRequested{Immediate:true, RepoURL, Branch}`
+  - Consumers still perform a full-site build (scope is never narrowed).
+  - The `Immediate:true` flag bypasses the quiet window but still respects “build running → emit one follow-up”.
+
+- Scheduled tick publishes `BuildRequested` (explicit repo mode):
+  - `BuildRequested{Reason:"scheduled build"}`
+
+- Discovery completion publishes `BuildRequested` (forge mode):
+  - `BuildRequested{Reason:"discovery"}`
+
+Note: the intended longer-term flow remains:
 `RepoUpdateRequested` → (RepoUpdater updates that repo) → `RepoUpdated(changed=true)` → `BuildRequested`.
-- Scheduled tick publishes:
-  - `DiscoveryRequested` or `FullRepoUpdateRequested`
-- Manual/admin endpoints publish appropriate events.
+We deferred `RepoUpdateRequested`/`RepoUpdater` to reduce risk while wiring the debounced build path first.
 
 - Ensure discovery diffs publish removal events:
   - `RepoRemoved` (or equivalent)
@@ -152,6 +159,14 @@ Acceptance criteria:
 
 - Builds triggered from webhooks render/publish the full repo set.
 - Site output remains coherent (search/index/taxonomies consistent).
+
+### Job IDs under coalescing (operational semantics)
+
+When requests are coalesced, multiple triggers may map to a single build job. To keep IDs stable and non-misleading:
+
+- Triggers should reuse the debouncer’s planned job ID when one is already pending.
+- Webhook endpoints return the planned job ID (so bursts return a stable ID that corresponds to the actual build).
+- Scheduled/discovery triggers also reuse the planned job ID to avoid logging “phantom” job IDs that won’t be enqueued.
 
 ## Phase 6: Optional correctness upgrade (snapshot builds)
 
