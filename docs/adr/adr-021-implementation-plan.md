@@ -36,12 +36,16 @@ Planned doc touchpoints:
     - “update one, rebuild all” (targeted update does not narrow site scope)
     - “build uses branch HEAD at build time” (eventual consistency)
 
+  Status: implemented.
+
 - Webhook setup guide: `docs/how-to/configure-webhooks.md`
   - Explain the new flow:
     - webhook publishes `RepoUpdateRequested`
     - repo update detects SHA movement and only then requests a build
     - build requests are debounced/coalesced
   - Add an operator note: a webhook does not necessarily produce an immediate build (quiet window).
+
+  Status: implemented.
 
 - CLI / ops reference (as applicable): `docs/reference/cli.md`
   - If we add debug flags, commands, or event/bus introspection, document them.
@@ -211,12 +215,18 @@ Planned simplifications:
   - Webhook/schedule/admin endpoints should only validate inputs and publish events.
   - Remove trigger code that decides build scope or repo set.
 
+  Status: implemented (triggers publish orchestration events; build scope remains canonical full-site).
+
 - Ensure a single build gate
   - Only `BuildDebouncer` (or a single gate component) should emit `BuildNow`.
   - Remove scattered coalescing/backoff logic elsewhere.
 
+  Status: implemented (build starts are gated by `BuildDebouncer` → `BuildNow`).
+
 - Converge on one canonical build entry point
   - Route all builds through the same build runner/queue path so semantics stay consistent.
+
+  Status: implemented (`BuildNow` consumer enqueues builds via the standard queue/job path).
 
 - Centralize shutdown behavior
   - Avoid bespoke goroutine lifecycles per trigger; use dispatcher/worker shutdown semantics.
