@@ -396,13 +396,56 @@ func publicDirForPage(page *PageMetadata) (string, error) {
 
 // checkExternalLink verifies an external link via HTTP request.
 func (s *VerificationService) checkExternalLink(ctx context.Context, linkURL string) (int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, linkURL, nil)
+	// First try HEAD (cheap, but some sites return false negatives for HEAD).
+	status, err := s.doExternalRequest(ctx, http.MethodHead, linkURL)
+	if err == nil {
+		return status, nil
+	}
+
+	// Treat rate limiting as "not broken". These responses indicate the URL likely exists,
+	// but the remote site is asking us to slow down.
+	if isRateLimited(status) {
+		return status, nil
+	}
+
+	// If HEAD is rejected or unhelpful, retry with a lightweight GET.
+	// Common cases:
+	// - Some CDNs/WAFs return 404 for HEAD but 200 for GET
+	// - Some servers mishandle HEAD on dynamic routes
+	switch status {
+	case http.StatusNotFound, http.StatusBadRequest:
+		statusGet, errGet := s.doExternalRequest(ctx, http.MethodGet, linkURL)
+		if errGet == nil {
+			return statusGet, nil
+		}
+		if isRateLimited(statusGet) {
+			return statusGet, nil
+		}
+		return statusGet, errGet
+	default:
+		return status, err
+	}
+}
+
+func (s *VerificationService) doExternalRequest(ctx context.Context, method, linkURL string) (int, error) {
+	// URL fragments are not sent to servers; strip them to avoid confusing redirects/logging.
+	if u, parseErr := url.Parse(linkURL); parseErr == nil {
+		u.Fragment = ""
+		linkURL = u.String()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, linkURL, nil)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set user agent
+	// Headers that improve compatibility with WAF/CDN protected sites.
 	req.Header.Set("User-Agent", "DocBuilder-LinkVerifier/1.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	if method == http.MethodGet {
+		// Keep GETs lightweight when possible.
+		req.Header.Set("Range", "bytes=0-1023")
+	}
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
@@ -438,6 +481,10 @@ func isAuthError(statusCode int) bool {
 		return true
 	}
 	return false
+}
+
+func isRateLimited(statusCode int) bool {
+	return statusCode == http.StatusTooManyRequests
 }
 
 // handleBrokenLink creates and publishes a broken link event.
