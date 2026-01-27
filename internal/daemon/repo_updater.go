@@ -107,12 +107,17 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		return
 	}
 
+	snapshot := map[string]string{}
+	if sha != "" {
+		snapshot[repo.URL] = sha
+	}
 	_ = u.bus.Publish(ctx, events.BuildRequested{
 		JobID:       req.JobID,
 		Immediate:   req.Immediate,
 		Reason:      "webhook",
 		RepoURL:     repo.URL,
 		Branch:      branch,
+		Snapshot:    snapshot,
 		RequestedAt: time.Now(),
 	})
 }

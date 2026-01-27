@@ -12,6 +12,7 @@ type BuildRequested struct {
 	Reason      string
 	RepoURL     string
 	Branch      string
+	Snapshot    map[string]string // optional: repoURL -> commitSHA
 	RequestedAt time.Time
 }
 
@@ -61,6 +62,7 @@ type BuildNow struct {
 	LastReason    string
 	LastRepoURL   string
 	LastBranch    string
+	Snapshot      map[string]string // optional: repoURL -> commitSHA
 	FirstRequest  time.Time
 	LastRequest   time.Time
 	DebounceCause string // "quiet" or "max_delay" or "after_running"

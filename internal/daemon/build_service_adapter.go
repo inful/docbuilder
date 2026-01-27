@@ -52,6 +52,14 @@ func (a *BuildServiceAdapter) Build(ctx context.Context, job *BuildJob) (*models
 	if job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
 		cfgCopy := *cfg
 		cfgCopy.Repositories = job.TypedMeta.Repositories
+		if len(job.TypedMeta.RepoSnapshot) > 0 {
+			for i := range cfgCopy.Repositories {
+				repo := &cfgCopy.Repositories[i]
+				if sha, ok := job.TypedMeta.RepoSnapshot[repo.URL]; ok && sha != "" {
+					repo.PinnedCommit = sha
+				}
+			}
+		}
 		cfg = &cfgCopy
 	}
 

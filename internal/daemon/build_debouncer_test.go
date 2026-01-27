@@ -231,6 +231,51 @@ func TestBuildDebouncer_ImmediateWhileRunning_EmitsAfterRunning(t *testing.T) {
 	}
 }
 
+func TestBuildDebouncer_MergesSnapshotsAcrossRequests(t *testing.T) {
+	bus := events.NewBus()
+	defer bus.Close()
+
+	var running atomic.Bool
+	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+		QuietWindow:       25 * time.Millisecond,
+		MaxDelay:          200 * time.Millisecond,
+		CheckBuildRunning: running.Load,
+		PollInterval:      10 * time.Millisecond,
+	})
+	require.NoError(t, err)
+
+	buildNowCh, unsub := events.Subscribe[events.BuildNow](bus, 10)
+	defer unsub()
+
+	ctx := t.Context()
+	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-debouncer.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for debouncer ready")
+	}
+
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{
+		Reason:   "test",
+		Snapshot: map[string]string{"https://example.invalid/r1.git": "a1"},
+	}))
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{
+		Reason:   "test",
+		Snapshot: map[string]string{"https://example.invalid/r2.git": "b2"},
+	}))
+
+	select {
+	case got := <-buildNowCh:
+		require.Equal(t, map[string]string{
+			"https://example.invalid/r1.git": "a1",
+			"https://example.invalid/r2.git": "b2",
+		}, got.Snapshot)
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for BuildNow")
+	}
+}
+
 func TestBuildDebouncer_DedupesRequestsWithSameJobIDAfterEmit(t *testing.T) {
 	bus := events.NewBus()
 	defer bus.Close()
