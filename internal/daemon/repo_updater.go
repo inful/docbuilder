@@ -89,7 +89,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		changed = true
 	}
 
-	_ = u.bus.Publish(ctx, events.RepoUpdated{
+	if err := publishOrchestrationEventOnBus(ctx, u.bus, events.RepoUpdated{
 		JobID:     req.JobID,
 		RepoURL:   repo.URL,
 		Branch:    branch,
@@ -97,7 +97,13 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		Changed:   changed,
 		UpdatedAt: time.Now(),
 		Immediate: req.Immediate,
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish RepoUpdated",
+			logfields.JobID(req.JobID),
+			logfields.Name(repo.Name),
+			logfields.URL(repo.URL),
+			logfields.Error(err))
+	}
 
 	if !changed {
 		slog.Info("Repo unchanged; skipping build request",
@@ -111,7 +117,7 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 	if sha != "" {
 		snapshot[repo.URL] = sha
 	}
-	_ = u.bus.Publish(ctx, events.BuildRequested{
+	if err := publishOrchestrationEventOnBus(ctx, u.bus, events.BuildRequested{
 		JobID:       req.JobID,
 		Immediate:   req.Immediate,
 		Reason:      "webhook",
@@ -119,7 +125,13 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 		Branch:      branch,
 		Snapshot:    snapshot,
 		RequestedAt: time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish BuildRequested",
+			logfields.JobID(req.JobID),
+			logfields.Name(repo.Name),
+			logfields.URL(repo.URL),
+			logfields.Error(err))
+	}
 }
 
 func (u *RepoUpdater) lookupRepo(repoURL string) (config.Repository, bool) {

@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"log/slog"
 	"maps"
 	"sync"
 	"time"
@@ -320,7 +321,52 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		}
 		return false
 	}
+	d.mu.Unlock()
 
+	var snapshotCopy map[string]string
+	if len(snapshot) > 0 {
+		snapshotCopy = make(map[string]string, len(snapshot))
+		maps.Copy(snapshotCopy, snapshot)
+	}
+
+	evt := events.BuildNow{
+		JobID:         jobID,
+		TriggeredAt:   time.Now(),
+		RequestCount:  count,
+		LastReason:    reason,
+		LastRepoURL:   repoURL,
+		LastBranch:    branch,
+		Snapshot:      snapshotCopy,
+		FirstRequest:  first,
+		LastRequest:   last,
+		DebounceCause: cause,
+	}
+
+	if err := publishOrchestrationEventOnBus(ctx, d.bus, evt); err != nil {
+		slog.Warn("Failed to publish BuildNow; will retry",
+			slog.String("job_id", jobID),
+			slog.String("cause", cause),
+			slog.String("reason", reason),
+			slog.String("repo_url", repoURL),
+			slog.String("branch", branch),
+			slog.Any("error", err))
+
+		d.mu.Lock()
+		d.pendingAfterRun = true
+		d.pollingAfterRun = false
+		pendingAfterRun := d.pendingAfterRun
+		d.mu.Unlock()
+
+		if d.metrics != nil {
+			d.metrics.SetGauge("debouncer_pending", 1)
+			if pendingAfterRun {
+				d.metrics.SetGauge("debouncer_pending_after_run", 1)
+			}
+		}
+		return false
+	}
+
+	d.mu.Lock()
 	d.pending = false
 	d.pendingAfterRun = false
 	d.pollingAfterRun = false
@@ -342,26 +388,6 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 		d.metrics.SetCustomMetric("debouncer_last_debounce_cause", cause)
 	}
 
-	var snapshotCopy map[string]string
-	if len(snapshot) > 0 {
-		snapshotCopy = make(map[string]string, len(snapshot))
-		maps.Copy(snapshotCopy, snapshot)
-	}
-
-	evt := events.BuildNow{
-		JobID:         jobID,
-		TriggeredAt:   time.Now(),
-		RequestCount:  count,
-		LastReason:    reason,
-		LastRepoURL:   repoURL,
-		LastBranch:    branch,
-		Snapshot:      snapshotCopy,
-		FirstRequest:  first,
-		LastRequest:   last,
-		DebounceCause: cause,
-	}
-
-	_ = d.bus.Publish(ctx, evt)
 	return true
 }
 
