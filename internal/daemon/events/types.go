@@ -7,6 +7,7 @@ import "time"
 // This is an orchestration event used by the daemon's in-process control flow.
 // It is not a durable event and is not written to internal/eventstore.
 type BuildRequested struct {
+	JobID       string
 	Reason      string
 	RepoURL     string
 	RequestedAt time.Time
@@ -15,6 +16,7 @@ type BuildRequested struct {
 // BuildNow is emitted by the BuildDebouncer once it decides to start a build.
 // Consumers should enqueue a canonical full-site build job.
 type BuildNow struct {
+	JobID         string
 	TriggeredAt   time.Time
 	RequestCount  int
 	LastReason    string

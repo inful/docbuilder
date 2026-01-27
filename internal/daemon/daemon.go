@@ -324,6 +324,12 @@ func (d *Daemon) Start(ctx context.Context) error {
 	// Start build queue processing
 	d.buildQueue.Start(ctx)
 
+	if d.orchestrationBus != nil {
+		go func() {
+			d.runBuildNowConsumer(ctx)
+		}()
+	}
+
 	if d.buildDebouncer != nil {
 		go func() {
 			_ = d.buildDebouncer.Run(ctx)
@@ -485,7 +491,7 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.buildQueue == nil {
 			slog.Warn("Skipping scheduled build: build queue not initialized")
 		} else {
-			d.triggerScheduledBuildForExplicitRepos()
+			d.triggerScheduledBuildForExplicitRepos(ctx)
 		}
 	}
 }

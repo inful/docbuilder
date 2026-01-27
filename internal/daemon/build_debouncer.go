@@ -45,6 +45,7 @@ type BuildDebouncer struct {
 	lastRequestAt   time.Time
 	lastReason      string
 	lastRepoURL     string
+	lastJobID       string
 	requestCount    int
 	pollingAfterRun bool
 }
@@ -191,6 +192,7 @@ func (d *BuildDebouncer) onRequest(req events.BuildRequested) {
 	d.lastRequestAt = now
 	d.lastReason = req.Reason
 	d.lastRepoURL = req.RepoURL
+	d.lastJobID = req.JobID
 	d.requestCount++
 }
 
@@ -214,6 +216,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	count := d.requestCount
 	reason := d.lastReason
 	repoURL := d.lastRepoURL
+	jobID := d.lastJobID
 	if !pending {
 		d.mu.Unlock()
 		return true
@@ -231,6 +234,7 @@ func (d *BuildDebouncer) tryEmit(ctx context.Context, cause string) bool {
 	d.mu.Unlock()
 
 	evt := events.BuildNow{
+		JobID:         jobID,
 		TriggeredAt:   time.Now(),
 		RequestCount:  count,
 		LastReason:    reason,
