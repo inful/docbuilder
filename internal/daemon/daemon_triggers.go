@@ -197,11 +197,16 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if jobID == "" {
 		jobID = fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
 	}
-	_ = d.orchestrationBus.Publish(ctx, events.BuildRequested{
+	if err := d.publishOrchestrationEvent(ctx, events.BuildRequested{
 		JobID:       jobID,
 		Reason:      "scheduled build",
 		RequestedAt: time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish scheduled build request",
+			logfields.JobID(jobID),
+			logfields.Error(err))
+		return
+	}
 	slog.Info("Scheduled build requested",
 		logfields.JobID(jobID),
 		slog.Int("repositories", len(d.config.Repositories)))

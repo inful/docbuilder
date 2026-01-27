@@ -258,34 +258,10 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		DiscoveryCache: daemon.discoveryCache,
 		Metrics:        daemon.metrics,
 		StateManager:   daemon.stateManager,
-		BuildRequester: func(ctx context.Context, jobID, reason string) {
-			if daemon.orchestrationBus == nil || ctx == nil {
-				return
-			}
-			if daemon.buildDebouncer != nil {
-				if planned, ok := daemon.buildDebouncer.PlannedJobID(); ok {
-					jobID = planned
-				}
-			}
-			_ = daemon.orchestrationBus.Publish(ctx, events.BuildRequested{
-				JobID:       jobID,
-				Reason:      reason,
-				RequestedAt: time.Now(),
-			})
-		},
-		RepoRemoved: func(ctx context.Context, repoURL, repoName string) {
-			if daemon.orchestrationBus == nil || ctx == nil {
-				return
-			}
-			_ = daemon.orchestrationBus.Publish(ctx, events.RepoRemoved{
-				RepoURL:    repoURL,
-				RepoName:   repoName,
-				RemovedAt:  time.Now(),
-				Discovered: true,
-			})
-		},
-		LiveReload: daemon.liveReload,
-		Config:     cfg,
+		BuildRequester: daemon.onDiscoveryBuildRequest,
+		RepoRemoved:    daemon.onDiscoveryRepoRemoved,
+		LiveReload:     daemon.liveReload,
+		Config:         cfg,
 	})
 
 	// Initialize build debouncer (ADR-021 Phase 2).
