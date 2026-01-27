@@ -55,6 +55,11 @@ func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
 
 	go d.runWebhookReceivedConsumer(ctx)
 
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
+
 	// Change outside docs path should not trigger a build.
 	jobID := d.TriggerWebhookBuild("forge-1", "org/repo", "main", []string{"src/config.yaml"})
 	require.NotEmpty(t, jobID)

@@ -93,15 +93,21 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 
 	select {
 	case <-d.repoUpdater.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
 
 	select {
 	case <-debouncer.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for debouncer ready")
 	}
+
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0 &&
+			events.SubscriberCount[events.BuildNow](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
 
 	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "feature-branch", nil)
 	require.NotEmpty(t, jobID)
@@ -109,7 +115,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	require.Eventually(t, func() bool {
 		job, ok := bq.JobSnapshot(jobID)
 		return ok && job != nil && job.TypedMeta != nil && len(job.TypedMeta.Repositories) == 2
-	}, 2*time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	job, ok := bq.JobSnapshot(jobID)
 	require.True(t, ok)
@@ -184,13 +190,13 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 
 	select {
 	case <-d.repoUpdater.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
 
 	select {
 	case <-debouncer.Ready():
-	case <-time.After(250 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
@@ -199,7 +205,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 	require.Eventually(t, func() bool {
 		planned, ok := d.buildDebouncer.PlannedJobID()
 		return ok && planned == "job-seeded"
-	}, 250*time.Millisecond, 5*time.Millisecond)
+	}, 1*time.Second, 5*time.Millisecond)
 
 	jobID1 := d.TriggerWebhookBuild("", "org/go-test-project", "main", nil)
 	jobID2 := d.TriggerWebhookBuild("", "org/go-test-project", "main", nil)

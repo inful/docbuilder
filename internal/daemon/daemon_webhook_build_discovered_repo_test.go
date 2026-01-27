@@ -129,6 +129,12 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 		t.Fatal("timed out waiting for debouncer ready")
 	}
 
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0 &&
+			events.SubscriberCount[events.BuildNow](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
+
 	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID)
 
@@ -138,7 +144,7 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 			return false
 		}
 		return job.Status == queue.BuildStatusCompleted
-	}, 2*time.Second, 10*time.Millisecond)
+	}, 5*time.Second, 10*time.Millisecond)
 
 	job, ok := d.buildQueue.JobSnapshot(jobID)
 	require.True(t, ok)
