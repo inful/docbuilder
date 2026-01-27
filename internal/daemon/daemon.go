@@ -78,7 +78,7 @@ type Daemon struct {
 	lastBuild   *time.Time
 
 	// Background worker tracking (started in Start, awaited in Stop).
-	workers sync.WaitGroup
+	workers WorkerGroup
 
 	// Scheduled job IDs (for observability and tests)
 	syncJobID   string
@@ -349,8 +349,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	}
 
 	// Create a derived run context that is canceled on daemon shutdown.
-	runCtx, runCancel := d.workContext(ctx)
+	runCtx, runCancel := context.WithCancel(ctx)
 	d.runCancel = runCancel
+	d.workers.Reset()
 
 	// Start HTTP servers
 	if err := d.httpServer.Start(runCtx); err != nil {
@@ -485,22 +486,6 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 	return nil
 }
 
-func (d *Daemon) workContext(parent context.Context) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(parent)
-
-	// Tie this context to daemon shutdown without storing a context on the daemon
-	// itself (see linters: containedctx/contextcheck).
-	go func() {
-		select {
-		case <-d.stopChan:
-			cancel()
-		case <-ctx.Done():
-		}
-	}()
-
-	return ctx, cancel
-}
-
 func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 	// Avoid running scheduled work when daemon is not running.
 	if d.GetStatus() != StatusRunning {
@@ -514,8 +499,7 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
-			workCtx, cancel := d.workContext(ctx)
-			defer cancel()
+			workCtx := d.stopAwareContext(ctx)
 			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
 	}
@@ -617,17 +601,8 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Wait for daemon-owned background workers to exit.
-	done := make(chan struct{})
-	go func() {
-		d.workers.Wait()
-		close(done)
-	}()
-	select {
-	case <-done:
-		// ok
-	case <-ctx.Done():
-		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(ctx.Err()))
+	if err := d.workers.StopAndWait(ctx); err != nil {
+		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
 
 	d.mu.Lock()
