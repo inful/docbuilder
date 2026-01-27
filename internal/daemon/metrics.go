@@ -6,6 +6,7 @@ import (
 	"maps"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -302,9 +303,10 @@ func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, _ *http.Req
 
 	// Counters
 	for name, value := range snapshot.Counters {
-		_, _ = fmt.Fprintf(w, "# HELP docbuilder_%s_total Total count of %s\n", name, name)
-		_, _ = fmt.Fprintf(w, "# TYPE docbuilder_%s_total counter\n", name)
-		_, _ = fmt.Fprintf(w, "docbuilder_%s_total %d\n", name, value)
+		metric := prometheusCounterMetricName(name)
+		_, _ = fmt.Fprintf(w, "# HELP docbuilder_%s Total count of %s\n", metric, name)
+		_, _ = fmt.Fprintf(w, "# TYPE docbuilder_%s counter\n", metric)
+		_, _ = fmt.Fprintf(w, "docbuilder_%s %d\n", metric, value)
 	}
 
 	// Gauges
@@ -323,4 +325,11 @@ func (mc *MetricsCollector) PrometheusHandler(w http.ResponseWriter, _ *http.Req
 	_, _ = fmt.Fprintf(w, "# HELP docbuilder_memory_alloc_bytes Allocated memory in bytes\n")
 	_, _ = fmt.Fprintf(w, "# TYPE docbuilder_memory_alloc_bytes gauge\n")
 	_, _ = fmt.Fprintf(w, "docbuilder_memory_alloc_bytes %f\n", sys.MemAllocMB*1024*1024)
+}
+
+func prometheusCounterMetricName(name string) string {
+	if strings.HasSuffix(name, "_total") {
+		return name
+	}
+	return name + "_total"
 }

@@ -26,6 +26,7 @@ build: {}           # Performance & workspace tuning
 daemon: {}          # Daemon mode settings (link verification, sync, storage)
 versioning: {}      # Multi-version documentation (optional)
 hugo: {}            # Hugo site metadata & theme
+monitoring: {}      # Health/metrics endpoints & logging
 output: {}          # Output directory behavior
 ```
 
@@ -62,6 +63,67 @@ output: {}          # Output directory behavior
 | workspace_dir | string | derived | Explicit workspace override path. |
 | namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
 | skip_if_unchanged | bool | daemon:true, CLI:false | Skip builds when nothing changed (daemon only). |
+
+## Monitoring
+
+The `monitoring` section configures:
+
+- Health/ready/metrics endpoints exposed by the daemon's **admin** HTTP server (see `daemon.http.admin_port`).
+- Default daemon logging level and format.
+
+### Monitoring Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| metrics.enabled | bool | true | Enable metrics endpoints on the admin server. |
+| metrics.path | string | /metrics | Path for the basic metrics endpoint (JSON summary). |
+| health.path | string | /health | Path for the basic health endpoint. |
+| logging.level | enum | info | Log level: `debug`, `info`, `warn`, `error`. |
+| logging.format | enum | json | Log output format: `json` or `text`. |
+
+Example:
+
+```yaml
+monitoring:
+  metrics:
+    enabled: true
+    path: "/metrics"
+  health:
+    path: "/health"
+  logging:
+    level: "info"
+    format: "json"
+```
+
+### Monitoring Endpoints (Admin Server)
+
+When `monitoring.metrics.enabled=true`, the admin server exposes:
+
+- `GET <metrics.path>`: basic metrics JSON.
+- `GET /metrics/detailed`: detailed daemon metrics JSON (includes counters, gauges, histograms, and custom metrics).
+- `GET /metrics/prometheus`: Prometheus text exposition (counters + gauges + a few runtime gauges).
+
+The admin server also exposes:
+
+- `GET <health.path>` and `GET /healthz`: health.
+- `GET /health/detailed`: enhanced health if available, otherwise basic health.
+- `GET /ready` and `GET /readyz`: readiness (ready once `<output>/public` exists).
+
+### Debouncer Metrics
+
+Build debouncer metrics are emitted in daemon mode and show up under `GET /metrics/detailed` (and most counters/gauges also show up under `GET /metrics/prometheus`).
+
+| Name | Type | Meaning |
+|------|------|---------|
+| debouncer_build_requests_total | counter | Total build requests observed by the debouncer. |
+| debouncer_build_requests_deduped_total | counter | Requests ignored because they repeat the last emitted `JobID` with no pending build. |
+| debouncer_builds_emitted_total | counter | Builds emitted by the debouncer (published as `BuildNow`). |
+| debouncer_coalesced_requests_total | counter | Number of requests coalesced into emitted builds (adds `requestCount-1` per emitted build). |
+| debouncer_pending | gauge | Whether a build is currently pending (0/1). |
+| debouncer_pending_after_run | gauge | Whether a follow-up build is pending because a build was already running (0/1). |
+| debouncer_planned_request_count | gauge | How many requests are currently coalesced into the next planned build. |
+| debouncer_time_to_build_seconds | histogram | Time from first request in a burst until the build is emitted. (Available in detailed JSON; not exported as a Prometheus histogram yet.) |
+| debouncer_last_debounce_cause | custom | Last trigger cause: `immediate`, `quiet`, `max_delay`, `after_running`. |
 
 ## Daemon Section
 
