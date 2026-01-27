@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: 851ec4e1a4126cf0998d179de8cf46bccb2bc0f6184384bad793149f8c87531f
-lastmod: "2026-01-26"
+fingerprint: a59a06bba66ea3e1aee20687e7bf4bf84f21ff5abf84142f170f24af352bf65a
+lastmod: "2026-01-27"
 tags:
   - webhooks
   - automation

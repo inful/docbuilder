@@ -1,0 +1,152 @@
+---
+aliases:
+  - /_uid/eaad3c8b-1c8a-4d4d-a3eb-ff4e7bbebf4c/
+categories:
+  - architecture-decisions
+date: 2026-01-26T00:00:00Z
+fingerprint: e364edcb68e3cde0d647c4ee0598a59331eb871ec68b96fd767ab3ef00c12a44
+lastmod: "2026-01-27"
+tags:
+  - daemon
+  - events
+  - implementation-plan
+uid: eaad3c8b-1c8a-4d4d-a3eb-ff4e7bbebf4c
+---
+
+# ADR-021 Implementation Plan: Event-driven daemon updates and debounced builds
+
+This plan intentionally evolves the daemon without a big-bang rewrite.
+
+## What “done” looks like
+
+- Webhook storms coalesce into one build (quiet window + max delay).
+- Webhook handling never narrows the rendered/published site scope.
+- A webhook updates one repo (when possible), but the build renders the full site.
+- Triggers publish events; update/build logic lives in workers.
+
+## Phase 0: Document invariants (no code)
+
+- Define “coherent-site-first” invariants:
+  - a build always renders the full site repo set
+  - publishing remains atomic
+- Define idempotency expectations:
+  - webhook retries must be safe
+  - overlapping schedules must coalesce
+
+- Document correctness expectations:
+  - eventual consistency is acceptable
+  - builds use the HEAD of the configured branch at build time
+
+Acceptance criteria:
+
+- ADR-021 invariants are explicitly documented in the codebase (docs).
+
+## Phase 1: Introduce an in-process event bus (foundation)
+
+- Add `internal/daemon/events` (lightweight in-process pub/sub), integrated with `internal/eventstore` for optional auditing:
+  - event interface/type union
+  - dispatcher with buffered channels
+  - simple `Publish(Event)` + `Subscribe(type)`
+- Add unit tests:
+  - publish/subscribe delivery
+  - backpressure behavior (bounded buffers)
+
+Note: `internal/eventstore` already exists and is primarily used for build telemetry/history. We should avoid turning it into a mandatory dependency for orchestration, but we can record orchestration summaries there if useful.
+
+Acceptance criteria:
+
+- Event bus supports clean shutdown and bounded buffering.
+- Tests cover publish/subscribe and backpressure.
+
+## Phase 2: Build debouncer / coalescer
+
+- Implement `BuildDebouncer`:
+  - accepts `BuildRequested` events
+  - waits for `quietWindow` (e.g. 10s) before emitting `BuildNow`
+  - enforces `maxDelay` (e.g. 60s)
+  - if a build is already running, coalesce into a single “build again” request
+- Add tests:
+  - burst coalesces to single build
+  - maxDelay forces build
+  - build-running scenario queues exactly one follow-up
+
+Acceptance criteria:
+
+- Given N build requests within the quiet window, exactly one build trigger fires.
+- Given continuous requests, a build still fires by maxDelay.
+
+## Phase 3: Event wiring (triggers)
+
+- Webhook handler publishes:
+  - `RepoUpdateRequested(repoURL, branch)`
+  - (webhooks are just an event source; they should not run update/build logic directly)
+
+Note: webhook handlers should generally not publish `BuildRequested` directly. The intended flow is:
+`RepoUpdateRequested` → (RepoUpdater updates that repo) → `RepoUpdated(changed=true)` → `BuildRequested`.
+- Scheduled tick publishes:
+  - `DiscoveryRequested` or `FullRepoUpdateRequested`
+- Manual/admin endpoints publish appropriate events.
+
+- Ensure discovery diffs publish removal events:
+  - `RepoRemoved` (or equivalent)
+
+Acceptance criteria:
+
+- Webhook handlers only parse/validate and publish orchestration events.
+- Removal is represented as a first-class event.
+
+## Phase 4: Repository update worker
+
+- Implement `RepoUpdater`:
+  - Full update: refresh known clones; emit `RepoUpdated` per repo
+  - Single update: refresh one repo; emit `RepoUpdated`
+  - Determine “changed” primarily via commit SHA movement (eventual consistency; HEAD-of-branch)
+  - Optionally determine `docsChanged` using cheap signals (quick hash), and treat it as an optimization hint
+- Wire `RepoUpdated(changed=true)` → `BuildRequested`
+
+This phase must explicitly support: webhook → single repo update → rebuild if changed.
+
+Acceptance criteria:
+
+- A webhook-triggered repo update publishes `RepoUpdated(changed=true)` only when SHA moves.
+- A build request is emitted only after change detection.
+
+## Phase 5: Build execution remains canonical
+
+- When debouncer emits `BuildNow`, enqueue a normal build job using the full repo set.
+- Keep existing serialization to prevent concurrent staging/output clobbering.
+
+Decision: even when only one repository was updated, the build still renders the full site (“update one, rebuild all”).
+
+Acceptance criteria:
+
+- Builds triggered from webhooks render/publish the full repo set.
+- Site output remains coherent (search/index/taxonomies consistent).
+
+## Phase 6: Optional correctness upgrade (snapshot builds)
+
+- Represent a “snapshot” as `{repoURL: commitSHA}` produced by repo update stage.
+- Teach build to optionally:
+  - checkout exact SHAs
+  - skip `fetch` if already at desired SHA
+- This enables strict “build corresponds to event state” semantics.
+
+Note: snapshot builds are optional because Phase 0 explicitly accepts eventual consistency.
+
+Acceptance criteria:
+
+- Snapshot builds (if implemented) can pin repo → SHA for strict “what was built”.
+
+## Rollout strategy
+
+- Start with the debounced build path only for webhooks (biggest storm source).
+- Keep scheduled builds unchanged initially.
+- Add metrics:
+  - debouncer coalesce count
+  - time-to-build after first trigger
+  - repos updated per cycle
+
+## Migration / compatibility
+
+- Preserve existing config fields and HTTP endpoints.
+- Keep the build pipeline untouched initially; only rewire triggers into events.
