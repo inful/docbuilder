@@ -30,7 +30,7 @@ func (r *webhookRuntimeStub) TriggerDiscovery() string      { return "" }
 func (r *webhookRuntimeStub) TriggerBuild() string          { return "" }
 func (r *webhookRuntimeStub) GetQueueLength() int           { return 0 }
 
-func (r *webhookRuntimeStub) TriggerWebhookBuild(repoFullName, branch string) string {
+func (r *webhookRuntimeStub) TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string {
 	r.called = true
 	r.repo = repoFullName
 	r.branch = branch

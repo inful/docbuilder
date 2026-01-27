@@ -335,16 +335,68 @@ func (c *GitLabClient) ValidateWebhook(_ []byte, signature string, secret string
 
 // ParseWebhookEvent parses GitLab webhook payload.
 func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
+	eventType = strings.TrimSpace(eventType)
+
+	if eventType == "System Hook" {
+		return c.parseSystemHookEvent(payload, eventType)
+	}
+
 	switch eventType {
-	case "push", "Push Hook":
+	case string(WebhookEventPush), "Push Hook":
 		return c.parsePushEvent(payload)
 	case "tag_push", "Tag Push Hook":
 		return c.parseTagPushEvent(payload)
-	case "repository", "Repository Update Hook":
+	case string(WebhookEventRepository), "Repository Update Hook":
+		return c.parseRepositoryEvent(payload)
+	default:
+		// Some GitLab setups (notably System Hooks) send event information primarily in the JSON body.
+		// As a safe fallback, try dispatching based on payload kind when the header type is not recognized.
+		event, err := c.parseSystemHookEvent(payload, eventType)
+		if err == nil {
+			return event, nil
+		}
+		return nil, errors.ForgeError("unsupported event type from GitLab").
+			WithContext("type", eventType).
+			Build()
+	}
+}
+
+type gitlabWebhookEnvelope struct {
+	ObjectKind string `json:"object_kind"`
+	EventName  string `json:"event_name"`
+	EventType  string `json:"event_type"`
+}
+
+func (c *GitLabClient) parseSystemHookEvent(payload []byte, headerEventType string) (*WebhookEvent, error) {
+	var env gitlabWebhookEnvelope
+	if err := json.Unmarshal(payload, &env); err != nil {
+		return nil, errors.ForgeError("failed to unmarshal GitLab webhook envelope").
+			WithCause(err).
+			WithContext("type", headerEventType).
+			Build()
+	}
+
+	kind := strings.TrimSpace(env.ObjectKind)
+	if kind == "" {
+		kind = strings.TrimSpace(env.EventName)
+	}
+	if kind == "" {
+		kind = strings.TrimSpace(env.EventType)
+	}
+
+	switch kind {
+	case string(WebhookEventPush):
+		return c.parsePushEvent(payload)
+	case "tag_push":
+		return c.parseTagPushEvent(payload)
+	case string(WebhookEventRepository), "repository_update":
 		return c.parseRepositoryEvent(payload)
 	default:
 		return nil, errors.ForgeError("unsupported event type from GitLab").
-			WithContext("type", eventType).
+			WithContext("type", headerEventType).
+			WithContext("object_kind", env.ObjectKind).
+			WithContext("event_name", env.EventName).
+			WithContext("event_type", env.EventType).
 			Build()
 	}
 }
@@ -487,9 +539,9 @@ func (c *GitLabClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	// Set event flags
 	for _, event := range events {
 		switch event {
-		case "push", "push_events":
+		case string(WebhookEventPush), "push_events":
 			payload["push_events"] = true
-		case "repository", "repository_update_events":
+		case string(WebhookEventRepository), "repository_update_events":
 			payload["repository_update_events"] = true
 		}
 	}

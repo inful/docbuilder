@@ -15,17 +15,17 @@ import (
 
 type testRuntime struct{}
 
-func (testRuntime) GetStatus() string                      { return "" }
-func (testRuntime) GetActiveJobs() int                     { return 0 }
-func (testRuntime) GetStartTime() time.Time                { return time.Time{} }
-func (testRuntime) HTTPRequestsTotal() int                 { return 0 }
-func (testRuntime) RepositoriesTotal() int                 { return 0 }
-func (testRuntime) LastDiscoveryDurationSec() int          { return 0 }
-func (testRuntime) LastBuildDurationSec() int              { return 0 }
-func (testRuntime) TriggerDiscovery() string               { return "" }
-func (testRuntime) TriggerBuild() string                   { return "" }
-func (testRuntime) TriggerWebhookBuild(_, _ string) string { return "" }
-func (testRuntime) GetQueueLength() int                    { return 0 }
+func (testRuntime) GetStatus() string                                  { return "" }
+func (testRuntime) GetActiveJobs() int                                 { return 0 }
+func (testRuntime) GetStartTime() time.Time                            { return time.Time{} }
+func (testRuntime) HTTPRequestsTotal() int                             { return 0 }
+func (testRuntime) RepositoriesTotal() int                             { return 0 }
+func (testRuntime) LastDiscoveryDurationSec() int                      { return 0 }
+func (testRuntime) LastBuildDurationSec() int                          { return 0 }
+func (testRuntime) TriggerDiscovery() string                           { return "" }
+func (testRuntime) TriggerBuild() string                               { return "" }
+func (testRuntime) TriggerWebhookBuild(_, _ string, _ []string) string { return "" }
+func (testRuntime) GetQueueLength() int                                { return 0 }
 
 type testBuildStatus struct {
 	hasError     bool

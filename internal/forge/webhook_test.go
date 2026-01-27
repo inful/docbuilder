@@ -200,6 +200,24 @@ func TestGitLabWebhookParsing(t *testing.T) {
 		expectError  bool
 	}{
 		{
+			name:      "System Hook push",
+			eventType: "System Hook",
+			payload: `{
+				"object_kind": "push",
+				"event_name": "push",
+				"ref": "refs/heads/main",
+				"project": {
+					"id": 321,
+					"name": "repo",
+					"path_with_namespace": "org/repo",
+					"web_url": "https://gitlab.example.com/org/repo",
+					"default_branch": "main"
+				}
+			}`,
+			expectedRepo: "org/repo",
+			expectedType: WebhookEventPush,
+		},
+		{
 			name:      "Push Hook",
 			eventType: "Push Hook",
 			payload: `{

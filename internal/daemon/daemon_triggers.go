@@ -3,6 +3,7 @@ package daemon
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -47,7 +48,7 @@ func (d *Daemon) TriggerBuild() string {
 
 // TriggerWebhookBuild triggers a build for specific repositories from a webhook event.
 // This allows targeted rebuilds without refetching all repositories.
-func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
+func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string {
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
@@ -71,6 +72,7 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 	// Determine whether the webhook matches any currently known repository.
 	matched := false
 	matchedRepoURL := ""
+	matchedDocsPaths := []string{"docs"}
 	for i := range reposForBuild {
 		repo := &reposForBuild[i]
 		if repo.Name != repoFullName && !matchesRepoURL(repo.URL, repoFullName) {
@@ -86,6 +88,9 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 
 		matched = true
 		matchedRepoURL = repo.URL
+		if len(repo.Paths) > 0 {
+			matchedDocsPaths = repo.Paths
+		}
 		if branch != "" {
 			repo.Branch = branch
 		}
@@ -100,6 +105,19 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 			"repo_full_name", repoFullName,
 			"branch", branch)
 		return ""
+	}
+
+	// If the webhook payload included changed files (push-like event), only trigger
+	// a rebuild when at least one change touches the configured docs paths.
+	if len(changedFiles) > 0 {
+		if !hasDocsRelevantChange(changedFiles, matchedDocsPaths) {
+			slog.Info("Webhook push ignored (no docs changes)",
+				"repo_full_name", repoFullName,
+				"branch", branch,
+				"changed_files", len(changedFiles),
+				"docs_paths", matchedDocsPaths)
+			return ""
+		}
 	}
 	if len(reposForBuild) == 0 {
 		slog.Warn("No repositories available for webhook build; falling back to target-only build",
@@ -145,6 +163,49 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string) string {
 
 	atomic.AddInt32(&d.queueLength, 1)
 	return jobID
+}
+
+func hasDocsRelevantChange(changedFiles []string, docsPaths []string) bool {
+	if len(changedFiles) == 0 {
+		return true
+	}
+	if len(docsPaths) == 0 {
+		docsPaths = []string{"docs"}
+	}
+
+	normalize := func(p string) string {
+		p = strings.TrimSpace(p)
+		p = strings.TrimPrefix(p, "./")
+		p = strings.TrimPrefix(p, "/")
+		p = strings.TrimSuffix(p, "/")
+		return p
+	}
+
+	nDocs := make([]string, 0, len(docsPaths))
+	for _, dp := range docsPaths {
+		dp = normalize(dp)
+		if dp == "" {
+			continue
+		}
+		nDocs = append(nDocs, dp)
+	}
+	if len(nDocs) == 0 {
+		nDocs = []string{"docs"}
+	}
+
+	for _, f := range changedFiles {
+		f = normalize(f)
+		if f == "" {
+			continue
+		}
+		for _, dp := range nDocs {
+			if f == dp || strings.HasPrefix(f, dp+"/") {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (d *Daemon) discoveredReposForWebhook(repoFullName, branch string) []config.Repository {

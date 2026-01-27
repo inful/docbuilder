@@ -55,7 +55,7 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 		Forges: []*config.ForgeConfig{{
 			Name:    "forge-1",
 			Type:    config.ForgeForgejo,
-			BaseURL: "https://git.home.luguber.info",
+			BaseURL: "https://forgejo.example.com",
 		}},
 	}
 
@@ -77,21 +77,21 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 
 	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "go-test-project",
-		FullName:      "inful/go-test-project",
-		CloneURL:      "https://git.home.luguber.info/inful/go-test-project.git",
-		SSHURL:        "ssh://git@git.home.luguber.info/inful/go-test-project.git",
+		FullName:      "org/go-test-project",
+		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
+		SSHURL:        "ssh://git@forgejo.example.com/org/go-test-project.git",
 		DefaultBranch: "main",
 		Metadata:      map[string]string{"forge_name": "forge-1"},
 	}, {
 		Name:          "other-project",
-		FullName:      "inful/other-project",
-		CloneURL:      "https://git.home.luguber.info/inful/other-project.git",
-		SSHURL:        "ssh://git@git.home.luguber.info/inful/other-project.git",
+		FullName:      "org/other-project",
+		CloneURL:      "https://forgejo.example.com/org/other-project.git",
+		SSHURL:        "ssh://git@forgejo.example.com/org/other-project.git",
 		DefaultBranch: "main",
 		Metadata:      map[string]string{"forge_name": "forge-1"},
 	}}})
 
-	jobID := d.TriggerWebhookBuild("inful/go-test-project", "main")
+	jobID := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID)
 
 	require.Eventually(t, func() bool {

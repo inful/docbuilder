@@ -29,6 +29,8 @@ When configured, DocBuilder:
 
 **Important**: Webhook-triggered builds only refetch and rebuild the specific repository mentioned in the webhook event, not all configured repositories. This provides fast, efficient updates.
 
+**Important**: For push-style webhooks that include changed file paths (GitLab/Forgejo/GitHub), DocBuilder only triggers a rebuild when at least one changed file is under one of the repository’s configured `paths` (defaults to `docs`). This avoids unnecessary rebuilds when unrelated code changes happen.
+
 **Important**: Webhooks do **not** perform repository discovery. They only trigger builds for repositories DocBuilder already knows about (i.e. repositories already discovered by the daemon or explicitly configured).
 
 To discover new repositories, rely on scheduled discovery (`daemon.sync.schedule`) or manually trigger discovery via the admin API: `POST http://your-docbuilder-host:<admin_port>/api/discovery/trigger`.
@@ -190,6 +192,11 @@ openssl rand -hex 32
 6. Click **Add webhook**
 
 **Test**: Click "Test" next to your webhook and select "Push events".
+
+**System Hooks vs Project Webhooks**:
+- DocBuilder is designed primarily for **Project Webhooks**, which typically send `X-Gitlab-Event: Push Hook` / `Tag Push Hook`.
+- If you configure a **GitLab System Hook**, GitLab sends `X-Gitlab-Event: System Hook` even when the payload is a normal push (with `object_kind: push`).
+- DocBuilder supports System Hook payloads by dispatching based on `object_kind` / `event_name` (push and tag push). If you see logs mentioning `event="System Hook"`, verify your GitLab hook type and that you’re sending `object_kind: push` (or use a Project Webhook instead).
 
 ### Forgejo (Gitea)
 

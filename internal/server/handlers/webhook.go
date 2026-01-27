@@ -15,7 +15,7 @@ import (
 
 // WebhookTrigger provides the interface for triggering webhook-based builds.
 type WebhookTrigger interface {
-	TriggerWebhookBuild(repoFullName, branch string) string
+	TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string
 }
 
 // WebhookHandlers contains HTTP handlers for webhook integrations.
@@ -234,7 +234,8 @@ func (h *WebhookHandlers) triggerBuildFromEvent(event *forge.WebhookEvent, forge
 		}
 	}
 
-	jobID := h.trigger.TriggerWebhookBuild(event.Repository.FullName, branch)
+	changedFiles := collectChangedFiles(event)
+	jobID := h.trigger.TriggerWebhookBuild(event.Repository.FullName, branch, changedFiles)
 	if jobID != "" {
 		slog.Info("Webhook triggered build",
 			"forge", forgeName,
@@ -244,6 +245,41 @@ func (h *WebhookHandlers) triggerBuildFromEvent(event *forge.WebhookEvent, forge
 	}
 
 	return jobID
+}
+
+func collectChangedFiles(event *forge.WebhookEvent) []string {
+	if event == nil || len(event.Commits) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, 64)
+	var out []string
+	add := func(p string) {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return
+		}
+		if _, ok := seen[p]; ok {
+			return
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+
+	for i := range event.Commits {
+		c := &event.Commits[i]
+		for _, p := range c.Added {
+			add(p)
+		}
+		for _, p := range c.Modified {
+			add(p)
+		}
+		for _, p := range c.Removed {
+			add(p)
+		}
+	}
+
+	return out
 }
 
 // HandleGitHubWebhook handles GitHub webhooks.
