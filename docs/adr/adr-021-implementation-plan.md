@@ -4,7 +4,7 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: 1453e3f2c1c7f28bbaf417694cacd4c7e51b8c5df31945f21f9ced04a77edb4e
+fingerprint: dbccf8e85d29a4bd058f292d2d13ee7ed638ee3f4d2050a1370d0c985ec1a11d
 lastmod: "2026-01-27"
 tags:
   - daemon
@@ -180,3 +180,29 @@ Acceptance criteria:
 
 - Preserve existing config fields and HTTP endpoints.
 - Keep the build pipeline untouched initially; only rewire triggers into events.
+
+## Cleanup / simplification tasks (planned removals)
+
+ADR-021 is expected to simplify the daemon over time. We should treat these as explicit tasks, not “maybe later”.
+
+Planned simplifications:
+
+- Make triggers thin
+  - Webhook/schedule/admin endpoints should only validate inputs and publish events.
+  - Remove trigger code that decides build scope or repo set.
+
+- Ensure a single build gate
+  - Only `BuildDebouncer` (or a single gate component) should emit `BuildNow`.
+  - Remove scattered coalescing/backoff logic elsewhere.
+
+- Converge on one canonical build entry point
+  - Route all builds through the same build runner/queue path so semantics stay consistent.
+
+- Centralize shutdown behavior
+  - Avoid bespoke goroutine lifecycles per trigger; use dispatcher/worker shutdown semantics.
+
+Acceptance criteria:
+
+- No trigger path calls update/build logic directly.
+- No trigger path computes the daemon’s site repo set.
+- There is exactly one component that decides when to start builds.
