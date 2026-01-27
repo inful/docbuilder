@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -20,23 +21,7 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 	// If explicit repositories are configured (no forges), trigger an immediate build
 	if len(d.config.Repositories) > 0 && len(d.config.Forges) == 0 {
 		slog.Info("Explicit repositories configured, triggering initial build", slog.Int("repositories", len(d.config.Repositories)))
-		go func() {
-			job := &BuildJob{
-				ID:        fmt.Sprintf("initial-build-%d", time.Now().Unix()),
-				Type:      BuildTypeManual,
-				Priority:  PriorityNormal,
-				CreatedAt: time.Now(),
-				TypedMeta: &BuildJobMetadata{
-					V2Config:      d.config,
-					Repositories:  d.config.Repositories,
-					StateManager:  d.stateManager,
-					LiveReloadHub: d.liveReload,
-				},
-			}
-			if err := d.buildQueue.Enqueue(job); err != nil {
-				slog.Error("Failed to enqueue initial build", logfields.Error(err))
-			}
-		}()
+		go d.requestInitialBuild(ctx)
 	}
 
 	for {
@@ -54,6 +39,36 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 				d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 			}()
 		}
+	}
+}
+
+func (d *Daemon) requestInitialBuild(ctx context.Context) {
+	if ctx == nil {
+		return
+	}
+	if d.orchestrationBus == nil {
+		slog.Warn("Skipping initial build: orchestration bus not initialized")
+		return
+	}
+
+	jobID := ""
+	if d.buildDebouncer != nil {
+		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+			jobID = planned
+		}
+	}
+	if jobID == "" {
+		jobID = fmt.Sprintf("initial-build-%d", time.Now().UnixNano())
+	}
+
+	err := d.orchestrationBus.Publish(ctx, events.BuildRequested{
+		JobID:       jobID,
+		Immediate:   true,
+		Reason:      "initial build",
+		RequestedAt: time.Now(),
+	})
+	if err != nil {
+		slog.Error("Failed to request initial build", logfields.Error(err), logfields.JobID(jobID))
 	}
 }
 
