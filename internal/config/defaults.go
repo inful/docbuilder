@@ -197,6 +197,8 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Daemon.Storage.OutputDir = cfg.Output.Directory
 	}
 
+	applyDaemonBuildDebounceDefaults(cfg.Daemon)
+
 	// Link verification defaults
 	if cfg.Daemon.LinkVerification == nil {
 		cfg.Daemon.LinkVerification = &LinkVerificationConfig{}
@@ -224,7 +226,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		lv.MaxConcurrent = 10
 	}
 	if lv.RequestTimeout == "" {
-		lv.RequestTimeout = "10s"
+		lv.RequestTimeout = defaultDuration10s
 	}
 	if lv.RateLimitDelay == "" {
 		lv.RateLimitDelay = "100ms"
@@ -242,6 +244,22 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 	}
 
 	return nil
+}
+
+func applyDaemonBuildDebounceDefaults(cfg *DaemonConfig) {
+	if cfg.BuildDebounce == nil {
+		cfg.BuildDebounce = &BuildDebounceConfig{}
+	}
+	if cfg.BuildDebounce.QuietWindow == "" {
+		cfg.BuildDebounce.QuietWindow = defaultDuration10s
+	}
+	if cfg.BuildDebounce.MaxDelay == "" {
+		cfg.BuildDebounce.MaxDelay = defaultDuration60s
+	}
+	if cfg.BuildDebounce.WebhookImmediate == nil {
+		v := true
+		cfg.BuildDebounce.WebhookImmediate = &v
+	}
 }
 
 // FilteringDefaultApplier handles Filtering configuration defaults.

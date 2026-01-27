@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: e876c1c42a449955488b7b19dc89015406a28bddd946a77adf617862b15c8175
+fingerprint: 29ccc214f37488ef676b52a3b6adb237017788243d4c8016d116b504d2d2cfbe
 lastmod: "2026-01-27"
 tags:
   - configuration
@@ -187,6 +187,28 @@ jetstream {
 The schedule is a standard 5-field cron expression (`minute hour day-of-month month day-of-week`) and is evaluated in the daemon process's local time (see `TZ`). Seconds are not supported.
 
 `@every <duration>` expressions are not supported.
+
+### Build Debouncing
+
+Build debouncing controls how DocBuilder coalesces bursts of build requests into fewer builds.
+
+Durations use Go duration syntax (e.g. `10s`, `1m`).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| quiet_window | duration | 10s | When non-immediate requests arrive, wait for a quiet period of this duration before triggering a build. |
+| max_delay | duration | 60s | Upper bound on waiting; ensures a build still triggers even if requests keep arriving. Must be >= `quiet_window`. |
+| webhook_immediate | bool | true | Whether webhook-triggered requests bypass the quiet window (but still coalesce while a build is running). |
+
+Example:
+
+```yaml
+daemon:
+  build_debounce:
+    quiet_window: "15s"
+    max_delay: "2m"
+    webhook_immediate: false
+```
 
 ### Storage Configuration
 

@@ -64,7 +64,22 @@ type DaemonConfig struct {
 	Sync             SyncConfig              `yaml:"sync"`
 	Storage          StorageConfig           `yaml:"storage"`
 	Content          DaemonContentConfig     `yaml:"content,omitempty"`
+	BuildDebounce    *BuildDebounceConfig    `yaml:"build_debounce,omitempty"`
 	LinkVerification *LinkVerificationConfig `yaml:"link_verification,omitempty"`
+}
+
+// BuildDebounceConfig controls debouncing/coalescing behavior for build requests.
+//
+// Durations must be valid Go duration strings (e.g. "10s", "1m").
+type BuildDebounceConfig struct {
+	QuietWindow string `yaml:"quiet_window,omitempty"`
+	MaxDelay    string `yaml:"max_delay,omitempty"`
+
+	// WebhookImmediate controls whether webhook-triggered build requests should bypass
+	// the quiet window (but still respect "build running" coalescing).
+	//
+	// When unset, defaults to true to preserve prior behavior.
+	WebhookImmediate *bool `yaml:"webhook_immediate,omitempty"`
 }
 
 // DaemonContentConfig represents daemon-specific content policies.
@@ -272,7 +287,7 @@ func Init(configPath string, force bool) error {
 				CacheTTL:           "24h",
 				CacheTTLFailures:   "1h",
 				MaxConcurrent:      10,
-				RequestTimeout:     "10s",
+				RequestTimeout:     defaultDuration10s,
 				RateLimitDelay:     "100ms",
 				VerifyExternalOnly: false,
 				SkipEditLinks:      true,

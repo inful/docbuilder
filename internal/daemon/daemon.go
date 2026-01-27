@@ -285,9 +285,13 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 
 	// Initialize build debouncer (ADR-021 Phase 2).
 	// Note: this is passive until components start publishing BuildRequested events.
+	quietWindow, maxDelay, err := getBuildDebounceDurations(cfg)
+	if err != nil {
+		return nil, err
+	}
 	debouncer, err := NewBuildDebouncer(daemon.orchestrationBus, BuildDebouncerConfig{
-		QuietWindow: 10 * time.Second,
-		MaxDelay:    60 * time.Second,
+		QuietWindow: quietWindow,
+		MaxDelay:    maxDelay,
 		CheckBuildRunning: func() bool {
 			if daemon.buildQueue == nil {
 				return false
@@ -309,6 +313,29 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.repoUpdater = NewRepoUpdater(daemon.orchestrationBus, gitClient, remoteCache, daemon.currentReposForOrchestratedBuild)
 
 	return daemon, nil
+}
+
+func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration, error) {
+	quietWindow := 10 * time.Second
+	maxDelay := 60 * time.Second
+	if cfg == nil || cfg.Daemon == nil || cfg.Daemon.BuildDebounce == nil {
+		return quietWindow, maxDelay, nil
+	}
+	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.QuietWindow); v != "" {
+		parsed, err := time.ParseDuration(v)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.quiet_window: %w", err)
+		}
+		quietWindow = parsed
+	}
+	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.MaxDelay); v != "" {
+		parsed, err := time.ParseDuration(v)
+		if err != nil {
+			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.max_delay: %w", err)
+		}
+		maxDelay = parsed
+	}
+	return quietWindow, maxDelay, nil
 }
 
 // defaultDaemonInstance is used by optional Prometheus integration to pull metrics
