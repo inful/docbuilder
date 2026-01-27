@@ -168,6 +168,30 @@ func (c *RemoteHeadCache) Set(url, branch, commitSHA string) {
 	}
 }
 
+// Delete removes a cached entry for a specific URL + branch.
+func (c *RemoteHeadCache) Delete(url, branch string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.entries, cacheKey(url, branch))
+}
+
+// DeleteByURL removes all cached entries for a given repository URL (across branches).
+func (c *RemoteHeadCache) DeleteByURL(url string) {
+	if c == nil || url == "" {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for key, entry := range c.entries {
+		if entry != nil && entry.URL == url {
+			delete(c.entries, key)
+		}
+	}
+}
+
 // Save persists the cache to disk.
 func (c *RemoteHeadCache) Save() error {
 	if c.path == "" {

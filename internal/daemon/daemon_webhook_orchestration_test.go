@@ -107,7 +107,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 
 	require.Eventually(t, func() bool {
 		job, ok := bq.JobSnapshot(jobID)
-		return ok && job != nil && job.Status == queue.BuildStatusCompleted
+		return ok && job != nil && job.TypedMeta != nil && len(job.TypedMeta.Repositories) == 2
 	}, 2*time.Second, 10*time.Millisecond)
 
 	job, ok := bq.JobSnapshot(jobID)

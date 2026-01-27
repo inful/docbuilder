@@ -121,6 +121,17 @@ func (a *ServiceAdapter) EnsureRepositoryState(url, name, branch string) {
 	_ = store.Create(ctx, repo) // Ignore error for interface compatibility
 }
 
+// RemoveRepositoryState removes a repository entry from persistent state.
+// It is used by daemon orchestration to reflect discovery removals.
+func (a *ServiceAdapter) RemoveRepositoryState(url string) {
+	if url == "" {
+		return
+	}
+	ctx := context.Background()
+	store := a.service.GetRepositoryStore()
+	_ = store.Delete(ctx, url)
+}
+
 // --- RepositoryMetadataWriter interface ---
 
 // SetRepoDocumentCount sets the document count for a repository.

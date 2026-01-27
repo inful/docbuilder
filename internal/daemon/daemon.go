@@ -279,6 +279,17 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 				RequestedAt: time.Now(),
 			})
 		},
+		RepoRemoved: func(ctx context.Context, repoURL, repoName string) {
+			if daemon.orchestrationBus == nil || ctx == nil {
+				return
+			}
+			_ = daemon.orchestrationBus.Publish(ctx, events.RepoRemoved{
+				RepoURL:    repoURL,
+				RepoName:   repoName,
+				RemovedAt:  time.Now(),
+				Discovered: true,
+			})
+		},
 		LiveReload: daemon.liveReload,
 		Config:     cfg,
 	})
@@ -379,6 +390,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	if d.orchestrationBus != nil {
 		go func() {
 			d.runBuildNowConsumer(ctx)
+		}()
+		go func() {
+			d.runRepoRemovedConsumer(ctx)
 		}()
 	}
 
