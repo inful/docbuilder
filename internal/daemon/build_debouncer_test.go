@@ -230,3 +230,53 @@ func TestBuildDebouncer_ImmediateWhileRunning_EmitsAfterRunning(t *testing.T) {
 		t.Fatal("timed out waiting for after-running BuildNow")
 	}
 }
+
+func TestBuildDebouncer_DedupesRequestsWithSameJobIDAfterEmit(t *testing.T) {
+	bus := events.NewBus()
+	defer bus.Close()
+
+	var running atomic.Bool
+	running.Store(true)
+
+	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+		QuietWindow:       50 * time.Millisecond,
+		MaxDelay:          100 * time.Millisecond,
+		CheckBuildRunning: running.Load,
+		PollInterval:      5 * time.Millisecond,
+	})
+	require.NoError(t, err)
+
+	buildNowCh, unsub := events.Subscribe[events.BuildNow](bus, 10)
+	defer unsub()
+
+	ctx := t.Context()
+	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-debouncer.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for debouncer ready")
+	}
+
+	// First request arrives while build is running, so it should emit after_running.
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{JobID: "job-1", Reason: "seed"}))
+
+	running.Store(false)
+
+	select {
+	case got := <-buildNowCh:
+		require.Equal(t, "job-1", got.JobID)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for BuildNow")
+	}
+
+	// A duplicate request reusing the same JobID should not trigger another BuildNow.
+	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{JobID: "job-1", Reason: "webhook", Immediate: true}))
+
+	select {
+	case <-buildNowCh:
+		t.Fatal("expected no duplicate BuildNow for already-emitted job id")
+	case <-time.After(100 * time.Millisecond):
+		// ok
+	}
+}

@@ -18,6 +18,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -63,6 +64,7 @@ type Daemon struct {
 	// Orchestration event bus (ADR-021; in-process control flow)
 	orchestrationBus *events.Bus
 	buildDebouncer   *BuildDebouncer
+	repoUpdater      *RepoUpdater
 
 	// Event sourcing components (Phase B)
 	eventStore      eventstore.Store
@@ -298,6 +300,14 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 	daemon.buildDebouncer = debouncer
 
+	remoteCache, cacheErr := git.NewRemoteHeadCache(cfg.Daemon.Storage.RepoCacheDir)
+	if cacheErr != nil {
+		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
+		remoteCache, _ = git.NewRemoteHeadCache("")
+	}
+	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
+	daemon.repoUpdater = NewRepoUpdater(daemon.orchestrationBus, gitClient, remoteCache, daemon.currentReposForOrchestratedBuild)
+
 	return daemon, nil
 }
 
@@ -348,6 +358,12 @@ func (d *Daemon) Start(ctx context.Context) error {
 	if d.buildDebouncer != nil {
 		go func() {
 			_ = d.buildDebouncer.Run(ctx)
+		}()
+	}
+
+	if d.repoUpdater != nil {
+		go func() {
+			d.repoUpdater.Run(ctx)
 		}()
 	}
 
