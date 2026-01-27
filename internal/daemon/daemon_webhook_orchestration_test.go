@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -57,6 +58,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 		PollInterval: 5 * time.Millisecond,
 	})
 	require.NoError(t, err)
+	d.buildDebouncer = debouncer
 
 	go d.runBuildNowConsumer(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
@@ -92,4 +94,69 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	}
 	require.NotNil(t, target)
 	require.Equal(t, "feature-branch", target.Branch)
+}
+
+func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunning(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	bus := events.NewBus()
+	defer bus.Close()
+
+	bq := queue.NewBuildQueue(10, 1, noOpBuilder{})
+	bq.Start(ctx)
+	defer bq.Stop(context.Background())
+
+	cfg := &config.Config{
+		Version: "2.0",
+		Repositories: []config.Repository{
+			{
+				Name:   "org/go-test-project",
+				URL:    "https://forgejo.example.com/org/go-test-project.git",
+				Branch: "main",
+				Paths:  []string{"docs"},
+			},
+		},
+	}
+
+	d := &Daemon{
+		config:           cfg,
+		stopChan:         make(chan struct{}),
+		orchestrationBus: bus,
+		buildQueue:       bq,
+	}
+	d.status.Store(StatusRunning)
+
+	var running atomic.Bool
+	running.Store(true)
+
+	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+		QuietWindow:       200 * time.Millisecond,
+		MaxDelay:          500 * time.Millisecond,
+		CheckBuildRunning: running.Load,
+		PollInterval:      5 * time.Millisecond,
+	})
+	require.NoError(t, err)
+	d.buildDebouncer = debouncer
+
+	go d.runBuildNowConsumer(ctx)
+	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-debouncer.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for debouncer ready")
+	}
+
+	jobID1 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
+	jobID2 := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
+	require.NotEmpty(t, jobID1)
+	require.Equal(t, jobID1, jobID2)
+
+	running.Store(false)
+
+	require.Eventually(t, func() bool {
+		job, ok := bq.JobSnapshot(jobID1)
+		return ok && job != nil && job.Status == queue.BuildStatusCompleted
+	}, 2*time.Second, 10*time.Millisecond)
 }

@@ -51,6 +51,29 @@ type BuildDebouncer struct {
 	pollingAfterRun bool
 }
 
+// PlannedJobID returns the JobID that will be used for the next BuildNow emission,
+// if there is currently a pending request (including a pending-after-run follow-up).
+//
+// This is intended for triggers (like webhooks) that want to return a stable job
+// identifier even when multiple requests coalesce into a single build.
+func (d *BuildDebouncer) PlannedJobID() (string, bool) {
+	if d == nil {
+		return "", false
+	}
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	if !d.pending && !d.pendingAfterRun {
+		return "", false
+	}
+	if d.lastJobID == "" {
+		return "", false
+	}
+
+	return d.lastJobID, true
+}
+
 func NewBuildDebouncer(bus *events.Bus, cfg BuildDebouncerConfig) (*BuildDebouncer, error) {
 	if bus == nil {
 		return nil, ferrors.ValidationError("bus is required").Build()
