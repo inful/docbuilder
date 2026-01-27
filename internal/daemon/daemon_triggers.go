@@ -34,12 +34,20 @@ func (d *Daemon) TriggerBuild() string {
 	if jobID == "" {
 		jobID = fmt.Sprintf("manual-%d", time.Now().UnixNano())
 	}
-	_ = d.orchestrationBus.Publish(context.Background(), events.BuildRequested{
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := d.orchestrationBus.Publish(ctx, events.BuildRequested{
 		JobID:       jobID,
 		Immediate:   true,
 		Reason:      "manual",
 		RequestedAt: time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish manual build request",
+			logfields.JobID(jobID),
+			logfields.Error(err))
+		return ""
+	}
 
 	slog.Info("Manual build requested", logfields.JobID(jobID))
 	return jobID
@@ -69,14 +77,25 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 	}
 
 	filesCopy := append([]string(nil), changedFiles...)
-	_ = d.orchestrationBus.Publish(context.Background(), events.WebhookReceived{
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := d.orchestrationBus.Publish(ctx, events.WebhookReceived{
 		JobID:        jobID,
 		ForgeName:    forgeName,
 		RepoFullName: repoFullName,
 		Branch:       branch,
 		ChangedFiles: filesCopy,
 		ReceivedAt:   time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish webhook received event",
+			logfields.JobID(jobID),
+			logfields.Error(err),
+			slog.String("forge", forgeName),
+			slog.String("repo", repoFullName),
+			slog.String("branch", branch))
+		return ""
+	}
 
 	slog.Info("Webhook received",
 		logfields.JobID(jobID),
