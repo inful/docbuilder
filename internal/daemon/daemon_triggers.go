@@ -146,9 +146,13 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles [
 		jobID = fmt.Sprintf("webhook-%d", time.Now().Unix())
 	}
 	if d.orchestrationBus != nil {
+		immediate := true
+		if d.config.Daemon != nil && d.config.Daemon.BuildDebounce != nil && d.config.Daemon.BuildDebounce.WebhookImmediate != nil {
+			immediate = *d.config.Daemon.BuildDebounce.WebhookImmediate
+		}
 		_ = d.orchestrationBus.Publish(context.Background(), events.RepoUpdateRequested{
 			JobID:       jobID,
-			Immediate:   true,
+			Immediate:   immediate,
 			RepoURL:     matchedRepoURL,
 			Branch:      branch,
 			RequestedAt: time.Now(),

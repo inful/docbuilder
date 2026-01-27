@@ -84,6 +84,58 @@ func (cv *configurationValidator) validateDaemon() error {
 			Build()
 	}
 
+	if cv.config.Daemon.BuildDebounce != nil {
+		if err := validateDaemonBuildDebounce(cv.config.Daemon.BuildDebounce); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateDaemonBuildDebounce(cfg *BuildDebounceConfig) error {
+	quietWindowStr := strings.TrimSpace(cfg.QuietWindow)
+	maxDelayStr := strings.TrimSpace(cfg.MaxDelay)
+
+	if quietWindowStr != "" {
+		quietDur, err := time.ParseDuration(quietWindowStr)
+		if err != nil {
+			return errors.WrapError(err, errors.CategoryValidation, "invalid daemon build debounce quiet_window").
+				WithContext("value", cfg.QuietWindow).
+				Build()
+		}
+		if quietDur <= 0 {
+			return errors.NewError(errors.CategoryValidation, "daemon build debounce quiet_window must be > 0").
+				WithContext("value", cfg.QuietWindow).
+				Build()
+		}
+	}
+
+	if maxDelayStr != "" {
+		maxDur, err := time.ParseDuration(maxDelayStr)
+		if err != nil {
+			return errors.WrapError(err, errors.CategoryValidation, "invalid daemon build debounce max_delay").
+				WithContext("value", cfg.MaxDelay).
+				Build()
+		}
+		if maxDur <= 0 {
+			return errors.NewError(errors.CategoryValidation, "daemon build debounce max_delay must be > 0").
+				WithContext("value", cfg.MaxDelay).
+				Build()
+		}
+	}
+
+	if quietWindowStr != "" && maxDelayStr != "" {
+		quietDur, _ := time.ParseDuration(quietWindowStr)
+		maxDur, _ := time.ParseDuration(maxDelayStr)
+		if maxDur < quietDur {
+			return errors.NewError(errors.CategoryValidation, "daemon build debounce max_delay must be >= quiet_window").
+				WithContext("max_delay", cfg.MaxDelay).
+				WithContext("quiet_window", cfg.QuietWindow).
+				Build()
+		}
+	}
+
 	return nil
 }
 
