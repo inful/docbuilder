@@ -4,6 +4,10 @@ daemon:
     docs_port: 8080
     webhook_port: 8081
     admin_port: 8082
+  build_debounce:
+    quiet_window: "10s"
+    max_delay: "60s"
+    webhook_immediate: true
   sync:
     schedule: 0 */4 * * *
     concurrent_builds: 3

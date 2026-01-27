@@ -42,6 +42,10 @@ output:
 daemon:
   link_verification:
     enabled: true
+  build_debounce:
+    quiet_window: "10s"
+    max_delay: "60s"
+    webhook_immediate: true
   sync:
     schedule: "*/1 * * * *"  # Every minute for dev
   storage:

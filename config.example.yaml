@@ -40,6 +40,10 @@ daemon:
   sync:
     schedule: "0 */4 * * *"         # Cron schedule (5-field)
     build_on_discovery: true        # Set false to discover without enqueuing builds
+  build_debounce:
+    quiet_window: "10s"             # Debounce window for non-immediate requests
+    max_delay: "60s"                # Max time before forcing a build (must be >= quiet_window)
+    webhook_immediate: true         # Webhooks bypass quiet window but still coalesce while a build is running
   storage:
     repo_cache_dir: "./daemon-data/repos"
 hugo:

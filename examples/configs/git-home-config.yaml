@@ -50,6 +50,10 @@ daemon:
     docs_port: 8081      # Documentation site serving port
     webhook_port: 8082   # Webhook receiver port  
     admin_port: 8083     # Admin/management API port
+  build_debounce:
+    quiet_window: "10s"
+    max_delay: "60s"
+    webhook_immediate: true
   sync:
     schedule: "*/2 * * * *"  # Every 15 minutes
     concurrent_builds: 2
