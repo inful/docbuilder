@@ -169,6 +169,9 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 	})
 
 	t.Run("webhook uses typed repositories", func(t *testing.T) {
+		const repoName = "go-test-project"
+		const repoURL = "https://git.home.luguber.info/inful/" + repoName + ".git"
+
 		svc := &mockBuildService{
 			runFunc: func(ctx context.Context, req build.BuildRequest) (*build.BuildResult, error) {
 				if req.Config == nil {
@@ -177,7 +180,7 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 				if len(req.Config.Repositories) != 1 {
 					t.Fatalf("expected 1 repository, got %d", len(req.Config.Repositories))
 				}
-				if req.Config.Repositories[0].Name != "go-test-project" {
+				if req.Config.Repositories[0].Name != repoName {
 					t.Fatalf("unexpected repo name: %q", req.Config.Repositories[0].Name)
 				}
 				return &build.BuildResult{Status: build.BuildStatusSuccess, Report: &models.BuildReport{Outcome: models.OutcomeSuccess}}, nil
@@ -191,8 +194,8 @@ func TestBuildServiceAdapter_Build(t *testing.T) {
 			TypedMeta: &BuildJobMetadata{
 				V2Config: &config.Config{},
 				Repositories: []config.Repository{{
-					Name:   "go-test-project",
-					URL:    "https://git.home.luguber.info/inful/go-test-project.git",
+					Name:   repoName,
+					URL:    repoURL,
 					Branch: "main",
 					Paths:  []string{"docs"},
 				}},

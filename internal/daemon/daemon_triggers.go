@@ -304,7 +304,15 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 		return
 	}
 
-	jobID := fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
+	jobID := ""
+	if d.buildDebouncer != nil {
+		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+			jobID = planned
+		}
+	}
+	if jobID == "" {
+		jobID = fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
+	}
 	if d.orchestrationBus != nil {
 		_ = d.orchestrationBus.Publish(ctx, events.BuildRequested{
 			JobID:       jobID,

@@ -266,6 +266,11 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			if daemon.orchestrationBus == nil || ctx == nil {
 				return
 			}
+			if daemon.buildDebouncer != nil {
+				if planned, ok := daemon.buildDebouncer.PlannedJobID(); ok {
+					jobID = planned
+				}
+			}
 			_ = daemon.orchestrationBus.Publish(ctx, events.BuildRequested{
 				JobID:       jobID,
 				Reason:      reason,
