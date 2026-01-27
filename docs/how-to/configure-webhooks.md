@@ -86,8 +86,8 @@ forges:
       events:                             # Events to listen for
         - push
         - repository
-  
-    - name: gitlab
+
+  - name: gitlab
     type: gitlab
     base_url: "https://gitlab.com"
     api_url: "https://gitlab.com/api/v4"
@@ -100,8 +100,8 @@ forges:
       events:
         - push
         - tag_push
-  
-    - name: forgejo
+
+  - name: forgejo
     type: forgejo
     base_url: "https://git.home.luguber.info"
     api_url: "https://git.home.luguber.info/api/v1"
