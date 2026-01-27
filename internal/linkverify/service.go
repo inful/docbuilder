@@ -9,6 +9,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -277,12 +280,118 @@ func (s *VerificationService) updateFailureTracking(entry *CacheEntry, cached *C
 
 // The linkURL should already be an absolute URL, resolved by verifyLink.
 func (s *VerificationService) checkLink(ctx context.Context, linkURL string, isInternal bool, page *PageMetadata) (int, error) {
+	baseURL := ""
+	if page != nil {
+		baseURL = page.BaseURL
+	}
 	slog.Debug("Checking link",
 		"url", linkURL,
 		"is_internal", isInternal,
-		"base_url", page.BaseURL)
+		"base_url", baseURL)
+
+	// Internal links should be verified against the rendered site on disk.
+	// This avoids false positives when the public base URL is temporarily unavailable
+	// or does not support HEAD.
+	if page != nil {
+		if isInternal || urlHostMatchesBase(linkURL, page.BaseURL) {
+			return checkInternalLink(page, linkURL)
+		}
+	}
 
 	return s.checkExternalLink(ctx, linkURL)
+}
+
+func urlHostMatchesBase(linkURL, baseURL string) bool {
+	u, err := url.Parse(linkURL)
+	if err != nil {
+		return false
+	}
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return false
+	}
+	if u.Hostname() == "" || base.Hostname() == "" {
+		return false
+	}
+	return strings.EqualFold(u.Hostname(), base.Hostname())
+}
+
+func checkInternalLink(page *PageMetadata, absoluteURL string) (int, error) {
+	localPath, err := localPathForInternalURL(page, absoluteURL)
+	if err != nil {
+		return 0, err
+	}
+	st, err := os.Stat(localPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return http.StatusNotFound, fmt.Errorf("internal file not found: %s", localPath)
+		}
+		return 0, fmt.Errorf("failed to stat internal file: %w", err)
+	}
+	if st.IsDir() {
+		return http.StatusNotFound, fmt.Errorf("internal path is a directory: %s", localPath)
+	}
+	return http.StatusOK, nil
+}
+
+func localPathForInternalURL(page *PageMetadata, absoluteURL string) (string, error) {
+	publicDir, err := publicDirForPage(page)
+	if err != nil {
+		return "", err
+	}
+	u, err := url.Parse(absoluteURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
+	}
+	urlPath := u.EscapedPath()
+	if urlPath == "" {
+		urlPath = "/"
+	}
+	urlPath = path.Clean(urlPath)
+	if urlPath == "." {
+		urlPath = "/"
+	}
+
+	// Hugo sites commonly use "pretty URLs" where "/section/" maps to "/section/index.html".
+	switch {
+	case urlPath == "/":
+		urlPath = "/index.html"
+	case strings.HasSuffix(u.Path, "/"):
+		urlPath = strings.TrimSuffix(urlPath, "/") + "/index.html"
+	case path.Ext(urlPath) == "":
+		urlPath += "/index.html"
+	}
+
+	rel := strings.TrimPrefix(urlPath, "/")
+	return filepath.Join(publicDir, filepath.FromSlash(rel)), nil
+}
+
+func publicDirForPage(page *PageMetadata) (string, error) {
+	if page == nil {
+		return "", errors.New("page metadata is required")
+	}
+	if page.HTMLPath == "" || page.RenderedPath == "" {
+		return "", errors.New("page HTMLPath and RenderedPath are required")
+	}
+
+	// HTMLPath == <publicDir>/<RenderedPath>
+	// Derive <publicDir> by walking up from HTMLPath based on RenderedPath depth.
+	htmlDir := filepath.Dir(page.HTMLPath)
+	relDir := filepath.Dir(page.RenderedPath)
+	if relDir == "." {
+		return htmlDir, nil
+	}
+
+	// Count path segments in relDir and walk up.
+	segments := strings.Split(filepath.ToSlash(relDir), "/")
+	publicDir := htmlDir
+	for _, seg := range segments {
+		if seg == "" || seg == "." {
+			continue
+		}
+		publicDir = filepath.Dir(publicDir)
+	}
+	return publicDir, nil
 }
 
 // checkExternalLink verifies an external link via HTTP request.
