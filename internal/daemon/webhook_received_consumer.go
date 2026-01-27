@@ -112,13 +112,18 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		immediate = *d.config.Daemon.BuildDebounce.WebhookImmediate
 	}
 
-	_ = d.orchestrationBus.Publish(ctx, events.RepoUpdateRequested{
+	if err := d.publishOrchestrationEvent(ctx, events.RepoUpdateRequested{
 		JobID:       evt.JobID,
 		Immediate:   immediate,
 		RepoURL:     matchedRepoURL,
 		Branch:      evt.Branch,
 		RequestedAt: time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("Failed to publish repo update request",
+			logfields.JobID(evt.JobID),
+			slog.String("repo_url", matchedRepoURL),
+			logfields.Error(err))
+	}
 }
 
 func repoMatchesFullName(repo config.Repository, fullName string) bool {
