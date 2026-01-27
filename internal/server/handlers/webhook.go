@@ -15,7 +15,7 @@ import (
 
 // WebhookTrigger provides the interface for triggering webhook-based builds.
 type WebhookTrigger interface {
-	TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string
+	TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string
 }
 
 // WebhookHandlers contains HTTP handlers for webhook integrations.
@@ -235,7 +235,7 @@ func (h *WebhookHandlers) triggerBuildFromEvent(event *forge.WebhookEvent, forge
 	}
 
 	changedFiles := collectChangedFiles(event)
-	jobID := h.trigger.TriggerWebhookBuild(event.Repository.FullName, branch, changedFiles)
+	jobID := h.trigger.TriggerWebhookBuild(forgeName, event.Repository.FullName, branch, changedFiles)
 	if jobID != "" {
 		slog.Info("Webhook triggered build",
 			"forge", forgeName,

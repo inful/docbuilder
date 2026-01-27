@@ -9,7 +9,9 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -47,7 +49,11 @@ func (fakeForgeClient) RegisterWebhook(context.Context, *forge.Repository, strin
 func (fakeForgeClient) GetEditURL(*forge.Repository, string, string) string              { return "" }
 
 func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
-	buildCtx := t.Context()
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	bus := events.NewBus()
+	defer bus.Close()
 
 	cfg := &config.Config{
 		Version: "2.0",
@@ -63,16 +69,17 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:         cfg,
-		stopChan:       make(chan struct{}),
-		forgeManager:   forgeManager,
-		discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache: NewDiscoveryCache(),
-		buildQueue:     queue.NewBuildQueue(10, 1, noOpBuilder{}),
+		config:           cfg,
+		stopChan:         make(chan struct{}),
+		orchestrationBus: bus,
+		forgeManager:     forgeManager,
+		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		discoveryCache:   NewDiscoveryCache(),
+		buildQueue:       queue.NewBuildQueue(10, 1, noOpBuilder{}),
 	}
 	d.status.Store(StatusRunning)
 
-	d.buildQueue.Start(buildCtx)
+	d.buildQueue.Start(ctx)
 	defer d.buildQueue.Stop(context.Background())
 
 	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
@@ -91,7 +98,38 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 		Metadata:      map[string]string{"forge_name": "forge-1"},
 	}}})
 
-	jobID := d.TriggerWebhookBuild("org/go-test-project", "main", nil)
+	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+		QuietWindow: 50 * time.Millisecond,
+		MaxDelay:    100 * time.Millisecond,
+		CheckBuildRunning: func() bool {
+			return false
+		},
+		PollInterval: 5 * time.Millisecond,
+	})
+	require.NoError(t, err)
+	d.buildDebouncer = debouncer
+
+	cache, err := git.NewRemoteHeadCache("")
+	require.NoError(t, err)
+	d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+
+	go d.runWebhookReceivedConsumer(ctx)
+	go d.runBuildNowConsumer(ctx)
+	go d.repoUpdater.Run(ctx)
+	go func() { _ = debouncer.Run(ctx) }()
+
+	select {
+	case <-d.repoUpdater.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for repo updater ready")
+	}
+	select {
+	case <-debouncer.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for debouncer ready")
+	}
+
+	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID)
 
 	require.Eventually(t, func() bool {

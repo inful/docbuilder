@@ -22,7 +22,7 @@ type Runtime interface {
 
 	TriggerDiscovery() string
 	TriggerBuild() string
-	TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string
+	TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string
 	GetQueueLength() int
 }
 

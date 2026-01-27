@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"sync/atomic"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
-	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -24,116 +21,8 @@ func (d *Daemon) TriggerBuild() string {
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
-
-	jobID := fmt.Sprintf("build-%d", time.Now().Unix())
-
-	job := &BuildJob{
-		ID:        jobID,
-		Type:      BuildTypeManual,
-		Priority:  PriorityHigh,
-		CreatedAt: time.Now(),
-		TypedMeta: &BuildJobMetadata{
-			V2Config:      d.config,
-			StateManager:  d.stateManager,
-			LiveReloadHub: d.liveReload,
-		},
-	}
-
-	if err := d.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue build job", logfields.JobID(jobID), logfields.Error(err))
+	if d.orchestrationBus == nil {
 		return ""
-	}
-
-	slog.Info("Manual build triggered", logfields.JobID(jobID))
-	return jobID
-}
-
-// TriggerWebhookBuild processes a webhook event and requests an orchestrated build.
-//
-// The webhook payload is used to decide whether a build should be requested and which
-// repository should be treated as "changed", but it does not narrow the site scope:
-// the build remains a canonical full-site build.
-func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string {
-	if d.GetStatus() != StatusRunning {
-		return ""
-	}
-
-	// A webhook build should rebuild the full site with the currently known repository
-	// set. The webhook payload only determines whether we trigger, and which repository
-	// we annotate as changed.
-	//
-	// In explicit-repo mode (config.repositories provided) use the configured list.
-	// In discovery-only mode, use the most recently discovered repository list.
-	var reposForBuild []config.Repository
-	if len(d.config.Repositories) > 0 {
-		reposForBuild = append([]config.Repository{}, d.config.Repositories...)
-	} else {
-		discovered, err := d.GetDiscoveryResult()
-		if err == nil && discovered != nil && d.discovery != nil {
-			reposForBuild = d.discovery.ConvertToConfigRepositories(discovered.Repositories, d.forgeManager)
-		}
-	}
-
-	// Determine whether the webhook matches any currently known repository.
-	matched := false
-	matchedRepoURL := ""
-	matchedDocsPaths := []string{"docs"}
-	for i := range reposForBuild {
-		repo := &reposForBuild[i]
-		if repo.Name != repoFullName && !matchesRepoURL(repo.URL, repoFullName) {
-			continue
-		}
-
-		// In explicit-repo mode, honor configured branch filters.
-		if len(d.config.Repositories) > 0 {
-			if branch != "" && repo.Branch != branch {
-				continue
-			}
-		}
-
-		matched = true
-		matchedRepoURL = repo.URL
-		if len(repo.Paths) > 0 {
-			matchedDocsPaths = repo.Paths
-		}
-		if branch != "" {
-			repo.Branch = branch
-		}
-		slog.Info("Webhook matched repository",
-			"repo", repo.Name,
-			"full_name", repoFullName,
-			"branch", branch)
-	}
-
-	if !matched {
-		slog.Warn("No matching repositories found for webhook",
-			"repo_full_name", repoFullName,
-			"branch", branch)
-		return ""
-	}
-
-	// If the webhook payload included changed files (push-like event), only trigger
-	// a rebuild when at least one change touches the configured docs paths.
-	if len(changedFiles) > 0 {
-		if !hasDocsRelevantChange(changedFiles, matchedDocsPaths) {
-			slog.Info("Webhook push ignored (no docs changes)",
-				"repo_full_name", repoFullName,
-				"branch", branch,
-				"changed_files", len(changedFiles),
-				"docs_paths", matchedDocsPaths)
-			return ""
-		}
-	}
-	if len(reposForBuild) == 0 {
-		slog.Warn("No repositories available for webhook build; falling back to target-only build",
-			"repo_full_name", repoFullName,
-			"branch", branch)
-		// Best-effort: keep previous behavior as a fallback.
-		reposForBuild = d.discoveredReposForWebhook(repoFullName, branch)
-		if len(reposForBuild) == 0 {
-			return ""
-		}
-		matchedRepoURL = reposForBuild[0].URL
 	}
 
 	jobID := ""
@@ -143,57 +32,58 @@ func (d *Daemon) TriggerWebhookBuild(repoFullName, branch string, changedFiles [
 		}
 	}
 	if jobID == "" {
-		jobID = fmt.Sprintf("webhook-%d", time.Now().Unix())
+		jobID = fmt.Sprintf("manual-%d", time.Now().UnixNano())
 	}
-	if d.orchestrationBus != nil {
-		immediate := true
-		if d.config.Daemon != nil && d.config.Daemon.BuildDebounce != nil && d.config.Daemon.BuildDebounce.WebhookImmediate != nil {
-			immediate = *d.config.Daemon.BuildDebounce.WebhookImmediate
-		}
-		_ = d.orchestrationBus.Publish(context.Background(), events.RepoUpdateRequested{
-			JobID:       jobID,
-			Immediate:   immediate,
-			RepoURL:     matchedRepoURL,
-			Branch:      branch,
-			RequestedAt: time.Now(),
-		})
-		slog.Info("Webhook repo update requested",
-			logfields.JobID(jobID),
-			slog.String("repo", repoFullName),
-			slog.String("branch", branch),
-			slog.Int("repositories", len(reposForBuild)))
-		return jobID
-	}
+	_ = d.orchestrationBus.Publish(context.Background(), events.BuildRequested{
+		JobID:       jobID,
+		Immediate:   true,
+		Reason:      "manual",
+		RequestedAt: time.Now(),
+	})
 
-	job := &BuildJob{
-		ID:        jobID,
-		Type:      BuildTypeWebhook,
-		Priority:  PriorityHigh,
-		CreatedAt: time.Now(),
-		TypedMeta: &BuildJobMetadata{
-			V2Config:      d.config,
-			Repositories:  reposForBuild,
-			StateManager:  d.stateManager,
-			LiveReloadHub: d.liveReload,
-			DeltaRepoReasons: map[string]string{
-				matchedRepoURL: fmt.Sprintf("webhook push to %s", branch),
-			},
-		},
-	}
+	slog.Info("Manual build requested", logfields.JobID(jobID))
+	return jobID
+}
 
-	if err := d.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue webhook build job", logfields.JobID(jobID), logfields.Error(err))
+// TriggerWebhookBuild processes a webhook event and requests an orchestrated build.
+//
+// The webhook payload is used to decide whether a build should be requested and which
+// repository should be treated as "changed", but it does not narrow the site scope:
+// the build remains a canonical full-site build.
+
+func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
+	if d.GetStatus() != StatusRunning {
 		return ""
 	}
+	if d.orchestrationBus == nil {
+		return ""
+	}
+	jobID := ""
+	if d.buildDebouncer != nil {
+		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+			jobID = planned
+		}
+	}
+	if jobID == "" {
+		jobID = fmt.Sprintf("webhook-%d", time.Now().UnixNano())
+	}
 
-	slog.Info("Webhook build triggered",
+	filesCopy := append([]string(nil), changedFiles...)
+	_ = d.orchestrationBus.Publish(context.Background(), events.WebhookReceived{
+		JobID:        jobID,
+		ForgeName:    forgeName,
+		RepoFullName: repoFullName,
+		Branch:       branch,
+		ChangedFiles: filesCopy,
+		ReceivedAt:   time.Now(),
+	})
+
+	slog.Info("Webhook received",
 		logfields.JobID(jobID),
+		slog.String("forge", forgeName),
 		slog.String("repo", repoFullName),
 		slog.String("branch", branch),
-		slog.Int("target_count", 1),
-		slog.Int("repositories", len(reposForBuild)))
-
-	atomic.AddInt32(&d.queueLength, 1)
+		slog.Int("changed_files", len(filesCopy)))
 	return jobID
 }
 
@@ -240,40 +130,6 @@ func hasDocsRelevantChange(changedFiles []string, docsPaths []string) bool {
 	return false
 }
 
-func (d *Daemon) discoveredReposForWebhook(repoFullName, branch string) []config.Repository {
-	discovered, err := d.GetDiscoveryResult()
-	if err != nil || discovered == nil {
-		return nil
-	}
-	if d.discovery == nil {
-		return nil
-	}
-
-	for _, repo := range discovered.Repositories {
-		if repo == nil {
-			continue
-		}
-		if repo.FullName != repoFullName && !matchesRepoURL(repo.CloneURL, repoFullName) && !matchesRepoURL(repo.SSHURL, repoFullName) {
-			continue
-		}
-
-		converted := d.discovery.ConvertToConfigRepositories([]*forge.Repository{repo}, d.forgeManager)
-		for i := range converted {
-			if branch != "" {
-				converted[i].Branch = branch
-			}
-		}
-
-		slog.Info("Webhook matched discovered repository",
-			"repo", repo.Name,
-			"full_name", repoFullName,
-			"branch", branch)
-		return converted
-	}
-
-	return nil
-}
-
 // matchesRepoURL checks if a repository URL matches the given full name (owner/repo).
 func matchesRepoURL(repoURL, fullName string) bool {
 	// Extract owner/repo from various URL formats:
@@ -309,6 +165,9 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
+	if d.orchestrationBus == nil {
+		return
+	}
 
 	jobID := ""
 	if d.buildDebouncer != nil {
@@ -319,39 +178,12 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if jobID == "" {
 		jobID = fmt.Sprintf("scheduled-build-%d", time.Now().Unix())
 	}
-	if d.orchestrationBus != nil {
-		_ = d.orchestrationBus.Publish(ctx, events.BuildRequested{
-			JobID:       jobID,
-			Reason:      "scheduled build",
-			RequestedAt: time.Now(),
-		})
-		slog.Info("Scheduled build requested",
-			logfields.JobID(jobID),
-			slog.Int("repositories", len(d.config.Repositories)))
-		return
-	}
-
-	slog.Info("Triggering scheduled build for explicit repositories",
+	_ = d.orchestrationBus.Publish(ctx, events.BuildRequested{
+		JobID:       jobID,
+		Reason:      "scheduled build",
+		RequestedAt: time.Now(),
+	})
+	slog.Info("Scheduled build requested",
 		logfields.JobID(jobID),
 		slog.Int("repositories", len(d.config.Repositories)))
-
-	job := &BuildJob{
-		ID:        jobID,
-		Type:      BuildTypeScheduled,
-		Priority:  PriorityNormal,
-		CreatedAt: time.Now(),
-		TypedMeta: &BuildJobMetadata{
-			V2Config:      d.config,
-			Repositories:  d.config.Repositories,
-			StateManager:  d.stateManager,
-			LiveReloadHub: d.liveReload,
-		},
-	}
-
-	if err := d.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue scheduled build", logfields.JobID(jobID), logfields.Error(err))
-		return
-	}
-
-	atomic.AddInt32(&d.queueLength, 1)
 }

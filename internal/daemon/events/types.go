@@ -28,6 +28,22 @@ type RepoUpdateRequested struct {
 	RequestedAt time.Time
 }
 
+// WebhookReceived represents an accepted/validated webhook that may result in a repo update and build.
+//
+// This event is intentionally "thin": it carries only webhook inputs. Downstream workers are
+// responsible for:
+// - matching the webhook to a known repository
+// - optional docs-change filtering
+// - publishing RepoUpdateRequested (and subsequent build requests).
+type WebhookReceived struct {
+	JobID        string
+	ForgeName    string
+	RepoFullName string
+	Branch       string
+	ChangedFiles []string
+	ReceivedAt   time.Time
+}
+
 // RepoUpdated is emitted after a repository update/check completes.
 //
 // When Changed is true, consumers may request a build.

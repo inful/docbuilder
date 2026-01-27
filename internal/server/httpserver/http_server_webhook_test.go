@@ -15,6 +15,7 @@ import (
 
 type webhookRuntimeStub struct {
 	called bool
+	forge  string
 	repo   string
 	branch string
 }
@@ -30,8 +31,9 @@ func (r *webhookRuntimeStub) TriggerDiscovery() string      { return "" }
 func (r *webhookRuntimeStub) TriggerBuild() string          { return "" }
 func (r *webhookRuntimeStub) GetQueueLength() int           { return 0 }
 
-func (r *webhookRuntimeStub) TriggerWebhookBuild(repoFullName, branch string, changedFiles []string) string {
+func (r *webhookRuntimeStub) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
 	r.called = true
+	r.forge = forgeName
 	r.repo = repoFullName
 	r.branch = branch
 	return "job-123"
@@ -87,6 +89,7 @@ func TestWebhookMux_ConfiguredForgePath_TriggersBuild(t *testing.T) {
 
 	require.Equal(t, http.StatusAccepted, rr.Code)
 	require.True(t, runtime.called)
+	require.Equal(t, forgeName, runtime.forge)
 	require.Equal(t, "test-org/mock-repo", runtime.repo)
 	require.Equal(t, "main", runtime.branch)
 }
