@@ -34,10 +34,8 @@ func (d *Daemon) TriggerBuild() string {
 	if jobID == "" {
 		jobID = fmt.Sprintf("manual-%d", time.Now().UnixNano())
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
-	if err := d.orchestrationBus.Publish(ctx, events.BuildRequested{
+	if err := d.publishOrchestrationEvent(context.Background(), events.BuildRequested{
 		JobID:       jobID,
 		Immediate:   true,
 		Reason:      "manual",
@@ -77,10 +75,8 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 	}
 
 	filesCopy := append([]string(nil), changedFiles...)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
 
-	if err := d.orchestrationBus.Publish(ctx, events.WebhookReceived{
+	if err := d.publishOrchestrationEvent(context.Background(), events.WebhookReceived{
 		JobID:        jobID,
 		ForgeName:    forgeName,
 		RepoFullName: repoFullName,
