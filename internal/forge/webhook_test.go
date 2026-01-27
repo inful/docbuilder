@@ -209,6 +209,7 @@ func TestGitLabWebhookParsing(t *testing.T) {
 				"project": {
 					"id": 321,
 					"name": "repo",
+					"namespace": "org",
 					"path_with_namespace": "org/repo",
 					"web_url": "https://gitlab.example.com/org/repo",
 					"default_branch": "main"

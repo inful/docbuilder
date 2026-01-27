@@ -98,6 +98,42 @@ type gitlabNamespace struct {
 	FullPath string `json:"full_path"`
 }
 
+func (n *gitlabNamespace) UnmarshalJSON(data []byte) error {
+	// GitLab webhooks are inconsistent across event types and versions.
+	// In particular, System Hooks may encode project.namespace as a string (e.g. "group")
+	// while other payloads encode it as an object.
+	if len(data) == 0 || string(data) == "null" {
+		*n = gitlabNamespace{}
+		return nil
+	}
+
+	switch data[0] {
+	case '"':
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		*n = gitlabNamespace{Name: s, Path: s, FullPath: s}
+		return nil
+	case '{':
+		type alias gitlabNamespace
+		var a alias
+		if err := json.Unmarshal(data, &a); err != nil {
+			return err
+		}
+		*n = gitlabNamespace(a)
+		return nil
+	default:
+		// Some payloads may provide only a numeric namespace id.
+		var id int
+		if err := json.Unmarshal(data, &id); err != nil {
+			return err
+		}
+		*n = gitlabNamespace{ID: id}
+		return nil
+	}
+}
+
 // ListOrganizations returns accessible groups.
 func (c *GitLabClient) ListOrganizations(ctx context.Context) ([]*Organization, error) {
 	var orgs []*Organization
