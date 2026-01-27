@@ -565,8 +565,8 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 
 	// For explicit repositories, trigger a build to check for updates.
 	if len(d.config.Repositories) > 0 {
-		if d.buildQueue == nil {
-			slog.Warn("Skipping scheduled build: build queue not initialized")
+		if d.orchestrationBus == nil {
+			slog.Warn("Skipping scheduled build: orchestration bus not initialized")
 		} else {
 			d.triggerScheduledBuildForExplicitRepos(ctx)
 		}
