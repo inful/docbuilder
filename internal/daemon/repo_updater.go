@@ -85,12 +85,43 @@ func (u *RepoUpdater) handleRequest(ctx context.Context, req events.RepoUpdateRe
 
 	changed, sha, err := u.remoteChecker.CheckRemoteChanged(u.cache, repo, branch)
 	if err != nil {
-		slog.Warn("Repo update check failed; assuming changed",
+		slog.Warn("Repo update check failed; triggering build",
 			logfields.JobID(req.JobID),
 			logfields.Name(repo.Name),
 			logfields.URL(repo.URL),
 			logfields.Error(err))
-		changed = true
+
+		if perr := publishOrchestrationEventOnBus(ctx, u.bus, events.RepoUpdateFailed{
+			JobID:     req.JobID,
+			RepoURL:   repo.URL,
+			Branch:    branch,
+			Error:     err.Error(),
+			UpdatedAt: time.Now(),
+			Immediate: req.Immediate,
+		}); perr != nil {
+			slog.Warn("Failed to publish RepoUpdateFailed",
+				logfields.JobID(req.JobID),
+				logfields.Name(repo.Name),
+				logfields.URL(repo.URL),
+				logfields.Error(perr))
+		}
+
+		if berr := publishOrchestrationEventOnBus(ctx, u.bus, events.BuildRequested{
+			JobID:       req.JobID,
+			Immediate:   req.Immediate,
+			Reason:      "repo_update_failed",
+			RepoURL:     repo.URL,
+			Branch:      branch,
+			Snapshot:    nil,
+			RequestedAt: time.Now(),
+		}); berr != nil {
+			slog.Warn("Failed to publish BuildRequested after repo update failure",
+				logfields.JobID(req.JobID),
+				logfields.Name(repo.Name),
+				logfields.URL(repo.URL),
+				logfields.Error(berr))
+		}
+		return
 	}
 
 	if err := publishOrchestrationEventOnBus(ctx, u.bus, events.RepoUpdated{

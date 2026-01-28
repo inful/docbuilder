@@ -57,6 +57,19 @@ type RepoUpdated struct {
 	Immediate bool
 }
 
+// RepoUpdateFailed is emitted when a repository update/check fails.
+//
+// This is an orchestration event used by the daemon's in-process control flow.
+// It is not durable and is not written to internal/eventstore.
+type RepoUpdateFailed struct {
+	JobID     string
+	RepoURL   string
+	Branch    string
+	Error     string
+	UpdatedAt time.Time
+	Immediate bool
+}
+
 // RepoRemoved is emitted when a previously discovered repository is no longer present
 // in the latest discovery result.
 //

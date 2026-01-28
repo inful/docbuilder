@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -133,6 +134,79 @@ func TestRepoUpdater_WhenRemoteUnchanged_PublishesRepoUpdatedButNoBuildRequested
 	select {
 	case <-buildRequestedCh:
 		t.Fatal("expected no BuildRequested when repo unchanged")
+	case <-time.After(75 * time.Millisecond):
+		// ok
+	}
+}
+
+func TestRepoUpdater_WhenRemoteCheckFails_PublishesRepoUpdateFailedAndBuildRequested(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	bus := events.NewBus()
+	defer bus.Close()
+
+	cache, err := git.NewRemoteHeadCache("")
+	require.NoError(t, err)
+
+	checker := fakeRemoteHeadChecker{err: errors.New("remote head check failed")}
+	updater := NewRepoUpdater(bus, checker, cache, func() []config.Repository {
+		return []config.Repository{{
+			Name:   "repo-1",
+			URL:    "https://example.invalid/repo-1.git",
+			Branch: "main",
+		}}
+	})
+
+	repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
+	defer unsubRepoUpdated()
+
+	repoUpdateFailedCh, unsubRepoUpdateFailed := events.Subscribe[events.RepoUpdateFailed](bus, 10)
+	defer unsubRepoUpdateFailed()
+
+	buildRequestedCh, unsubBuildRequested := events.Subscribe[events.BuildRequested](bus, 10)
+	defer unsubBuildRequested()
+
+	go updater.Run(ctx)
+	select {
+	case <-updater.Ready():
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for repo updater ready")
+	}
+
+	require.NoError(t, bus.Publish(context.Background(), events.RepoUpdateRequested{
+		JobID:     "job-1",
+		Immediate: true,
+		RepoURL:   "https://example.invalid/repo-1.git",
+		Branch:    "main",
+	}))
+
+	select {
+	case got := <-repoUpdateFailedCh:
+		require.Equal(t, "job-1", got.JobID)
+		require.Equal(t, "https://example.invalid/repo-1.git", got.RepoURL)
+		require.Equal(t, "main", got.Branch)
+		require.NotEmpty(t, got.Error)
+		require.True(t, got.Immediate)
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for RepoUpdateFailed")
+	}
+
+	select {
+	case got := <-buildRequestedCh:
+		require.Equal(t, "job-1", got.JobID)
+		require.True(t, got.Immediate)
+		require.Equal(t, "repo_update_failed", got.Reason)
+		require.Equal(t, "https://example.invalid/repo-1.git", got.RepoURL)
+		require.Equal(t, "main", got.Branch)
+		require.Nil(t, got.Snapshot)
+	case <-time.After(250 * time.Millisecond):
+		t.Fatal("timed out waiting for BuildRequested")
+	}
+
+	select {
+	case got := <-repoUpdatedCh:
+		t.Fatalf("expected no RepoUpdated on check failure, got: %+v", got)
 	case <-time.After(75 * time.Millisecond):
 		// ok
 	}
