@@ -87,14 +87,18 @@ func NewMetricsCollector() *MetricsCollector {
 //
 // Delta values <= 0 are ignored.
 // Negative values likely indicate a caller bug and will be logged.
+// Zero values are typically a no-op but may indicate unexpected caller behavior;
+// we log at debug level to aid diagnosis without spamming warnings.
 func (mc *MetricsCollector) AddCounter(name string, delta int64) {
-	if delta < 0 {
-		slog.Warn("metrics AddCounter called with negative delta; ignoring",
-			slog.String("metric", name),
-			slog.Int64("delta", delta))
-		return
-	}
 	if delta <= 0 {
+		if delta < 0 {
+			slog.Warn("metrics AddCounter called with negative delta; ignoring",
+				slog.String("metric", name),
+				slog.Int64("delta", delta))
+			return
+		}
+		slog.Debug("metrics AddCounter called with zero delta; ignoring",
+			slog.String("metric", name))
 		return
 	}
 
