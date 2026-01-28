@@ -247,9 +247,9 @@ func checkoutExactCommit(repoPath, commitSHA string) (time.Time, error) {
 	if checkoutErr := wt.Checkout(&ggit.CheckoutOptions{Hash: h, Force: true}); checkoutErr != nil {
 		return time.Time{}, fmt.Errorf("checkout commit %s: %w", commitSHA, checkoutErr)
 	}
-	commit, _ := repo.CommitObject(h)
-	if commit == nil {
-		return time.Time{}, nil
+	commit, err := repo.CommitObject(h)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read commit %s: %w", commitSHA, err)
 	}
 	return commit.Author.When, nil
 }
