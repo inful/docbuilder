@@ -37,26 +37,40 @@ func TestDefaultRepoFetcher_FetchPinnedCommit_ChecksOutExactSHAAndSkipsWhenAlrea
 	require.NoError(t, err)
 	require.Equal(t, commit1, head1)
 
+	// Even with CloneStrategyFresh, pinned commits should not require a reclone if
+	// the repo already exists and has the pinned commit available.
+	repoCfg.PinnedCommit = commit2
+	resFresh2 := fetcher.Fetch(t.Context(), config.CloneStrategyFresh, repoCfg)
+	require.NoError(t, resFresh2.Err)
+	require.Equal(t, commit1, resFresh2.PreHead)
+	require.Equal(t, commit2, resFresh2.PostHead)
+	require.True(t, resFresh2.Updated)
+	require.Equal(t, res1.Path, resFresh2.Path)
+
+	headFresh2, err := gitpkg.ReadRepoHead(resFresh2.Path)
+	require.NoError(t, err)
+	require.Equal(t, commit2, headFresh2)
+
 	res2 := fetcher.Fetch(t.Context(), config.CloneStrategyUpdate, repoCfg)
 	require.NoError(t, res2.Err)
-	require.Equal(t, commit1, res2.PreHead)
-	require.Equal(t, commit1, res2.PostHead)
+	require.Equal(t, commit2, res2.PreHead)
+	require.Equal(t, commit2, res2.PostHead)
 	require.False(t, res2.Updated)
 
 	head2, err := gitpkg.ReadRepoHead(res2.Path)
 	require.NoError(t, err)
-	require.Equal(t, commit1, head2)
+	require.Equal(t, commit2, head2)
 
-	repoCfg.PinnedCommit = commit2
+	repoCfg.PinnedCommit = commit1
 	res3 := fetcher.Fetch(t.Context(), config.CloneStrategyUpdate, repoCfg)
 	require.NoError(t, res3.Err)
-	require.Equal(t, commit1, res3.PreHead)
-	require.Equal(t, commit2, res3.PostHead)
+	require.Equal(t, commit2, res3.PreHead)
+	require.Equal(t, commit1, res3.PostHead)
 	require.True(t, res3.Updated)
 
 	head3, err := gitpkg.ReadRepoHead(res3.Path)
 	require.NoError(t, err)
-	require.Equal(t, commit2, head3)
+	require.Equal(t, commit1, head3)
 }
 
 func initGitRepoWithTwoCommits(t *testing.T) (repoPath, commit1, commit2 string) {

@@ -119,17 +119,33 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy conf
 		return res
 	}
 
+	// Optimization: if the repo already exists locally and already has the pinned
+	// commit object available, we can skip any clone/update and just force-checkout
+	// the desired commit.
+	if err := gitStatRepo(repoPath); err == nil {
+		if checkedOutAt, cerr := checkoutExactCommit(repoPath, repo.PinnedCommit); cerr == nil {
+			res.Path = repoPath
+			res.PostHead = repo.PinnedCommit
+			res.CommitDate = checkedOutAt
+			res.Updated = preHead == "" || preHead != repo.PinnedCommit
+			return res
+		}
+	}
+
 	// Ensure repo exists locally.
 	attemptUpdate := false
+	repoExists := gitStatRepo(repoPath) == nil
 	switch strategy {
 	case config.CloneStrategyUpdate:
 		attemptUpdate = true
 	case config.CloneStrategyAuto:
-		if err := gitStatRepo(repoPath); err == nil {
+		if repoExists {
 			attemptUpdate = true
 		}
 	case config.CloneStrategyFresh:
-		attemptUpdate = false
+		// For pinned commits, prefer updating an existing clone instead of recloning.
+		// If the commit wasn't locally available, an update can fetch it.
+		attemptUpdate = repoExists
 	}
 
 	var path string
