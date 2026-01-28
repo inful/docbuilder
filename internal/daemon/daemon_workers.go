@@ -1,13 +1,21 @@
 package daemon
 
-import "context"
+import (
+	"context"
+	"log/slog"
+)
 
-func (d *Daemon) goWorker(fn func()) {
+func (d *Daemon) goWorker(name string, fn func()) {
 	if d == nil || fn == nil {
 		return
 	}
 
-	_ = d.workers.Go(fn)
+	if ok := d.workers.Go(fn); !ok {
+		if name == "" {
+			name = "(unnamed)"
+		}
+		slog.Warn("Worker not started (daemon stopping)", slog.String("worker", name))
+	}
 }
 
 func (d *Daemon) startWorkers(ctx context.Context) {
@@ -16,16 +24,16 @@ func (d *Daemon) startWorkers(ctx context.Context) {
 	}
 
 	if d.orchestrationBus != nil {
-		d.goWorker(func() { d.runBuildNowConsumer(ctx) })
-		d.goWorker(func() { d.runWebhookReceivedConsumer(ctx) })
-		d.goWorker(func() { d.runRepoRemovedConsumer(ctx) })
+		d.goWorker("build_now_consumer", func() { d.runBuildNowConsumer(ctx) })
+		d.goWorker("webhook_received_consumer", func() { d.runWebhookReceivedConsumer(ctx) })
+		d.goWorker("repo_removed_consumer", func() { d.runRepoRemovedConsumer(ctx) })
 	}
 
 	if d.buildDebouncer != nil {
-		d.goWorker(func() { _ = d.buildDebouncer.Run(ctx) })
+		d.goWorker("build_debouncer", func() { _ = d.buildDebouncer.Run(ctx) })
 	}
 
 	if d.repoUpdater != nil {
-		d.goWorker(func() { d.repoUpdater.Run(ctx) })
+		d.goWorker("repo_updater", func() { d.repoUpdater.Run(ctx) })
 	}
 }

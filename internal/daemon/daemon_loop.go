@@ -21,7 +21,7 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 	// If explicit repositories are configured (no forges), trigger an immediate build
 	if len(d.config.Repositories) > 0 && len(d.config.Forges) == 0 {
 		slog.Info("Explicit repositories configured, triggering initial build", slog.Int("repositories", len(d.config.Repositories)))
-		d.goWorker(func() { d.requestInitialBuild(ctx) })
+		d.goWorker("initial_build", func() { d.requestInitialBuild(ctx) })
 	}
 
 	for {
@@ -34,7 +34,7 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 			return
 		case <-initialDiscoveryTimer.C:
 			workCtx, cancel := context.WithCancel(d.stopAwareContext(ctx))
-			d.goWorker(func() {
+			d.goWorker("initial_discovery", func() {
 				defer cancel()
 				d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 			})
