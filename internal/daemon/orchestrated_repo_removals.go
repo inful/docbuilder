@@ -60,12 +60,21 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 		return
 	}
 	repoCacheDir := strings.TrimSpace(d.config.Daemon.Storage.RepoCacheDir)
-	if repoCacheDir == "" || strings.TrimSpace(evt.RepoName) == "" {
+	repoName := strings.TrimSpace(evt.RepoName)
+	if repoCacheDir == "" || repoName == "" {
 		return
 	}
 
 	base := filepath.Clean(repoCacheDir)
-	target := filepath.Clean(filepath.Join(base, evt.RepoName))
+	target := filepath.Clean(filepath.Join(base, repoName))
+	if target == base {
+		slog.Warn("Skipping repo cache deletion: refusing to delete repo cache base dir",
+			slog.String("repo_url", evt.RepoURL),
+			logfields.Name(evt.RepoName),
+			slog.String("repo_cache_dir", base),
+			slog.String("target", target))
+		return
+	}
 	if !strings.HasPrefix(target, base+string(os.PathSeparator)) {
 		slog.Warn("Skipping repo cache deletion: path escapes repo cache dir",
 			slog.String("repo_url", evt.RepoURL),
