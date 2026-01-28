@@ -10,7 +10,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
-const defaultOutputDir = "./site"
+const (
+	defaultOutputDir = "./site"
+
+	maxDaemonBuildDebounceDuration      = 24 * time.Hour
+	maxDaemonBuildDebounceDurationHuman = "24h"
+)
 
 // ValidateConfig validates the complete configuration structure using the new validation system.
 // This function is now implemented directly here to avoid import cycles.
@@ -97,37 +102,56 @@ func validateDaemonBuildDebounce(cfg *BuildDebounceConfig) error {
 	quietWindowStr := strings.TrimSpace(cfg.QuietWindow)
 	maxDelayStr := strings.TrimSpace(cfg.MaxDelay)
 
+	var quietDur time.Duration
+	hasQuiet := false
+	var maxDur time.Duration
+	hasMax := false
+
 	if quietWindowStr != "" {
-		quietDur, err := time.ParseDuration(quietWindowStr)
+		d, err := time.ParseDuration(quietWindowStr)
 		if err != nil {
 			return errors.WrapError(err, errors.CategoryValidation, "invalid daemon build debounce quiet_window").
 				WithContext("value", cfg.QuietWindow).
 				Build()
 		}
-		if quietDur <= 0 {
+		if d <= 0 {
 			return errors.NewError(errors.CategoryValidation, "daemon build debounce quiet_window must be > 0").
 				WithContext("value", cfg.QuietWindow).
 				Build()
 		}
+		if d > maxDaemonBuildDebounceDuration {
+			return errors.NewError(errors.CategoryValidation, "daemon build debounce quiet_window must be <= "+maxDaemonBuildDebounceDurationHuman).
+				WithContext("value", cfg.QuietWindow).
+				WithContext("max", maxDaemonBuildDebounceDurationHuman).
+				Build()
+		}
+		quietDur = d
+		hasQuiet = true
 	}
 
 	if maxDelayStr != "" {
-		maxDur, err := time.ParseDuration(maxDelayStr)
+		d, err := time.ParseDuration(maxDelayStr)
 		if err != nil {
 			return errors.WrapError(err, errors.CategoryValidation, "invalid daemon build debounce max_delay").
 				WithContext("value", cfg.MaxDelay).
 				Build()
 		}
-		if maxDur <= 0 {
+		if d <= 0 {
 			return errors.NewError(errors.CategoryValidation, "daemon build debounce max_delay must be > 0").
 				WithContext("value", cfg.MaxDelay).
 				Build()
 		}
+		if d > maxDaemonBuildDebounceDuration {
+			return errors.NewError(errors.CategoryValidation, "daemon build debounce max_delay must be <= "+maxDaemonBuildDebounceDurationHuman).
+				WithContext("value", cfg.MaxDelay).
+				WithContext("max", maxDaemonBuildDebounceDurationHuman).
+				Build()
+		}
+		maxDur = d
+		hasMax = true
 	}
 
-	if quietWindowStr != "" && maxDelayStr != "" {
-		quietDur, _ := time.ParseDuration(quietWindowStr)
-		maxDur, _ := time.ParseDuration(maxDelayStr)
+	if hasQuiet && hasMax {
 		if maxDur < quietDur {
 			return errors.NewError(errors.CategoryValidation, "daemon build debounce max_delay must be >= quiet_window").
 				WithContext("max_delay", cfg.MaxDelay).
