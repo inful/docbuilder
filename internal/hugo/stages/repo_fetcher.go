@@ -3,6 +3,7 @@ package stages
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -129,6 +130,12 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy conf
 			res.CommitDate = checkedOutAt
 			res.Updated = preHead == "" || preHead != repo.PinnedCommit
 			return res
+		} else {
+			slog.Debug("Pinned commit checkout fast-path failed; falling back to clone/update",
+				slog.String("repo", repo.Name),
+				slog.String("path", repoPath),
+				slog.String("pinned_commit", repo.PinnedCommit),
+				slog.Any("error", cerr))
 		}
 	}
 
