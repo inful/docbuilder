@@ -2,6 +2,7 @@ package state
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -129,7 +130,12 @@ func (a *ServiceAdapter) RemoveRepositoryState(url string) {
 	}
 	ctx := context.Background()
 	store := a.service.GetRepositoryStore()
-	_ = store.Delete(ctx, url)
+	res := store.Delete(ctx, url)
+	if res.IsErr() {
+		slog.Warn("Failed to delete repository state",
+			slog.String("url", url),
+			slog.Any("error", res.UnwrapErr()))
+	}
 }
 
 // --- RepositoryMetadataWriter interface ---
