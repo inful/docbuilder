@@ -499,7 +499,8 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
-			workCtx := d.stopAwareContext(ctx)
+			workCtx, cancel := d.stopAwareContext(ctx)
+			defer cancel()
 			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
 	}
