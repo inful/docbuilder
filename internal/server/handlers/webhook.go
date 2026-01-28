@@ -15,6 +15,11 @@ import (
 
 // WebhookTrigger provides the interface for triggering webhook-based builds.
 type WebhookTrigger interface {
+	// TriggerWebhookBuild triggers a build for the given repository/branch.
+	//
+	// forgeName is the configured forge instance name (config.forges[].name). It
+	// is optional; callers may pass an empty string when the webhook endpoint is
+	// not namespaced by forge.
 	TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string
 }
 
