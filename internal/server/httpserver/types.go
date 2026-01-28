@@ -22,6 +22,12 @@ type Runtime interface {
 
 	TriggerDiscovery() string
 	TriggerBuild() string
+	// TriggerWebhookBuild triggers a build based on a webhook event.
+	//
+	// forgeName is optional; callers may pass an empty string when the request is
+	// not scoped to a specific configured forge instance. When forgeName is
+	// provided, it may be used to disambiguate repositories hosted on different
+	// forges.
 	TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string
 	GetQueueLength() int
 }

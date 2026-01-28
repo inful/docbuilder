@@ -55,6 +55,9 @@ func (d *Daemon) TriggerBuild() string {
 // The webhook payload is used to decide whether a build should be requested and which
 // repository should be treated as "changed", but it does not narrow the site scope:
 // the build remains a canonical full-site build.
+//
+// forgeName is optional; callers may pass an empty string when the webhook is not
+// scoped to a specific configured forge instance.
 
 func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
 	if d.GetStatus() != StatusRunning {
