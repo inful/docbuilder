@@ -2,15 +2,17 @@ package daemon
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 )
 
 // WorkerGroup tracks daemon-owned goroutines and provides a safe shutdown
 // boundary so we never call WaitGroup.Add concurrently with Wait.
 type WorkerGroup struct {
-	mu       sync.Mutex
-	wg       sync.WaitGroup
-	stopping bool
+	mu             sync.Mutex
+	wg             sync.WaitGroup
+	stopping       bool
+	warnedStopping bool
 }
 
 // Reset prepares the group for reuse after a full stop.
@@ -21,6 +23,7 @@ func (g *WorkerGroup) Reset() {
 	defer g.mu.Unlock()
 
 	g.stopping = false
+	g.warnedStopping = false
 	g.wg = sync.WaitGroup{}
 }
 
@@ -33,6 +36,10 @@ func (g *WorkerGroup) Go(fn func()) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.stopping {
+		if !g.warnedStopping {
+			slog.Warn("WorkerGroup.Go called while stopping; worker not started")
+			g.warnedStopping = true
+		}
 		return false
 	}
 
