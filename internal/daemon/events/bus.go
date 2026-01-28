@@ -183,7 +183,12 @@ func (b *Bus) Close() {
 		b.isClosed.Store(true)
 
 		b.mu.Lock()
-		var toClose []*subscriber
+		estimated := 0
+		for _, typeSubs := range b.subs {
+			estimated += len(typeSubs)
+		}
+
+		toClose := make([]*subscriber, 0, estimated)
 		for _, typeSubs := range b.subs {
 			for _, s := range typeSubs {
 				toClose = append(toClose, s)

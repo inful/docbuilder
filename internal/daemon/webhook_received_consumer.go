@@ -186,8 +186,8 @@ func extractRepoHost(repoURL string) string {
 	}
 
 	// ssh scp-like: git@host:owner/repo.git
-	if at := strings.Index(repoURL, "@"); at >= 0 {
-		afterAt := repoURL[at+1:]
+	if _, after, ok := strings.Cut(repoURL, "@"); ok {
+		afterAt := after
 		hostPart := afterAt
 		if strings.Contains(hostPart, ":") {
 			hostPart = strings.SplitN(hostPart, ":", 2)[0]
