@@ -9,12 +9,17 @@ import (
 //
 // This preserves the historical behavior where closing stopChan unblocks
 // in-flight work even when the caller passes context.Background().
-func (d *Daemon) stopAwareContext(parent context.Context) context.Context {
+//
+// Callers MUST call the returned cancel func when the derived context is no
+// longer needed; otherwise the internal stop-listener goroutine may live for
+// the lifetime of the parent context.
+func (d *Daemon) stopAwareContext(parent context.Context) (context.Context, context.CancelFunc) {
 	if parent == nil {
 		parent = context.Background()
 	}
 	if d == nil || d.stopChan == nil {
-		return parent
+		ctx, cancel := context.WithCancel(parent)
+		return ctx, cancel
 	}
 
 	ctx, cancel := context.WithCancel(parent)
@@ -26,5 +31,5 @@ func (d *Daemon) stopAwareContext(parent context.Context) context.Context {
 			// parent canceled; nothing else to do
 		}
 	}()
-	return ctx
+	return ctx, cancel
 }
