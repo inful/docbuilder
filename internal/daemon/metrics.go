@@ -3,6 +3,7 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"maps"
 	"net/http"
 	"runtime"
@@ -85,7 +86,14 @@ func NewMetricsCollector() *MetricsCollector {
 // AddCounter increments a counter metric by delta.
 //
 // Delta values <= 0 are ignored.
+// Negative values likely indicate a caller bug and will be logged.
 func (mc *MetricsCollector) AddCounter(name string, delta int64) {
+	if delta < 0 {
+		slog.Warn("metrics AddCounter called with negative delta; ignoring",
+			slog.String("metric", name),
+			slog.Int64("delta", delta))
+		return
+	}
 	if delta <= 0 {
 		return
 	}
