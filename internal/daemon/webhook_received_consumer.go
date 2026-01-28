@@ -202,6 +202,8 @@ func extractRepoHost(repoURL string) string {
 }
 
 func hasDocsRelevantChange(changedFiles []string, docsPaths []string) bool {
+	// If the webhook payload does not include a file list, we conservatively assume
+	// the change may affect docs so webhook processing is not accidentally skipped.
 	if len(changedFiles) == 0 {
 		return true
 	}
