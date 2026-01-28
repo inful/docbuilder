@@ -1,3 +1,0 @@
-[submodule ".devcontainer"]
-	path = .devcontainer
-	url = ssh://git@gitlab.mgmlab.net:30022/sfb/devcontainers/go.git
