@@ -80,3 +80,27 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteOutsideRepoCacheDir(t *testing.T)
 	_, err := os.Stat(outside)
 	require.NoError(t, err)
 }
+
+func TestDaemon_handleRepoRemoved_DoesNotDeleteRepoCacheBaseDir(t *testing.T) {
+	tmp := t.TempDir()
+	repoCacheDir := filepath.Join(tmp, "repo-cache")
+	require.NoError(t, os.MkdirAll(repoCacheDir, 0o750))
+
+	// Sentinel file that must survive.
+	sentinel := filepath.Join(repoCacheDir, "sentinel.txt")
+	require.NoError(t, os.WriteFile(sentinel, []byte("keep"), 0o600))
+
+	svcResult := state.NewService(tmp)
+	require.True(t, svcResult.IsOk())
+	sm := state.NewServiceAdapter(svcResult.Unwrap())
+
+	d := &Daemon{
+		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		stateManager: sm,
+	}
+
+	d.handleRepoRemoved(events.RepoRemoved{RepoURL: "https://example.com/r.git", RepoName: "."})
+
+	_, err := os.Stat(sentinel)
+	require.NoError(t, err)
+}
