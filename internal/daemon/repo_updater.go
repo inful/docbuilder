@@ -13,7 +13,7 @@ import (
 
 type RepoUpdater struct {
 	bus   *events.Bus
-	ready chan struct{}
+	ready chan struct{} // closed once Run has subscribed to events
 
 	remoteChecker RemoteHeadChecker
 	cache         *git.RemoteHeadCache
@@ -29,6 +29,10 @@ func NewRepoUpdater(bus *events.Bus, checker RemoteHeadChecker, cache *git.Remot
 	return &RepoUpdater{bus: bus, ready: make(chan struct{}), remoteChecker: checker, cache: cache, reposForLookup: reposForLookup}
 }
 
+// Ready is closed once Run has subscribed to RepoUpdateRequested events.
+//
+// This is primarily intended for tests and deterministic startup sequencing.
+// Note: Ready() does not indicate that any particular update has been processed.
 func (u *RepoUpdater) Ready() <-chan struct{} {
 	if u == nil {
 		return nil
