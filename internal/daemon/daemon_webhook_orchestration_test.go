@@ -109,7 +109,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 			events.SubscriberCount[events.BuildNow](bus) > 0
 	}, 1*time.Second, 10*time.Millisecond)
 
-	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "feature-branch", nil)
+	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "main", nil)
 	require.NotEmpty(t, jobID)
 
 	require.Eventually(t, func() bool {
@@ -133,7 +133,67 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 		}
 	}
 	require.NotNil(t, target)
-	require.Equal(t, "feature-branch", target.Branch)
+	require.Equal(t, "main", target.Branch)
+}
+
+func TestDaemon_TriggerWebhookBuild_Orchestrated_IgnoresNonDefaultBranch(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	bus := events.NewBus()
+	defer bus.Close()
+
+	cfg := &config.Config{
+		Version: "2.0",
+		Daemon:  &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}},
+		Forges: []*config.ForgeConfig{{
+			Name:    "forge-1",
+			Type:    config.ForgeForgejo,
+			BaseURL: "https://forgejo.example.com",
+		}},
+	}
+
+	forgeManager := forge.NewForgeManager()
+	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
+
+	d := &Daemon{
+		config:           cfg,
+		stopChan:         make(chan struct{}),
+		orchestrationBus: bus,
+		forgeManager:     forgeManager,
+		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		discoveryCache:   NewDiscoveryCache(),
+	}
+	d.status.Store(StatusRunning)
+
+	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+		Name:          "go-test-project",
+		FullName:      "org/go-test-project",
+		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
+		SSHURL:        "ssh://git@forgejo.example.com/org/go-test-project.git",
+		DefaultBranch: "main",
+		Metadata:      map[string]string{"forge_name": "forge-1"},
+	}}})
+
+	repoUpdateCh, unsubRepoUpdate := events.Subscribe[events.RepoUpdateRequested](bus, 10)
+	defer unsubRepoUpdate()
+
+	go d.runWebhookReceivedConsumer(ctx)
+
+	// Avoid flaky races where the webhook event is published before consumers subscribe.
+	require.Eventually(t, func() bool {
+		return events.SubscriberCount[events.WebhookReceived](bus) > 0
+	}, 1*time.Second, 10*time.Millisecond)
+
+	jobID := d.TriggerWebhookBuild("forge-1", "org/go-test-project", "feature-branch", nil)
+	require.NotEmpty(t, jobID)
+
+	select {
+	case <-repoUpdateCh:
+		t.Fatal("expected no repo update request for non-default branch")
+	case <-time.After(200 * time.Millisecond):
+		// ok
+	}
 }
 
 func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunning(t *testing.T) {

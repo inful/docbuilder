@@ -57,6 +57,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 
 	matchedRepoURL := ""
 	matchedDocsPaths := []string{"docs"}
+	matchedBranch := ""
 	for i := range repos {
 		repo := &repos[i]
 
@@ -79,6 +80,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		}
 
 		matchedRepoURL = repo.URL
+		matchedBranch = repo.Branch
 		if len(repo.Paths) > 0 {
 			matchedDocsPaths = repo.Paths
 		}
@@ -91,6 +93,19 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			slog.String("forge", evt.ForgeName),
 			slog.String("repo", evt.RepoFullName),
 			slog.String("branch", evt.Branch))
+		return
+	}
+
+	// DocBuilder builds are always full-site builds on the repo's configured/default
+	// branch. Ignore push events for other branches to avoid fetching refs we don't
+	// care about (and to prevent errors when feature branches are deleted).
+	if matchedBranch != "" && evt.Branch != "" && evt.Branch != matchedBranch {
+		slog.Info("Webhook push ignored (non-default branch)",
+			logfields.JobID(evt.JobID),
+			slog.String("forge", evt.ForgeName),
+			slog.String("repo", evt.RepoFullName),
+			slog.String("branch", evt.Branch),
+			slog.String("default_branch", matchedBranch))
 		return
 	}
 
@@ -116,7 +131,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		JobID:       evt.JobID,
 		Immediate:   immediate,
 		RepoURL:     matchedRepoURL,
-		Branch:      evt.Branch,
+		Branch:      strings.TrimSpace(firstNonEmpty(matchedBranch, evt.Branch)),
 		RequestedAt: time.Now(),
 	}); err != nil {
 		slog.Warn("Failed to publish repo update request",
@@ -124,6 +139,15 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			slog.String("repo_url", matchedRepoURL),
 			logfields.Error(err))
 	}
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func repoMatchesFullName(repo config.Repository, fullName string) bool {
