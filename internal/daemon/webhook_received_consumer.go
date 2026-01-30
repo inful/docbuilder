@@ -38,13 +38,15 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		return
 	}
 
+	evtBranch := normalizeGitBranchRef(evt.Branch)
+
 	repos := d.currentReposForOrchestratedBuild()
 	if len(repos) == 0 {
 		slog.Warn("Webhook received but no repositories available",
 			logfields.JobID(evt.JobID),
 			slog.String("forge", evt.ForgeName),
 			slog.String("repo", evt.RepoFullName),
-			slog.String("branch", evt.Branch))
+			slog.String("branch", evtBranch))
 		return
 	}
 
@@ -60,6 +62,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	matchedBranch := ""
 	for i := range repos {
 		repo := &repos[i]
+		repoBranch := normalizeGitBranchRef(repo.Branch)
 
 		if forgeHost != "" {
 			repoHost := extractRepoHost(repo.URL)
@@ -74,13 +77,13 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 
 		// In explicit-repo mode, honor configured branch filters.
 		if d.config != nil && len(d.config.Repositories) > 0 {
-			if evt.Branch != "" && repo.Branch != evt.Branch {
+			if evtBranch != "" && repoBranch != evtBranch {
 				continue
 			}
 		}
 
 		matchedRepoURL = repo.URL
-		matchedBranch = repo.Branch
+		matchedBranch = repoBranch
 		if len(repo.Paths) > 0 {
 			matchedDocsPaths = repo.Paths
 		}
@@ -92,19 +95,19 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			logfields.JobID(evt.JobID),
 			slog.String("forge", evt.ForgeName),
 			slog.String("repo", evt.RepoFullName),
-			slog.String("branch", evt.Branch))
+			slog.String("branch", evtBranch))
 		return
 	}
 
 	// DocBuilder builds are always full-site builds on the repo's configured/default
 	// branch. Ignore push events for other branches to avoid fetching refs we don't
 	// care about (and to prevent errors when feature branches are deleted).
-	if matchedBranch != "" && evt.Branch != "" && evt.Branch != matchedBranch {
+	if matchedBranch != "" && evtBranch != "" && evtBranch != matchedBranch {
 		slog.Info("Webhook push ignored (non-default branch)",
 			logfields.JobID(evt.JobID),
 			slog.String("forge", evt.ForgeName),
 			slog.String("repo", evt.RepoFullName),
-			slog.String("branch", evt.Branch),
+			slog.String("branch", evtBranch),
 			slog.String("default_branch", matchedBranch))
 		return
 	}
@@ -115,7 +118,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 				logfields.JobID(evt.JobID),
 				slog.String("forge", evt.ForgeName),
 				slog.String("repo", evt.RepoFullName),
-				slog.String("branch", evt.Branch),
+				slog.String("branch", evtBranch),
 				slog.Int("changed_files", len(evt.ChangedFiles)),
 				slog.Any("docs_paths", matchedDocsPaths))
 			return
@@ -131,7 +134,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		JobID:       evt.JobID,
 		Immediate:   immediate,
 		RepoURL:     matchedRepoURL,
-		Branch:      strings.TrimSpace(firstNonEmpty(matchedBranch, evt.Branch)),
+		Branch:      strings.TrimSpace(firstNonEmpty(matchedBranch, evtBranch)),
 		RequestedAt: time.Now(),
 	}); err != nil {
 		slog.Warn("Failed to publish repo update request",
@@ -139,6 +142,13 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			slog.String("repo_url", matchedRepoURL),
 			logfields.Error(err))
 	}
+}
+
+func normalizeGitBranchRef(branch string) string {
+	branch = strings.TrimSpace(branch)
+	branch = strings.TrimPrefix(branch, "refs/heads/")
+	branch = strings.TrimPrefix(branch, "refs/tags/")
+	return strings.TrimSpace(branch)
 }
 
 func firstNonEmpty(vals ...string) string {

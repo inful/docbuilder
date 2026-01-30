@@ -24,89 +24,101 @@ func (f fixedRemoteHeadChecker) CheckRemoteChanged(_ *git.RemoteHeadCache, _ con
 }
 
 func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) {
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-
-	bus := events.NewBus()
-	defer bus.Close()
-
-	bq := queue.NewBuildQueue(10, 1, noOpBuilder{})
-	bq.Start(ctx)
-	defer bq.Stop(context.Background())
-
-	cfg := &config.Config{
-		Version: "2.0",
-		Repositories: []config.Repository{{
-			Name:   "org/repo",
-			URL:    "https://forgejo.example.com/org/repo.git",
-			Branch: "main",
-			Paths:  []string{"docs"},
-		}},
+	tcs := []struct {
+		name   string
+		branch string
+	}{
+		{name: "short_branch", branch: "main"},
+		{name: "ref_heads_branch", branch: "refs/heads/main"},
 	}
 
-	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+
+			bus := events.NewBus()
+			defer bus.Close()
+
+			bq := queue.NewBuildQueue(10, 1, noOpBuilder{})
+			bq.Start(ctx)
+			defer bq.Stop(context.Background())
+
+			cfg := &config.Config{
+				Version: "2.0",
+				Repositories: []config.Repository{{
+					Name:   "org/repo",
+					URL:    "https://forgejo.example.com/org/repo.git",
+					Branch: "main",
+					Paths:  []string{"docs"},
+				}},
+			}
+
+			d := &Daemon{
+				config:           cfg,
+				stopChan:         make(chan struct{}),
+				orchestrationBus: bus,
+				buildQueue:       bq,
+			}
+			d.status.Store(StatusRunning)
+
+			debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
+				QuietWindow: 50 * time.Millisecond,
+				MaxDelay:    100 * time.Millisecond,
+				CheckBuildRunning: func() bool {
+					return len(bq.GetActiveJobs()) > 0
+				},
+				PollInterval: 5 * time.Millisecond,
+			})
+			require.NoError(t, err)
+			d.buildDebouncer = debouncer
+
+			cache, err := git.NewRemoteHeadCache("")
+			require.NoError(t, err)
+			d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+
+			repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
+			defer unsubRepoUpdated()
+
+			go d.runWebhookReceivedConsumer(ctx)
+			go d.runBuildNowConsumer(ctx)
+			go d.repoUpdater.Run(ctx)
+			go func() { _ = debouncer.Run(ctx) }()
+
+			select {
+			case <-d.repoUpdater.Ready():
+			case <-time.After(1 * time.Second):
+				t.Fatal("timed out waiting for repo updater ready")
+			}
+			select {
+			case <-debouncer.Ready():
+			case <-time.After(1 * time.Second):
+				t.Fatal("timed out waiting for debouncer ready")
+			}
+
+			// Avoid flaky races where the webhook event is published before consumers subscribe.
+			require.Eventually(t, func() bool {
+				return events.SubscriberCount[events.WebhookReceived](bus) > 0
+			}, 1*time.Second, 10*time.Millisecond)
+
+			jobID := d.TriggerWebhookBuild("", "org/repo", tc.branch, []string{"docs/README.md"})
+			require.NotEmpty(t, jobID)
+
+			select {
+			case got := <-repoUpdatedCh:
+				require.Equal(t, jobID, got.JobID)
+				require.True(t, got.Changed)
+				require.Equal(t, "deadbeef", got.CommitSHA)
+			case <-time.After(5 * time.Second):
+				t.Fatal("timed out waiting for RepoUpdated")
+			}
+
+			require.Eventually(t, func() bool {
+				job, ok := bq.JobSnapshot(jobID)
+				return ok && job != nil && job.Status == queue.BuildStatusCompleted
+			}, 5*time.Second, 10*time.Millisecond)
+		})
 	}
-	d.status.Store(StatusRunning)
-
-	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
-		QuietWindow: 50 * time.Millisecond,
-		MaxDelay:    100 * time.Millisecond,
-		CheckBuildRunning: func() bool {
-			return len(bq.GetActiveJobs()) > 0
-		},
-		PollInterval: 5 * time.Millisecond,
-	})
-	require.NoError(t, err)
-	d.buildDebouncer = debouncer
-
-	cache, err := git.NewRemoteHeadCache("")
-	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
-
-	repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
-	defer unsubRepoUpdated()
-
-	go d.runWebhookReceivedConsumer(ctx)
-	go d.runBuildNowConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
-	go func() { _ = debouncer.Run(ctx) }()
-
-	select {
-	case <-d.repoUpdater.Ready():
-	case <-time.After(1 * time.Second):
-		t.Fatal("timed out waiting for repo updater ready")
-	}
-	select {
-	case <-debouncer.Ready():
-	case <-time.After(1 * time.Second):
-		t.Fatal("timed out waiting for debouncer ready")
-	}
-
-	// Avoid flaky races where the webhook event is published before consumers subscribe.
-	require.Eventually(t, func() bool {
-		return events.SubscriberCount[events.WebhookReceived](bus) > 0
-	}, 1*time.Second, 10*time.Millisecond)
-
-	jobID := d.TriggerWebhookBuild("", "org/repo", "main", []string{"docs/README.md"})
-	require.NotEmpty(t, jobID)
-
-	select {
-	case got := <-repoUpdatedCh:
-		require.Equal(t, jobID, got.JobID)
-		require.True(t, got.Changed)
-		require.Equal(t, "deadbeef", got.CommitSHA)
-	case <-time.After(5 * time.Second):
-		t.Fatal("timed out waiting for RepoUpdated")
-	}
-
-	require.Eventually(t, func() bool {
-		job, ok := bq.JobSnapshot(jobID)
-		return ok && job != nil && job.Status == queue.BuildStatusCompleted
-	}, 5*time.Second, 10*time.Millisecond)
 }
 
 func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *testing.T) {
