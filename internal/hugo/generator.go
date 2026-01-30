@@ -101,6 +101,20 @@ func (g *Generator) existingSiteValidForSkip() bool {
 	if !g.previousReportAllowsSkip(prev) {
 		return false
 	}
+	// Align with skip evaluation: if a daemon state manager is present and its stored
+	// config hash disagrees with the current config snapshot, do not early-skip.
+	// Otherwise the daemon can get stuck serving a valid site while its state never
+	// converges, causing subsequent skip evaluations to keep failing.
+	if g.stateManager != nil {
+		type configHashReader interface{ GetLastConfigHash() string }
+		if r, ok := any(g.stateManager).(configHashReader); ok {
+			currentHash := g.ComputeConfigHashForPersistence()
+			storedHash := r.GetLastConfigHash()
+			if currentHash == "" || storedHash == "" || currentHash != storedHash {
+				return false
+			}
+		}
+	}
 	if !g.outputHasPublicIndex() {
 		return false
 	}

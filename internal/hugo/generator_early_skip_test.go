@@ -271,6 +271,30 @@ func TestExistingSiteValidForSkip_RejectsOnlyRootIndexContent(t *testing.T) {
 	}
 }
 
+type fakeConfigHashState struct{ last string }
+
+func (f fakeConfigHashState) SetRepoDocumentCount(string, int)   {}
+func (f fakeConfigHashState) SetRepoDocFilesHash(string, string) {}
+func (f fakeConfigHashState) GetLastConfigHash() string          { return f.last }
+
+func TestExistingSiteValidForSkip_RejectsConfigHashMismatchInState(t *testing.T) {
+	gen := setupExistingSiteValidForSkipProbe(t, 2)
+
+	// existingSiteValidForSkip() requires at least one markdown file besides the root content/_index.md.
+	outDir := gen.OutputDir()
+	if err := os.MkdirAll(filepath.Join(outDir, "content", "repo1"), 0o750); err != nil {
+		t.Fatalf("mkdir content repo dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(outDir, "content", "repo1", "_index.md"), []byte("# Repo\n"), 0o600); err != nil {
+		t.Fatalf("write repo index: %v", err)
+	}
+
+	gen = gen.WithStateManager(fakeConfigHashState{last: "different"})
+	if gen.ExistingSiteValidForSkip() {
+		t.Fatalf("expected ExistingSiteValidForSkip()=false when state config hash mismatches")
+	}
+}
+
 func setupExistingSiteValidForSkipProbe(t *testing.T, reportFiles int) *Generator {
 	t.Helper()
 
