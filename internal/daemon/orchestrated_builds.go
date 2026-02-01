@@ -117,8 +117,8 @@ func (d *Daemon) currentReposForOrchestratedBuild() []config.Repository {
 	}
 
 	// Forge mode: prefer the last discovery result.
-	discovered, err := d.GetDiscoveryResult()
-	if err == nil && discovered != nil && d.discovery != nil {
+	discovered, _ := d.GetDiscoveryResult()
+	if discovered != nil && d.discovery != nil {
 		return d.discovery.ConvertToConfigRepositories(discovered.Repositories, d.forgeManager)
 	}
 
