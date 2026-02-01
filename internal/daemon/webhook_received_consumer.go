@@ -41,12 +41,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	evtBranch := normalizeGitBranchRef(evt.Branch)
 
 	repos := d.currentReposForOrchestratedBuild()
-	if len(repos) == 0 {
-		slog.Warn("Webhook received but no repositories available",
-			logfields.JobID(evt.JobID),
-			slog.String("forge", evt.ForgeName),
-			slog.String("repo", evt.RepoFullName),
-			slog.String("branch", evtBranch))
+	if d.handleWebhookWithNoRepos(ctx, evt, evtBranch, repos) {
 		return
 	}
 
@@ -57,38 +52,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 		}
 	}
 
-	matchedRepoURL := ""
-	matchedDocsPaths := []string{"docs"}
-	matchedBranch := ""
-	for i := range repos {
-		repo := &repos[i]
-		repoBranch := normalizeGitBranchRef(repo.Branch)
-
-		if forgeHost != "" {
-			repoHost := extractRepoHost(repo.URL)
-			if repoHost == "" || repoHost != forgeHost {
-				continue
-			}
-		}
-
-		if !repoMatchesFullName(*repo, evt.RepoFullName) {
-			continue
-		}
-
-		// In explicit-repo mode, honor configured branch filters.
-		if d.config != nil && len(d.config.Repositories) > 0 {
-			if evtBranch != "" && repoBranch != evtBranch {
-				continue
-			}
-		}
-
-		matchedRepoURL = repo.URL
-		matchedBranch = repoBranch
-		if len(repo.Paths) > 0 {
-			matchedDocsPaths = repo.Paths
-		}
-		break
-	}
+	matchedRepoURL, matchedBranch, matchedDocsPaths := d.matchWebhookRepo(evt, evtBranch, forgeHost, repos)
 
 	if matchedRepoURL == "" {
 		slog.Warn("Webhook did not match any known repository",
@@ -141,6 +105,118 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			logfields.JobID(evt.JobID),
 			slog.String("repo_url", matchedRepoURL),
 			logfields.Error(err))
+	}
+}
+
+func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.WebhookReceived, evtBranch string, repos []config.Repository) bool {
+	if len(repos) != 0 {
+		return false
+	}
+
+	isForgeMode := d.config != nil && len(d.config.Repositories) == 0
+	if !isForgeMode {
+		slog.Warn("Webhook received but no repositories available",
+			logfields.JobID(evt.JobID),
+			slog.String("forge", evt.ForgeName),
+			slog.String("repo", evt.RepoFullName),
+			slog.String("branch", evtBranch))
+		return true
+	}
+
+	// In forge mode, repository lists come from discovery. If discovery hasn't completed
+	// yet, retry once it has populated the cache.
+	if d.discoveryRunner != nil {
+		go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+	}
+
+	slog.Warn("Webhook received but no repositories available; will retry after discovery",
+		logfields.JobID(evt.JobID),
+		slog.String("forge", evt.ForgeName),
+		slog.String("repo", evt.RepoFullName),
+		slog.String("branch", evtBranch))
+	go d.retryWebhookAfterDiscovery(ctx, events.WebhookReceived{
+		JobID:        evt.JobID,
+		ForgeName:    evt.ForgeName,
+		RepoFullName: evt.RepoFullName,
+		Branch:       evtBranch,
+		ChangedFiles: append([]string(nil), evt.ChangedFiles...),
+		ReceivedAt:   evt.ReceivedAt,
+	})
+	return true
+}
+
+func (d *Daemon) matchWebhookRepo(evt events.WebhookReceived, evtBranch string, forgeHost string, repos []config.Repository) (string, string, []string) {
+	matchedRepoURL := ""
+	matchedDocsPaths := []string{"docs"}
+	matchedBranch := ""
+
+	for i := range repos {
+		repo := &repos[i]
+		repoBranch := normalizeGitBranchRef(repo.Branch)
+
+		if forgeHost != "" {
+			repoHost := extractRepoHost(repo.URL)
+			if repoHost == "" || repoHost != forgeHost {
+				continue
+			}
+		}
+
+		if !repoMatchesFullName(*repo, evt.RepoFullName) {
+			continue
+		}
+
+		// In explicit-repo mode, honor configured branch filters.
+		if d.config != nil && len(d.config.Repositories) > 0 {
+			if evtBranch != "" && repoBranch != evtBranch {
+				continue
+			}
+		}
+
+		matchedRepoURL = repo.URL
+		matchedBranch = repoBranch
+		if len(repo.Paths) > 0 {
+			matchedDocsPaths = repo.Paths
+		}
+		break
+	}
+
+	return matchedRepoURL, matchedBranch, matchedDocsPaths
+}
+
+func (d *Daemon) retryWebhookAfterDiscovery(ctx context.Context, evt events.WebhookReceived) {
+	if d == nil || d.orchestrationBus == nil {
+		return
+	}
+	// Wait for discovery to populate the repo list, then re-publish the webhook event.
+	// This avoids dropping webhooks during startup when discovery hasn't completed.
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.NewTimer(2 * time.Minute)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-timeout.C:
+			slog.Warn("Webhook retry timed out waiting for repositories",
+				logfields.JobID(evt.JobID),
+				slog.String("forge", evt.ForgeName),
+				slog.String("repo", evt.RepoFullName))
+			return
+		case <-ticker.C:
+			repos := d.currentReposForOrchestratedBuild()
+			if len(repos) == 0 {
+				continue
+			}
+			slog.Info("Retrying webhook after discovery",
+				logfields.JobID(evt.JobID),
+				slog.String("forge", evt.ForgeName),
+				slog.String("repo", evt.RepoFullName),
+				slog.String("branch", evt.Branch))
+			_ = d.publishOrchestrationEvent(ctx, evt)
+			return
+		}
 	}
 }
 
