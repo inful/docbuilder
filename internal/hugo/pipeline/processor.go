@@ -160,7 +160,9 @@ func (p *Processor) GenerateStaticAssets() ([]*StaticAsset, error) {
 		Config: p.config,
 	}
 
-	// Use a map to handle duplicate paths (last writer wins, which is correct for merging)
+	// Use a map to handle duplicate paths. This enables the view transitions generator
+	// (which runs after template metadata) to merge its content with the template metadata
+	// partial generated earlier, creating a single custom-header.html with both features.
 	assetMap := make(map[string]*StaticAsset)
 
 	for i, generator := range p.staticAssetGenerators {
