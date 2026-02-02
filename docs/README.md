@@ -33,6 +33,8 @@ Task-oriented guides:
 - [Prune Workspace Size](how-to/prune-workspace-size.md)
 - [Run Incremental Builds](how-to/run-incremental-builds.md)
 - [Setup Linting](how-to/setup-linting.md)
+- [Use Templates](how-to/use-templates.md)
+- [Author Templates](how-to/author-templates.md)
 - [Use Relearn Theme](how-to/use-relearn-theme.md)
 - [Write Cross-Document Links](how-to/write-cross-document-links.md)
 
