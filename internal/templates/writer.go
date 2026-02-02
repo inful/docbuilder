@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 // WriteGeneratedFile writes content to a path under docsDir and returns full path.
@@ -35,6 +36,10 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	// #nosec G304 -- fullPath is validated to stay under docsDir.
 	file, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
+		// Check if error is due to file already existing
+		if errors.Is(err, os.ErrExist) || errors.Is(err, syscall.EEXIST) {
+			return "", fmt.Errorf("file already exists: %s", fullPath)
+		}
 		return "", fmt.Errorf("write output file: %w", err)
 	}
 	defer func() {
