@@ -126,11 +126,9 @@ func TestIsMarkdownCodeNode_VariousClasses(t *testing.T) {
 			if tc.valid {
 				require.NoError(t, err)
 				require.NotNil(t, page)
-			} else {
+			} else if err == nil {
 				// If not valid, it should either error or not find the code block
-				if err == nil {
-					require.Empty(t, page.Body)
-				}
+				require.Empty(t, page.Body)
 			}
 		})
 	}
