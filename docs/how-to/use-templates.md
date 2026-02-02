@@ -148,11 +148,20 @@ Tags: api, reference, v2
 
 ### Boolean
 
-Yes/no prompt:
+Accepts true/false values:
 
 ```
-Published (y/n): y
+Published: true
 ```
+
+**Accepted values:**
+- `true`, `false`
+- `t`, `f`
+- `1`, `0`
+- `TRUE`, `FALSE`, `True`, `False`
+- `T`, `F`
+
+**Note:** The prompt does not show "(y/n)" - enter one of the accepted values above.
 
 ## Examples
 

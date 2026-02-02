@@ -89,12 +89,21 @@ func TestViewTransitionsDisabled(t *testing.T) {
 	err := gen.GenerateSite([]docs.DocFile{})
 	require.NoError(t, err)
 
-	// Verify assets were NOT created
+	// Verify view transitions assets were NOT created
 	cssPath := filepath.Join(outputDir, "static", "view-transitions.css")
 	assert.NoFileExists(t, cssPath, "CSS asset should not be created when transitions disabled")
 
+	// Template metadata partial should always exist (required for template discovery)
 	partialPath := filepath.Join(outputDir, "layouts", "partials", "custom-header.html")
-	assert.NoFileExists(t, partialPath, "HTML partial should not be created when transitions disabled")
+	assert.FileExists(t, partialPath, "HTML partial should exist for template metadata")
+
+	// Verify the partial does NOT contain view transitions code
+	// #nosec G304 -- test utility reading from test output directory
+	htmlContent, err := os.ReadFile(partialPath)
+	require.NoError(t, err)
+	assert.NotContains(t, string(htmlContent), ".Site.Params.enable_transitions", "HTML partial should not contain view transitions code when disabled")
+	assert.NotContains(t, string(htmlContent), "/view-transitions.css", "HTML partial should not reference view transitions CSS when disabled")
+	assert.Contains(t, string(htmlContent), "docbuilder:template.type", "HTML partial should contain template metadata code")
 
 	// Verify Hugo config does NOT have enable_transitions param
 	hugoConfigPath := filepath.Join(outputDir, "hugo.yaml")

@@ -23,9 +23,11 @@ func TestParseTemplateDiscovery_ExtractsTemplates(t *testing.T) {
 
 	require.Equal(t, "adr", got[0].Type)
 	require.Equal(t, "https://docs.example.com/path/adr.template/index.html", got[0].URL)
+	require.Equal(t, "adr.template", got[0].Name) // Name should be populated from anchor text
 
 	require.Equal(t, "runbook", got[1].Type)
 	require.Equal(t, "https://docs.example.com/path/runbook.template/", got[1].URL)
+	require.Equal(t, "runbook", got[1].Name) // Name should fallback to type when anchor text is empty
 }
 
 func TestParseTemplateDiscovery_NoTemplates(t *testing.T) {

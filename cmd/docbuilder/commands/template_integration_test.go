@@ -130,6 +130,120 @@ categories:
 	return httptest.NewServer(mux)
 }
 
+// singleTemplateServer creates a test HTTP server that serves only one specific template.
+// This is useful for tests that don't need template selection prompts.
+func singleTemplateServer(t *testing.T, templateType string) *httptest.Server {
+	t.Helper()
+
+	mux := http.NewServeMux()
+
+	// Discovery page: /categories/templates/
+	mux.HandleFunc("/categories/templates/", func(w http.ResponseWriter, r *http.Request) {
+		var html string
+		if templateType == "adr" {
+			html = `<!DOCTYPE html>
+<html>
+<head><title>Templates</title></head>
+<body>
+	<h1>Templates</h1>
+	<ul>
+		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
+	</ul>
+</body>
+</html>`
+		} else if templateType == "guide" {
+			html = `<!DOCTYPE html>
+<html>
+<head><title>Templates</title></head>
+<body>
+	<h1>Templates</h1>
+	<ul>
+		<li><a href="/templates/guide.template/index.html">guide.template</a></li>
+	</ul>
+</body>
+</html>`
+		}
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(html))
+	})
+
+	// ADR template page
+	mux.HandleFunc("/templates/adr.template/index.html", func(w http.ResponseWriter, r *http.Request) {
+		html := `<!DOCTYPE html>
+<html>
+<head>
+	<meta property="docbuilder:template.type" content="adr">
+	<meta property="docbuilder:template.name" content="Architecture Decision Record">
+	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
+	<meta property="docbuilder:template.description" content="Create a new ADR">
+	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
+	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
+	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
+</head>
+<body>
+	<h1>ADR Template</h1>
+	<pre><code class="language-markdown">---
+title: "{{ .Title }}"
+categories:
+  - {{ index .categories 0 }}
+date: 2026-01-01T00:00:00Z
+slug: "{{ .Slug }}"
+---
+
+# {{ .Title }}
+
+**Status**: Proposed
+
+## Context
+
+## Decision
+
+## Consequences
+</code></pre>
+</body>
+</html>`
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(html))
+	})
+
+	// Guide template page
+	mux.HandleFunc("/templates/guide.template/index.html", func(w http.ResponseWriter, r *http.Request) {
+		html := `<!DOCTYPE html>
+<html>
+<head>
+	<meta property="docbuilder:template.type" content="guide">
+	<meta property="docbuilder:template.name" content="How-To Guide">
+	<meta property="docbuilder:template.output_path" content="guides/{{ .Slug }}.md">
+	<meta property="docbuilder:template.description" content="Create a new how-to guide">
+	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true},{"key":"Category","type":"string_enum","required":true,"options":["getting-started","advanced","reference"]}]}'>
+</head>
+<body>
+	<h1>Guide Template</h1>
+	<pre><code class="language-markdown">---
+title: "{{ .Title }}"
+categories:
+  - {{ .Category }}
+date: 2026-01-01T00:00:00Z
+slug: "{{ .Slug }}"
+---
+
+# {{ .Title }}
+
+## Overview
+
+## Steps
+
+## Next Steps
+</code></pre>
+</body>
+</html>`
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(html))
+	})
+
+	return httptest.NewServer(mux)
+}
+
 func TestTemplateList_Integration(t *testing.T) {
 	server := templateServer(t)
 	defer server.Close()
