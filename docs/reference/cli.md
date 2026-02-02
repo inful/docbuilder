@@ -26,6 +26,7 @@ DocBuilder provides a unified command-line interface for building documentation 
 | `init` | Create example configuration file |
 | `discover` | List documentation files found in repositories (debugging) |
 | `lint` | Check documentation for errors and style issues |
+| `template` | Create new documentation pages from templates |
 | `daemon` | Run continuous documentation server with webhooks |
 | `preview` | Preview local documentation with live reload |
 
