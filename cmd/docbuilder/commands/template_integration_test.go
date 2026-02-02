@@ -701,6 +701,80 @@ slug: "{{ .Slug }}"
 	require.Contains(t, content, "prompted-slug")
 }
 
+func TestTemplateNew_ConfirmOutputPath_Integration(t *testing.T) {
+	server := singleTemplateServer(t, "adr")
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+	configPath := createTestConfig(t, tmpDir)
+
+	oldCwd, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() { _ = os.Chdir(oldCwd) }()
+	require.NoError(t, os.Chdir(tmpDir))
+
+	// Create mock stdin for confirmation prompt
+	rStdin, wStdin, err := os.Pipe()
+	require.NoError(t, err)
+	oldStdin := os.Stdin
+	os.Stdin = rStdin
+	defer func() {
+		os.Stdin = oldStdin
+		_ = rStdin.Close()
+		_ = wStdin.Close()
+	}()
+
+	// Test case 1: User confirms (y)
+	t.Run("UserConfirms", func(t *testing.T) {
+		go func() {
+			_, _ = wStdin.WriteString("y\n")
+		}()
+
+		cmd := &TemplateNewCmd{
+			BaseURL: server.URL,
+			Set:     []string{"Title=Test ADR", "Slug=test-adr"},
+			Yes:     false, // Allow confirmation prompt
+		}
+		cli := &CLI{
+			Config: configPath,
+		}
+
+		err = cmd.Run(&Global{}, cli)
+		require.NoError(t, err)
+
+		expectedPath := filepath.Join(docsDir, "adr", "adr-001-test-adr.md")
+		require.FileExists(t, expectedPath)
+	})
+
+	// Test case 2: User declines (n)
+	t.Run("UserDeclines", func(t *testing.T) {
+		// Clean up previous file
+		_ = os.RemoveAll(filepath.Join(docsDir, "adr"))
+
+		go func() {
+			_, _ = wStdin.WriteString("n\n")
+		}()
+
+		cmd := &TemplateNewCmd{
+			BaseURL: server.URL,
+			Set:     []string{"Title=Test ADR 2", "Slug=test-adr-2"},
+			Yes:     false,
+		}
+		cli := &CLI{
+			Config: configPath,
+		}
+
+		err = cmd.Run(&Global{}, cli)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "aborted")
+
+		expectedPath := filepath.Join(docsDir, "adr", "adr-001-test-adr-2.md")
+		require.NoFileExists(t, expectedPath)
+	})
+}
+
 func TestTemplateNew_ErrorHandling_Integration(t *testing.T) {
 	t.Run("invalid base URL", func(t *testing.T) {
 		cmd := &TemplateListCmd{

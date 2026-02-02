@@ -65,3 +65,73 @@ func TestParseTemplatePage_MultipleMarkdownBlocks(t *testing.T) {
 	_, err := ParseTemplatePage(strings.NewReader(html))
 	require.Error(t, err)
 }
+
+func TestIsMarkdownCodeNode_VariousClasses(t *testing.T) {
+	testCases := []struct {
+		name  string
+		html  string
+		valid bool
+	}{
+		{
+			name:  "language-markdown",
+			html:  `<pre><code class="language-markdown"># test</code></pre>`,
+			valid: true,
+		},
+		{
+			name:  "language-md",
+			html:  `<pre><code class="language-md"># test</code></pre>`,
+			valid: true,
+		},
+		{
+			name:  "lang-markdown",
+			html:  `<pre><code class="lang-markdown"># test</code></pre>`,
+			valid: true,
+		},
+		{
+			name:  "lang-md",
+			html:  `<pre><code class="lang-md"># test</code></pre>`,
+			valid: true,
+		},
+		{
+			name:  "markdown",
+			html:  `<pre><code class="markdown"># test</code></pre>`,
+			valid: true,
+		},
+		{
+			name:  "not in pre",
+			html:  `<code class="language-markdown"># test</code>`,
+			valid: false,
+		},
+		{
+			name:  "wrong language",
+			html:  `<pre><code class="language-python">print("test")</code></pre>`,
+			valid: false,
+		},
+		{
+			name:  "no class",
+			html:  `<pre><code># test</code></pre>`,
+			valid: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			html := `<html><head>
+				<meta property="docbuilder:template.type" content="adr">
+				<meta property="docbuilder:template.name" content="ADR">
+				<meta property="docbuilder:template.output_path" content="adr/adr-001.md">
+			</head><body>` + tc.html + `</body></html>`
+
+			page, err := ParseTemplatePage(strings.NewReader(html))
+			if tc.valid {
+				require.NoError(t, err)
+				require.NotNil(t, page)
+			} else {
+				// If not valid, it should either error or not find the code block
+				if err == nil {
+					require.Empty(t, page.Body)
+				}
+			}
+		})
+	}
+}

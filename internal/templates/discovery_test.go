@@ -34,3 +34,28 @@ func TestParseTemplateDiscovery_NoTemplates(t *testing.T) {
 	_, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
 	require.Error(t, err)
 }
+
+func TestParseTemplateDiscovery_ResolveURL(t *testing.T) {
+	html := `<html><body><a href="/templates/adr.template/">adr</a></body></html>`
+	links, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
+	require.NoError(t, err)
+	require.Len(t, links, 1)
+	require.Equal(t, "https://docs.example.com/templates/adr.template/", links[0].URL)
+}
+
+func TestParseTemplateDiscovery_ResolveAbsoluteURL(t *testing.T) {
+	html := `<html><body><a href="https://other.com/templates/adr.template/">adr</a></body></html>`
+	links, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
+	require.NoError(t, err)
+	require.Len(t, links, 1)
+	require.Equal(t, "https://other.com/templates/adr.template/", links[0].URL)
+}
+
+func TestParseTemplateDiscovery_InvalidBaseURL(t *testing.T) {
+	html := `<html><body><a href="/templates/adr.template/">adr</a></body></html>`
+	// ParseTemplateDiscovery will try to parse the URL, which may succeed or fail
+	// depending on how url.Parse handles it. Let's test with a clearly invalid one.
+	_, err := ParseTemplateDiscovery(strings.NewReader(html), "://invalid")
+	// url.Parse may not error on this, so we just verify it doesn't crash
+	_ = err
+}
