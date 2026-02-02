@@ -296,10 +296,13 @@ docbuilder template list --base-url https://docs.example.com
 
 ### File Already Exists
 
-**Solution:** The CLI will not overwrite existing files. Either:
-- Delete the existing file
-- Choose a different slug/name
-- Use a different output path pattern
+**Error:** `file already exists: docs/path/to/file.md`
+
+**Solution:** The CLI **never overwrites existing files** to prevent accidental data loss. To resolve:
+- Delete the existing file if you want to replace it
+- Choose a different slug/name to create a new file
+- Use a different output path pattern in your template
+- Check if the file was already created from a previous run
 
 ## Best Practices
 

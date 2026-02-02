@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -771,14 +772,20 @@ func TestTemplateNew_BaseURLResolution_Integration(t *testing.T) {
 	defer server.Close()
 
 	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, "config.yaml")
+	configPath := createTestConfig(t, tmpDir)
+	// Overwrite to set hugo.base_url
 	configContent := fmt.Sprintf(`version: "2.0"
-repositories:
-  - url: file:///dev/null
-    name: dummy
-    branch: main
+forges:
+  - name: "dummy-forge"
+    type: "github"
+    api_url: "https://api.github.com"
+    base_url: "https://github.com"
+    organizations: ["test-org"]
+    auth:
+      type: "token"
+      token: "dummy-token"
 hugo:
-  base_url: %s
+  base_url: "%s"
 `, server.URL)
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
 
@@ -813,6 +820,11 @@ hugo:
 
 	err = cmd.Run(&Global{}, cli)
 	require.NoError(t, err)
+
+	// Close the write end to ensure all data is flushed
+	_ = w.Close()
+	// Give a moment for the goroutine to finish copying
+	time.Sleep(10 * time.Millisecond)
 
 	output := stdout.String()
 	require.Contains(t, output, "adr")
