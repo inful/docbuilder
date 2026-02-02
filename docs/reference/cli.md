@@ -147,6 +147,105 @@ docbuilder lint -f json
 
 Note: `docbuilder lint --fix` may update markdown file content beyond renames/link rewrites, including regenerating frontmatter `fingerprint` values and setting `lastmod` (UTC `YYYY-MM-DD`) when a fingerprint changes.
 
+## Template Command
+
+Create new documentation pages from templates hosted in your documentation site.
+
+```bash
+docbuilder template <subcommand> [flags]
+```
+
+### Subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `list` | List available templates from a documentation site |
+| `new` | Create a new document from a selected template |
+
+### Template List
+
+List available templates from a documentation site.
+
+```bash
+docbuilder template list [flags]
+```
+
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--base-url URL` | Base URL for template discovery (required if not in config/env) |
+
+#### Examples
+
+```bash
+# List templates from explicit URL
+docbuilder template list --base-url https://docs.example.com
+
+# Using environment variable
+export DOCBUILDER_TEMPLATE_BASE_URL=https://docs.example.com
+docbuilder template list
+
+# Using config file
+docbuilder template list -c config.yaml  # Uses config.hugo.base_url
+```
+
+### Template New
+
+Create a new document from a template.
+
+```bash
+docbuilder template new [flags]
+```
+
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--base-url URL` | Base URL for template discovery |
+| `--set KEY=VALUE` | Override template field (repeatable) |
+| `--defaults` | Use template defaults and skip prompts |
+| `-y, --yes` | Auto-confirm file creation without prompting |
+
+#### Base URL Resolution
+
+Resolved in order:
+1. `--base-url` flag
+2. `DOCBUILDER_TEMPLATE_BASE_URL` environment variable
+3. `hugo.base_url` from config (if `-c/--config` provided)
+4. Error if none found
+
+#### Examples
+
+```bash
+# Interactive mode (prompts for all fields)
+docbuilder template new --base-url https://docs.example.com
+
+# With pre-filled values
+docbuilder template new --base-url https://docs.example.com \
+  --set Title="New Feature" \
+  --set Slug="new-feature"
+
+# Use defaults only
+docbuilder template new --base-url https://docs.example.com \
+  --set Title="Quick Start" \
+  --defaults
+
+# CI/CD mode (no prompts, auto-confirm)
+docbuilder template new --base-url https://docs.example.com \
+  --set Title="Release Notes" \
+  --set Slug="release-1.0" \
+  --yes
+```
+
+#### Generated File Processing
+
+After creating a file, DocBuilder automatically:
+1. Writes the file to `docs/` (or path specified by template)
+2. Runs `docbuilder lint --fix` to ensure proper frontmatter
+
+See [Using Templates](../how-to/use-templates.md) for detailed usage guide.
+
 ## Daemon Command
 
 Run continuous documentation server with webhook support.
