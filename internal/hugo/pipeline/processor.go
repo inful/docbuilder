@@ -160,7 +160,9 @@ func (p *Processor) GenerateStaticAssets() ([]*StaticAsset, error) {
 		Config: p.config,
 	}
 
-	var allAssets []*StaticAsset
+	// Use a map to handle duplicate paths (last writer wins, which is correct for merging)
+	assetMap := make(map[string]*StaticAsset)
+
 	for i, generator := range p.staticAssetGenerators {
 		assets, err := generator(ctx)
 		if err != nil {
@@ -171,7 +173,17 @@ func (p *Processor) GenerateStaticAssets() ([]*StaticAsset, error) {
 				slog.Int("count", len(assets)),
 				slog.Int("generator", i))
 		}
-		allAssets = append(allAssets, assets...)
+		// Store assets by path (later generators overwrite earlier ones for same path)
+		// This allows view transitions to merge with template metadata
+		for _, asset := range assets {
+			assetMap[asset.Path] = asset
+		}
+	}
+
+	// Convert map back to slice
+	allAssets := make([]*StaticAsset, 0, len(assetMap))
+	for _, asset := range assetMap {
+		allAssets = append(allAssets, asset)
 	}
 
 	slog.Info("Pipeline: Static asset generation complete", slog.Int("total", len(allAssets)))
@@ -213,6 +225,7 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 // defaultStaticAssetGenerators returns the standard set of static asset generators.
 func defaultStaticAssetGenerators() []StaticAssetGenerator {
 	return []StaticAssetGenerator{
-		generateViewTransitionsAssets, // Generate View Transitions API assets if enabled
+		generateTemplateMetadataAssets, // Always generate template metadata partial (required for template discovery)
+		generateViewTransitionsAssets,  // Generate View Transitions API assets if enabled (will merge with template metadata)
 	}
 }

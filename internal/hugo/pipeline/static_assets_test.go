@@ -87,7 +87,7 @@ func TestGenerateStaticAssets_WithTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	require.Len(t, assets, 2, "should generate 2 assets when transitions enabled")
+	require.Len(t, assets, 2, "should generate 2 assets when transitions enabled: CSS and merged header")
 
 	// Verify assets structure
 	var cssFound, htmlFound bool
@@ -99,11 +99,15 @@ func TestGenerateStaticAssets_WithTransitions(t *testing.T) {
 		if asset.Path == "layouts/partials/custom-header.html" {
 			htmlFound = true
 			assert.NotEmpty(t, asset.Content)
+			// Should contain both view transitions and template metadata
+			content := string(asset.Content)
+			assert.Contains(t, content, "view-transitions", "should contain view transitions")
+			assert.Contains(t, content, "docbuilder:template", "should contain template metadata")
 		}
 	}
 
 	assert.True(t, cssFound, "CSS asset should be generated")
-	assert.True(t, htmlFound, "HTML partial asset should be generated")
+	assert.True(t, htmlFound, "HTML partial asset should be generated with merged content")
 }
 
 func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
@@ -118,26 +122,47 @@ func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	assert.Empty(t, assets, "should not generate assets when transitions disabled")
+	// Template metadata partial is always generated (required for template discovery)
+	require.Len(t, assets, 1, "should generate template metadata partial even when transitions disabled")
+
+	// Verify it's the template metadata partial
+	found := false
+	for _, asset := range assets {
+		if asset.Path == "layouts/partials/custom-header.html" {
+			found = true
+			assert.Contains(t, string(asset.Content), "docbuilder:template", "should contain template metadata")
+			assert.NotContains(t, string(asset.Content), "view-transitions", "should not contain view transitions when disabled")
+		}
+	}
+	assert.True(t, found, "should generate custom-header.html with template metadata")
 }
 
 func TestDefaultStaticAssetGenerators(t *testing.T) {
 	generators := defaultStaticAssetGenerators()
-	require.Len(t, generators, 1, "should have exactly one default generator")
+	require.Len(t, generators, 2, "should have two default generators: template metadata and view transitions")
 
-	// Test the generator with enabled transitions
+	// Test template metadata generator (always runs)
 	ctx := &GenerationContext{
 		Config: &config.Config{
 			Hugo: config.HugoConfig{
-				EnablePageTransitions: true,
+				EnablePageTransitions: false,
 			},
 		},
 	}
 
-	assets, err := generators[0](ctx)
+	assets, err := generators[0](ctx) // Template metadata generator
 	require.NoError(t, err)
 	require.NotNil(t, assets)
-	assert.Len(t, assets, 2, "default generator should produce 2 assets when enabled")
+	require.Len(t, assets, 1, "template metadata generator should always produce 1 asset")
+	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
+	assert.Contains(t, string(assets[0].Content), "docbuilder:template")
+
+	// Test view transitions generator (only when enabled)
+	ctx.Config.Hugo.EnablePageTransitions = true
+	assets, err = generators[1](ctx) // View transitions generator
+	require.NoError(t, err)
+	require.NotNil(t, assets)
+	assert.Len(t, assets, 2, "view transitions generator should produce 2 assets when enabled")
 }
 
 func TestStaticAssetContent(t *testing.T) {
