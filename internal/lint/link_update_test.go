@@ -304,6 +304,7 @@ See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 
 // TestApplyLinkUpdates_AtomicRollback tests that updates are rolled back on error.
 func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
+	skipIfRoot(t)
 	tmpDir := t.TempDir()
 	source1 := filepath.Join(tmpDir, "source1.md")
 	source2 := filepath.Join(tmpDir, "source2.md")
@@ -699,6 +700,7 @@ Reference to [Errors](../api-guide.md#errors).
 
 // TestApplyLinkUpdates_RollbackOnFailure tests that changes are rolled back on failure.
 func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
+	skipIfRoot(t)
 	tmpDir := t.TempDir()
 	source1 := filepath.Join(tmpDir, "source1.md")
 	source2 := filepath.Join(tmpDir, "source2.md")

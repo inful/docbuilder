@@ -271,6 +271,7 @@ func TestFix_FindLinksError(t *testing.T) {
 
 // TestFix_ApplyLinkUpdatesError tests handling of applyLinkUpdates error.
 func TestFix_ApplyLinkUpdatesError(t *testing.T) {
+	skipIfRoot(t)
 	tmpDir := t.TempDir()
 
 	// Create a file to rename
