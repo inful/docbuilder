@@ -11,9 +11,18 @@ import (
 	"time"
 )
 
+// maxTemplateResponseBytes is the maximum size of template page responses (5MB).
+// This prevents memory exhaustion from malicious or malformed responses.
 const maxTemplateResponseBytes = 5 * 1024 * 1024
 
-// NewTemplateHTTPClient creates an HTTP client with safe defaults.
+// NewTemplateHTTPClient creates an HTTP client configured for safe template fetching.
+//
+// The client has:
+//   - 10 second timeout to prevent hanging requests
+//   - Redirect protection (blocks cross-host redirects, limits to 5 redirects)
+//   - No automatic cookie handling (stateless requests)
+//
+// Returns a client suitable for fetching template discovery pages and template pages.
 func NewTemplateHTTPClient() *http.Client {
 	return &http.Client{
 		Timeout: 10 * time.Second,
@@ -32,7 +41,24 @@ func NewTemplateHTTPClient() *http.Client {
 	}
 }
 
-// FetchTemplateDiscovery retrieves and parses the template discovery page.
+// FetchTemplateDiscovery fetches and parses the template discovery page from a documentation site.
+//
+// The discovery page is expected at <baseURL>/categories/templates/ and contains
+// links to individual template pages.
+//
+// Parameters:
+//   - ctx: Context for request cancellation/timeout
+//   - baseURL: Base URL of the documentation site (e.g., "https://docs.example.com")
+//   - client: HTTP client (if nil, uses NewTemplateHTTPClient())
+//
+// Returns:
+//   - A slice of discovered TemplateLink structs
+//   - An error if the URL is invalid, request fails, or parsing fails
+//
+// Example:
+//
+//	client := NewTemplateHTTPClient()
+//	links, err := FetchTemplateDiscovery(ctx, "https://docs.example.com", client)
 func FetchTemplateDiscovery(ctx context.Context, baseURL string, client *http.Client) ([]TemplateLink, error) {
 	if client == nil {
 		client = NewTemplateHTTPClient()
@@ -50,10 +76,28 @@ func FetchTemplateDiscovery(ctx context.Context, baseURL string, client *http.Cl
 		return nil, err
 	}
 
-	return ParseTemplateDiscovery(root.String(), strings.NewReader(string(body)))
+	return ParseTemplateDiscovery(strings.NewReader(string(body)), root.String())
 }
 
-// FetchTemplatePage retrieves and parses a template page.
+// FetchTemplatePage fetches and parses a single template page from a documentation site.
+//
+// The template page is an HTML document containing:
+//   - Metadata in <meta property="docbuilder:template.*"> tags
+//   - Template body in a <pre><code class="language-markdown"> block
+//
+// Parameters:
+//   - ctx: Context for request cancellation/timeout
+//   - templateURL: Full URL to the template page
+//   - client: HTTP client (if nil, uses NewTemplateHTTPClient())
+//
+// Returns:
+//   - A parsed TemplatePage with metadata and body
+//   - An error if the URL is invalid, request fails, or parsing fails
+//
+// Example:
+//
+//	client := NewTemplateHTTPClient()
+//	page, err := FetchTemplatePage(ctx, "https://docs.example.com/templates/adr.template/", client)
 func FetchTemplatePage(ctx context.Context, templateURL string, client *http.Client) (*TemplatePage, error) {
 	if client == nil {
 		client = NewTemplateHTTPClient()
@@ -70,6 +114,12 @@ func FetchTemplatePage(ctx context.Context, templateURL string, client *http.Cli
 	return ParseTemplatePage(strings.NewReader(string(body)))
 }
 
+// fetchHTML fetches HTML content from a URL with size limits and error handling.
+//
+// The function:
+//   - Limits response size to maxTemplateResponseBytes
+//   - Validates HTTP status codes (200-299)
+//   - Handles request cancellation via context
 func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, http.NoBody)
 	if err != nil {
@@ -99,6 +149,10 @@ func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte
 	return data, nil
 }
 
+// validateTemplateURL validates that a URL is safe for template fetching.
+//
+// Only http:// and https:// schemes are allowed. This prevents file://, data:,
+// and other potentially dangerous schemes.
 func validateTemplateURL(raw string) (*url.URL, error) {
 	parsed, err := url.Parse(raw)
 	if err != nil {

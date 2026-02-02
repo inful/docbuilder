@@ -9,24 +9,75 @@ import (
 	"golang.org/x/net/html"
 )
 
-// TemplateMeta contains metadata extracted from docbuilder:* meta tags.
+// TemplateMeta contains metadata extracted from docbuilder:* HTML meta tags.
+//
+// All metadata is stored as strings (JSON for complex types) and must be parsed
+// separately using ParseTemplateSchema, ParseTemplateDefaults, etc.
 type TemplateMeta struct {
-	Type        string
-	Name        string
-	OutputPath  string
+	// Type is the canonical template identifier (e.g., "adr", "guide").
+	// Required. Extracted from "docbuilder:template.type" meta tag.
+	Type string
+
+	// Name is the human-friendly display name shown in template lists.
+	// Required. Extracted from "docbuilder:template.name" meta tag.
+	Name string
+
+	// OutputPath is a Go template string defining where generated files are written.
+	// Required. Extracted from "docbuilder:template.output_path" meta tag.
+	// Example: "adr/adr-{{ printf \"%03d\" (nextInSequence \"adr\") }}-{{ .Slug }}.md"
+	OutputPath string
+
+	// Description is an optional brief description of the template.
+	// Extracted from "docbuilder:template.description" meta tag.
 	Description string
-	Schema      string
-	Defaults    string
-	Sequence    string
+
+	// Schema is a JSON string defining input fields and their types.
+	// Extracted from "docbuilder:template.schema" meta tag.
+	// See TemplateSchema for the structure.
+	Schema string
+
+	// Defaults is a JSON object string providing default values for fields.
+	// Extracted from "docbuilder:template.defaults" meta tag.
+	Defaults string
+
+	// Sequence is a JSON object string defining sequential numbering configuration.
+	// Extracted from "docbuilder:template.sequence" meta tag.
+	// See SequenceDefinition for the structure.
+	Sequence string
 }
 
-// TemplatePage represents a parsed template page and its markdown body.
+// TemplatePage represents a fully parsed template page with metadata and body.
 type TemplatePage struct {
+	// Meta contains all template metadata extracted from HTML meta tags.
 	Meta TemplateMeta
+
+	// Body is the raw markdown template content extracted from the code block.
+	// This is the template that will be rendered with user inputs.
 	Body string
 }
 
-// ParseTemplatePage extracts template metadata and the markdown body from a template page.
+// ParseTemplatePage parses an HTML template page and extracts metadata and markdown body.
+//
+// The function:
+//   - Extracts metadata from <meta property="docbuilder:template.*"> tags in the <head>
+//   - Finds the first <pre><code class="language-markdown"> block in the <body>
+//   - Validates that required metadata (type, name, output_path) is present
+//   - Ensures exactly one markdown code block exists
+//
+// Parameters:
+//   - r: HTML content reader (typically from HTTP response body)
+//
+// Returns:
+//   - A TemplatePage with parsed metadata and body
+//   - An error if required metadata is missing, no code block is found, or multiple blocks exist
+//
+// Example:
+//
+//	page, err := ParseTemplatePage(htmlReader)
+//	if err != nil {
+//	    return err
+//	}
+//	fmt.Printf("Template: %s (%s)\n", page.Meta.Name, page.Meta.Type)
 func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
@@ -84,6 +135,10 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 	return result, nil
 }
 
+// isMarkdownCodeNode checks if an HTML node is a markdown code block.
+//
+// A markdown code block is a <code> element inside a <pre> element with a class
+// containing "language-markdown", "language-md", "lang-markdown", "lang-md", or "markdown".
 func isMarkdownCodeNode(n *html.Node) bool {
 	if n == nil || n.Data != "code" {
 		return false

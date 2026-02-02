@@ -17,7 +17,7 @@ func TestParseTemplateDiscovery_ExtractsTemplates(t *testing.T) {
 			</body>
 		</html>`
 
-	got, err := ParseTemplateDiscovery("https://docs.example.com", strings.NewReader(html))
+	got, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
 	require.NoError(t, err)
 	require.Len(t, got, 2)
 
@@ -31,6 +31,6 @@ func TestParseTemplateDiscovery_ExtractsTemplates(t *testing.T) {
 func TestParseTemplateDiscovery_NoTemplates(t *testing.T) {
 	html := `<html><body><a href="/path/regular/"></a></body></html>`
 
-	_, err := ParseTemplateDiscovery("https://docs.example.com", strings.NewReader(html))
+	_, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
 	require.Error(t, err)
 }
