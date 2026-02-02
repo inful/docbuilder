@@ -1,0 +1,29 @@
+{{- /* Template metadata injection for DocBuilder templates */ -}}
+{{- if isset .Params "docbuilder" -}}
+  {{- if isset .Params.docbuilder "template" -}}
+    {{- $tmpl := .Params.docbuilder.template -}}
+    {{- if isset $tmpl "type" -}}
+<meta property="docbuilder:template.type" content="{{ $tmpl.type }}">
+    {{- end -}}
+    {{- if isset $tmpl "name" -}}
+<meta property="docbuilder:template.name" content="{{ $tmpl.name }}">
+    {{- end -}}
+    {{- if isset $tmpl "output_path" -}}
+<meta property="docbuilder:template.output_path" content="{{ $tmpl.output_path }}">
+    {{- end -}}
+    {{- if isset $tmpl "description" -}}
+<meta property="docbuilder:template.description" content="{{ $tmpl.description }}">
+    {{- end -}}
+    {{- if isset $tmpl "schema" -}}
+<meta property="docbuilder:template.schema" content="{{ $tmpl.schema }}">
+    {{- end -}}
+    {{- if isset $tmpl "defaults" -}}
+<meta property="docbuilder:template.defaults" content="{{ $tmpl.defaults }}">
+    {{- end -}}
+    {{- if isset $tmpl "sequence" -}}
+      {{- if and (isset $tmpl.sequence "name") (isset $tmpl.sequence "dir") (isset $tmpl.sequence "glob") (isset $tmpl.sequence "regex") -}}
+<meta property="docbuilder:template.sequence" content="{{ $tmpl.sequence | jsonify }}">
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
