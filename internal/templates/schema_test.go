@@ -27,3 +27,27 @@ func TestParseTemplateDefaults(t *testing.T) {
 	require.Equal(t, []any{"a", "b"}, defaults["Tags"])
 	require.Equal(t, true, defaults["Published"])
 }
+
+func TestParseTemplateSchema_Empty(t *testing.T) {
+	schema, err := ParseTemplateSchema("")
+	require.NoError(t, err)
+	require.Len(t, schema.Fields, 0)
+}
+
+func TestParseTemplateSchema_InvalidJSON(t *testing.T) {
+	_, err := ParseTemplateSchema(`{"fields":[{"key":"Title"`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse template schema")
+}
+
+func TestParseTemplateDefaults_Empty(t *testing.T) {
+	defaults, err := ParseTemplateDefaults("")
+	require.NoError(t, err)
+	require.Len(t, defaults, 0)
+}
+
+func TestParseTemplateDefaults_InvalidJSON(t *testing.T) {
+	_, err := ParseTemplateDefaults(`{"Title":"My Title"`)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "parse template defaults")
+}
