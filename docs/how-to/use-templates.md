@@ -267,6 +267,15 @@ After creating a file, DocBuilder automatically:
 
 This ensures generated files immediately conform to DocBuilder standards.
 
+### File Protection
+
+**Important:** DocBuilder **never overwrites existing files**. If the target file already exists, the command will fail with a clear error message: `file already exists: docs/path/to/file.md`. This prevents accidental data loss.
+
+To resolve:
+- Delete the existing file if you want to replace it
+- Choose a different slug/name to create a new file
+- Use a different output path pattern in your template
+
 ## Troubleshooting
 
 ### "template base URL is required"
