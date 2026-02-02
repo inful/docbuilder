@@ -10,14 +10,45 @@ import (
 	"golang.org/x/net/html"
 )
 
-// TemplateLink represents a template discovered from the rendered site.
+// TemplateLink represents a template discovered from the rendered documentation site.
+//
+// Templates are discovered by parsing the HTML from the /categories/templates/ taxonomy
+// page, which contains links to individual template pages.
 type TemplateLink struct {
+	// Type is the template identifier (e.g., "adr", "guide") extracted from the link.
 	Type string
-	URL  string
+
+	// URL is the fully resolved URL to the template page.
+	URL string
+
+	// Name is a human-friendly display name, derived from the anchor text or type.
+	Name string
 }
 
-// ParseTemplateDiscovery extracts template links from a rendered templates taxonomy page.
-func ParseTemplateDiscovery(baseURL string, r io.Reader) ([]TemplateLink, error) {
+// ParseTemplateDiscovery parses the HTML content of a template discovery page
+// (typically /categories/templates/) and extracts links to individual templates.
+//
+// The function looks for anchor tags (<a>) with href attributes containing ".template/"
+// and extracts the template type from either the anchor text or the URL path.
+//
+// Parameters:
+//   - r: HTML content reader (typically from HTTP response body)
+//   - baseURL: Base URL of the documentation site for resolving relative links
+//
+// Returns:
+//   - A slice of TemplateLink structs, one per discovered template
+//   - An error if parsing fails or no templates are found
+//
+// Example:
+//
+//	links, err := ParseTemplateDiscovery("https://docs.example.com", htmlReader)
+//	if err != nil {
+//	    return err
+//	}
+//	for _, link := range links {
+//	    fmt.Printf("Found template: %s at %s\n", link.Type, link.URL)
+//	}
+func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error) {
 	if baseURL == "" {
 		return nil, errors.New("base URL is required")
 	}
@@ -60,6 +91,10 @@ func ParseTemplateDiscovery(baseURL string, r io.Reader) ([]TemplateLink, error)
 	return results, nil
 }
 
+// deriveTemplateType extracts the template type identifier from anchor text or URL.
+//
+// It first tries to extract from the anchor text (removing ".template" suffix),
+// then falls back to parsing the URL path segments.
 func deriveTemplateType(anchorText, href string) string {
 	text := strings.TrimSpace(anchorText)
 	if text != "" {
@@ -86,6 +121,9 @@ func deriveTemplateType(anchorText, href string) string {
 	return strings.TrimSuffix(segments[len(segments)-1], ".template")
 }
 
+// resolveURL resolves a relative URL against a base URL.
+//
+// If the href is already absolute or parsing fails, it returns the href unchanged.
 func resolveURL(base *url.URL, href string) string {
 	if base == nil {
 		return href
@@ -97,6 +135,7 @@ func resolveURL(base *url.URL, href string) string {
 	return base.ResolveReference(rel).String()
 }
 
+// getAttr extracts an attribute value from an HTML node.
 func getAttr(n *html.Node, key string) string {
 	for _, attr := range n.Attr {
 		if attr.Key == key {
@@ -106,6 +145,7 @@ func getAttr(n *html.Node, key string) string {
 	return ""
 }
 
+// extractText recursively extracts all text content from an HTML node and its children.
 func extractText(n *html.Node) string {
 	if n.Type == html.TextNode {
 		return strings.TrimSpace(n.Data)

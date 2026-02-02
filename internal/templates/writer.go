@@ -1,3 +1,9 @@
+// Package templates provides functionality for discovering, parsing, and instantiating
+// documentation templates from rendered documentation sites.
+//
+// Templates are discovered from a documentation site's taxonomy page, parsed from HTML
+// with metadata in meta tags, and rendered using Go's text/template engine with user
+// inputs and sequence helpers.
 package templates
 
 import (
@@ -9,7 +15,29 @@ import (
 	"syscall"
 )
 
-// WriteGeneratedFile writes content to a path under docsDir and returns full path.
+// WriteGeneratedFile writes the generated content to a file under the docs directory.
+//
+// The function ensures:
+//   - The output path is relative to docsDir (no path traversal)
+//   - Parent directories are created if needed
+//   - Existing files are never overwritten (returns error if file exists)
+//   - File permissions are set to 0o600 (read/write for owner only)
+//
+// Parameters:
+//   - docsDir: The base documentation directory (typically "docs/")
+//   - relativePath: Path relative to docsDir (e.g., "adr/adr-001-title.md")
+//   - content: The markdown content to write
+//
+// Returns:
+//   - The full path of the written file
+//   - An error if the file already exists, path is invalid, or write fails
+//
+// Example:
+//
+//	fullPath, err := WriteGeneratedFile("docs", "adr/adr-001.md", "# My ADR\n")
+//	if err != nil {
+//	    // Handle error (e.g., file already exists)
+//	}
 func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	if docsDir == "" {
 		return "", errors.New("docs directory is required")
