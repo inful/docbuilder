@@ -422,8 +422,22 @@ Available in output paths and template bodies:
 - All referenced variables are provided
 - Path is relative to `docs/` directory
 
+## Example Templates
+
+Reference implementations are available in the docs repository:
+
+- [ADR Template](../examples/adr.template.md) - Architecture Decision Record with sequence numbering
+- [Guide Template](../examples/guide.template.md) - User guide with category selection
+
+These examples demonstrate:
+- Complete frontmatter configuration
+- Schema definitions
+- Sequence configuration
+- Template body structure
+
 ## Next Steps
 
 - [Using Templates](./use-templates.md) - Learn how to use templates
+- [Example Templates](../examples/) - Reference template implementations
 - [ADR-022](../adr/adr-022-cli-template-based-markdown-generation.md) - Technical specification
 - [CLI Reference](../reference/cli.md) - Full command reference
