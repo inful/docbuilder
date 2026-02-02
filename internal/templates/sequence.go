@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +13,9 @@ import (
 
 const maxSequenceFiles = 10000
 
+// ErrNoSequenceDefinition indicates that no sequence definition was provided.
+var ErrNoSequenceDefinition = errors.New("sequence definition missing")
+
 // SequenceDefinition describes how to compute a sequential number.
 type SequenceDefinition struct {
 	Name  string
@@ -20,6 +24,22 @@ type SequenceDefinition struct {
 	Regex string
 	Width int
 	Start int
+}
+
+// ParseSequenceDefinition parses a sequence definition from JSON metadata.
+func ParseSequenceDefinition(raw string) (*SequenceDefinition, error) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, ErrNoSequenceDefinition
+	}
+
+	var def SequenceDefinition
+	if err := json.Unmarshal([]byte(raw), &def); err != nil {
+		return nil, fmt.Errorf("parse sequence definition: %w", err)
+	}
+	if def.Name == "" || def.Dir == "" || def.Glob == "" || def.Regex == "" {
+		return nil, errors.New("sequence definition missing required fields")
+	}
+	return &def, nil
 }
 
 // ComputeNextInSequence scans docsDir based on the sequence definition.
