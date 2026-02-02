@@ -68,11 +68,17 @@ func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error)
 		if n.Type == html.ElementNode && n.Data == "a" {
 			href := getAttr(n, "href")
 			if strings.Contains(href, ".template/") {
-				templateType := deriveTemplateType(extractText(n), href)
+				anchorText := extractText(n)
+				templateType := deriveTemplateType(anchorText, href)
 				if templateType != "" {
+					name := anchorText
+					if name == "" {
+						name = templateType // Fallback to type if no anchor text
+					}
 					results = append(results, TemplateLink{
 						Type: templateType,
 						URL:  resolveURL(parsedBase, href),
+						Name: name,
 					})
 				}
 			}

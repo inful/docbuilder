@@ -158,7 +158,7 @@ params:
 - `string` - Text input
 - `string_enum` - Select from options (requires `options` array)
 - `string_list` - Comma-separated values
-- `bool` - Yes/no prompt
+- `bool` - Boolean value (accepts `true`/`false`, `t`/`f`, `1`/`0`, `TRUE`/`FALSE`, `True`/`False`, `T`/`F`)
 
 **Example Schema:**
 
