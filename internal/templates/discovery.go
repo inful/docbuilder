@@ -65,23 +65,8 @@ func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error)
 	var results []TemplateLink
 	var walk func(*html.Node)
 	walk = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			href := getAttr(n, "href")
-			if strings.Contains(href, ".template/") {
-				anchorText := extractText(n)
-				templateType := deriveTemplateType(anchorText, href)
-				if templateType != "" {
-					name := anchorText
-					if name == "" {
-						name = templateType // Fallback to type if no anchor text
-					}
-					results = append(results, TemplateLink{
-						Type: templateType,
-						URL:  resolveURL(parsedBase, href),
-						Name: name,
-					})
-				}
-			}
+		if link, ok := templateLinkFromNode(n, parsedBase); ok {
+			results = append(results, link)
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -95,6 +80,34 @@ func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error)
 	}
 
 	return results, nil
+}
+
+func templateLinkFromNode(n *html.Node, parsedBase *url.URL) (TemplateLink, bool) {
+	if n.Type != html.ElementNode || n.Data != "a" {
+		return TemplateLink{}, false
+	}
+
+	href := getAttr(n, "href")
+	if !strings.Contains(href, ".template/") {
+		return TemplateLink{}, false
+	}
+
+	anchorText := extractText(n)
+	templateType := deriveTemplateType(anchorText, href)
+	if templateType == "" {
+		return TemplateLink{}, false
+	}
+
+	name := anchorText
+	if name == "" {
+		name = templateType
+	}
+
+	return TemplateLink{
+		Type: templateType,
+		URL:  resolveURL(parsedBase, href),
+		Name: name,
+	}, true
 }
 
 // deriveTemplateType extracts the template type identifier from anchor text or URL.

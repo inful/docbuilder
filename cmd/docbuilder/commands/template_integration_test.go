@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,67 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 )
+
+const (
+	templatesCategoryPath        = "/categories/templates/"
+	templatesCategoryPathNoSlash = "/categories/templates"
+	adrTemplatePath              = "/templates/adr.template/index.html"
+)
+
+const discoveryHTMLADROnly = `<!DOCTYPE html>
+<html>
+<head><title>Templates</title></head>
+<body>
+	<h1>Templates</h1>
+	<ul>
+		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
+	</ul>
+</body>
+</html>`
+
+const discoveryHTMLGuideOnly = `<!DOCTYPE html>
+<html>
+<head><title>Templates</title></head>
+<body>
+	<h1>Templates</h1>
+	<ul>
+		<li><a href="/templates/guide.template/index.html">guide.template</a></li>
+	</ul>
+</body>
+</html>`
+
+const adrTemplateNoDescHTML = `<!DOCTYPE html>
+<html>
+<head>
+	<meta property="docbuilder:template.type" content="adr">
+	<meta property="docbuilder:template.name" content="Architecture Decision Record">
+	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
+	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
+	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
+	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
+</head>
+<body>
+	<h1>ADR Template</h1>
+	<pre><code class="language-markdown">---
+title: "{{ .Title }}"
+categories:
+  - {{ index .categories 0 }}
+date: 2026-01-01T00:00:00Z
+slug: "{{ .Slug }}"
+---
+
+# {{ .Title }}
+
+**Status**: Proposed
+
+## Context
+
+## Decision
+
+## Consequences
+</code></pre>
+</body>
+</html>`
 
 // createTestConfig creates a minimal test config file.
 func createTestConfig(t *testing.T, tmpDir string) string {
@@ -138,30 +200,13 @@ func singleTemplateServer(t *testing.T, templateType string) *httptest.Server {
 	mux := http.NewServeMux()
 
 	// Discovery page: /categories/templates/
-	mux.HandleFunc("/categories/templates/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(templatesCategoryPath, func(w http.ResponseWriter, r *http.Request) {
 		var html string
-		if templateType == "adr" {
-			html = `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
-	</ul>
-</body>
-</html>`
-		} else if templateType == "guide" {
-			html = `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/guide.template/index.html">guide.template</a></li>
-	</ul>
-</body>
-</html>`
+		switch templateType {
+		case "adr":
+			html = discoveryHTMLADROnly
+		case "guide":
+			html = discoveryHTMLGuideOnly
 		}
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(html))
@@ -267,54 +312,14 @@ func TestTemplateList_Integration(t *testing.T) {
 func TestTemplateNew_SingleTemplate_Integration(t *testing.T) {
 	// Create a server with only one template
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/categories/templates/" || r.URL.Path == "/categories/templates" {
-			html := `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
-	</ul>
-</body>
-</html>`
+		if r.URL.Path == templatesCategoryPath || r.URL.Path == templatesCategoryPathNoSlash {
+			html := discoveryHTMLADROnly
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
 		}
-		if r.URL.Path == "/templates/adr.template/index.html" {
-			html := `<!DOCTYPE html>
-<html>
-<head>
-	<meta property="docbuilder:template.type" content="adr">
-	<meta property="docbuilder:template.name" content="Architecture Decision Record">
-	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
-	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
-	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
-	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
-</head>
-<body>
-	<h1>ADR Template</h1>
-	<pre><code class="language-markdown">---
-title: "{{ .Title }}"
-categories:
-  - {{ index .categories 0 }}
-date: 2026-01-01T00:00:00Z
-slug: "{{ .Slug }}"
----
-
-# {{ .Title }}
-
-**Status**: Proposed
-
-## Context
-
-## Decision
-
-## Consequences
-</code></pre>
-</body>
-</html>`
+		if r.URL.Path == adrTemplatePath {
+			html := adrTemplateNoDescHTML
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
@@ -328,11 +333,7 @@ slug: "{{ .Slug }}"
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
-	// Change to temp directory
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	cmd := &TemplateNewCmd{
 		BaseURL: server.URL,
@@ -368,6 +369,7 @@ slug: "{{ .Slug }}"
 	require.FileExists(t, expectedPath)
 
 	// Verify file content
+	// #nosec G304 -- expectedPath is created under t.TempDir() during this test.
 	data, err := os.ReadFile(expectedPath)
 	require.NoError(t, err)
 	content := string(data)
@@ -389,7 +391,7 @@ func TestTemplateNew_MultipleTemplates_WithSelection_Integration(t *testing.T) {
 	// in unit tests. The full interactive flow with stdin mocking is
 	// complex and flaky, so we focus on file creation here.
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/categories/templates/" || r.URL.Path == "/categories/templates" {
+		if r.URL.Path == templatesCategoryPath || r.URL.Path == templatesCategoryPathNoSlash {
 			html := `<!DOCTYPE html>
 <html>
 <head><title>Templates</title></head>
@@ -444,10 +446,7 @@ categories:
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	cmd := &TemplateNewCmd{
 		BaseURL: server.URL,
@@ -458,13 +457,14 @@ categories:
 	cli := &CLI{
 		Config: configPath,
 	}
-	err = cmd.Run(&Global{}, cli)
+	err := cmd.Run(&Global{}, cli)
 	require.NoError(t, err)
 
 	// Verify guide file was created
 	expectedPath := filepath.Join(docsDir, "guides", "test-guide.md")
 	require.FileExists(t, expectedPath)
 
+	// #nosec G304 -- expectedPath is created under t.TempDir() during this test.
 	data, err := os.ReadFile(expectedPath)
 	require.NoError(t, err)
 	content := string(data)
@@ -477,54 +477,14 @@ categories:
 func TestTemplateNew_WithDefaults_Integration(t *testing.T) {
 	// Use single-template server to avoid selection prompt
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/categories/templates/" || r.URL.Path == "/categories/templates" {
-			html := `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
-	</ul>
-</body>
-</html>`
+		if r.URL.Path == templatesCategoryPath || r.URL.Path == templatesCategoryPathNoSlash {
+			html := discoveryHTMLADROnly
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
 		}
-		if r.URL.Path == "/templates/adr.template/index.html" {
-			html := `<!DOCTYPE html>
-<html>
-<head>
-	<meta property="docbuilder:template.type" content="adr">
-	<meta property="docbuilder:template.name" content="Architecture Decision Record">
-	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
-	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
-	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
-	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
-</head>
-<body>
-	<h1>ADR Template</h1>
-	<pre><code class="language-markdown">---
-title: "{{ .Title }}"
-categories:
-  - {{ index .categories 0 }}
-date: 2026-01-01T00:00:00Z
-slug: "{{ .Slug }}"
----
-
-# {{ .Title }}
-
-**Status**: Proposed
-
-## Context
-
-## Decision
-
-## Consequences
-</code></pre>
-</body>
-</html>`
+		if r.URL.Path == adrTemplatePath {
+			html := adrTemplateNoDescHTML
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
@@ -538,16 +498,13 @@ slug: "{{ .Slug }}"
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	cmd := &TemplateNewCmd{
 		BaseURL:  server.URL,
-		Set:       []string{"Title=Default ADR", "Slug=default-adr"},
-		Defaults:  true,
-		Yes:       true,
+		Set:      []string{"Title=Default ADR", "Slug=default-adr"},
+		Defaults: true,
+		Yes:      true,
 	}
 
 	// Capture stdout using a pipe
@@ -575,6 +532,7 @@ slug: "{{ .Slug }}"
 	expectedPath := filepath.Join(docsDir, "adr", "adr-001-default-adr.md")
 	require.FileExists(t, expectedPath)
 
+	// #nosec G304 -- expectedPath is created under t.TempDir() during this test.
 	data, err := os.ReadFile(expectedPath)
 	require.NoError(t, err)
 	content := string(data)
@@ -584,54 +542,14 @@ slug: "{{ .Slug }}"
 func TestTemplateNew_SequenceNumbering_Integration(t *testing.T) {
 	// Use single-template server to avoid selection prompt
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/categories/templates/" || r.URL.Path == "/categories/templates" {
-			html := `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
-	</ul>
-</body>
-</html>`
+		if r.URL.Path == templatesCategoryPath || r.URL.Path == templatesCategoryPathNoSlash {
+			html := discoveryHTMLADROnly
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
 		}
-		if r.URL.Path == "/templates/adr.template/index.html" {
-			html := `<!DOCTYPE html>
-<html>
-<head>
-	<meta property="docbuilder:template.type" content="adr">
-	<meta property="docbuilder:template.name" content="Architecture Decision Record">
-	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
-	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
-	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
-	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
-</head>
-<body>
-	<h1>ADR Template</h1>
-	<pre><code class="language-markdown">---
-title: "{{ .Title }}"
-categories:
-  - {{ index .categories 0 }}
-date: 2026-01-01T00:00:00Z
-slug: "{{ .Slug }}"
----
-
-# {{ .Title }}
-
-**Status**: Proposed
-
-## Context
-
-## Decision
-
-## Consequences
-</code></pre>
-</body>
-</html>`
+		if r.URL.Path == adrTemplatePath {
+			html := adrTemplateNoDescHTML
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
@@ -656,10 +574,7 @@ slug: "{{ .Slug }}"
 		require.NoError(t, os.WriteFile(filepath.Join(adrDir, f), []byte("# Existing ADR\n"), 0o600))
 	}
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	cmd := &TemplateNewCmd{
 		BaseURL: server.URL,
@@ -697,54 +612,14 @@ slug: "{{ .Slug }}"
 func TestTemplateNew_WithPrompts_Integration(t *testing.T) {
 	// Use single-template server to avoid selection prompt
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/categories/templates/" || r.URL.Path == "/categories/templates" {
-			html := `<!DOCTYPE html>
-<html>
-<head><title>Templates</title></head>
-<body>
-	<h1>Templates</h1>
-	<ul>
-		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
-	</ul>
-</body>
-</html>`
+		if r.URL.Path == templatesCategoryPath || r.URL.Path == templatesCategoryPathNoSlash {
+			html := discoveryHTMLADROnly
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
 		}
-		if r.URL.Path == "/templates/adr.template/index.html" {
-			html := `<!DOCTYPE html>
-<html>
-<head>
-	<meta property="docbuilder:template.type" content="adr">
-	<meta property="docbuilder:template.name" content="Architecture Decision Record">
-	<meta property="docbuilder:template.output_path" content="adr/adr-{{ printf &quot;%03d&quot; (nextInSequence &quot;adr&quot;) }}-{{ .Slug }}.md">
-	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
-	<meta property="docbuilder:template.defaults" content='{"categories":["architecture-decisions"]}'>
-	<meta property="docbuilder:template.sequence" content='{"name":"adr","dir":"adr","glob":"adr-*.md","regex":"^adr-(\\d{3})-","width":3,"start":1}'>
-</head>
-<body>
-	<h1>ADR Template</h1>
-	<pre><code class="language-markdown">---
-title: "{{ .Title }}"
-categories:
-  - {{ index .categories 0 }}
-date: 2026-01-01T00:00:00Z
-slug: "{{ .Slug }}"
----
-
-# {{ .Title }}
-
-**Status**: Proposed
-
-## Context
-
-## Decision
-
-## Consequences
-</code></pre>
-</body>
-</html>`
+		if r.URL.Path == adrTemplatePath {
+			html := adrTemplateNoDescHTML
 			w.Header().Set("Content-Type", "text/html")
 			_, _ = w.Write([]byte(html))
 			return
@@ -758,10 +633,7 @@ slug: "{{ .Slug }}"
 	docsDir := filepath.Join(tmpDir, "docs")
 	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	// Mock stdin: provide Title and Slug (no template selection needed - single template)
 	rStdin, wStdin, err := os.Pipe()
@@ -808,6 +680,7 @@ slug: "{{ .Slug }}"
 	expectedPath := filepath.Join(docsDir, "adr", "adr-001-prompted-slug.md")
 	require.FileExists(t, expectedPath)
 
+	// #nosec G304 -- expectedPath is created under t.TempDir() during this test.
 	data, err := os.ReadFile(expectedPath)
 	require.NoError(t, err)
 	content := string(data)
@@ -824,10 +697,7 @@ func TestTemplateNew_ConfirmOutputPath_Integration(t *testing.T) {
 	require.NoError(t, os.MkdirAll(docsDir, 0o750))
 	configPath := createTestConfig(t, tmpDir)
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	// Create mock stdin for confirmation prompt
 	rStdin, wStdin, err := os.Pipe()
@@ -936,10 +806,7 @@ func TestTemplateNew_ErrorHandling_Integration(t *testing.T) {
 		docsDir := filepath.Join(tmpDir, "docs")
 		require.NoError(t, os.MkdirAll(docsDir, 0o750))
 
-		oldCwd, err := os.Getwd()
-		require.NoError(t, err)
-		defer func() { _ = os.Chdir(oldCwd) }()
-		require.NoError(t, os.Chdir(tmpDir))
+		t.Chdir(tmpDir)
 
 		cmd := &TemplateNewCmd{
 			BaseURL: server.URL,
@@ -977,10 +844,7 @@ hugo:
 `, server.URL)
 	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
 
-	oldCwd, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { _ = os.Chdir(oldCwd) }()
-	require.NoError(t, os.Chdir(tmpDir))
+	t.Chdir(tmpDir)
 
 	cmd := &TemplateListCmd{
 		// No BaseURL set - should use config
@@ -1021,9 +885,14 @@ hugo:
 func TestTemplateServer_HTMLStructure(t *testing.T) {
 	server := templateServer(t)
 	defer server.Close()
+	client := server.Client()
 
 	// Test discovery page
-	resp, err := http.Get(server.URL + "/categories/templates/")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL+templatesCategoryPath, nil)
+	require.NoError(t, err)
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -1034,7 +903,11 @@ func TestTemplateServer_HTMLStructure(t *testing.T) {
 	require.Contains(t, string(body), "guide.template")
 
 	// Test ADR template page
-	resp, err = http.Get(server.URL + "/templates/adr.template/index.html")
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel2()
+	req2, err := http.NewRequestWithContext(ctx2, http.MethodGet, server.URL+adrTemplatePath, nil)
+	require.NoError(t, err)
+	resp, err = client.Do(req2)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
 	require.Equal(t, http.StatusOK, resp.StatusCode)

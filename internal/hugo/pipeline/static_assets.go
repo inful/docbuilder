@@ -37,12 +37,11 @@ func generateViewTransitionsAssets(ctx *GenerationContext) ([]*StaticAsset, erro
 		return nil, nil
 	}
 
-	assets := []*StaticAsset{
-		{
-			Path:    "static/view-transitions.css",
-			Content: viewTransitionsCSS,
-		},
-	}
+	assets := make([]*StaticAsset, 0, 2)
+	assets = append(assets, &StaticAsset{
+		Path:    "static/view-transitions.css",
+		Content: viewTransitionsCSS,
+	})
 
 	// Merge view transitions with template metadata in custom-header.html
 	// The template metadata partial should already exist from generateTemplateMetadataAssets
