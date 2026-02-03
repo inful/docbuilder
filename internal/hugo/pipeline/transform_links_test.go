@@ -318,3 +318,13 @@ func TestRewriteLinkPath_SingleRepo(t *testing.T) {
 		})
 	}
 }
+
+func TestRewriteLinkPath_RootRelativeMixedCase_SingleRepo(t *testing.T) {
+	got := rewriteLinkPath("/Drift/gitlab-profile-ssh.png", "local", "", false, "content/drift/page.md", true)
+	assert.Equal(t, "/drift/gitlab-profile-ssh.png", got)
+}
+
+func TestRewriteLinkPath_RootRelativeMarkdownMixedCase_MultiRepo(t *testing.T) {
+	got := rewriteLinkPath("/How-To/Authentication.MD#SSH", "DocsRepo", "GitLab", false, "content/gitlab/docsrepo/guide/page.md", false)
+	assert.Equal(t, "/gitlab/docsrepo/how-to/authentication#SSH", got)
+}

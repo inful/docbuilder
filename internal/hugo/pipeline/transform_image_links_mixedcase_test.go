@@ -76,3 +76,25 @@ func TestRewriteImageLinks_MixedCaseWithForge(t *testing.T) {
 		t.Logf("PARTIAL: Filename lowercased but ../ not resolved (acceptable for now)")
 	}
 }
+
+func TestRewriteImageLinks_RootRelativeMixedCase(t *testing.T) {
+	doc := &Document{
+		Content: "![SSH](/Drift/gitlab-profile-ssh.png)",
+	}
+
+	_, err := rewriteImageLinks(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, "![SSH](/drift/gitlab-profile-ssh.png)", doc.Content)
+}
+
+func TestRewriteImageLinks_HTMLImgRootRelativeMixedCase(t *testing.T) {
+	doc := &Document{
+		Content: `<img src="/Drift/gitlab-profile-ssh.png" alt="SSH" />`,
+	}
+
+	_, err := rewriteImageLinks(doc)
+	require.NoError(t, err)
+
+	assert.Equal(t, `<img src="/drift/gitlab-profile-ssh.png" alt="SSH" />`, doc.Content)
+}
