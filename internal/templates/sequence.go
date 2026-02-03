@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -119,10 +120,9 @@ func ComputeNextInSequence(def SequenceDefinition, docsDir string) (int, error) 
 	}
 
 	cleanDir := filepath.Clean(def.Dir)
-	for _, segment := range strings.Split(cleanDir, string(os.PathSeparator)) {
-		if segment == ".." {
-			return 0, errors.New("sequence dir must not contain '..'")
-		}
+	segments := strings.Split(cleanDir, string(os.PathSeparator))
+	if slices.Contains(segments, "..") {
+		return 0, errors.New("sequence dir must not contain '..'")
 	}
 
 	dirPath := filepath.Join(docsDir, cleanDir)
