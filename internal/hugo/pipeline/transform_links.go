@@ -129,14 +129,24 @@ func isAbsoluteOrSpecialURL(path string) bool {
 	return strings.HasPrefix(path, "http://") ||
 		strings.HasPrefix(path, "https://") ||
 		strings.HasPrefix(path, "#") ||
-		strings.HasPrefix(path, "mailto:") ||
-		strings.HasPrefix(path, "/")
+		strings.HasPrefix(path, "mailto:")
 }
 
 // rewriteImageLinks rewrites image paths to work with Hugo.
 func rewriteImageLinks(doc *Document) ([]*Document, error) {
 	// Pattern to match markdown images: ![alt](path)
 	imagePattern := regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
+
+	lowerPathPreserveQueryAndFragment := func(p string) string {
+		cut := len(p)
+		if i := strings.IndexByte(p, '?'); i >= 0 && i < cut {
+			cut = i
+		}
+		if i := strings.IndexByte(p, '#'); i >= 0 && i < cut {
+			cut = i
+		}
+		return strings.ToLower(p[:cut]) + p[cut:]
+	}
 
 	doc.Content = imagePattern.ReplaceAllStringFunc(doc.Content, func(match string) string {
 		submatches := imagePattern.FindStringSubmatch(match)
@@ -149,9 +159,14 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 
 		// Skip absolute URLs
 		if strings.HasPrefix(path, "http://") ||
-			strings.HasPrefix(path, "https://") ||
-			strings.HasPrefix(path, "/") {
+			strings.HasPrefix(path, "https://") {
 			return match
+		}
+
+		// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased)
+		if strings.HasPrefix(path, "/") {
+			newPath := lowerPathPreserveQueryAndFragment(path)
+			return fmt.Sprintf("![%s](%s)", alt, newPath)
 		}
 
 		// Rewrite relative image path accounting for document's section
@@ -174,9 +189,14 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 
 		// Skip absolute URLs
 		if strings.HasPrefix(path, "http://") ||
-			strings.HasPrefix(path, "https://") ||
-			strings.HasPrefix(path, "/") {
+			strings.HasPrefix(path, "https://") {
 			return match
+		}
+
+		// Normalize root-relative paths to lowercase
+		if strings.HasPrefix(path, "/") {
+			newPath := lowerPathPreserveQueryAndFragment(path)
+			return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 		}
 
 		// Rewrite relative image path
@@ -192,43 +212,67 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	// Strip leading ./ from relative paths (e.g., ./api-guide.md -> api-guide.md)
 	path = strings.TrimPrefix(path, "./")
 
-	// Remove .md extension
-	path = strings.TrimSuffix(path, ".md")
-	path = strings.TrimSuffix(path, ".markdown")
+	// Preserve query + anchor while rewriting the path itself.
+	anchor := ""
+	if idx := strings.IndexByte(path, '#'); idx >= 0 {
+		anchor = path[idx:]
+		path = path[:idx]
+	}
+	query := ""
+	if idx := strings.IndexByte(path, '?'); idx >= 0 {
+		query = path[idx:]
+		path = path[:idx]
+	}
+	suffix := query + anchor
+
+	// Remove .md/.markdown extension (case-insensitive)
+	lowerPath := strings.ToLower(path)
+	if strings.HasSuffix(lowerPath, ".md") {
+		path = path[:len(path)-3]
+		lowerPath = lowerPath[:len(lowerPath)-3]
+	} else if strings.HasSuffix(lowerPath, ".markdown") {
+		path = path[:len(path)-9]
+		lowerPath = lowerPath[:len(lowerPath)-9]
+	}
 
 	// Handle README/index special case - these become section URLs with trailing slash
-	if strings.HasSuffix(path, "/README") || strings.HasSuffix(path, "/readme") {
-		path = strings.TrimSuffix(path, "/README")
-		path = strings.TrimSuffix(path, "/readme")
+	if strings.HasSuffix(lowerPath, "/readme") {
+		path = path[:len(path)-len("/README")]
+		lowerPath = lowerPath[:len(lowerPath)-len("/readme")]
 		path += "/"
+		lowerPath += "/"
 	}
-	if before, ok := strings.CutSuffix(path, "/index"); ok {
-		path = before
-		path += "/"
+	if before, ok := strings.CutSuffix(lowerPath, "/index"); ok {
+		path = path[:len(before)] + "/"
 	}
 
-	// Handle anchor links
-	anchorIdx := strings.Index(path, "#")
-	var anchor string
-	if anchorIdx != -1 {
-		anchor = path[anchorIdx:]
-		path = path[:anchorIdx]
+	// Handle repository-root-relative links (start with /): normalize case and namespace.
+	if rel, ok := strings.CutPrefix(path, "/"); ok {
+		rel = strings.ToLower(rel)
+
+		// Multi-repo builds need repository (and optional forge) prefix.
+		if !isSingleRepo && repository != "" {
+			return buildFullPath(forge, repository, "", rel) + suffix
+		}
+
+		// Single-repo mode: keep site-root path.
+		return "/" + rel + suffix
 	}
 
 	// Skip empty paths (pure anchors)
 	if path == "" {
-		return anchor
+		return suffix
 	}
 
 	// Handle relative paths that navigate up directories (../)
 	if after, ok := strings.CutPrefix(path, "../"); ok {
 		path = handleParentDirNavigation(after, repository, forge, isSingleRepo)
-		return path + anchor
+		return path + suffix
 	}
 
 	// For index files, preserve relative links within the same directory
 	if isIndex {
-		if result, handled := handleIndexFileLink(path, docPath, repository, forge, isSingleRepo, anchor); handled {
+		if result, handled := handleIndexFileLink(path, docPath, repository, forge, isSingleRepo, suffix); handled {
 			return result
 		}
 	}
@@ -238,7 +282,7 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 		path = handleRegularFileLink(path, docPath, repository, forge, isSingleRepo)
 	}
 
-	return path + anchor
+	return path + suffix
 }
 
 // handleParentDirNavigation handles links with ../ navigation.
@@ -370,16 +414,16 @@ func buildFullPath(forge, repository, section, path string) string {
 	parts = append(parts, "")
 
 	if forge != "" {
-		parts = append(parts, forge)
+		parts = append(parts, strings.ToLower(forge))
 	}
 
-	parts = append(parts, repository)
+	parts = append(parts, strings.ToLower(repository))
 
 	if section != "" {
-		parts = append(parts, section)
+		parts = append(parts, strings.ToLower(section))
 	}
 
-	parts = append(parts, path)
+	parts = append(parts, strings.ToLower(path))
 
 	return strings.Join(parts, "/")
 }
