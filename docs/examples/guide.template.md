@@ -1,16 +1,21 @@
 ---
-title: "Guide Template"
+aliases:
+  - /_uid/6359eb3d-f704-412d-9f55-373f496a1959/
 categories:
   - Templates
+fingerprint: a62c6220ba47b5643d68980cf90e82e65f30ec3dd9d0acba1b06511ad6a8545f
+lastmod: "2026-02-04"
 params:
   docbuilder:
     template:
-      type: "guide"
-      name: "User Guide"
-      output_path: "guides/{{ .Slug }}.md"
-      description: "Create a new user guide with category selection"
-      schema: '{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true},{"key":"Category","type":"string_enum","required":true,"options":["getting-started","advanced","reference"]}]}'
       defaults: '{"tags":["guide"]}'
+      description: Create a new user guide with category selection
+      name: User Guide
+      output_path: guides/{{ .Slug }}.md
+      schema: '{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true},{"key":"Category","type":"string_enum","required":true,"options":["getting-started","advanced","reference"]}]}'
+      type: guide
+title: Guide Template
+uid: 6359eb3d-f704-412d-9f55-373f496a1959
 ---
 
 # Guide Template

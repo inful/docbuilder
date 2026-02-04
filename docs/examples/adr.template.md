@@ -1,23 +1,28 @@
 ---
-title: "ADR Template"
+aliases:
+  - /_uid/0135c423-8777-4292-99e9-19ab7b82b852/
 categories:
   - Templates
+fingerprint: 4443d2f31d95095df4d1b1cb9debc596ada8f4805a073d5c288c8317fc58ab87
+lastmod: "2026-02-04"
 params:
   docbuilder:
     template:
-      type: "adr"
-      name: "Architecture Decision Record"
-      output_path: "adr/adr-{{ printf \"%03d\" (nextInSequence \"adr\") }}-{{ .Slug }}.md"
-      description: "Create a new Architecture Decision Record following the standard ADR format"
-      schema: '{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true},{"key":"DecisionMakers","type":"string","required":false}]}'
       defaults: '{"categories":["architecture-decisions"]}'
+      description: Create a new Architecture Decision Record following the standard ADR format
+      name: Architecture Decision Record
+      output_path: adr/adr-{{ printf "%03d" (nextInSequence "adr") }}-{{ .Slug }}.md
+      schema: '{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true},{"key":"DecisionMakers","type":"string","required":false}]}'
       sequence:
-        name: "adr"
-        dir: "adr"
-        glob: "adr-*.md"
-        regex: "^adr-(\\d{3})-"
-        width: 3
+        dir: adr
+        glob: adr-*.md
+        name: adr
+        regex: ^adr-(\d{3})-
         start: 1
+        width: 3
+      type: adr
+title: ADR Template
+uid: 0135c423-8777-4292-99e9-19ab7b82b852
 ---
 
 # Architecture Decision Record Template
