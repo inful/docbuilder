@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 2308fc0201713954f78a0896498f97aac5c0cf300b78f5c362f443f80c345e91
-lastmod: "2026-01-22"
+fingerprint: da55d229d4da3bb511c77d88c79fe3f92bd36d24e2b5c3ca203c7e7331f77d46
+lastmod: "2026-02-04"
 tags:
   - cli
   - commands

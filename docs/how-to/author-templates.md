@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: template-authoring-guide-fingerprint
-lastmod: "2026-02-02"
+fingerprint: 34fcdbfa20b2f1802fc42fc453a8dc4a633df1a0449f4b9ba411339321e019c6
+lastmod: "2026-02-04"
 tags:
   - templates
   - authoring
