@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -352,7 +353,10 @@ func TestTemplateNew_SingleTemplate_Integration(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
 	}()
@@ -518,7 +522,10 @@ func TestTemplateNew_WithDefaults_Integration(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
 	}()
@@ -593,7 +600,10 @@ func TestTemplateNew_SequenceNumbering_Integration(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
 	}()
@@ -666,7 +676,10 @@ func TestTemplateNew_WithPrompts_Integration(t *testing.T) {
 	}()
 
 	var stdout bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
 	}()
@@ -861,7 +874,10 @@ hugo:
 	}()
 
 	var stdout bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
 	}()
@@ -875,8 +891,7 @@ hugo:
 
 	// Close the write end to ensure all data is flushed
 	_ = w.Close()
-	// Give a moment for the goroutine to finish copying
-	time.Sleep(10 * time.Millisecond)
+	wg.Wait()
 
 	output := stdout.String()
 	require.Contains(t, output, "adr")

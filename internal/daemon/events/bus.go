@@ -152,8 +152,12 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 
 	evtType := reflect.TypeOf(evt)
 
+	// Hold the read lock for the duration of delivery to ensure that
+	// unsubscribe/Close (which take the write lock and close channels)
+	// cannot race with channel sends.
 	b.mu.RLock()
-	var targets []*subscriber
+	defer b.mu.RUnlock()
+
 	for subType, typeSubs := range b.subs {
 		match := subType == evtType
 		if !match && subType.Kind() == reflect.Interface {
@@ -163,14 +167,9 @@ func (b *Bus) Publish(ctx context.Context, evt any) error {
 			continue
 		}
 		for _, s := range typeSubs {
-			targets = append(targets, s)
-		}
-	}
-	b.mu.RUnlock()
-
-	for _, s := range targets {
-		if err := s.send(ctx, evt); err != nil {
-			return err
+			if err := s.send(ctx, evt); err != nil {
+				return err
+			}
 		}
 	}
 
