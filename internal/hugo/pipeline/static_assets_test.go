@@ -122,47 +122,23 @@ func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	// Template metadata partial is always generated (required for template discovery)
-	require.Len(t, assets, 1, "should generate template metadata partial even when transitions disabled")
-
-	// Verify it's the template metadata partial
-	found := false
-	for _, asset := range assets {
-		if asset.Path == "layouts/partials/custom-header.html" {
-			found = true
-			assert.Contains(t, string(asset.Content), "docbuilder:template", "should contain template metadata")
-			assert.NotContains(t, string(asset.Content), "view-transitions", "should not contain view transitions when disabled")
-		}
-	}
-	assert.True(t, found, "should generate custom-header.html with template metadata")
+	assert.Empty(t, assets, "should not generate any static assets when transitions disabled")
 }
 
 func TestDefaultStaticAssetGenerators(t *testing.T) {
 	generators := defaultStaticAssetGenerators()
-	require.Len(t, generators, 2, "should have two default generators: template metadata and view transitions")
+	require.Len(t, generators, 1, "should have one default generator: view transitions")
 
-	// Test template metadata generator (always runs)
-	ctx := &GenerationContext{
-		Config: &config.Config{
-			Hugo: config.HugoConfig{
-				EnablePageTransitions: false,
-			},
-		},
-	}
-
-	assets, err := generators[0](ctx) // Template metadata generator
+	ctx := &GenerationContext{Config: &config.Config{Hugo: config.HugoConfig{EnablePageTransitions: false}}}
+	assets, err := generators[0](ctx)
 	require.NoError(t, err)
-	require.NotNil(t, assets)
-	require.Len(t, assets, 1, "template metadata generator should always produce 1 asset")
-	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
-	assert.Contains(t, string(assets[0].Content), "docbuilder:template")
+	assert.Nil(t, assets, "should not generate assets when transitions disabled")
 
-	// Test view transitions generator (only when enabled)
 	ctx.Config.Hugo.EnablePageTransitions = true
-	assets, err = generators[1](ctx) // View transitions generator
+	assets, err = generators[0](ctx)
 	require.NoError(t, err)
 	require.NotNil(t, assets)
-	assert.Len(t, assets, 2, "view transitions generator should produce 2 assets when enabled")
+	assert.Len(t, assets, 2, "should generate 2 assets when transitions enabled")
 }
 
 func TestStaticAssetContent(t *testing.T) {

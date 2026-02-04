@@ -227,7 +227,6 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 // defaultStaticAssetGenerators returns the standard set of static asset generators.
 func defaultStaticAssetGenerators() []StaticAssetGenerator {
 	return []StaticAssetGenerator{
-		generateTemplateMetadataAssets, // Always generate template metadata partial (required for template discovery)
-		generateViewTransitionsAssets,  // Generate View Transitions API assets if enabled (will merge with template metadata)
+		generateViewTransitionsAssets, // Generate View Transitions API assets if enabled
 	}
 }
