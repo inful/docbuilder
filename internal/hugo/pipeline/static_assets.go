@@ -29,8 +29,7 @@ type StaticAssetGenerator func(ctx *GenerationContext) ([]*StaticAsset, error)
 
 // generateViewTransitionsAssets creates View Transitions API static assets
 // if enable_page_transitions is enabled in the Hugo configuration.
-// This merges view transitions content with the existing custom-header.html
-// (which contains template metadata from generateTemplateMetadataAssets).
+// This also includes template metadata meta tags in the generated custom-header.html.
 func generateViewTransitionsAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
 	// Check if transitions are enabled
 	if ctx.Config == nil || !ctx.Config.Hugo.EnablePageTransitions {
@@ -44,7 +43,6 @@ func generateViewTransitionsAssets(ctx *GenerationContext) ([]*StaticAsset, erro
 	})
 
 	// Merge view transitions with template metadata in custom-header.html
-	// The template metadata partial should already exist from generateTemplateMetadataAssets
 	mergedHeader := bytes.Join([][]byte{
 		viewTransitionsHeadPartial,
 		[]byte("\n"),
@@ -57,18 +55,4 @@ func generateViewTransitionsAssets(ctx *GenerationContext) ([]*StaticAsset, erro
 	})
 
 	return assets, nil
-}
-
-// generateTemplateMetadataAssets creates the custom-header.html partial that injects
-// template metadata as HTML meta tags. This is always generated to support template discovery.
-// Note: This must run before generateViewTransitionsAssets so the view transitions generator
-// can merge its content with the template metadata partial.
-func generateTemplateMetadataAssets(ctx *GenerationContext) ([]*StaticAsset, error) {
-	// Always generate template metadata partial (required for template discovery)
-	return []*StaticAsset{
-		{
-			Path:    "layouts/partials/custom-header.html",
-			Content: templateMetadataHeadPartial,
-		},
-	}, nil
 }
