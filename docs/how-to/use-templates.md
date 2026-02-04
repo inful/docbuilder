@@ -1,6 +1,6 @@
 ---
 aliases:
-  - /_uid/template-usage-guide/
+  - /_uid/afc07ae8-7c29-400d-8124-2120e8a7f421/
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
@@ -11,7 +11,7 @@ tags:
   - cli
   - authoring
   - markdown
-uid: template-usage-guide-uid
+uid: afc07ae8-7c29-400d-8124-2120e8a7f421
 ---
 
 # Using Documentation Templates

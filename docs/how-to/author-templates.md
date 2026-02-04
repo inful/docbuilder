@@ -1,6 +1,6 @@
 ---
 aliases:
-  - /_uid/template-authoring-guide/
+  - /_uid/730751d6-527e-4897-ba8d-305ee7d8f017/
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
@@ -11,7 +11,7 @@ tags:
   - authoring
   - markdown
   - metadata
-uid: template-authoring-guide-uid
+uid: 730751d6-527e-4897-ba8d-305ee7d8f017
 ---
 
 # Authoring Documentation Templates
