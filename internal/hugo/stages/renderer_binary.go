@@ -257,5 +257,10 @@ type NoopRenderer struct{}
 
 func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 	slog.Debug("NoopRenderer skipping render", "dir", rootDir)
+	// Maintain the invariant expected by the pipeline/reporting:
+	// if rendering is considered successful, a publish directory exists.
+	if err := os.MkdirAll(filepath.Join(rootDir, "public"), 0o750); err != nil {
+		return fmt.Errorf("create public dir: %w", err)
+	}
 	return nil
 }

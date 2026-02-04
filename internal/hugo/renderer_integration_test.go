@@ -183,10 +183,10 @@ func TestRenderMode_Always_WithNoopRenderer(t *testing.T) {
 		t.Error("expected report.StaticRendered=true with stages.NoopRenderer")
 	}
 
-	// Hugo should not have created public/ directory (stages.NoopRenderer doesn't run Hugo)
+	// stages.NoopRenderer doesn't run Hugo, but it ensures the public/ directory exists.
 	publicDir := filepath.Join(dir, "public")
-	if _, err := os.Stat(publicDir); err == nil {
-		t.Error("expected no public/ directory with stages.NoopRenderer")
+	if _, err := os.Stat(publicDir); err != nil {
+		t.Errorf("expected public/ directory with stages.NoopRenderer: %v", err)
 	}
 
 	t.Log("✓ stages.NoopRenderer takes precedence over stages.BinaryRenderer with render_mode=always")
@@ -252,7 +252,7 @@ func TestRendererPrecedence(t *testing.T) {
 			renderMode:      config.RenderModeAlways,
 			customRenderer:  &stages.NoopRenderer{},
 			expectRendered:  true,
-			expectPublicDir: false,
+			expectPublicDir: true,
 			description:     "Custom renderer executes when mode=always",
 		},
 		{
