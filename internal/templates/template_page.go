@@ -120,8 +120,9 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 		},
 	}
 
-	if result.Meta.Type == "" || result.Meta.Name == "" || result.Meta.OutputPath == "" {
-		return nil, errors.New("missing required template metadata")
+	missing := missingRequiredTemplateMeta(result.Meta)
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("missing required template metadata: %s", strings.Join(missing, ", "))
 	}
 
 	if len(markdownBlocks) == 0 {
@@ -133,6 +134,20 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 
 	result.Body = markdownBlocks[0]
 	return result, nil
+}
+
+func missingRequiredTemplateMeta(meta TemplateMeta) []string {
+	var missing []string
+	if strings.TrimSpace(meta.Type) == "" {
+		missing = append(missing, "docbuilder:template.type")
+	}
+	if strings.TrimSpace(meta.Name) == "" {
+		missing = append(missing, "docbuilder:template.name")
+	}
+	if strings.TrimSpace(meta.OutputPath) == "" {
+		missing = append(missing, "docbuilder:template.output_path")
+	}
+	return missing
 }
 
 // isMarkdownCodeNode checks if an HTML node is a markdown code block.

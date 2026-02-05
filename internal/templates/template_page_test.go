@@ -46,6 +46,8 @@ func TestParseTemplatePage_MissingRequiredMeta(t *testing.T) {
 
 	_, err := ParseTemplatePage(strings.NewReader(html))
 	require.Error(t, err)
+	require.Contains(t, err.Error(), "missing required template metadata")
+	require.Contains(t, err.Error(), "docbuilder:template.output_path")
 }
 
 func TestParseTemplatePage_MultipleMarkdownBlocks(t *testing.T) {
