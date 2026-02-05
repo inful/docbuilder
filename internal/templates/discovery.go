@@ -79,7 +79,43 @@ func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error)
 		return nil, errors.New("no template links discovered")
 	}
 
+	results = dedupeTemplateLinksByURL(results)
+	if len(results) == 0 {
+		return nil, errors.New("no template links discovered")
+	}
+
 	return results, nil
+}
+
+func dedupeTemplateLinksByURL(links []TemplateLink) []TemplateLink {
+	if len(links) <= 1 {
+		return links
+	}
+
+	seen := make(map[string]struct{}, len(links))
+	out := make([]TemplateLink, 0, len(links))
+	for _, link := range links {
+		key := normalizeTemplateURL(link.URL)
+		if key == "" {
+			key = link.URL
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, link)
+	}
+	return out
+}
+
+func normalizeTemplateURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	// Treat fragment-only differences as the same template page.
+	u.Fragment = ""
+	return u.String()
 }
 
 func templateLinkFromNode(n *html.Node, parsedBase *url.URL) (TemplateLink, bool) {

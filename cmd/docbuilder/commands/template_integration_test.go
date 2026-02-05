@@ -310,6 +310,40 @@ func TestTemplateList_Integration(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTemplateList_NoConfigButBaseURL_Integration(t *testing.T) {
+	server := templateServer(t)
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	cmd := &TemplateListCmd{BaseURL: server.URL}
+	cli := &CLI{Config: "config.yaml"}
+
+	err := cmd.Run(&Global{}, cli)
+	require.NoError(t, err)
+}
+
+func TestTemplateNew_NoConfigButBaseURL_Integration(t *testing.T) {
+	server := singleTemplateServer(t, "adr")
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+	t.Chdir(tmpDir)
+
+	cmd := &TemplateNewCmd{
+		BaseURL: server.URL,
+		Set:     []string{"Title=Test ADR", "Slug=test-adr"},
+		Yes:     true,
+	}
+	cli := &CLI{Config: "config.yaml"}
+
+	err := cmd.Run(&Global{}, cli)
+	require.NoError(t, err)
+}
+
 func TestTemplateNew_SingleTemplate_Integration(t *testing.T) {
 	// Create a server with only one template
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -161,6 +161,16 @@ func (t *TemplateNewCmd) Run(_ *Global, root *CLI) error {
 }
 
 func loadConfigForTemplates(path string) (*config.Config, error) {
+	if path == "" {
+		return &config.Config{}, nil
+	}
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return &config.Config{}, nil
+		}
+		return nil, fmt.Errorf("stat config: %w", err)
+	}
+
 	result, cfg, err := config.LoadWithResult(path)
 	if err != nil {
 		return nil, fmt.Errorf("load config: %w", err)

@@ -30,6 +30,24 @@ func TestParseTemplateDiscovery_ExtractsTemplates(t *testing.T) {
 	require.Equal(t, "runbook", got[1].Name) // Name should fallback to type when anchor text is empty
 }
 
+func TestParseTemplateDiscovery_DeduplicatesByURL(t *testing.T) {
+	html := `<!DOCTYPE html>
+<html>
+<body>
+	<ul>
+		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
+		<li><a href="/templates/adr.template/index.html">adr.template</a></li>
+	</ul>
+</body>
+</html>`
+
+	got, err := ParseTemplateDiscovery(strings.NewReader(html), "https://docs.example.com")
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, "adr", got[0].Type)
+	require.Equal(t, "https://docs.example.com/templates/adr.template/index.html", got[0].URL)
+}
+
 func TestParseTemplateDiscovery_NoTemplates(t *testing.T) {
 	html := `<html><body><a href="/path/regular/"></a></body></html>`
 
