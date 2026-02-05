@@ -346,6 +346,12 @@ func hasDocsRelevantChange(changedFiles []string, docsPaths []string) bool {
 		if f == "" {
 			continue
 		}
+		// .docignore in the repository root controls whether the repository is
+		// included at all during discovery, so any change to it must trigger a
+		// rebuild even if no docs path changed.
+		if f == ".docignore" {
+			return true
+		}
 		for _, dp := range nDocs {
 			if f == dp || strings.HasPrefix(f, dp+"/") {
 				return true

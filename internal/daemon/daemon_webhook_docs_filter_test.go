@@ -83,4 +83,28 @@ func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
 	case <-time.After(500 * time.Millisecond):
 		t.Fatal("timed out waiting for RepoUpdateRequested")
 	}
+
+	// Changes to .docignore must trigger a rebuild because they affect repo inclusion/exclusion.
+	jobID = d.TriggerWebhookBuild("forge-1", "org/repo", "main", []string{".docignore"})
+	require.NotEmpty(t, jobID)
+
+	select {
+	case got := <-repoUpdateCh:
+		require.Equal(t, jobID, got.JobID)
+		require.Equal(t, "https://gitlab.example.com/org/repo.git", got.RepoURL)
+		require.Equal(t, "main", got.Branch)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for RepoUpdateRequested for .docignore")
+	}
+
+	// Also tolerate common webhook path formats (leading slash).
+	jobID = d.TriggerWebhookBuild("forge-1", "org/repo", "main", []string{"/.docignore"})
+	require.NotEmpty(t, jobID)
+
+	select {
+	case got := <-repoUpdateCh:
+		require.Equal(t, jobID, got.JobID)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("timed out waiting for RepoUpdateRequested for /.docignore")
+	}
 }
