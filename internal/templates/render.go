@@ -41,6 +41,8 @@ func RenderTemplateBody(bodyTemplate string, data map[string]any, nextSequence f
 		},
 	}
 
+	data = withBuiltinTemplateData(data)
+
 	tpl, err := template.New("body").Funcs(funcs).Option("missingkey=error").Parse(bodyTemplate)
 	if err != nil {
 		return "", fmt.Errorf("parse template body: %w", err)

@@ -41,6 +41,8 @@ func RenderOutputPath(pathTemplate string, data map[string]any, nextSequence fun
 		},
 	}
 
+	data = withBuiltinTemplateData(data)
+
 	tpl, err := template.New("output_path").Funcs(funcs).Option("missingkey=error").Parse(pathTemplate)
 	if err != nil {
 		return "", fmt.Errorf("parse output path template: %w", err)

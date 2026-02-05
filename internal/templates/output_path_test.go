@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,4 +19,11 @@ func TestRenderOutputPath_WithSequence(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "adr/adr-007-test-decision.md", got)
+}
+
+func TestRenderOutputPath_BuiltinDate(t *testing.T) {
+	template := `daily/{{ .Date }}.md`
+	got, err := RenderOutputPath(template, map[string]any{}, nil)
+	require.NoError(t, err)
+	require.Regexp(t, regexp.MustCompile(`^daily/\d{4}-\d{2}-\d{2}\.md$`), got)
 }
