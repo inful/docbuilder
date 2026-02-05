@@ -50,6 +50,35 @@ func TestParseTemplatePage_MissingRequiredMeta(t *testing.T) {
 	require.Contains(t, err.Error(), "docbuilder:template.output_path")
 }
 
+func TestParseTemplatePage_PreservesNewlinesWithHighlightedCode(t *testing.T) {
+	html := `
+		<html>
+			<head>
+				<meta property="docbuilder:template.type" content="adr">
+				<meta property="docbuilder:template.name" content="Architecture Decision Record">
+				<meta property="docbuilder:template.output_path" content="adr/adr-001.md">
+			</head>
+			<body>
+				<pre><code class="language-markdown"><span class="line">---</span>
+<span class="line">title: "{{ .Title }}"</span>
+<span class="line">categories:</span>
+<span class="line">  - {{ index .categories 0 }}</span>
+<span class="line">---</span>
+
+<span class="line"># {{ .Title }}</span>
+</code></pre>
+			</body>
+		</html>`
+
+	page, err := ParseTemplatePage(strings.NewReader(html))
+	require.NoError(t, err)
+	require.Contains(t, page.Body, "---\n")
+	require.Contains(t, page.Body, "title: \"{{ .Title }}\"\n")
+	require.Contains(t, page.Body, "# {{ .Title }}")
+	// Most importantly: we should still have newlines between lines.
+	require.Contains(t, page.Body, "---\n\n#")
+}
+
 func TestParseTemplatePage_MultipleMarkdownBlocks(t *testing.T) {
 	html := `
 		<html>

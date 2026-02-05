@@ -97,7 +97,7 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 				}
 			case "code":
 				if isMarkdownCodeNode(n) {
-					markdownBlocks = append(markdownBlocks, strings.TrimSpace(extractText(n)))
+					markdownBlocks = append(markdownBlocks, strings.TrimSpace(extractTextPreserveWhitespace(n)))
 				}
 			}
 		}
@@ -134,6 +134,27 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 
 	result.Body = markdownBlocks[0]
 	return result, nil
+}
+
+// extractTextPreserveWhitespace extracts text content while preserving whitespace.
+//
+// This is important for template bodies inside <pre><code> where newlines and
+// indentation must be preserved. Many Hugo themes/syntax highlighters wrap code
+// in nested <span> nodes, which can cause the trimmed extractText() helper to
+// collapse newlines.
+func extractTextPreserveWhitespace(n *html.Node) string {
+	if n == nil {
+		return ""
+	}
+	if n.Type == html.TextNode {
+		return n.Data
+	}
+
+	var text strings.Builder
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		text.WriteString(extractTextPreserveWhitespace(c))
+	}
+	return text.String()
 }
 
 func missingRequiredTemplateMeta(meta TemplateMeta) []string {
