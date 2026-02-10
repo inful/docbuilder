@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/kong v1.13.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-co-op/gocron/v2 v2.19.0
-	github.com/go-git/go-git/v5 v5.16.4
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/google/uuid v1.6.0
 	github.com/inful/mdfp v1.2.0
 	github.com/joho/godotenv v1.5.1
