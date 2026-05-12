@@ -32,6 +32,52 @@ title: {{ .Title }}
 	require.Equal(t, "---\ntitle: {{ .Title }}\n---", page.Body)
 }
 
+func TestParseTemplatePage_ValidFromMetaName(t *testing.T) {
+	html := `
+		<html>
+			<head>
+				<meta name="docbuilder:template.type" content="general-meeting-minutes">
+				<meta name="docbuilder:template.name" content="Meeting Minutes">
+				<meta name="docbuilder:template.output_path" content="minutes/{{ .Date }}-{{ .Slug }}.md">
+			</head>
+			<body>
+				<pre><code class="language-markdown">---
+title: {{ .Title }}
+---</code></pre>
+			</body>
+		</html>`
+
+	page, err := ParseTemplatePage(strings.NewReader(html))
+	require.NoError(t, err)
+	require.Equal(t, "general-meeting-minutes", page.Meta.Type)
+	require.Equal(t, "Meeting Minutes", page.Meta.Name)
+	require.Equal(t, "minutes/{{ .Date }}-{{ .Slug }}.md", page.Meta.OutputPath)
+}
+
+func TestParseTemplatePage_ValidFromParamsMetaName(t *testing.T) {
+	html := `
+		<html>
+			<head>
+				<meta name="params.docbuilder.template.type" content="general-meeting-minutes">
+				<meta name="params.docbuilder.template.name" content="Meeting Minutes">
+				<meta name="params.docbuilder.template.output_path" content="minutes/{{ .Date }}-{{ .Slug }}.md">
+				<meta name="params.docbuilder.template.description" content="Create a meeting minutes document">
+			</head>
+			<body>
+				<pre><code class="language-markdown">---
+title: {{ .Title }}
+---</code></pre>
+			</body>
+		</html>`
+
+	page, err := ParseTemplatePage(strings.NewReader(html))
+	require.NoError(t, err)
+	require.Equal(t, "general-meeting-minutes", page.Meta.Type)
+	require.Equal(t, "Meeting Minutes", page.Meta.Name)
+	require.Equal(t, "minutes/{{ .Date }}-{{ .Slug }}.md", page.Meta.OutputPath)
+	require.Equal(t, "Create a meeting minutes document", page.Meta.Description)
+}
+
 func TestParseTemplatePage_MissingRequiredMeta(t *testing.T) {
 	html := `
 		<html>

@@ -1,0 +1,17 @@
+version: "2.0"
+
+repositories:
+  - name: template-metadata-test
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Template Metadata Header Test"
+  description: "Verify template metadata headers are emitted"
+  base_url: "http://localhost:1313/"
+
+output:
+  directory: PLACEHOLDER
+  clean: true
