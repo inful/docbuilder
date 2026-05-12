@@ -21,7 +21,9 @@ func TestGenerateViewTransitionsAssets_Disabled(t *testing.T) {
 
 	assets, err := generateViewTransitionsAssets(ctx)
 	require.NoError(t, err)
-	assert.Nil(t, assets, "should not generate assets when transitions disabled")
+	require.Len(t, assets, 1, "should generate template metadata header even when transitions disabled")
+	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
+	assert.Contains(t, string(assets[0].Content), "docbuilder:template", "header should contain template metadata")
 }
 
 func TestGenerateViewTransitionsAssets_Enabled(t *testing.T) {
@@ -61,7 +63,9 @@ func TestGenerateViewTransitionsAssets_NilConfig(t *testing.T) {
 
 	assets, err := generateViewTransitionsAssets(ctx)
 	require.NoError(t, err)
-	assert.Nil(t, assets, "should not generate assets when config is nil")
+	require.Len(t, assets, 1, "should still generate template metadata header when config is nil")
+	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
+	assert.Contains(t, string(assets[0].Content), "docbuilder:template", "header should contain template metadata")
 }
 
 func TestGenerateStaticAssets_NoGenerators(t *testing.T) {
@@ -122,7 +126,9 @@ func TestGenerateStaticAssets_WithoutTransitions(t *testing.T) {
 
 	assets, err := processor.GenerateStaticAssets()
 	require.NoError(t, err)
-	assert.Empty(t, assets, "should not generate any static assets when transitions disabled")
+	require.Len(t, assets, 1, "should generate template metadata header when transitions disabled")
+	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
+	assert.Contains(t, string(assets[0].Content), "docbuilder:template", "header should contain template metadata")
 }
 
 func TestDefaultStaticAssetGenerators(t *testing.T) {
@@ -132,7 +138,9 @@ func TestDefaultStaticAssetGenerators(t *testing.T) {
 	ctx := &GenerationContext{Config: &config.Config{Hugo: config.HugoConfig{EnablePageTransitions: false}}}
 	assets, err := generators[0](ctx)
 	require.NoError(t, err)
-	assert.Nil(t, assets, "should not generate assets when transitions disabled")
+	require.Len(t, assets, 1, "should generate template metadata header when transitions disabled")
+	assert.Equal(t, "layouts/partials/custom-header.html", assets[0].Path)
+	assert.Contains(t, string(assets[0].Content), "docbuilder:template", "header should contain template metadata")
 
 	ctx.Config.Hugo.EnablePageTransitions = true
 	assets, err = generators[0](ctx)

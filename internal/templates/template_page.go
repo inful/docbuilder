@@ -92,8 +92,12 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 		if n.Type == html.ElementNode {
 			switch n.Data {
 			case "meta":
-				if prop := getAttr(n, "property"); prop != "" {
-					meta[prop] = getAttr(n, "content")
+				key := strings.TrimSpace(getAttr(n, "property"))
+				if key == "" {
+					key = strings.TrimSpace(getAttr(n, "name"))
+				}
+				if key != "" {
+					meta[key] = getAttr(n, "content")
 				}
 			case "code":
 				if isMarkdownCodeNode(n) {
@@ -110,13 +114,13 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 
 	result := &TemplatePage{
 		Meta: TemplateMeta{
-			Type:        meta["docbuilder:template.type"],
-			Name:        meta["docbuilder:template.name"],
-			OutputPath:  meta["docbuilder:template.output_path"],
-			Description: meta["docbuilder:template.description"],
-			Schema:      meta["docbuilder:template.schema"],
-			Defaults:    meta["docbuilder:template.defaults"],
-			Sequence:    meta["docbuilder:template.sequence"],
+			Type:        firstTemplateMetaValue(meta, "docbuilder:template.type", "docbuilder.template.type", "params.docbuilder.template.type", "params.docbuilder:template.type"),
+			Name:        firstTemplateMetaValue(meta, "docbuilder:template.name", "docbuilder.template.name", "params.docbuilder.template.name", "params.docbuilder:template.name"),
+			OutputPath:  firstTemplateMetaValue(meta, "docbuilder:template.output_path", "docbuilder.template.output_path", "params.docbuilder.template.output_path", "params.docbuilder:template.output_path"),
+			Description: firstTemplateMetaValue(meta, "docbuilder:template.description", "docbuilder.template.description", "params.docbuilder.template.description", "params.docbuilder:template.description"),
+			Schema:      firstTemplateMetaValue(meta, "docbuilder:template.schema", "docbuilder.template.schema", "params.docbuilder.template.schema", "params.docbuilder:template.schema"),
+			Defaults:    firstTemplateMetaValue(meta, "docbuilder:template.defaults", "docbuilder.template.defaults", "params.docbuilder.template.defaults", "params.docbuilder:template.defaults"),
+			Sequence:    firstTemplateMetaValue(meta, "docbuilder:template.sequence", "docbuilder.template.sequence", "params.docbuilder.template.sequence", "params.docbuilder:template.sequence"),
 		},
 	}
 
@@ -134,6 +138,18 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 
 	result.Body = markdownBlocks[0]
 	return result, nil
+}
+
+func firstTemplateMetaValue(meta map[string]string, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := meta[key]; ok {
+			trimmed := strings.TrimSpace(value)
+			if trimmed != "" {
+				return trimmed
+			}
+		}
+	}
+	return ""
 }
 
 // extractTextPreserveWhitespace extracts text content while preserving whitespace.
