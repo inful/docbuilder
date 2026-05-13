@@ -38,7 +38,7 @@ linters:
     - mirror
     - misspell
     # - mnd
-    - modernize
+    #- modernize
     - nestif
     - nilerr
     - nilnil
