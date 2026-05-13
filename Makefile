@@ -50,7 +50,7 @@ lint:
 
 # Development setup
 dev-setup:
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
 # Quick development cycle
 dev: fmt build test
