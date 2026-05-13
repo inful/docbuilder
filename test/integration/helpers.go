@@ -180,7 +180,6 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 		return
 	}
 
-	// #nosec G304 -- test utility reading golden file from testdata
 	// #nosec G304 -- test helper reads a controlled golden file path under testdata.
 	goldenData, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
