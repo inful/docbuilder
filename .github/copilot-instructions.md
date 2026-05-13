@@ -450,7 +450,7 @@ Available in `test/integration/helpers.go`:
 ### 1. Run golangci-lint and Fix All Issues
 
 ```bash
-# DocBuilder uses golangci-lint v2.8.0
+# DocBuilder uses golangci-lint v2.12.2
 golangci-lint version
 
 # Run linter and format code
