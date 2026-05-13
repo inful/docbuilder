@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+const (
+	testNameNilError                  = "nil error"
+	testNameClassifiedValidationError = "classified validation error"
+	testNameUnclassifiedError         = "unclassified error"
+	testMsgUnknownError               = "unknown error"
+)
+
 func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
 	adapter := NewCLIErrorAdapter(false, slog.Default())
 
@@ -15,12 +22,12 @@ func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
 		expected int
 	}{
 		{
-			name:     "nil error",
+			name:     testNameNilError,
 			err:      nil,
 			expected: 0,
 		},
 		{
-			name: "classified validation error",
+			name: testNameClassifiedValidationError,
 			err: NewError(CategoryValidation, "invalid input").
 				WithSeverity(SeverityError).
 				Build(),
@@ -48,8 +55,8 @@ func TestCLIErrorAdapter_ExitCodeFor(t *testing.T) {
 			expected: 1, // Should map to general error
 		},
 		{
-			name:     "unclassified error",
-			err:      &customError{msg: "unknown error"},
+			name:     testNameUnclassifiedError,
+			err:      &customError{msg: testMsgUnknownError},
 			expected: 1,
 		},
 	}
@@ -73,7 +80,7 @@ func TestCLIErrorAdapter_FormatError(t *testing.T) {
 		contains string
 	}{
 		{
-			name:     "nil error",
+			name:     testNameNilError,
 			err:      nil,
 			contains: "",
 		},
@@ -85,9 +92,9 @@ func TestCLIErrorAdapter_FormatError(t *testing.T) {
 			contains: "Internal error occurred (use -v for details)",
 		},
 		{
-			name:     "unclassified error",
-			err:      &customError{msg: "unknown error"},
-			contains: "Error: unknown error",
+			name:     testNameUnclassifiedError,
+			err:      &customError{msg: testMsgUnknownError},
+			contains: "Error: " + testMsgUnknownError,
 		},
 	}
 

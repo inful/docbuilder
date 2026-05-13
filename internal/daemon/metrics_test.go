@@ -31,7 +31,7 @@ func TestMetricsCollector_PrometheusHandler_CounterSuffix(t *testing.T) {
 	mc.IncrementCounter("bar")
 
 	rr := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "http://example/metrics", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "http://example/metrics", nil)
 	mc.PrometheusHandler(rr, req)
 
 	require.Equal(t, http.StatusOK, rr.Code)

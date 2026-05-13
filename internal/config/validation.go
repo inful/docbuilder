@@ -264,7 +264,7 @@ func (cv *configurationValidator) validateForgeScopes(forge *ForgeConfig) error 
 	allowAuto := forge.AutoDiscover
 	if !allowAuto && forge.Options != nil {
 		// Check legacy options-based flag
-		if v, ok := forge.Options["auto_discover"]; ok {
+		if v, ok := forge.Options[forgeOptionAutoDiscoverKey]; ok {
 			if b, ok2 := v.(bool); ok2 && b {
 				allowAuto = true
 			}

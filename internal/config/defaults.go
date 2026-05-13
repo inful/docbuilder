@@ -97,7 +97,7 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Build.RetryInitialDelay = "1s"
 	}
 	if cfg.Build.RetryMaxDelay == "" {
-		cfg.Build.RetryMaxDelay = "30s"
+		cfg.Build.RetryMaxDelay = defaultDuration30s
 	}
 
 	return nil
@@ -175,7 +175,7 @@ func (d *DaemonDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Daemon.HTTP.LiveReloadPort = 8083
 	}
 	if cfg.Daemon.Sync.Schedule == "" {
-		cfg.Daemon.Sync.Schedule = "0 */4 * * *" // Every 4 hours
+		cfg.Daemon.Sync.Schedule = defaultSyncScheduleEvery4h // Every 4 hours
 	}
 	if cfg.Daemon.Sync.BuildOnDiscovery == nil {
 		v := true
@@ -274,10 +274,10 @@ func (f *FilteringDefaultApplier) ApplyDefaults(cfg *Config) error {
 
 	// Distinguish between nil slice and explicitly empty slice
 	if cfg.Filtering.RequiredPaths == nil {
-		cfg.Filtering.RequiredPaths = []string{"docs"}
+		cfg.Filtering.RequiredPaths = []string{defaultRequiredPathDocs}
 	}
 	if len(cfg.Filtering.IgnoreFiles) == 0 {
-		cfg.Filtering.IgnoreFiles = []string{".docignore"}
+		cfg.Filtering.IgnoreFiles = []string{defaultIgnoreFileDocignore}
 	}
 
 	return nil
@@ -331,7 +331,7 @@ func (m *MonitoringDefaultApplier) ApplyDefaults(cfg *Config) error {
 	}
 
 	if cfg.Monitoring.Metrics.Path == "" {
-		cfg.Monitoring.Metrics.Path = "/metrics"
+		cfg.Monitoring.Metrics.Path = defaultMetricsPath
 	}
 	if cfg.Monitoring.Health.Path == "" {
 		cfg.Monitoring.Health.Path = "/health"

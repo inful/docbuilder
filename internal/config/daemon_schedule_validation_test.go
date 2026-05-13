@@ -4,12 +4,12 @@ import "testing"
 
 func TestValidateDaemonSyncSchedule_ValidCron(t *testing.T) {
 	base := Config{
-		Version: "2.0",
-		Output:  OutputConfig{Directory: "./out", Clean: true},
+		Version: configVersion,
+		Output:  OutputConfig{Directory: testOutputDir, Clean: true},
 		Build:   BuildConfig{CloneConcurrency: 1, MaxRetries: 1, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "2s", CloneStrategy: CloneStrategyFresh},
 		Forges:  []*ForgeConfig{{Name: "f1", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, AutoDiscover: true}},
 		Daemon: &DaemonConfig{
-			Sync: SyncConfig{Schedule: "0 */4 * * *"},
+			Sync: SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 		},
 	}
 
@@ -20,8 +20,8 @@ func TestValidateDaemonSyncSchedule_ValidCron(t *testing.T) {
 
 func TestValidateDaemonSyncSchedule_InvalidCron(t *testing.T) {
 	base := Config{
-		Version: "2.0",
-		Output:  OutputConfig{Directory: "./out", Clean: true},
+		Version: configVersion,
+		Output:  OutputConfig{Directory: testOutputDir, Clean: true},
 		Build:   BuildConfig{CloneConcurrency: 1, MaxRetries: 1, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "2s", CloneStrategy: CloneStrategyFresh},
 		Forges:  []*ForgeConfig{{Name: "f1", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, AutoDiscover: true}},
 		Daemon: &DaemonConfig{
@@ -36,8 +36,8 @@ func TestValidateDaemonSyncSchedule_InvalidCron(t *testing.T) {
 
 func TestValidateDaemonSyncSchedule_EmptyAfterTrim(t *testing.T) {
 	base := Config{
-		Version: "2.0",
-		Output:  OutputConfig{Directory: "./out", Clean: true},
+		Version: configVersion,
+		Output:  OutputConfig{Directory: testOutputDir, Clean: true},
 		Build:   BuildConfig{CloneConcurrency: 1, MaxRetries: 1, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "2s", CloneStrategy: CloneStrategyFresh},
 		Forges:  []*ForgeConfig{{Name: "f1", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, AutoDiscover: true}},
 		Daemon: &DaemonConfig{

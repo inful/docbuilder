@@ -207,7 +207,7 @@ func (f *Fixer) processFileWithIssues(filePath string, issues []Issue, rootPath 
 	}
 
 	// Only count issues we actually addressed: filename issues are always fixable.
-	fixResult.ErrorsFixed += countIssuesByRule(issues, "filename-conventions")
+	fixResult.ErrorsFixed += countIssuesByRule(issues, ruleFilenameConventions)
 
 	// In dry-run mode the rename is not applied, so subsequent operations must
 	// continue to reference the original on-disk path.
@@ -310,7 +310,7 @@ func (f *Fixer) findAndUpdateLinks(oldPath, newPath, rootPath string) ([]LinkUpd
 // canFixFilename checks if the issues for a file are filename-related and fixable.
 func (f *Fixer) canFixFilename(issues []Issue) bool {
 	for _, issue := range issues {
-		if issue.Rule == "filename-conventions" {
+		if issue.Rule == ruleFilenameConventions {
 			return true
 		}
 	}
@@ -386,6 +386,7 @@ func (f *Fixer) updateFrontmatterFingerprint(filePath string) FingerprintUpdate 
 		return op
 	}
 
+	//nolint:gosec // filePath comes from controlled lint/discovery walk; no untrusted path input
 	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
 		op.Success = false
 		op.Error = fmt.Errorf("write file for fingerprint update: %w", writeErr)

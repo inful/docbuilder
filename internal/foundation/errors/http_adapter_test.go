@@ -17,12 +17,12 @@ func TestHTTPErrorAdapter_StatusCodeFor(t *testing.T) {
 		expected int
 	}{
 		{
-			name:     "nil error",
+			name:     testNameNilError,
 			err:      nil,
 			expected: http.StatusOK,
 		},
 		{
-			name: "classified validation error",
+			name: testNameClassifiedValidationError,
 			err: NewError(CategoryValidation, "invalid input").
 				WithSeverity(SeverityError).
 				Build(),
@@ -50,8 +50,8 @@ func TestHTTPErrorAdapter_StatusCodeFor(t *testing.T) {
 			expected: http.StatusConflict,
 		},
 		{
-			name:     "unclassified error",
-			err:      &customHTTPError{msg: "unknown error"},
+			name:     testNameUnclassifiedError,
+			err:      &customHTTPError{msg: testMsgUnknownError},
 			expected: http.StatusInternalServerError,
 		},
 	}
@@ -76,13 +76,13 @@ func TestHTTPErrorAdapter_WriteErrorResponse(t *testing.T) {
 		checkJSON      bool
 	}{
 		{
-			name:           "nil error",
+			name:           testNameNilError,
 			err:            nil,
 			expectedStatus: http.StatusOK,
 			checkJSON:      false,
 		},
 		{
-			name: "classified validation error",
+			name: testNameClassifiedValidationError,
 			err: NewError(CategoryValidation, "invalid input").
 				WithSeverity(SeverityError).
 				Build(),
@@ -94,7 +94,7 @@ func TestHTTPErrorAdapter_WriteErrorResponse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(http.MethodGet, "/test", nil)
+			r := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", nil)
 			adapter.WriteErrorResponse(w, r, tt.err)
 
 			if w.Code != tt.expectedStatus {
@@ -135,7 +135,7 @@ func TestHTTPErrorAdapter_FormatErrorResponse(t *testing.T) {
 		checkMsg bool
 	}{
 		{
-			name:     "nil error",
+			name:     testNameNilError,
 			err:      nil,
 			checkMsg: false,
 		},

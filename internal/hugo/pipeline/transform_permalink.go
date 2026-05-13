@@ -10,7 +10,7 @@ import (
 // It requires a non-empty "uid" field and a matching "/_uid/<uid>/" value in "aliases".
 func injectPermalink(baseURL string) FileTransform {
 	return func(doc *Document) ([]*Document, error) {
-		if doc.Extension != ".md" || doc.Generated {
+		if doc.Extension != markdownExtension || doc.Generated {
 			return nil, nil
 		}
 

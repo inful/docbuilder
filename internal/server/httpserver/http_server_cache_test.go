@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -27,28 +28,28 @@ func TestCacheControlHeaders(t *testing.T) {
 		{"/static/font.ttf", immutableCacheControl},
 
 		// Images - 1 week
-		{"/images/logo.png", "public, max-age=604800"},
-		{"/assets/hero.jpg", "public, max-age=604800"},
-		{"/static/icon.svg", "public, max-age=604800"},
-		{"/favicon.ico", "public, max-age=604800"},
+		{"/images/logo.png", cacheControlWeek},
+		{"/assets/hero.jpg", cacheControlWeek},
+		{"/static/icon.svg", cacheControlWeek},
+		{"/favicon.ico", cacheControlWeek},
 
 		// Downloadable files - 1 day
-		{"/downloads/manual.pdf", "public, max-age=86400"},
-		{"/files/archive.zip", "public, max-age=86400"},
+		{"/downloads/manual.pdf", cacheControlDay},
+		{"/files/archive.zip", cacheControlDay},
 
 		// JSON (non-search) - 5 minutes
-		{"/data/config.json", "public, max-age=300"},
-		{"/api-data.json", "public, max-age=300"},
+		{"/data/config.json", cacheControlFiveMinute},
+		{"/api-data.json", cacheControlFiveMinute},
 
 		// XML - 1 hour
-		{"/sitemap.xml", "public, max-age=3600"},
-		{"/feed.xml", "public, max-age=3600"},
+		{"/sitemap.xml", cacheControlHour},
+		{"/feed.xml", cacheControlHour},
 
 		// HTML and root - no cache
-		{"/index.html", "no-cache, must-revalidate"},
-		{"/docs/guide.html", "no-cache, must-revalidate"},
-		{"/", "no-cache, must-revalidate"},
-		{"/docs/", "no-cache, must-revalidate"},
+		{"/index.html", cacheControlNoCache},
+		{"/docs/guide.html", cacheControlNoCache},
+		{"/", cacheControlNoCache},
+		{"/docs/", cacheControlNoCache},
 
 		// Search index - no cache header (special case)
 		{"/search-index.json", ""},
@@ -70,7 +71,7 @@ func TestCacheControlHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, tt.path, nil)
 			rec := httptest.NewRecorder()
 
 			handler.ServeHTTP(rec, req)
@@ -99,7 +100,7 @@ func TestCacheControlNoInterferenceWithLiveReload(t *testing.T) {
 
 	handler := srv.addCacheControlHeaders(simpleHandler)
 
-	req := httptest.NewRequest(http.MethodGet, "/static/app.css", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/static/app.css", nil)
 	rec := httptest.NewRecorder()
 
 	handler.ServeHTTP(rec, req)

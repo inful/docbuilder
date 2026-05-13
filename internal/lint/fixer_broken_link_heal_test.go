@@ -31,7 +31,7 @@ func TestFixer_HealsBrokenLinks_FromGitUncommittedRename(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 	res, err := fixer.fix(docsDir)
 	require.NoError(t, err)
@@ -70,7 +70,7 @@ func TestFixer_HealsBrokenLinks_RenameBackRoundTrip(t *testing.T) {
 			// modifies the destination file contents during other fix phases.
 			git(t, repoDir, "mv", "docs/test.md", "docs/"+newName)
 
-			linter := NewLinter(&Config{Format: "text"})
+			linter := NewLinter(&Config{Format: formatText})
 			fixer := NewFixer(linter, false, true)
 
 			// First run: healer should update link to point at the renamed file.
@@ -142,7 +142,7 @@ func TestFixer_HealsBrokenLinks_PreservesLabelWhenLabelEqualsOldDestination(t *t
 	// User renames the file and forgets to update the link.
 	git(t, repoDir, "mv", "docs/file.md", "docs/file-rename.md")
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 
 	res, err := fixer.fix(docsDir)
@@ -196,7 +196,7 @@ func TestFixer_SkipsBrokenLinkHealing_WhenRenameMappingIsAmbiguous(t *testing.T)
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 	// Fix only the linking file so filename-convention renames on other files
 	// cannot affect ambiguity detection.
@@ -238,7 +238,7 @@ func TestFixer_HealsBrokenLinks_ToFinalPath_WhenFixerAlsoRenamesDestination(t *t
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 	res, err := fixer.fix(docsDir)
 	require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestFixer_WarnsOnRenameCollision_WhenHistoryRenameCreatesCaseOnlyConflict(t
 	require.NoError(t, err)
 	require.Len(t, before, 1)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false) // force=false: must refuse overwrite
 	res, err := fixer.fix(docsDir)
 	require.NoError(t, err)

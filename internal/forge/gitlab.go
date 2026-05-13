@@ -373,14 +373,14 @@ func (c *GitLabClient) ValidateWebhook(_ []byte, signature string, secret string
 func (c *GitLabClient) ParseWebhookEvent(payload []byte, eventType string) (*WebhookEvent, error) {
 	eventType = strings.TrimSpace(eventType)
 
-	if eventType == "System Hook" {
+	if eventType == gitLabSystemHook {
 		return c.parseSystemHookEvent(payload, eventType)
 	}
 
 	switch eventType {
-	case string(WebhookEventPush), "Push Hook":
+	case string(WebhookEventPush), gitLabPushHook:
 		return c.parsePushEvent(payload)
-	case "tag_push", "Tag Push Hook":
+	case "tag_push", gitLabTagPushHook:
 		return c.parseTagPushEvent(payload)
 	case string(WebhookEventRepository), "Repository Update Hook":
 		return c.parseRepositoryEvent(payload)

@@ -75,8 +75,8 @@ func testDocsDiscoveryComponentIntegration(t *testing.T) {
 	// Create docs discovery configuration
 	discoveryConfig := &config.FilteringConfig{
 		RequiredPaths:   []string{"docs", "documentation", "guides"},
-		IncludePatterns: []string{"*.md", "*.rst", "*.adoc"},
-		ExcludePatterns: []string{"*deprecated*", "*legacy*", "*old*"},
+		IncludePatterns: []string{testPatternMarkdownAny, testPatternRSTAny, testPatternAdocAny},
+		ExcludePatterns: []string{testPatternDeprecated, testPatternLegacyLike, testPatternOldLike},
 	}
 
 	// Populate with realistic repository structures
@@ -338,7 +338,7 @@ func testMultiForgeConfigurationIntegration(t *testing.T) {
 
 	// Create comprehensive configuration
 	integrationConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			githubConfig,
 			gitlabConfig,
@@ -350,8 +350,8 @@ func testMultiForgeConfigurationIntegration(t *testing.T) {
 		},
 		Filtering: &config.FilteringConfig{
 			RequiredPaths:   []string{"docs", "documentation"},
-			IncludePatterns: []string{"*.md", "*.rst"},
-			ExcludePatterns: []string{"*legacy*"},
+			IncludePatterns: []string{testPatternMarkdownAny, testPatternRSTAny},
+			ExcludePatterns: []string{testPatternLegacyLike},
 		},
 		Hugo: config.HugoConfig{
 			Title: "Multi-Forge Documentation Hub",

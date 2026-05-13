@@ -8,6 +8,11 @@ import (
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
+const (
+	testRepoNameUserGuide = "user-guide"
+	testOrgNameAcmeCorp   = "acme-corp"
+)
+
 // TestTestForgeBasicUsage demonstrates basic test forge usage.
 func TestTestForgeBasicUsage(t *testing.T) {
 	// Create a test forge with realistic data
@@ -17,9 +22,9 @@ func TestTestForgeBasicUsage(t *testing.T) {
 
 	// Add a realistic test repository
 	testRepo := testforge.TestRepository{
-		Name:        "user-guide",
-		FullName:    "acme-corp/user-guide",
-		CloneURL:    "https://github.com/acme-corp/user-guide.git",
+		Name:        testRepoNameUserGuide,
+		FullName:    testOrgNameAcmeCorp + "/" + testRepoNameUserGuide,
+		CloneURL:    "https://github.com/" + testOrgNameAcmeCorp + "/" + testRepoNameUserGuide + ".git",
 		Description: "User guide documentation for Acme Corp products",
 		Topics:      []string{"documentation", "user-guide", "acme"},
 		Language:    "Markdown",
@@ -29,7 +34,7 @@ func TestTestForgeBasicUsage(t *testing.T) {
 	}
 
 	forge.AddRepository(testRepo)
-	forge.AddOrganization("acme-corp")
+	forge.AddOrganization(testOrgNameAcmeCorp)
 
 	ctx := t.Context()
 
@@ -39,24 +44,24 @@ func TestTestForgeBasicUsage(t *testing.T) {
 		t.Fatalf("Failed to get organizations: %v", err)
 	}
 
-	if len(orgs) != 1 || orgs[0].Name != "acme-corp" {
-		t.Errorf("Expected 1 organization 'acme-corp', got %d: %v", len(orgs), orgs)
+	if len(orgs) != 1 || orgs[0].Name != testOrgNameAcmeCorp {
+		t.Errorf("Expected 1 organization %q, got %d: %v", testOrgNameAcmeCorp, len(orgs), orgs)
 	}
 
 	// Test repository discovery
-	repos, err := forge.GetRepositoriesForOrganization(ctx, "acme-corp")
+	repos, err := forge.GetRepositoriesForOrganization(ctx, testOrgNameAcmeCorp)
 	if err != nil {
 		t.Fatalf("Failed to get repositories: %v", err)
 	}
 
-	if len(repos) != 1 || repos[0].Name != "user-guide" {
-		t.Errorf("Expected 1 repository 'user-guide', got %d: %v", len(repos), repos)
+	if len(repos) != 1 || repos[0].Name != testRepoNameUserGuide {
+		t.Errorf("Expected 1 repository %q, got %d: %v", testRepoNameUserGuide, len(repos), repos)
 	}
 
 	// Verify repository attributes
 	repo := repos[0]
-	if repo.FullName != "acme-corp/user-guide" {
-		t.Errorf("Expected full name 'acme-corp/user-guide', got '%s'", repo.FullName)
+	if repo.FullName != testOrgNameAcmeCorp+"/"+testRepoNameUserGuide {
+		t.Errorf("Expected full name %q, got %q", testOrgNameAcmeCorp+"/"+testRepoNameUserGuide, repo.FullName)
 	}
 
 	if !contains(repo.Topics, "documentation") {

@@ -14,10 +14,12 @@ type Linter struct {
 	rules []Rule
 }
 
+const formatText = "text"
+
 // NewLinter creates a new linter with the given configuration.
 func NewLinter(cfg *Config) *Linter {
 	if cfg == nil {
-		cfg = &Config{Format: "text"}
+		cfg = &Config{Format: formatText}
 	}
 
 	return &Linter{

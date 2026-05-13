@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func TestWriteJSONBasic(t *testing.T) {
 	rec := httptest.NewRecorder()
-	payload := map[string]string{"status": "ok"}
+	payload := map[string]string{statusKey: "ok"}
 	if err := writeJSON(rec, 202, payload); err != nil {
 		t.Fatalf("writeJSON error: %v", err)
 	}
@@ -25,7 +26,7 @@ func TestWriteJSONBasic(t *testing.T) {
 
 func TestWriteJSONPretty(t *testing.T) {
 	rec := httptest.NewRecorder()
-	r := httptest.NewRequest(http.MethodGet, "/x?pretty=1", nil)
+	r := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/x?pretty=1", nil)
 	payload := map[string]string{"hello": "world"}
 	if err := writeJSONPretty(rec, r, 200, payload); err != nil {
 		t.Fatalf("writeJSONPretty error: %v", err)

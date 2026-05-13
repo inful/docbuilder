@@ -71,6 +71,7 @@ func (f *Fixer) shouldUseGitMv(filePath string) bool {
 	}
 
 	// Check if file is tracked by Git
+	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
 	cmd := exec.CommandContext(context.Background(), "git", "ls-files", "--error-unmatch", filePath)
 	err := cmd.Run()
 	return err == nil
@@ -78,6 +79,7 @@ func (f *Fixer) shouldUseGitMv(filePath string) bool {
 
 // gitMv performs a git mv operation.
 func (f *Fixer) gitMv(oldPath, newPath string) error {
+	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
 	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -88,6 +90,7 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 
 // isGitRepository checks if the given directory is a Git repository.
 func isGitRepository(dir string) bool {
+	//nolint:gosec // command is executed without a shell; args are passed as separate parameters
 	cmd := exec.CommandContext(context.Background(), "git", "-C", dir, "rev-parse", "--git-dir")
 	err := cmd.Run()
 	return err == nil

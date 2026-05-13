@@ -98,6 +98,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		if modified {
 			// Create backup before writing
 			backupPath := sourceFile + ".backup"
+			//nolint:gosec // backupPath is derived from a controlled sourceFile under the docs root
 			err := os.WriteFile(backupPath, originalContent, 0o600)
 			if err != nil {
 				// Rollback previous changes
@@ -107,6 +108,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			backupPaths = append(backupPaths, backupPath)
 
 			// Write updated content
+			//nolint:gosec // sourceFile is derived from a controlled discovery walk under the docs root
 			err = os.WriteFile(sourceFile, content, 0o600)
 			if err != nil {
 				// Rollback previous changes
@@ -181,7 +183,7 @@ func (f *Fixer) rollbackLinkUpdates(backupPaths []string) {
 
 		// #nosec G304 -- backupPath created internally, not user input
 		if content, err := os.ReadFile(backupPath); err == nil {
-			_ = os.WriteFile(originalFile, content, 0o600) // Best effort restore
+			_ = os.WriteFile(originalFile, content, 0o600) //nolint:gosec // best-effort restore within repo workspace
 		}
 		_ = os.Remove(backupPath) // Best effort cleanup
 	}

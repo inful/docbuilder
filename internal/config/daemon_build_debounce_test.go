@@ -27,13 +27,13 @@ func TestDaemonBuildDebounceDefaultsApplied(t *testing.T) {
 
 func TestValidateConfig_DaemonBuildDebounce_InvalidQuietWindow(t *testing.T) {
 	cfg := Config{
-		Version:      "2.0",
+		Version:      configVersion,
 		Repositories: []Repository{{Name: "r"}},
 		Daemon: &DaemonConfig{
-			Sync: SyncConfig{Schedule: "0 */4 * * *"},
+			Sync: SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 			BuildDebounce: &BuildDebounceConfig{
 				QuietWindow: "nope",
-				MaxDelay:    "60s",
+				MaxDelay:    defaultDuration60s,
 			},
 		},
 	}
@@ -49,12 +49,12 @@ func TestValidateConfig_DaemonBuildDebounce_InvalidQuietWindow(t *testing.T) {
 
 func TestValidateConfig_DaemonBuildDebounce_MaxDelayLessThanQuietWindow(t *testing.T) {
 	cfg := Config{
-		Version:      "2.0",
+		Version:      configVersion,
 		Repositories: []Repository{{Name: "r"}},
 		Daemon: &DaemonConfig{
-			Sync: SyncConfig{Schedule: "0 */4 * * *"},
+			Sync: SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 			BuildDebounce: &BuildDebounceConfig{
-				QuietWindow: "10s",
+				QuietWindow: defaultDuration10s,
 				MaxDelay:    "5s",
 			},
 		},
@@ -62,7 +62,7 @@ func TestValidateConfig_DaemonBuildDebounce_MaxDelayLessThanQuietWindow(t *testi
 	if err := applyDefaults(&cfg); err != nil {
 		t.Fatalf("defaults: %v", err)
 	}
-	cfg.Daemon.BuildDebounce.QuietWindow = "10s"
+	cfg.Daemon.BuildDebounce.QuietWindow = defaultDuration10s
 	cfg.Daemon.BuildDebounce.MaxDelay = "5s"
 
 	if err := ValidateConfig(&cfg); err == nil {
@@ -72,20 +72,20 @@ func TestValidateConfig_DaemonBuildDebounce_MaxDelayLessThanQuietWindow(t *testi
 
 func TestValidateConfig_DaemonBuildDebounce_QuietWindowTooLarge(t *testing.T) {
 	cfg := Config{
-		Version:      "2.0",
+		Version:      configVersion,
 		Repositories: []Repository{{Name: "r"}},
 		Daemon: &DaemonConfig{
-			Sync: SyncConfig{Schedule: "0 */4 * * *"},
+			Sync: SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 			BuildDebounce: &BuildDebounceConfig{
-				QuietWindow: "25h",
-				MaxDelay:    "60s",
+				QuietWindow: quietWindow25h,
+				MaxDelay:    defaultDuration60s,
 			},
 		},
 	}
 	if err := applyDefaults(&cfg); err != nil {
 		t.Fatalf("defaults: %v", err)
 	}
-	cfg.Daemon.BuildDebounce.QuietWindow = "25h"
+	cfg.Daemon.BuildDebounce.QuietWindow = quietWindow25h
 
 	if err := ValidateConfig(&cfg); err == nil {
 		t.Fatalf("expected validation error for quiet_window above max")
@@ -94,20 +94,20 @@ func TestValidateConfig_DaemonBuildDebounce_QuietWindowTooLarge(t *testing.T) {
 
 func TestValidateConfig_DaemonBuildDebounce_MaxDelayTooLarge(t *testing.T) {
 	cfg := Config{
-		Version:      "2.0",
+		Version:      configVersion,
 		Repositories: []Repository{{Name: "r"}},
 		Daemon: &DaemonConfig{
-			Sync: SyncConfig{Schedule: "0 */4 * * *"},
+			Sync: SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 			BuildDebounce: &BuildDebounceConfig{
-				QuietWindow: "10s",
-				MaxDelay:    "25h",
+				QuietWindow: defaultDuration10s,
+				MaxDelay:    quietWindow25h,
 			},
 		},
 	}
 	if err := applyDefaults(&cfg); err != nil {
 		t.Fatalf("defaults: %v", err)
 	}
-	cfg.Daemon.BuildDebounce.MaxDelay = "25h"
+	cfg.Daemon.BuildDebounce.MaxDelay = quietWindow25h
 
 	if err := ValidateConfig(&cfg); err == nil {
 		t.Fatalf("expected validation error for max_delay above max")

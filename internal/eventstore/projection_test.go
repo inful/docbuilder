@@ -16,7 +16,7 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 
 	// Apply BuildStarted event
 	buildID := testBuildID
-	startEvent, err := NewBuildStarted(buildID, BuildStartedMeta{TenantID: "tenant-1", Type: "manual"})
+	startEvent, err := NewBuildStarted(buildID, BuildStartedMeta{TenantID: testTenantID, Type: testBuildTypeManual})
 	if err != nil {
 		t.Fatalf("Failed to create event: %v", err)
 	}
@@ -27,11 +27,11 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 	if !exists {
 		t.Fatal("Expected build to exist")
 	}
-	if summary.Status != "running" {
+	if summary.Status != buildStatusRunning {
 		t.Errorf("Expected status 'running', got %q", summary.Status)
 	}
-	if summary.TenantID != "tenant-1" {
-		t.Errorf("Expected tenant 'tenant-1', got %q", summary.TenantID)
+	if summary.TenantID != testTenantID {
+		t.Errorf("Expected tenant %q, got %q", testTenantID, summary.TenantID)
 	}
 
 	// Apply RepositoryCloned event
@@ -59,7 +59,7 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 	}
 
 	// Apply BuildCompleted event
-	completeEvent, err := NewBuildCompleted(buildID, "completed", 5*time.Second, map[string]string{"site": "/output"})
+	completeEvent, err := NewBuildCompleted(buildID, "completed", 5*time.Second, map[string]string{"site": testArtifactSitePath})
 	if err != nil {
 		t.Fatalf("Failed to create event: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestBuildHistoryProjection_ApplyEvents(t *testing.T) {
 	if summary.CompletedAt == nil {
 		t.Error("Expected completed_at to be set")
 	}
-	if summary.Artifacts["site"] != "/output" {
+	if summary.Artifacts["site"] != testArtifactSitePath {
 		t.Errorf("Expected artifact 'site' = '/output', got %q", summary.Artifacts["site"])
 	}
 

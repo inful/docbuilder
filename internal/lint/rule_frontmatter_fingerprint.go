@@ -22,6 +22,21 @@ type FrontmatterFingerprintRule struct{}
 
 const frontmatterFingerprintRuleName = "frontmatter-fingerprint"
 
+const (
+	frontmatterFingerprintMissingMessage = "Missing or invalid fingerprint in frontmatter"
+	frontmatterFingerprintExplainLine    = "DocBuilder uses these fingerprints to detect content changes reliably."
+	frontmatterFingerprintFixHint        = "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)"
+)
+
+func frontmatterFingerprintExplanation() string {
+	return strings.TrimSpace(strings.Join([]string{
+		"This document is expected to carry a content fingerprint in its YAML frontmatter.",
+		frontmatterFingerprintExplainLine,
+		"",
+		"This check is powered by github.com/inful/mdfp.",
+	}, "\n"))
+}
+
 func (r *FrontmatterFingerprintRule) Name() string {
 	return frontmatterFingerprintRuleName
 }
@@ -42,17 +57,12 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 		//nolint:nilerr // Split failures are reported as lint issues, not fatal errors.
 		return []Issue{
 			{
-				FilePath: filePath,
-				Severity: SeverityError,
-				Rule:     r.Name(),
-				Message:  splitErr.Error(),
-				Explanation: strings.TrimSpace(strings.Join([]string{
-					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-					"DocBuilder uses these fingerprints to detect content changes reliably.",
-					"",
-					"This check is powered by github.com/inful/mdfp.",
-				}, "\n")),
-				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+				FilePath:    filePath,
+				Severity:    SeverityError,
+				Rule:        r.Name(),
+				Message:     splitErr.Error(),
+				Explanation: frontmatterFingerprintExplanation(),
+				Fix:         frontmatterFingerprintFixHint,
 			},
 		}, nil
 	}
@@ -60,17 +70,12 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	if !hadFrontmatter {
 		return []Issue{
 			{
-				FilePath: filePath,
-				Severity: SeverityError,
-				Rule:     r.Name(),
-				Message:  "Missing or invalid fingerprint in frontmatter",
-				Explanation: strings.TrimSpace(strings.Join([]string{
-					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-					"DocBuilder uses these fingerprints to detect content changes reliably.",
-					"",
-					"This check is powered by github.com/inful/mdfp.",
-				}, "\n")),
-				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+				FilePath:    filePath,
+				Severity:    SeverityError,
+				Rule:        r.Name(),
+				Message:     frontmatterFingerprintMissingMessage,
+				Explanation: frontmatterFingerprintExplanation(),
+				Fix:         frontmatterFingerprintFixHint,
 			},
 		}, nil
 	}
@@ -79,17 +84,12 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	if parseErr != nil {
 		return []Issue{
 			{
-				FilePath: filePath,
-				Severity: SeverityError,
-				Rule:     r.Name(),
-				Message:  fmt.Sprintf("invalid YAML frontmatter: %v", parseErr),
-				Explanation: strings.TrimSpace(strings.Join([]string{
-					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-					"DocBuilder uses these fingerprints to detect content changes reliably.",
-					"",
-					"This check is powered by github.com/inful/mdfp.",
-				}, "\n")),
-				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+				FilePath:    filePath,
+				Severity:    SeverityError,
+				Rule:        r.Name(),
+				Message:     fmt.Sprintf("invalid YAML frontmatter: %v", parseErr),
+				Explanation: frontmatterFingerprintExplanation(),
+				Fix:         frontmatterFingerprintFixHint,
 			},
 		}, nil
 	}
@@ -98,17 +98,12 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	if !ok {
 		return []Issue{
 			{
-				FilePath: filePath,
-				Severity: SeverityError,
-				Rule:     r.Name(),
-				Message:  "Missing or invalid fingerprint in frontmatter",
-				Explanation: strings.TrimSpace(strings.Join([]string{
-					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-					"DocBuilder uses these fingerprints to detect content changes reliably.",
-					"",
-					"This check is powered by github.com/inful/mdfp.",
-				}, "\n")),
-				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+				FilePath:    filePath,
+				Severity:    SeverityError,
+				Rule:        r.Name(),
+				Message:     frontmatterFingerprintMissingMessage,
+				Explanation: frontmatterFingerprintExplanation(),
+				Fix:         frontmatterFingerprintFixHint,
 			},
 		}, nil
 	}
@@ -117,17 +112,12 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	if !ok || strings.TrimSpace(currentFingerprint) == "" {
 		return []Issue{
 			{
-				FilePath: filePath,
-				Severity: SeverityError,
-				Rule:     r.Name(),
-				Message:  "Missing or invalid fingerprint in frontmatter",
-				Explanation: strings.TrimSpace(strings.Join([]string{
-					"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-					"DocBuilder uses these fingerprints to detect content changes reliably.",
-					"",
-					"This check is powered by github.com/inful/mdfp.",
-				}, "\n")),
-				Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+				FilePath:    filePath,
+				Severity:    SeverityError,
+				Rule:        r.Name(),
+				Message:     frontmatterFingerprintMissingMessage,
+				Explanation: frontmatterFingerprintExplanation(),
+				Fix:         frontmatterFingerprintFixHint,
 			},
 		}, nil
 	}
@@ -140,21 +130,14 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 		return nil, nil
 	}
 
-	message := "Missing or invalid fingerprint in frontmatter"
-
 	return []Issue{
 		{
-			FilePath: filePath,
-			Severity: SeverityError,
-			Rule:     r.Name(),
-			Message:  message,
-			Explanation: strings.TrimSpace(strings.Join([]string{
-				"This document is expected to carry a content fingerprint in its YAML frontmatter.",
-				"DocBuilder uses these fingerprints to detect content changes reliably.",
-				"",
-				"This check is powered by github.com/inful/mdfp.",
-			}, "\n")),
-			Fix: "Run: docbuilder lint --fix (regenerates frontmatter fingerprints)",
+			FilePath:    filePath,
+			Severity:    SeverityError,
+			Rule:        r.Name(),
+			Message:     frontmatterFingerprintMissingMessage,
+			Explanation: frontmatterFingerprintExplanation(),
+			Fix:         frontmatterFingerprintFixHint,
 		},
 	}, nil
 }

@@ -181,6 +181,7 @@ func verifyHugoConfig(t *testing.T, outputDir, goldenPath string, updateGolden b
 	}
 
 	// #nosec G304 -- test helper reads a controlled golden file path under testdata.
+	// #nosec G304 -- goldenPath is controlled by the test harness (golden fixture path)
 	goldenData, err := os.ReadFile(goldenPath)
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 
@@ -282,8 +283,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 
 		relPath, _ := filepath.Rel(outputDir, path)
 
-		// #nosec G304 -- test utility reading from test output directory
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) //nolint:gosec // test-only walk within controlled output directory
 		if err != nil {
 			return err
 		}
@@ -324,7 +324,7 @@ func verifyContentStructure(t *testing.T, outputDir, goldenPath string, updateGo
 		return
 	}
 
-	goldenData, err := os.ReadFile(goldenPath)
+	goldenData, err := os.ReadFile(goldenPath) //nolint:gosec // goldenPath is a controlled golden fixture path
 	require.NoError(t, err, "failed to read golden file: %s", goldenPath)
 
 	var expected ContentStructure
@@ -436,7 +436,7 @@ func dumpContentDiff(t *testing.T, outputDir string, expected, actual ContentStr
 
 		// Write to /tmp for debugging
 		debugPath := filepath.Join("/tmp", "golden-debug-"+filepath.Base(path))
-		_ = os.WriteFile(debugPath, body, 0o600)
+		_ = os.WriteFile(debugPath, body, 0o600) //nolint:gosec // test-only debug output
 		t.Logf("Wrote body to: %s", debugPath)
 	}
 }

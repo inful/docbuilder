@@ -3,7 +3,7 @@ package config
 import "testing"
 
 func TestNormalizeFiltering_DedupeTrimSort(t *testing.T) {
-	c := &Config{Version: "2.0", Filtering: &FilteringConfig{
+	c := &Config{Version: configVersion, Filtering: &FilteringConfig{
 		RequiredPaths:   []string{" docs ", "docs", "guides"},
 		IgnoreFiles:     []string{" .docignore ", ".docignore", "README.md"},
 		IncludePatterns: []string{"  lib-*  ", "api-*", "lib-*", "core"},
@@ -17,11 +17,11 @@ func TestNormalizeFiltering_DedupeTrimSort(t *testing.T) {
 		t.Fatalf("expected warnings for filtering normalization")
 	}
 	// RequiredPaths should be [docs,guides] sorted
-	if len(c.Filtering.RequiredPaths) != 2 || c.Filtering.RequiredPaths[0] != "docs" || c.Filtering.RequiredPaths[1] != "guides" {
+	if len(c.Filtering.RequiredPaths) != 2 || c.Filtering.RequiredPaths[0] != defaultRequiredPathDocs || c.Filtering.RequiredPaths[1] != "guides" {
 		t.Fatalf("unexpected required_paths: %#v", c.Filtering.RequiredPaths)
 	}
 	// IgnoreFiles trimmed/deduped and sorted => [".docignore","README.md"] (space-trim) keep order alphabetical
-	if len(c.Filtering.IgnoreFiles) != 2 || c.Filtering.IgnoreFiles[0] != ".docignore" || c.Filtering.IgnoreFiles[1] != "README.md" {
+	if len(c.Filtering.IgnoreFiles) != 2 || c.Filtering.IgnoreFiles[0] != defaultIgnoreFileDocignore || c.Filtering.IgnoreFiles[1] != "README.md" {
 		t.Fatalf("unexpected ignore_files: %#v", c.Filtering.IgnoreFiles)
 	}
 	// IncludePatterns => ["api-*","core","lib-*"]
@@ -35,7 +35,7 @@ func TestNormalizeFiltering_DedupeTrimSort(t *testing.T) {
 }
 
 func TestSnapshot_IncludesFiltering(t *testing.T) {
-	c := &Config{Version: "2.0", Filtering: &FilteringConfig{IncludePatterns: []string{"b", "a"}}, Hugo: HugoConfig{}}
+	c := &Config{Version: configVersion, Filtering: &FilteringConfig{IncludePatterns: []string{"b", "a"}}, Hugo: HugoConfig{}}
 	if _, err := NormalizeConfig(c); err != nil {
 		t.Fatalf("normalize: %v", err)
 	}

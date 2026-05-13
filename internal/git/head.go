@@ -28,7 +28,7 @@ func ReadRepoHead(repoPath string) (string, error) {
 		ref := strings.TrimSpace(after)
 		refPath := filepath.Join(repoPath, ".git", filepath.FromSlash(ref))
 		// #nosec G304 - refPath is internal git metadata, repoPath is controlled
-		if refData, refErr := os.ReadFile(refPath); refErr == nil {
+		if refData, refErr := os.ReadFile(refPath); refErr == nil { //nolint:gosec // internal git metadata read
 			return strings.TrimSpace(string(refData)), nil
 		}
 	}

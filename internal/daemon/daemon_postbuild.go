@@ -181,7 +181,7 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 
 		// Compute MD5 hash of HTML content for change detection
 		var contentHash string
-		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil {
+		if htmlBytes, err := os.ReadFile(filepath.Clean(path)); err == nil { //nolint:gosec // walk within controlled output dir
 			// #nosec G401 -- MD5 is used for content hashing, not cryptographic security
 			hash := md5.New()
 			hash.Write(htmlBytes)

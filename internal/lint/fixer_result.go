@@ -117,13 +117,13 @@ func (fr *FixResult) CountAffectedFiles() int {
 func (fr *FixResult) Summary() string {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("Files renamed: %d\n", len(fr.FilesRenamed)))
-	b.WriteString(fmt.Sprintf("Errors fixed: %d\n", fr.ErrorsFixed))
-	b.WriteString(fmt.Sprintf("Fingerprints updated: %d\n", len(fr.Fingerprints)))
-	b.WriteString(fmt.Sprintf("Links updated: %d\n", len(fr.LinksUpdated)))
+	fmt.Fprintf(&b, "Files renamed: %d\n", len(fr.FilesRenamed))
+	fmt.Fprintf(&b, "Errors fixed: %d\n", fr.ErrorsFixed)
+	fmt.Fprintf(&b, "Fingerprints updated: %d\n", len(fr.Fingerprints))
+	fmt.Fprintf(&b, "Links updated: %d\n", len(fr.LinksUpdated))
 
 	if len(fr.BrokenLinks) > 0 {
-		b.WriteString(fmt.Sprintf("\nBroken links detected: %d\n", len(fr.BrokenLinks)))
+		fmt.Fprintf(&b, "\nBroken links detected: %d\n", len(fr.BrokenLinks))
 		b.WriteString("These links reference non-existent files:\n")
 		for _, broken := range fr.BrokenLinks {
 			linkTypeStr := linkTypeInline
@@ -135,17 +135,17 @@ func (fr *FixResult) Summary() string {
 			case LinkTypeReference:
 				linkTypeStr = linkTypeReference
 			}
-			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s (broken %s)\n",
-				broken.SourceFile, broken.LineNumber, linkTypeStr, broken.Target, linkTypeStr))
+			fmt.Fprintf(&b, "  • %s:%d: %s → %s (broken %s)\n",
+				broken.SourceFile, broken.LineNumber, linkTypeStr, broken.Target, linkTypeStr)
 		}
 	}
 
 	if len(fr.HealSkipped) > 0 {
-		b.WriteString(fmt.Sprintf("\nBroken link heals skipped: %d\n", len(fr.HealSkipped)))
+		fmt.Fprintf(&b, "\nBroken link heals skipped: %d\n", len(fr.HealSkipped))
 		for _, s := range fr.HealSkipped {
-			b.WriteString(fmt.Sprintf("  • %s:%d: %s (reason: %s)\n", s.SourceFile, s.LineNumber, s.Target, s.Reason))
+			fmt.Fprintf(&b, "  • %s:%d: %s (reason: %s)\n", s.SourceFile, s.LineNumber, s.Target, s.Reason)
 			if len(s.Candidates) > 0 {
-				b.WriteString(fmt.Sprintf("    candidates: %s\n", strings.Join(s.Candidates, ", ")))
+				fmt.Fprintf(&b, "    candidates: %s\n", strings.Join(s.Candidates, ", "))
 			}
 		}
 	}
@@ -153,15 +153,15 @@ func (fr *FixResult) Summary() string {
 	if len(fr.LinksUpdated) > 0 {
 		b.WriteString("\nLink Updates:\n")
 		for _, update := range fr.LinksUpdated {
-			b.WriteString(fmt.Sprintf("  • %s:%d: %s → %s\n",
-				update.SourceFile, update.LineNumber, update.OldTarget, update.NewTarget))
+			fmt.Fprintf(&b, "  • %s:%d: %s → %s\n",
+				update.SourceFile, update.LineNumber, update.OldTarget, update.NewTarget)
 		}
 	}
 
 	if len(fr.Errors) > 0 {
-		b.WriteString(fmt.Sprintf("\nErrors encountered: %d\n", len(fr.Errors)))
+		fmt.Fprintf(&b, "\nErrors encountered: %d\n", len(fr.Errors))
 		for _, err := range fr.Errors {
-			b.WriteString(fmt.Sprintf("  • %v\n", err))
+			fmt.Fprintf(&b, "  • %v\n", err)
 		}
 	}
 
@@ -181,7 +181,7 @@ func (fr *FixResult) PreviewChanges() string {
 		for _, rename := range fr.FilesRenamed {
 			oldName := filepath.Base(rename.OldPath)
 			newName := filepath.Base(rename.NewPath)
-			b.WriteString(fmt.Sprintf("  %s → %s\n", oldName, newName))
+			fmt.Fprintf(&b, "  %s → %s\n", oldName, newName)
 		}
 		b.WriteString("\n")
 	}
@@ -197,7 +197,7 @@ func (fr *FixResult) PreviewChanges() string {
 
 		b.WriteString("LINKS TO UPDATE:\n")
 		for filename, updates := range fileUpdates {
-			b.WriteString(fmt.Sprintf("  • %s (%d link%s)\n", filename, len(updates), pluralize(len(updates))))
+			fmt.Fprintf(&b, "  • %s (%d link%s)\n", filename, len(updates), pluralize(len(updates)))
 		}
 		b.WriteString("\n")
 	}
@@ -206,18 +206,18 @@ func (fr *FixResult) PreviewChanges() string {
 	if len(fr.Fingerprints) > 0 {
 		b.WriteString("FRONTMATTER FINGERPRINTS:\n")
 		for _, fp := range fr.Fingerprints {
-			b.WriteString(fmt.Sprintf("  • %s\n", filepath.Base(fp.FilePath)))
+			fmt.Fprintf(&b, "  • %s\n", filepath.Base(fp.FilePath))
 		}
 		b.WriteString("\n")
 	}
 
 	// Statistics
 	b.WriteString("SUMMARY:\n")
-	b.WriteString(fmt.Sprintf("  • %d file%s will be renamed\n", len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed))))
-	b.WriteString(fmt.Sprintf("  • %d link%s will be updated\n", len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated))))
-	b.WriteString(fmt.Sprintf("  • %d file%s will have fingerprints updated\n", len(fr.Fingerprints), pluralize(len(fr.Fingerprints))))
+	fmt.Fprintf(&b, "  • %d file%s will be renamed\n", len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed)))
+	fmt.Fprintf(&b, "  • %d link%s will be updated\n", len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated)))
+	fmt.Fprintf(&b, "  • %d file%s will have fingerprints updated\n", len(fr.Fingerprints), pluralize(len(fr.Fingerprints)))
 	if len(fr.BrokenLinks) > 0 {
-		b.WriteString(fmt.Sprintf("  • %d broken link%s detected\n", len(fr.BrokenLinks), pluralize(len(fr.BrokenLinks))))
+		fmt.Fprintf(&b, "  • %d broken link%s detected\n", len(fr.BrokenLinks), pluralize(len(fr.BrokenLinks)))
 	}
 
 	return b.String()
@@ -235,8 +235,8 @@ func (fr *FixResult) DetailedPreview() string {
 	if len(fr.FilesRenamed) > 0 {
 		b.WriteString("[File Renames]\n")
 		for i, rename := range fr.FilesRenamed {
-			b.WriteString(fmt.Sprintf("%d. %s\n", i+1, rename.OldPath))
-			b.WriteString(fmt.Sprintf("   → %s\n\n", rename.NewPath))
+			fmt.Fprintf(&b, "%d. %s\n", i+1, rename.OldPath)
+			fmt.Fprintf(&b, "   → %s\n\n", rename.NewPath)
 		}
 	}
 
@@ -244,9 +244,9 @@ func (fr *FixResult) DetailedPreview() string {
 	if len(fr.LinksUpdated) > 0 {
 		b.WriteString("[Link Updates]\n")
 		for i, update := range fr.LinksUpdated {
-			b.WriteString(fmt.Sprintf("%d. %s:%d\n", i+1, update.SourceFile, update.LineNumber))
-			b.WriteString(fmt.Sprintf("   Before: %s\n", update.OldTarget))
-			b.WriteString(fmt.Sprintf("   After:  %s\n\n", update.NewTarget))
+			fmt.Fprintf(&b, "%d. %s:%d\n", i+1, update.SourceFile, update.LineNumber)
+			fmt.Fprintf(&b, "   Before: %s\n", update.OldTarget)
+			fmt.Fprintf(&b, "   After:  %s\n\n", update.NewTarget)
 		}
 	}
 
@@ -263,23 +263,23 @@ func (fr *FixResult) DetailedPreview() string {
 			case LinkTypeReference:
 				linkTypeStr = linkTypeReference
 			}
-			b.WriteString(fmt.Sprintf("%d. %s:%d (%s)\n", i+1, broken.SourceFile, broken.LineNumber, linkTypeStr))
-			b.WriteString(fmt.Sprintf("   Target: %s (file not found)\n\n", broken.Target))
+			fmt.Fprintf(&b, "%d. %s:%d (%s)\n", i+1, broken.SourceFile, broken.LineNumber, linkTypeStr)
+			fmt.Fprintf(&b, "   Target: %s (file not found)\n\n", broken.Target)
 		}
 	}
 
 	if len(fr.Fingerprints) > 0 {
 		b.WriteString("[Frontmatter Fingerprints]\n")
 		for i, fp := range fr.Fingerprints {
-			b.WriteString(fmt.Sprintf("%d. %s\n", i+1, fp.FilePath))
+			fmt.Fprintf(&b, "%d. %s\n", i+1, fp.FilePath)
 			b.WriteString("   → fingerprint updated\n\n")
 		}
 	}
 
 	b.WriteString(strings.Repeat("=", 60) + "\n")
-	b.WriteString(fmt.Sprintf("Total: %d file%s, %d link%s\n",
+	fmt.Fprintf(&b, "Total: %d file%s, %d link%s\n",
 		len(fr.FilesRenamed), pluralize(len(fr.FilesRenamed)),
-		len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated))))
+		len(fr.LinksUpdated), pluralize(len(fr.LinksUpdated)))
 
 	return b.String()
 }

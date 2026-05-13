@@ -211,7 +211,7 @@ func (ss *Service) GetStats(ctx context.Context) foundation.Result[ServiceStats,
 	// Get health info
 	health := ss.store.Health(ctx)
 	if health.IsOk() {
-		stats.IsHealthy = health.Unwrap().Status == "healthy"
+		stats.IsHealthy = health.Unwrap().Status == healthyStatus
 		if health.Unwrap().StorageSize != nil {
 			stats.StorageSize = health.Unwrap().StorageSize
 		}

@@ -1,0 +1,9 @@
+{
+  "features": {
+    "ghcr.io/inful/docbuilder-feature/docbuilder:latest": {
+      "version": "0.4.4",
+      "resolved": "ghcr.io/inful/docbuilder-feature/docbuilder@sha256:240e49ad7ddcbf88945317583ab71ace4b0c1aeeb6ac14817c8e5e2354bceb7d",
+      "integrity": "sha256:240e49ad7ddcbf88945317583ab71ace4b0c1aeeb6ac14817c8e5e2354bceb7d"
+    }
+  }
+}

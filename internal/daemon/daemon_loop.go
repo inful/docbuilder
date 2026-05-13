@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -87,7 +86,7 @@ func (d *Daemon) updateStatus() {
 			n = math.MinInt32
 		}
 		// #nosec G115 -- value is clamped to int32 range above
-		atomic.StoreInt32(&d.queueLength, int32(n))
+		d.queueLength.Store(int32(n))
 	}
 
 	// Periodic state save

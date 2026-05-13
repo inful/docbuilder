@@ -19,14 +19,14 @@ func TestPathsEqualCaseInsensitive(t *testing.T) {
 	}{
 		{
 			name:     "exact match",
-			path1:    "/docs/api-guide.md",
-			path2:    "/docs/api-guide.md",
+			path1:    testPathDocsAPIGuide,
+			path2:    testPathDocsAPIGuide,
 			expected: true,
 		},
 		{
 			name:     "case difference",
 			path1:    "/docs/API_Guide.md",
-			path2:    "/docs/api_guide.md",
+			path2:    testPathDocsAPIGuideUnderscore,
 			expected: true,
 		},
 		{

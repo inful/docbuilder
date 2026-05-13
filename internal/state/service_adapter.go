@@ -43,7 +43,7 @@ func (a *ServiceAdapter) Load() error {
 	if health.IsErr() {
 		return health.UnwrapErr()
 	}
-	if health.Unwrap().Status != "healthy" {
+	if health.Unwrap().Status != healthyStatus {
 		return errors.InternalError("state store unhealthy").
 			WithContext("status", health.Unwrap().Status).
 			Build()
@@ -108,7 +108,7 @@ func (a *ServiceAdapter) EnsureRepositoryState(url, name, branch string) {
 
 	// Default branch for compatibility with legacy code that passes empty branch
 	if branch == "" {
-		branch = "main"
+		branch = defaultBranchMain
 	}
 
 	// Create new repository

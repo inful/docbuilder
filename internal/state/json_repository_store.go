@@ -82,19 +82,9 @@ func (rs *jsonRepositoryStore) GetByURL(_ context.Context, url string) foundatio
 }
 
 func (rs *jsonRepositoryStore) Update(_ context.Context, repo *Repository) foundation.Result[*Repository, error] {
-	if repo == nil {
-		return foundation.Err[*Repository, error](
-			errors.ValidationError("repository cannot be nil").Build(),
-		)
-	}
-
-	// Validate the repository
-	if validationResult := repo.Validate(); !validationResult.Valid {
-		return foundation.Err[*Repository, error](validationResult.ToError())
-	}
-
-	return updateEntity[Repository](
+	return updateValidatableEntity[Repository](
 		rs.store,
+		"repository",
 		repo,
 		func() bool { _, ok := rs.store.repositories[repo.URL]; return ok },
 		func() { repo.UpdatedAt = time.Now() },

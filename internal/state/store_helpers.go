@@ -12,6 +12,13 @@ type Validatable interface {
 	Validate() foundation.ValidationResult
 }
 
+// ptrValidatable constrains P to be a pointer to T and also Validatable.
+// This allows nil checks in generic helpers.
+type ptrValidatable[T any] interface {
+	~*T
+	Validatable
+}
+
 // createEntity is a generic helper for creating entities with timestamp setting and auto-save.
 // T must be a pointer type to an entity with ID, CreatedAt, and UpdatedAt fields.
 func createEntity[T Validatable](
@@ -46,17 +53,33 @@ func createEntity[T Validatable](
 	return foundation.Ok[T, error](entity)
 }
 
-// updateEntity centralizes the common update flow for JSON-backed stores.
-// It assumes validation has already been performed by the caller.
-func updateEntity[T any](
+// updateValidatableEntity is a generic helper for update flows where:
+// - entity is pointer-like and can be nil
+// - entity validates itself via Validate()
+// - UpdatedAt should be bumped on successful update
+//
+// It centralizes the common patterns used across Build/Repository/Schedule stores,
+// avoiding repeated code that triggers the dupl linter.
+func updateValidatableEntity[T any, P ptrValidatable[T]](
 	js *JSONStore,
-	obj *T,
+	entityName string,
+	entity P,
 	exists func() bool,
 	setUpdatedAt func(),
 	write func(),
-	onNotFound func() foundation.Result[*T, error],
+	onNotFound func() foundation.Result[P, error],
 	saveErrMsg string,
-) foundation.Result[*T, error] {
+) foundation.Result[P, error] {
+	if entity == nil {
+		return foundation.Err[P, error](
+			errors.ValidationError(entityName + " cannot be nil").Build(),
+		)
+	}
+
+	if validationResult := entity.Validate(); !validationResult.Valid {
+		return foundation.Err[P, error](validationResult.ToError())
+	}
+
 	js.mu.Lock()
 	defer js.mu.Unlock()
 
@@ -65,17 +88,18 @@ func updateEntity[T any](
 	}
 
 	setUpdatedAt()
+
 	write()
 
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*T, error](
+			return foundation.Err[P, error](
 				errors.InternalError(saveErrMsg).WithCause(err).Build(),
 			)
 		}
 	}
 
-	return foundation.Ok[*T, error](obj)
+	return foundation.Ok[P, error](entity)
 }
 
 // updateSimpleEntity is a variant for entities that don't track UpdatedAt

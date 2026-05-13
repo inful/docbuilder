@@ -201,7 +201,7 @@ func TestGitLabWebhookParsing(t *testing.T) {
 	}{
 		{
 			name:      "System Hook push",
-			eventType: "System Hook",
+			eventType: gitLabSystemHook,
 			payload: `{
 				"object_kind": "push",
 				"event_name": "push",
@@ -220,7 +220,7 @@ func TestGitLabWebhookParsing(t *testing.T) {
 		},
 		{
 			name:      "System Hook push (numeric visibility_level)",
-			eventType: "System Hook",
+			eventType: gitLabSystemHook,
 			payload: `{
 				"object_kind": "push",
 				"event_name": "push",
@@ -243,8 +243,8 @@ func TestGitLabWebhookParsing(t *testing.T) {
 			expectedType: WebhookEventPush,
 		},
 		{
-			name:      "Push Hook",
-			eventType: "Push Hook",
+			name:      gitLabPushHook,
+			eventType: gitLabPushHook,
 			payload: `{
 				"event_type": "push",
 				"ref": "refs/heads/main",
@@ -260,8 +260,8 @@ func TestGitLabWebhookParsing(t *testing.T) {
 			expectedType: WebhookEventPush,
 		},
 		{
-			name:      "Tag Push Hook",
-			eventType: "Tag Push Hook",
+			name:      gitLabTagPushHook,
+			eventType: gitLabTagPushHook,
 			payload: `{
 				"event_type": "tag_push",
 				"ref": "refs/tags/v1.0.0",
@@ -278,7 +278,7 @@ func TestGitLabWebhookParsing(t *testing.T) {
 		},
 		{
 			name:        "Missing project",
-			eventType:   "Push Hook",
+			eventType:   gitLabPushHook,
 			payload:     `{"event_type": "push", "ref": "refs/heads/main"}`,
 			expectError: true,
 		},

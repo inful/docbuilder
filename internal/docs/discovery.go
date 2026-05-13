@@ -15,7 +15,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
-const markdownExtension = ".md"
+const (
+	markdownExtension = ".md"
+	readmeFilename    = "README.md"
+	imageExtensionPng = ".png"
+)
 
 // DocFile represents a discovered documentation file or asset.
 type DocFile struct {
@@ -305,7 +309,7 @@ func isAsset(filename string) bool {
 	ext := strings.ToLower(filepath.Ext(filename))
 	assetExtensions := []string{
 		// Images
-		".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico",
+		imageExtensionPng, ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico",
 		// Documents
 		".pdf",
 		// Video
@@ -319,7 +323,7 @@ func isAsset(filename string) bool {
 // isIgnoredFile checks if a file should be ignored.
 func isIgnoredFile(filename string) bool {
 	ignored := []string{
-		"README.md",       // Usually repository readme, not docs
+		readmeFilename,    // Usually repository readme, not docs
 		"CONTRIBUTING.md", // Contributing guidelines
 		"CHANGELOG.md",    // Changelog
 		"LICENSE.md",      // License file

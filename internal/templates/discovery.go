@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"slices"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -167,9 +168,9 @@ func deriveTemplateType(anchorText, href string) string {
 	}
 
 	segments := strings.Split(path, "/")
-	for i := len(segments) - 1; i >= 0; i-- {
-		if strings.Contains(segments[i], ".template") {
-			return strings.TrimSuffix(segments[i], ".template")
+	for _, v := range slices.Backward(segments) {
+		if strings.Contains(v, ".template") {
+			return strings.TrimSuffix(v, ".template")
 		}
 	}
 

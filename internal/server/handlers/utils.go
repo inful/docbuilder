@@ -9,6 +9,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
+const statusKey = "status"
+
 // writeJSON serializes the provided value to JSON and writes it with the given
 // status code. It sets a consistent Content-Type header. Encoding is performed
 // into an intermediate buffer so that we don't send partial responses if

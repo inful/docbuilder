@@ -250,7 +250,7 @@ func (c *ForgejoClient) CheckDocumentation(ctx context.Context, repo *Repository
 	owner, repoName := c.splitFullName(repo.FullName)
 
 	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, owner, repoName, "docs", repo.DefaultBranch)
+	hasDocs, err := c.checkPathExists(ctx, owner, repoName, docsToken, repo.DefaultBranch)
 	if err != nil {
 		return errors.ForgeError("failed to check docs folder existence on Forgejo").
 			WithCause(err).
@@ -496,10 +496,10 @@ func (c *ForgejoClient) RegisterWebhook(ctx context.Context, repo *Repository, w
 	}
 
 	payload := map[string]any{
-		"type":   "forgejo",
-		"config": config,
-		"events": events,
-		"active": true,
+		"type":      "forgejo",
+		configToken: config,
+		"events":    events,
+		"active":    true,
 	}
 
 	req, err := c.NewRequest(ctx, "POST", endpoint, payload)

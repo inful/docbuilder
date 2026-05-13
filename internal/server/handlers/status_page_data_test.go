@@ -12,6 +12,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
+const testConfigVersion = "2.0"
+
 type fakeStatusProvider struct {
 	status         string
 	startTime      time.Time
@@ -47,7 +49,7 @@ func TestGenerateStatusData_BasicInfo(t *testing.T) {
 	p := fakeStatusProvider{
 		status:         "running",
 		startTime:      time.Now().Add(-1 * time.Hour),
-		cfg:            &config.Config{Version: "2.0"},
+		cfg:            &config.Config{Version: testConfigVersion},
 		configFilePath: "/path/to/config.yaml",
 	}
 
@@ -59,7 +61,7 @@ func TestGenerateStatusData_BasicInfo(t *testing.T) {
 }
 
 func TestGenerateStatusData_EmptyStatusFallsBackStopped(t *testing.T) {
-	p := fakeStatusProvider{startTime: time.Now().Add(-1 * time.Hour), cfg: &config.Config{Version: "2.0"}}
+	p := fakeStatusProvider{startTime: time.Now().Add(-1 * time.Hour), cfg: &config.Config{Version: testConfigVersion}}
 
 	data, err := GenerateStatusData(context.Background(), p)
 	require.NoError(t, err)
@@ -92,7 +94,7 @@ func TestGenerateStatusData_WithBuildProjection_ConvertsStagesAndPopulatesReport
 	completedEvent, _ := eventstore.NewBuildCompleted(buildID, "completed", 5*time.Second, map[string]string{})
 	projection.Apply(completedEvent)
 
-	p := fakeStatusProvider{status: "running", startTime: time.Now().Add(-1 * time.Hour), cfg: &config.Config{Version: "2.0"}, buildProj: projection}
+	p := fakeStatusProvider{status: "running", startTime: time.Now().Add(-1 * time.Hour), cfg: &config.Config{Version: testConfigVersion}, buildProj: projection}
 
 	data, err := GenerateStatusData(context.Background(), p)
 	require.NoError(t, err)

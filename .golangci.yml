@@ -22,7 +22,6 @@ linters:
     - exhaustive
     - forbidigo
     - gochecknoinits
-    - goconst
     - gocritic
     - gocyclo
     - gosec
@@ -79,9 +78,6 @@ linters:
     govet:
       enable:
         - shadow
-    goconst:
-      ignore-string-values:
-        - "false"
     misspell:
       locale: US
     perfsprint:

@@ -12,13 +12,13 @@ import (
 
 // TestFixer_CanFixFilename tests the canFixFilename method.
 func TestFixer_CanFixFilename(t *testing.T) {
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	t.Run("detects fixable filename issues", func(t *testing.T) {
 		issues := []Issue{
 			{
-				Rule:     "filename-conventions",
+				Rule:     ruleFilenameConventions,
 				Severity: SeverityError,
 				Message:  "Filename contains uppercase",
 			},
@@ -52,7 +52,7 @@ func TestFixer_DryRun(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run fixer in dry-run mode
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // dry-run enabled
 
 	result, err := fixer.Fix(tmpDir)
@@ -80,7 +80,7 @@ func TestFixer_RenameFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run fixer (not dry-run)
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(tmpDir)
@@ -135,7 +135,7 @@ func TestFixer_RenameMultipleFiles(t *testing.T) {
 	}
 
 	// Run fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(tmpDir)
@@ -181,7 +181,7 @@ func TestFixer_ErrorWhenTargetExists(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run fixer without force flag
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(tmpDir)
@@ -229,7 +229,7 @@ func TestFixer_CreateBackup(t *testing.T) {
 	}
 
 	// Create fixer and backup
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	backupDir, err := fixer.CreateBackup(result, docsDir)
@@ -268,7 +268,7 @@ func TestFixer_CreateBackup_DryRun(t *testing.T) {
 		},
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // dry-run mode
 
 	backupDir, err := fixer.CreateBackup(result, tmpDir)
@@ -278,7 +278,7 @@ func TestFixer_CreateBackup_DryRun(t *testing.T) {
 
 // TestFixer_WithAutoConfirm tests the auto-confirm flag.
 func TestFixer_WithAutoConfirm(t *testing.T) {
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	// Initial state
@@ -301,7 +301,7 @@ func TestFixer_ConfirmChanges_AutoConfirm(t *testing.T) {
 		},
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 
 	// Should auto-confirm without prompting
@@ -318,7 +318,7 @@ func TestFixer_ConfirmChanges_DryRun(t *testing.T) {
 		},
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // dry-run mode
 
 	// Should auto-confirm in dry-run
@@ -331,7 +331,7 @@ func TestFixer_ConfirmChanges_DryRun(t *testing.T) {
 func TestFixer_ConfirmChanges_NoChanges(t *testing.T) {
 	result := &FixResult{} // No changes
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	// Should return true without prompting when there are no changes
@@ -354,7 +354,7 @@ func TestFixer_FixWithConfirmation_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use auto-confirm to avoid interactive prompt in test
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
 
 	// Run with confirmation (should auto-confirm due to flag)

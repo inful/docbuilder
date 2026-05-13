@@ -110,7 +110,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 	if !exists {
 		summary = &BuildSummary{
 			BuildID:   buildID,
-			Status:    "running",
+			Status:    buildStatusRunning,
 			StartedAt: event.Timestamp(),
 		}
 		p.builds[buildID] = summary
@@ -118,7 +118,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 
 	// Update summary based on event type
 	switch event.Type() {
-	case "BuildStarted":
+	case eventTypeBuildStarted:
 		summary.StartedAt = event.Timestamp()
 		summary.Status = buildStatusRunning
 		// Parse payload for tenant_id
@@ -129,10 +129,10 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 			summary.TenantID = payload.TenantID
 		}
 
-	case "RepositoryCloned":
+	case eventTypeRepositoryCloned:
 		summary.RepoCount++
 
-	case "DocumentsDiscovered":
+	case eventTypeDocumentsDiscovered:
 		var payload struct {
 			FileCount int `json:"file_count"`
 		}
@@ -140,7 +140,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 			summary.FileCount += payload.FileCount
 		}
 
-	case "BuildCompleted":
+	case eventTypeBuildCompleted:
 		now := event.Timestamp()
 		summary.CompletedAt = &now
 		summary.Duration = now.Sub(summary.StartedAt)
@@ -158,7 +158,7 @@ func (p *BuildHistoryProjection) applyEventLocked(event Event) {
 		// Add to history if not already there
 		p.addToHistoryLocked(summary)
 
-	case "BuildFailed":
+	case eventTypeBuildFailed:
 		now := event.Timestamp()
 		summary.CompletedAt = &now
 		summary.Duration = now.Sub(summary.StartedAt)

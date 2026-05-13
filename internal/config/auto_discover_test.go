@@ -5,8 +5,8 @@ import "testing"
 // TestAutoDiscoverValidation ensures that empty organizations/groups are only allowed when options.auto_discover=true.
 func TestAutoDiscoverValidation(t *testing.T) {
 	base := Config{
-		Version: "2.0",
-		Output:  OutputConfig{Directory: "./out", Clean: true},
+		Version: configVersion,
+		Output:  OutputConfig{Directory: testOutputDir, Clean: true},
 		Build:   BuildConfig{CloneConcurrency: 1, MaxRetries: 1, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "2s", CloneStrategy: CloneStrategyFresh},
 		Forges:  []*ForgeConfig{},
 	}
@@ -18,7 +18,7 @@ func TestAutoDiscoverValidation(t *testing.T) {
 		t.Fatalf("expected error when no org/group and auto_discover unset")
 	}
 
-	forgeAuto := &ForgeConfig{Name: "f2", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{"auto_discover": true}}
+	forgeAuto := &ForgeConfig{Name: "f2", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{forgeOptionAutoDiscoverKey: true}}
 	if err := validateConfig(withForge(forgeAuto)); err != nil {
 		t.Fatalf("unexpected error with options.auto_discover=true: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestAutoDiscoverValidation(t *testing.T) {
 		t.Fatalf("unexpected error with top-level auto_discover: %v", err)
 	}
 
-	forgeFalse := &ForgeConfig{Name: "f3", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{"auto_discover": false}}
+	forgeFalse := &ForgeConfig{Name: "f3", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, Options: map[string]any{forgeOptionAutoDiscoverKey: false}}
 	if err := validateConfig(withForge(forgeFalse)); err == nil {
 		t.Fatalf("expected error with auto_discover=false")
 	}
@@ -99,10 +99,10 @@ func TestAutoDiscoverValidationWithTestForgeFactory(t *testing.T) {
 			options   map[string]any
 			shouldErr bool
 		}{
-			{"auto_discover_true", map[string]any{"auto_discover": true}, false},
-			{"auto_discover_false", map[string]any{"auto_discover": false}, true},
+			{"auto_discover_true", map[string]any{forgeOptionAutoDiscoverKey: true}, false},
+			{"auto_discover_false", map[string]any{forgeOptionAutoDiscoverKey: false}, true},
 			{"auto_discover_missing", map[string]any{}, true},
-			{"other_options", map[string]any{"rate_limit": 5000, "timeout": "30s"}, true},
+			{"other_options", map[string]any{"rate_limit": 5000, "timeout": defaultDuration30s}, true},
 		}
 
 		for _, tc := range testCases {
@@ -110,7 +110,7 @@ func TestAutoDiscoverValidationWithTestForgeFactory(t *testing.T) {
 				forge := factory.CreateForgeWithOptions(ForgeGitHub, "options-test", tc.options)
 
 				// Remove organizations for options testing
-				if _, hasAutoDiscover := tc.options["auto_discover"]; !hasAutoDiscover || tc.options["auto_discover"] == false {
+				if _, hasAutoDiscover := tc.options[forgeOptionAutoDiscoverKey]; !hasAutoDiscover || tc.options[forgeOptionAutoDiscoverKey] == false {
 					forge.Organizations = nil
 					forge.Groups = nil
 					forge.AutoDiscover = false

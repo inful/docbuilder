@@ -16,13 +16,13 @@ func TestSingleRepoPathGeneration(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test repository structure with API docs
-	repoDir := filepath.Join(tempDir, "my-docs")
-	docsDir := filepath.Join(repoDir, "docs")
+	repoDir := filepath.Join(tempDir, testRepoNameMyDocs)
+	docsDir := filepath.Join(repoDir, testDocsDir)
 
 	require.NoError(t, os.MkdirAll(filepath.Join(docsDir, "api"), 0o750))
 
 	testFiles := map[string]string{
-		"docs/index.md":       "# Documentation\n",
+		testDocsIndexPath:     "# Documentation\n",
 		"docs/api/guide.md":   "# API Guide\n",
 		"docs/api/methods.md": "# API Methods\n",
 	}
@@ -35,14 +35,14 @@ func TestSingleRepoPathGeneration(t *testing.T) {
 	// Create repository configuration (single repo)
 	repos := []config.Repository{
 		{
-			Name:  "my-docs",
+			Name:  testRepoNameMyDocs,
 			URL:   "https://github.com/example/my-docs.git",
-			Paths: []string{"docs"},
+			Paths: []string{testDocsDir},
 		},
 	}
 
 	repoPaths := map[string]string{
-		"my-docs": repoDir,
+		testRepoNameMyDocs: repoDir,
 	}
 
 	// Run discovery
@@ -71,7 +71,7 @@ func TestSingleRepoPathGeneration(t *testing.T) {
 		expectedPaths[hugoPath] = true
 
 		// Verify paths do NOT contain repository name
-		assert.NotContains(t, hugoPath, "my-docs", "Single-repo path should not contain repository name")
+		assert.NotContains(t, hugoPath, testRepoNameMyDocs, "Single-repo path should not contain repository name")
 	}
 
 	// Verify all expected paths were found
@@ -88,16 +88,16 @@ func TestMultiRepoPathGeneration(t *testing.T) {
 	repo1Dir := filepath.Join(tempDir, "repo-a")
 	repo2Dir := filepath.Join(tempDir, "repo-b")
 
-	require.NoError(t, os.MkdirAll(filepath.Join(repo1Dir, "docs"), 0o750))
-	require.NoError(t, os.MkdirAll(filepath.Join(repo2Dir, "docs"), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(repo1Dir, testDocsDir), 0o750))
+	require.NoError(t, os.MkdirAll(filepath.Join(repo2Dir, testDocsDir), 0o750))
 
-	require.NoError(t, os.WriteFile(filepath.Join(repo1Dir, "docs", "index.md"), []byte("# Repo A\n"), 0o600))
-	require.NoError(t, os.WriteFile(filepath.Join(repo2Dir, "docs", "index.md"), []byte("# Repo B\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(repo1Dir, testDocsDir, "index.md"), []byte("# Repo A\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(repo2Dir, testDocsDir, "index.md"), []byte("# Repo B\n"), 0o600))
 
 	// Create repository configurations (multi repo)
 	repos := []config.Repository{
-		{Name: "repo-a", URL: "https://github.com/example/repo-a.git", Paths: []string{"docs"}},
-		{Name: "repo-b", URL: "https://github.com/example/repo-b.git", Paths: []string{"docs"}},
+		{Name: "repo-a", URL: "https://github.com/example/repo-a.git", Paths: []string{testDocsDir}},
+		{Name: "repo-b", URL: "https://github.com/example/repo-b.git", Paths: []string{testDocsDir}},
 	}
 
 	repoPaths := map[string]string{
@@ -133,10 +133,10 @@ func TestMultiRepoPathGeneration(t *testing.T) {
 func TestGetHugoPath_ParameterOverride(t *testing.T) {
 	// Create a DocFile instance
 	df := &DocFile{
-		Repository:   "my-docs",
+		Repository:   testRepoNameMyDocs,
 		Section:      "api",
 		Name:         "guide",
-		Extension:    ".md",
+		Extension:    markdownExtension,
 		RelativePath: "api/guide.md",
 	}
 
@@ -148,7 +148,7 @@ func TestGetHugoPath_ParameterOverride(t *testing.T) {
 
 	// Test with isSingleRepo=false (include namespace)
 	multiRepoPath := df.GetHugoPath(false)
-	expectedMulti := filepath.Join("content", "my-docs", "api", "guide.md")
+	expectedMulti := filepath.Join("content", testRepoNameMyDocs, "api", "guide.md")
 	assert.Equal(t, expectedMulti, multiRepoPath,
 		"Multi-repo mode should include repository namespace")
 

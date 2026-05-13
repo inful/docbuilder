@@ -9,6 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testLineInlineCodeSingle = "Some text `code` more text"
+	testLineInlineCodeDouble = "Text `code1` and `code2` end"
+)
+
 func TestIsInsideInlineCode(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -18,37 +23,37 @@ func TestIsInsideInlineCode(t *testing.T) {
 	}{
 		{
 			name:     "before any backticks",
-			line:     "Some text `code` more text",
+			line:     testLineInlineCodeSingle,
 			pos:      5,
 			expected: false,
 		},
 		{
 			name:     "inside inline code",
-			line:     "Some text `code` more text",
+			line:     testLineInlineCodeSingle,
 			pos:      13,
 			expected: true,
 		},
 		{
 			name:     "after inline code",
-			line:     "Some text `code` more text",
+			line:     testLineInlineCodeSingle,
 			pos:      20,
 			expected: false,
 		},
 		{
 			name:     "multiple inline code blocks - first",
-			line:     "Text `code1` and `code2` end",
+			line:     testLineInlineCodeDouble,
 			pos:      8,
 			expected: true,
 		},
 		{
 			name:     "multiple inline code blocks - between",
-			line:     "Text `code1` and `code2` end",
+			line:     testLineInlineCodeDouble,
 			pos:      15,
 			expected: false,
 		},
 		{
 			name:     "multiple inline code blocks - second",
-			line:     "Text `code1` and `code2` end",
+			line:     testLineInlineCodeDouble,
 			pos:      20,
 			expected: true,
 		},

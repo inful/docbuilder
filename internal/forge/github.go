@@ -204,7 +204,7 @@ func (c *GitHubClient) CheckDocumentation(ctx context.Context, repo *Repository)
 	owner, repoName := c.splitFullName(repo.FullName)
 
 	// Check for docs folder
-	hasDocs, err := c.checkPathExists(ctx, owner, repoName, "docs", repo.DefaultBranch)
+	hasDocs, err := c.checkPathExists(ctx, owner, repoName, docsToken, repo.DefaultBranch)
 	if err != nil {
 		return errors.ForgeError("failed to check docs folder existence on GitHub").
 			WithCause(err).
@@ -475,9 +475,9 @@ func (c *GitHubClient) RegisterWebhook(ctx context.Context, repo *Repository, we
 	}
 
 	payload := map[string]any{
-		"config": webhookConfig,
-		"events": events,
-		"active": true,
+		configToken: webhookConfig,
+		"events":    events,
+		"active":    true,
 	}
 
 	req, err := c.NewRequest(ctx, "POST", endpoint, payload)

@@ -109,7 +109,7 @@ func (m *Manager) scanForDeletions(repo cfg.Repository, workspace string, persis
 	}
 
 	fresh := make([]string, 0, len(persistedPaths))
-	docRoots := []string{"docs", "documentation"}
+	docRoots := []string{docRootDocs, docRootDocumentation}
 
 	for _, dr := range docRoots {
 		base := filepath.Join(repoRoot, dr)

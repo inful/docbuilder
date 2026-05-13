@@ -260,8 +260,8 @@ func Init(configPath string, force bool) error {
 	}
 
 	exampleConfig := Config{
-		Version: "2.0",
-		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "30s"},
+		Version: configVersion,
+		Build:   BuildConfig{CloneConcurrency: 4, MaxRetries: 2, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: defaultDuration30s},
 		Daemon: &DaemonConfig{
 			HTTP: HTTPConfig{
 				DocsPort:       8080,
@@ -270,14 +270,14 @@ func Init(configPath string, force bool) error {
 				LiveReloadPort: 8083,
 			},
 			Sync: SyncConfig{
-				Schedule:         "0 */4 * * *",
+				Schedule:         defaultSyncScheduleEvery4h,
 				ConcurrentBuilds: 3,
 				QueueSize:        100,
 			},
 			Storage: StorageConfig{
 				StateFile:    "./docbuilder-state.json",
 				RepoCacheDir: "./repositories",
-				OutputDir:    "./site",
+				OutputDir:    defaultOutputDir,
 			},
 			LinkVerification: &LinkVerificationConfig{
 				Enabled:            true,
@@ -302,11 +302,11 @@ func Init(configPath string, force bool) error {
 				APIURL:        "https://api.github.com",
 				BaseURL:       "https://github.com",
 				Organizations: []string{"your-org"},
-				Auth: &AuthConfig{
+				Auth: &AuthConfig{ //nolint:gosec // example placeholder; populated via env var expansion
 					Type:  AuthTypeToken,
 					Token: "${GITHUB_TOKEN}",
 				},
-				Webhook: &WebhookConfig{
+				Webhook: &WebhookConfig{ //nolint:gosec // example placeholder; populated via env var expansion
 					Secret: "${GITHUB_WEBHOOK_SECRET}",
 					Path:   "/webhooks/github",
 					Events: []string{"push", "repository"},
@@ -314,8 +314,8 @@ func Init(configPath string, force bool) error {
 			},
 		},
 		Filtering: &FilteringConfig{
-			RequiredPaths: []string{"docs"},
-			IgnoreFiles:   []string{".docignore"},
+			RequiredPaths: []string{defaultRequiredPathDocs},
+			IgnoreFiles:   []string{defaultIgnoreFileDocignore},
 		},
 		Versioning: &VersioningConfig{
 			Strategy:           StrategyBranchesAndTags,
@@ -332,7 +332,7 @@ func Init(configPath string, force bool) error {
 		Monitoring: &MonitoringConfig{
 			Metrics: MonitoringMetrics{
 				Enabled: true,
-				Path:    "/metrics",
+				Path:    defaultMetricsPath,
 			},
 			Health: MonitoringHealth{
 				Path: "/health",
@@ -343,7 +343,7 @@ func Init(configPath string, force bool) error {
 			},
 		},
 		Output: OutputConfig{
-			Directory: "./site",
+			Directory: defaultOutputDir,
 			Clean:     true,
 		},
 		// Example explicit repositories block (optional; forge discovery may also be used)
@@ -352,7 +352,7 @@ func Init(configPath string, force bool) error {
 				URL:    "https://github.com/example/repo1.git",
 				Name:   "repo1",
 				Branch: "main",
-				Paths:  []string{"docs"},
+				Paths:  []string{defaultRequiredPathDocs},
 			},
 		},
 	}

@@ -66,7 +66,7 @@ func testProductionDeploymentScenarioValidation(t *testing.T) {
 
 	// Create production-like configuration
 	prodConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			github.GenerateForgeConfig(),
 			gitlab.GenerateForgeConfig(),
@@ -81,8 +81,8 @@ func testProductionDeploymentScenarioValidation(t *testing.T) {
 		},
 		Filtering: &config.FilteringConfig{
 			RequiredPaths:   []string{"docs", "documentation", "wiki"},
-			IncludePatterns: []string{"*.md", "*.rst", "*.adoc"},
-			ExcludePatterns: []string{"*deprecated*", "*legacy*", "*archive*"},
+			IncludePatterns: []string{testPatternMarkdownAny, testPatternRSTAny, testPatternAdocAny},
+			ExcludePatterns: []string{testPatternDeprecated, testPatternLegacyLike, "*archive*"},
 		},
 		Hugo: config.HugoConfig{
 			Title:   "Enterprise Documentation Hub",
@@ -185,7 +185,7 @@ func testMonitoringAndObservabilityIntegration(t *testing.T) {
 		"total_repositories":     len(repos),
 		"discovery_duration_ms":  discoveryDuration.Milliseconds(),
 		"repositories_with_docs": 0,
-		"forge_type":             "github",
+		forgeTypeKey:             "github",
 		"timestamp":              time.Now().Unix(),
 	}
 
@@ -239,14 +239,14 @@ func testSecurityAndAuthenticationTesting(t *testing.T) {
 
 	// Configure different authentication types for security testing
 	githubConfig := github.GenerateForgeConfig()
-	githubConfig.Auth = &config.AuthConfig{
-		Type:  "token",
+	githubConfig.Auth = &config.AuthConfig{ //nolint:gosec // test-only token value
+		Type:  config.AuthTypeToken,
 		Token: "github_pat_secure_token_123",
 	}
 
 	gitlabConfig := gitlab.GenerateForgeConfig()
-	gitlabConfig.Auth = &config.AuthConfig{
-		Type:  "token",
+	gitlabConfig.Auth = &config.AuthConfig{ //nolint:gosec // test-only token value
+		Type:  config.AuthTypeToken,
 		Token: "glpat_secure_token_456",
 	}
 

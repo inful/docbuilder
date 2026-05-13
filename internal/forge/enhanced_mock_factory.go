@@ -24,10 +24,10 @@ func CreateMockGitHubRepo(owner, name string, hasDocs, isPrivate, isArchived, is
 		HasDocs:       hasDocs,
 		HasDocIgnore:  false,
 		LastUpdated:   time.Now().Add(-time.Hour * 24),
-		Topics:        []string{"github", "documentation", "mock"},
-		Language:      "Markdown",
+		Topics:        []string{"github", documentationToken, "mock"},
+		Language:      languageMarkdown,
 		Metadata: map[string]string{
-			"forge_type": "github",
+			forgeTypeKey: "github",
 			"owner":      owner,
 			"fork":       strconv.FormatBool(isFork),
 		},
@@ -49,10 +49,10 @@ func CreateMockGitLabRepo(group, name string, hasDocs, isPrivate, isArchived, is
 		HasDocs:       hasDocs,
 		HasDocIgnore:  false,
 		LastUpdated:   time.Now().Add(-time.Hour * 48),
-		Topics:        []string{"gitlab", "documentation", "mock"},
-		Language:      "Markdown",
+		Topics:        []string{"gitlab", documentationToken, "mock"},
+		Language:      languageMarkdown,
 		Metadata: map[string]string{
-			"forge_type": "gitlab",
+			forgeTypeKey: "gitlab",
 			"group":      group,
 			"fork":       strconv.FormatBool(isFork),
 		},
@@ -75,7 +75,7 @@ func CreateMockForgejoRepo(org, name string, hasDocs, isPrivate, isArchived, isF
 		HasDocIgnore:  false,
 		LastUpdated:   time.Now().Add(-time.Hour * 12),
 		Topics:        []string{"forgejo", "documentation", "mock"},
-		Language:      "Markdown",
+		Language:      languageMarkdown,
 		Metadata: map[string]string{
 			"forge_type": "forgejo",
 			"org":        org,
@@ -160,7 +160,7 @@ func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repos
 				HasDocs:       hasDocs,
 				Private:       isPrivate,
 				Topics:        []string{"documentation", "mock"},
-				Language:      "Markdown",
+				Language:      languageMarkdown,
 			}
 		}
 	}
@@ -226,11 +226,11 @@ func (b *EnhancedMockBuilder) Build() *EnhancedMockForgeClient {
 // CreateRealisticGitHubMock creates a GitHub mock with realistic data.
 func CreateRealisticGitHubMock(name string) *EnhancedMockForgeClient {
 	return NewEnhancedMockBuilder(name, TypeGitHub).
-		WithOrganizations(CreateMockGitHubOrg("company")).
+		WithOrganizations(CreateMockGitHubOrg(companyToken)).
 		WithRepositories(
-			CreateMockGitHubRepo("company", "docs", true, false, false, false),
-			CreateMockGitHubRepo("company", "api-docs", true, false, false, false),
-			CreateMockGitHubRepo("company", "website", false, false, false, false),
+			CreateMockGitHubRepo(companyToken, docsToken, true, false, false, false),
+			CreateMockGitHubRepo(companyToken, repoNameAPIDocs, true, false, false, false),
+			CreateMockGitHubRepo(companyToken, "website", false, false, false, false),
 		).
 		Build()
 }
@@ -240,7 +240,7 @@ func CreateRealisticGitLabMock(name string) *EnhancedMockForgeClient {
 	return NewEnhancedMockBuilder(name, TypeGitLab).
 		WithOrganizations(CreateMockGitLabGroup("team")).
 		WithRepositories(
-			CreateMockGitLabRepo("team", "documentation", true, false, false, false),
+			CreateMockGitLabRepo("team", documentationToken, true, false, false, false),
 			CreateMockGitLabRepo("team", "internal-docs", true, true, false, false),
 			CreateMockGitLabRepo("team", "wiki", true, false, false, false),
 		).

@@ -15,7 +15,7 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 
 	// Check if root index already exists
 	for _, doc := range ctx.Discovered {
-		if doc.Path == "content/_index.md" || doc.Path == "content/index.md" {
+		if doc.Path == contentIndexPath || doc.Path == contentLegacyIndexPath {
 			return nil, nil // Already exists
 		}
 	}
@@ -32,14 +32,14 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 	}
 
 	doc := &Document{
-		Path:      "content/_index.md",
+		Path:      contentIndexPath,
 		IsIndex:   true,
 		Generated: true,
 		Content:   fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
 		FrontMatter: map[string]any{
-			"title":       title,
-			"description": description,
-			"type":        "docs",
+			"title":                   title,
+			frontMatterKeyDescription: description,
+			"type":                    "docs",
 		},
 		Repository: "",
 		Section:    "",
@@ -91,7 +91,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			}
 
 			doc := &Document{
-				Path:       filepath.Join("content", repoPath, "_index.md"),
+				Path:       filepath.Join("content", repoPath, indexFileSuffix+markdownExtension),
 				IsIndex:    true,
 				Generated:  true,
 				Repository: repo,
@@ -99,9 +99,9 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 				Section:    "",
 				Content:    fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
 				FrontMatter: map[string]any{
-					"title":       title,
-					"description": description,
-					"type":        "docs",
+					"title":                   title,
+					frontMatterKeyDescription: description,
+					"type":                    "docs",
 				},
 			}
 			if ctx.Config.IsDaemonPublicOnlyEnabled() {

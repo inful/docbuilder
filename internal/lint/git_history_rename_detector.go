@@ -115,7 +115,7 @@ func gitRevParseOK(ctx context.Context, repoRoot string, rev string) bool {
 }
 
 func gitDiffRenamesRange(ctx context.Context, repoRoot string, rangeSpec string) ([]RenameMapping, error) {
-	args := []string{"-C", repoRoot, "diff", "--name-status", "-z", "-M", rangeSpec}
+	args := []string{"-C", repoRoot, gitCommandDiff, "--name-status", "-z", "-M", rangeSpec}
 
 	// #nosec G204 -- invoking git with fixed binary name and controlled args
 	cmd := exec.CommandContext(ctx, "git", args...)

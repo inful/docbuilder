@@ -145,7 +145,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 	forge.Options = options
 
 	// Handle auto_discover option
-	if autoDiscover, ok := options["auto_discover"]; ok {
+	if autoDiscover, ok := options[forgeOptionAutoDiscoverKey]; ok {
 		if enabled, isBool := autoDiscover.(bool); isBool && enabled {
 			forge.Organizations = nil
 			forge.Groups = nil
@@ -158,7 +158,7 @@ func (f *TestForgeConfigFactory) CreateForgeWithOptions(forgeType ForgeType, nam
 // CreateConfigWithForges creates a complete Config with realistic forge configurations.
 func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *Config {
 	return &Config{
-		Version: "2.0",
+		Version: configVersion,
 		Hugo:    HugoConfig{Title: "TestForge Documentation"},
 		Output:  OutputConfig{Directory: "./test-output", Clean: true},
 		Build: BuildConfig{
@@ -166,14 +166,14 @@ func (f *TestForgeConfigFactory) CreateConfigWithForges(forges []*ForgeConfig) *
 			MaxRetries:        3,
 			RetryBackoff:      RetryBackoffLinear,
 			RetryInitialDelay: "1s",
-			RetryMaxDelay:     "10s",
+			RetryMaxDelay:     defaultDuration10s,
 			CloneStrategy:     CloneStrategyFresh,
 		},
 		Forges: forges,
 		Monitoring: &MonitoringConfig{
 			Metrics: MonitoringMetrics{
 				Enabled: true,
-				Path:    "/metrics",
+				Path:    defaultMetricsPath,
 			},
 		},
 	}

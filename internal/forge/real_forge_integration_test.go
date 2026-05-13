@@ -38,7 +38,7 @@ func TestRealForgeIntegration(t *testing.T) {
 			Private:       false,
 			Archived:      false,
 			Topics:        []string{"api", "documentation"},
-			Language:      "Markdown",
+			Language:      languageMarkdown,
 		})
 
 		mockForge.AddRepository(&Repository{
@@ -52,7 +52,7 @@ func TestRealForgeIntegration(t *testing.T) {
 			Private:       false,
 			Archived:      false,
 			Topics:        []string{"guide", "documentation"},
-			Language:      "Markdown",
+			Language:      languageMarkdown,
 		})
 
 		// Add a repository without documentation (name doesn't contain "docs")

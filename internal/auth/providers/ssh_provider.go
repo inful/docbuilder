@@ -47,7 +47,7 @@ func (p *SSHProvider) ValidateConfig(authCfg *config.AuthConfig) error {
 	}
 
 	// Check if the key file exists
-	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+	if _, err := os.Stat(keyPath); os.IsNotExist(err) { //nolint:gosec // keyPath is a local, user-configured file path
 		return fmt.Errorf("SSH key file does not exist: %s", keyPath)
 	}
 

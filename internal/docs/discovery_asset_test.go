@@ -11,13 +11,11 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-const testImageExtension = ".png"
-
 func TestAssetPathInSubdirectories(t *testing.T) {
 	// Create a temporary test repository
 	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-	docsPath := filepath.Join(repoPath, "docs")
+	repoPath := filepath.Join(tmpDir, testRepoName)
+	docsPath := filepath.Join(repoPath, testDocsDir)
 	guidesPath := filepath.Join(docsPath, "guides")
 	imagesPath := filepath.Join(guidesPath, "images")
 
@@ -36,8 +34,8 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 	cfg := &config.Config{
 		Repositories: []config.Repository{
 			{
-				Name:  "test-repo",
-				Paths: []string{"docs"},
+				Name:  testRepoName,
+				Paths: []string{testDocsDir},
 				Tags:  map[string]string{},
 			},
 		},
@@ -45,7 +43,7 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 
 	disc := NewDiscovery(cfg.Repositories, &config.BuildConfig{})
 	files, err := disc.DiscoverDocs(map[string]string{
-		"test-repo": repoPath,
+		testRepoName: repoPath,
 	})
 	require.NoError(t, err)
 	require.Len(t, files, 2, "Should discover markdown and image file")
@@ -54,9 +52,9 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 	var mdFile, imageFile *DocFile
 	for i := range files {
 		switch files[i].Extension {
-		case ".md":
+		case markdownExtension:
 			mdFile = &files[i]
-		case testImageExtension:
+		case imageExtensionPng:
 			imageFile = &files[i]
 		}
 	}
@@ -80,19 +78,19 @@ func TestAssetPathInSubdirectories(t *testing.T) {
 	t.Logf("Image HugoPath: %s", imageHugoPath)
 
 	// The markdown file should be at: content/test-repo/guides/tutorial.md
-	assert.Equal(t, filepath.Join("content", "test-repo", "guides", "tutorial.md"), mdHugoPath)
+	assert.Equal(t, filepath.Join("content", testRepoName, "guides", "tutorial.md"), mdHugoPath)
 
 	// The image should be at: content/test-repo/guides/images/test.png
 	// This is the key test - the image must preserve its relative path from the markdown file
-	assert.Equal(t, filepath.Join("content", "test-repo", "guides", "images", "test.png"), imageHugoPath,
+	assert.Equal(t, filepath.Join("content", testRepoName, "guides", "images", "test.png"), imageHugoPath,
 		"Image should be placed relative to markdown file to preserve references")
 }
 
 func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 	// Test case: docs/tutorial.md references docs/images/logo.png
 	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-	docsPath := filepath.Join(repoPath, "docs")
+	repoPath := filepath.Join(tmpDir, testRepoName)
+	docsPath := filepath.Join(repoPath, testDocsDir)
 	imagesPath := filepath.Join(docsPath, "images")
 
 	require.NoError(t, os.MkdirAll(imagesPath, 0o750))
@@ -108,8 +106,8 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 	cfg := &config.Config{
 		Repositories: []config.Repository{
 			{
-				Name:  "test-repo",
-				Paths: []string{"docs"},
+				Name:  testRepoName,
+				Paths: []string{testDocsDir},
 				Tags:  map[string]string{},
 			},
 		},
@@ -117,7 +115,7 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 
 	disc := NewDiscovery(cfg.Repositories, &config.BuildConfig{})
 	files, err := disc.DiscoverDocs(map[string]string{
-		"test-repo": repoPath,
+		testRepoName: repoPath,
 	})
 	require.NoError(t, err)
 
@@ -125,9 +123,9 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 	var mdFile, imageFile *DocFile
 	for i := range files {
 		switch files[i].Extension {
-		case ".md":
+		case markdownExtension:
 			mdFile = &files[i]
-		case ".png":
+		case imageExtensionPng:
 			imageFile = &files[i]
 		}
 	}
@@ -137,11 +135,11 @@ func TestAssetPathInRootWithImageSubdirectory(t *testing.T) {
 
 	// Markdown at root has empty section
 	assert.Equal(t, "", mdFile.Section)
-	assert.Equal(t, filepath.Join("content", "test-repo", "_index.md"), mdFile.GetHugoPath(false))
+	assert.Equal(t, filepath.Join("content", testRepoName, "_index.md"), mdFile.GetHugoPath(false))
 
 	// Image should be in images subdirectory
 	assert.Equal(t, "images", imageFile.Section)
-	assert.Equal(t, filepath.Join("content", "test-repo", "images", "logo.png"), imageFile.GetHugoPath(false),
+	assert.Equal(t, filepath.Join("content", testRepoName, "images", "logo.png"), imageFile.GetHugoPath(false),
 		"Image should preserve images/ subdirectory")
 }
 
@@ -149,8 +147,8 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 	// Test case: Image files with mixed case like 6_3_approve_MR.png
 	// Should be normalized to lowercase for URL compatibility
 	tmpDir := t.TempDir()
-	repoPath := filepath.Join(tmpDir, "test-repo")
-	docsPath := filepath.Join(repoPath, "docs")
+	repoPath := filepath.Join(tmpDir, testRepoName)
+	docsPath := filepath.Join(repoPath, testDocsDir)
 	imagesPath := filepath.Join(docsPath, "images")
 
 	require.NoError(t, os.MkdirAll(imagesPath, 0o750))
@@ -166,8 +164,8 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 	cfg := &config.Config{
 		Repositories: []config.Repository{
 			{
-				Name:  "test-repo",
-				Paths: []string{"docs"},
+				Name:  testRepoName,
+				Paths: []string{testDocsDir},
 				Tags:  map[string]string{},
 			},
 		},
@@ -175,14 +173,14 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 
 	disc := NewDiscovery(cfg.Repositories, &config.BuildConfig{})
 	files, err := disc.DiscoverDocs(map[string]string{
-		"test-repo": repoPath,
+		testRepoName: repoPath,
 	})
 	require.NoError(t, err)
 
 	// Find the image file
 	var imageFile *DocFile
 	for i := range files {
-		if files[i].Extension == ".png" {
+		if files[i].Extension == imageExtensionPng {
 			imageFile = &files[i]
 			break
 		}
@@ -192,7 +190,7 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 
 	// Image filename should be normalized to lowercase
 	hugoPath := imageFile.GetHugoPath(false)
-	expectedPath := filepath.Join("content", "test-repo", "images", "6_3_approve_mr.png")
+	expectedPath := filepath.Join("content", testRepoName, "images", "6_3_approve_mr.png")
 
 	t.Logf("Image Hugo Path: %s", hugoPath)
 	t.Logf("Expected Path: %s", expectedPath)
@@ -202,5 +200,5 @@ func TestAssetMixedCaseFilename(t *testing.T) {
 	assert.Equal(t, expectedPath, hugoPath,
 		"Image filename should be fully lowercase for URL compatibility, including extension")
 	assert.Equal(t, "6_3_approve_MR", imageFile.Name, "Original name preserved in struct")
-	assert.Equal(t, ".png", imageFile.Extension, "Original extension preserved in struct")
+	assert.Equal(t, imageExtensionPng, imageFile.Extension, "Original extension preserved in struct")
 }

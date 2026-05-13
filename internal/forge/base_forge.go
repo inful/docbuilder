@@ -14,6 +14,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
+const authHeaderPrefixBearer = "Bearer "
+
 // BaseForge provides common HTTP operations for forge clients.
 // It consolidates duplicate newRequest/doRequest logic from GitHub, GitLab, and Forgejo clients.
 type BaseForge struct {
@@ -32,7 +34,7 @@ func NewBaseForge(httpClient *http.Client, apiURL, token string) *BaseForge {
 		httpClient:       httpClient,
 		apiURL:           apiURL,
 		token:            token,
-		authHeaderPrefix: "Bearer ", // default to Bearer
+		authHeaderPrefix: authHeaderPrefixBearer, // default to Bearer
 		customHeaders:    make(map[string]string),
 	}
 }
@@ -121,6 +123,7 @@ func (b *BaseForge) NewRequest(ctx context.Context, method, endpoint string, bod
 // DoRequest executes an HTTP request and decodes the response.
 // Consolidates error handling, response closing, and JSON decoding.
 func (b *BaseForge) DoRequest(req *http.Request, result any) error {
+	//nolint:gosec // forge request URLs are built from configured base URLs, not user-supplied input
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		return errors.NetworkError("failed to execute forge request").
@@ -166,6 +169,7 @@ func (b *BaseForge) DoRequest(req *http.Request, result any) error {
 // DoRequestWithHeaders is like DoRequest but also returns response headers.
 // Useful for pagination that uses Link headers (GitHub).
 func (b *BaseForge) DoRequestWithHeaders(req *http.Request, result any) (http.Header, error) {
+	//nolint:gosec // forge request URLs are built from configured base URLs, not user-supplied input
 	resp, err := b.httpClient.Do(req)
 	if err != nil {
 		return nil, errors.NetworkError("failed to execute forge request").

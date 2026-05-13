@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -100,7 +99,7 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		return
 	}
 
-	atomic.AddInt32(&d.queueLength, 1)
+	d.queueLength.Add(1)
 	slog.Info("Orchestrated build enqueued",
 		logfields.JobID(jobID),
 		slog.Int("repositories", len(reposForBuild)))

@@ -11,7 +11,7 @@ func GetVersioningConfig(v2Config *config.Config) *VersionConfig {
 		return &VersionConfig{
 			Strategy:          StrategyDefaultOnly,
 			DefaultBranchOnly: true,
-			BranchPatterns:    []string{"main", "master"},
+			BranchPatterns:    []string{defaultBranchMain, defaultBranchMaster},
 			TagPatterns:       []string{},
 			MaxVersions:       5,
 		}
