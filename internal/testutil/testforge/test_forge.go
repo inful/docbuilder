@@ -68,6 +68,16 @@ const (
 	FailModeNotFound
 )
 
+const (
+	testDefaultBranchMain  = "main"
+	testTopicDocs          = "docs"
+	testTopicDocumentation = "documentation"
+	testLanguageMarkdown   = "Markdown"
+	testMetadataKeyTest    = "test"
+	testMetadataValueTrue  = "true"
+	testOrgName            = "test-org"
+)
+
 // NewTestForge creates a new test forge with default repositories.
 func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 	return &TestForge{
@@ -77,13 +87,13 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 			{
 				ID:            "1",
 				Name:          "docs-repo",
-				FullName:      "test-org/docs-repo",
-				CloneURL:      "https://test-forge.example.com/test-org/docs-repo.git",
-				SSHURL:        "git@test-forge.example.com:test-org/docs-repo.git",
-				DefaultBranch: "main",
+				FullName:      testOrgName + "/docs-repo",
+				CloneURL:      "https://test-forge.example.com/" + testOrgName + "/docs-repo.git",
+				SSHURL:        "git@test-forge.example.com:" + testOrgName + "/docs-repo.git",
+				DefaultBranch: testDefaultBranchMain,
 				Description:   "Documentation repository for testing",
-				Topics:        []string{"docs", "testing"},
-				Language:      "Markdown",
+				Topics:        []string{testTopicDocs, "testing"},
+				Language:      testLanguageMarkdown,
 				Private:       false,
 				Archived:      false,
 				Fork:          false,
@@ -92,18 +102,18 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 				CreatedAt:     time.Now().Add(-30 * 24 * time.Hour),
 				UpdatedAt:     time.Now().Add(-1 * time.Hour),
 				LastUpdated:   time.Now().Add(-1 * time.Hour),
-				Metadata:      map[string]string{"test": "true"},
+				Metadata:      map[string]string{testMetadataKeyTest: testMetadataValueTrue},
 			},
 			{
 				ID:            "2",
 				Name:          "api-docs",
-				FullName:      "test-org/api-docs",
-				CloneURL:      "https://test-forge.example.com/test-org/api-docs.git",
-				SSHURL:        "git@test-forge.example.com:test-org/api-docs.git",
-				DefaultBranch: "main",
+				FullName:      testOrgName + "/api-docs",
+				CloneURL:      "https://test-forge.example.com/" + testOrgName + "/api-docs.git",
+				SSHURL:        "git@test-forge.example.com:" + testOrgName + "/api-docs.git",
+				DefaultBranch: testDefaultBranchMain,
 				Description:   "API documentation",
-				Topics:        []string{"api", "documentation"},
-				Language:      "Markdown",
+				Topics:        []string{"api", testTopicDocumentation},
+				Language:      testLanguageMarkdown,
 				Private:       false,
 				Archived:      false,
 				Fork:          false,
@@ -112,15 +122,15 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 				CreatedAt:     time.Now().Add(-20 * 24 * time.Hour),
 				UpdatedAt:     time.Now().Add(-2 * time.Hour),
 				LastUpdated:   time.Now().Add(-2 * time.Hour),
-				Metadata:      map[string]string{"test": "true"},
+				Metadata:      map[string]string{testMetadataKeyTest: testMetadataValueTrue},
 			},
 			{
 				Name:        "archived-docs",
-				FullName:    "test-org/archived-docs",
-				CloneURL:    "https://test-forge.example.com/test-org/archived-docs.git",
+				FullName:    testOrgName + "/archived-docs",
+				CloneURL:    "https://test-forge.example.com/" + testOrgName + "/archived-docs.git",
 				Description: "Archived documentation",
 				Topics:      []string{"legacy"},
-				Language:    "Markdown",
+				Language:    testLanguageMarkdown,
 				Private:     false,
 				Archived:    true,
 				Fork:        false,
@@ -129,11 +139,11 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 			},
 			{
 				Name:        "private-docs",
-				FullName:    "test-org/private-docs",
-				CloneURL:    "https://test-forge.example.com/test-org/private-docs.git",
+				FullName:    testOrgName + "/private-docs",
+				CloneURL:    "https://test-forge.example.com/" + testOrgName + "/private-docs.git",
 				Description: "Private documentation",
 				Topics:      []string{"internal"},
-				Language:    "Markdown",
+				Language:    testLanguageMarkdown,
 				Private:     true,
 				Archived:    false,
 				Fork:        false,
@@ -141,7 +151,7 @@ func NewTestForge(name string, forgeType config.ForgeType) *TestForge {
 				UpdatedAt:   time.Now().Add(-30 * time.Minute),
 			},
 		},
-		organizations: []string{"test-org", "docs-org"},
+		organizations: []string{testOrgName, "docs-org"},
 		failMode:      FailModeNone,
 		delay:         0,
 	}
@@ -187,11 +197,11 @@ func (tf *TestForge) simulate() error {
 	case FailModeNone:
 		return nil
 	case FailModeAuth:
-		return errors.New("authentication failed: invalid credentials")
+		return errors.New("authentication failed: invalid token")
 	case FailModeNetwork:
 		return errors.New("network error: connection timeout")
 	case FailModeRateLimit:
-		return errors.New("rate limit exceeded: try again later")
+		return errors.New("rate limit exceeded: too many requests")
 	case FailModeNotFound:
 		return errors.New("not found: resource does not exist")
 	default:
@@ -235,7 +245,7 @@ func (tf *TestForge) GetRepositoriesForOrganization(_ context.Context, orgName s
 				FullName:      testRepo.FullName,
 				CloneURL:      testRepo.CloneURL,
 				SSHURL:        strings.Replace(testRepo.CloneURL, "https://", "git@", 1),
-				DefaultBranch: "main",
+				DefaultBranch: testDefaultBranchMain,
 				Description:   testRepo.Description,
 				Private:       testRepo.Private,
 				Archived:      testRepo.Archived,
@@ -288,8 +298,8 @@ func (tff *Factory) CreateGitHubTestForge(name string) *TestForge {
 		FullName:    "github-org/awesome-docs",
 		CloneURL:    "https://github.com/github-org/awesome-docs.git",
 		Description: "Awesome documentation project",
-		Topics:      []string{"documentation", "awesome"},
-		Language:    "Markdown",
+		Topics:      []string{testTopicDocumentation, "awesome"},
+		Language:    testLanguageMarkdown,
 		Private:     false,
 		Archived:    false,
 		Fork:        false,
@@ -312,7 +322,7 @@ func (tff *Factory) CreateGitLabTestForge(name string) *TestForge {
 		CloneURL:    "https://gitlab.example.com/gitlab-group/project-docs.git",
 		Description: "Project documentation on GitLab",
 		Topics:      []string{"project", "gitlab"},
-		Language:    "Markdown",
+		Language:    testLanguageMarkdown,
 		Private:     false,
 		Archived:    false,
 		Fork:        false,
@@ -335,7 +345,7 @@ func (tff *Factory) CreateForgejoTestForge(name string) *TestForge {
 		CloneURL:    "https://forgejo.example.com/forgejo-org/self-hosted-docs.git",
 		Description: "Self-hosted documentation",
 		Topics:      []string{"self-hosted", "forgejo"},
-		Language:    "Markdown",
+		Language:    testLanguageMarkdown,
 		Private:     false,
 		Archived:    false,
 		Fork:        false,
@@ -364,7 +374,7 @@ func CreateTestForgeConfig(name string, forgeType config.ForgeType, organization
 			"include_archived": false,
 			"include_private":  false,
 			"include_forks":    false,
-			"topic_filter":     []string{"docs", "documentation"},
+			"topic_filter":     []string{testTopicDocs, testTopicDocumentation},
 		},
 	}
 }
@@ -405,8 +415,8 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 				PublicRepositories:   6,
 				ArchivedRepositories: 1,
 				PrivateRepositories:  1,
-				Organizations:        []string{"test-org", "github-org", "gitlab-group", "forgejo-org"},
-				Topics:               []string{"docs", "documentation", "api", "awesome", "project", "self-hosted"},
+				Organizations:        []string{testOrgName, "github-org", "gitlab-group", "forgejo-org"},
+				Topics:               []string{testTopicDocs, testTopicDocumentation, "api", "awesome", "project", "self-hosted"},
 			},
 		},
 		{
@@ -437,7 +447,7 @@ func CreateTestScenarios() []TestDiscoveryScenario {
 			},
 			Expected: ExpectedResults{
 				TotalRepositories: 0,
-				Organizations:     []string{"test-org", "docs-org"},
+				Organizations:     []string{testOrgName, "docs-org"},
 			},
 		},
 	}
@@ -453,7 +463,7 @@ func (tf *TestForge) ToConfigRepositories() []config.Repository {
 			Name:   repo.Name,
 			URL:    repo.CloneURL,
 			Branch: repo.DefaultBranch,
-			Paths:  []string{"docs"}, // Default paths
+			Paths:  []string{testTopicDocs}, // Default paths
 			Tags: map[string]string{
 				"description": repo.Description,
 				"language":    repo.Language,

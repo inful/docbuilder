@@ -146,7 +146,7 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 		return op
 	}
 
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
+	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
 		op.Error = fmt.Errorf("write file for uid update: %w", writeErr)
 		return op
@@ -257,7 +257,7 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 		return op
 	}
 
-	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil {
+	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
 		op.Error = fmt.Errorf("write file for uid alias update: %w", writeErr)
 		return op

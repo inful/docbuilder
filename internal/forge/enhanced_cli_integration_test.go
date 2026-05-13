@@ -44,7 +44,7 @@ func testEnhancedCliConfigurationWorkflow(t *testing.T) {
 
 	// Create a configuration that represents what a CLI user might create
 	cliConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			githubConfig,
 			gitlabConfig,
@@ -112,13 +112,13 @@ func testEnhancedCliFailureHandling(t *testing.T) {
 	gitlab.WithRateLimit(50, time.Minute*30) // Rate limited
 
 	cliConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			github.GenerateForgeConfig(),
 			gitlab.GenerateForgeConfig(),
 		},
 		Filtering: &config.FilteringConfig{
-			RequiredPaths: []string{"docs"},
+			RequiredPaths: []string{docsToken},
 		},
 	}
 
@@ -174,7 +174,7 @@ func testEnhancedCliWebhookWorkflow(t *testing.T) {
 
 	// Create CLI configuration with webhook settings
 	githubConfig := github.GenerateForgeConfig()
-	githubConfig.Webhook = &config.WebhookConfig{
+	githubConfig.Webhook = &config.WebhookConfig{ //nolint:gosec // test-only secret value
 		Secret:       "github-webhook-secret",
 		Path:         "/webhooks/github",
 		Events:       []string{"push", "repository"},
@@ -182,7 +182,7 @@ func testEnhancedCliWebhookWorkflow(t *testing.T) {
 	}
 
 	gitlabConfig := gitlab.GenerateForgeConfig()
-	gitlabConfig.Webhook = &config.WebhookConfig{
+	gitlabConfig.Webhook = &config.WebhookConfig{ //nolint:gosec // test-only secret value
 		Secret:       "gitlab-webhook-secret",
 		Path:         "/webhooks/gitlab",
 		Events:       []string{"push", "merge_request"},
@@ -190,13 +190,13 @@ func testEnhancedCliWebhookWorkflow(t *testing.T) {
 	}
 
 	cliConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			githubConfig,
 			gitlabConfig,
 		},
 		Filtering: &config.FilteringConfig{
-			RequiredPaths: []string{"docs"},
+			RequiredPaths: []string{docsToken},
 		},
 	}
 
@@ -285,7 +285,7 @@ func testEnhancedCliMultiPlatformIntegration(t *testing.T) {
 
 	// Create CLI configuration for multi-platform documentation aggregation
 	cliConfig := &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			githubConfig,
 			gitlabConfig,
@@ -293,8 +293,8 @@ func testEnhancedCliMultiPlatformIntegration(t *testing.T) {
 		},
 		Build: config.BuildConfig{},
 		Filtering: &config.FilteringConfig{
-			RequiredPaths:   []string{"docs", "documentation"},
-			IncludePatterns: []string{"*docs*", "*guides*", "*api*", "*runbooks*"},
+			RequiredPaths:   []string{docsToken, documentationToken},
+			IncludePatterns: []string{testPatternDocsLike, "*guides*", testPatternAPILike, "*runbooks*"},
 			ExcludePatterns: []string{},
 		},
 		Output: config.OutputConfig{

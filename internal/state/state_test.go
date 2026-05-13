@@ -29,7 +29,7 @@ func testRepositoryOperations(t *testing.T) {
 	repo := &Repository{
 		URL:    "https://github.com/test/repo.git",
 		Name:   "test-repo",
-		Branch: "main",
+		Branch: defaultBranchMain,
 	}
 
 	createResult := repoStore.Create(ctx, repo)
@@ -256,7 +256,7 @@ func testTransactionOperations(t *testing.T) {
 		repo := &Repository{
 			URL:    "https://github.com/tx/repo.git",
 			Name:   "tx-repo",
-			Branch: "main",
+			Branch: defaultBranchMain,
 		}
 
 		createResult := txStore.Repositories().Create(ctx, repo)
@@ -325,7 +325,7 @@ func testPersistence(t *testing.T) {
 	repo := &Repository{
 		URL:    "https://github.com/test/persist.git",
 		Name:   "persist-repo",
-		Branch: "main",
+		Branch: defaultBranchMain,
 	}
 	if createResult := store.Repositories().Create(ctx, repo); createResult.IsErr() {
 		t.Fatalf("Failed to create test repository: %v", createResult.UnwrapErr())

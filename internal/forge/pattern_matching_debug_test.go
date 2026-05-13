@@ -13,20 +13,20 @@ func TestPatternMatchingDebug(t *testing.T) {
 		want    bool
 		note    string
 	}{
-		{"api-docs", "*api*", true, "contains match"},
-		{"test-org/api-docs", "*api*", true, "contains match"},
-		{"api-docs", "*docs*", true, "contains match"},
-		{"test-org/api-docs", "*docs*", true, "contains match"},
-		{"backend-service", "*api*", false, "should not match"},
-		{"backend-service", "*docs*", false, "should not match"},
-		{"docs-website", "*docs*", true, "contains match"},
-		{"legacy-docs", "*legacy*", true, "contains match"},
+		{repoNameAPIDocs, testPatternAPILike, true, "contains match"},
+		{"test-org/" + repoNameAPIDocs, testPatternAPILike, true, "contains match"},
+		{repoNameAPIDocs, testPatternDocsLike, true, "contains match"},
+		{"test-org/" + repoNameAPIDocs, testPatternDocsLike, true, "contains match"},
+		{testRepoNameBackendSvc, testPatternAPILike, false, "should not match"},
+		{testRepoNameBackendSvc, testPatternDocsLike, false, "should not match"},
+		{"docs-website", testPatternDocsLike, true, "contains match"},
+		{"legacy-docs", testPatternLegacyLike, true, "contains match"},
 
 		// Test other pattern types
-		{"api-docs", "api*", true, "prefix match"},
-		{"api-docs", "*docs", true, "suffix match"},
-		{"api-docs", "api-docs", true, "exact match"},
-		{"api-docs", "*", true, "wildcard match"},
+		{repoNameAPIDocs, testTopicAPI + "*", true, "prefix match"},
+		{repoNameAPIDocs, "*" + docsToken, true, "suffix match"},
+		{repoNameAPIDocs, repoNameAPIDocs, true, "exact match"},
+		{repoNameAPIDocs, "*", true, "wildcard match"},
 	}
 
 	for _, tc := range testCases {
@@ -46,12 +46,12 @@ func TestContainsFunction(t *testing.T) {
 		substr string
 		want   bool
 	}{
-		{"api-docs", "api", true},
-		{"api-docs", "docs", true},
-		{"test-org/api-docs", "api", true},
-		{"test-org/api-docs", "docs", true},
-		{"backend-service", "api", false},
-		{"backend-service", "docs", false},
+		{repoNameAPIDocs, testTopicAPI, true},
+		{repoNameAPIDocs, docsToken, true},
+		{"test-org/" + repoNameAPIDocs, testTopicAPI, true},
+		{"test-org/" + repoNameAPIDocs, docsToken, true},
+		{testRepoNameBackendSvc, testTopicAPI, false},
+		{testRepoNameBackendSvc, docsToken, false},
 	}
 
 	for _, tc := range testCases {

@@ -18,7 +18,7 @@ func TestHandleDocsStatus_OK(t *testing.T) {
 	cfg := &config.Config{}
 	h := NewAPIHandlers(cfg, &stubDaemon{})
 
-	req := httptest.NewRequest(http.MethodGet, "/api/status", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/api/status", nil)
 	rec := httptest.NewRecorder()
 
 	h.HandleDocsStatus(rec, req)

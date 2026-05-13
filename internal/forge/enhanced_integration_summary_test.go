@@ -299,7 +299,7 @@ func testEnhancedDiscoveryService(t *testing.T) {
 	manager.AddForge(github.GenerateForgeConfig(), github)
 
 	filtering := &config.FilteringConfig{
-		RequiredPaths: []string{"docs"},
+		RequiredPaths: []string{docsToken},
 	}
 
 	discovery := NewDiscoveryService(manager, filtering)

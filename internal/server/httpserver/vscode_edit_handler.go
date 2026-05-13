@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 // handleVSCodeEdit handles requests to open files in VS Code.
@@ -41,19 +43,44 @@ func (s *Server) handleVSCodeEdit(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Opened file in VS Code", slog.String("path", absPath))
 
-	// Redirect back to the referer, or to home if no referer
+	redirectTarget := safeRedirectTargetFromReferer(r)
+	//nolint:gosec // redirectTarget is constrained to same-origin/relative targets by safeRedirectTargetFromReferer
+	http.Redirect(w, r, redirectTarget, http.StatusSeeOther)
+}
+
+func safeRedirectTargetFromReferer(r *http.Request) string {
+	redirectTarget := "/"
 	referer := r.Referer()
 	if referer == "" {
-		referer = "/"
+		return redirectTarget
 	}
-	http.Redirect(w, r, referer, http.StatusSeeOther)
+
+	u, err := url.Parse(referer)
+	if err != nil {
+		return redirectTarget
+	}
+
+	// Allow relative paths.
+	if u.Scheme == "" && u.Host == "" {
+		if strings.HasPrefix(u.Path, "/") && !strings.HasPrefix(u.Path, "//") {
+			return u.RequestURI()
+		}
+		return redirectTarget
+	}
+
+	// Allow same-origin absolute URLs.
+	if (u.Scheme == "http" || u.Scheme == "https") && strings.EqualFold(u.Host, r.Host) {
+		return u.RequestURI()
+	}
+
+	return redirectTarget
 }
 
 // editError represents an error from the VS Code edit handler with an HTTP status code.
 type editError struct {
 	message    string
 	statusCode int
-	logLevel   string // "warn" or "error"
+	logLevel   string // logLevelWarn or logLevelError
 	logFields  []any
 }
 
@@ -65,7 +92,7 @@ func (e *editError) Error() string {
 func (s *Server) handleEditError(w http.ResponseWriter, err error) {
 	var editErr *editError
 	if ok := errors.As(err, &editErr); ok {
-		if editErr.logLevel == "error" {
+		if editErr.logLevel == logLevelError {
 			slog.Error("VS Code edit handler: "+editErr.message, editErr.logFields...)
 		} else {
 			slog.Warn("VS Code edit handler: "+editErr.message, editErr.logFields...)

@@ -46,18 +46,9 @@ func (bs *jsonBuildStore) GetByID(_ context.Context, id string) foundation.Resul
 }
 
 func (bs *jsonBuildStore) Update(_ context.Context, build *Build) foundation.Result[*Build, error] {
-	if build == nil {
-		return foundation.Err[*Build, error](
-			errors.ValidationError("build cannot be nil").Build(),
-		)
-	}
-
-	if validationResult := build.Validate(); !validationResult.Valid {
-		return foundation.Err[*Build, error](validationResult.ToError())
-	}
-
-	return updateEntity[Build](
+	return updateValidatableEntity[Build](
 		bs.store,
+		"build",
 		build,
 		func() bool { _, ok := bs.store.builds[build.ID]; return ok },
 		func() { build.UpdatedAt = time.Now() },

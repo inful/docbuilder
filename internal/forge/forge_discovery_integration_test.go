@@ -28,7 +28,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		// Add repositories with documentation
 		mockForge.AddRepository(&Repository{
 			ID:            "repo1",
-			Name:          "api-docs",
+			Name:          repoNameAPIDocs,
 			FullName:      "test-org/api-docs",
 			CloneURL:      "https://github.com/test-org/api-docs.git",
 			SSHURL:        "git@github.com:test-org/api-docs.git",
@@ -38,8 +38,8 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			Archived:      false,
 			HasDocs:       true,
 			HasDocIgnore:  false,
-			Topics:        []string{"api", "documentation"},
-			Language:      "Markdown",
+			Topics:        []string{testTopicAPI, documentationToken},
+			Language:      languageMarkdown,
 		})
 
 		mockForge.AddRepository(&Repository{
@@ -54,14 +54,14 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			Archived:      false,
 			HasDocs:       true,
 			HasDocIgnore:  true,
-			Topics:        []string{"guide", "documentation"},
-			Language:      "Markdown",
+			Topics:        []string{"guide", documentationToken},
+			Language:      languageMarkdown,
 		})
 
 		// Add a repository without documentation (should be filtered out)
 		mockForge.AddRepository(&Repository{
 			ID:            "repo3",
-			Name:          "backend-service",
+			Name:          testRepoNameBackendSvc,
 			FullName:      "test-org/backend-service",
 			CloneURL:      "https://github.com/test-org/backend-service.git",
 			SSHURL:        "git@github.com:test-org/backend-service.git",
@@ -71,7 +71,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			Archived:      false,
 			HasDocs:       false,
 			HasDocIgnore:  false,
-			Topics:        []string{"backend", "service"},
+			Topics:        []string{testTopicBackend, "service"},
 			Language:      "Go",
 		})
 
@@ -94,8 +94,8 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 
 		// Create filtering configuration
 		filtering := &config.FilteringConfig{
-			RequiredPaths:   []string{"docs"},
-			IncludePatterns: []string{"*docs*", "*guide*"},
+			RequiredPaths:   []string{docsToken},
+			IncludePatterns: []string{testPatternDocsLike, testPatternGuideLike},
 			ExcludePatterns: []string{"*backend*"},
 		}
 
@@ -181,7 +181,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		githubConfig.Organizations = []string{"mega-corp"}
 
 		filtering := &config.FilteringConfig{
-			RequiredPaths:   []string{"docs"},
+			RequiredPaths:   []string{docsToken},
 			IncludePatterns: []string{"*"},
 			ExcludePatterns: []string{},
 		}
@@ -247,7 +247,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 		forgejoConfig.Organizations = []string{"test-forgejo"}
 
 		filtering := &config.FilteringConfig{
-			RequiredPaths:   []string{"docs"},
+			RequiredPaths:   []string{docsToken},
 			IncludePatterns: []string{"*"},
 			ExcludePatterns: []string{},
 		}
@@ -302,11 +302,11 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 
 		// Add repositories with different characteristics for testing filtering
 		microserviceRepo := CreateMockGitHubRepo("config-test", "user-service", true, false, false, false)
-		microserviceRepo.Topics = []string{"microservice", "api", "backend"}
+		microserviceRepo.Topics = []string{"microservice", testTopicAPI, testTopicBackend}
 		github.AddRepository(microserviceRepo)
 
 		frontendRepo := CreateMockGitHubRepo("config-test", "web-frontend", true, false, false, false)
-		frontendRepo.Topics = []string{"frontend", "react", "documentation"}
+		frontendRepo.Topics = []string{"frontend", "react", documentationToken}
 		github.AddRepository(frontendRepo)
 
 		toolsRepo := CreateMockGitHubRepo("config-test", "build-tools", false, false, false, false) // No docs
@@ -329,7 +329,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			{
 				name: "RequireDocsOnly",
 				filtering: &config.FilteringConfig{
-					RequiredPaths:   []string{"docs"},
+					RequiredPaths:   []string{docsToken},
 					IncludePatterns: []string{"*"},
 					ExcludePatterns: []string{},
 				},
@@ -338,7 +338,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			{
 				name: "ServicePatternOnly",
 				filtering: &config.FilteringConfig{
-					RequiredPaths:   []string{"docs"},
+					RequiredPaths:   []string{docsToken},
 					IncludePatterns: []string{"*service*"},
 					ExcludePatterns: []string{},
 				},
@@ -347,7 +347,7 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 			{
 				name: "ExcludeFrontend",
 				filtering: &config.FilteringConfig{
-					RequiredPaths:   []string{"docs"},
+					RequiredPaths:   []string{docsToken},
 					IncludePatterns: []string{"*"},
 					ExcludePatterns: []string{"*frontend*"},
 				},
@@ -395,8 +395,8 @@ func TestForgeDiscoveryIntegration(t *testing.T) {
 // Helper functions for generating realistic test data
 
 func generateRepoName(index int) string {
-	prefixes := []string{"api", "service", "web", "mobile", "cli", "sdk", "lib", "tool", "docs", "config"}
-	suffixes := []string{"server", "client", "frontend", "backend", "core", "utils", "common", "proto", "gateway", "proxy"}
+	prefixes := []string{testTopicAPI, "service", "web", "mobile", "cli", "sdk", "lib", "tool", docsToken, configToken}
+	suffixes := []string{"server", "client", "frontend", testTopicBackend, "core", "utils", "common", "proto", "gateway", "proxy"}
 
 	prefix := prefixes[index%len(prefixes)]
 	suffix := suffixes[index%len(suffixes)]
@@ -418,14 +418,14 @@ func generateDocPaths(index int) string {
 
 func generateRepoTopics(index int) []string {
 	topicSets := [][]string{
-		{"api", "rest", "documentation"},
+		{testTopicAPI, "rest", documentationToken},
 		{"frontend", "react", "javascript"},
-		{"backend", "microservice", "golang"},
+		{testTopicBackend, "microservice", "golang"},
 		{"devops", "infrastructure", "automation"},
 		{"mobile", "ios", "android"},
 		{"cli", "tool", "utility"},
 		{"library", "sdk", "client"},
-		{"documentation", "guides", "examples"},
+		{documentationToken, "guides", "examples"},
 		{"configuration", "deployment", "setup"},
 		{"monitoring", "logging", "observability"},
 	}

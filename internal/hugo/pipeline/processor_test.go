@@ -12,7 +12,7 @@ import (
 
 func TestProcessContent_EmptyInput(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -24,7 +24,7 @@ func TestProcessContent_EmptyInput(t *testing.T) {
 
 func TestProcessContent_WithDocuments(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test Site"},
+		Hugo: config.HugoConfig{Title: testTitleTestSite},
 	}
 	processor := NewProcessor(cfg)
 
@@ -35,7 +35,7 @@ func TestProcessContent_WithDocuments(t *testing.T) {
 			Path:        "repo/test.md",
 			Repository:  "repo",
 			Name:        "test",
-			Extension:   ".md",
+			Extension:   markdownExtension,
 			IsIndex:     false,
 			Generated:   false,
 		},
@@ -68,7 +68,7 @@ func TestProcessContent_WithDocuments(t *testing.T) {
 
 func TestProcessContent_GeneratorError(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -85,7 +85,7 @@ func TestProcessContent_GeneratorError(t *testing.T) {
 
 func TestProcessContent_TransformError(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -112,7 +112,7 @@ func TestProcessContent_TransformError(t *testing.T) {
 
 func TestProcessTransforms_BasicFlow(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -143,7 +143,7 @@ func TestProcessTransforms_BasicFlow(t *testing.T) {
 
 func TestProcessTransforms_DynamicGeneration(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -188,7 +188,7 @@ func TestProcessTransforms_DynamicGeneration(t *testing.T) {
 
 func TestProcessTransforms_PreventGeneratedFromGenerating(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -222,7 +222,7 @@ func TestProcessTransforms_PreventGeneratedFromGenerating(t *testing.T) {
 
 func TestProcessTransforms_TransformError(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -248,7 +248,7 @@ func TestProcessTransforms_TransformError(t *testing.T) {
 
 func TestProcessTransforms_MultipleTransforms(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -291,7 +291,7 @@ func TestProcessTransforms_MultipleTransforms(t *testing.T) {
 
 func TestWithGenerators(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -318,7 +318,7 @@ func TestWithGenerators(t *testing.T) {
 
 func TestWithTransforms(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -349,7 +349,7 @@ func TestWithTransforms(t *testing.T) {
 
 func TestProcessContent_RepositoryMetadataInjection(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 	processor.WithGenerators([]FileGenerator{}) // No generators
@@ -408,7 +408,7 @@ func TestProcessContent_RepositoryMetadataInjection(t *testing.T) {
 
 func TestProcessTransforms_LargeDocumentSet(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 	processor := NewProcessor(cfg)
 
@@ -436,7 +436,7 @@ func TestProcessTransforms_LargeDocumentSet(t *testing.T) {
 
 func TestDefaultTransforms_Order(t *testing.T) {
 	cfg := &config.Config{
-		Hugo: config.HugoConfig{Title: "Test"},
+		Hugo: config.HugoConfig{Title: testTitleTest},
 	}
 
 	transforms := defaultTransforms(cfg)
@@ -456,10 +456,10 @@ Content with [link](./other.md) and ![image](./img.png).
 		FrontMatter: make(map[string]any),
 		Path:        "repo/_index.md",
 		Repository:  "repo",
-		Name:        "_index",
+		Name:        indexFileSuffix,
 		IsIndex:     true,
 		DocsBase:    "docs",
-		Extension:   ".md",
+		Extension:   markdownExtension,
 	}
 
 	// Run all transforms

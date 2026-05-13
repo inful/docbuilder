@@ -17,18 +17,18 @@ func TestTestForgeBasics(t *testing.T) {
 	// Add some test repositories
 	testRepo := TestRepository{
 		Name:        "test-docs",
-		FullName:    "test-org/test-docs",
-		CloneURL:    "https://github.com/test-org/test-docs.git",
+		FullName:    testOrgName + "/test-docs",
+		CloneURL:    "https://github.com/" + testOrgName + "/test-docs.git",
 		Description: "Test documentation repository",
-		Topics:      []string{"docs", "documentation"},
-		Language:    "Markdown",
+		Topics:      []string{testTopicDocs, testTopicDocumentation},
+		Language:    testLanguageMarkdown,
 		Private:     false,
 		Archived:    false,
 		Fork:        false,
 	}
 
 	forge.AddRepository(testRepo)
-	forge.AddOrganization("test-org")
+	forge.AddOrganization(testOrgName)
 
 	// Test basic functionality
 	orgs, err := forge.GetUserOrganizations(t.Context())
@@ -36,12 +36,12 @@ func TestTestForgeBasics(t *testing.T) {
 		t.Fatalf("Failed to list organizations: %v", err)
 	}
 
-	if len(orgs) != 1 || orgs[0].Name != "test-org" {
-		t.Errorf("Expected 1 organization 'test-org', got %d orgs: %v", len(orgs), orgs)
+	if len(orgs) != 1 || orgs[0].Name != testOrgName {
+		t.Errorf("Expected 1 organization %q, got %d orgs: %v", testOrgName, len(orgs), orgs)
 	}
 
 	// Test repository listing
-	repos, err := forge.GetRepositoriesForOrganization(t.Context(), "test-org")
+	repos, err := forge.GetRepositoriesForOrganization(t.Context(), testOrgName)
 	if err != nil {
 		t.Fatalf("Failed to list repositories: %v", err)
 	}

@@ -66,7 +66,7 @@ func isGitWorkTree(ctx context.Context, repoRoot string) bool {
 }
 
 func gitDiffRenames(ctx context.Context, repoRoot string, cached bool) ([]RenameMapping, error) {
-	args := []string{"-C", repoRoot, "diff", "--name-status", "-z", "-M"}
+	args := []string{"-C", repoRoot, gitCommandDiff, "--name-status", "-z", "-M"}
 	if cached {
 		args = append(args, "--cached")
 	}
@@ -128,7 +128,7 @@ func gitDiffRenames(ctx context.Context, repoRoot string, cached bool) ([]Rename
 }
 
 func detectUnstagedRenamesFromDeletedPlusUntracked(ctx context.Context, repoRoot string) ([]RenameMapping, error) {
-	deletedRel, err := gitNameOnly(ctx, repoRoot, []string{"diff", "--name-only", "-z", "--diff-filter=D"})
+	deletedRel, err := gitNameOnly(ctx, repoRoot, []string{gitCommandDiff, "--name-only", "-z", "--diff-filter=D"})
 	if err != nil {
 		return nil, err
 	}

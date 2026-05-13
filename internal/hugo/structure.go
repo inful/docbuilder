@@ -219,7 +219,7 @@ func (g *Generator) removeOldBackup(prev string) {
 		// Last resort: remove with chmod
 		_ = filepath.Walk(prev, func(path string, _ os.FileInfo, err error) error {
 			if err == nil {
-				_ = os.Chmod(path, 0o600)
+				_ = os.Chmod(path, 0o600) //nolint:gosec // walk within controlled backup directory
 			}
 			return nil
 		})

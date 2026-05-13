@@ -15,9 +15,9 @@ const (
 
 func TestNormalizer_Basic(t *testing.T) {
 	normalizer := NewNormalizer(map[string]TestEnum{
-		"alpha": TestEnumAlpha,
-		"beta":  TestEnumBeta,
-		"gamma": TestEnumGamma,
+		string(TestEnumAlpha): TestEnumAlpha,
+		string(TestEnumBeta):  TestEnumBeta,
+		string(TestEnumGamma): TestEnumGamma,
 	}, TestEnumAlpha)
 
 	tests := []struct {
@@ -44,8 +44,8 @@ func TestNormalizer_Basic(t *testing.T) {
 
 func TestNormalizer_WithError(t *testing.T) {
 	normalizer := NewNormalizer(map[string]TestEnum{
-		"alpha": TestEnumAlpha,
-		"beta":  TestEnumBeta,
+		string(TestEnumAlpha): TestEnumAlpha,
+		string(TestEnumBeta):  TestEnumBeta,
 	}, TestEnumAlpha)
 
 	// Valid input
@@ -66,9 +66,9 @@ func TestNormalizer_WithError(t *testing.T) {
 
 func TestValidKeys(t *testing.T) {
 	normalizer := NewNormalizer(map[string]TestEnum{
-		"gamma": TestEnumGamma,
-		"alpha": TestEnumAlpha,
-		"beta":  TestEnumBeta,
+		string(TestEnumGamma): TestEnumGamma,
+		string(TestEnumAlpha): TestEnumAlpha,
+		string(TestEnumBeta):  TestEnumBeta,
 	}, TestEnumAlpha)
 
 	keys := normalizer.ValidKeys()

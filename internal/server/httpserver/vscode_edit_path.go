@@ -16,7 +16,7 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 		return "", &editError{
 			message:    "Invalid edit URL",
 			statusCode: http.StatusBadRequest,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 		}
 	}
 
@@ -25,7 +25,7 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 		return "", &editError{
 			message:    "No file path specified",
 			statusCode: http.StatusBadRequest,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 		}
 	}
 
@@ -35,7 +35,7 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 		return "", &editError{
 			message:    "Server configuration error",
 			statusCode: http.StatusInternalServerError,
-			logLevel:   "error",
+			logLevel:   logLevelError,
 			logFields:  []any{slog.String("reason", "unable to determine docs directory")},
 		}
 	}
@@ -56,7 +56,7 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 		return "", &editError{
 			message:    "Invalid file path",
 			statusCode: http.StatusBadRequest,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 			logFields: []any{
 				slog.String("requested", relPath),
 				slog.String("resolved", cleanPath),
@@ -82,14 +82,14 @@ func (s *Server) validateMarkdownFile(path string) error {
 			return &editError{
 				message:    "File not found",
 				statusCode: http.StatusNotFound,
-				logLevel:   "warn",
+				logLevel:   logLevelWarn,
 				logFields:  []any{slog.String("path", path)},
 			}
 		}
 		return &editError{
 			message:    "Failed to access file",
 			statusCode: http.StatusInternalServerError,
-			logLevel:   "error",
+			logLevel:   logLevelError,
 			logFields: []any{
 				slog.String("path", path),
 				slog.String("error", err.Error()),
@@ -102,7 +102,7 @@ func (s *Server) validateMarkdownFile(path string) error {
 		return &editError{
 			message:    "Symlinks are not allowed",
 			statusCode: http.StatusForbidden,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 			logFields: []any{
 				slog.String("path", path),
 				slog.String("reason", "symlink detected"),
@@ -114,7 +114,7 @@ func (s *Server) validateMarkdownFile(path string) error {
 		return &editError{
 			message:    "Not a regular file",
 			statusCode: http.StatusBadRequest,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 			logFields:  []any{slog.String("path", path)},
 		}
 	}
@@ -125,7 +125,7 @@ func (s *Server) validateMarkdownFile(path string) error {
 		return &editError{
 			message:    "Only markdown files can be edited",
 			statusCode: http.StatusBadRequest,
-			logLevel:   "warn",
+			logLevel:   logLevelWarn,
 			logFields: []any{
 				slog.String("path", path),
 				slog.String("extension", ext),

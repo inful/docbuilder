@@ -13,7 +13,7 @@ func TestForgeTyped(t *testing.T) {
 			input    string
 			expected ForgeTyped
 		}{
-			{"github", ForgeTypedGitHub},
+			{string(ForgeGitHub), ForgeTypedGitHub},
 			{"GitHub", ForgeTypedGitHub},
 			{"  gitlab  ", ForgeTypedGitLab},
 			{"FORGEJO", ForgeTypedForgejo},

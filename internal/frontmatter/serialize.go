@@ -9,6 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const yamlTagString = "!!str"
+
 // SerializeYAML serializes a frontmatter map into YAML bytes (without delimiters).
 //
 // Determinism: keys are sorted (recursively for nested maps) to keep output stable.
@@ -57,7 +59,7 @@ func nodeFromStringMap(m map[string]any) (*yaml.Node, error) {
 
 	n := &yaml.Node{Kind: yaml.MappingNode}
 	for _, k := range keys {
-		keyNode := &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k}
+		keyNode := &yaml.Node{Kind: yaml.ScalarNode, Tag: yamlTagString, Value: k}
 		valNode, err := nodeFromAny(m[k])
 		if err != nil {
 			return nil, err
@@ -72,7 +74,7 @@ func nodeFromAny(v any) (*yaml.Node, error) {
 	case nil:
 		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!null", Value: "null"}, nil
 	case string:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: vv}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Tag: yamlTagString, Value: vv}, nil
 	case bool:
 		if vv {
 			return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"}, nil
@@ -105,7 +107,7 @@ func nodeFromAny(v any) (*yaml.Node, error) {
 	case []string:
 		seq := &yaml.Node{Kind: yaml.SequenceNode}
 		for _, item := range vv {
-			seq.Content = append(seq.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: item})
+			seq.Content = append(seq.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: yamlTagString, Value: item})
 		}
 		return seq, nil
 	default:

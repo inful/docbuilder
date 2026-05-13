@@ -34,12 +34,12 @@ func TestRead_EmptyFrontmatterBlock_ReturnsHadWithEmptyFields(t *testing.T) {
 }
 
 func TestRead_ValidYAMLFrontmatter_ReturnsFieldsAndBody(t *testing.T) {
-	input := []byte("---\nuid: abc\ntags:\n  - one\n---\n# Title\n")
+	input := []byte("---\nuid: " + testUID + "\ntags:\n  - one\n---\n# Title\n")
 
 	fields, body, had, _, err := Read(input)
 	require.NoError(t, err)
 	require.True(t, had)
-	require.Equal(t, "abc", fields["uid"])
+	require.Equal(t, testUID, fields["uid"])
 	require.Equal(t, []any{"one"}, fields["tags"])
 	require.Equal(t, []byte("# Title\n"), body)
 }
@@ -61,7 +61,7 @@ func TestRead_MissingClosingDelimiter_ReturnsError(t *testing.T) {
 }
 
 func TestWrite_HadFalse_ReturnsBodyOnly(t *testing.T) {
-	fields := map[string]any{"uid": "abc"}
+	fields := map[string]any{"uid": testUID}
 	body := []byte("# Title\n")
 
 	out, err := Write(fields, body, false, frontmatter.Style{Newline: "\n"})
@@ -85,7 +85,7 @@ func TestWrite_HadTrue_EmptyFields_EmitsEmptyFrontmatterBlock(t *testing.T) {
 }
 
 func TestWrite_CRLFStyle_UsesCRLFDelimitersAndNewlines(t *testing.T) {
-	fields := map[string]any{"uid": "abc"}
+	fields := map[string]any{"uid": testUID}
 	body := []byte("# Title\r\n")
 
 	out, err := Write(fields, body, true, frontmatter.Style{Newline: "\r\n"})

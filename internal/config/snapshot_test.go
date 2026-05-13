@@ -4,7 +4,7 @@ import "testing"
 
 // helper to build minimal config.
 func baseCfg() *Config {
-	return &Config{Version: "2.0", Hugo: HugoConfig{BaseURL: "https://example", Title: "Docs"}}
+	return &Config{Version: configVersion, Hugo: HugoConfig{BaseURL: "https://example", Title: "Docs"}}
 }
 
 func TestSnapshotStableAcrossNormalizationVariants(t *testing.T) {
@@ -20,7 +20,7 @@ func TestSnapshotStableAcrossNormalizationVariants(t *testing.T) {
 	snapA := a.Snapshot()
 
 	b := baseCfg()
-	b.Build.RenderMode = "always"                                                                                                           // already canonical
+	b.Build.RenderMode = RenderModeAlways                                                                                                   // already canonical
 	b.Versioning = &VersioningConfig{Strategy: "branches_only", BranchPatterns: []string{"release/*", "main"}, TagPatterns: []string{"v*"}} // different order
 	if _, err := NormalizeConfig(b); err != nil {
 		t.Fatalf("normalize b: %v", err)

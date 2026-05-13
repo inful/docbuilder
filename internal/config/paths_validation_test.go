@@ -5,8 +5,8 @@ import "testing"
 // TestValidatePaths_Unified ensures daemon.storage.output_dir matches output.directory when set.
 func TestValidatePaths_Unified(t *testing.T) {
 	base := Config{
-		Version: "2.0",
-		Output:  OutputConfig{Directory: "./out", Clean: true},
+		Version: configVersion,
+		Output:  OutputConfig{Directory: testOutputDir, Clean: true},
 		Build:   BuildConfig{CloneConcurrency: 1, MaxRetries: 1, RetryBackoff: RetryBackoffLinear, RetryInitialDelay: "1s", RetryMaxDelay: "2s", CloneStrategy: CloneStrategyFresh},
 		Forges:  []*ForgeConfig{{Name: "f1", Type: ForgeGitHub, Auth: &AuthConfig{Type: AuthTypeToken, Token: "x"}, AutoDiscover: true}},
 	}
@@ -20,7 +20,7 @@ func TestValidatePaths_Unified(t *testing.T) {
 	withDaemonMatch := base
 	withDaemonMatch.Daemon = &DaemonConfig{
 		Storage: StorageConfig{OutputDir: base.Output.Directory},
-		Sync:    SyncConfig{Schedule: "0 */4 * * *"},
+		Sync:    SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 	}
 	if err := validateConfig(&withDaemonMatch); err != nil {
 		t.Fatalf("unexpected error with matching output dirs: %v", err)
@@ -30,7 +30,7 @@ func TestValidatePaths_Unified(t *testing.T) {
 	withDaemonMismatch := base
 	withDaemonMismatch.Daemon = &DaemonConfig{
 		Storage: StorageConfig{OutputDir: "./different"},
-		Sync:    SyncConfig{Schedule: "0 */4 * * *"},
+		Sync:    SyncConfig{Schedule: defaultSyncScheduleEvery4h},
 	}
 	if err := validateConfig(&withDaemonMismatch); err == nil {
 		t.Fatalf("expected error on mismatched output dirs, got nil")

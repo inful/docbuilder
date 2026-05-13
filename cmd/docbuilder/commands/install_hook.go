@@ -44,7 +44,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 			return fmt.Errorf("failed to read existing hook: %w", err)
 		}
 
-		if err := os.WriteFile(backupPath, content, 0o600); err != nil {
+		if err := os.WriteFile(backupPath, content, 0o600); err != nil { //nolint:gosec // backupPath is derived from the git directory
 			return fmt.Errorf("failed to create backup: %w", err)
 		}
 	}

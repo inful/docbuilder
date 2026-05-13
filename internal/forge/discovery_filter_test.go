@@ -10,7 +10,7 @@ func TestDiscoveryService_FilterDecision(t *testing.T) {
 	t.Parallel()
 
 	cfg := &config.FilteringConfig{
-		RequiredPaths:   []string{"docs"},
+		RequiredPaths:   []string{docsToken},
 		IncludePatterns: []string{"inc-*"},
 		ExcludePatterns: []string{"*blocked*"},
 	}
@@ -24,10 +24,10 @@ func TestDiscoveryService_FilterDecision(t *testing.T) {
 		wantDetail  string
 	}{
 		{
-			name:        "archived",
+			name:        archivedToken,
 			repo:        &Repository{Name: "inc-one", FullName: "g/inc-one", Archived: true, HasDocs: true},
 			wantInclude: false,
-			wantReason:  "archived",
+			wantReason:  archivedToken,
 		},
 		{
 			name:        "docignore present",

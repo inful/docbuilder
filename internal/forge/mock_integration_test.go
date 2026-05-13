@@ -26,9 +26,9 @@ func testDirectForgeClientReplacement(t *testing.T) {
 
 	// Add test data using enhanced system
 	enhanced := client.(*EnhancedMockForgeClient)
-	enhanced.AddRepository(CreateMockGitHubRepo("company", "docs", true, false, false, false))
-	enhanced.AddRepository(CreateMockGitHubRepo("company", "api", true, false, false, false))
-	enhanced.AddOrganization(CreateMockGitHubOrg("company"))
+	enhanced.AddRepository(CreateMockGitHubRepo(companyToken, docsToken, true, false, false, false))
+	enhanced.AddRepository(CreateMockGitHubRepo(companyToken, "api", true, false, false, false))
+	enhanced.AddOrganization(CreateMockGitHubOrg(companyToken))
 
 	// Use exactly like any ForgeClient
 	orgs, err := client.ListOrganizations(ctx)
@@ -39,7 +39,7 @@ func testDirectForgeClientReplacement(t *testing.T) {
 		t.Errorf("Expected 1 organization, got %d", len(orgs))
 	}
 
-	repos, err := client.ListRepositories(ctx, []string{"company"})
+	repos, err := client.ListRepositories(ctx, []string{companyToken})
 	if err != nil {
 		t.Fatalf("Failed to list repositories: %v", err)
 	}
@@ -48,7 +48,7 @@ func testDirectForgeClientReplacement(t *testing.T) {
 	}
 
 	// Test specific repository retrieval
-	repo, err := client.GetRepository(ctx, "company", "docs")
+	repo, err := client.GetRepository(ctx, companyToken, docsToken)
 	if err != nil {
 		t.Fatalf("Failed to get repository: %v", err)
 	}
@@ -68,7 +68,7 @@ func testRealisticTestData(t *testing.T) {
 	ctx := t.Context()
 
 	// GitHub realistic data
-	githubRepos, err := github.ListRepositories(ctx, []string{"company"})
+	githubRepos, err := github.ListRepositories(ctx, []string{companyToken})
 	if err != nil {
 		t.Fatalf("GitHub realistic mock failed: %v", err)
 	}
@@ -281,11 +281,11 @@ func testBeforeAfterComparison(t *testing.T) {
 	// AFTER: Enhanced mock system
 	t.Log("Enhanced pattern (AFTER):")
 	client := NewEnhancedMockForgeClient("migration-demo", TypeGitHub)
-	client.AddRepository(CreateMockGitHubRepo("company", "docs", true, false, false, false))
-	client.AddOrganization(CreateMockGitHubOrg("company"))
+	client.AddRepository(CreateMockGitHubRepo(companyToken, docsToken, true, false, false, false))
+	client.AddOrganization(CreateMockGitHubOrg(companyToken))
 
 	ctx := t.Context()
-	repos, err := client.ListRepositories(ctx, []string{"company"})
+	repos, err := client.ListRepositories(ctx, []string{companyToken})
 	if err != nil {
 		t.Fatalf("Enhanced mock failed: %v", err)
 	}

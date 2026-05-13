@@ -6,7 +6,11 @@ import (
 	"time"
 )
 
-const testBuildID = "build-123"
+const (
+	testBuildID          = "build-123"
+	testBuildTypeManual  = "manual"
+	testArtifactSitePath = "/output"
+)
 
 func TestEventSerialization(t *testing.T) {
 	buildID := testBuildID
@@ -17,60 +21,60 @@ func TestEventSerialization(t *testing.T) {
 		eventType string
 	}{
 		{
-			name: "BuildStarted",
+			name: eventTypeBuildStarted,
 			createFn: func() (Event, error) {
-				return NewBuildStarted(buildID, BuildStartedMeta{TenantID: "tenant-1", Type: "manual"})
+				return NewBuildStarted(buildID, BuildStartedMeta{TenantID: testTenantID, Type: testBuildTypeManual})
 			},
-			eventType: "BuildStarted",
+			eventType: eventTypeBuildStarted,
 		},
 		{
-			name: "RepositoryCloned",
+			name: eventTypeRepositoryCloned,
 			createFn: func() (Event, error) {
 				return NewRepositoryCloned(buildID, "repo-1", "abc123", "/path/to/repo", 100*time.Millisecond)
 			},
-			eventType: "RepositoryCloned",
+			eventType: eventTypeRepositoryCloned,
 		},
 		{
-			name: "DocumentsDiscovered",
+			name: eventTypeDocumentsDiscovered,
 			createFn: func() (Event, error) {
 				return NewDocumentsDiscovered(buildID, "repo-1", []string{"file1.md", "file2.md"})
 			},
-			eventType: "DocumentsDiscovered",
+			eventType: eventTypeDocumentsDiscovered,
 		},
 		{
-			name: "TransformApplied",
+			name: eventTypeTransformApplied,
 			createFn: func() (Event, error) {
 				return NewTransformApplied(buildID, "frontmatter", 10, 50*time.Millisecond)
 			},
-			eventType: "TransformApplied",
+			eventType: eventTypeTransformApplied,
 		},
 		{
-			name: "HugoConfigGenerated",
+			name: eventTypeHugoConfigGenerated,
 			createFn: func() (Event, error) {
 				return NewHugoConfigGenerated(buildID, "hash123", map[string]any{"theme": "relearn"})
 			},
-			eventType: "HugoConfigGenerated",
+			eventType: eventTypeHugoConfigGenerated,
 		},
 		{
-			name: "SiteGenerated",
+			name: eventTypeSiteGenerated,
 			createFn: func() (Event, error) {
 				return NewSiteGenerated(buildID, "/output/path", 100, 2*time.Second)
 			},
-			eventType: "SiteGenerated",
+			eventType: eventTypeSiteGenerated,
 		},
 		{
-			name: "BuildCompleted",
+			name: eventTypeBuildCompleted,
 			createFn: func() (Event, error) {
-				return NewBuildCompleted(buildID, "success", 5*time.Second, map[string]string{"site": "/output"})
+				return NewBuildCompleted(buildID, "success", 5*time.Second, map[string]string{"site": testArtifactSitePath})
 			},
-			eventType: "BuildCompleted",
+			eventType: eventTypeBuildCompleted,
 		},
 		{
-			name: "BuildFailed",
+			name: eventTypeBuildFailed,
 			createFn: func() (Event, error) {
 				return NewBuildFailed(buildID, "generate", "failed to generate site")
 			},
-			eventType: "BuildFailed",
+			eventType: eventTypeBuildFailed,
 		},
 	}
 
@@ -110,8 +114,8 @@ func TestEventSerialization(t *testing.T) {
 func TestBuildStartedFields(t *testing.T) {
 	buildID := testBuildID
 	meta := BuildStartedMeta{
-		TenantID: "tenant-1",
-		Type:     "manual",
+		TenantID: testTenantID,
+		Type:     testBuildTypeManual,
 		Priority: 5,
 		WorkerID: "worker-1",
 	}
@@ -124,7 +128,7 @@ func TestBuildStartedFields(t *testing.T) {
 	if event.TenantID != meta.TenantID {
 		t.Errorf("expected tenant_id %s, got %s", meta.TenantID, event.TenantID)
 	}
-	if event.Config.Type != "manual" {
+	if event.Config.Type != testBuildTypeManual {
 		t.Errorf("expected config type=manual, got %s", event.Config.Type)
 	}
 	if event.Config.Priority != 5 {
@@ -159,7 +163,7 @@ func TestRepositoryClonedFields(t *testing.T) {
 }
 
 func TestDocumentsDiscoveredFields(t *testing.T) {
-	buildID := "build-123"
+	buildID := testBuildID
 	repoName := "repo-1"
 	files := []string{"file1.md", "file2.md", "file3.md"}
 
@@ -180,7 +184,7 @@ func TestDocumentsDiscoveredFields(t *testing.T) {
 }
 
 func TestBuildFailedFields(t *testing.T) {
-	buildID := "build-123"
+	buildID := testBuildID
 	stage := "generate"
 	errorMsg := "failed to generate site"
 

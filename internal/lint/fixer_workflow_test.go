@@ -27,7 +27,7 @@ func TestFix_SuccessfulRenameWithLinkUpdates(t *testing.T) {
 		t.Fatalf("failed to create linking file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true) // not dry-run, auto-fix enabled
 
 	result, err := fixer.fix(tmpDir)
@@ -62,7 +62,7 @@ func TestFix_SuccessfulRenameNoLinks(t *testing.T) {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 
 	result, err := fixer.fix(tmpDir)
@@ -102,7 +102,7 @@ func TestFix_RenameFailure(t *testing.T) {
 		t.Fatalf("failed to create conflicting file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false) // force=false to fail on conflict
 
 	result, err := fixer.fix(tmpDir)
@@ -146,7 +146,7 @@ func TestFix_RenameCollision_CaseOnly_DoesNotOverwrite(t *testing.T) {
 		t.Fatalf("failed to create lower file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false) // force=false to avoid overwriting
 
 	result, err := fixer.fix(tmpDir)
@@ -205,7 +205,7 @@ func TestFix_DryRunMode(t *testing.T) {
 		t.Fatalf("failed to create linking file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // dry-run mode, no auto-fix
 
 	result, err := fixer.fix(tmpDir)
@@ -251,7 +251,7 @@ func TestFix_FindLinksError(t *testing.T) {
 		_ = os.Chmod(restrictedDir, 0o755)
 	}()
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 
 	result, err := fixer.fix(tmpDir)
@@ -293,7 +293,7 @@ func TestFix_ApplyLinkUpdatesError(t *testing.T) {
 		_ = os.Chmod(linkingFile, 0o644)
 	}()
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 
 	result, err := fixer.fix(tmpDir)
@@ -322,7 +322,7 @@ func TestFix_NoFilenameIssues(t *testing.T) {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, true)
 
 	result, err := fixer.fix(tmpDir)

@@ -58,7 +58,7 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 		phases := []string{
 			"Enhanced Mock Ecosystem",
 			"Realistic Testing Standards",
-			"CLI Testing Framework",
+			testPhaseCLITesting,
 			"Component Integration Testing",
 			"Enterprise Deployment Patterns",
 			"Security & Compliance Patterns",
@@ -72,7 +72,7 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 			case "Enhanced Mock Ecosystem":
 				transformationMetrics["forge_integrations"] = 3 // GitHub, GitLab, Forgejo
 				transformationMetrics["repositories_processed"] = 50
-			case "CLI Testing Framework":
+			case testPhaseCLITesting:
 				transformationMetrics["repositories_processed"] = transformationMetrics["repositories_processed"].(int) + 100
 			case "Component Integration Testing":
 				transformationMetrics["repositories_processed"] = transformationMetrics["repositories_processed"].(int) + 200
@@ -127,7 +127,7 @@ func TestDocBuilderTransformationComplete(t *testing.T) {
 			"Testing Excellence": {
 				"Mock Ecosystem":        true,
 				"Integration Testing":   true,
-				"CLI Testing Framework": true,
+				testPhaseCLITesting:     true,
 				"Component Integration": true,
 				"Performance Testing":   true,
 			},
@@ -269,7 +269,7 @@ func setupComprehensiveForgeEcosystem(t *testing.T, github, gitlab, forgejo *Enh
 
 func createCLITestConfiguration(github, gitlab, forgejo *EnhancedMockForgeClient) *config.Config {
 	return &config.Config{
-		Version: "2.0",
+		Version: testConfigVersion,
 		Forges: []*config.ForgeConfig{
 			github.GenerateForgeConfig(),
 			gitlab.GenerateForgeConfig(),

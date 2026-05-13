@@ -93,7 +93,7 @@ func (g *Generator) addGoVersionToExisting(goModPath, existingContent string) er
 
 	newContent := strings.Join(newLines, "\n")
 	// #nosec G306 -- go.mod is a module configuration file
-	if err := os.WriteFile(goModPath, []byte(newContent), 0o644); err != nil {
+	if err := os.WriteFile(goModPath, []byte(newContent), 0o644); err != nil { //nolint:gosec // goModPath is under build root
 		slog.Warn("Failed to add go version to go.mod", "error", err)
 		return g.ensureThemeVersionRequires(goModPath)
 	}
@@ -118,7 +118,7 @@ func (g *Generator) sanitizeGoMod(goModPath string, lines []string) error {
 	}
 
 	// #nosec G306 -- go.mod is a module configuration file
-	if writeErr := os.WriteFile(goModPath, []byte(newContent), 0o644); writeErr != nil {
+	if writeErr := os.WriteFile(goModPath, []byte(newContent), 0o644); writeErr != nil { //nolint:gosec // goModPath is under build root
 		slog.Warn("Failed to rewrite invalid go.mod module line", "error", writeErr)
 		return g.ensureThemeVersionRequires(goModPath)
 	}

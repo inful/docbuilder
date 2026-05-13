@@ -175,11 +175,15 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 				redirectPath := s.findNearestValidParent(root, r.URL.Path)
 				if redirectPath != "" && redirectPath != r.URL.Path {
 					// Clear the cookie and redirect
+					//nolint:gosec // local preview commonly runs on HTTP; Secure cookies would not be sent
 					http.SetCookie(w, &http.Cookie{
-						Name:   "docbuilder_lr_reload",
-						Value:  "",
-						MaxAge: -1,
-						Path:   "/",
+						Name:     "docbuilder_lr_reload",
+						Value:    "",
+						MaxAge:   -1,
+						Path:     "/",
+						HttpOnly: true,
+						Secure:   r.TLS != nil,
+						SameSite: http.SameSiteLaxMode,
 					})
 					w.Header().Set("Location", redirectPath)
 					w.WriteHeader(http.StatusTemporaryRedirect)
@@ -340,28 +344,28 @@ func determineCacheControl(path string) string {
 		strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".gif") ||
 		strings.HasSuffix(path, ".svg") || strings.HasSuffix(path, ".webp") ||
 		strings.HasSuffix(path, ".ico") {
-		return "public, max-age=604800"
+		return cacheControlWeek
 	}
 
 	// Downloadable files - cache for 1 day
 	if strings.HasSuffix(path, ".pdf") || strings.HasSuffix(path, ".zip") ||
 		strings.HasSuffix(path, ".tar") || strings.HasSuffix(path, ".gz") {
-		return "public, max-age=86400"
+		return cacheControlDay
 	}
 
 	// JSON data files (except search indices) - cache for 5 minutes
 	if strings.HasSuffix(path, ".json") && !strings.Contains(path, "search") {
-		return "public, max-age=300"
+		return cacheControlFiveMinute
 	}
 
 	// XML files (RSS, sitemaps) - cache for 1 hour
 	if strings.HasSuffix(path, ".xml") {
-		return "public, max-age=3600"
+		return cacheControlHour
 	}
 
 	// HTML pages and directories - no cache to ensure content updates are visible
 	if strings.HasSuffix(path, ".html") || path == "/" || !strings.Contains(path, ".") {
-		return "no-cache, must-revalidate"
+		return cacheControlNoCache
 	}
 
 	// For all other files, don't set Cache-Control (let browser use default behavior)

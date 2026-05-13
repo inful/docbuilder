@@ -16,8 +16,8 @@ func TestDocumentationDiscovery(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test repository structure
-	repoDir := filepath.Join(tempDir, "test-repo")
-	docsDir := filepath.Join(repoDir, "docs")
+	repoDir := filepath.Join(tempDir, testRepoName)
+	docsDir := filepath.Join(repoDir, testDocsDir)
 
 	// Create directories
 	if mkdirErr := os.MkdirAll(filepath.Join(docsDir, "api"), 0o750); mkdirErr != nil {
@@ -29,11 +29,11 @@ func TestDocumentationDiscovery(t *testing.T) {
 
 	// Create test markdown files
 	testFiles := map[string]string{
-		"docs/index.md":                  "# Documentation Index\n\nWelcome to the docs.",
+		testDocsIndexPath:                "# Documentation Index\n\nWelcome to the docs.",
 		"docs/api/overview.md":           "# API Overview\n\nAPI documentation.",
 		"docs/api/reference.md":          "# API Reference\n\nDetailed API reference.",
 		"docs/guides/getting-started.md": "# Getting Started\n\nHow to get started.",
-		"docs/README.md":                 "# Repository README\n\nThis should be ignored.",
+		testDocsReadmePath:               "# Repository README\n\nThis should be ignored.",
 		"docs/non-markdown.txt":          "This is not markdown and should be ignored.",
 	}
 
@@ -48,8 +48,8 @@ func TestDocumentationDiscovery(t *testing.T) {
 	// Create repository configuration
 	repos := []config.Repository{
 		{
-			Name:  "test-repo",
-			Paths: []string{"docs"},
+			Name:  testRepoName,
+			Paths: []string{testDocsDir},
 			Tags:  map[string]string{"section": "test"},
 		},
 	}
@@ -59,7 +59,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 
 	// Test discovery
 	repoPaths := map[string]string{
-		"test-repo": repoDir,
+		testRepoName: repoDir,
 	}
 
 	docFiles, err := discovery.DiscoverDocs(repoPaths)
@@ -70,7 +70,7 @@ func TestDocumentationDiscovery(t *testing.T) {
 	// Verify results (now including README.md)
 	expectedFiles := []string{
 		"index.md",
-		"README.md",
+		readmeFilename,
 		"api/overview.md",
 		"api/reference.md",
 		"guides/getting-started.md",
@@ -89,9 +89,9 @@ func TestDocumentationDiscovery(t *testing.T) {
 
 	// Test file grouping
 	filesByRepo := discovery.GetDocFilesByRepository()
-	if len(filesByRepo["test-repo"]) != len(expectedFiles) {
+	if len(filesByRepo[testRepoName]) != len(expectedFiles) {
 		t.Errorf("Expected %d files for test-repo, got %d",
-			len(expectedFiles), len(filesByRepo["test-repo"]))
+			len(expectedFiles), len(filesByRepo[testRepoName]))
 	}
 }
 
@@ -126,7 +126,7 @@ func TestIgnoredFiles(t *testing.T) {
 		filename string
 		expected bool
 	}{
-		{"README.md", true},
+		{readmeFilename, true},
 		{"CONTRIBUTING.md", true},
 		{"CHANGELOG.md", true},
 		{"LICENSE.md", true},
@@ -149,18 +149,18 @@ func TestForgeNamespacingModes(t *testing.T) {
 
 	mkRepo := func(name, forgeType string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
-		docsDir := filepath.Join(repoDir, "docs")
+		docsDir := filepath.Join(repoDir, testDocsDir)
 		if err := os.MkdirAll(docsDir, 0o750); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
 		if err := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); err != nil {
 			t.Fatalf("write: %v", err)
 		}
-		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": forgeType}}, repoDir
+		return config.Repository{Name: name, Paths: []string{testDocsDir}, Tags: map[string]string{"forge_type": forgeType}}, repoDir
 	}
 
 	// Two repos on different forges
-	r1, p1 := mkRepo("repoA", "github")
+	r1, p1 := mkRepo("repoA", testForgeTypeGitHub)
 	r2, p2 := mkRepo("repoB", "gitlab")
 
 	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
@@ -214,14 +214,14 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 
 	mkRepo := func(name string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, name)
-		docsDir := filepath.Join(repoDir, "docs")
+		docsDir := filepath.Join(repoDir, testDocsDir)
 		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
 			t.Fatalf("mkdir: %v", mkdirErr)
 		}
 		if writeFileErr := os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600); writeFileErr != nil {
 			t.Fatalf("write: %v", writeFileErr)
 		}
-		return config.Repository{Name: name, Paths: []string{"docs"}, Tags: map[string]string{"forge_type": "github"}}, repoDir
+		return config.Repository{Name: name, Paths: []string{testDocsDir}, Tags: map[string]string{"forge_type": testForgeTypeGitHub}}, repoDir
 	}
 
 	r1, p1 := mkRepo("service-a")
@@ -241,7 +241,7 @@ func TestForgeNamespacingAutoSingleForge(t *testing.T) {
 		if f.Forge != "" {
 			t.Fatalf("expected empty forge for single-forge auto mode, got %q", f.Forge)
 		}
-		if strings.Contains(f.GetHugoPath(false), "github") {
+		if strings.Contains(f.GetHugoPath(false), testForgeTypeGitHub) {
 			t.Fatalf("path should not contain forge segment: %s", f.GetHugoPath(false))
 		}
 	}
@@ -266,10 +266,10 @@ func testLargeScaleRepositoryDiscovery(t *testing.T) {
 			FullName:      fmt.Sprintf("test-org/docs-repo-%d", i+1),
 			CloneURL:      fmt.Sprintf("https://test-forge.example.com/test-org/docs-repo-%d.git", i+1),
 			SSHURL:        fmt.Sprintf("git@test-forge.example.com:test-org/docs-repo-%d.git", i+1),
-			DefaultBranch: "main",
+			DefaultBranch: testDefaultBranch,
 			Description:   fmt.Sprintf("Documentation repository %d for testing", i+1),
-			Topics:        []string{"docs", "testing", fmt.Sprintf("repo-%d", i+1)},
-			Language:      "Markdown",
+			Topics:        []string{testDocsDir, testTopicTesting, fmt.Sprintf("repo-%d", i+1)},
+			Language:      testLanguageMarkdown,
 			Private:       false,
 			Archived:      false,
 			Fork:          false,
@@ -288,7 +288,7 @@ func testLargeScaleRepositoryDiscovery(t *testing.T) {
 	for i := range repositories {
 		repo := &repositories[i]
 		repoDir := filepath.Join(tempDir, repo.Name)
-		docsDir := filepath.Join(repoDir, "docs")
+		docsDir := filepath.Join(repoDir, testDocsDir)
 
 		if mkdirErr := os.MkdirAll(docsDir, 0o750); mkdirErr != nil {
 			t.Fatalf("Failed to create docs dir for %s: %v", repo.Name, mkdirErr)
@@ -296,7 +296,7 @@ func testLargeScaleRepositoryDiscovery(t *testing.T) {
 
 		// Create realistic documentation files
 		docFiles := map[string]string{
-			"docs/index.md":           "# " + repo.Name + " Documentation\n\nOverview of the project.",
+			testDocsIndexPath:         "# " + repo.Name + " Documentation\n\nOverview of the project.",
 			"docs/api/endpoints.md":   "# API Endpoints\n\nAPI documentation for " + repo.Name,
 			"docs/guides/setup.md":    "# Setup Guide\n\nHow to set up " + repo.Name,
 			"docs/guides/examples.md": "# Examples\n\nUsage examples for " + repo.Name,

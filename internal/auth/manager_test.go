@@ -12,6 +12,8 @@ import (
 func TestManager_CreateAuth(t *testing.T) {
 	manager := NewManager()
 
+	const testToken = "test-token"
+
 	tests := []struct {
 		name        string
 		authConfig  *config.AuthConfig
@@ -39,7 +41,7 @@ func TestManager_CreateAuth(t *testing.T) {
 			name: "token auth - valid",
 			authConfig: &config.AuthConfig{
 				Type:  config.AuthTypeToken,
-				Token: "test-token",
+				Token: testToken,
 			},
 			expectNil:   false,
 			expectError: false,
@@ -49,7 +51,7 @@ func TestManager_CreateAuth(t *testing.T) {
 			name: "token auth - custom username",
 			authConfig: &config.AuthConfig{
 				Type:     config.AuthTypeToken,
-				Token:    "test-token",
+				Token:    testToken,
 				Username: "oauth2",
 			},
 			expectNil:   false,

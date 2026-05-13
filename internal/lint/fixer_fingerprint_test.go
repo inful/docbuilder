@@ -23,7 +23,7 @@ func mustExtractFrontmatterLastmod(t *testing.T, content string) (string, bool) 
 	fields, err := frontmatter.ParseYAML(fmRaw)
 	require.NoError(t, err)
 
-	val, ok := fields["lastmod"]
+	val, ok := fields[testFrontmatterKeyLastmod]
 	if !ok {
 		return "", false
 	}
@@ -52,7 +52,7 @@ func buildDocWithFingerprint(t *testing.T, fields map[string]any, body string) s
 		if k == mdfp.FingerprintField {
 			continue
 		}
-		if k == "lastmod" {
+		if k == testFrontmatterKeyLastmod {
 			continue
 		}
 		if k == "uid" {
@@ -86,7 +86,7 @@ func TestFixer_UpdatesFrontmatterFingerprint(t *testing.T) {
 	path := filepath.Join(tmpDir, "doc.md")
 	require.NoError(t, os.WriteFile(path, []byte("# Title\n\nHello\n"), 0o600))
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	res, err := fixer.Fix(tmpDir)
@@ -107,7 +107,7 @@ func TestFixer_DryRun_DoesNotWriteFingerprintChanges(t *testing.T) {
 	original := "# Title\n\nHello\n"
 	require.NoError(t, os.WriteFile(path, []byte(original), 0o600))
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // dry-run
 
 	res, err := fixer.Fix(tmpDir)
@@ -126,7 +126,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_SetsLastmodWhenMissingFingerprint(t
 	path := filepath.Join(tmpDir, "doc.md")
 	require.NoError(t, os.WriteFile(path, []byte("# Title\n\nHello\n"), 0o600))
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 	fixer.nowFn = func() time.Time { return time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC) }
 
@@ -156,15 +156,15 @@ func TestFixer_UpdatesFrontmatterFingerprint_UpdatesLastmodWhenFingerprintChange
 	path := filepath.Join(tmpDir, "doc.md")
 
 	seed := buildDocWithFingerprint(t, map[string]any{
-		"title":   "Title",
-		"lastmod": "2000-01-01",
+		testFrontmatterKeyTitle:   "Title",
+		testFrontmatterKeyLastmod: "2000-01-01",
 	}, "# Title\n\nHello\n")
 
 	// Change the body but keep the old fingerprint + lastmod (should trigger fix).
 	mismatched := strings.Replace(seed, "Hello", "Hello changed", 1)
 	require.NoError(t, os.WriteFile(path, []byte(mismatched), 0o600))
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 	fixer.nowFn = func() time.Time { return time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC) }
 
@@ -195,8 +195,8 @@ func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprint
 
 	// Create a file with valid fingerprint and lastmod
 	seed := buildDocWithFingerprint(t, map[string]any{
-		"title":   "Title",
-		"lastmod": "2000-01-01",
+		testFrontmatterKeyTitle:   "Title",
+		testFrontmatterKeyLastmod: "2000-01-01",
 	}, "# Title\n\nHello\n")
 	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
 
@@ -210,7 +210,7 @@ func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprint
 	require.Equal(t, "2000-01-01", lastmodBefore)
 
 	// Re-run the fixer without changing content
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 	fixer.nowFn = func() time.Time { return time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC) }
 

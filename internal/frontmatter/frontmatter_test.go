@@ -77,12 +77,12 @@ func TestJoin_RoundTrip_ReconstructsOriginalBytes(t *testing.T) {
 }
 
 func TestParseYAML_ValidYAML_ReturnsMap(t *testing.T) {
-	fm := []byte("uid: abc\ntags:\n  - one\n")
+	fm := []byte("uid: abc\ntags:\n  - " + testValueOne + "\n")
 
 	fields, err := ParseYAML(fm)
 	require.NoError(t, err)
 	require.Equal(t, "abc", fields["uid"])
-	require.Equal(t, []any{"one"}, fields["tags"])
+	require.Equal(t, []any{testValueOne}, fields["tags"])
 }
 
 func TestParseYAML_Empty_ReturnsEmptyMap(t *testing.T) {

@@ -32,8 +32,8 @@ func TestFrontmatterFingerprintRule_Check(t *testing.T) {
 
 		body := "# Title\n\nHello\n"
 		fields := map[string]any{
-			"title": "My Title",
-			"tags":  []string{"one", "two"},
+			testFrontmatterKeyTitle: "My Title",
+			"tags":                  []string{"one", "two"},
 		}
 
 		hashStyle := frontmatter.Style{Newline: "\n"}

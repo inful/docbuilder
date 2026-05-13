@@ -152,7 +152,7 @@ func (js *JSONStore) Health(_ context.Context) foundation.Result[StoreHealth, er
 	defer js.mu.RUnlock()
 
 	health := StoreHealth{
-		Status:    "healthy",
+		Status:    healthyStatus,
 		CheckedAt: time.Now(),
 	}
 

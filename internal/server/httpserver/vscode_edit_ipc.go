@@ -41,7 +41,7 @@ func validateIPCSocketPath(socketPath string) error {
 
 // fileExists checks if a file or socket exists at the given path.
 func fileExists(path string) bool {
-	_, err := os.Stat(path)
+	_, err := os.Stat(path) //nolint:gosec // path is validated or provided by VS Code environment
 	return err == nil
 }
 

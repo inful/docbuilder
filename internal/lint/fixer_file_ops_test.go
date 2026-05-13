@@ -53,7 +53,7 @@ func TestBackupPreservesDirectoryStructure(t *testing.T) {
 	}
 
 	// Create backup
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	backupDir, err := fixer.CreateBackup(result, docsDir)

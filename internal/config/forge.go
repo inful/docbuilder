@@ -16,10 +16,10 @@ const (
 
 // NormalizeForgeType canonicalizes a forge type string (case-insensitive) or returns empty if unknown.
 var forgeTypeStringNormalizer = normalization.NewNormalizer(map[string]ForgeType{
-	"github":  ForgeGitHub,
-	"gitlab":  ForgeGitLab,
-	"forgejo": ForgeForgejo,
-	"local":   ForgeLocal,
+	string(ForgeGitHub):  ForgeGitHub,
+	string(ForgeGitLab):  ForgeGitLab,
+	string(ForgeForgejo): ForgeForgejo,
+	string(ForgeLocal):   ForgeLocal,
 }, "")
 
 // NormalizeForgeType canonicalizes a forge type string (case-insensitive) or returns empty if unknown.

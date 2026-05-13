@@ -46,18 +46,9 @@ func (ss *jsonScheduleStore) GetByID(_ context.Context, id string) foundation.Re
 }
 
 func (ss *jsonScheduleStore) Update(_ context.Context, schedule *Schedule) foundation.Result[*Schedule, error] {
-	if schedule == nil {
-		return foundation.Err[*Schedule, error](
-			errors.ValidationError("schedule cannot be nil").Build(),
-		)
-	}
-
-	if validationResult := schedule.Validate(); !validationResult.Valid {
-		return foundation.Err[*Schedule, error](validationResult.ToError())
-	}
-
-	return updateEntity[Schedule](
+	return updateValidatableEntity[Schedule](
 		ss.store,
+		"schedule",
 		schedule,
 		func() bool { _, ok := ss.store.schedules[schedule.ID]; return ok },
 		func() { schedule.UpdatedAt = time.Now() },

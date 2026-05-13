@@ -52,7 +52,7 @@ func TestGoldenAutoFix_FileRenameWithLinkUpdates(t *testing.T) {
 	})
 
 	// Run the fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false) // Not dry-run, not force
 
 	result, err := fixer.Fix(workDir)
@@ -114,7 +114,7 @@ func TestGoldenAutoFix_DryRun(t *testing.T) {
 	require.NoError(t, err, "failed to copy test data")
 
 	// Run the fixer in dry-run mode
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, true, false) // Dry-run mode
 
 	result, err := fixer.Fix(workDir)
@@ -182,7 +182,7 @@ func TestGoldenAutoFix_BrokenLinkDetection(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run fix (which includes broken link detection)
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(docsDir)
@@ -219,12 +219,13 @@ func copyDir(src, dst string) error {
 
 		// Copy file
 		// #nosec G304 -- test utility copying files from test directory
-		data, err := os.ReadFile(path)
+		// #nosec G122 -- test-only walk within controlled fixture directory
+		data, err := os.ReadFile(path) //nolint:gosec // test-only walk within controlled fixture directory
 		if err != nil {
 			return err
 		}
 
-		return os.WriteFile(dstPath, data, info.Mode())
+		return os.WriteFile(dstPath, data, info.Mode()) //nolint:gosec // test-only copy within controlled dirs
 	})
 }
 
@@ -252,10 +253,12 @@ func compareDirectories(t *testing.T, actualDir, expectedDir string) {
 
 		// Read both files
 		// #nosec G304 -- test utility reading test output for comparison
-		expectedContent, err := os.ReadFile(expectedPath)
+		// #nosec G122 -- test-only walk within controlled fixture directory
+		expectedContent, err := os.ReadFile(expectedPath) //nolint:gosec // test-only walk within controlled fixture directory
 		require.NoError(t, err, "failed to read expected file: %s", expectedPath)
 
 		// #nosec G304 -- test utility reading test output for comparison
+		// #nosec G122 -- test-only walk within controlled fixture directory
 		actualContent, err := os.ReadFile(actualPath)
 		require.NoError(t, err, "failed to read actual file: %s", actualPath)
 

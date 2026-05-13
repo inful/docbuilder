@@ -13,7 +13,7 @@ type FilenameRule struct{}
 
 // Name returns the rule identifier.
 func (r *FilenameRule) Name() string {
-	return "filename-conventions"
+	return ruleFilenameConventions
 }
 
 // AppliesTo returns true for all documentation and asset files.
@@ -27,7 +27,7 @@ func (r *FilenameRule) Check(filePath string) ([]Issue, error) {
 	var issues []Issue
 
 	// Whitelist special Hugo files with underscores
-	if filename == "_index.md" || filename == "_index.markdown" {
+	if filename == indexFilename || filename == "_index.markdown" {
 		// This is a special Hugo file, explicitly allowed
 		return issues, nil
 	}

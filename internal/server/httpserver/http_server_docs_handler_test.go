@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -67,7 +68,7 @@ func TestDocsHandlerStaticRoot(t *testing.T) {
 
 	srv := New(cfg, testRuntime{}, Options{})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
 	// Call the root handler directly
@@ -103,7 +104,7 @@ func TestDocsHandlerNoBuildPendingPage(t *testing.T) {
 
 	srv := New(cfg, testRuntime{}, Options{})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
 	root := srv.resolveDocsRoot()
@@ -141,7 +142,7 @@ func TestDocsHandlerBuildErrorPage(t *testing.T) {
 
 	srv := New(cfg, testRuntime{}, Options{BuildStatus: testBuildStatus{hasError: true, err: ErrTestBuildFailed, hasGoodBuild: false}})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
 	root := srv.resolveDocsRoot()
@@ -184,7 +185,7 @@ func TestDocsHandlerWithLiveReload(t *testing.T) {
 
 	srv := New(cfg, testRuntime{}, Options{LiveReloadHub: testLiveReloadHub{}})
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
 	root := srv.resolveDocsRoot()

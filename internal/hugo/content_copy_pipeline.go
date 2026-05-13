@@ -263,7 +263,7 @@ func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
 
 	// Copy asset file as-is
 	// #nosec G306 -- asset files are public documentation resources
-	if err := os.WriteFile(outputPath, content, 0o644); err != nil {
+	if err := os.WriteFile(outputPath, content, 0o644); err != nil { //nolint:gosec // outputPath is under generator build root
 		return fmt.Errorf("%w: failed to write asset %s: %w",
 			herrors.ErrContentWriteFailed, outputPath, err)
 	}

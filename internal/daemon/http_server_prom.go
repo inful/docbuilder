@@ -27,14 +27,14 @@ var (
 		if defaultDaemonInstance == nil {
 			return 0
 		}
-		return float64(atomic.LoadInt32(&defaultDaemonInstance.queueLength))
+		return float64(defaultDaemonInstance.queueLength.Load())
 	})
 	// Last build snapshot gauges.
 	daemonLastBuildRenderedPages = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_rendered_pages", Help: "Pages rendered in most recent completed build"}, func() float64 {
-		return float64(atomic.LoadInt64(&lastRenderedPages))
+		return float64(lastRenderedPages.Load())
 	})
 	daemonLastBuildRepositories = prom.NewGaugeFunc(prom.GaugeOpts{Namespace: "docbuilder", Name: "daemon_last_build_repositories", Help: "Repositories processed in most recent completed build"}, func() float64 {
-		return float64(atomic.LoadInt64(&lastRepositories))
+		return float64(lastRepositories.Load())
 	})
 )
 
@@ -72,8 +72,8 @@ func updateDaemonPromMetrics(d *Daemon) {
 	// Update snapshot gauges from last build report via event-sourced projection (Phase B)
 	if d.buildProjection != nil {
 		if last := d.buildProjection.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
-			atomic.StoreInt64(&lastRenderedPages, int64(last.ReportData.RenderedPages))
-			atomic.StoreInt64(&lastRepositories, int64(last.RepoCount))
+			lastRenderedPages.Store(int64(last.ReportData.RenderedPages))
+			lastRepositories.Store(int64(last.RepoCount))
 		}
 	}
 }
@@ -81,8 +81,8 @@ func updateDaemonPromMetrics(d *Daemon) {
 var (
 	lastCompleted     int64
 	lastFailed        int64
-	lastRenderedPages int64
-	lastRepositories  int64
+	lastRenderedPages atomic.Int64
+	lastRepositories  atomic.Int64
 )
 
 func atomicLoadInt64(p *int64) int64     { return atomic.LoadInt64(p) }

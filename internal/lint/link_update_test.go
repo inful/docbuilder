@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testAPILink = "[API](./api-guide.md)"
+const testAPILink = "[API](" + testTargetDotAPIGuide + ")"
 
 // TestApplyLinkUpdates_BasicUpdate tests updating a single link in a single file.
 func TestApplyLinkUpdates_BasicUpdate(t *testing.T) {
@@ -18,10 +18,7 @@ func TestApplyLinkUpdates_BasicUpdate(t *testing.T) {
 	targetFile := filepath.Join(tmpDir, "target.md")
 
 	// Create source file with a link
-	sourceContent := `# Documentation
-
-See [API Guide](./api-guide.md) for details.
-`
+	sourceContent := "# Documentation\n\nSee [API Guide](" + testTargetDotAPIGuide + ") for details.\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 	require.NoError(t, os.WriteFile(targetFile, []byte("# API Guide"), 0o600))
 
@@ -30,7 +27,7 @@ See [API Guide](./api-guide.md) for details.
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 	}
@@ -47,16 +44,16 @@ See [API Guide](./api-guide.md) for details.
 	assert.Len(t, updates, 1)
 	assert.Equal(t, sourceFile, updates[0].SourceFile)
 	assert.Equal(t, 3, updates[0].LineNumber)
-	assert.Equal(t, "./api-guide.md", updates[0].OldTarget)
-	assert.Equal(t, "./api_guide.md", updates[0].NewTarget)
+	assert.Equal(t, testTargetDotAPIGuide, updates[0].OldTarget)
+	assert.Equal(t, testTargetDotAPIGuideUnderscore, updates[0].NewTarget)
 
 	// Verify file was updated
 	// #nosec G304 -- test utility reading from test output directory
 	// #nosec G304 -- test utility reading from test output directory
 	updatedContent, err := os.ReadFile(sourceFile)
 	require.NoError(t, err)
-	assert.Contains(t, string(updatedContent), "[API Guide](./api_guide.md)")
-	assert.NotContains(t, string(updatedContent), "[API Guide](./api-guide.md)")
+	assert.Contains(t, string(updatedContent), "[API Guide]("+testTargetDotAPIGuideUnderscore+")")
+	assert.NotContains(t, string(updatedContent), "[API Guide]("+testTargetDotAPIGuide+")")
 
 	// Verify backup was cleaned up
 	backupPath := sourceFile + ".backup"
@@ -70,16 +67,11 @@ func TestApplyLinkUpdates_MultipleLinksInFile(t *testing.T) {
 	sourceFile := filepath.Join(tmpDir, "source.md")
 
 	// Create source file with multiple links
-	sourceContent := `# Documentation
-
-See [API Guide](./api-guide.md) for details.
-
-Also check [API Reference](../api-guide.md) and ![Screenshot](./images/api-guide.md.png).
-
-Reference: [api-guide][1]
-
-[1]: ./api-guide.md
-`
+	sourceContent := "# Documentation\n\n" +
+		"See [API Guide](" + testTargetDotAPIGuide + ") for details.\n\n" +
+		"Also check [API Reference](" + testTargetDotDotAPIGuide + ") and ![Screenshot](./images/api-guide.md.png).\n\n" +
+		"Reference: [api-guide][1]\n\n" +
+		"[1]: " + testTargetDotAPIGuide + "\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references (will be sorted reverse by applyLinkUpdates)
@@ -87,13 +79,13 @@ Reference: [api-guide][1]
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: sourceFile,
 			LineNumber: 5,
-			Target:     "../api-guide.md",
+			Target:     testTargetDotDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
@@ -105,7 +97,7 @@ Reference: [api-guide][1]
 		{
 			SourceFile: sourceFile,
 			LineNumber: 9,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeReference,
 		},
 	}
@@ -127,14 +119,14 @@ Reference: [api-guide][1]
 	require.NoError(t, err)
 	content := string(updatedContent)
 
-	assert.Contains(t, content, "[API Guide](./api_guide.md)")
-	assert.Contains(t, content, "[API Reference](../api_guide.md)")
+	assert.Contains(t, content, "[API Guide]("+testTargetDotAPIGuideUnderscore+")")
+	assert.Contains(t, content, "[API Reference]("+testTargetDotDotAPIGuideUnderscore+")")
 	assert.Contains(t, content, "![Screenshot](./images/api_guide.md.png)")
-	assert.Contains(t, content, "[1]: ./api_guide.md")
+	assert.Contains(t, content, "[1]: "+testTargetDotAPIGuideUnderscore)
 
 	// Verify old links are gone
-	assert.NotContains(t, content, "./api-guide.md")
-	assert.NotContains(t, content, "../api-guide.md")
+	assert.NotContains(t, content, testTargetDotAPIGuide)
+	assert.NotContains(t, content, testTargetDotDotAPIGuide)
 }
 
 // TestApplyLinkUpdates_MultipleSourceFiles tests updating links across multiple files.
@@ -152,13 +144,13 @@ func TestApplyLinkUpdates_MultipleSourceFiles(t *testing.T) {
 		{
 			SourceFile: source1,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: source2,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 	}
@@ -193,13 +185,11 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(sourceFile), 0o750))
 
 	// Create source file with various relative paths
-	sourceContent := `# Links
-
-- [Same dir](./api-guide.md)
-- [Parent](../api-guide.md)
-- [Subdir](./sub/api-guide.md)
-- [No prefix](api-guide.md)
-`
+	sourceContent := "# Links\n\n" +
+		"- [Same dir](" + testTargetDotAPIGuide + ")\n" +
+		"- [Parent](" + testTargetDotDotAPIGuide + ")\n" +
+		"- [Subdir](./sub/api-guide.md)\n" +
+		"- [No prefix](api-guide.md)\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with different path styles
@@ -207,13 +197,13 @@ func TestApplyLinkUpdates_RelativePathPreservation(t *testing.T) {
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: sourceFile,
 			LineNumber: 4,
-			Target:     "../api-guide.md",
+			Target:     testTargetDotDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
@@ -258,10 +248,8 @@ func TestApplyLinkUpdates_AnchorFragmentPreservation(t *testing.T) {
 	sourceFile := filepath.Join(tmpDir, "source.md")
 
 	// Create source file with links containing anchors
-	sourceContent := `# Documentation
-
-See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
-`
+	sourceContent := "# Documentation\n\n" +
+		"See [Overview](" + testTargetDotAPIGuide + "#overview) and [Methods](" + testTargetDotAPIGuide + "#methods).\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with anchors
@@ -269,13 +257,13 @@ See [Overview](./api-guide.md#overview) and [Methods](./api-guide.md#methods).
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md#overview",
+			Target:     testTargetDotAPIGuide + "#overview",
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md#methods",
+			Target:     testTargetDotAPIGuide + "#methods",
 			LinkType:   LinkTypeInline,
 		},
 	}
@@ -322,13 +310,13 @@ func TestApplyLinkUpdates_AtomicRollback(t *testing.T) {
 		{
 			SourceFile: source1,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: source2,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 	}
@@ -381,37 +369,37 @@ func TestUpdateLinkTarget(t *testing.T) {
 	}{
 		{
 			name:       "same directory",
-			oldPath:    "/docs/api-guide.md",
-			newPath:    "/docs/api_guide.md",
-			linkTarget: "./api-guide.md",
-			expected:   "./api_guide.md",
+			oldPath:    testPathDocsAPIGuide,
+			newPath:    testPathDocsAPIGuideUnderscore,
+			linkTarget: testTargetDotAPIGuide,
+			expected:   testTargetDotAPIGuideUnderscore,
 		},
 		{
 			name:       "parent directory",
-			oldPath:    "/docs/api-guide.md",
-			newPath:    "/docs/api_guide.md",
-			linkTarget: "../api-guide.md",
-			expected:   "../api_guide.md",
+			oldPath:    testPathDocsAPIGuide,
+			newPath:    testPathDocsAPIGuideUnderscore,
+			linkTarget: testTargetDotDotAPIGuide,
+			expected:   testTargetDotDotAPIGuideUnderscore,
 		},
 		{
 			name:       "subdirectory",
-			oldPath:    "/docs/api-guide.md",
-			newPath:    "/docs/api_guide.md",
+			oldPath:    testPathDocsAPIGuide,
+			newPath:    testPathDocsAPIGuideUnderscore,
 			linkTarget: "./sub/api-guide.md",
 			expected:   "./sub/api_guide.md",
 		},
 		{
 			name:       "no directory prefix",
-			oldPath:    "/docs/api-guide.md",
-			newPath:    "/docs/api_guide.md",
+			oldPath:    testPathDocsAPIGuide,
+			newPath:    testPathDocsAPIGuideUnderscore,
 			linkTarget: "api-guide.md",
 			expected:   "api_guide.md",
 		},
 		{
 			name:       "with anchor",
-			oldPath:    "/docs/api-guide.md",
-			newPath:    "/docs/api_guide.md",
-			linkTarget: "./api-guide.md#section",
+			oldPath:    testPathDocsAPIGuide,
+			newPath:    testPathDocsAPIGuideUnderscore,
+			linkTarget: testTargetDotAPIGuide + "#section",
 			expected:   "./api_guide.md#section",
 		},
 		{
@@ -454,7 +442,7 @@ Check [API](../API_Guide.md).
 `), 0o600))
 
 	// Create linter and fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false) // not dry-run, no confirm
 
 	// Apply fixes
@@ -518,7 +506,7 @@ Indented code (should NOT be updated):
 `
 	require.NoError(t, os.WriteFile(indexFile, []byte(indexContent), 0o600))
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	result, err := fixer.Fix(docsDir)
@@ -535,7 +523,7 @@ Indented code (should NOT be updated):
 	updatedIndex, err := os.ReadFile(indexFile)
 	require.NoError(t, err)
 	content := string(updatedIndex)
-	assert.Contains(t, content, "[API](<./api-guide.md>)")
+	assert.Contains(t, content, "[API](<"+testTargetDotAPIGuide+">)")
 
 	// Verify inline code and code blocks were not modified.
 	assert.Contains(t, content, "`./API Guide.md`", "inline code should remain unchanged")
@@ -548,13 +536,13 @@ func TestApplyLinkUpdates_UpdatesDestinationNotInlineCode(t *testing.T) {
 
 	// Both inline code and a real link exist on the same line.
 	// applyLinkUpdates should update the real link destination, not the inline code.
-	sourceContent := "# Title\nInline code: `./api-guide.md` and real link: [API](./api-guide.md)\n"
+	sourceContent := "# Title\nInline code: `" + testTargetDotAPIGuide + "` and real link: [API](" + testTargetDotAPIGuide + ")\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	links := []LinkReference{{
 		SourceFile: sourceFile,
 		LineNumber: 2,
-		Target:     "./api-guide.md",
+		Target:     testTargetDotAPIGuide,
 		LinkType:   LinkTypeInline,
 	}}
 
@@ -571,7 +559,7 @@ func TestApplyLinkUpdates_UpdatesDestinationNotInlineCode(t *testing.T) {
 	require.NoError(t, err)
 	updatedText := string(updated)
 
-	assert.Contains(t, updatedText, "`./api-guide.md`", "inline code should remain unchanged")
+	assert.Contains(t, updatedText, "`"+testTargetDotAPIGuide+"`", "inline code should remain unchanged")
 	assert.Contains(t, updatedText, "[API](./api_guide.md)", "real link destination should be updated")
 }
 
@@ -617,14 +605,10 @@ func TestApplyLinkUpdates_PreservesAnchorFragments(t *testing.T) {
 	sourceFile := filepath.Join(tmpDir, "source.md")
 
 	// Create source file with links that have anchor fragments
-	sourceContent := `# Documentation
-
-See [Authentication](./api-guide.md#authentication) for auth details.
-
-Also check [Overview](./api-guide.md#overview) section.
-
-Reference to [Errors](../api-guide.md#errors).
-`
+	sourceContent := "# Documentation\n\n" +
+		"See [Authentication](" + testTargetDotAPIGuide + "#authentication) for auth details.\n\n" +
+		"Also check [Overview](" + testTargetDotAPIGuide + "#overview) section.\n\n" +
+		"Reference to [Errors](" + testTargetDotDotAPIGuide + "#errors).\n"
 	require.NoError(t, os.WriteFile(sourceFile, []byte(sourceContent), 0o600))
 
 	// Create link references with anchor fragments
@@ -632,21 +616,21 @@ Reference to [Errors](../api-guide.md#errors).
 		{
 			SourceFile: sourceFile,
 			LineNumber: 3,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			Fragment:   "#authentication",
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: sourceFile,
 			LineNumber: 5,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			Fragment:   "#overview",
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: sourceFile,
 			LineNumber: 7,
-			Target:     "../api-guide.md",
+			Target:     testTargetDotDotAPIGuide,
 			Fragment:   "#errors",
 			LinkType:   LinkTypeInline,
 		},
@@ -672,15 +656,15 @@ Reference to [Errors](../api-guide.md#errors).
 
 	// Verify each expected update exists at the correct line
 	assert.Contains(t, updatesByLine, 3)
-	assert.Equal(t, "./api-guide.md#authentication", updatesByLine[3].OldTarget)
+	assert.Equal(t, testTargetDotAPIGuide+"#authentication", updatesByLine[3].OldTarget)
 	assert.Equal(t, "./api_guide.md#authentication", updatesByLine[3].NewTarget)
 
 	assert.Contains(t, updatesByLine, 5)
-	assert.Equal(t, "./api-guide.md#overview", updatesByLine[5].OldTarget)
+	assert.Equal(t, testTargetDotAPIGuide+"#overview", updatesByLine[5].OldTarget)
 	assert.Equal(t, "./api_guide.md#overview", updatesByLine[5].NewTarget)
 
 	assert.Contains(t, updatesByLine, 7)
-	assert.Equal(t, "../api-guide.md#errors", updatesByLine[7].OldTarget)
+	assert.Equal(t, testTargetDotDotAPIGuide+"#errors", updatesByLine[7].OldTarget)
 	assert.Equal(t, "../api_guide.md#errors", updatesByLine[7].NewTarget)
 
 	// Verify file was updated correctly with fragments preserved
@@ -694,8 +678,8 @@ Reference to [Errors](../api-guide.md#errors).
 	assert.Contains(t, content, "[Errors](../api_guide.md#errors)")
 
 	// Verify old links are gone
-	assert.NotContains(t, content, "./api-guide.md")
-	assert.NotContains(t, content, "../api-guide.md")
+	assert.NotContains(t, content, testTargetDotAPIGuide)
+	assert.NotContains(t, content, testTargetDotDotAPIGuide)
 }
 
 // TestApplyLinkUpdates_RollbackOnFailure tests that changes are rolled back on failure.
@@ -724,13 +708,13 @@ func TestApplyLinkUpdates_RollbackOnFailure(t *testing.T) {
 		{
 			SourceFile: source1,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 		{
 			SourceFile: source2,
 			LineNumber: 1,
-			Target:     "./api-guide.md",
+			Target:     testTargetDotAPIGuide,
 			LinkType:   LinkTypeInline,
 		},
 	}

@@ -35,7 +35,7 @@ func TestLinkDiscovery_CaseInsensitive(t *testing.T) {
 	require.NoError(t, err)
 
 	// Find links to the target file
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	links, err := fixer.findLinksToFile(targetFile, tmpDir)
@@ -69,7 +69,7 @@ func TestFixer_findLinksInFile_SkipsInlineCodeAndOffsetsFrontmatter(t *testing.T
 	absTarget, err := filepath.Abs(targetFile)
 	require.NoError(t, err)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	links, err := fixer.findLinksInFile(sourceFile, absTarget)

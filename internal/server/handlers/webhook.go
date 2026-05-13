@@ -104,7 +104,7 @@ func (h *WebhookHandlers) HandleWebhook(w http.ResponseWriter, r *http.Request) 
 
 	// Minimal acknowledgment response
 	resp := map[string]any{
-		"status":    "received",
+		statusKey:   "received",
 		"timestamp": time.Now().UTC(),
 		"event":     r.Header.Get("X-GitHub-Event"),
 		"source":    r.Header.Get("User-Agent"),

@@ -64,15 +64,15 @@ func testProductionBuilderPattern(t *testing.T) {
 	// Test fluent builder pattern
 	mock := NewEnhancedMockBuilder("builder-test", TypeGitLab).
 		WithRepositories(
-			CreateMockGitLabRepo("company", "docs", true, false, false, false),
-			CreateMockGitLabRepo("company", "api", true, false, false, false),
+			CreateMockGitLabRepo(companyToken, docsToken, true, false, false, false),
+			CreateMockGitLabRepo(companyToken, "api", true, false, false, false),
 		).
-		WithOrganizations(CreateMockGitLabGroup("company")).
+		WithOrganizations(CreateMockGitLabGroup(companyToken)).
 		WithDelay(time.Millisecond * 10).
 		Build()
 
 	ctx := t.Context()
-	repos, err := mock.ListRepositories(ctx, []string{"company"})
+	repos, err := mock.ListRepositories(ctx, []string{companyToken})
 	if err != nil {
 		t.Fatalf("Failed to list repositories: %v", err)
 	}
@@ -136,7 +136,7 @@ func testProductionRealisticMocks(t *testing.T) {
 	ctx := t.Context()
 
 	// Validate GitHub mock
-	githubRepos, err := githubMock.ListRepositories(ctx, []string{"company"})
+	githubRepos, err := githubMock.ListRepositories(ctx, []string{companyToken})
 	if err != nil {
 		t.Fatalf("Failed to list GitHub repositories: %v", err)
 	}

@@ -8,6 +8,11 @@ import (
 	"testing"
 )
 
+const (
+	testForgeToken        = "test-token"
+	authHeaderPrefixToken = "token "
+)
+
 func TestBaseForge_NewRequest(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -27,41 +32,41 @@ func TestBaseForge_NewRequest(t *testing.T) {
 			apiURL:     "https://api.example.com/v1",
 			endpoint:   "/user/repos",
 			body:       nil,
-			authPrefix: "Bearer ",
+			authPrefix: authHeaderPrefixBearer,
 			wantPath:   "/v1/user/repos",
-			wantAuth:   "Bearer test-token",
+			wantAuth:   authHeaderPrefixBearer + testForgeToken,
 			wantErr:    false,
 		},
 		{
 			name:       "endpoint with leading slash trimmed",
 			apiURL:     "https://api.example.com",
 			endpoint:   "/repos/owner/name",
-			authPrefix: "token ",
+			authPrefix: authHeaderPrefixToken,
 			wantPath:   "/repos/owner/name",
-			wantAuth:   "token test-token",
+			wantAuth:   authHeaderPrefixToken + testForgeToken,
 			wantErr:    false,
 		},
 		{
 			name:       "endpoint with query string",
 			apiURL:     "https://api.example.com/api/v1",
 			endpoint:   "/user/orgs?page=2&limit=50",
-			authPrefix: "Bearer ",
+			authPrefix: authHeaderPrefixBearer,
 			wantPath:   "/api/v1/user/orgs",
 			wantQuery:  "page=2&limit=50",
-			wantAuth:   "Bearer test-token",
+			wantAuth:   authHeaderPrefixBearer + testForgeToken,
 			wantErr:    false,
 		},
 		{
 			name:       "with custom headers",
 			apiURL:     "https://api.github.com",
 			endpoint:   "/user",
-			authPrefix: "Bearer ",
+			authPrefix: authHeaderPrefixBearer,
 			customHeaders: map[string]string{
 				"Accept":               "application/vnd.github+json",
 				"X-GitHub-Api-Version": "2022-11-28",
 			},
 			wantPath: "/user",
-			wantAuth: "Bearer test-token",
+			wantAuth: authHeaderPrefixBearer + testForgeToken,
 			wantCustomHeaders: map[string]string{
 				"Accept":               "application/vnd.github+json",
 				"X-GitHub-Api-Version": "2022-11-28",
@@ -73,9 +78,9 @@ func TestBaseForge_NewRequest(t *testing.T) {
 			apiURL:     "https://api.example.com",
 			endpoint:   "/repos",
 			body:       map[string]string{"name": "test-repo"},
-			authPrefix: "Bearer ",
+			authPrefix: authHeaderPrefixBearer,
 			wantPath:   "/repos",
-			wantAuth:   "Bearer test-token",
+			wantAuth:   authHeaderPrefixBearer + testForgeToken,
 			wantErr:    false,
 		},
 	}
@@ -83,7 +88,7 @@ func TestBaseForge_NewRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := &http.Client{}
-			bf := NewBaseForge(client, tt.apiURL, "test-token")
+			bf := NewBaseForge(client, tt.apiURL, testForgeToken)
 
 			if tt.authPrefix != "" {
 				bf.SetAuthHeaderPrefix(tt.authPrefix)
@@ -185,7 +190,7 @@ func TestBaseForge_DoRequest(t *testing.T) {
 			defer server.Close()
 
 			client := server.Client()
-			bf := NewBaseForge(client, server.URL, "test-token")
+			bf := NewBaseForge(client, server.URL, testForgeToken)
 
 			req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/test", http.NoBody)
 			if err != nil {
@@ -218,7 +223,7 @@ func TestBaseForge_DoRequestWithHeaders(t *testing.T) {
 	defer server.Close()
 
 	client := server.Client()
-	bf := NewBaseForge(client, server.URL, "test-token")
+	bf := NewBaseForge(client, server.URL, testForgeToken)
 
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/test", http.NoBody)
 	if err != nil {
@@ -249,7 +254,7 @@ func TestBaseForge_Integration(t *testing.T) {
 	// Simulates a complete request cycle like forge clients do
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify headers
-		if auth := r.Header.Get("Authorization"); !strings.HasPrefix(auth, "Bearer ") {
+		if auth := r.Header.Get("Authorization"); !strings.HasPrefix(auth, authHeaderPrefixBearer) {
 			t.Errorf("Authorization header = %v, want Bearer prefix", auth)
 		}
 
@@ -271,7 +276,7 @@ func TestBaseForge_Integration(t *testing.T) {
 	defer server.Close()
 
 	client := server.Client()
-	bf := NewBaseForge(client, server.URL, "test-token")
+	bf := NewBaseForge(client, server.URL, testForgeToken)
 	bf.SetCustomHeader("Accept", "application/json")
 
 	// Test GET

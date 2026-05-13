@@ -90,7 +90,7 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		case doc.IsIndex:
 			// For indices, we might extract title from H1 later (extractIndexTitle).
 			// If name is present and not just "index", it's a good fallback.
-			if doc.Name != "" && doc.Name != "index" && doc.Name != "_index" {
+			if doc.Name != "" && doc.Name != "index" && doc.Name != indexFileSuffix {
 				doc.FrontMatter["title"] = formatTitle(doc.Name)
 			}
 		case doc.Name != "":

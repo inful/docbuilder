@@ -10,13 +10,13 @@ import (
 func TestFixResult_PreviewChanges(t *testing.T) {
 	result := &FixResult{
 		FilesRenamed: []RenameOperation{
-			{OldPath: "/tmp/docs/API_Guide.md", NewPath: "/tmp/docs/api-guide.md", Success: true},
+			{OldPath: testPathTmpDocsAPIGuideUpper, NewPath: testPathTmpDocsAPIGuideLower, Success: true},
 			{OldPath: "/tmp/docs/User Manual.md", NewPath: "/tmp/docs/user-manual.md", Success: true},
 		},
 		LinksUpdated: []LinkUpdate{
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 10, OldTarget: "./API_Guide.md", NewTarget: "./api-guide.md"},
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 15, OldTarget: "./User Manual.md", NewTarget: "./user-manual.md"},
-			{SourceFile: "/tmp/docs/guide.md", LineNumber: 5, OldTarget: "../API_Guide.md", NewTarget: "../api-guide.md"},
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 10, OldTarget: "./API_Guide.md", NewTarget: testTargetDotAPIGuide},
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 15, OldTarget: "./User Manual.md", NewTarget: "./user-manual.md"},
+			{SourceFile: "/tmp/docs/guide.md", LineNumber: 5, OldTarget: "../API_Guide.md", NewTarget: testTargetDotDotAPIGuide},
 		},
 	}
 
@@ -40,13 +40,13 @@ func TestFixResult_PreviewChanges(t *testing.T) {
 func TestFixResult_DetailedPreview(t *testing.T) {
 	result := &FixResult{
 		FilesRenamed: []RenameOperation{
-			{OldPath: "/tmp/docs/API_Guide.md", NewPath: "/tmp/docs/api-guide.md", Success: true},
+			{OldPath: testPathTmpDocsAPIGuideUpper, NewPath: testPathTmpDocsAPIGuideLower, Success: true},
 		},
 		LinksUpdated: []LinkUpdate{
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 10, OldTarget: "./API_Guide.md", NewTarget: "./api-guide.md"},
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 10, OldTarget: "./API_Guide.md", NewTarget: testTargetDotAPIGuide},
 		},
 		BrokenLinks: []BrokenLink{
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 20, Target: "./missing.md", LinkType: LinkTypeInline},
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 20, Target: "./missing.md", LinkType: LinkTypeInline},
 		},
 	}
 
@@ -54,13 +54,13 @@ func TestFixResult_DetailedPreview(t *testing.T) {
 
 	// Verify detailed preview shows full paths and line-by-line changes
 	assert.Contains(t, preview, "[File Renames]", "should show file renames header")
-	assert.Contains(t, preview, "/tmp/docs/API_Guide.md", "should show full old path")
-	assert.Contains(t, preview, "/tmp/docs/api-guide.md", "should show full new path")
+	assert.Contains(t, preview, testPathTmpDocsAPIGuideUpper, "should show full old path")
+	assert.Contains(t, preview, testPathTmpDocsAPIGuideLower, "should show full new path")
 
 	assert.Contains(t, preview, "[Link Updates]", "should show link updates header")
-	assert.Contains(t, preview, "/tmp/docs/index.md:10", "should show file and line number")
+	assert.Contains(t, preview, testPathTmpDocsIndexMD+":10", "should show file and line number")
 	assert.Contains(t, preview, "Before: ./API_Guide.md", "should show before state")
-	assert.Contains(t, preview, "After:  ./api-guide.md", "should show after state")
+	assert.Contains(t, preview, "After:  "+testTargetDotAPIGuide, "should show after state")
 
 	assert.Contains(t, preview, "[Broken Links Detected]", "should show broken links header")
 	assert.Contains(t, preview, "./missing.md (file not found)", "should show broken link target")
@@ -76,22 +76,22 @@ func TestFixResult_HasChanges(t *testing.T) {
 		{
 			name: "has file renames",
 			result: &FixResult{
-				FilesRenamed: []RenameOperation{{OldPath: "a.md", NewPath: "b.md"}},
+				FilesRenamed: []RenameOperation{{OldPath: testFilenameAMD, NewPath: testFilenameBMD}},
 			},
 			expected: true,
 		},
 		{
 			name: "has link updates",
 			result: &FixResult{
-				LinksUpdated: []LinkUpdate{{SourceFile: "a.md", OldTarget: "b.md", NewTarget: "c.md"}},
+				LinksUpdated: []LinkUpdate{{SourceFile: testFilenameAMD, OldTarget: testFilenameBMD, NewTarget: testFilenameCMD}},
 			},
 			expected: true,
 		},
 		{
 			name: "has both",
 			result: &FixResult{
-				FilesRenamed: []RenameOperation{{OldPath: "a.md", NewPath: "b.md"}},
-				LinksUpdated: []LinkUpdate{{SourceFile: "a.md", OldTarget: "b.md", NewTarget: "c.md"}},
+				FilesRenamed: []RenameOperation{{OldPath: testFilenameAMD, NewPath: testFilenameBMD}},
+				LinksUpdated: []LinkUpdate{{SourceFile: testFilenameAMD, OldTarget: testFilenameBMD, NewTarget: testFilenameCMD}},
 			},
 			expected: true,
 		},
@@ -120,12 +120,12 @@ func TestFixResult_HasChanges(t *testing.T) {
 func TestFixResult_CountAffectedFiles(t *testing.T) {
 	result := &FixResult{
 		FilesRenamed: []RenameOperation{
-			{OldPath: "/tmp/docs/API_Guide.md", NewPath: "/tmp/docs/api-guide.md"},
+			{OldPath: testPathTmpDocsAPIGuideUpper, NewPath: testPathTmpDocsAPIGuideLower},
 			{OldPath: "/tmp/docs/User Manual.md", NewPath: "/tmp/docs/user-manual.md"},
 		},
 		LinksUpdated: []LinkUpdate{
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 10},
-			{SourceFile: "/tmp/docs/index.md", LineNumber: 15}, // Same file, counted once
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 10},
+			{SourceFile: testPathTmpDocsIndexMD, LineNumber: 15}, // Same file, counted once
 			{SourceFile: "/tmp/docs/guide.md", LineNumber: 5},
 		},
 	}
@@ -138,7 +138,7 @@ func TestFixResult_CountAffectedFiles(t *testing.T) {
 func TestFixResult_Summary(t *testing.T) {
 	result := &FixResult{
 		FilesRenamed: []RenameOperation{
-			{OldPath: "file1.md", NewPath: "file1-new.md", Success: true},
+			{OldPath: testFilenameFile1MD, NewPath: "file1-new.md", Success: true},
 			{OldPath: "file2.md", NewPath: "file2-new.md", Success: true},
 		},
 		ErrorsFixed: 3,
@@ -154,7 +154,7 @@ func TestFixResult_Summary(t *testing.T) {
 func TestFixResult_SummaryWithErrors(t *testing.T) {
 	result := &FixResult{
 		FilesRenamed: []RenameOperation{
-			{OldPath: "file1.md", NewPath: "file1-new.md", Success: false, Error: assert.AnError},
+			{OldPath: testFilenameFile1MD, NewPath: "file1-new.md", Success: false, Error: assert.AnError},
 		},
 		ErrorsFixed: 0,
 		Errors:      []error{assert.AnError},

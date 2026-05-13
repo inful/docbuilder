@@ -100,8 +100,8 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	// Verify loaded configuration
-	if config.Version != "2.0" {
-		t.Errorf("Version = %v, want 2.0", config.Version)
+	if config.Version != configVersion {
+		t.Errorf("Version = %v, want %s", config.Version, configVersion)
 	}
 
 	// Test daemon config
@@ -192,8 +192,8 @@ hugo:
 	// Verify defaults were applied
 	// Theme is always Relearn (removed from config)
 
-	if config.Output.Directory != "./site" {
-		t.Errorf("Default output directory = %v, want ./site", config.Output.Directory)
+	if config.Output.Directory != defaultOutputDir {
+		t.Errorf("Default output directory = %v, want %s", config.Output.Directory, defaultOutputDir)
 	}
 
 	if !config.Output.Clean {
@@ -206,12 +206,12 @@ hugo:
 	}
 
 	// Filtering should have defaults
-	if len(config.Filtering.RequiredPaths) != 1 || config.Filtering.RequiredPaths[0] != "docs" {
-		t.Errorf("Default required paths = %v, want [docs]", config.Filtering.RequiredPaths)
+	if len(config.Filtering.RequiredPaths) != 1 || config.Filtering.RequiredPaths[0] != defaultRequiredPathDocs {
+		t.Errorf("Default required paths = %v, want [%s]", config.Filtering.RequiredPaths, defaultRequiredPathDocs)
 	}
 
-	if len(config.Filtering.IgnoreFiles) != 1 || config.Filtering.IgnoreFiles[0] != ".docignore" {
-		t.Errorf("Default ignore files = %v, want [.docignore]", config.Filtering.IgnoreFiles)
+	if len(config.Filtering.IgnoreFiles) != 1 || config.Filtering.IgnoreFiles[0] != defaultIgnoreFileDocignore {
+		t.Errorf("Default ignore files = %v, want [%s]", config.Filtering.IgnoreFiles, defaultIgnoreFileDocignore)
 	}
 
 	// Versioning should have defaults
@@ -224,8 +224,8 @@ hugo:
 	}
 
 	// Monitoring should have defaults
-	if config.Monitoring.Metrics.Path != "/metrics" {
-		t.Errorf("Default metrics path = %v, want /metrics", config.Monitoring.Metrics.Path)
+	if config.Monitoring.Metrics.Path != defaultMetricsPath {
+		t.Errorf("Default metrics path = %v, want %s", config.Monitoring.Metrics.Path, defaultMetricsPath)
 	}
 }
 

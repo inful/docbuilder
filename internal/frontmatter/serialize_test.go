@@ -15,7 +15,7 @@ func TestSerializeYAML_EmptyMap_ReturnsEmpty(t *testing.T) {
 func TestSerializeYAML_DeterministicOrderAndTrailingNewline(t *testing.T) {
 	fields := map[string]any{
 		"b": "two",
-		"a": "one",
+		"a": testValueOne,
 		"c": 3,
 	}
 
@@ -27,14 +27,14 @@ func TestSerializeYAML_DeterministicOrderAndTrailingNewline(t *testing.T) {
 	require.Equal(t, string(out1), string(out2))
 
 	// Deterministic key ordering and trailing newline.
-	require.Equal(t, "a: one\nb: two\nc: 3\n", string(out1))
+	require.Equal(t, "a: "+testValueOne+"\nb: two\nc: 3\n", string(out1))
 }
 
 func TestSerializeYAML_NewlineStyle_CRLF(t *testing.T) {
-	fields := map[string]any{"a": "one"}
+	fields := map[string]any{"a": testValueOne}
 	out, err := SerializeYAML(fields, Style{Newline: "\r\n"})
 	require.NoError(t, err)
-	require.Equal(t, "a: one\r\n", string(out))
+	require.Equal(t, "a: "+testValueOne+"\r\n", string(out))
 }
 
 func TestSerializeYAML_NestedMap_SortsKeysRecursively(t *testing.T) {

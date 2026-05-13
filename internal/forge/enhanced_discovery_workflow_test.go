@@ -31,7 +31,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Create discovery service
 		filtering := &config.FilteringConfig{
-			RequiredPaths:   []string{"docs"},
+			RequiredPaths:   []string{docsToken},
 			IncludePatterns: []string{"*"},
 			ExcludePatterns: []string{},
 		}
@@ -73,7 +73,7 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 		gitlab := NewEnhancedGitLabMock("config-gitlab")
 
 		// Add test repositories
-		github.AddRepository(CreateMockGitHubRepo("config-org", "documentation", true, false, false, false))
+		github.AddRepository(CreateMockGitHubRepo("config-org", documentationToken, true, false, false, false))
 		gitlab.AddRepository(CreateMockGitLabRepo("config-group", "docs-site", true, false, false, false))
 
 		// Generate realistic configurations
@@ -82,14 +82,14 @@ func TestEnhancedForgeDiscoveryWorkflow(t *testing.T) {
 
 		// Create a complete configuration
 		fullConfig := &config.Config{
-			Version: "2.0",
+			Version: testConfigVersion,
 			Forges: []*config.ForgeConfig{
 				githubConfig,
 				gitlabConfig,
 			},
 			Build: config.BuildConfig{},
 			Filtering: &config.FilteringConfig{
-				RequiredPaths:   []string{"docs", "documentation"},
+				RequiredPaths:   []string{docsToken, documentationToken},
 				IncludePatterns: []string{"*"},
 				ExcludePatterns: []string{},
 			},

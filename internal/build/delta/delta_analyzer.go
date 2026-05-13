@@ -77,7 +77,7 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 	if fi, err := os.Stat(root); err != nil || !fi.IsDir() {
 		return ""
 	}
-	docRoots := []string{"docs", "documentation"}
+	docRoots := []string{docRootDocs, docRootDocumentation}
 	paths := make([]string, 0, 32)
 	for _, docRoot := range docRoots {
 		base := filepath.Join(root, docRoot)

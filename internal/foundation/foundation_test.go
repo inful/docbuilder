@@ -2,7 +2,13 @@ package foundation
 
 import (
 	"errors"
+	"strconv"
 	"testing"
+)
+
+const (
+	forgeGitHub = "github"
+	forgeGitLab = "gitlab"
 )
 
 func TestResult(t *testing.T) {
@@ -42,7 +48,7 @@ func TestResult(t *testing.T) {
 	t.Run("Map operation", func(t *testing.T) {
 		result := Ok[int, error](5)
 		mapped := Map(result, func(i int) string {
-			return "value is " + string(rune(i+'0'))
+			return "value is " + strconv.Itoa(i)
 		})
 
 		if !mapped.IsOk() {
@@ -118,23 +124,23 @@ func TestOption(t *testing.T) {
 
 func TestNormalizer(t *testing.T) {
 	normalizer := NewNormalizer(map[string]string{
-		"github":  "github",
-		"gitlab":  "gitlab",
-		"forgejo": "forgejo",
-	}, "github")
+		forgeGitHub: forgeGitHub,
+		forgeGitLab: forgeGitLab,
+		"forgejo":   "forgejo",
+	}, forgeGitHub)
 
 	t.Run("Valid values", func(t *testing.T) {
-		if normalizer.Normalize("GitHub") != "github" {
+		if normalizer.Normalize("GitHub") != forgeGitHub {
 			t.Error("Expected 'GitHub' to normalize to 'github'")
 		}
 
-		if normalizer.Normalize(" gitlab ") != "gitlab" {
+		if normalizer.Normalize(" gitlab ") != forgeGitLab {
 			t.Error("Expected ' gitlab ' to normalize to 'gitlab'")
 		}
 	})
 
 	t.Run("Invalid value", func(t *testing.T) {
-		if normalizer.Normalize("bitbucket") != "github" {
+		if normalizer.Normalize("bitbucket") != forgeGitHub {
 			t.Error("Expected 'bitbucket' to return default 'github'")
 		}
 	})

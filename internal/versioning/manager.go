@@ -224,7 +224,7 @@ func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authCo
 // getDefaultBranch determines the default branch for the repository.
 func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitReference) (string, error) {
 	// Look for common default branch names
-	defaultCandidates := []string{"main", "master", "trunk"}
+	defaultCandidates := []string{defaultBranchMain, defaultBranchMaster, "trunk"}
 
 	for _, candidate := range defaultCandidates {
 		for _, ref := range refs {
@@ -339,7 +339,7 @@ func (vm *DefaultVersionManager) generateDisplayName(name, refType string) strin
 
 	// For branches, make it more readable
 	switch name {
-	case "main", "master":
+	case defaultBranchMain, defaultBranchMaster:
 		return "Latest"
 	case "develop", "development":
 		return "Development"

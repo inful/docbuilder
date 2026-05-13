@@ -192,6 +192,7 @@ func hashDirectory(repoPath, dirPath string, fileHashes *[]string) error {
 
 		// Compute file hash
 		// #nosec G304 - p is from filepath.Walk, within controlled directory
+		// #nosec G122 - walk is scoped to a controlled directory used for hashing
 		content, err := os.ReadFile(p)
 		if err != nil {
 			return GitError("failed to read file").

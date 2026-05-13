@@ -29,7 +29,7 @@ func TestDocument_NewFromDocFile(t *testing.T) {
 func TestProcessor_New(t *testing.T) {
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{
-			Title:       "Test Site",
+			Title:       testTitleTestSite,
 			Description: "Test Description",
 		},
 	}
@@ -62,28 +62,22 @@ func TestParseFrontMatter(t *testing.T) {
 		expectContent string
 	}{
 		{
-			name: "valid front matter",
-			content: `---
-title: Test Page
-description: Test description
----
-# Content
-
-This is the body.`,
+			name:          "valid front matter",
+			content:       "---\n" + testTitleLineTestPageLF + "description: Test description\n---\n# Content\n\nThis is the body.",
 			expectFM:      true,
-			expectTitle:   "Test Page",
+			expectTitle:   testTitleTestPage,
 			expectContent: "# Content\n\nThis is the body.",
 		},
 		{
 			name: "valid front matter (CRLF)",
 			content: "---\r\n" +
-				"title: Test Page\r\n" +
+				testTitleLineTestPageCRLF +
 				"description: Test description\r\n" +
 				"---\r\n" +
 				"# Content\r\n\r\n" +
 				"This is the body.",
 			expectFM:      true,
-			expectTitle:   "Test Page",
+			expectTitle:   testTitleTestPage,
 			expectContent: "# Content\r\n\r\nThis is the body.",
 		},
 		{
@@ -112,11 +106,11 @@ This is the body.`,
 		{
 			name: "malformed front matter (missing closing delimiter)",
 			content: "---\n" +
-				"title: Test Page\n" +
+				testTitleLineTestPageLF +
 				"# Content\n",
 			expectFM:      false,
 			expectTitle:   "",
-			expectContent: "---\n" + "title: Test Page\n" + "# Content\n",
+			expectContent: "---\n" + testTitleLineTestPageLF + "# Content\n",
 		},
 		{
 			name: "invalid YAML front matter (treated as no front matter, body preserved)",
@@ -223,8 +217,8 @@ func TestSerializeDocument(t *testing.T) {
 	doc := &Document{
 		Content: "# Test Content\n\nThis is the body.",
 		FrontMatter: map[string]any{
-			"title":       "Test Page",
-			"description": "Test description",
+			"title":                   testTitleTestPage,
+			frontMatterKeyDescription: "Test description",
 		},
 	}
 
@@ -243,7 +237,7 @@ func TestSerializeDocument(t *testing.T) {
 		t.Error("Expected serialized content to contain front matter delimiters")
 	}
 
-	if !containsString(content, "title: Test Page") {
+	if !containsString(content, testTitleLineTestPage) {
 		t.Error("Expected serialized content to contain title")
 	}
 
@@ -283,8 +277,8 @@ func TestGenerateMainIndex(t *testing.T) {
 		t.Error("Expected document to be marked as IsIndex")
 	}
 
-	if doc.Path != "content/_index.md" {
-		t.Errorf("Expected path='content/_index.md', got %q", doc.Path)
+	if doc.Path != contentIndexPath {
+		t.Errorf("Expected path=%q, got %q", contentIndexPath, doc.Path)
 	}
 
 	if title, ok := doc.FrontMatter["title"].(string); !ok || title != "My Documentation" {

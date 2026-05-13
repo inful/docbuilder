@@ -14,12 +14,12 @@ func TestInjectPermalink(t *testing.T) {
 
 	t.Run("Injects permalink when UID and alias match", func(t *testing.T) {
 		doc := &Document{
-			Extension: ".md",
+			Extension: markdownExtension,
 			FrontMatter: map[string]any{
 				"title": "My Page",
 				"uid":   "12345",
-				"aliases": []any{
-					"/_uid/12345/",
+				testPermalinkAliasesKey: []any{
+					testPermalinkAliasUID,
 				},
 			},
 			Content: "# My Page\n\nContent here.",
@@ -35,11 +35,11 @@ func TestInjectPermalink(t *testing.T) {
 
 	t.Run("Does not inject when already present", func(t *testing.T) {
 		doc := &Document{
-			Extension: ".md",
+			Extension: markdownExtension,
 			FrontMatter: map[string]any{
 				"uid": "12345",
-				"aliases": []any{
-					"/_uid/12345/",
+				testPermalinkAliasesKey: []any{
+					testPermalinkAliasUID,
 				},
 			},
 			Content: "# Title\n\n[permalink](https://docs.example.com/_uid/12345/)",
@@ -55,10 +55,10 @@ func TestInjectPermalink(t *testing.T) {
 
 	t.Run("Does not inject when UID missing", func(t *testing.T) {
 		doc := &Document{
-			Extension: ".md",
+			Extension: markdownExtension,
 			FrontMatter: map[string]any{
-				"aliases": []any{
-					"/_uid/12345/",
+				testPermalinkAliasesKey: []any{
+					testPermalinkAliasUID,
 				},
 			},
 			Content: "# Title",
@@ -71,7 +71,7 @@ func TestInjectPermalink(t *testing.T) {
 
 	t.Run("Does not inject when alias missing", func(t *testing.T) {
 		doc := &Document{
-			Extension: ".md",
+			Extension: markdownExtension,
 			FrontMatter: map[string]any{
 				"uid": "12345",
 			},

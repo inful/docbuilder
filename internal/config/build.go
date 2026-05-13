@@ -76,9 +76,9 @@ const (
 )
 
 var namespacingModeNormalizer = normalization.NewNormalizer(map[string]NamespacingMode{
-	"auto":   NamespacingAuto,
-	"always": NamespacingAlways,
-	"never":  NamespacingNever,
+	string(NamespacingAuto):   NamespacingAuto,
+	string(NamespacingAlways): NamespacingAlways,
+	string(NamespacingNever):  NamespacingNever,
 }, "")
 
 // NormalizeNamespacingMode canonicalizes user input returning empty string if unknown.

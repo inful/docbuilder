@@ -304,7 +304,7 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision {
 	// Skip archived repositories
 	if repo.Archived {
-		return repoFilterDecision{include: false, reason: "archived"}
+		return repoFilterDecision{include: false, reason: archivedToken}
 	}
 
 	// Check for .docignore file

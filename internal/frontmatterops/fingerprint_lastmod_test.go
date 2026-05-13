@@ -13,7 +13,7 @@ func TestUpsertFingerprintAndMaybeLastmod(t *testing.T) {
 	expectedLastmod := now.UTC().Format("2006-01-02")
 
 	t.Run("sets fingerprint and lastmod when missing", func(t *testing.T) {
-		fields := map[string]any{"title": "Test"}
+		fields := map[string]any{"title": testTitle}
 		body := []byte("hello")
 
 		fp, changed, err := UpsertFingerprintAndMaybeLastmod(fields, body, now)
@@ -24,7 +24,7 @@ func TestUpsertFingerprintAndMaybeLastmod(t *testing.T) {
 	})
 
 	t.Run("does not update lastmod when fingerprint unchanged", func(t *testing.T) {
-		fields := map[string]any{"title": "Test"}
+		fields := map[string]any{"title": testTitle}
 		body := []byte("hello")
 
 		existing, err := ComputeFingerprint(fields, body)

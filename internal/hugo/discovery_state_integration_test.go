@@ -3,8 +3,6 @@
 package hugo
 
 import (
-"git.home.luguber.info/inful/docbuilder/internal/hugo/stages"
-"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"testing"
 )
 

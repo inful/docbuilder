@@ -12,6 +12,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
+const (
+	testBuildOutputDir = "/tmp/test"
+	testRepoName       = "test"
+	testRepoURL        = "https://example.com/test.git"
+)
+
 // mockHugoGenerator is a test double for HugoGenerator.
 type mockHugoGenerator struct {
 	generateError error
@@ -65,7 +71,7 @@ func TestDefaultBuildService_Run_NilConfig(t *testing.T) {
 
 	result, err := svc.Run(t.Context(), BuildRequest{
 		Config:    nil,
-		OutputDir: "/tmp/test",
+		OutputDir: testBuildOutputDir,
 	})
 
 	if err == nil {
@@ -81,7 +87,7 @@ func TestDefaultBuildService_Run_NoRepositories(t *testing.T) {
 
 	result, err := svc.Run(t.Context(), BuildRequest{
 		Config:    &config.Config{},
-		OutputDir: "/tmp/test",
+		OutputDir: testBuildOutputDir,
 	})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -102,13 +108,13 @@ func TestDefaultBuildService_Run_CancelledContext(t *testing.T) {
 
 	cfg := &config.Config{
 		Repositories: []config.Repository{
-			{Name: "test", URL: "https://example.com/repo.git"},
+			{Name: testRepoName, URL: "https://example.com/repo.git"},
 		},
 	}
 
 	result, err := svc.Run(ctx, BuildRequest{
 		Config:    cfg,
-		OutputDir: "/tmp/test",
+		OutputDir: testBuildOutputDir,
 	})
 
 	// Note: Might fail earlier during workspace creation
@@ -144,7 +150,7 @@ func TestDefaultBuildService_WithFactories(t *testing.T) {
 	// Verify factories are called during Run (with empty repos so it exits early)
 	_, _ = svc.Run(t.Context(), BuildRequest{
 		Config:    &config.Config{},
-		OutputDir: "/tmp/test",
+		OutputDir: testBuildOutputDir,
 	})
 
 	// With no repos, we don't proceed far enough to call all factories
@@ -191,9 +197,9 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 
 		result, err := svc.Run(t.Context(), BuildRequest{
 			Config: &config.Config{
-				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
+				Repositories: []config.Repository{{Name: testRepoName, URL: testRepoURL}},
 			},
-			OutputDir: "/tmp/test",
+			OutputDir: testBuildOutputDir,
 			Options:   BuildOptions{SkipIfUnchanged: true},
 		})
 		if err != nil {
@@ -233,7 +239,7 @@ func TestDefaultBuildService_Run_SkipEvaluation(t *testing.T) {
 		// The important thing is that it proceeds past skip evaluation
 		result, _ := svc.Run(t.Context(), BuildRequest{
 			Config: &config.Config{
-				Repositories: []config.Repository{{Name: "test", URL: "https://example.com/test.git"}},
+				Repositories: []config.Repository{{Name: testRepoName, URL: testRepoURL}},
 			},
 			OutputDir: t.TempDir(),
 			Options:   BuildOptions{SkipIfUnchanged: true},

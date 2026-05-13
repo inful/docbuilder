@@ -29,6 +29,8 @@ type Repository struct {
 type BuildStatus string
 
 const (
+	defaultBranchMain = "main"
+
 	BuildStatusPending   BuildStatus = "pending"
 	BuildStatusRunning   BuildStatus = "running"
 	BuildStatusCompleted BuildStatus = "completed"

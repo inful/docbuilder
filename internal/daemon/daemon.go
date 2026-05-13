@@ -74,7 +74,7 @@ type Daemon struct {
 
 	// Runtime state
 	activeJobs  int32
-	queueLength int32
+	queueLength atomic.Int32
 	lastBuild   *time.Time
 
 	// Background worker tracking (started in Start, awaited in Stop).
@@ -632,7 +632,7 @@ func (d *Daemon) GetActiveJobs() int {
 
 // GetQueueLength returns the current build queue length.
 func (d *Daemon) GetQueueLength() int {
-	return int(atomic.LoadInt32(&d.queueLength))
+	return int(d.queueLength.Load())
 }
 
 // GetStartTime returns the daemon start time.

@@ -14,6 +14,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
+const testCaseNameRelativePath = "relative path"
+
 // TestHandleVSCodeEdit_FeatureDisabled tests that the handler returns 404 when --vscode flag not set.
 func TestHandleVSCodeEdit_FeatureDisabled(t *testing.T) {
 	cfg := &config.Config{
@@ -23,7 +25,7 @@ func TestHandleVSCodeEdit_FeatureDisabled(t *testing.T) {
 	}
 
 	srv := &Server{cfg: cfg}
-	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_edit/test.md", nil)
 	w := httptest.NewRecorder()
 
 	srv.handleVSCodeEdit(w, req)
@@ -50,7 +52,7 @@ func TestHandleVSCodeEdit_DaemonMode(t *testing.T) {
 	}
 
 	srv := &Server{cfg: cfg}
-	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_edit/test.md", nil)
 	w := httptest.NewRecorder()
 
 	srv.handleVSCodeEdit(w, req)
@@ -330,7 +332,7 @@ func TestValidateIPCSocketPath(t *testing.T) {
 		{"null byte", "/tmp/vscode-ipc-test\x00.sock", true},
 		{"wrong location", "/home/user/evil.sock", true},
 		{"missing .sock extension", "/tmp/vscode-ipc-test", true},
-		{"relative path", "./vscode-ipc-test.sock", true},
+		{testCaseNameRelativePath, "./vscode-ipc-test.sock", true},
 	}
 
 	for _, tt := range tests {
@@ -556,7 +558,7 @@ func TestGetDocsDirectory(t *testing.T) {
 			expected: "/absolute/path/docs",
 		},
 		{
-			name: "relative path",
+			name: testCaseNameRelativePath,
 			cfg: &config.Config{
 				Repositories: []config.Repository{
 					{URL: "docs"},
@@ -572,11 +574,11 @@ func TestGetDocsDirectory(t *testing.T) {
 			result := srv.getDocsDirectory()
 
 			switch {
-			case tt.expected == "" && result != "" && tt.name != "relative path":
+			case tt.expected == "" && result != "" && tt.name != testCaseNameRelativePath:
 				t.Errorf("Expected empty string, got %s", result)
 			case tt.expected != "" && result != tt.expected:
 				t.Errorf("Expected %s, got %s", tt.expected, result)
-			case tt.name == "relative path" && !filepath.IsAbs(result) && result != "":
+			case tt.name == testCaseNameRelativePath && !filepath.IsAbs(result) && result != "":
 				t.Errorf("Expected absolute path for relative input, got %s", result)
 			}
 		})
@@ -690,7 +692,7 @@ func TestHandleVSCodeEdit_Integration(t *testing.T) {
 		return "", "", nil
 	}
 	srv.vscodeOpenBackoffs = []time.Duration{}
-	req := httptest.NewRequest(http.MethodGet, "/_edit/test.md", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/_edit/test.md", nil)
 	req.URL.Path = "/_edit/test.md"
 	req.Header.Set("Referer", "http://localhost:1314/docs/")
 	w := httptest.NewRecorder()

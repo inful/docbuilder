@@ -23,13 +23,13 @@ func TestResolveRelativePath(t *testing.T) {
 			name:       "same directory",
 			sourceFile: testDocGuidePath,
 			linkTarget: "api.md",
-			want:       "/docs/api.md",
+			want:       testPathDocsAPIMD,
 		},
 		{
 			name:       "parent directory",
 			sourceFile: "/docs/guides/tutorial.md",
 			linkTarget: "../api.md",
-			want:       "/docs/api.md",
+			want:       testPathDocsAPIMD,
 		},
 		{
 			name:       "subdirectory",
@@ -41,13 +41,13 @@ func TestResolveRelativePath(t *testing.T) {
 			name:       "with fragment",
 			sourceFile: testDocGuidePath,
 			linkTarget: "api.md#section",
-			want:       "/docs/api.md",
+			want:       testPathDocsAPIMD,
 		},
 		{
 			name:       "multiple parent traversals",
 			sourceFile: "/docs/guides/advanced/testing.md",
 			linkTarget: "../../api.md",
-			want:       "/docs/api.md",
+			want:       testPathDocsAPIMD,
 		},
 	}
 
@@ -107,7 +107,7 @@ Code block (should be ignored):
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	// Find links
@@ -181,7 +181,7 @@ Also see [authentication](../API_Guide.md#auth).
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	// Find all links to target file (search from docs root)
@@ -246,7 +246,7 @@ Regular text continues here with [link](api.md).
 	require.NoError(t, err)
 
 	// Create fixer
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	// Find links
@@ -292,7 +292,7 @@ func TestLinkDiscovery_IgnoresLinksInTildeFencedCodeBlocks(t *testing.T) {
 	absTarget, err := filepath.Abs(targetFile)
 	require.NoError(t, err)
 
-	linter := NewLinter(&Config{Format: "text"})
+	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false)
 
 	links, err := fixer.findLinksInFile(absSource, absTarget)

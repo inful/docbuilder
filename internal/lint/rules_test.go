@@ -11,7 +11,7 @@ func TestFilenameRule_ValidFiles(t *testing.T) {
 	rule := &FilenameRule{}
 
 	validFiles := []string{
-		"readme.md",
+		testFilenameReadmeMD,
 		"getting-started.md",
 		"api_reference.md",
 		"image.png",
@@ -102,6 +102,8 @@ func TestFilenameRule_InvalidDoubleExtensions(t *testing.T) {
 func TestFilenameRule_UppercaseLetters(t *testing.T) {
 	rule := &FilenameRule{}
 
+	const testFilenameReadmeUpper = "README.MD"
+
 	tests := []struct {
 		name     string
 		filename string
@@ -109,8 +111,8 @@ func TestFilenameRule_UppercaseLetters(t *testing.T) {
 	}{
 		{
 			name:     "all uppercase",
-			filename: "README.MD",
-			wantFix:  "readme.md",
+			filename: testFilenameReadmeUpper,
+			wantFix:  testFilenameReadmeMD,
 		},
 		{
 			name:     "mixed case",
@@ -189,12 +191,12 @@ func TestFilenameRule_Spaces(t *testing.T) {
 		{
 			name:     "leading space",
 			filename: " readme.md",
-			wantFix:  "readme.md",
+			wantFix:  testFilenameReadmeMD,
 		},
 		{
 			name:     "trailing space",
 			filename: "readme .md",
-			wantFix:  "readme.md",
+			wantFix:  testFilenameReadmeMD,
 		},
 	}
 
@@ -213,7 +215,7 @@ func TestFilenameRule_SpecialCharacters(t *testing.T) {
 		{
 			name:        "parentheses",
 			filename:    "file(1).md",
-			wantFix:     "file1.md",
+			wantFix:     testFilenameFile1MD,
 			wantInvalid: []string{"(", ")"},
 		},
 		{
@@ -269,12 +271,12 @@ func TestFilenameRule_LeadingTrailingSeparators(t *testing.T) {
 		{
 			name:     "leading hyphen",
 			filename: "-readme.md",
-			wantFix:  "readme.md",
+			wantFix:  testFilenameReadmeMD,
 		},
 		{
 			name:     "trailing hyphen",
 			filename: "readme-.md",
-			wantFix:  "readme.md",
+			wantFix:  testFilenameReadmeMD,
 		},
 		{
 			name:     "leading underscore",
@@ -296,12 +298,12 @@ func TestSuggestFilename(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"README.MD", "readme.md"},
+		{"README.MD", testFilenameReadmeMD},
 		{"Getting Started.md", "getting-started.md"},
 		{"API Reference Guide.md", "api-reference-guide.md"},
-		{"file(1).md", "file1.md"},
+		{"file(1).md", testFilenameFile1MD},
 		{"doc@#$%.md", "doc.md"},
-		{"-readme-.md", "readme.md"},
+		{"-readme-.md", testFilenameReadmeMD},
 		{"config__file.md", "config__file.md"}, // Double underscore is allowed
 		{"my---file.md", "my-file.md"},         // Multiple hyphens collapsed
 		{"file  with   spaces.md", "file-with-spaces.md"},

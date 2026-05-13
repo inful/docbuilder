@@ -46,7 +46,7 @@ func TestServiceAdapter(t *testing.T) {
 	t.Run("RepositoryInitializer interface", func(t *testing.T) {
 		url := testRepoURL
 		name := "test-repo"
-		branch := "main"
+		branch := defaultBranchMain
 
 		// Ensure repository state creates a new entry
 		adapter.EnsureRepositoryState(url, name, branch)
@@ -99,7 +99,7 @@ func TestServiceAdapter(t *testing.T) {
 		commit := "abc123def456"
 
 		// Set last commit
-		adapter.SetRepoLastCommit(url, "test-repo", "main", commit)
+		adapter.SetRepoLastCommit(url, "test-repo", defaultBranchMain, commit)
 
 		// Get last commit
 		gotCommit := adapter.GetRepoLastCommit(url)
@@ -144,7 +144,7 @@ func TestServiceAdapter(t *testing.T) {
 		url := "https://github.com/test/another-repo"
 
 		// First ensure the repo exists
-		adapter.EnsureRepositoryState(url, "another-repo", "main")
+		adapter.EnsureRepositoryState(url, "another-repo", defaultBranchMain)
 
 		// Record discovery
 		adapter.RecordDiscovery(url, 15)

@@ -65,7 +65,7 @@ func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) er
 			return &editError{
 				message:    "VS Code IPC socket not found - is VS Code running?",
 				statusCode: http.StatusServiceUnavailable,
-				logLevel:   "warn",
+				logLevel:   logLevelWarn,
 				logFields: []any{
 					slog.String("path", absPath),
 					slog.String("hint", "Ensure VS Code is running and connected via remote SSH"),
@@ -78,7 +78,7 @@ func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) er
 			return &editError{
 				message:    "Invalid IPC socket path",
 				statusCode: http.StatusInternalServerError,
-				logLevel:   "error",
+				logLevel:   logLevelError,
 				logFields: []any{
 					slog.String("socket", ipcSocket),
 					slog.String("error", err.Error()),
@@ -115,7 +115,7 @@ func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) er
 			return &editError{
 				message:    "Failed to open file in VS Code",
 				statusCode: http.StatusInternalServerError,
-				logLevel:   "error",
+				logLevel:   logLevelError,
 				logFields: []any{
 					slog.String("path", absPath),
 					slog.String("code_cli", codeCmd),
@@ -132,7 +132,7 @@ func (s *Server) executeVSCodeOpen(parentCtx context.Context, absPath string) er
 	return &editError{
 		message:    "Failed to open file in VS Code",
 		statusCode: http.StatusInternalServerError,
-		logLevel:   "error",
+		logLevel:   logLevelError,
 		logFields: []any{
 			slog.String("path", absPath),
 			slog.String("code_cli", codeCmd),
@@ -291,7 +291,7 @@ func tryPattern(pattern string) string {
 
 // isExecutable checks if a file exists and is executable.
 func isExecutable(path string) bool {
-	info, err := os.Stat(path)
+	info, err := os.Stat(path) //nolint:gosec // path comes from known install locations or controlled glob patterns
 	if err != nil {
 		return false
 	}

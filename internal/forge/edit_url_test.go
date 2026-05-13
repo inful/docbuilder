@@ -67,7 +67,7 @@ func TestGenerateEditURL(t *testing.T) {
 			baseURL:   "https://bitbucket.org",
 			fullName:  "team/repo",
 			branch:    "main",
-			filePath:  "file.md",
+			filePath:  testFileNameFileMD,
 			want:      "",
 		},
 		{
@@ -76,7 +76,7 @@ func TestGenerateEditURL(t *testing.T) {
 			baseURL:   "",
 			fullName:  "org/repo",
 			branch:    "main",
-			filePath:  "file.md",
+			filePath:  testFileNameFileMD,
 			want:      "",
 		},
 		{
@@ -85,7 +85,7 @@ func TestGenerateEditURL(t *testing.T) {
 			baseURL:   "https://github.com",
 			fullName:  "",
 			branch:    "main",
-			filePath:  "file.md",
+			filePath:  testFileNameFileMD,
 			want:      "",
 		},
 		{
@@ -94,7 +94,7 @@ func TestGenerateEditURL(t *testing.T) {
 			baseURL:   "https://github.com",
 			fullName:  "org/repo",
 			branch:    "",
-			filePath:  "file.md",
+			filePath:  testFileNameFileMD,
 			want:      "",
 		},
 	}
