@@ -1,0 +1,134 @@
+package app
+
+import (
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+
+	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/field"
+	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
+)
+
+func TestCollectData_RequiredBool(t *testing.T) {
+	fields := []formField{{
+		spec:      templating.SchemaField{Key: "Published", Type: templating.FieldTypeBool, Required: true},
+		boolValue: field.NewBoolField(true, nil),
+	}}
+
+	_, err := collectData(fields, map[string]any{})
+	if err == nil {
+		t.Fatalf("expected validation error for required bool")
+	}
+
+	fields[0].boolValue.SetTrue()
+	data, err := collectData(fields, map[string]any{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	value, ok := data["Published"].(bool)
+	if !ok || !value {
+		t.Fatalf("expected Published=true in collected data, got %#v", data["Published"])
+	}
+}
+
+func TestApplySuggestion_StringList(t *testing.T) {
+	f := &formField{
+		spec:      templating.SchemaField{Key: "Tags", Type: templating.FieldTypeStringList},
+		textValue: "alpha, be",
+	}
+	applySuggestion(f, "beta")
+	if f.textValue != "alpha, beta" {
+		t.Fatalf("unexpected list suggestion result: %q", f.textValue)
+	}
+}
+
+func TestMaybeAutoSuggestSlug_FromTitle(t *testing.T) {
+	m := &model{
+		fields: []formField{
+			{spec: templating.SchemaField{Key: "Title", Type: templating.FieldTypeString}, textValue: "My Fancy Title"},
+			{spec: templating.SchemaField{Key: "Slug", Type: templating.FieldTypeString}, textValue: ""},
+		},
+	}
+
+	m.maybeAutoSuggestSlug()
+	if got := m.fields[1].textValue; got != "my-fancy-title" {
+		t.Fatalf("expected slug my-fancy-title, got %q", got)
+	}
+	if m.autoSlug != "my-fancy-title" {
+		t.Fatalf("expected autoSlug tracker to be updated, got %q", m.autoSlug)
+	}
+}
+
+func TestMaybeAutoSuggestSlug_DoesNotOverrideManualSlug(t *testing.T) {
+	m := &model{
+		autoSlug: "my-fancy-title",
+		fields: []formField{
+			{spec: templating.SchemaField{Key: "Title", Type: templating.FieldTypeString}, textValue: "Different Title"},
+			{spec: templating.SchemaField{Key: "Slug", Type: templating.FieldTypeString}, textValue: "custom-slug"},
+		},
+	}
+
+	m.maybeAutoSuggestSlug()
+	if got := m.fields[1].textValue; got != "custom-slug" {
+		t.Fatalf("expected manual slug to be preserved, got %q", got)
+	}
+}
+
+func TestHandleFormFieldInput_AllowsSpaces(t *testing.T) {
+	m := &model{}
+	current := &formField{spec: templating.SchemaField{Key: "Title", Type: templating.FieldTypeString}}
+
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'H', 'i'}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'t', 'h', 'e', 'r', 'e'}})
+
+	if current.textValue != "Hi there" {
+		t.Fatalf("expected spaces to be preserved, got %q", current.textValue)
+	}
+}
+
+func TestHandleFormFieldInput_AllowsHandL(t *testing.T) {
+	m := &model{}
+	current := &formField{spec: templating.SchemaField{Key: "Title", Type: templating.FieldTypeString}}
+
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	m.handleFormFieldInput(current, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'o'}})
+
+	if current.textValue != "hello" {
+		t.Fatalf("expected h/l to be preserved in text entry, got %q", current.textValue)
+	}
+}
+
+func TestRenderMarkdownForPreview_ReturnsStyledContent(t *testing.T) {
+	markdown := "# Hello\n\nThis is **bold** text."
+	rendered := renderMarkdownForPreview(markdown, 80)
+	if rendered == "" {
+		t.Fatalf("expected rendered markdown, got empty string")
+	}
+	if rendered == markdown {
+		t.Fatalf("expected rendered output to differ from raw markdown")
+	}
+}
+
+func TestUpdateKey_QInStringFieldDoesNotQuit(t *testing.T) {
+	m := &model{
+		step: stepForm,
+		fields: []formField{
+			{spec: templating.SchemaField{Key: "Title", Type: templating.FieldTypeString}},
+		},
+		fieldIndex: 0,
+	}
+
+	_, cmd := m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if m.fields[0].textValue != "q" {
+		t.Fatalf("expected q to be inserted into text field, got %q", m.fields[0].textValue)
+	}
+	if cmd != nil {
+		if _, ok := cmd().(tea.QuitMsg); ok {
+			t.Fatalf("expected q in text field to not quit")
+		}
+	}
+}
