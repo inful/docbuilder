@@ -3,7 +3,7 @@
 {
     "name": "docbuilder-devcontainer",
     // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "image": "mcr.microsoft.com/devcontainers/go:1.25-bookworm",
+    "image": "mcr.microsoft.com/devcontainers/go:1.26-trixie",
     "containerEnv": {
         "http_proxy": "${localEnv:HTTP_PROXY}",
         "https_proxy": "${localEnv:HTTP_PROXY}",
@@ -29,8 +29,7 @@
     "portsAttributes": {
         "1316": {
             "label": "DocBuilder Preview",
-            "protocol": "http",
-            "onAutoForward": "openPreview"
+            "protocol": "http"
         },
         "56095": {
             "label": "live reload port",
