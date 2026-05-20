@@ -475,8 +475,15 @@ func (m *model) handleFormFieldInput(current *formField, msg tea.KeyMsg) {
 		case templating.FieldTypeStringEnum:
 			cycleEnum(current, -1)
 			m.refreshSuggestions()
-		case templating.FieldTypeString, templating.FieldTypeStringList:
-			// No left-action for free text field types.
+		case templating.FieldTypeStringList:
+			if len(m.suggestions) > 0 {
+				m.suggCursor--
+				if m.suggCursor < 0 {
+					m.suggCursor = len(m.suggestions) - 1
+				}
+			}
+		case templating.FieldTypeString:
+			// No left-action for free text fields.
 		}
 	case "right":
 		switch current.spec.Type {
@@ -485,8 +492,12 @@ func (m *model) handleFormFieldInput(current *formField, msg tea.KeyMsg) {
 		case templating.FieldTypeStringEnum:
 			cycleEnum(current, 1)
 			m.refreshSuggestions()
-		case templating.FieldTypeString, templating.FieldTypeStringList:
-			// No right-action for free text field types.
+		case templating.FieldTypeStringList:
+			if len(m.suggestions) > 0 {
+				m.suggCursor = (m.suggCursor + 1) % len(m.suggestions)
+			}
+		case templating.FieldTypeString:
+			// No right-action for free text fields.
 		}
 	case "backspace", "delete":
 		if current.spec.Type == templating.FieldTypeBool {
@@ -654,8 +665,10 @@ func (m *model) View() string {
 			}
 		}
 		if len(m.suggestions) > 0 {
-			b.WriteString("\n" + panelStyle.Render("Suggestions") + "\n")
-			for i, suggestion := range m.suggestions {
+			b.WriteString("\n" + panelStyle.Render(fmt.Sprintf("Suggestions (%d total)", len(m.suggestions))) + "\n")
+			start, end := suggestionWindow(len(m.suggestions), m.suggCursor)
+			for i := start; i < end; i++ {
+				suggestion := m.suggestions[i]
 				prefix := "  "
 				rowStyle := unfocusedRowStyle
 				if i == m.suggCursor {
@@ -664,8 +677,11 @@ func (m *model) View() string {
 				}
 				fmt.Fprintf(&b, "%s\n", rowStyle.Render(prefix+suggestion))
 			}
+			if len(m.suggestions) > maxVisibleSuggestions {
+				fmt.Fprintf(&b, "%s\n", metaStyle.Render(fmt.Sprintf("showing %d-%d of %d", start+1, end, len(m.suggestions))))
+			}
 		}
-		b.WriteString("\n" + helpStyle.Render("Keys: up/down field, left/right bool or enum, ctrl+n/ctrl+b suggestion, tab or enter apply, ctrl+g preview, q"))
+		b.WriteString("\n" + helpStyle.Render("Keys: up/down field, left/right bool/enum/list suggestion, tab or enter apply, ctrl+g preview, q"))
 	case stepPreview:
 		b.WriteString(panelStyle.Render("Preview"))
 		b.WriteString("\n")
@@ -924,6 +940,32 @@ func mergeSuggestions(primary, secondary []string, limit int) []string {
 	appendUnique(primary)
 	appendUnique(secondary)
 	return result
+}
+
+const maxVisibleSuggestions = 8
+
+func suggestionWindow(total, cursor int) (start, end int) {
+	if total <= 0 || maxVisibleSuggestions <= 0 {
+		return 0, 0
+	}
+	if total <= maxVisibleSuggestions {
+		return 0, total
+	}
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor >= total {
+		cursor = total - 1
+	}
+
+	half := maxVisibleSuggestions / 2
+	start = max(cursor-half, 0)
+	end = start + maxVisibleSuggestions
+	if end > total {
+		end = total
+		start = end - maxVisibleSuggestions
+	}
+	return start, end
 }
 
 func cycleEnum(f *formField, delta int) {
