@@ -145,6 +145,8 @@ func (s *Server) startDocsServerWithListener(_ context.Context, ln net.Listener)
 
 	// VS Code edit link handler for local preview mode
 	mux.HandleFunc("/_edit/", s.handleVSCodeEdit)
+	// Machine-readable taxonomy endpoint for template/snippet tooling.
+	mux.HandleFunc("/api/taxonomies.json", s.handleTaxonomiesJSON)
 
 	// Root handler dynamically chooses between the Hugo output directory and the rendered "public" folder.
 	// This lets us begin serving immediately (before a static render completes) while automatically

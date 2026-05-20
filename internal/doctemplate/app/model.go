@@ -59,6 +59,8 @@ type model struct {
 	suggIndex   suggest.Index
 	suggestions []string
 	suggCursor  int
+	taxTags     []string
+	taxCats     []string
 
 	previewPath string
 	previewBody string
@@ -96,6 +98,12 @@ type previewMsg struct {
 type writeMsg struct {
 	path string
 	err  error
+}
+
+type taxonomiesMsg struct {
+	tags       []string
+	categories []string
+	err        error
 }
 
 type templateItem struct {
@@ -249,6 +257,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshSuggestions()
 		m.step = stepForm
 		return m, nil
+	case taxonomiesMsg:
+		if typed.err == nil {
+			m.taxTags = typed.tags
+			m.taxCats = typed.categories
+			if m.step == stepForm {
+				m.refreshSuggestions()
+			}
+		}
+		return m, nil
 	case previewMsg:
 		m.loading = false
 		if typed.err != nil {
@@ -331,12 +348,19 @@ func (m *model) updateBaseURL(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.err = "base URL is required"
 			return m, nil
 		}
+		baseURL := strings.TrimSpace(m.baseIn.Value())
 		m.loading = true
 		m.err = ""
-		return m, func() tea.Msg {
-			templates, err := m.service.Discover(context.Background(), strings.TrimSpace(m.baseIn.Value()))
-			return templatesMsg{templates: templates, err: err}
-		}
+		return m, tea.Batch(
+			func() tea.Msg {
+				templates, err := m.service.Discover(context.Background(), baseURL)
+				return templatesMsg{templates: templates, err: err}
+			},
+			func() tea.Msg {
+				tags, categories, err := fetchTaxonomies(context.Background(), baseURL)
+				return taxonomiesMsg{tags: tags, categories: categories, err: err}
+			},
+		)
 	}
 	return m, cmd
 }
@@ -381,6 +405,7 @@ func (m *model) updateForm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 
 	current := &m.fields[m.fieldIndex]
+
 	switch msg.String() {
 	case "up", "shift+tab":
 		m.moveField(-1)
@@ -772,13 +797,30 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 
 func (m *model) refreshSuggestions() {
 	m.suggestions = nil
+	input := ""
 	if len(m.fields) == 0 || m.fieldIndex >= len(m.fields) {
 		m.suggCursor = 0
 		return
 	}
 	current := m.fields[m.fieldIndex]
-	if current.spec.Type == templating.FieldTypeStringEnum && len(current.spec.Options) > 0 {
-		m.suggestions = filterOptions(current.spec.Options, current.textValue, 8)
+	input = current.textValue
+	if current.spec.Type == templating.FieldTypeStringList || current.spec.Type == templating.FieldTypeStringEnum {
+		input = currentToken(input)
+	}
+
+	// For taxonomy fields, prioritize remote taxonomy values over filesystem guesses.
+	if m.refreshTaxonomySuggestions(current, input) {
+		return
+	}
+
+	if strings.TrimSpace(current.spec.GlobSuggestion) != "" {
+		m.suggestions = m.suggIndex.SuggestFromGlob(current.spec.GlobSuggestion, input, 8)
+		if len(m.suggestions) == 0 && strings.TrimSpace(input) != "" {
+			// When the current input doesn't match any glob-derived values,
+			// still show available values so users can discover valid options.
+			m.suggestions = m.suggIndex.SuggestFromGlob(current.spec.GlobSuggestion, "", 8)
+		}
+		m.suggestions = mergeSuggestions(m.suggestions, m.taxonomySuggestionsForField(current.spec.Key, input), 8)
 		if len(m.suggestions) == 0 {
 			m.suggCursor = 0
 			return
@@ -788,15 +830,20 @@ func (m *model) refreshSuggestions() {
 		}
 		return
 	}
-	if !shouldSuggest(current.spec.Key, current.spec.Type) {
-		m.suggCursor = 0
+
+	if current.spec.Type == templating.FieldTypeStringEnum && len(current.spec.Options) > 0 {
+		m.suggestions = filterOptions(current.spec.Options, current.textValue, 8)
+		m.suggestions = mergeSuggestions(m.suggestions, m.taxonomySuggestionsForField(current.spec.Key, input), 8)
+		if len(m.suggestions) == 0 {
+			m.suggCursor = 0
+			return
+		}
+		if m.suggCursor >= len(m.suggestions) {
+			m.suggCursor = 0
+		}
 		return
 	}
-	input := current.textValue
-	if current.spec.Type == templating.FieldTypeStringList {
-		input = currentToken(input)
-	}
-	m.suggestions = m.suggIndex.Suggest(input, 8)
+	m.suggestions = m.taxonomySuggestionsForField(current.spec.Key, input)
 	if len(m.suggestions) == 0 {
 		m.suggCursor = 0
 		return
@@ -804,6 +851,79 @@ func (m *model) refreshSuggestions() {
 	if m.suggCursor >= len(m.suggestions) {
 		m.suggCursor = 0
 	}
+}
+
+func (m *model) taxonomySuggestionsForField(fieldKey, input string) []string {
+	const taxonomySuggestionLimit = 512
+	lower := strings.ToLower(strings.TrimSpace(fieldKey))
+	if strings.Contains(lower, "tag") {
+		return filterOptions(m.taxTags, input, taxonomySuggestionLimit)
+	}
+	if strings.Contains(lower, "categor") {
+		return filterOptions(m.taxCats, input, taxonomySuggestionLimit)
+	}
+	return nil
+}
+
+func isTaxonomyField(fieldKey string) bool {
+	lower := strings.ToLower(strings.TrimSpace(fieldKey))
+	return strings.Contains(lower, "tag") || strings.Contains(lower, "categor")
+}
+
+func (m *model) refreshTaxonomySuggestions(current formField, input string) bool {
+	if !isTaxonomyField(current.spec.Key) {
+		return false
+	}
+
+	m.suggestions = m.taxonomySuggestionsForField(current.spec.Key, input)
+	if len(m.suggestions) == 0 {
+		m.suggestions = m.fallbackSuggestions(current, input)
+	}
+	if len(m.suggestions) == 0 {
+		m.suggCursor = 0
+		return true
+	}
+	if m.suggCursor >= len(m.suggestions) {
+		m.suggCursor = 0
+	}
+	return true
+}
+
+func (m *model) fallbackSuggestions(current formField, input string) []string {
+	if strings.TrimSpace(current.spec.GlobSuggestion) != "" {
+		return m.suggIndex.SuggestFromGlob(current.spec.GlobSuggestion, input, 8)
+	}
+	return nil
+}
+
+func mergeSuggestions(primary, secondary []string, limit int) []string {
+	if limit <= 0 {
+		return nil
+	}
+	if len(primary) == 0 && len(secondary) == 0 {
+		return nil
+	}
+	result := make([]string, 0, limit)
+	seen := map[string]struct{}{}
+	appendUnique := func(items []string) {
+		for _, item := range items {
+			if len(result) >= limit {
+				return
+			}
+			key := strings.ToLower(strings.TrimSpace(item))
+			if key == "" {
+				continue
+			}
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			result = append(result, item)
+		}
+	}
+	appendUnique(primary)
+	appendUnique(secondary)
+	return result
 }
 
 func cycleEnum(f *formField, delta int) {
@@ -876,20 +996,6 @@ func (m *model) stepLabel() string {
 	default:
 		return ""
 	}
-}
-
-func shouldSuggest(key string, typ templating.FieldType) bool {
-	if typ == templating.FieldTypeBool {
-		return false
-	}
-	lower := strings.ToLower(key)
-	candidates := []string{"slug", "path", "file", "section", "category", "tag", "name"}
-	for _, candidate := range candidates {
-		if strings.Contains(lower, candidate) {
-			return true
-		}
-	}
-	return false
 }
 
 func currentToken(value string) string {

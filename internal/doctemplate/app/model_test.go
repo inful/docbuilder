@@ -1,11 +1,16 @@
 package app
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/field"
+	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/suggest"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
 )
 
@@ -130,5 +135,115 @@ func TestUpdateKey_QInStringFieldDoesNotQuit(t *testing.T) {
 		if _, ok := cmd().(tea.QuitMsg); ok {
 			t.Fatalf("expected q in text field to not quit")
 		}
+	}
+}
+
+func TestRefreshSuggestions_GlobSuggestionFallback(t *testing.T) {
+	docsDir := t.TempDir()
+	mustWrite(t, filepath.Join(docsDir, "guides", "alpha.md"), "# alpha")
+	mustWrite(t, filepath.Join(docsDir, "guides", "beta.md"), "# beta")
+
+	idx, err := suggest.BuildFromDocs(docsDir)
+	if err != nil {
+		t.Fatalf("BuildFromDocs failed: %v", err)
+	}
+
+	m := &model{
+		suggIndex: idx,
+		fields: []formField{
+			{
+				spec: templating.SchemaField{Key: "Slug", Type: templating.FieldTypeString, GlobSuggestion: "guides/*.md"},
+				// Non-matching input should still show unfiltered fallback suggestions.
+				textValue: "does-not-match",
+			},
+		},
+		fieldIndex: 0,
+	}
+
+	m.refreshSuggestions()
+	if len(m.suggestions) == 0 {
+		t.Fatalf("expected fallback glob suggestions, got none")
+	}
+}
+
+func TestRefreshSuggestions_MergesRemoteTagTaxonomies(t *testing.T) {
+	docsDir := t.TempDir()
+	mustWrite(t, filepath.Join(docsDir, "docs", "alpha.md"), "# alpha")
+
+	idx, err := suggest.BuildFromDocs(docsDir)
+	if err != nil {
+		t.Fatalf("BuildFromDocs failed: %v", err)
+	}
+
+	m := &model{
+		suggIndex: idx,
+		taxTags:   []string{"remote-tag", "alpha"},
+		fields: []formField{{
+			spec:      templating.SchemaField{Key: "Tags", Type: templating.FieldTypeStringList},
+			textValue: "",
+		}},
+		fieldIndex: 0,
+	}
+
+	m.refreshSuggestions()
+	if len(m.suggestions) == 0 {
+		t.Fatalf("expected suggestions")
+	}
+	if m.suggestions[0] != "remote-tag" {
+		t.Fatalf("expected taxonomy suggestions to be prioritized, got %#v", m.suggestions)
+	}
+
+	foundRemote := slices.Contains(m.suggestions, "remote-tag")
+	if !foundRemote {
+		t.Fatalf("expected remote taxonomy suggestion in %#v", m.suggestions)
+	}
+}
+
+func TestRefreshSuggestions_TagTaxonomiesNotTruncatedToEight(t *testing.T) {
+	tags := make([]string, 0, 12)
+	for i := 1; i <= 12; i++ {
+		tags = append(tags, "tag-"+fmt.Sprintf("%02d", i))
+	}
+
+	m := &model{
+		taxTags: tags,
+		fields: []formField{{
+			spec: templating.SchemaField{Key: "tags", Type: templating.FieldTypeStringList},
+		}},
+		fieldIndex: 0,
+	}
+
+	m.refreshSuggestions()
+	if len(m.suggestions) != len(tags) {
+		t.Fatalf("expected %d taxonomy suggestions, got %d (%#v)", len(tags), len(m.suggestions), m.suggestions)
+	}
+}
+
+func TestRefreshSuggestions_UsesRemoteCategoriesWhenKeyNotNormallySuggested(t *testing.T) {
+	m := &model{
+		taxCats: []string{"guides", "api"},
+		fields: []formField{{
+			spec:      templating.SchemaField{Key: "Categories", Type: templating.FieldTypeStringList},
+			textValue: "g",
+		}},
+		fieldIndex: 0,
+	}
+
+	m.refreshSuggestions()
+	if len(m.suggestions) == 0 {
+		t.Fatalf("expected taxonomy suggestions")
+	}
+	if m.suggestions[0] != "guides" {
+		t.Fatalf("expected filtered category suggestion guides, got %#v", m.suggestions)
+	}
+}
+
+func mustWrite(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		t.Fatalf("mkdir parent %s: %v", filepath.Dir(path), err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write %s: %v", path, err)
 	}
 }
