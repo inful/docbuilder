@@ -130,3 +130,10 @@ func (rc *RootConfig) SetHomeOutputsHTMLRSSJSON() {
 	outs := rc.EnsureOutputs()
 	outs["home"] = []string{"HTML", "RSS", "JSON"}
 }
+
+// SetTaxonomyOutputsHTMLJSON ensures taxonomy and term outputs include JSON.
+func (rc *RootConfig) SetTaxonomyOutputsHTMLJSON() {
+	outs := rc.EnsureOutputs()
+	outs["taxonomy"] = []string{"HTML", "JSON"}
+	outs["term"] = []string{"HTML", "JSON"}
+}

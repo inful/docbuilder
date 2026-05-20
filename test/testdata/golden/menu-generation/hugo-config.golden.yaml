@@ -39,6 +39,12 @@ outputs:
         - HTML
         - RSS
         - JSON
+    taxonomy:
+        - HTML
+        - JSON
+    term:
+        - HTML
+        - JSON
 params:
     alwaysopen: false
     collapsibleMenu: true

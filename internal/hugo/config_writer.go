@@ -71,9 +71,10 @@ func (g *Generator) GenerateHugoConfig() error {
 		root.EnableGitInfo = false
 	}
 
-	// Enable search JSON (Relearn uses Lunr search)
+	// Enable search JSON (Relearn uses Lunr search) and taxonomy JSON outputs
 	if !g.config.Build.LiveReload {
 		root.SetHomeOutputsHTMLRSSJSON()
+		root.SetTaxonomyOutputsHTMLJSON()
 	}
 
 	// Phase 5.5: Taxonomies configuration
