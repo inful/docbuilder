@@ -219,6 +219,28 @@ func TestRefreshSuggestions_TagTaxonomiesNotTruncatedToEight(t *testing.T) {
 	}
 }
 
+func TestSuggestionWindow(t *testing.T) {
+	start, end := suggestionWindow(3, 0)
+	if start != 0 || end != 3 {
+		t.Fatalf("expected full window for small set, got %d-%d", start, end)
+	}
+
+	start, end = suggestionWindow(20, 0)
+	if start != 0 || end != 8 {
+		t.Fatalf("expected leading window, got %d-%d", start, end)
+	}
+
+	start, end = suggestionWindow(20, 10)
+	if start != 6 || end != 14 {
+		t.Fatalf("expected centered window around cursor, got %d-%d", start, end)
+	}
+
+	start, end = suggestionWindow(20, 19)
+	if start != 12 || end != 20 {
+		t.Fatalf("expected trailing window, got %d-%d", start, end)
+	}
+}
+
 func TestRefreshSuggestions_UsesRemoteCategoriesWhenKeyNotNormallySuggested(t *testing.T) {
 	m := &model{
 		taxCats: []string{"guides", "api"},
