@@ -39,6 +39,44 @@ func TestSuggestLimit(t *testing.T) {
 	}
 }
 
+func TestSuggestFromGlob_FileStem(t *testing.T) {
+	docsDir := t.TempDir()
+	mustMkdirAll(t, filepath.Join(docsDir, "dir"))
+	mustWrite(t, filepath.Join(docsDir, "dir", "something.md"), "# one")
+	mustWrite(t, filepath.Join(docsDir, "dir", "another.md"), "# two")
+
+	idx, err := BuildFromDocs(docsDir)
+	if err != nil {
+		t.Fatalf("BuildFromDocs failed: %v", err)
+	}
+
+	got := idx.SuggestFromGlob("dir/*.md", "som", 10)
+	if !slices.Contains(got, "something") {
+		t.Fatalf("expected glob stem suggestion 'something', got %v", got)
+	}
+}
+
+func TestSuggestFromGlob_Directories(t *testing.T) {
+	docsDir := t.TempDir()
+	mustWrite(t, filepath.Join(docsDir, "dir", "one", "two.md"), "# two")
+	mustWrite(t, filepath.Join(docsDir, "dir", "one", "three.md"), "# three")
+	mustWrite(t, filepath.Join(docsDir, "dir", "subdir", "four.md"), "# four")
+	mustWrite(t, filepath.Join(docsDir, "dir", "file.md"), "# file")
+
+	idx, err := BuildFromDocs(docsDir)
+	if err != nil {
+		t.Fatalf("BuildFromDocs failed: %v", err)
+	}
+
+	got := idx.SuggestFromGlob("dir/*/", "", 10)
+	if !slices.Contains(got, "one") || !slices.Contains(got, "subdir") {
+		t.Fatalf("expected directory suggestions one and subdir, got %v", got)
+	}
+	if slices.Contains(got, "file") {
+		t.Fatalf("did not expect file stem in directory suggestions, got %v", got)
+	}
+}
+
 func mustMkdirAll(t *testing.T, path string) {
 	t.Helper()
 	if err := os.MkdirAll(path, 0o750); err != nil {
@@ -48,6 +86,9 @@ func mustMkdirAll(t *testing.T, path string) {
 
 func mustWrite(t *testing.T, path, content string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
+		t.Fatalf("mkdir parent %s: %v", filepath.Dir(path), err)
+	}
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write %s: %v", path, err)
 	}

@@ -38,6 +38,12 @@ type SchemaField struct {
 
 	// Options is required for FieldTypeStringEnum and lists valid choices.
 	Options []string `json:"options,omitempty"`
+
+	// GlobSuggestion optionally defines a docs-relative glob for suggestion values.
+	// Examples:
+	//   - "dir/*.md" -> suggests stem values (e.g., "something" from "dir/something.md")
+	//   - "dir/*/"  -> suggests direct child directory names under dir
+	GlobSuggestion string `json:"glob-suggestion,omitempty"`
 }
 
 // TemplateSchema describes all input fields required to instantiate a template.

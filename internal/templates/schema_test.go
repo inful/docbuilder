@@ -7,7 +7,7 @@ import (
 )
 
 func TestParseTemplateSchema(t *testing.T) {
-	raw := `{"fields":[{"key":"Title","type":"string","required":true},{"key":"Kind","type":"string_enum","options":["adr","tech"]}]}`
+	raw := `{"fields":[{"key":"Title","type":"string","required":true},{"key":"Kind","type":"string_enum","options":["adr","tech"],"glob-suggestion":"examples/*.md"}]}`
 
 	schema, err := ParseTemplateSchema(raw)
 	require.NoError(t, err)
@@ -16,6 +16,7 @@ func TestParseTemplateSchema(t *testing.T) {
 	require.Equal(t, FieldTypeString, schema.Fields[0].Type)
 	require.True(t, schema.Fields[0].Required)
 	require.Equal(t, []string{"adr", "tech"}, schema.Fields[1].Options)
+	require.Equal(t, "examples/*.md", schema.Fields[1].GlobSuggestion)
 }
 
 func TestParseTemplateDefaults(t *testing.T) {
