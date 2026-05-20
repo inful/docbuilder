@@ -160,6 +160,18 @@ params:
 - `string_list` - Comma-separated values
 - `bool` - Boolean value (accepts `true`/`false`, `t`/`f`, `1`/`0`, `TRUE`/`FALSE`, `True`/`False`, `T`/`F`)
 
+**Optional Per-Field Properties:**
+
+- `glob-suggestion` - Docs-relative glob used by `doctemplate` to build suggestions from the local filesystem.
+
+Supported `glob-suggestion` shapes:
+
+- `dir/*.md` - Returns only values covered by the glob, using file stems.
+  - Example: `dir/something.md` -> suggestion `something`
+- `dir/*/` - Returns direct child directory names under `dir/`.
+  - Example inputs: `dir/one/two.md`, `dir/one/three.md`, `dir/subdir/four.md`, `dir/file.md`
+  - Suggestions: `one`, `subdir`
+
 **Example Schema:**
 
 ```json
@@ -174,7 +186,8 @@ params:
       "key": "Category",
       "type": "string_enum",
       "required": true,
-      "options": ["getting-started", "advanced", "reference"]
+      "options": ["getting-started", "advanced", "reference"],
+      "glob-suggestion": "guides/*/"
     },
     {
       "key": "Tags",

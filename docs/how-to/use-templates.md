@@ -138,6 +138,12 @@ Select from predefined options:
 Category [getting-started, advanced, reference]: getting-started
 ```
 
+For `doctemplate`, schema fields can also define `glob-suggestion` to source suggestions from local docs files.
+Examples:
+
+- `guides/*.md` suggests file stem values from matching files
+- `guides/*/` suggests direct child directories under `guides/`
+
 ### String List
 
 Comma-separated values:
