@@ -388,12 +388,10 @@ func TestTemplateNew_SingleTemplate_Integration(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
-	}()
+	})
 
 	// Single template auto-selects, so no stdin needed
 	cli := &CLI{
@@ -557,12 +555,10 @@ func TestTemplateNew_WithDefaults_Integration(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
-	}()
+	})
 
 	cli := &CLI{
 		Config: configPath,
@@ -635,12 +631,10 @@ func TestTemplateNew_SequenceNumbering_Integration(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
-	}()
+	})
 
 	cli := &CLI{
 		Config: configPath,
@@ -711,12 +705,10 @@ func TestTemplateNew_WithPrompts_Integration(t *testing.T) {
 
 	var stdout bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
-	}()
+	})
 
 	cli := &CLI{
 		Config: configPath,
@@ -909,12 +901,10 @@ hugo:
 
 	var stdout bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = io.Copy(&stdout, r)
 		_ = r.Close()
-	}()
+	})
 
 	cli := &CLI{
 		Config: configPath,

@@ -43,11 +43,9 @@ func (g *WorkerGroup) Go(fn func()) bool {
 		return false
 	}
 
-	g.wg.Add(1)
-	go func() {
-		defer g.wg.Done()
+	g.wg.Go(func() {
 		fn()
-	}()
+	})
 	return true
 }
 

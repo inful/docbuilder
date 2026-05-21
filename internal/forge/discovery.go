@@ -66,9 +66,7 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 	var mu sync.Mutex
 
 	for forgeName, client := range forges {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
@@ -93,7 +91,7 @@ func (ds *DiscoveryService) DiscoverAll(ctx context.Context) (*DiscoveryResult, 
 				"repositories", len(repos),
 				"organizations", len(orgs),
 				"filtered", len(filtered))
-		}()
+		})
 	}
 
 	wg.Wait()
@@ -153,18 +151,14 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 	// If we already listed orgs for auto-discovery, reuse that result.
 	var fetchWG sync.WaitGroup
 	if !hasPrelistedOrgs {
-		fetchWG.Add(1)
-		go func() {
-			defer fetchWG.Done()
+		fetchWG.Go(func() {
 			organizations, organizationsErr = client.ListOrganizations(ctx)
-		}()
+		})
 	}
 
-	fetchWG.Add(1)
-	go func() {
-		defer fetchWG.Done()
+	fetchWG.Go(func() {
 		repositories, repositoriesErr = client.ListRepositories(ctx, targetOrgs)
-	}()
+	})
 
 	fetchWG.Wait()
 
