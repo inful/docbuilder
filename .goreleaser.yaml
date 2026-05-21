@@ -39,6 +39,37 @@ builds:
     env:
       - CGO_ENABLED=0
 
+  - id: doctemplate
+    main: ./cmd/doctemplate
+    binary: doctemplate
+    
+    # Build for Linux only
+    goos:
+      - linux
+    
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    
+    goarm:
+      - "7"
+    
+    # Build flags
+    flags:
+      - -trimpath
+    
+    # Linker flags for version injection
+    ldflags:
+      - -s -w
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
+      - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
+    
+    # Environment variables for the build
+    env:
+      - CGO_ENABLED=0
+
 # Archive configuration
 archives:
   - id: default

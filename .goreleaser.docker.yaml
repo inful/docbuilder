@@ -31,6 +31,32 @@ builds:
     env:
       - CGO_ENABLED=0
 
+  - id: doctemplate
+    main: ./cmd/doctemplate
+    binary: doctemplate
+    
+    # Only build for Linux (Docker target)
+    goos:
+      - linux
+    
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    
+    goarm:
+      - "7"
+    
+    flags:
+      - -trimpath
+    
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    
+    env:
+      - CGO_ENABLED=0
+
 # Disable archives for Docker-only builds
 archives:
   - id: default
