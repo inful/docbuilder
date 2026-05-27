@@ -2,6 +2,7 @@ package preview
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -102,6 +103,7 @@ func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs st
 		slog.Error("initial build failed", "error", err)
 		buildStat.setError(err)
 	} else {
+		writeVSCodeArtifactsIfEnabled(ctx, cfg, absDocs)
 		buildStat.setSuccess()
 	}
 
@@ -210,11 +212,84 @@ func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, pre
 			lr.Broadcast(fmt.Sprintf("error:%d", time.Now().UnixNano()))
 		}
 	} else {
+		writeVSCodeArtifactsIfEnabled(ctx, cfg, absDocs)
 		buildStat.setSuccess()
 		if lr := previewDaemon.LiveReloadHub(); lr != nil {
 			lr.Broadcast(strconv.FormatInt(time.Now().UnixNano(), 10))
 		}
 	}
+}
+
+func writeVSCodeArtifactsIfEnabled(ctx context.Context, cfg *config.Config, absDocs string) {
+	if cfg == nil || !cfg.Build.VSCodeEditLinks {
+		return
+	}
+
+	contentDir := filepath.Join(cfg.Output.Directory, "content")
+	repoRoot := filepath.Dir(absDocs)
+	snippetsPath := filepath.Join(repoRoot, ".vscode", "docbuilder-taxonomies.code-snippets")
+	settingsPath := filepath.Join(repoRoot, ".vscode", "settings.json")
+
+	if err := docs.WriteVSCodeTaxonomySnippets(ctx, contentDir, snippetsPath); err != nil {
+		slog.Warn("failed to write VS Code taxonomy snippets", "error", err, "path", snippetsPath)
+	} else {
+		slog.Debug("updated VS Code taxonomy snippets", "path", snippetsPath)
+	}
+
+	if err := ensureVSCodeMarkdownSnippetSettings(settingsPath); err != nil {
+		slog.Warn("failed to ensure VS Code markdown settings", "error", err, "path", settingsPath)
+		return
+	}
+
+	slog.Debug("ensured VS Code markdown settings", "path", settingsPath)
+}
+
+func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
+	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o750); err != nil {
+		return fmt.Errorf("create vscode settings directory: %w", err)
+	}
+
+	settings := map[string]any{}
+	// #nosec G304 -- settingsPath is derived from the local docs repository root in preview mode.
+	if data, readErr := os.ReadFile(settingsPath); readErr == nil {
+		if len(strings.TrimSpace(string(data))) > 0 {
+			if err := json.Unmarshal(data, &settings); err != nil {
+				return fmt.Errorf("parse vscode settings: %w", err)
+			}
+		}
+	} else if !os.IsNotExist(readErr) {
+		return fmt.Errorf("read vscode settings: %w", readErr)
+	}
+
+	markdownSettings := map[string]any{}
+	if existing, ok := settings["[markdown]"]; ok {
+		if existingMap, ok := existing.(map[string]any); ok {
+			markdownSettings = existingMap
+		}
+	}
+
+	markdownSettings["editor.quickSuggestions"] = map[string]any{
+		"other":    false,
+		"comments": false,
+		"strings":  true,
+	}
+	markdownSettings["editor.snippetSuggestions"] = "top"
+	markdownSettings["editor.suggest.showSnippets"] = true
+	markdownSettings["editor.wordBasedSuggestions"] = "off"
+
+	settings["[markdown]"] = markdownSettings
+
+	serialized, err := json.MarshalIndent(settings, "", "    ")
+	if err != nil {
+		return fmt.Errorf("marshal vscode settings: %w", err)
+	}
+	serialized = append(serialized, '\n')
+
+	if err := os.WriteFile(settingsPath, serialized, 0o600); err != nil {
+		return fmt.Errorf("write vscode settings: %w", err)
+	}
+
+	return nil
 }
 
 // runPreviewLoop handles filesystem events and graceful shutdown.
