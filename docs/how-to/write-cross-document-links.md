@@ -32,6 +32,8 @@ This dual compatibility means you can write standard relative markdown links (li
 
 The transform pipeline automatically rewrites links during the build process. You write links once, and they work everywhere.
 
+For image-specific guidance, see [How To: Write Image Links](write-image-links.md).
+
 ## Link Types
 
 ### 1. Page-Relative Links (Recommended for Nearby Files)

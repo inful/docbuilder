@@ -169,8 +169,8 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 			return fmt.Sprintf("![%s](%s)", alt, newPath)
 		}
 
-		// Rewrite relative image path accounting for document's section
-		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section)
+		// Rewrite relative image path accounting for document's section and repo mode
+		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
 		return fmt.Sprintf("![%s](%s)", alt, newPath)
 	})
 
@@ -199,8 +199,8 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 			return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 		}
 
-		// Rewrite relative image path
-		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section)
+		// Rewrite relative image path accounting for document's section and repo mode
+		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
 		return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 	})
 
@@ -393,12 +393,23 @@ func extractDirectory(hugoPath string, isSingleRepo bool, forge string) string {
 
 // rewriteImagePath rewrites an image path based on the document's context.
 // The path is relative to the document's location (section).
-func rewriteImagePath(path, repository, forge, section string) string {
+func rewriteImagePath(path, repository, forge, section string, isSingleRepo bool) string {
 	// Normalize the path first (remove ./ prefix, collapse ../, lowercase)
 	path = strings.TrimPrefix(path, "./")
 
 	// Lowercase the entire path including filename and extension for URL compatibility
 	path = strings.ToLower(path)
+
+	// In single-repo mode, omit repository/forge namespace to match content paths.
+	if isSingleRepo {
+		if section != "" {
+			return "/" + strings.ToLower(section) + "/" + path
+		}
+		if !strings.HasPrefix(path, "/") {
+			return "/" + path
+		}
+		return path
+	}
 
 	// Prepend repository and section path if relative
 	if !strings.HasPrefix(path, "/") && repository != "" {

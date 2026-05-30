@@ -61,6 +61,31 @@ func TestRewriteImageLinks_RootLevel(t *testing.T) {
 	assert.Equal(t, expected, doc.Content)
 }
 
+func TestRewriteImageLinks_SingleRepoPreviewMode(t *testing.T) {
+	doc := &Document{
+		Repository:   "local",
+		Forge:        "",
+		Section:      "guides",
+		IsSingleRepo: true,
+		Content: `# Preview Guide
+
+![Inline](images/diagram.png)
+<img src="assets/logo.svg" alt="Logo" />
+`,
+	}
+
+	_, err := rewriteImageLinks(doc)
+	require.NoError(t, err)
+
+	expected := `# Preview Guide
+
+![Inline](/guides/images/diagram.png)
+<img src="/guides/assets/logo.svg" alt="Logo" />
+`
+
+	assert.Equal(t, expected, doc.Content)
+}
+
 func TestRewriteImageLinks_WithForge(t *testing.T) {
 	doc := &Document{
 		Repository: "test-repo",
@@ -99,6 +124,7 @@ func TestRewriteImagePath(t *testing.T) {
 		repository string
 		forge      string
 		section    string
+		isSingle   bool
 		expected   string
 	}{
 		{
@@ -107,6 +133,7 @@ func TestRewriteImagePath(t *testing.T) {
 			repository: "repo",
 			forge:      "",
 			section:    "guides",
+			isSingle:   false,
 			expected:   "/repo/guides/images/test.png",
 		},
 		{
@@ -115,6 +142,7 @@ func TestRewriteImagePath(t *testing.T) {
 			repository: "repo",
 			forge:      "",
 			section:    "",
+			isSingle:   false,
 			expected:   "/repo/images/logo.png",
 		},
 		{
@@ -123,6 +151,7 @@ func TestRewriteImagePath(t *testing.T) {
 			repository: "repo",
 			forge:      "github",
 			section:    "docs",
+			isSingle:   false,
 			expected:   "/github/repo/docs/assets/icon.svg",
 		},
 		{
@@ -131,6 +160,7 @@ func TestRewriteImagePath(t *testing.T) {
 			repository: "repo",
 			forge:      "",
 			section:    "guides",
+			isSingle:   false,
 			expected:   "/static/image.png",
 		},
 		{
@@ -139,13 +169,32 @@ func TestRewriteImagePath(t *testing.T) {
 			repository: "repo",
 			forge:      "",
 			section:    "api/v2/endpoints",
+			isSingle:   false,
 			expected:   "/repo/api/v2/endpoints/diagrams/flow.png",
+		},
+		{
+			name:       "single repo omits repository prefix",
+			path:       "diagrams/flow.png",
+			repository: "local",
+			forge:      "",
+			section:    "api/v2/endpoints",
+			isSingle:   true,
+			expected:   "/api/v2/endpoints/diagrams/flow.png",
+		},
+		{
+			name:       "single repo root path",
+			path:       "images/logo.png",
+			repository: "local",
+			forge:      "",
+			section:    "",
+			isSingle:   true,
+			expected:   "/images/logo.png",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := rewriteImagePath(tt.path, tt.repository, tt.forge, tt.section)
+			result := rewriteImagePath(tt.path, tt.repository, tt.forge, tt.section, tt.isSingle)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
