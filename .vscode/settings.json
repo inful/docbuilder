@@ -1,11 +1,21 @@
 {
+    "[markdown]": {
+        "editor.quickSuggestions": {
+            "comments": false,
+            "other": false,
+            "strings": true
+        },
+        "editor.snippetSuggestions": "top",
+        "editor.suggest.showSnippets": true,
+        "editor.wordBasedSuggestions": "off"
+    },
     "makefile.configureOnOpen": false,
-    "spellright.language": [
-        "en"
-    ],
     "spellright.documentTypes": [
         "markdown",
         "latex",
         "plaintext"
+    ],
+    "spellright.language": [
+        "en"
     ]
 }

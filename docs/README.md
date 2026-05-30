@@ -37,6 +37,7 @@ Task-oriented guides:
 - [Author Templates](how-to/author-templates.md)
 - [Use Relearn Theme](how-to/use-relearn-theme.md)
 - [Write Cross-Document Links](how-to/write-cross-document-links.md)
+- [Write Image Links](how-to/write-image-links.md)
 
 ### 📖 [Reference](reference/)
 
