@@ -270,7 +270,9 @@ Update the ordering golden test to include your transform:
 
 ### Golden Tests
 - Used for complex output verification (HTML, YAML, JSON)
-- Update with `go test -update` when output changes intentionally
+- Always run `go test ./test/integration -run TestGolden -v` to verify current behavior first
+- If output changes are intentional, verify the diff, then update fixtures with `go test ./test/integration -run TestGolden -v -update-golden`
+- Re-run `go test ./test/integration -run TestGolden -v` after updating fixtures to confirm they match expected behavior
 - Review golden file changes carefully in PRs
 
 ### Test Naming
