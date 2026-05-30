@@ -348,3 +348,4 @@ public/
 
 testdocs/*test-ci-output/
 .tokensave
+/.vscode/docbuilder-taxonomies.code-snippets
