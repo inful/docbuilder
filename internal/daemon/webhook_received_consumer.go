@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -41,9 +42,6 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	evtBranch := normalizeGitBranchRef(evt.Branch)
 
 	repos := d.currentReposForOrchestratedBuild()
-	if d.handleWebhookWithNoRepos(ctx, evt, evtBranch, repos) {
-		return
-	}
 
 	forgeHost := ""
 	if evt.ForgeName != "" && d.forgeManager != nil {
@@ -53,8 +51,14 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	}
 
 	matchedRepoURL, matchedBranch, matchedDocsPaths := d.matchWebhookRepo(evt, evtBranch, forgeHost, repos)
+	if matchedRepoURL == "" {
+		matchedRepoURL, matchedBranch, matchedDocsPaths = d.resolveWebhookRepoFromForge(ctx, evt)
+	}
 
 	if matchedRepoURL == "" {
+		if d.handleWebhookWithNoRepos(ctx, evt, evtBranch, repos) {
+			return
+		}
 		slog.Warn("Webhook did not match any known repository",
 			logfields.JobID(evt.JobID),
 			slog.String("forge", evt.ForgeName),
@@ -106,6 +110,151 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 			slog.String("repo_url", matchedRepoURL),
 			logfields.Error(err))
 	}
+}
+
+func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.WebhookReceived) (string, string, []string) {
+	if ctx == nil || d == nil || d.forgeManager == nil || d.discovery == nil {
+		return "", "", nil
+	}
+	if strings.TrimSpace(evt.ForgeName) == "" || strings.TrimSpace(evt.RepoFullName) == "" {
+		return "", "", nil
+	}
+	if !hasDocsRelevantChange(evt.ChangedFiles, nil) {
+		return "", "", nil
+	}
+
+	client := d.forgeManager.GetForge(evt.ForgeName)
+	if client == nil {
+		return "", "", nil
+	}
+
+	owner, repoName, ok := splitWebhookRepoFullName(evt.RepoFullName)
+	if !ok {
+		return "", "", nil
+	}
+
+	repo, err := client.GetRepository(ctx, owner, repoName)
+	if err != nil {
+		slog.Warn("Failed to fetch repository after unmatched webhook",
+			logfields.JobID(evt.JobID),
+			slog.String("forge", evt.ForgeName),
+			slog.String("repo", evt.RepoFullName),
+			logfields.Error(err))
+		return "", "", nil
+	}
+	if repo == nil {
+		return "", "", nil
+	}
+	if repo.Metadata == nil {
+		repo.Metadata = make(map[string]string)
+	}
+	if repo.Metadata["forge_name"] == "" {
+		repo.Metadata["forge_name"] = evt.ForgeName
+	}
+
+	if err := client.CheckDocumentation(ctx, repo); err != nil {
+		slog.Warn("Failed to check repository documentation after unmatched webhook",
+			logfields.JobID(evt.JobID),
+			slog.String("forge", evt.ForgeName),
+			slog.String("repo", evt.RepoFullName),
+			logfields.Error(err))
+		return "", "", nil
+	}
+
+	include, reason := d.discovery.ShouldIncludeRepository(repo)
+	if !include {
+		slog.Info("Webhook repo remains excluded after direct probe",
+			logfields.JobID(evt.JobID),
+			slog.String("forge", evt.ForgeName),
+			slog.String("repo", evt.RepoFullName),
+			slog.String("reason", reason))
+		return "", "", nil
+	}
+
+	d.upsertWebhookDiscoveredRepo(repo)
+
+	converted := d.discovery.ConvertToConfigRepositories([]*forge.Repository{repo}, d.forgeManager)
+	if len(converted) == 0 {
+		return "", normalizeGitBranchRef(repo.DefaultBranch), []string{"docs"}
+	}
+
+	cfgRepo := converted[0]
+	docsPaths := cfgRepo.Paths
+	if len(docsPaths) == 0 {
+		docsPaths = []string{"docs"}
+	}
+
+	slog.Info("Webhook matched repository after direct probe",
+		logfields.JobID(evt.JobID),
+		slog.String("forge", evt.ForgeName),
+		slog.String("repo", evt.RepoFullName),
+		slog.String("repo_url", cfgRepo.URL))
+
+	return cfgRepo.URL, normalizeGitBranchRef(cfgRepo.Branch), docsPaths
+}
+
+func (d *Daemon) upsertWebhookDiscoveredRepo(repo *forge.Repository) {
+	if d == nil || d.discoveryCache == nil || repo == nil {
+		return
+	}
+
+	current, _ := d.discoveryCache.Get()
+	next := &forge.DiscoveryResult{
+		Timestamp: time.Now(),
+	}
+	if current != nil {
+		*next = *current
+		next.Repositories = append([]*forge.Repository(nil), current.Repositories...)
+		next.Filtered = append([]*forge.Repository(nil), current.Filtered...)
+	}
+
+	repoCopy := *repo
+	next.Repositories = upsertWebhookRepoEntry(next.Repositories, &repoCopy)
+	next.Filtered = removeWebhookRepoEntry(next.Filtered, repo)
+	d.discoveryCache.Update(next)
+}
+
+func upsertWebhookRepoEntry(repos []*forge.Repository, target *forge.Repository) []*forge.Repository {
+	for i := range repos {
+		if sameWebhookRepo(repos[i], target) {
+			repos[i] = target
+			return repos
+		}
+	}
+	return append(repos, target)
+}
+
+func removeWebhookRepoEntry(repos []*forge.Repository, target *forge.Repository) []*forge.Repository {
+	filtered := repos[:0]
+	for _, repo := range repos {
+		if sameWebhookRepo(repo, target) {
+			continue
+		}
+		filtered = append(filtered, repo)
+	}
+	return filtered
+}
+
+func sameWebhookRepo(left, right *forge.Repository) bool {
+	if left == nil || right == nil {
+		return false
+	}
+	if left.CloneURL != "" && right.CloneURL != "" && left.CloneURL == right.CloneURL {
+		return true
+	}
+	return left.FullName != "" && left.FullName == right.FullName
+}
+
+func splitWebhookRepoFullName(fullName string) (string, string, bool) {
+	fullName = strings.TrimSpace(fullName)
+	if fullName == "" {
+		return "", "", false
+	}
+	lastSlash := strings.LastIndex(fullName, "/")
+	if lastSlash <= 0 || lastSlash == len(fullName)-1 {
+		return "", "", false
+	}
+	return fullName[:lastSlash], fullName[lastSlash+1:], true
 }
 
 func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.WebhookReceived, evtBranch string, repos []config.Repository) bool {
