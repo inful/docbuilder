@@ -296,6 +296,11 @@ func (ds *DiscoveryService) discoverForge(ctx context.Context, client Client) ([
 // shouldIncludeRepository determines if a repository should be included based on filtering config.
 
 func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision {
+	filtering := ds.filtering
+	if filtering == nil {
+		filtering = &config.FilteringConfig{RequiredPaths: []string{"docs"}}
+	}
+
 	// Skip archived repositories
 	if repo.Archived {
 		return repoFilterDecision{include: false, reason: archivedToken}
@@ -307,14 +312,14 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 	}
 
 	// Check if repository has required paths (e.g., docs folder)
-	if !repo.HasDocs && len(ds.filtering.RequiredPaths) > 0 {
+	if !repo.HasDocs && len(filtering.RequiredPaths) > 0 {
 		return repoFilterDecision{include: false, reason: "missing_required_paths"}
 	}
 
 	// Check include patterns
-	if len(ds.filtering.IncludePatterns) > 0 {
+	if len(filtering.IncludePatterns) > 0 {
 		included := false
-		for _, pattern := range ds.filtering.IncludePatterns {
+		for _, pattern := range filtering.IncludePatterns {
 			if matchesPattern(repo.Name, pattern) || matchesPattern(repo.FullName, pattern) {
 				included = true
 				break
@@ -326,13 +331,20 @@ func (ds *DiscoveryService) filterDecision(repo *Repository) repoFilterDecision 
 	}
 
 	// Check exclude patterns
-	for _, pattern := range ds.filtering.ExcludePatterns {
+	for _, pattern := range filtering.ExcludePatterns {
 		if matchesPattern(repo.Name, pattern) || matchesPattern(repo.FullName, pattern) {
 			return repoFilterDecision{include: false, reason: "exclude_patterns_match", detail: pattern}
 		}
 	}
 
 	return repoFilterDecision{include: true, reason: "included"}
+}
+
+// ShouldIncludeRepository applies the same inclusion logic used during full
+// discovery so callers can consistently evaluate a single repository.
+func (ds *DiscoveryService) ShouldIncludeRepository(repo *Repository) (bool, string) {
+	decision := ds.filterDecision(repo)
+	return decision.include, decision.reason
 }
 
 // matchesPattern checks if a string matches a simple glob pattern
