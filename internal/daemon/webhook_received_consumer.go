@@ -202,20 +202,21 @@ func (d *Daemon) upsertWebhookDiscoveredRepo(repo *forge.Repository) {
 		return
 	}
 
-	current, _ := d.discoveryCache.Get()
-	next := &forge.DiscoveryResult{
-		Timestamp: time.Now(),
-	}
-	if current != nil {
-		*next = *current
-		next.Repositories = append([]*forge.Repository(nil), current.Repositories...)
-		next.Filtered = append([]*forge.Repository(nil), current.Filtered...)
-	}
+	d.discoveryCache.Merge(func(current *forge.DiscoveryResult) *forge.DiscoveryResult {
+		next := &forge.DiscoveryResult{
+			Timestamp: time.Now(),
+		}
+		if current != nil {
+			*next = *current
+			next.Repositories = append([]*forge.Repository(nil), current.Repositories...)
+			next.Filtered = append([]*forge.Repository(nil), current.Filtered...)
+		}
 
-	repoCopy := *repo
-	next.Repositories = upsertWebhookRepoEntry(next.Repositories, &repoCopy)
-	next.Filtered = removeWebhookRepoEntry(next.Filtered, repo)
-	d.discoveryCache.Update(next)
+		repoCopy := *repo
+		next.Repositories = upsertWebhookRepoEntry(next.Repositories, &repoCopy)
+		next.Filtered = removeWebhookRepoEntry(next.Filtered, repo)
+		return next
+	})
 }
 
 func upsertWebhookRepoEntry(repos []*forge.Repository, target *forge.Repository) []*forge.Repository {
