@@ -119,7 +119,11 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 	if strings.TrimSpace(evt.ForgeName) == "" || strings.TrimSpace(evt.RepoFullName) == "" {
 		return "", "", nil
 	}
-	if !hasDocsRelevantChange(evt.ChangedFiles, nil) {
+	relevantPaths := []string{"docs"}
+	if d.config != nil && d.config.Filtering != nil && len(d.config.Filtering.RequiredPaths) > 0 {
+		relevantPaths = d.config.Filtering.RequiredPaths
+	}
+	if !hasDocsRelevantChange(evt.ChangedFiles, relevantPaths) {
 		return "", "", nil
 	}
 
