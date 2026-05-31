@@ -28,6 +28,26 @@ func (c *Cache) Update(result *forge.DiscoveryResult) {
 	c.err = nil
 }
 
+// Merge performs an atomic read-modify-write of the cached result.
+// If mergeFn or its return value is nil, the cache is left unchanged.
+// Successful merges clear any previous cached error.
+func (c *Cache) Merge(mergeFn func(current *forge.DiscoveryResult) *forge.DiscoveryResult) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if mergeFn == nil {
+		return
+	}
+
+	next := mergeFn(c.result)
+	if next == nil {
+		return
+	}
+
+	c.result = next
+	c.err = nil
+}
+
 // SetError stores a discovery error, preserving the previous result (if any).
 func (c *Cache) SetError(err error) {
 	c.mu.Lock()
