@@ -77,7 +77,14 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 		}
 
 		// Convert to pipeline Document
-		doc := pipeline.NewDocumentFromDocFile(*file, isSingleRepo, g.config.Build.IsPreview, g.config.Build.VSCodeEditLinks, g.config.Build.EditURLBase)
+		doc := pipeline.NewDocumentFromDocFile(
+			*file,
+			isSingleRepo,
+			g.config.Build.IsPreview,
+			g.config.Build.VSCodeEditLinks,
+			g.config.Build.EditURLBase,
+			g.config.Hugo.BaseURL,
+		)
 		discovered = append(discovered, doc)
 	}
 

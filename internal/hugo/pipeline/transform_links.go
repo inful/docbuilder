@@ -166,11 +166,13 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 		// Normalize root-relative paths to lowercase (DocBuilder writes content paths lowercased)
 		if strings.HasPrefix(path, "/") {
 			newPath := lowerPathPreserveQueryAndFragment(path)
+			newPath = applySiteBasePath(newPath, doc.SiteBasePath, doc.IsSingleRepo, doc.Repository, doc.Forge)
 			return fmt.Sprintf("![%s](%s)", alt, newPath)
 		}
 
 		// Rewrite relative image path accounting for document's section and repo mode
 		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
+		newPath = applySiteBasePath(newPath, doc.SiteBasePath, doc.IsSingleRepo, doc.Repository, doc.Forge)
 		return fmt.Sprintf("![%s](%s)", alt, newPath)
 	})
 
@@ -196,11 +198,13 @@ func rewriteImageLinks(doc *Document) ([]*Document, error) {
 		// Normalize root-relative paths to lowercase
 		if strings.HasPrefix(path, "/") {
 			newPath := lowerPathPreserveQueryAndFragment(path)
+			newPath = applySiteBasePath(newPath, doc.SiteBasePath, doc.IsSingleRepo, doc.Repository, doc.Forge)
 			return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 		}
 
 		// Rewrite relative image path accounting for document's section and repo mode
 		newPath := rewriteImagePath(path, doc.Repository, doc.Forge, doc.Section, doc.IsSingleRepo)
+		newPath = applySiteBasePath(newPath, doc.SiteBasePath, doc.IsSingleRepo, doc.Repository, doc.Forge)
 		return fmt.Sprintf("<img %ssrc=\"%s\"%s>", beforeSrc, newPath, afterSrc)
 	})
 
@@ -437,4 +441,44 @@ func buildFullPath(forge, repository, section, path string) string {
 	parts = append(parts, strings.ToLower(path))
 
 	return strings.Join(parts, "/")
+}
+
+func applySiteBasePath(path, siteBasePath string, isSingleRepo bool, repository, forge string) string {
+	if siteBasePath == "" || !strings.HasPrefix(path, "/") {
+		return path
+	}
+
+	base := strings.TrimSpace(siteBasePath)
+	if base == "" || base == "/" {
+		return path
+	}
+
+	if !strings.HasPrefix(base, "/") {
+		base = "/" + base
+	}
+	base = strings.TrimRight(base, "/")
+
+	// In multi-repo builds, image/link paths are namespaced by repo (and optional forge).
+	// If the repo namespace equals the base path segment (e.g., /drift/... with base /drift),
+	// we still need to prefix base path to produce /drift/drift/... for correct published URLs.
+	if !isSingleRepo {
+		repo := strings.ToLower(strings.TrimSpace(repository))
+		fg := strings.ToLower(strings.TrimSpace(forge))
+		nsPrefix := "/"
+		if fg != "" {
+			nsPrefix += fg + "/"
+		}
+		if repo != "" {
+			nsPrefix += repo + "/"
+			if strings.HasPrefix(path, nsPrefix) {
+				return base + path
+			}
+		}
+	}
+
+	if path == base || strings.HasPrefix(path, base+"/") {
+		return path
+	}
+
+	return base + path
 }

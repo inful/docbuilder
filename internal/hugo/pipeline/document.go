@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"net/url"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ type Document struct {
 	Forge           string         // Optional forge namespace
 	Section         string         // Documentation section
 	IsSingleRepo    bool           // True if this is a single-repository build (skip repo namespace in links)
+	SiteBasePath    string         // Optional site base path from Hugo baseURL (e.g. /docs)
 	IsPreviewMode   bool           // True if running in preview/daemon mode
 	VSCodeEditLinks bool           // True if VS Code edit links are enabled (via --vscode flag)
 	EditURLBase     string         // Base URL override for edit links (from --edit-url-base flag)
@@ -56,7 +58,7 @@ type Document struct {
 }
 
 // NewDocumentFromDocFile creates a Document from a discovered DocFile.
-func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode bool, vscodeEditLinks bool, editURLBase string) *Document {
+func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode bool, vscodeEditLinks bool, editURLBase string, hugoBaseURL string) *Document {
 	// Determine if this is an index file
 	isIndex := isIndexFileName(file.Name)
 
@@ -76,6 +78,7 @@ func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode 
 		Forge:               file.Forge,
 		Section:             file.Section,
 		IsSingleRepo:        isSingleRepo,
+		SiteBasePath:        deriveSiteBasePath(hugoBaseURL),
 		IsPreviewMode:       isPreviewMode,
 		VSCodeEditLinks:     vscodeEditLinks,
 		EditURLBase:         editURLBase,
@@ -91,6 +94,37 @@ func NewDocumentFromDocFile(file docs.DocFile, isSingleRepo bool, isPreviewMode 
 		Name:                file.Name,
 		Raw:                 nil,
 	}
+}
+
+func deriveSiteBasePath(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" || baseURL == "/" {
+		return ""
+	}
+
+	if parsed, err := url.Parse(baseURL); err == nil {
+		return normalizeBasePath(parsed.Path)
+	}
+
+	return normalizeBasePath(baseURL)
+}
+
+func normalizeBasePath(path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" || path == "/" {
+		return ""
+	}
+
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	path = strings.TrimRight(path, "/")
+	if path == "" || path == "/" {
+		return ""
+	}
+
+	return path
 }
 
 // isIndexFileName checks if a file name represents an index file.

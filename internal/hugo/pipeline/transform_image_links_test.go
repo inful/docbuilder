@@ -257,3 +257,53 @@ Regular text with ![inline image](/docs/api/images/icon.png) continues here.
 
 	assert.Equal(t, expected, doc.Content)
 }
+
+func TestRewriteImageLinks_SiteBasePathPrefix(t *testing.T) {
+	doc := &Document{
+		Repository:   "drift",
+		Forge:        "",
+		Section:      "",
+		IsSingleRepo: true,
+		SiteBasePath: "/drift",
+		Content: `# Doc
+
+![pic](./img/pic.png)
+<img src="/img/logo.png" alt="Logo" />
+`,
+	}
+
+	_, err := rewriteImageLinks(doc)
+	require.NoError(t, err)
+
+	expected := `# Doc
+
+![pic](/drift/img/pic.png)
+<img src="/drift/img/logo.png" alt="Logo" />
+`
+
+	assert.Equal(t, expected, doc.Content)
+}
+
+func TestRewriteImageLinks_SiteBasePathPrefix_MultiRepoRepoMatchesBase(t *testing.T) {
+	doc := &Document{
+		Repository:   "drift",
+		Forge:        "",
+		Section:      "",
+		IsSingleRepo: false,
+		SiteBasePath: "/drift",
+		Content: `# Doc
+
+![pic](./img/pic.png)
+`,
+	}
+
+	_, err := rewriteImageLinks(doc)
+	require.NoError(t, err)
+
+	expected := `# Doc
+
+![pic](/drift/drift/img/pic.png)
+`
+
+	assert.Equal(t, expected, doc.Content)
+}
