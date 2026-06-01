@@ -31,7 +31,7 @@ These are the safest defaults for documentation authoring.
 
 ## What DocBuilder Does
 
-During content processing, DocBuilder rewrites image paths to match generated Hugo content paths and copies discovered image assets into the same content tree.
+During content processing, DocBuilder rewrites image paths to match generated Hugo content paths. It identifies image assets by performing a filesystem walk of the configured documentation directories and copying files with supported extensions into the content tree.
 
 In single-repository preview mode:
 
