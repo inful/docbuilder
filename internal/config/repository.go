@@ -4,6 +4,7 @@ package config
 type Repository struct {
 	URL         string            `yaml:"url"`
 	Name        string            `yaml:"name"`
+	DisplayName string            `yaml:"display_name,omitempty"` // Human-readable label used in category menus; falls back to Name.
 	Branch      string            `yaml:"branch,omitempty"`
 	Description string            `yaml:"description,omitempty"`
 	Auth        *AuthConfig       `yaml:"auth,omitempty"`
@@ -21,4 +22,14 @@ type Repository struct {
 
 	IsVersioned bool `yaml:"-"` // Internal flag indicating this repo was created from version expansion
 	IsTag       bool `yaml:"-"` // Internal flag indicating this is a tag reference (not a branch)
+}
+
+// Label returns the human-readable label for this repository: DisplayName
+// when set, otherwise Name. Callers in user-facing surfaces (sidebar menus,
+// section indexes) should prefer Label over Name.
+func (r *Repository) Label() string {
+	if r.DisplayName != "" {
+		return r.DisplayName
+	}
+	return r.Name
 }

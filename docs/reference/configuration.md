@@ -412,6 +412,60 @@ topics: ["backend-development"]
 
 DocBuilder's FrontMatter model supports `tags`, `categories`, and `keywords` fields by default. Custom taxonomies can be added through the `Custom` field or by extending the FrontMatter structure.
 
+### Categories Sidebar
+
+DocBuilder is a documentation aggregator: it pulls docs from many external repositories, each with its own conventions for file names, titles, and front-matter categories. When two repositories both ship an `intro.md` titled "Introduction" under `categories: [Documentation]`, the default Hugo taxonomy listing renders two indistinguishable links.
+
+The `hugo.sidebar.mode: categories` setting solves this by emitting one Relearn sidebar block per category, with each repository represented as an expandable header under which its documents are listed. The rendered sidebar tree is `Category > Project > Document`, so collisions in file names and titles are resolved structurally by the parent project entry rather than by uglified link text.
+
+**Example rendered sidebar:**
+
+```
+Documentation
+  Project A
+    Introduction
+    Setup
+  Project B
+    Configuration
+    Introduction
+```
+
+**Configuration:**
+
+```yaml
+hugo:
+  sidebar:
+    mode: categories            # "default" (the current behavior) or "categories"
+    keep_default_menu: true     # keep the full main page menu below the category menus
+    project_segment: repo      # today only "repo" is supported
+```
+
+| Field | Description |
+|-------|-------------|
+| `mode` | `"default"` keeps Relearn's default single page menu; `"categories"` wires one sidebar block per category. |
+| `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
+| `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
+
+**Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
+
+```yaml
+repositories:
+  - name: platform-services
+    display_name: Platform Services
+    url: https://github.com/org/platform-services.git
+```
+
+**Requirements:** Each document that should appear in a category sidebar must declare at least one `categories` entry in its front matter:
+
+```yaml
+---
+title: Introduction
+categories: [Documentation]
+---
+```
+
+**Opt-in for existing builds:** `mode: default` is the current default, so existing builds are unaffected. To migrate, set `mode: categories` under `hugo.sidebar`. The on-disk content tree does not change, so existing URLs and bookmarks remain valid.
+
 ## Output Section
 
 | Field | Type | Default | Description |
