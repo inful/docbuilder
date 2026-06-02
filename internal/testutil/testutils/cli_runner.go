@@ -188,13 +188,22 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 
 	// Check if binary already exists and is executable
 	if stat, err := os.Stat(absPath); err == nil && stat.Mode()&0o111 != 0 {
-		// Binary exists and is executable, use it
-		env.t.Logf("Using existing binary at %s", absPath)
-		env.runner.binaryPath = absPath
-		return env
+		// Binary exists on disk, but the file may be a stale or
+		// wrong-architecture build (e.g. built on a different OS).
+		// A quick no-op exec catches "exec format error" before we
+		// commit to using it. If the no-op fails for any reason we
+		// fall through to the rebuild path below.
+		// #nosec G204 -- absPath was resolved from a caller-supplied test fixture path and is treated as untrusted-by-design
+		if probeErr := exec.CommandContext(context.Background(), absPath, "--help").Run(); probeErr == nil {
+			env.t.Logf("Using existing binary at %s", absPath)
+			env.runner.binaryPath = absPath
+			return env
+		} else {
+			env.t.Logf("Existing binary at %s did not execute (%v); rebuilding", absPath, probeErr)
+		}
 	}
 
-	// Binary doesn't exist or isn't executable, try to build it
+	// Binary doesn't exist, isn't executable, or didn't run; rebuild it.
 	buildCmd := exec.CommandContext(context.Background(), "go", "build", "-o", absPath, "git.home.luguber.info/inful/docbuilder/cmd/docbuilder") //nolint:gosec // building test binary
 	buildCmd.Env = os.Environ()
 	if out, err := buildCmd.CombinedOutput(); err != nil {

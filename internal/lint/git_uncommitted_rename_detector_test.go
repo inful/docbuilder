@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -110,6 +112,15 @@ func initGitRepo(t *testing.T) string {
 	t.Helper()
 
 	repoDir := t.TempDir()
+	// Many of the tests that use initGitRepo rely on case-only renames
+	// (e.g. "test.md" -> "Test.md") or on having two files whose names
+	// differ only in case coexist in the same directory. Both rely on
+	// the host filesystem being case-sensitive. Probe up front and skip
+	// on case-insensitive filesystems (macOS HFS+/APFS, Windows NTFS)
+	// rather than failing with confusing errors deep in the test body.
+	if !foundation.IsCaseSensitiveFilesystem(repoDir) {
+		t.Skip("case-insensitive filesystem: git-rename test is not meaningful here")
+	}
 	git(t, repoDir, "init")
 	git(t, repoDir, "config", "user.email", "test@example.com")
 	git(t, repoDir, "config", "user.name", "Test")

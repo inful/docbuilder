@@ -31,10 +31,21 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 	newPath := filepath.Join(dir, suggestedName)
 	op.NewPath = newPath
 
-	// Check if target already exists
+	// Check if target already exists. We must also handle the case
+	// where oldPath and newPath differ only in case and the host
+	// filesystem is case-insensitive (e.g. macOS HFS+/APFS, Windows
+	// NTFS): in that situation os.Stat(newPath) reports the file as
+	// existing even though it is the same file as oldPath. Use
+	// os.SameFile on the two stat results to detect "this is the same
+	// file under a different name" and not refuse the rename in that
+	// case.
 	if _, err := os.Stat(newPath); err == nil && !f.force {
-		op.Error = fmt.Errorf("target file already exists: %s", newPath)
-		return op
+		newInfo, _ := os.Stat(newPath)
+		oldInfo, oldStatErr := os.Stat(oldPath)
+		if oldStatErr != nil || !os.SameFile(newInfo, oldInfo) {
+			op.Error = fmt.Errorf("target file already exists: %s", newPath)
+			return op
+		}
 	}
 
 	// Dry-run mode: just report what would happen
