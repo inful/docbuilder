@@ -16,11 +16,11 @@ func TestIsCaseSensitiveFilesystem_AgreesWithProbe(t *testing.T) {
 	if err := os.WriteFile(lower, []byte("a"), 0o600); err != nil {
 		t.Fatalf("write lower: %v", err)
 	}
-	defer os.Remove(lower)
+	defer func() { _ = os.Remove(lower) }()
 	if err := os.WriteFile(upper, []byte("b"), 0o600); err != nil {
 		t.Fatalf("write upper: %v", err)
 	}
-	defer os.Remove(upper)
+	defer func() { _ = os.Remove(upper) }()
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
