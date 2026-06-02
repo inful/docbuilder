@@ -269,32 +269,48 @@ func (df *DocFile) LoadContent() error {
 
 // GetHugoPath returns the Hugo-compatible path for this documentation file.
 func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
-	// Path shapes:
-	//   Single repository:           content/{section}/{name}.md
-	//   Multiple repos, single forge: content/{repository}/{section}/{name}.md
-	//   Multiple forges:             content/{forge}/{repository}/{section}/{name}.md
+	return HugoContentPath(df.Forge, df.Repository, df.Section, df.Name, df.Extension, isSingleRepo)
+}
+
+// HugoContentPath returns the Hugo content path for a file described by its
+// component parts. This is the single source of truth for the case-normalized
+// content-tree path used throughout the pipeline and the index generators.
+//
+// Path shapes:
+//
+//	Single repository:            content/{section}/{name}{ext}
+//	Multiple repos, single forge: content/{repository}/{section}/{name}{ext}
+//	Multiple forges:              content/{forge}/{repository}/{section}/{name}{ext}
+//
+// All non-empty components are lowercased. The filename is rewritten to
+// "_index" when the leaf name is "index" (so user-provided index.md becomes
+// Hugo's _index.md convention). The result is always rooted at "content/".
+//
+// All code that writes a file into the content/ tree MUST go through this
+// helper (or DocFile.GetHugoPath, which delegates to it) to guarantee that
+// the doc-copy stage and the index generators agree on the case of the
+// directory. Otherwise case-insensitive filesystems alias "Drift" and
+// "drift" to the same directory and Hugo produces doubled publish paths.
+func HugoContentPath(forge, repository, section, name, ext string, isSingleRepo bool) string {
 	parts := []string{"content"}
-	if df.Forge != "" {
-		parts = append(parts, strings.ToLower(df.Forge))
+	if forge != "" {
+		parts = append(parts, strings.ToLower(forge))
 	}
 
-	// Skip repository namespace for single-repository builds
-	if !isSingleRepo {
-		parts = append(parts, strings.ToLower(df.Repository))
+	if !isSingleRepo && repository != "" {
+		parts = append(parts, strings.ToLower(repository))
 	}
 
-	if df.Section != "" {
-		parts = append(parts, strings.ToLower(df.Section))
+	if section != "" {
+		parts = append(parts, strings.ToLower(section))
 	}
 
-	// Convert user-provided index.md to _index.md for Hugo section pages
-	filename := strings.ToLower(df.Name)
+	filename := strings.ToLower(name)
 	if filename == "index" {
 		filename = "_index"
 	}
 
-	// Lowercase the filename for URL compatibility
-	parts = append(parts, filename+df.Extension)
+	parts = append(parts, filename+ext)
 	return filepath.Join(parts...)
 }
 

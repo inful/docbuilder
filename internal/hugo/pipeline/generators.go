@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 // generateMainIndex creates the site root _index.md if it doesn't exist.
@@ -68,10 +70,10 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 
 	var generated []*Document
 
-	for repo, docs := range repoFiles {
+	for repo, repoDocs := range repoFiles {
 		// Check if repository index already exists
 		hasIndex := false
-		for _, doc := range docs {
+		for _, doc := range repoDocs {
 			if doc.IsIndex && doc.Section == "" {
 				hasIndex = true
 				break
@@ -84,14 +86,11 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			title := titleCase(repo)
 			description := fmt.Sprintf("Documentation for %s", repo)
 
-			// Build repository path (handle forge namespacing)
-			repoPath := repo
-			if repoMeta.Namespace != "" {
-				repoPath = filepath.Join(repoMeta.Namespace, repo)
-			}
-
+			// Build the content path via the single source of truth
+			// (docs.HugoContentPath) so this stage agrees with the
+			// doc-copy stage on the case of every path component.
 			doc := &Document{
-				Path:       filepath.Join("content", repoPath, indexFileSuffix+markdownExtension),
+				Path:       docs.HugoContentPath(repoMeta.Forge, repo, "", indexFileSuffix, markdownExtension, ctx.IsSingleRepo),
 				IsIndex:    true,
 				Generated:  true,
 				Repository: repo,
@@ -175,21 +174,14 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		}
 		description := fmt.Sprintf("Documentation for %s", sectionName)
 
-		// Build section path (handle forge namespacing and single-repo mode)
-		var sectionPath string
-		if ctx.IsSingleRepo {
-			// Single repository: skip repository namespace
-			sectionPath = sectionName
-		} else {
-			// Multiple repositories: include repository in path
-			sectionPath = filepath.Join(repo, sectionName)
-			if repoMeta.Namespace != "" {
-				sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
-			}
-		}
+		// Build section path via the single source of truth
+		// (docs.HugoContentPath) so this stage agrees with the doc-copy
+		// stage on the case of every path component. The helper handles
+		// the single-repo skip and forge namespacing internally.
+		sectionPath := docs.HugoContentPath(repoMeta.Forge, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
 
 		doc := &Document{
-			Path:       filepath.Join("content", sectionPath, "_index.md"),
+			Path:       sectionPath,
 			IsIndex:    true,
 			Generated:  true,
 			Repository: repo,
