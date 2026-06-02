@@ -83,6 +83,10 @@ func (b *BuildDefaultApplier) ApplyDefaults(cfg *Config) error {
 		cfg.Build.MaxRetries = 2
 	}
 
+	if cfg.Build.MaxAssetSize == 0 {
+		cfg.Build.MaxAssetSize = 50 * 1024 * 1024 // Default 50MB
+	}
+
 	if cfg.Build.RetryBackoff == "" {
 		cfg.Build.RetryBackoff = RetryBackoffLinear
 	} else {

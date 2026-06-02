@@ -27,6 +27,7 @@ type DocFile struct {
 	RelativePath     string            // Path relative to the docs directory
 	DocsBase         string            // The configured docs base path for this repo (e.g., "docs" or ".")
 	Repository       string            // Repository name
+	Group            string            // GitLab/GitHub group for collision resolution
 	Forge            string            // Optional forge namespace (empty when single or not namespaced)
 	Section          string            // Documentation section/directory
 	Name             string            // File name without extension
@@ -117,7 +118,12 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 
 		forgeNS := ""
 		if namespaceForges {
-			forgeNS = repo.Tags["forge_type"]
+			// Use Namespace as alias for forge_type (preferred)
+			if repo.Namespace != "" {
+				forgeNS = repo.Namespace
+			} else if ft, ok := repo.Tags["forge_type"]; ok && ft != "" {
+				forgeNS = ft
+			}
 		}
 		missingDocsPaths := 0
 		for _, docsPath := range repo.Paths {
@@ -132,7 +138,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 				continue
 			}
 
-			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, docsPath, repo.Tags)
+			files, err := d.walkDocsDirectory(fullDocsPath, repoName, forgeNS, repo.Group, docsPath, repo.Tags)
 			if err != nil {
 				return nil, errors.WrapError(err, errors.CategoryDocs, "documentation directory walk failed").
 					WithContext("path", docsPath).
@@ -170,7 +176,7 @@ func (d *Discovery) DiscoverDocs(repoPaths map[string]string) ([]DocFile, error)
 }
 
 // walkDocsDirectory recursively walks a documentation directory.
-func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath string, metadata map[string]string) ([]DocFile, error) {
+func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, group, relativePath string, metadata map[string]string) ([]DocFile, error) {
 	var files []DocFile
 
 	err := filepath.Walk(docsPath, func(path string, info os.FileInfo, err error) error {
@@ -223,6 +229,7 @@ func (d *Discovery) walkDocsDirectory(docsPath, repoName, forgeNS, relativePath 
 			RelativePath: relPath,
 			DocsBase:     relativePath,
 			Repository:   repoName,
+			Group:        group,
 			Forge:        forgeNS,
 			Section:      section,
 			Name:         strings.TrimSuffix(info.Name(), filepath.Ext(info.Name())),
@@ -270,12 +277,19 @@ func (df *DocFile) LoadContent() error {
 // GetHugoPath returns the Hugo-compatible path for this documentation file.
 func (df *DocFile) GetHugoPath(isSingleRepo bool) string {
 	// Path shapes:
-	//   Single repository:           content/{section}/{name}.md
-	//   Multiple repos, single forge: content/{repository}/{section}/{name}.md
-	//   Multiple forges:             content/{forge}/{repository}/{section}/{name}.md
+	//   Single repository:             content/{section}/{name}.md
+	//   With Group:                    content/{group}/{repository}/{section}/{name}.md
+	//   With Forge:                    content/{forge}/{group}/{repository}/{section}/{name}.md
+	//   Multiple repos, single forge:  content/{repository}/{section}/{name}.md
+	//   Multiple forges:               content/{forge}/{repository}/{section}/{name}.md
 	parts := []string{"content"}
 	if df.Forge != "" {
 		parts = append(parts, strings.ToLower(df.Forge))
+	}
+
+	// Include Group if present for collision resolution
+	if df.Group != "" {
+		parts = append(parts, strings.ToLower(df.Group))
 	}
 
 	// Skip repository namespace for single-repository builds
