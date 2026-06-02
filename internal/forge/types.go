@@ -3,6 +3,7 @@ package forge
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -163,12 +164,22 @@ func (r *Repository) ToConfigRepository(auth *config.AuthConfig) config.Reposito
 		url = r.SSHURL
 	}
 
+	// Extract group/organization from FullName (format: "org/repo")
+	group := ""
+	if r.FullName != "" {
+		parts := strings.Split(r.FullName, "/")
+		if len(parts) >= 2 {
+			group = parts[0]
+		}
+	}
+
 	return config.Repository{
 		URL:    url,
 		Name:   r.Name,
 		Branch: r.DefaultBranch,
 		Auth:   auth,
 		Paths:  []string{"docs"}, // Default paths
+		Group:  group,            // Extracted from FullName (org/repo format)
 		Tags: map[string]string{
 			"forge_id":     r.ID,
 			"full_name":    r.FullName,

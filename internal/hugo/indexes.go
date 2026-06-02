@@ -157,7 +157,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		// (e.g. "Drift/" next to "drift/") on case-insensitive
 		// filesystems, which doubles Hugo's publish path for page
 		// resources.
-		relPath := docs.HugoContentPath("", repoName, "", "index", ".md", false)
+		relPath := docs.HugoContentPath("", "", repoName, "", "index", ".md", false)
 		indexPath := filepath.Join(g.BuildRoot(), relPath)
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
@@ -358,7 +358,7 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 		// compute where the original README.md was written, so this
 		// removal path agrees with the doc-copy stage on the case of
 		// every path component.
-		relPath := docs.HugoContentPath(readmeFile.Forge, readmeFile.Repository, readmeFile.Section, readmeFile.Name, readmeFile.Extension, false)
+		relPath := docs.HugoContentPath(readmeFile.Forge, readmeFile.Group, readmeFile.Repository, readmeFile.Section, readmeFile.Name, readmeFile.Extension, false)
 		transformedPath := filepath.Join(g.BuildRoot(), relPath)
 		if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
 			slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
@@ -451,7 +451,7 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 	// stage on the case of every path component. Using the raw repoName
 	// here would create a case-different sibling directory (e.g.
 	// "Drift/" next to "drift/") on case-insensitive filesystems.
-	relPath := docs.HugoContentPath("", repoName, sectionName, "index", ".md", false)
+	relPath := docs.HugoContentPath("", "", repoName, sectionName, "index", ".md", false)
 	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
@@ -567,7 +567,7 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 	// stage on the case of every path component. Using the raw repoName
 	// here would create a case-different sibling directory (e.g.
 	// "Drift/" next to "drift/") on case-insensitive filesystems.
-	relPath := docs.HugoContentPath("", repoName, sectionName, "index", ".md", false)
+	relPath := docs.HugoContentPath("", "", repoName, sectionName, "index", ".md", false)
 	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)

@@ -25,9 +25,11 @@ type BuildConfig struct {
 	DetectDeletions    bool             `yaml:"detect_deletions,omitempty"` // enable unchanged repo deletion scan during partial recomposition
 	LiveReload         bool             `yaml:"live_reload,omitempty"`      // enable SSE livereload endpoint & script (development only)
 	IsPreview          bool             `yaml:"-"`                          // true when running in preview/daemon mode
-	VSCodeEditLinks    bool             `yaml:"-"`                          // enable VS Code edit links with /_edit/ handler (set via --vscode flag)
+	VSCodeEditLinks    bool             `yaml:"-"`                          // enable VS Code edit links (set via --vscode flag)
 	EditURLBase        string           `yaml:"-"`                          // base URL for edit links (CLI override, not persisted)
+	MaxAssetSize       int64            `yaml:"max_asset_size,omitempty"`   // maximum allowable size for a single asset file (bytes)
 	// detectDeletionsSpecified is set internally during load when the YAML explicitly sets detect_deletions.
+
 	// This lets defaults apply (true) only when user omitted the field entirely.
 	detectDeletionsSpecified bool `yaml:"-"`
 	// shallowDepthSpecified is set internally during load when the YAML explicitly sets shallow_depth.
