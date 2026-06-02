@@ -150,12 +150,15 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 	}
 	for repoName, files := range repoGroups {
-		// Lowercase the repository name to match the doc-copy stage
-		// (which uses file.GetHugoPath, lowercasing Repository). Using
-		// the raw name here creates a case-different sibling directory
-		// (e.g. "Drift/" and "drift/") on case-insensitive filesystems,
-		// which doubles Hugo's publish path for page resources.
-		indexPath := filepath.Join(g.BuildRoot(), "content", strings.ToLower(repoName), "_index.md")
+		// Build the index path via the single source of truth
+		// (docs.HugoContentPath) so this stage agrees with the doc-copy
+		// stage on the case of every path component. Using the raw
+		// repoName here would create a case-different sibling directory
+		// (e.g. "Drift/" next to "drift/") on case-insensitive
+		// filesystems, which doubles Hugo's publish path for page
+		// resources.
+		relPath := docs.HugoContentPath("", repoName, "", "index", ".md", false)
+		indexPath := filepath.Join(g.BuildRoot(), relPath)
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 		}
@@ -351,7 +354,12 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	// Note: Repository is always in the path for README files, even in single-repo mode,
 	// because they're used for repository-level indexes (content/{repo}/_index.md).
 	if readmeFile.Repository != "" && readmeFile.Name != "" && readmeFile.Extension != "" {
-		transformedPath := filepath.Join(g.BuildRoot(), "content", strings.ToLower(readmeFile.Repository), strings.ToLower(readmeFile.Name+readmeFile.Extension))
+		// Use the single source of truth (docs.HugoContentPath) to
+		// compute where the original README.md was written, so this
+		// removal path agrees with the doc-copy stage on the case of
+		// every path component.
+		relPath := docs.HugoContentPath(readmeFile.Forge, readmeFile.Repository, readmeFile.Section, readmeFile.Name, readmeFile.Extension, false)
+		transformedPath := filepath.Join(g.BuildRoot(), relPath)
 		if err := os.Remove(transformedPath); err != nil && !os.IsNotExist(err) {
 			slog.Warn("Failed to remove original readme.md after promoting to _index.md", "path", transformedPath, "error", err)
 		}
@@ -438,7 +446,13 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 		return nil
 	}
 
-	indexPath := filepath.Join(g.BuildRoot(), "content", strings.ToLower(repoName), sectionName, "_index.md")
+	// Build the section index path via the single source of truth
+	// (docs.HugoContentPath) so this stage agrees with the doc-copy
+	// stage on the case of every path component. Using the raw repoName
+	// here would create a case-different sibling directory (e.g.
+	// "Drift/" next to "drift/") on case-insensitive filesystems.
+	relPath := docs.HugoContentPath("", repoName, sectionName, "index", ".md", false)
+	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 	}
@@ -548,7 +562,13 @@ func buildIndexContent(frontMatter map[string]any, body string) (string, error) 
 
 // generateIntermediateSectionIndex creates an index for sections without direct files.
 func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName string) error {
-	indexPath := filepath.Join(g.BuildRoot(), "content", strings.ToLower(repoName), sectionName, "_index.md")
+	// Build the section index path via the single source of truth
+	// (docs.HugoContentPath) so this stage agrees with the doc-copy
+	// stage on the case of every path component. Using the raw repoName
+	// here would create a case-different sibling directory (e.g.
+	// "Drift/" next to "drift/") on case-insensitive filesystems.
+	relPath := docs.HugoContentPath("", repoName, sectionName, "index", ".md", false)
+	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
 	}
