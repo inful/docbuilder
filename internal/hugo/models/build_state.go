@@ -25,6 +25,9 @@ type Generator interface {
 	Observer() BuildObserver
 	ExistingSiteValidForSkip() bool
 	Renderer() Renderer
+	ComputeCategoriesMenu(bs *BuildState) (*CategoriesMenu, error)
+	AttachCategoriesMenu(*CategoriesMenu)
+	ApplyCategoriesMenuToConfig(root *RootConfig)
 }
 
 // GitState manages git repository operations and state tracking.

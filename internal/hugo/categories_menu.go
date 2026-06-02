@@ -1,0 +1,299 @@
+package hugo
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+)
+
+// categoryDoc is the minimal projection of a DocFile that the
+// categories menu builder needs. Decoupling from docs.DocFile keeps
+// the builder a pure function and easy to test.
+type categoryDoc struct {
+	Repository string
+	Title      string
+	Path       string // Hugo path used for the menu entry's pageRef
+	Weight     int
+	Categories []string
+}
+
+// buildCategoriesMenu is the pure builder used by the categories-menu
+// stage. It walks the doc set, groups docs by category, and for each
+// category emits:
+//
+//   - A Hugo menu (one per category) with one parent entry per
+//     project and one child entry per doc. Parents are non-clickable
+//     headers (no URL, no pageRef) so the Relearn sidebar renders
+//     them as expandable section headers under which the docs of
+//     that project are listed.
+//   - A sidebar entry (one per category) of type "menu" pointing at
+//     the Hugo menu identifier.
+//
+// The projectSegment argument is reserved for future segmentations
+// (forge, group). Today only "repo" is supported and any other value
+// returns an error so misconfiguration fails fast and loudly.
+func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, projectSegment string) (*models.CategoriesMenu, error) {
+	if projectSegment != "repo" {
+		return nil, fmt.Errorf("unsupported sidebar project_segment %q (only \"repo\" is supported)", projectSegment)
+	}
+	cm := &models.CategoriesMenu{
+		Menus:          map[string][]models.MenuEntry{},
+		SidebarEntries: []models.SidebarEntry{},
+		Built:          true,
+	}
+	if len(items) == 0 {
+		return cm, nil
+	}
+
+	// Index repositories by name once so the label lookup is O(1).
+	repoByName := make(map[string]config.Repository, len(repos))
+	for i := range repos {
+		repoByName[repos[i].Name] = repos[i]
+	}
+
+	// category -> project -> []doc
+	type projectDocs = []categoryDoc
+	type categoryGroup = map[string]projectDocs
+	grouped := make(map[string]categoryGroup)
+	for _, d := range items {
+		for _, cat := range d.Categories {
+			cat = strings.TrimSpace(cat)
+			if cat == "" {
+				continue
+			}
+			if grouped[cat] == nil {
+				grouped[cat] = make(categoryGroup)
+			}
+			grouped[cat][d.Repository] = append(grouped[cat][d.Repository], d)
+		}
+	}
+
+	// Sidebar entries are emitted in sorted category order so the YAML
+	// is deterministic for golden tests.
+	categoryNames := make([]string, 0, len(grouped))
+	for k := range grouped {
+		categoryNames = append(categoryNames, k)
+	}
+	sort.Strings(categoryNames)
+
+	for _, cat := range categoryNames {
+		catEntries := grouped[cat]
+
+		// Sort project names for stable ordering.
+		projectNames := make([]string, 0, len(catEntries))
+		for p := range catEntries {
+			projectNames = append(projectNames, p)
+		}
+		sort.Strings(projectNames)
+
+		// First pass: emit parent entries.
+		for _, projectName := range projectNames {
+			repo, ok := repoByName[projectName]
+			label := projectName
+			if ok {
+				label = repo.Label()
+			}
+			parentID := categoryParentIdentifier(cat, projectName)
+			cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+				Identifier: parentID,
+				Name:       label,
+			})
+		}
+
+		// Second pass: emit child entries grouped under parents. We
+		// sort each project's docs by weight, then by title, so the
+		// sidebar order is stable and predictable.
+		for _, projectName := range projectNames {
+			projectDocs := catEntries[projectName]
+			sort.SliceStable(projectDocs, func(i, j int) bool {
+				if projectDocs[i].Weight != projectDocs[j].Weight {
+					return projectDocs[i].Weight < projectDocs[j].Weight
+				}
+				return projectDocs[i].Title < projectDocs[j].Title
+			})
+			parentID := categoryParentIdentifier(cat, projectName)
+			for _, d := range projectDocs {
+				cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+					Name:    d.Title,
+					PageRef: d.Path,
+					Parent:  parentID,
+					Weight:  d.Weight,
+				})
+			}
+		}
+
+		cm.SidebarEntries = append(cm.SidebarEntries, models.SidebarEntry{
+			Identifier:   categorySidebarIdentifier(cat),
+			Type:         "menu",
+			DisableTitle: false,
+		})
+	}
+
+	return cm, nil
+}
+
+// categoryParentIdentifier builds a stable, collision-resistant
+// identifier for a category/project parent entry. Identifiers must
+// start with a letter and contain only letters, digits, and
+// underscores per Hugo's menu rules.
+func categoryParentIdentifier(category, project string) string {
+	return "cat_" + slugForIdentifier(category) + "_" + slugForIdentifier(project)
+}
+
+// categorySidebarIdentifier builds a stable identifier for a
+// per-category sidebar entry. It is prefixed with "cat-" so the
+// reserved-name check in lint rules does not false-positive against
+// built-in Relearn sidebar identifiers ("main", "shortcuts", etc.).
+func categorySidebarIdentifier(category string) string {
+	return "cat-" + slugForIdentifier(category)
+}
+
+// slugForIdentifier replaces any non-alphanumeric character in s with
+// an underscore. The result is suitable for a Hugo menu identifier.
+func slugForIdentifier(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z',
+			r >= 'A' && r <= 'Z',
+			r >= '0' && r <= '9':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	out := b.String()
+	if out == "" {
+		return "x"
+	}
+	// Hugo requires identifiers to start with a letter.
+	first := out[0]
+	if (first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') {
+		return out
+	}
+	return "x_" + out
+}
+
+// readCategoriesMenuDocs projects each doc into the categoryDoc shape
+// consumed by buildCategoriesMenu. It reads front matter from the
+// in-memory DocFile.Content (loaded during discovery), not from disk,
+// so the stage can run before the copy-content stage.
+//
+// Title resolution prefers the front matter `title` field. When the
+// front matter does not declare one, the doc filename (without
+// extension) is used. This is consistent with how the rest of the
+// pipeline handles docs without a title.
+func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]categoryDoc, error) {
+	out := make([]categoryDoc, 0, len(files))
+	for i := range files {
+		f := &files[i]
+		if f.IsAsset {
+			continue
+		}
+		if len(f.Content) == 0 {
+			// Discovery loads content on demand; if it was not
+			// loaded, there is no front matter to read.
+			continue
+		}
+		fm, _, had, _, err := frontmatterops.Read(f.Content)
+		if err != nil {
+			return nil, fmt.Errorf("categories menu: parse front matter for %s: %w", f.Path, err)
+		}
+		if !had {
+			continue
+		}
+		cats := extractStringSlice(fm, "categories")
+		if len(cats) == 0 {
+			continue
+		}
+		title := extractString(fm, "title")
+		if title == "" {
+			title = f.Name
+		}
+		weight := extractInt(fm, "weight")
+		hugoPath := f.GetHugoPath(isSingleRepo)
+		// Hugo's pageRef is the URL of the page (relative to baseURL),
+		// which is the content path with the "content/" prefix and
+		// the ".md" suffix stripped, and a trailing slash appended.
+		hugoPath = strings.TrimPrefix(hugoPath, "content/")
+		pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+		out = append(out, categoryDoc{
+			Repository: f.Repository,
+			Title:      title,
+			Path:       pageRef,
+			Weight:     weight,
+			Categories: cats,
+		})
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Repository != out[j].Repository {
+			return out[i].Repository < out[j].Repository
+		}
+		if out[i].Title != out[j].Title {
+			return out[i].Title < out[j].Title
+		}
+		return out[i].Path < out[j].Path
+	})
+	return out, nil
+}
+
+func extractString(fm map[string]any, key string) string {
+	if v, ok := fm[key]; ok {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+func extractInt(fm map[string]any, key string) int {
+	v, ok := fm[key]
+	if !ok {
+		return 0
+	}
+	switch n := v.(type) {
+	case int:
+		return n
+	case int64:
+		return int(n)
+	case float64:
+		return int(n)
+	}
+	return 0
+}
+
+func extractStringSlice(fm map[string]any, key string) []string {
+	v, ok := fm[key]
+	if !ok {
+		return nil
+	}
+	switch xs := v.(type) {
+	case []string:
+		out := make([]string, 0, len(xs))
+		for _, s := range xs {
+			s = strings.TrimSpace(s)
+			if s != "" {
+				out = append(out, s)
+			}
+		}
+		return out
+	case []any:
+		out := make([]string, 0, len(xs))
+		for _, e := range xs {
+			if s, ok := e.(string); ok {
+				s = strings.TrimSpace(s)
+				if s != "" {
+					out = append(out, s)
+				}
+			}
+		}
+		return out
+	}
+	return nil
+}

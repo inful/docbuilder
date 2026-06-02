@@ -44,6 +44,10 @@ type Generator struct {
 	stateManager state.RepositoryMetadataWriter
 	// keepStaging preserves staging directory on failure for debugging (set via WithKeepStaging)
 	keepStaging bool
+	// categoriesMenu holds the result of the categories-menu stage, if
+	// the sidebar mode is "categories". The config writer picks it up
+	// when emitting hugo.yaml. nil means "no categories menu".
+	categoriesMenu *models.CategoriesMenu
 }
 
 // NewGenerator creates a new Hugo site generator.
@@ -281,6 +285,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 
 	pipeline := models.NewPipeline().
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
+		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
 		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).
@@ -433,6 +438,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
 		Add(models.StageCloneRepos, stages.StageCloneRepos).
 		Add(models.StageDiscoverDocs, stages.StageDiscoverDocs).
+		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
 		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).

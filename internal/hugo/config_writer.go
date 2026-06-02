@@ -114,6 +114,14 @@ func (g *Generator) GenerateHugoConfig() error {
 		root.Menu = converted
 	}
 
+	// Phase 7.5: Categories-menu wiring (only when the sidebar mode
+	// is "categories"). This must run after Phase 7 so it can merge
+	// the user-supplied menu on top, and before yaml.Marshal so the
+	// final hugo.yaml includes the categories menus and sidebarmenus
+	// blocks. The build is a no-op when the mode is "default" or
+	// unset.
+	g.ApplyCategoriesMenuToConfig(root)
+
 	data, err := yaml.Marshal(root)
 	if err != nil {
 		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
