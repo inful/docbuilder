@@ -255,7 +255,9 @@ func TestNamespaceAlias(t *testing.T) {
 func TestGroupCollisionResolution(t *testing.T) {
 	tempDir := t.TempDir()
 
-	// Create two repos with same name but different groups
+	// Create two repos with the same lowercased name but different groups
+	// so the group is the only thing that can disambiguate them in the
+	// content tree.
 	createRepo := func(name, group, dirName string) (config.Repository, string) {
 		repoDir := filepath.Join(tempDir, dirName)
 		docsDir := filepath.Join(repoDir, "docs")
@@ -270,9 +272,10 @@ func TestGroupCollisionResolution(t *testing.T) {
 		}, repoDir
 	}
 
-	// Two repos with same logical name but different groups - names must be unique
-	r1, p1 := createRepo("group-a/common-name", "group-a", "repo-a")
-	r2, p2 := createRepo("group-b/common-name", "group-b", "repo-b")
+	// Two repos whose names collide after lowercasing. The group is
+	// the only way to give each repo a distinct content path.
+	r1, p1 := createRepo("common-name", "group-a", "repo-a")
+	r2, p2 := createRepo("Common-Name", "group-b", "repo-b")
 
 	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
 	repos := []config.Repository{r1, r2}
@@ -282,22 +285,101 @@ func TestGroupCollisionResolution(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, files, 2)
 
-	// Each file should have unique path including group
+	// Each file should have a unique path that includes its group
+	// (because the names collide and only the group disambiguates).
 	paths := make(map[string]int)
 	for _, f := range files {
 		path := f.GetHugoPath(false)
 		paths[path]++
-
-		// Verify group is in path
-		assert.Contains(t, path, strings.ToLower(f.Group))
+		assert.Contains(t, path, strings.ToLower(f.Group),
+			"path %q must include group %q for collision resolution", path, f.Group)
 		assert.Contains(t, path, "github")
-		assert.Contains(t, path, "common-name")
 	}
 
 	// Verify no collisions
 	for path, count := range paths {
 		assert.Equal(t, 1, count, "Path %s should be unique", path)
 	}
+}
+
+// TestGroupOmittedWhenNotColliding asserts that the group segment is
+// NOT added to the content path when there is no repository name
+// collision. This is the common case (a single GitLab group with a
+// few repos): the group must not turn into a spurious top-level
+// sidebar entry in the rendered Hugo site.
+func TestGroupOmittedWhenNotColliding(t *testing.T) {
+	tempDir := t.TempDir()
+
+	mkRepo := func(name, group, dirName string) (config.Repository, string) {
+		repoDir := filepath.Join(tempDir, dirName)
+		docsDir := filepath.Join(repoDir, "docs")
+		require.NoError(t, os.MkdirAll(docsDir, 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600))
+
+		return config.Repository{
+			Name:  name,
+			Group: group,
+			Paths: []string{"docs"},
+			Tags:  map[string]string{"forge_type": "gitlab"},
+		}, repoDir
+	}
+
+	// Two repos with distinct names under the same group. No collision
+	// means the group must not appear in the content path.
+	r1, p1 := mkRepo("repo-one", "mygroup", "repo-one")
+	r2, p2 := mkRepo("repo-two", "mygroup", "repo-two")
+
+	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
+	repos := []config.Repository{r1, r2}
+
+	d := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingAuto})
+	files, err := d.DiscoverDocs(repoPaths)
+	require.NoError(t, err)
+	require.Len(t, files, 2)
+
+	for _, f := range files {
+		path := f.GetHugoPath(false)
+		assert.Equal(t, "", f.Group,
+			"DocFile.Group must be cleared when no collision; got %q", f.Group)
+		assert.NotContains(t, path, "/mygroup/",
+			"path %q must not contain the group segment when there is no collision", path)
+	}
+}
+
+// TestCollidingReposWithoutGroupFails asserts that discovery returns a
+// fatal error when two repositories collide and at least one is
+// missing the `group` field needed for disambiguation. Without the
+// group, the two repos would produce identical Hugo content paths.
+func TestCollidingReposWithoutGroupFails(t *testing.T) {
+	tempDir := t.TempDir()
+
+	mkRepo := func(name, group, dirName string) (config.Repository, string) {
+		repoDir := filepath.Join(tempDir, dirName)
+		docsDir := filepath.Join(repoDir, "docs")
+		require.NoError(t, os.MkdirAll(docsDir, 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600))
+
+		return config.Repository{
+			Name:  name,
+			Group: group,
+			Paths: []string{"docs"},
+			Tags:  map[string]string{"forge_type": "github"},
+		}, repoDir
+	}
+
+	// Two repos whose lowercased names collide, but the second is
+	// missing the group field. This must fail with an actionable error.
+	r1, p1 := mkRepo("common-name", "group-a", "repo-a")
+	r2, p2 := mkRepo("Common-Name", "", "repo-b")
+
+	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
+	repos := []config.Repository{r1, r2}
+
+	d := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingAlways})
+	_, err := d.DiscoverDocs(repoPaths)
+	require.Error(t, err, "expected error when colliding repos lack a group")
+	assert.Contains(t, err.Error(), "group",
+		"error should mention the missing 'group' field; got: %v", err)
 }
 
 func TestForgeNamespacingAutoSingleForge(t *testing.T) {
