@@ -5,7 +5,7 @@ categories:
   - how-to
 date: 2025-12-15T00:00:00Z
 fingerprint: 3adea9e83bbb8a570efaf476d302c27dd653b4237ed14be0b3a1119a47d48b66
-lastmod: "2026-01-22"
+lastmod: "2026-06-02"
 tags:
   - forge
   - namespacing
@@ -26,6 +26,50 @@ Configured via `build.namespace_forges`:
 - `always`: Always prefix with the forge type when known.
 - `never`: Never add the prefix (legacy layout).
 
+## Explicit Namespace Alias
+
+By default, DocBuilder detects the forge type from repository metadata. You can override this by setting the `namespace` field in the repository configuration:
+
+```yaml
+repositories:
+  - name: my-docs
+    url: https://github.com/example/docs
+    namespace: github  # Explicit forge namespace
+```
+
+The `namespace` field takes precedence over automatic detection. This is useful when:
+- Automatic detection fails (e.g., self-hosted GitLab without explicit forge metadata)
+- You want to use a custom namespace for grouping
+
+## Group Collision Resolution
+
+When multiple repositories share the same name across different GitLab/GitHub groups, use the `group` field to disambiguate:
+
+```yaml
+repositories:
+  - name: docs
+    url: https://github.com/acme/docs
+    namespace: github
+    group: engineering
+  - name: docs
+    url: https://github.com/initech/docs
+    namespace: github
+    group: product
+```
+
+This creates paths like:
+
+```
+content/
+  github/
+    engineering/
+      docs/...
+    product/
+      docs/...
+```
+
+**Note**: Repository names must still be unique when combined with their namespace and group. If you have two repos with the same name in the same group, you should differentiate them (e.g., `group-a/common-name` vs `group-b/common-name`).
+
 ## Example Layouts
 
 Multiple forges (auto or always):
@@ -36,6 +80,17 @@ content/
     service-a/...
   gitlab/
     service-b/...
+```
+
+With groups:
+
+```
+content/
+  github/
+    engineering/
+      service-a/...
+    product/
+      service-a/...
 ```
 
 Single forge (auto or never):

@@ -38,6 +38,8 @@ output: {}          # Output directory behavior
 | name | string | yes | Unique repository name (used in content paths). |
 | branch | string | no | Branch to checkout (default per remote). |
 | paths | []string | no | Documentation root paths (default: ["docs"]). |
+| namespace | string | no | Explicit forge namespace alias (e.g., "github", "gitlab"). Overrides forge_type detection. |
+| group | string | no | GitLab/GitHub group for collision resolution (e.g., "engineering"). Creates paths like `content/<forge>/<group>/<repo>/...`. |
 | auth.type | enum | no | Authentication mode: `token`, `ssh`, or `basic`. |
 | auth.token | string | conditional | Required when `type=token`. |
 | auth.username | string | conditional | Required when `type=basic`. |
@@ -62,6 +64,7 @@ output: {}          # Output directory behavior
 | retry_max_delay | duration | 30s | Maximum backoff delay cap. |
 | workspace_dir | string | derived | Explicit workspace override path. |
 | namespace_forges | enum | auto | Forge prefixing: `auto`, `always`, or `never`. |
+| max_asset_size | int64 | 52428800 | Maximum size in bytes for individual asset files (default 50MB). Files exceeding this are skipped. |
 | skip_if_unchanged | bool | daemon:true, CLI:false | Skip builds when nothing changed (daemon only). |
 
 ## Monitoring
