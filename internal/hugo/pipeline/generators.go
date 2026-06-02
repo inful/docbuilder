@@ -84,10 +84,16 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 			title := titleCase(repo)
 			description := fmt.Sprintf("Documentation for %s", repo)
 
-			// Build repository path (handle forge namespacing)
-			repoPath := repo
+			// Build repository path (handle forge namespacing). The
+			// repository name is lowercased to match the doc-copy stage
+			// (which uses file.GetHugoPath, lowercasing Repository). Using
+			// the raw name here would create a case-different sibling
+			// directory (e.g. "Drift/" next to "drift/") on case-
+			// insensitive filesystems, which doubles Hugo's publish path
+			// for page resources.
+			repoPath := strings.ToLower(repo)
 			if repoMeta.Namespace != "" {
-				repoPath = filepath.Join(repoMeta.Namespace, repo)
+				repoPath = filepath.Join(strings.ToLower(repoMeta.Namespace), repoPath)
 			}
 
 			doc := &Document{
@@ -175,16 +181,20 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		}
 		description := fmt.Sprintf("Documentation for %s", sectionName)
 
-		// Build section path (handle forge namespacing and single-repo mode)
+		// Build section path (handle forge namespacing and single-repo mode).
+		// The repository name is lowercased to match the doc-copy stage
+		// (which uses file.GetHugoPath, lowercasing Repository). Using the
+		// raw name here would create a case-different sibling directory
+		// (e.g. "Drift/" next to "drift/") on case-insensitive filesystems.
 		var sectionPath string
 		if ctx.IsSingleRepo {
 			// Single repository: skip repository namespace
 			sectionPath = sectionName
 		} else {
 			// Multiple repositories: include repository in path
-			sectionPath = filepath.Join(repo, sectionName)
+			sectionPath = filepath.Join(strings.ToLower(repo), sectionName)
 			if repoMeta.Namespace != "" {
-				sectionPath = filepath.Join(repoMeta.Namespace, repo, sectionName)
+				sectionPath = filepath.Join(strings.ToLower(repoMeta.Namespace), strings.ToLower(repo), sectionName)
 			}
 		}
 

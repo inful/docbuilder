@@ -83,6 +83,104 @@ func TestPublicOnly_FiltersMarkdownButKeepsAssetsAndScopesIndexes(t *testing.T) 
 	}
 }
 
+// TestPublicOnly_PublicDocWithImageLink_AssetAndLinkAgree reproduces the
+// production symptom where enabling daemon.content.public_only causes images
+// to render with broken links or to be missing/incorrectly placed.
+//
+// Setup:
+//   - public_only: true
+//   - One public doc in repo1/guides/advanced/install.md referencing
+//     ![Alt](images/foo.png) (relative to the doc).
+//   - A sibling private doc in the same section (filtered out by public_only).
+//   - The image asset images/foo.png.
+//
+// Expected behaviour (matches the no-public_only instance):
+//   - The kept public doc's image link is rewritten to an absolute path
+//     pointing at the asset's Hugo location.
+//   - The asset is copied to that same Hugo location.
+//
+// Bug (symptom reported in production):
+//   - Asset and link disagree (asset in repo1/guides/images/, link in
+//     repo1/guides/advanced/images/; or asset missing entirely).
+func TestPublicOnly_PublicDocWithImageLink_AssetAndLinkAgree(t *testing.T) {
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"},
+		Daemon: &config.DaemonConfig{
+			Content: config.DaemonContentConfig{PublicOnly: true},
+		},
+	}
+	gen := NewGenerator(cfg, t.TempDir())
+
+	assetSrc := filepath.Join(t.TempDir(), "foo.png")
+	if err := os.WriteFile(assetSrc, []byte{0x89, 0x50, 0x4e, 0x47}, 0o600); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+
+	publicDoc := docs.DocFile{
+		Repository:   "repo1",
+		Section:      "guides/advanced",
+		Name:         "install",
+		Extension:    ".md",
+		RelativePath: "guides/advanced/install.md",
+		Content: []byte("---\npublic: true\n---\n# Install\n\n" +
+			"![Diagram](images/foo.png)\n"),
+	}
+	privateDoc := docs.DocFile{
+		Repository:   "repo1",
+		Section:      "guides/advanced",
+		Name:         "internal",
+		Extension:    ".md",
+		RelativePath: "guides/advanced/internal.md",
+		Content:      []byte("# Internal\n"),
+	}
+	asset := docs.DocFile{
+		Repository:   "repo1",
+		Section:      "guides/advanced",
+		Name:         "foo",
+		Extension:    ".png",
+		RelativePath: "guides/advanced/images/foo.png",
+		Path:         assetSrc,
+		IsAsset:      true,
+	}
+	// Second repo so isSingleRepo=false in the pipeline; otherwise the
+	// repository namespace is omitted and the link/asset paths below don't
+	// match the production scenario.
+	otherDoc := docs.DocFile{
+		Repository:   "repo2",
+		Section:      "notes",
+		Name:         "readme",
+		Extension:    ".md",
+		RelativePath: "notes/readme.md",
+		Content:      []byte("---\npublic: true\n---\n# Notes\n"),
+	}
+
+	files := []docs.DocFile{publicDoc, privateDoc, asset, otherDoc}
+	if err := gen.copyContentFiles(t.Context(), files); err != nil {
+		t.Fatalf("copy: %v", err)
+	}
+
+	const expectedLink = "/repo1/guides/advanced/images/foo.png"
+	publicOut := filepath.Join(gen.BuildRoot(), publicDoc.GetHugoPath(false))
+	// #nosec G304 -- test file reading from controlled test output
+	publicBytes, err := os.ReadFile(publicOut)
+	if err != nil {
+		t.Fatalf("read public page: %v", err)
+	}
+	if !stringsContains(string(publicBytes), expectedLink) {
+		t.Fatalf("expected rewritten image link %q in public doc, got:\n%s",
+			expectedLink, string(publicBytes))
+	}
+
+	assetOut := filepath.Join(gen.BuildRoot(), asset.GetHugoPath(false))
+	if _, err := os.Stat(assetOut); err != nil {
+		t.Fatalf("expected asset at %s (where the link points): %v", assetOut, err)
+	}
+
+	if !fileExists(filepath.Join(gen.BuildRoot(), "content", "repo1", "guides", "advanced", "_index.md")) {
+		t.Fatalf("expected section _index.md to be generated for the public doc's section")
+	}
+}
+
 func TestPublicOnly_ZeroPublicPages_ProducesNoIndexes(t *testing.T) {
 	cfg := &config.Config{
 		Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"},
@@ -106,6 +204,11 @@ func TestPublicOnly_ZeroPublicPages_ProducesNoIndexes(t *testing.T) {
 	if _, err := os.Stat(privateOut); err == nil {
 		t.Fatalf("expected private page to be excluded, but exists at %s", privateOut)
 	}
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
 }
 
 func containsAll(s string, parts []string) bool {
