@@ -3,6 +3,7 @@ package hugo
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -245,27 +246,62 @@ func (g *Generator) buildRepositoryMetadata(bs *models.BuildState) map[string]pi
 
 // copyAssetFile copies an asset file (image, etc.) to Hugo content directory without processing.
 func (g *Generator) copyAssetFile(file docs.DocFile, isSingleRepo bool) error {
-	// Read the asset file
-	content, err := os.ReadFile(file.Path)
+	// Open the asset file
+	src, err := os.Open(file.Path)
 	if err != nil {
-		return fmt.Errorf("%w: failed to read asset %s: %w",
+		return fmt.Errorf("%w: failed to open asset %s: %w",
 			herrors.ErrContentWriteFailed, file.Path, err)
+	}
+	defer func() {
+		if cerr := src.Close(); cerr != nil {
+			slog.Warn("Failed to close source file",
+				slog.String("path", file.Path),
+				slog.String("error", cerr.Error()))
+		}
+	}()
+
+	// Check file size against limit
+	info, err := src.Stat()
+	if err != nil {
+		return fmt.Errorf("%w: failed to stat asset %s: %w",
+			herrors.ErrContentWriteFailed, file.Path, err)
+	}
+
+	if g.config.Build.MaxAssetSize > 0 && info.Size() > g.config.Build.MaxAssetSize {
+		slog.Warn("Skipping asset file: exceeds maximum allowed size",
+			slog.String("path", file.Path),
+			slog.Int64("size", info.Size()),
+			slog.Int64("limit", g.config.Build.MaxAssetSize))
+		return nil // Soft skip
 	}
 
 	// Calculate output path - assets go in same location as markdown files
 	outputPath := filepath.Join(g.BuildRoot(), file.GetHugoPath(isSingleRepo))
 
 	// Create directory if needed
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0o750); err != nil {
+	if mkdirErr := os.MkdirAll(filepath.Dir(outputPath), 0o750); mkdirErr != nil {
 		return fmt.Errorf("%w: failed to create directory for %s: %w",
-			herrors.ErrContentWriteFailed, outputPath, err)
+			herrors.ErrContentWriteFailed, outputPath, mkdirErr)
 	}
 
-	// Copy asset file as-is
-	// #nosec G306 -- asset files are public documentation resources
-	if err := os.WriteFile(outputPath, content, 0o644); err != nil { //nolint:gosec // outputPath is under generator build root
-		return fmt.Errorf("%w: failed to write asset %s: %w",
+	// Stream the asset file as-is
+	// #nosec G304 -- outputPath is constructed from trusted buildRoot and validated GetHugoPath
+	dst, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("%w: failed to create asset destination %s: %w",
 			herrors.ErrContentWriteFailed, outputPath, err)
+	}
+	defer func() {
+		if cerr := dst.Close(); cerr != nil {
+			slog.Warn("Failed to close destination file",
+				slog.String("path", outputPath),
+				slog.String("error", cerr.Error()))
+		}
+	}()
+
+	if _, err = io.Copy(dst, src); err != nil {
+		return fmt.Errorf("%w: failed to copy asset %s to %s: %w",
+			herrors.ErrContentWriteFailed, file.Path, outputPath, err)
 	}
 
 	slog.Debug("Copied asset file",

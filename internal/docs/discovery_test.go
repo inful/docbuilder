@@ -9,6 +9,8 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDocumentationDiscovery(t *testing.T) {
@@ -206,6 +208,94 @@ func TestForgeNamespacingModes(t *testing.T) {
 		if strings.Contains(f.GetHugoPath(false), "github") || strings.Contains(f.GetHugoPath(false), "gitlab") {
 			t.Fatalf("path should not contain forge in never mode: %s", f.GetHugoPath(false))
 		}
+	}
+}
+
+func TestNamespaceAlias(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create repo with Namespace field set
+	repoDir := filepath.Join(tempDir, "test-repo")
+	docsDir := filepath.Join(repoDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600))
+
+	// Create repo config with Namespace set but no forge_type in tags
+	repo := config.Repository{
+		Name:      "test-repo",
+		Namespace: "github", // Namespace alias
+		Paths:     []string{"docs"},
+		Tags:      map[string]string{}, // No forge_type
+	}
+
+	repoPaths := map[string]string{repo.Name: repoDir}
+	repos := []config.Repository{repo}
+
+	run := func(mode config.NamespacingMode) []DocFile {
+		bc := &config.BuildConfig{NamespaceForges: mode}
+		d := NewDiscovery(repos, bc)
+		files, err := d.DiscoverDocs(repoPaths)
+		require.NoError(t, err)
+		return files
+	}
+
+	// always mode should use Namespace alias
+	files := run(config.NamespacingAlways)
+	require.Len(t, files, 1)
+	assert.Equal(t, "github", files[0].Forge)
+	assert.Contains(t, files[0].GetHugoPath(false), "github")
+
+	// never mode should not set Forge
+	files = run(config.NamespacingNever)
+	require.Len(t, files, 1)
+	assert.Equal(t, "", files[0].Forge)
+}
+
+func TestGroupCollisionResolution(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create two repos with same name but different groups
+	createRepo := func(name, group, dirName string) (config.Repository, string) {
+		repoDir := filepath.Join(tempDir, dirName)
+		docsDir := filepath.Join(repoDir, "docs")
+		require.NoError(t, os.MkdirAll(docsDir, 0o750))
+		require.NoError(t, os.WriteFile(filepath.Join(docsDir, "page.md"), []byte("# Page"), 0o600))
+
+		return config.Repository{
+			Name:  name,
+			Group: group,
+			Paths: []string{"docs"},
+			Tags:  map[string]string{"forge_type": "github"},
+		}, repoDir
+	}
+
+	// Two repos with same logical name but different groups - names must be unique
+	r1, p1 := createRepo("group-a/common-name", "group-a", "repo-a")
+	r2, p2 := createRepo("group-b/common-name", "group-b", "repo-b")
+
+	repoPaths := map[string]string{r1.Name: p1, r2.Name: p2}
+	repos := []config.Repository{r1, r2}
+
+	d := NewDiscovery(repos, &config.BuildConfig{NamespaceForges: config.NamespacingAlways})
+	files, err := d.DiscoverDocs(repoPaths)
+	require.NoError(t, err)
+	require.Len(t, files, 2)
+
+	// Each file should have unique path including group
+	paths := make(map[string]int)
+	for _, f := range files {
+		path := f.GetHugoPath(false)
+		paths[path]++
+
+		// Verify group is in path
+		assert.Contains(t, path, strings.ToLower(f.Group))
+		assert.Contains(t, path, "github")
+		assert.Contains(t, path, "common-name")
+	}
+
+	// Verify no collisions
+	for path, count := range paths {
+		assert.Equal(t, 1, count, "Path %s should be unique", path)
 	}
 }
 
