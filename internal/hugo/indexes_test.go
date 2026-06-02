@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
@@ -14,11 +13,15 @@ import (
 func TestGenerateIndexPages(t *testing.T) {
 	out := t.TempDir()
 	gen := NewGenerator(&config.Config{Hugo: config.HugoConfig{Title: "Test", BaseURL: "/"}}, out)
+	// Use lowercase repository names: docs.HugoContentPath lowercases the
+	// repository component, so the index files are written under
+	// content/repoa/ (not content/repoA/). On case-sensitive filesystems
+	// (Linux CI), the test must read from the same lowercased directory.
 	files := []docs.DocFile{
-		{Repository: "repoA", Name: "alpha", RelativePath: "alpha.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("A")},
-		{Repository: "repoA", Name: "beta", RelativePath: "beta.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("B")},
-		{Repository: "repoA", Name: "root", RelativePath: "root.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("R")},
-		{Repository: "repoB", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("I")},
+		{Repository: "repoa", Name: "alpha", RelativePath: "alpha.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("A")},
+		{Repository: "repoa", Name: "beta", RelativePath: "beta.md", DocsBase: "docs", Section: "section1", Extension: ".md", Content: []byte("B")},
+		{Repository: "repoa", Name: "root", RelativePath: "root.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("R")},
+		{Repository: "repob", Name: "intro", RelativePath: "intro.md", DocsBase: "docs", Section: "", Extension: ".md", Content: []byte("I")},
 	}
 
 	// Need structure for indexes (skip full generation) -> just call generateIndexPages after structure creation
@@ -39,28 +42,29 @@ func TestGenerateIndexPages(t *testing.T) {
 	if !strings.Contains(string(b), "Repositories") {
 		t.Fatalf("main index missing repositories header: %s", string(b))
 	}
-	if !strings.Contains(string(b), "repoA") || !strings.Contains(string(b), "repoB") {
+	if !strings.Contains(string(b), "repoa") || !strings.Contains(string(b), "repob") {
 		t.Fatalf("main index missing repo links: %s", string(b))
 	}
 
 	// Repo index
-	repoIdx := filepath.Join(out, "content", "repoA", "_index.md")
+	repoIdx := filepath.Join(out, "content", "repoa", "_index.md")
 	// #nosec G304 -- test utility reading from test output directory
 	rb, err := os.ReadFile(repoIdx)
 	if err != nil {
 		t.Fatalf("read repo index: %v", err)
 	}
-	if !strings.Contains(string(rb), "Alpha Documentation") && !strings.Contains(string(rb), "Documentation") { // lenient: tolerate missing specific phrase but ensure file has some content
-		if len(strings.TrimSpace(string(rb))) == 0 {
-			t.Fatalf("repo index unexpectedly empty")
-		}
+	if !strings.Contains(string(rb), "## Sections") {
+		t.Fatalf("repo index missing sections header: %s", string(rb))
 	}
 	if !strings.Contains(string(rb), "alpha/") || !strings.Contains(string(rb), "beta/") {
 		t.Fatalf("repo index missing file links: %s", string(rb))
 	}
+	if !strings.Contains(string(rb), "## Section1") {
+		t.Fatalf("repo index missing section1 subheader: %s", string(rb))
+	}
 
 	// Section index
-	secIdx := filepath.Join(out, "content", "repoA", "section1", "_index.md")
+	secIdx := filepath.Join(out, "content", "repoa", "section1", "_index.md")
 	// #nosec G304 -- test utility reading from test output directory
 	sb, err := os.ReadFile(secIdx)
 	if err != nil {
@@ -68,11 +72,6 @@ func TestGenerateIndexPages(t *testing.T) {
 	}
 	if !strings.Contains(string(sb), "Alpha") || !strings.Contains(string(sb), "Beta") {
 		t.Fatalf("section index missing file entries: %s", string(sb))
-	}
-
-	// Basic date presence
-	if !strings.Contains(string(rb), time.Now().Format("2006")) { // not strict; log only
-		t.Logf("year not present in repo index (non-fatal)")
 	}
 }
 
