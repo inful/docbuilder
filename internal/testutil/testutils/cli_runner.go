@@ -193,6 +193,7 @@ func (env *MockCLIEnvironment) WithBinaryPath(path string) *MockCLIEnvironment {
 		// A quick no-op exec catches "exec format error" before we
 		// commit to using it. If the no-op fails for any reason we
 		// fall through to the rebuild path below.
+		// #nosec G204 -- absPath was resolved from a caller-supplied test fixture path and is treated as untrusted-by-design
 		if probeErr := exec.CommandContext(context.Background(), absPath, "--help").Run(); probeErr == nil {
 			env.t.Logf("Using existing binary at %s", absPath)
 			env.runner.binaryPath = absPath

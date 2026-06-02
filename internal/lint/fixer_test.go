@@ -52,7 +52,7 @@ func TestFixer_DryRun(t *testing.T) {
 	// (line 35 of fixer_file_ops.go) to drive Success/Error. On a
 	// case-insensitive filesystem the case-only rename of "API_Guide.md"
 	// -> "api_guide.md" hits the same inode, so the check is moot and
-	// the success/error signalling changes. Skip on such systems.
+	// the success/error signaling changes. Skip on such systems.
 	if !foundation.IsCaseSensitiveFilesystem(tmpDir) {
 		t.Skip("case-insensitive filesystem: dry-run rename test is not meaningful here")
 	}

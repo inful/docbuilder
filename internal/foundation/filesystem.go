@@ -15,7 +15,7 @@ import (
 // The result is cached per directory because the answer cannot change
 // during the test process lifetime.
 //
-// Tests that rely on case-only filename differences to assert behaviour
+// Tests that rely on case-only filename differences to assert behavior
 // (e.g. case-collision detection, rename-overwrite protection) should
 // skip themselves on case-insensitive filesystems. Such tests cannot
 // faithfully simulate the case-different names on a filesystem that
@@ -45,20 +45,20 @@ func probeIsCaseSensitive(dir string) bool {
 		// that need a strict filesystem.
 		return false
 	}
-	defer os.RemoveAll(base)
+	defer func() { _ = os.RemoveAll(base) }()
 
 	lower := filepath.Join(base, "lowercase")
 	upper := filepath.Join(base, "LowerCase")
 
-	if err := os.WriteFile(lower, []byte("a"), 0o600); err != nil {
+	if writeErr := os.WriteFile(lower, []byte("a"), 0o600); writeErr != nil {
 		return false
 	}
-	defer os.Remove(lower)
+	defer func() { _ = os.Remove(lower) }()
 
-	if err := os.WriteFile(upper, []byte("b"), 0o600); err != nil {
+	if writeErr := os.WriteFile(upper, []byte("b"), 0o600); writeErr != nil {
 		return false
 	}
-	defer os.Remove(upper)
+	defer func() { _ = os.Remove(upper) }()
 
 	// Read the directory listing: on a case-sensitive FS, both names
 	// appear. On a case-insensitive FS, the second write overwrites
@@ -66,8 +66,8 @@ func probeIsCaseSensitive(dir string) bool {
 	// os.Stat on either name returns success on case-insensitive FS
 	// because the FS aliases both names to the same inode, so the
 	// directory listing is the authoritative check.)
-	entries, err := os.ReadDir(base)
-	if err != nil {
+	entries, readErr := os.ReadDir(base)
+	if readErr != nil {
 		return false
 	}
 	names := make(map[string]struct{}, len(entries))
