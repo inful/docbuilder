@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 )
 
 // TestFix_FileProcessingLoop tests the file processing loop with different scenarios.
@@ -89,6 +91,12 @@ func TestFix_SuccessfulRenameNoLinks(t *testing.T) {
 // TestFix_RenameFailure tests handling of rename operation failure.
 func TestFix_RenameFailure(t *testing.T) {
 	tmpDir := t.TempDir()
+	// Requires two distinct files whose names differ only in case
+	// (BadFilename.md and badfilename.md); cannot be set up on a
+	// case-insensitive filesystem.
+	if !foundation.IsCaseSensitiveFilesystem(tmpDir) {
+		t.Skip("case-insensitive filesystem: rename-failure test is not meaningful here")
+	}
 
 	// Create a file with uppercase letters
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
@@ -137,6 +145,14 @@ func TestFix_RenameCollision_CaseOnly_DoesNotOverwrite(t *testing.T) {
 
 	// On case-sensitive filesystems (like Linux), these are two distinct files.
 	// Renaming Test.md -> test.md would overwrite an existing file and must be refused.
+	// On case-insensitive filesystems (macOS HFS+/APFS, Windows NTFS) the
+	// second os.WriteFile overwrites the first, so the test's premise
+	// (two distinct files that the fixer should refuse to merge) cannot
+	// be set up. Skip there.
+	if !foundation.IsCaseSensitiveFilesystem(tmpDir) {
+		t.Skip("case-insensitive filesystem: rename-collision test is not meaningful here")
+	}
+
 	upper := filepath.Join(tmpDir, "Test.md")
 	lower := filepath.Join(tmpDir, "test.md")
 	if err := os.WriteFile(upper, []byte("# Upper\n"), 0o600); err != nil {
