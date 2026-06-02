@@ -91,6 +91,12 @@ func TestFix_SuccessfulRenameNoLinks(t *testing.T) {
 // TestFix_RenameFailure tests handling of rename operation failure.
 func TestFix_RenameFailure(t *testing.T) {
 	tmpDir := t.TempDir()
+	// Requires two distinct files whose names differ only in case
+	// (BadFilename.md and badfilename.md); cannot be set up on a
+	// case-insensitive filesystem.
+	if !foundation.IsCaseSensitiveFilesystem(tmpDir) {
+		t.Skip("case-insensitive filesystem: rename-failure test is not meaningful here")
+	}
 
 	// Create a file with uppercase letters
 	badFile := filepath.Join(tmpDir, "BadFilename.md")
