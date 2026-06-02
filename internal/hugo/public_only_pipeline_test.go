@@ -94,7 +94,7 @@ func TestPublicOnly_FiltersMarkdownButKeepsAssetsAndScopesIndexes(t *testing.T) 
 //   - A sibling private doc in the same section (filtered out by public_only).
 //   - The image asset images/foo.png.
 //
-// Expected behaviour (matches the no-public_only instance):
+// Expected behavior (matches the no-public_only instance):
 //   - The kept public doc's image link is rewritten to an absolute path
 //     pointing at the asset's Hugo location.
 //   - The asset is copied to that same Hugo location.

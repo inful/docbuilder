@@ -123,8 +123,7 @@ func TestPublicOnly_CaseDifferentRepoDirs_DriftVsDrift(t *testing.T) {
 	// under the same parent.
 	hasUpper, hasLower := false, false
 	for _, d := range dirs {
-		parts := strings.Split(d, string(filepath.Separator))
-		for _, p := range parts {
+		for p := range strings.SplitSeq(d, string(filepath.Separator)) {
 			if p == "Drift" {
 				hasUpper = true
 			}
@@ -367,6 +366,7 @@ func copyDir(src, dst string) error {
 		if info.IsDir() {
 			return os.MkdirAll(target, 0o750)
 		}
+		// #nosec G122,G304 -- test helper operating under t.TempDir() roots
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
@@ -374,12 +374,14 @@ func copyDir(src, dst string) error {
 		if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 			return err
 		}
+		// #nosec G122,G703 -- test helper writing under t.TempDir() destination
 		return os.WriteFile(target, data, 0o600)
 	})
 }
 
 func stripShortcodes(t *testing.T, path string) {
 	t.Helper()
+	// #nosec G304 -- test helper reading from a t.TempDir() path
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return
@@ -400,6 +402,7 @@ func stripShortcodes(t *testing.T, path string) {
 		}
 		s = s[:start] + s[start+end+len(closer):]
 	}
+	// #nosec G703 -- test helper writing to a t.TempDir() path
 	if err := os.WriteFile(path, []byte(s), 0o600); err != nil {
 		t.Fatalf("rewrite %s: %v", path, err)
 	}
