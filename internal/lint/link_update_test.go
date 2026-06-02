@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -425,6 +427,14 @@ func TestUpdateLinkTarget(t *testing.T) {
 // TestIntegration_RenameWithLinkUpdates tests the full integration of renaming and link updates.
 func TestIntegration_RenameWithLinkUpdates(t *testing.T) {
 	tmpDir := t.TempDir()
+
+	// On case-insensitive filesystems the rename "API_Guide.md" ->
+	// "api_guide.md" lands on top of itself, so the fixer's
+	// "target file already exists" check (which is the very thing this
+	// integration asserts) is not exercisable. Skip there.
+	if !foundation.IsCaseSensitiveFilesystem(tmpDir) {
+		t.Skip("case-insensitive filesystem: rename-with-link-updates integration test is not meaningful here")
+	}
 
 	// Create a documentation structure with a file that violates naming conventions
 	apiFile := filepath.Join(tmpDir, "API_Guide.md") // Uppercase - violates kebab-case

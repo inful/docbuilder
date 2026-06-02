@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	testforge "git.home.luguber.info/inful/docbuilder/internal/testutil/testforge"
 )
 
@@ -785,6 +786,17 @@ func testPerformanceValidationWithLargeDataset(t *testing.T) {
 func TestPathCollisionDetection(t *testing.T) {
 	// Create temporary directory structure for testing
 	tempDir := t.TempDir()
+
+	// Skip on case-insensitive filesystems: this test creates two files
+	// whose names differ only in case (Minutes.md and minutes.md) and
+	// expects both to coexist so the collision detector can fire. On
+	// case-insensitive filesystems (macOS HFS+/APFS, Windows NTFS) the
+	// second os.WriteFile overwrites the first, the test sees only one
+	// file, and the collision detection legitimately has nothing to
+	// detect. The behaviour under test cannot be exercised there.
+	if !foundation.IsCaseSensitiveFilesystem(tempDir) {
+		t.Skip("case-insensitive filesystem: case-collision test is not meaningful here")
+	}
 
 	// Create test repository with files that will collide when lowercased
 	repoDir := filepath.Join(tempDir, "collision-repo")
