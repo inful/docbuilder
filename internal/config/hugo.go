@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // HugoConfig represents Hugo-specific configuration for Relearn theme.
 type HugoConfig struct {
@@ -125,6 +128,11 @@ func (s *SidebarConfig) ShouldKeepDefaultMenu() bool {
 // fails the build for a sidebar misconfiguration, since a
 // misconfigured sidebar is recoverable (a legacy single-page layout)
 // and the user will see the warning in the build log.
+//
+// GroupBy map keys (canonical category names) and field names are
+// lowercased in place so users can write them in any case. Without
+// this normalisation, "Minutes" or "Project" would silently not
+// match the canonical lowercase keys / front-matter field names.
 func (s *SidebarConfig) Normalize(res *NormalizationResult) {
 	if s == nil {
 		return
@@ -138,6 +146,21 @@ func (s *SidebarConfig) Normalize(res *NormalizationResult) {
 			s.Mode, SidebarModeAuto,
 		))
 		s.Mode = SidebarModeAuto
+	}
+	if len(s.GroupBy) > 0 {
+		normalized := make(map[string][]string, len(s.GroupBy))
+		for cat, fields := range s.GroupBy {
+			lcCat := strings.ToLower(cat)
+			lcFields := make([]string, 0, len(fields))
+			for _, f := range fields {
+				if f == "" {
+					continue
+				}
+				lcFields = append(lcFields, strings.ToLower(f))
+			}
+			normalized[lcCat] = lcFields
+		}
+		s.GroupBy = normalized
 	}
 }
 

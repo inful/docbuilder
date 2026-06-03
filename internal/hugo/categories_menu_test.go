@@ -1087,3 +1087,81 @@ func entryByID(entries []models.MenuEntry, id string) bool {
 	}
 	return false
 }
+
+// TestReadCategoriesMenuDocs_CaseInsensitiveFrontMatter is the
+// regression for the case where the user's config says
+// group_by: { minutes: [Project] } (or any case) but the doc's
+// front matter uses lowercase `project:`. Both should match.
+func TestReadCategoriesMenuDocs_CaseInsensitiveFrontMatter(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/m.md",
+			Name:       "m",
+			Repository: "project_a",
+			// Front matter uses capital P.
+			Content: []byte("---\ntitle: M\ncategories: [Minutes]\n" +
+				"Project: team_alpha\n---\n"),
+		},
+	}
+	// Read path is given the lowercased field name (after
+	// SidebarConfig.Normalize).
+	got := readCategoriesMenuDocs(files, false, false, []string{"project"})
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry; got %d", len(got))
+	}
+	if got[0].GroupFields["project"] != "team_alpha" {
+		t.Fatalf("GroupFields[project] = %q, want %q (case-insensitive lookup)",
+			got[0].GroupFields["project"], "team_alpha")
+	}
+}
+
+// TestComputeCategoriesMenu_GroupByMixedCaseConfig is the
+// end-to-end regression for the user-reported bug: when the user
+// writes the group_by map with capitalised keys (e.g. "Minutes")
+// and the doc's front matter field uses a different case, the
+// categories menu must still use the project field for grouping.
+func TestComputeCategoriesMenu_GroupByMixedCaseConfig(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title: "Mixed Case Group By",
+			Sidebar: &config.SidebarConfig{
+				Mode: config.SidebarModeCategories,
+				// Capitalised key and field name on purpose.
+				GroupBy: map[string][]string{
+					"Minutes": {"Project"},
+				},
+			},
+		},
+		Repositories: []config.Repository{{Name: "project_a"}},
+	}
+	// Force the Normalize pass (mimicking what the config loader
+	// does at startup).
+	cfg.Hugo.Sidebar.Normalize(&config.NormalizationResult{})
+
+	g := NewGenerator(cfg, out)
+	// Doc uses lowercase categories and lowercase project.
+	doc := docWithFrontMatter("project_a", "alpha",
+		"---\ntitle: Alpha\ncategories: [Minutes]\n"+
+			"project: team_alpha\n---\n")
+	cm, err := g.computeCategoriesMenu(&models.BuildState{
+		Docs: models.DocsState{Files: []docs.DocFile{doc}},
+	})
+	if err != nil {
+		t.Fatalf("computeCategoriesMenu: %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "team_alpha")
+	if !entryByID(cm.Menus["minutes"], wantID) {
+		t.Fatalf("expected team_alpha parent under minutes; got: %+v", cm.Menus["minutes"])
+	}
+	// The doc must be the child of the team_alpha parent, NOT the
+	// project_a (Repository) parent.
+	for _, e := range cm.Menus["minutes"] {
+		if e.PageRef == "" || e.Name != "Alpha" {
+			continue
+		}
+		if e.Parent != wantID {
+			t.Errorf("doc parent = %q, want %q (group_by must override Repository)", e.Parent, wantID)
+		}
+	}
+}
