@@ -37,17 +37,8 @@ menu:
         - identifier: cat_x__uncategorized_public_filter_repo
           name: public-filter-repo
           parent: cat_x__uncategorized_top
-        - name: false-public
-          pageRef: /false-public/
-          parent: cat_x__uncategorized_public_filter_repo
-        - name: nested-private
-          pageRef: /other/nested-private/
-          parent: cat_x__uncategorized_public_filter_repo
         - name: nested-public
           pageRef: /other/nested-public/
-          parent: cat_x__uncategorized_public_filter_repo
-        - name: private-page
-          pageRef: /private-page/
           parent: cat_x__uncategorized_public_filter_repo
         - name: public-page
           pageRef: /public-page/
