@@ -301,11 +301,20 @@ const uncategorizedSidebarWeightValue = 999
 // categoryDoc bucketed under UncategorizedCategory so un-categorized
 // docs surface as a triage list in the rendered sidebar.
 //
-// The function does not return an error today. Unreadable files
-// and malformed front matter are both bucketed under the synthetic
-// _uncategorized category with a debug log; they are not stage
+// When publicOnly is true (mirrors daemon.content.public_only), the
+// function applies the same gate the copy-content stage uses:
+//   - Docs that are not explicitly `public: true` are dropped entirely
+//     (no _uncategorized fallback either).
+//   - Docs whose front matter cannot be parsed or whose content cannot
+//     be loaded are dropped (fail-closed: we cannot prove they are
+//     meant to be public).
+//
+// The function does not return an error. Unreadable files and
+// malformed front matter are bucketed under the synthetic
+// _uncategorized category with a debug log when publicOnly is false,
+// and silently dropped when publicOnly is true. They are not stage
 // failures because the rest of the pipeline tolerates them.
-func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryDoc {
+func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly bool) []categoryDoc {
 	out := make([]categoryDoc, 0, len(files))
 	for i := range files {
 		f := &files[i]
@@ -317,32 +326,20 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 		// keeps the categories-menu stage self-sufficient without
 		// requiring it to run after the copy-content stage.
 		if len(f.Content) == 0 {
-			if err := f.LoadContent(); err != nil {
-				// A doc that cannot be read is treated as having no
-				// front matter; it will be bucketed under the
-				// synthetic _uncategorized category if it has a
-				// non-empty path, or skipped otherwise. We do not
-				// fail the build for a single unreadable doc.
-				slog.Debug("Skipping doc in categories menu: cannot read content",
-					logfields.Path(f.Path), logfields.Error(err))
-				// We still want the doc to surface under the
-				// synthetic bucket when it has a discoverable path.
-				// Project that onto the uncategorized bucket.
-				if f.Path != "" {
-					hugoPath := f.GetHugoPath(isSingleRepo)
-					hugoPath = strings.TrimPrefix(hugoPath, "content/")
-					pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
-					out = append(out, categoryDoc{
-						Repository:      f.Repository,
-						Title:           f.Name,
-						Path:            pageRef,
-						Weight:          0,
-						Categories:      []string{UncategorizedCategory},
-						CategoryDisplay: UncategorizedCategory,
-					})
+			if loadErr := f.LoadContent(); loadErr != nil {
+				if extra, ok := unreadableDocFallback(f, isSingleRepo, publicOnly, loadErr); ok {
+					out = append(out, extra)
 				}
 				continue
 			}
+		}
+		// In public-only mode, drop any doc that does not carry the
+		// explicit `public: true` flag. This mirrors the gate the
+		// copy-content stage uses (see copyContentFilesPipeline),
+		// preventing private docs (and any categories they would
+		// otherwise contribute) from reaching the sidebar.
+		if publicOnly && !isPublicMarkdown(f.Content) {
+			continue
 		}
 		fm, _, had, _, err := frontmatterops.Read(f.Content)
 		if err != nil {
@@ -354,6 +351,13 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 			// without a build failure.
 			slog.Debug("Categories menu: skipping doc with malformed front matter",
 				logfields.Path(f.Path), logfields.Error(err))
+			// In public-only mode, isPublicMarkdown above would have
+			// already returned false for a doc whose front matter is
+			// malformed, so we should never reach this branch with
+			// publicOnly=true. Belt-and-braces: drop here too.
+			if publicOnly {
+				continue
+			}
 			hugoPath := f.GetHugoPath(isSingleRepo)
 			hugoPath = strings.TrimPrefix(hugoPath, "content/")
 			pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
@@ -432,6 +436,32 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 		return out[i].Path < out[j].Path
 	})
 	return out
+}
+
+// unreadableDocFallback decides what to emit for a doc whose Content
+// could not be loaded. In public-only mode we cannot prove the doc is
+// meant to be public, so we drop it entirely (returns false). With
+// public_only off, we project the doc onto the synthetic
+// _uncategorized bucket so it still surfaces somewhere for the user
+// to triage. A doc with no Path cannot be referenced from Hugo and is
+// also dropped.
+func unreadableDocFallback(f *docs.DocFile, isSingleRepo, publicOnly bool, loadErr error) (categoryDoc, bool) {
+	slog.Debug("Skipping doc in categories menu: cannot read content",
+		logfields.Path(f.Path), logfields.Error(loadErr))
+	if publicOnly || f.Path == "" {
+		return categoryDoc{}, false
+	}
+	hugoPath := f.GetHugoPath(isSingleRepo)
+	hugoPath = strings.TrimPrefix(hugoPath, "content/")
+	pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+	return categoryDoc{
+		Repository:      f.Repository,
+		Title:           f.Name,
+		Path:            pageRef,
+		Weight:          0,
+		Categories:      []string{UncategorizedCategory},
+		CategoryDisplay: UncategorizedCategory,
+	}, true
 }
 
 func extractString(fm map[string]any, key string) string {

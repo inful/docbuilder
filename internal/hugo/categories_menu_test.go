@@ -283,7 +283,7 @@ func TestCategoriesMenu_UncategorizedSidebarBlockRendersLast(t *testing.T) {
 // returns an empty slice so the categories-menu stage falls back to
 // the default sidebar (and emits the one-line INFO log).
 func TestReadCategoriesMenuDocs_EmitsNothingForEmptyDocSet(t *testing.T) {
-	got := readCategoriesMenuDocs(nil, false)
+	got := readCategoriesMenuDocs(nil, false, false)
 	if len(got) != 0 {
 		t.Fatalf("expected empty result for empty doc set; got %d entries", len(got))
 	}
@@ -308,7 +308,7 @@ func TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic(t *testing.T) {
 			Content:    []byte("---\ntitle: B\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false)
+	got := readCategoriesMenuDocs(files, false, false)
 	if len(got) != 3 {
 		t.Fatalf("expected 3 entries (1 doc × 2 categories + 1 doc × 1 synthetic); got %d", len(got))
 	}
@@ -352,7 +352,7 @@ func TestReadCategoriesMenuDocs_LoadsContentFromDisk(t *testing.T) {
 			Content: nil,
 		},
 	}
-	got := readCategoriesMenuDocs(files, false)
+	got := readCategoriesMenuDocs(files, false, false)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry from on-disk doc; got %d", len(got))
 	}
@@ -381,7 +381,7 @@ func TestReadCategoriesMenuDocs_ToleratesMalformedFrontmatter(t *testing.T) {
 	files := []docs.DocFile{
 		{Path: mdPath, Repository: "project_a", Name: "broken"},
 	}
-	got := readCategoriesMenuDocs(files, false)
+	got := readCategoriesMenuDocs(files, false, false)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry from malformed doc; got %d", len(got))
 	}
@@ -499,7 +499,7 @@ func TestReadCategoriesMenuDocs_LowercasesCategoryKey(t *testing.T) {
 			Content:    []byte("---\ntitle: M\ncategories: [Minutes]\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false)
+	got := readCategoriesMenuDocs(files, false, false)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry; got %d", len(got))
 	}
@@ -647,4 +647,156 @@ func equalStringSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// TestReadCategoriesMenuDocs_PublicOnly_DropsPrivateDocs is the
+// reproducer for the public_only menu-leak: when daemon.content.public_only
+// is on, only docs whose front matter carries `public: true` may
+// contribute to the categories menu. A private doc tagged with a
+// category must not surface in the sidebar at all (not even as
+// _uncategorized).
+func TestReadCategoriesMenuDocs_PublicOnly_DropsPrivateDocs(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/pub.md",
+			Name:       "pub",
+			Repository: "project_a",
+			Content: []byte("---\ntitle: Public Doc\npublic: true\n" +
+				"categories: [Minutes]\n---\n"),
+		},
+		{
+			Path:       "/tmp/priv.md",
+			Name:       "priv",
+			Repository: "project_a",
+			Content: []byte("---\ntitle: Private Doc\n" +
+				"categories: [Secret]\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false, true)
+	if len(got) != 1 {
+		t.Fatalf("expected exactly the public doc; got %d entries: %+v", len(got), got)
+	}
+	if got[0].Title != "Public Doc" {
+		t.Fatalf("surviving entry title = %q, want %q", got[0].Title, "Public Doc")
+	}
+	if got[0].Categories[0] != "minutes" {
+		t.Fatalf("surviving entry canonical category = %q, want %q",
+			got[0].Categories[0], "minutes")
+	}
+	for _, cd := range got {
+		if cd.Categories[0] == "secret" {
+			t.Fatalf("private doc's category %q leaked into menu: %+v", "secret", cd)
+		}
+	}
+}
+
+// TestReadCategoriesMenuDocs_PublicOnly_NoPublicDocsForCategoryDropsBucket
+// asserts that a category referenced only by private docs disappears
+// entirely from the menu input set.
+func TestReadCategoriesMenuDocs_PublicOnly_NoPublicDocsForCategoryDropsBucket(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/priv.md",
+			Name:       "priv",
+			Repository: "project_a",
+			Content: []byte("---\ntitle: Private\n" +
+				"categories: [Minutes]\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false, true)
+	if len(got) != 0 {
+		t.Fatalf("expected empty result (only private doc); got %d entries: %+v", len(got), got)
+	}
+}
+
+// TestReadCategoriesMenuDocs_PublicOnly_KeepsPublicUncategorized
+// verifies that the public_only filter only drops *private* docs:
+// a public doc with no `categories:` front matter still ends up
+// in the synthetic _uncategorized bucket.
+func TestReadCategoriesMenuDocs_PublicOnly_KeepsPublicUncategorized(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/orphan.md",
+			Name:       "orphan",
+			Repository: "project_a",
+			Content:    []byte("---\ntitle: Public Orphan\npublic: true\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false, true)
+	if len(got) != 1 {
+		t.Fatalf("expected the public orphan to survive; got %d entries", len(got))
+	}
+	if got[0].Categories[0] != UncategorizedCategory {
+		t.Fatalf("public orphan must be bucketed under %q; got %q",
+			UncategorizedCategory, got[0].Categories[0])
+	}
+}
+
+// TestReadCategoriesMenuDocs_PublicOnly_MalformedFrontmatterDropped
+// pins the fail-closed behavior for malformed front matter under
+// public_only: the doc is dropped rather than bucketed, because we
+// cannot prove it is meant to be public.
+func TestReadCategoriesMenuDocs_PublicOnly_MalformedFrontmatterDropped(t *testing.T) {
+	dir := t.TempDir()
+	mdPath := filepath.Join(dir, "broken.md")
+	if err := os.WriteFile(mdPath, []byte("---\ntitle: Broken [unterminated\n---\n"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	files := []docs.DocFile{
+		{Path: mdPath, Repository: "project_a", Name: "broken"},
+	}
+	got := readCategoriesMenuDocs(files, false, true)
+	if len(got) != 0 {
+		t.Fatalf("expected malformed doc to be dropped under public_only; got %+v", got)
+	}
+}
+
+// TestComputeCategoriesMenu_PublicOnly_FiltersDownstream is the
+// stage-level end-to-end check: with daemon.content.public_only on,
+// the resulting CategoriesMenu must only contain buckets whose
+// members include at least one public doc, and each surviving bucket
+// must hold only the public docs.
+func TestComputeCategoriesMenu_PublicOnly_FiltersDownstream(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title:   "Public Only Build",
+			Sidebar: &config.SidebarConfig{Mode: config.SidebarModeCategories},
+		},
+		Daemon: &config.DaemonConfig{
+			Content: config.DaemonContentConfig{PublicOnly: true},
+		},
+		Repositories: []config.Repository{{Name: "project_a"}},
+	}
+	g := NewGenerator(cfg, out)
+	// Three docs: two public in distinct categories, one private in
+	// a third category. The private doc's category must not surface.
+	docPub1 := docWithFrontMatter("project_a", "alpha",
+		"---\ntitle: Alpha\npublic: true\ncategories: [Documentation]\n---\n")
+	docPub2 := docWithFrontMatter("project_a", "ops",
+		"---\ntitle: Ops\npublic: true\ncategories: [Operations]\n---\n")
+	docPriv := docWithFrontMatter("project_a", "secret",
+		"---\ntitle: Secret\ncategories: [Internal]\n---\n")
+	cm, err := g.computeCategoriesMenu(&models.BuildState{
+		Docs: models.DocsState{Files: []docs.DocFile{docPub1, docPub2, docPriv}},
+	})
+	if err != nil {
+		t.Fatalf("computeCategoriesMenu: %v", err)
+	}
+	if _, ok := cm.Menus["documentation"]; !ok {
+		t.Errorf("expected documentation bucket; got keys: %v", keys(cm.Menus))
+	}
+	if _, ok := cm.Menus["operations"]; !ok {
+		t.Errorf("expected operations bucket; got keys: %v", keys(cm.Menus))
+	}
+	if _, ok := cm.Menus["internal"]; ok {
+		t.Errorf("private-only category 'internal' leaked into menu: %v", keys(cm.Menus))
+	}
+	for _, entries := range cm.Menus {
+		for _, e := range entries {
+			if e.Name == "Secret" {
+				t.Errorf("private doc 'Secret' leaked into a category bucket: %+v", e)
+			}
+		}
+	}
 }
