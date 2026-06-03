@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_deep_nesting
           name: deep-nesting
+          parent: cat_x__uncategorized_top
         - name: Root Level
           pageRef: /root/
           parent: cat_x__uncategorized_deep_nesting

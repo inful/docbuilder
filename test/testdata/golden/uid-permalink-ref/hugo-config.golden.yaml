@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_test_repo
           name: test-repo
+          parent: cat_x__uncategorized_top
         - name: With Alias No UID
           pageRef: /with-alias-no-uid/
           parent: cat_x__uncategorized_test_repo

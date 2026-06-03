@@ -102,7 +102,7 @@ func TestHugoConfigGolden_CategoriesMode(t *testing.T) {
 		t.Fatalf("expected menu.Documentation to be a list; got %T (yaml:\n%s)",
 			menus["Documentation"], data)
 	}
-	if got, want := len(docMenu), 6; got != want {
+	if got, want := len(docMenu), 7; got != want {
 		t.Fatalf("Documentation menu length = %d, want %d; got: %v", got, want, docMenu)
 	}
 

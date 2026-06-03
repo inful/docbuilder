@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_only_readme
           name: only-readme
+          parent: cat_x__uncategorized_top
         - name: README
           pageRef: /readme/
           parent: cat_x__uncategorized_only_readme

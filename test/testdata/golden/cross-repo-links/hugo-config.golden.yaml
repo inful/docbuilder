@@ -32,10 +32,14 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_backend
           name: backend
+          parent: cat_x__uncategorized_top
         - identifier: cat_x__uncategorized_frontend
           name: frontend
+          parent: cat_x__uncategorized_top
         - name: Backend API
           pageRef: /backend/api/
           parent: cat_x__uncategorized_backend

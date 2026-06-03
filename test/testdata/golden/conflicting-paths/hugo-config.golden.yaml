@@ -32,10 +32,14 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_repo_a
           name: repo-a
+          parent: cat_x__uncategorized_top
         - identifier: cat_x__uncategorized_repo_b
           name: repo-b
+          parent: cat_x__uncategorized_top
         - name: Setup Guide (Repository A)
           pageRef: /repo-a/setup/
           parent: cat_x__uncategorized_repo_a

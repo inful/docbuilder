@@ -73,10 +73,11 @@ func TestBuildCategoriesMenu_CollidingIntroFiles(t *testing.T) {
 		t.Fatalf("expected a Documentation menu, got keys: %v", keys(cm.Menus))
 	}
 
-	// The menu must contain one parent entry per project (so the
-	// tree groups children under their repo) and one child entry per
-	// doc. Total = 2 parents + 4 children = 6.
-	if got, want := len(docMenu), 6; got != want {
+	// The menu must contain a title-wrapper entry, one parent
+	// entry per project (so the tree groups children under their
+	// repo) and one child entry per doc. Total = 1 wrapper +
+	// 2 parents + 4 children = 7.
+	if got, want := len(docMenu), 7; got != want {
 		t.Fatalf("Documentation menu length = %d, want %d; entries: %+v", got, want, docMenu)
 	}
 
@@ -165,7 +166,7 @@ func TestBuildCategoriesMenu_ProjectLabelUsesDisplayName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
-	entry := cm.Menus["Reference"][0]
+	entry := cm.Menus["Reference"][1]
 	if entry.Name != "Platform Services" {
 		t.Fatalf("project entry name = %q, want %q (DisplayName should win over Name)", entry.Name, "Platform Services")
 	}
@@ -383,5 +384,96 @@ func TestReadCategoriesMenuDocs_ToleratesMalformedFrontmatter(t *testing.T) {
 	}
 	if got[0].Categories[0] != UncategorizedCategory {
 		t.Fatalf("malformed doc must be bucketed under _uncategorized; got %q", got[0].Categories[0])
+	}
+}
+
+// TestBuildCategoriesMenu_PrependsTitleWrapperEntry locks down the
+// title-wrapper convention: each category's menu opens with a single
+// nameless top-level entry whose `name` becomes the sidebar block's
+// title (Relearn's i18n-free title path). Every project parent
+// entry is then re-parented under that wrapper so the wrapper is the
+// menu's sole root.
+func TestBuildCategoriesMenu_PrependsTitleWrapperEntry(t *testing.T) {
+	repos := []config.Repository{
+		{Name: "project_a", DisplayName: "Project A"},
+		{Name: "project_b", DisplayName: "Project B"},
+	}
+	docs := []categoryDoc{
+		{Repository: "project_a", Title: "Setup", Path: "/project_a/setup/", Categories: []string{"Documentation"}},
+		{Repository: "project_b", Title: "Configuration", Path: "/project_b/config/", Categories: []string{"Documentation"}},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	entries := cm.Menus["Documentation"]
+	if len(entries) == 0 {
+		t.Fatal("expected non-empty Documentation menu")
+	}
+	wrapper := entries[0]
+	wantWrapperID := categoryTitleIdentifier("Documentation")
+	if wrapper.Identifier != wantWrapperID {
+		t.Fatalf("wrapper identifier = %q, want %q", wrapper.Identifier, wantWrapperID)
+	}
+	if wrapper.Name != "Documentation" {
+		t.Fatalf("wrapper name = %q, want %q (humanized category)", wrapper.Name, "Documentation")
+	}
+	if wrapper.URL != "" || wrapper.PageRef != "" {
+		t.Fatalf("wrapper must not be clickable; got url=%q pageRef=%q", wrapper.URL, wrapper.PageRef)
+	}
+	if wrapper.Parent != "" {
+		t.Fatalf("wrapper must be at top level; got parent=%q", wrapper.Parent)
+	}
+	// Every project-parent entry must reference the wrapper.
+	for _, e := range entries[1:] {
+		// Project parents have an Identifier set; doc children do not.
+		if e.Identifier == "" {
+			continue
+		}
+		if e.Parent != wantWrapperID {
+			t.Fatalf("project parent %q parent = %q, want wrapper %q",
+				e.Identifier, e.Parent, wantWrapperID)
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_UncategorizedWrapperShowsHumanLabel asserts
+// the synthetic _uncategorized bucket renders with the literal
+// display label "Uncategorized" rather than the raw "_uncategorized"
+// front-matter token.
+func TestBuildCategoriesMenu_UncategorizedWrapperShowsHumanLabel(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "Orphan", Path: "/project_a/orphan/",
+			Categories: []string{UncategorizedCategory},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wrapper := cm.Menus[UncategorizedCategory][0]
+	if wrapper.Name != "Uncategorized" {
+		t.Fatalf("uncategorized wrapper name = %q, want %q", wrapper.Name, "Uncategorized")
+	}
+}
+
+// TestHumanizeCategory checks the display-label rules for the
+// category-name humaniser used by the title wrapper.
+func TestHumanizeCategory(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{UncategorizedCategory, "Uncategorized"},
+		{"documentation", "Documentation"},
+		{"Documentation", "Documentation"},
+		{"release notes", "Release Notes"},
+		{"", ""},
+	}
+	for _, c := range cases {
+		if got := humanizeCategory(c.in); got != c.want {
+			t.Errorf("humanizeCategory(%q) = %q, want %q", c.in, got, c.want)
+		}
 	}
 }
