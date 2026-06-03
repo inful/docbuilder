@@ -59,7 +59,7 @@ func TestBuildCategoriesMenu_CollidingIntroFiles(t *testing.T) {
 		},
 	}
 
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestBuildCategoriesMenu_SkipsDocsWithoutCategory(t *testing.T) {
 		{Repository: "project_a", Title: "Untagged", Path: "/project_a/untagged/", Categories: nil},
 		{Repository: "project_a", Title: "Tagged", Path: "/project_a/tagged/", Categories: []string{"Docs"}},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -138,7 +138,7 @@ func TestBuildCategoriesMenu_SkipsDocsWithoutCategory(t *testing.T) {
 
 // TestBuildCategoriesMenu_EmptyInput is a no-op sanity check.
 func TestBuildCategoriesMenu_EmptyInput(t *testing.T) {
-	cm, err := buildCategoriesMenu(nil, nil, "repo")
+	cm, err := buildCategoriesMenu(nil, nil, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -162,7 +162,7 @@ func TestBuildCategoriesMenu_ProjectLabelUsesDisplayName(t *testing.T) {
 	docs := []categoryDoc{
 		{Repository: "platform-services", Title: "Overview", Path: "/platform-services/overview/", Categories: []string{"Reference"}},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -202,7 +202,7 @@ func TestCategoriesMenu_EmitsUncategorizedBucketForUntaggedDocs(t *testing.T) {
 			Categories: []string{UncategorizedCategory},
 		},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestCategoriesMenu_UncategorizedSidebarBlockRendersLast(t *testing.T) {
 			Categories: []string{UncategorizedCategory},
 		},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -283,7 +283,7 @@ func TestCategoriesMenu_UncategorizedSidebarBlockRendersLast(t *testing.T) {
 // returns an empty slice so the categories-menu stage falls back to
 // the default sidebar (and emits the one-line INFO log).
 func TestReadCategoriesMenuDocs_EmitsNothingForEmptyDocSet(t *testing.T) {
-	got := readCategoriesMenuDocs(nil, false, false)
+	got := readCategoriesMenuDocs(nil, false, false, nil)
 	if len(got) != 0 {
 		t.Fatalf("expected empty result for empty doc set; got %d entries", len(got))
 	}
@@ -308,7 +308,7 @@ func TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic(t *testing.T) {
 			Content:    []byte("---\ntitle: B\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, false)
+	got := readCategoriesMenuDocs(files, false, false, nil)
 	if len(got) != 3 {
 		t.Fatalf("expected 3 entries (1 doc × 2 categories + 1 doc × 1 synthetic); got %d", len(got))
 	}
@@ -352,7 +352,7 @@ func TestReadCategoriesMenuDocs_LoadsContentFromDisk(t *testing.T) {
 			Content: nil,
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, false)
+	got := readCategoriesMenuDocs(files, false, false, nil)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry from on-disk doc; got %d", len(got))
 	}
@@ -381,7 +381,7 @@ func TestReadCategoriesMenuDocs_ToleratesMalformedFrontmatter(t *testing.T) {
 	files := []docs.DocFile{
 		{Path: mdPath, Repository: "project_a", Name: "broken"},
 	}
-	got := readCategoriesMenuDocs(files, false, false)
+	got := readCategoriesMenuDocs(files, false, false, nil)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry from malformed doc; got %d", len(got))
 	}
@@ -405,7 +405,7 @@ func TestBuildCategoriesMenu_PrependsTitleWrapperEntry(t *testing.T) {
 		{Repository: "project_a", Title: "Setup", Path: "/project_a/setup/", Categories: []string{"Documentation"}},
 		{Repository: "project_b", Title: "Configuration", Path: "/project_b/config/", Categories: []string{"Documentation"}},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -452,7 +452,7 @@ func TestBuildCategoriesMenu_UncategorizedWrapperShowsHumanLabel(t *testing.T) {
 			Categories: []string{UncategorizedCategory},
 		},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -499,7 +499,7 @@ func TestReadCategoriesMenuDocs_LowercasesCategoryKey(t *testing.T) {
 			Content:    []byte("---\ntitle: M\ncategories: [Minutes]\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, false)
+	got := readCategoriesMenuDocs(files, false, false, nil)
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry; got %d", len(got))
 	}
@@ -533,7 +533,7 @@ func TestBuildCategoriesMenu_MergesCategoriesCaseInsensitively(t *testing.T) {
 			Categories: []string{"minutes"}, CategoryDisplay: "minutes",
 		},
 	}
-	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	cm, err := buildCategoriesMenu(docs, repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
@@ -609,11 +609,11 @@ func TestBuildCategoriesMenu_IdentifiersStableAcrossCaseFlips(t *testing.T) {
 			},
 		}
 	}
-	a, err := buildCategoriesMenu(mk("Minutes"), repos, "repo")
+	a, err := buildCategoriesMenu(mk("Minutes"), repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu(Minutes): %v", err)
 	}
-	b, err := buildCategoriesMenu(mk("minutes"), repos, "repo")
+	b, err := buildCategoriesMenu(mk("minutes"), repos, "repo", nil)
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu(minutes): %v", err)
 	}
@@ -672,7 +672,7 @@ func TestReadCategoriesMenuDocs_PublicOnly_DropsPrivateDocs(t *testing.T) {
 				"categories: [Secret]\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, true)
+	got := readCategoriesMenuDocs(files, false, true, nil)
 	if len(got) != 1 {
 		t.Fatalf("expected exactly the public doc; got %d entries: %+v", len(got), got)
 	}
@@ -703,7 +703,7 @@ func TestReadCategoriesMenuDocs_PublicOnly_NoPublicDocsForCategoryDropsBucket(t 
 				"categories: [Minutes]\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, true)
+	got := readCategoriesMenuDocs(files, false, true, nil)
 	if len(got) != 0 {
 		t.Fatalf("expected empty result (only private doc); got %d entries: %+v", len(got), got)
 	}
@@ -722,7 +722,7 @@ func TestReadCategoriesMenuDocs_PublicOnly_KeepsPublicUncategorized(t *testing.T
 			Content:    []byte("---\ntitle: Public Orphan\npublic: true\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, true)
+	got := readCategoriesMenuDocs(files, false, true, nil)
 	if len(got) != 1 {
 		t.Fatalf("expected the public orphan to survive; got %d entries", len(got))
 	}
@@ -745,7 +745,7 @@ func TestReadCategoriesMenuDocs_PublicOnly_MalformedFrontmatterDropped(t *testin
 	files := []docs.DocFile{
 		{Path: mdPath, Repository: "project_a", Name: "broken"},
 	}
-	got := readCategoriesMenuDocs(files, false, true)
+	got := readCategoriesMenuDocs(files, false, true, nil)
 	if len(got) != 0 {
 		t.Fatalf("expected malformed doc to be dropped under public_only; got %+v", got)
 	}
@@ -799,4 +799,291 @@ func TestComputeCategoriesMenu_PublicOnly_FiltersDownstream(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestReadCategoriesMenuDocs_ExtractsGroupingFields is the read-side
+// regression for hugo.sidebar.group_by: when the read path is given
+// a non-empty list of grouping field names, the doc's front matter
+// for each named field must end up on categoryDoc.GroupFields keyed
+// by that field name.
+func TestReadCategoriesMenuDocs_ExtractsGroupingFields(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/m.md",
+			Name:       "m",
+			Repository: "project_a",
+			Content: []byte("---\ntitle: M\ncategories: [Minutes]\n" +
+				"project: team_alpha\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false, false, []string{"project"})
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry; got %d", len(got))
+	}
+	if got[0].GroupFields == nil {
+		t.Fatalf("GroupFields must be populated when grouping fields are requested")
+	}
+	if got[0].GroupFields["project"] != "team_alpha" {
+		t.Fatalf("GroupFields[project] = %q, want %q",
+			got[0].GroupFields["project"], "team_alpha")
+	}
+}
+
+// TestReadCategoriesMenuDocs_NoGroupingFieldsNoMap confirms the
+// common case: when the read path is called with nil grouping
+// fields, no GroupFields map is allocated.
+func TestReadCategoriesMenuDocs_NoGroupingFieldsNoMap(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/m.md",
+			Name:       "m",
+			Repository: "project_a",
+			Content:    []byte("---\ntitle: M\ncategories: [Minutes]\nproject: team_alpha\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false, false, nil)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry; got %d", len(got))
+	}
+	if got[0].GroupFields != nil {
+		t.Fatalf("GroupFields must be nil when no grouping fields are requested; got %v",
+			got[0].GroupFields)
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByFrontMatterField is the headline
+// test for the new feature: docs in a category configured with
+// `group_by: [project]` are bucketed under their `project:` value
+// instead of under their source Repository.
+func TestBuildCategoriesMenu_GroupByFrontMatterField(t *testing.T) {
+	repos := []config.Repository{
+		{Name: "project_a"},
+		{Name: "project_b"},
+	}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "alpha1", Path: "/project_a/alpha1/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+		{
+			Repository: "project_b", Title: "alpha2", Path: "/project_b/alpha2/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+		{
+			Repository: "project_a", Title: "beta1", Path: "/project_a/beta1/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_beta"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	entries := cm.Menus["minutes"]
+	// Expect: wrapper + 2 project parents (alpha, beta) + 3 docs = 6.
+	if got, want := len(entries), 6; got != want {
+		t.Fatalf("minutes menu length = %d, want %d; got: %+v", got, want, entries)
+	}
+	// Both alpha docs must share the same parent identifier.
+	wantAlphaID := categoryParentIdentifier("minutes", "team_alpha")
+	wantBetaID := categoryParentIdentifier("minutes", "team_beta")
+	wantTitleID := categoryTitleIdentifier("minutes")
+	got := map[string]string{}
+	for _, e := range entries {
+		switch e.Identifier {
+		case wantTitleID:
+			if e.Parent != "" {
+				t.Errorf("wrapper must be at top level; got parent=%q", e.Parent)
+			}
+		case wantAlphaID:
+			if e.Parent != wantTitleID {
+				t.Errorf("alpha parent must point at wrapper; got parent=%q", e.Parent)
+			}
+			if e.Name != "team_alpha" {
+				t.Errorf("alpha parent label = %q, want %q", e.Name, "team_alpha")
+			}
+		case wantBetaID:
+			if e.Parent != wantTitleID {
+				t.Errorf("beta parent must point at wrapper; got parent=%q", e.Parent)
+			}
+		}
+		if e.PageRef != "" {
+			got[e.Parent] = e.Name
+		}
+	}
+	// Confirm doc parents are correct.
+	alphaDocs := 0
+	betaDocs := 0
+	for _, e := range entries {
+		if e.PageRef == "" {
+			continue
+		}
+		switch e.Parent {
+		case wantAlphaID:
+			alphaDocs++
+		case wantBetaID:
+			betaDocs++
+		}
+	}
+	if alphaDocs != 2 {
+		t.Errorf("alphaDocs = %d, want 2", alphaDocs)
+	}
+	if betaDocs != 1 {
+		t.Errorf("betaDocs = %d, want 1", betaDocs)
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByFirstSeenSpelling confirms the
+// first-seen original spelling rule applies to the new project level
+// the same way it does for category wrappers: two casings collapse to
+// one bucket labeled with whichever appeared first.
+func TestBuildCategoriesMenu_GroupByFirstSeenSpelling(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "a1", Path: "/project_a/a1/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "Team_Alpha"},
+		},
+		{
+			Repository: "project_a", Title: "a2", Path: "/project_a/a2/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	entries := cm.Menus["minutes"]
+	wantID := categoryParentIdentifier("minutes", "team_alpha")
+	for _, e := range entries {
+		if e.Identifier == wantID && e.Name != "Team_Alpha" {
+			t.Errorf("first-seen project label = %q, want %q", e.Name, "Team_Alpha")
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByFallsBackToRepository asserts that
+// a doc in a configured category with no value for the configured
+// grouping field is bucketed under its source Repository.
+func TestBuildCategoriesMenu_GroupByFallsBackToRepository(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "no-project-field", Path: "/project_a/x/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			// GroupFields is nil: no `project:` declared.
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "project_a")
+	found := false
+	for _, e := range cm.Menus["minutes"] {
+		if e.Identifier == wantID {
+			found = true
+			if e.Name != "project_a" {
+				t.Errorf("fallback parent label = %q, want %q", e.Name, "project_a")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected fallback to project_a parent; got entries: %+v", cm.Menus["minutes"])
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByScopedToConfiguredCategories
+// asserts that the group_by map only affects categories listed in
+// it; other categories continue to use Repository-based grouping.
+func TestBuildCategoriesMenu_GroupByScopedToConfiguredCategories(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "minute", Path: "/project_a/m/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+		{
+			Repository: "project_a", Title: "doc", Path: "/project_a/d/",
+			Categories: []string{"operations"}, CategoryDisplay: "Operations",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"}, // operations is NOT in the map
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	// "minutes" must use the project field; expect a team_alpha parent.
+	if id := categoryParentIdentifier("minutes", "team_alpha"); !entryByID(cm.Menus["minutes"], id) {
+		t.Errorf("minutes menu missing team_alpha parent: %+v", cm.Menus["minutes"])
+	}
+	// "operations" must NOT use the project field; it should fall
+	// back to project_a (the source Repository).
+	if id := categoryParentIdentifier("operations", "team_alpha"); entryByID(cm.Menus["operations"], id) {
+		t.Errorf("operations menu should not have a team_alpha parent: %+v", cm.Menus["operations"])
+	}
+	if id := categoryParentIdentifier("operations", "project_a"); !entryByID(cm.Menus["operations"], id) {
+		t.Errorf("operations menu missing project_a parent: %+v", cm.Menus["operations"])
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByPublicOnlyFilter applies the
+// public_only contract to docs that carry a grouping field: a
+// private doc is dropped, and its group key must not surface.
+func TestBuildCategoriesMenu_GroupByPublicOnlyFilter(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title: "Public Only Build",
+			Sidebar: &config.SidebarConfig{
+				Mode:    config.SidebarModeCategories,
+				GroupBy: map[string][]string{"minutes": {"project"}},
+			},
+		},
+		Daemon: &config.DaemonConfig{
+			Content: config.DaemonContentConfig{PublicOnly: true},
+		},
+		Repositories: []config.Repository{{Name: "project_a"}},
+	}
+	g := NewGenerator(cfg, out)
+	docPub := docWithFrontMatter("project_a", "pub",
+		"---\ntitle: Public\npublic: true\ncategories: [Minutes]\n"+
+			"project: team_alpha\n---\n")
+	docPriv := docWithFrontMatter("project_a", "priv",
+		"---\ntitle: Private\ncategories: [Minutes]\n"+
+			"project: secret_team\n---\n")
+	cm, err := g.computeCategoriesMenu(&models.BuildState{
+		Docs: models.DocsState{Files: []docs.DocFile{docPub, docPriv}},
+	})
+	if err != nil {
+		t.Fatalf("computeCategoriesMenu: %v", err)
+	}
+	if id := categoryParentIdentifier("minutes", "secret_team"); entryByID(cm.Menus["minutes"], id) {
+		t.Errorf("private group's parent leaked into menu: %+v", cm.Menus["minutes"])
+	}
+	if id := categoryParentIdentifier("minutes", "team_alpha"); !entryByID(cm.Menus["minutes"], id) {
+		t.Errorf("public group's parent missing: %+v", cm.Menus["minutes"])
+	}
+}
+
+func entryByID(entries []models.MenuEntry, id string) bool {
+	for _, e := range entries {
+		if e.Identifier == id {
+			return true
+		}
+	}
+	return false
 }

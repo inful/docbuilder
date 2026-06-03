@@ -443,6 +443,8 @@ hugo:
     mode: auto                 # the default; "categories" and unset are equivalent
     keep_default_menu: true     # keep the full main page menu below the category menus
     project_segment: repo      # today only "repo" is supported
+    group_by:                  # optional: per-category sub-grouping by a front-matter field
+      minutes: [project]       # group "Minutes" docs by their `project:` value
 ```
 
 | Field | Description |
@@ -450,6 +452,7 @@ hugo:
 | `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. |
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
+| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names to consult; the first non-empty value becomes the project-level key for that doc. Categories not present in the map use the default Repository-based grouping. Docs whose configured fields are all empty fall back to their source Repository so they still surface under a sensible heading. |
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 
@@ -472,6 +475,45 @@ categories: [Documentation]
 ```
 
 **Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
+
+**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at a front-matter field and DocBuilder will use that field's value as the project-level key inside the sidebar block.
+
+```yaml
+hugo:
+  sidebar:
+    group_by:
+      minutes: [project]   # group "Minutes" docs by their `project:` field
+```
+
+```markdown
+---
+title: Team Alpha Sync
+categories: [Minutes]
+project: team_alpha
+---
+
+# Team Alpha Sync
+```
+
+```markdown
+---
+title: Team Beta Sync
+categories: [Minutes]
+project: team_beta
+---
+```
+
+With the config above, the rendered sidebar shows:
+
+```
+Minutes
+  team_alpha
+    Team Alpha Sync
+  team_beta
+    Team Beta Sync
+```
+
+A doc that belongs to a configured category but has no value for the configured field falls back to its source Repository, so unannotated docs still surface somewhere sensible. The label preserves the original spelling of the front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
 
 ## Output Section
 

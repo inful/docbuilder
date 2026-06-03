@@ -34,6 +34,14 @@ type categoryDoc struct {
 	// pipeline emits one categoryDoc per declared category so the
 	// pairing is always one-to-one.
 	CategoryDisplay string
+	// GroupFields carries the raw values of any front-matter fields
+	// the user has asked to be used for sub-grouping (see
+	// hugo.sidebar.group_by). The map is keyed by field name; the
+	// value is the trimmed front-matter string (or "" when the field
+	// is missing or empty). Nil when no grouping fields were
+	// requested at read time, which keeps the cost of the common
+	// (no-grouping) path at zero.
+	GroupFields map[string]string
 }
 
 // UncategorizedCategory is the synthetic category name emitted for
@@ -58,7 +66,14 @@ var UncategorizedCategory = config.SidebarUncategorizedCategory
 // The projectSegment argument is reserved for future segmentations
 // (forge, group). Today only "repo" is supported and any other value
 // returns an error so misconfiguration fails fast and loudly.
-func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, projectSegment string) (*models.CategoriesMenu, error) {
+//
+// groupBy, when non-empty, opts a category into a front-matter-driven
+// sub-grouping under its wrapper. The map is keyed by canonical
+// (lowercased) category name; the value is the ordered list of
+// front-matter field names to consult. Only the first field in the
+// list is used today. Categories not present in the map use the
+// default Repository-based grouping.
+func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, projectSegment string, groupBy map[string][]string) (*models.CategoriesMenu, error) {
 	if projectSegment != "repo" {
 		return nil, fmt.Errorf("unsupported sidebar project_segment %q (only \"repo\" is supported)", projectSegment)
 	}
@@ -77,15 +92,20 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 		repoByName[repos[i].Name] = repos[i]
 	}
 
-	// category -> project -> []doc, keyed by the canonical
-	// (lowercased) category form so case variants merge into a
-	// single bucket. displayByKey remembers the first original
-	// spelling seen per canonical key — that becomes the wrapper
-	// label rendered in the sidebar.
+	// category -> projectKey -> []doc, where projectKey is either the
+	// doc's Repository (the default) or the value of a front-matter
+	// field when the category is configured in groupBy. We use a
+	// single two-level map and let projectKeyForDoc below decide the
+	// per-category key.
 	type projectDocs = []categoryDoc
 	type categoryGroup = map[string]projectDocs
 	grouped := make(map[string]categoryGroup)
+	// displayByKey remembers the first original spelling seen per
+	// (category, projectKey) pair. The category spelling drives the
+	// sidebar block title; the projectKey spelling drives the
+	// expandable header underneath it.
 	displayByKey := make(map[string]string)
+	displayByKeyProject := make(map[string]string)
 	for _, d := range items {
 		for i, raw := range d.Categories {
 			raw = strings.TrimSpace(raw)
@@ -96,19 +116,17 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 			if grouped[key] == nil {
 				grouped[key] = make(categoryGroup)
 			}
-			grouped[key][d.Repository] = append(grouped[key][d.Repository], d)
+			projectKey := projectKeyForDoc(d, key, groupBy)
+			grouped[key][projectKey] = append(grouped[key][projectKey], d)
 			if _, seen := displayByKey[key]; !seen {
-				// Prefer the doc's CategoryDisplay when present and
-				// the iteration is at the first declared category
-				// (readCategoriesMenuDocs only ever emits one
-				// category per categoryDoc, so this is the common
-				// path). Otherwise fall back to the raw spelling
-				// from this position of d.Categories.
 				display := raw
 				if i == 0 && d.CategoryDisplay != "" {
 					display = strings.TrimSpace(d.CategoryDisplay)
 				}
 				displayByKey[key] = display
+			}
+			if _, seen := displayByKeyProject[projectKey]; !seen {
+				displayByKeyProject[projectKey] = projectDisplayLabel(d, projectKey, repoByName)
 			}
 		}
 	}
@@ -144,15 +162,10 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 
 		// First pass: emit parent entries.
 		for _, projectName := range projectNames {
-			repo, ok := repoByName[projectName]
-			label := projectName
-			if ok {
-				label = repo.Label()
-			}
 			parentID := categoryParentIdentifier(cat, projectName)
 			cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
 				Identifier: parentID,
-				Name:       label,
+				Name:       displayByKeyProject[projectName],
 				Parent:     titleID,
 			})
 		}
@@ -192,6 +205,57 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 	}
 
 	return cm, nil
+}
+
+// projectKeyForDoc returns the project-level key used to group a doc
+// under the given canonical category. When groupBy declares a
+// front-matter field for this category and the doc carries a value
+// for it, that value is used (slugified to a canonical form). When
+// the configured field is absent or empty, the doc falls back to
+// its source Repository. Categories with no entry in groupBy always
+// use Repository. The first-seen original spelling for the key is
+// recorded separately by the caller via projectDisplayLabel.
+func projectKeyForDoc(d categoryDoc, canonicalCat string, groupBy map[string][]string) string {
+	fields, ok := groupBy[canonicalCat]
+	if !ok || len(fields) == 0 {
+		return d.Repository
+	}
+	for _, f := range fields {
+		if v, present := d.GroupFields[f]; present {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				return strings.ToLower(v)
+			}
+		}
+	}
+	return d.Repository
+}
+
+// projectDisplayLabel returns the first-seen label for a project-level
+// key. When the key is a Repository name, the repository's
+// DisplayName (or Name if DisplayName is unset) is preferred — the
+// same rule the project level has always used. When the key was
+// derived from a front-matter field, the first-seen raw spelling
+// wins so intentional casings like "team_alpha" or "Team-Alpha" are
+// preserved. Repository labels and front-matter labels can both
+// produce a key; the first to register a projectKey wins.
+func projectDisplayLabel(d categoryDoc, projectKey string, repoByName map[string]config.Repository) string {
+	// First, see if the project key was derived from one of the
+	// doc's front-matter GroupFields. If so, use the first-seen raw
+	// spelling. We match on lowercased equality because projectKey
+	// is the lowercased canonical form.
+	for _, raw := range d.GroupFields {
+		raw = strings.TrimSpace(raw)
+		if raw != "" && strings.EqualFold(raw, projectKey) {
+			return raw
+		}
+	}
+	// Otherwise the project key is the doc's Repository. Use the
+	// DisplayName if one is registered, else the name verbatim.
+	if repo, ok := repoByName[projectKey]; ok {
+		return repo.Label()
+	}
+	return projectKey
 }
 
 // categoryParentIdentifier builds a stable, collision-resistant
@@ -314,7 +378,14 @@ const uncategorizedSidebarWeightValue = 999
 // _uncategorized category with a debug log when publicOnly is false,
 // and silently dropped when publicOnly is true. They are not stage
 // failures because the rest of the pipeline tolerates them.
-func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly bool) []categoryDoc {
+//
+// groupingFields is the set of front-matter field names the build
+// stage wants to consult when computing per-category sub-groupings
+// (see hugo.sidebar.group_by). When non-empty, each named field is
+// extracted from the doc's front matter and recorded on
+// categoryDoc.GroupFields. When nil or empty, no GroupFields are
+// populated and the build falls back to Repository-based grouping.
+func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly bool, groupingFields []string) []categoryDoc {
 	out := make([]categoryDoc, 0, len(files))
 	for i := range files {
 		f := &files[i]
@@ -406,6 +477,16 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly 
 			// /categories/_uncategorized/) for the user to triage.
 			cats = []string{UncategorizedCategory}
 		}
+		// Extract any user-configured grouping fields once per doc
+		// (the value is shared across every categoryDoc we emit for
+		// this file). Nil when no grouping fields were requested.
+		var groupFields map[string]string
+		if len(groupingFields) > 0 {
+			groupFields = make(map[string]string, len(groupingFields))
+			for _, name := range groupingFields {
+				groupFields[name] = extractString(fm, name)
+			}
+		}
 		// Emit one categoryDoc per declared (or synthetic) category.
 		// The canonical key (lowercased + trimmed) is what we group
 		// on; the original spelling rides along in CategoryDisplay
@@ -423,6 +504,7 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly 
 				Weight:          weight,
 				Categories:      []string{key},
 				CategoryDisplay: display,
+				GroupFields:     groupFields,
 			})
 		}
 	}

@@ -24,10 +24,30 @@ func (g *Generator) computeCategoriesMenu(ctx *models.BuildState) (*models.Categ
 	if !g.config.Hugo.Sidebar.IsCategories() {
 		return nil, models.ErrCategoriesMenuSkipped
 	}
+	// Flatten the configured group_by field names into a single set
+	// for the read path. The read path does not care which
+	// categories the fields apply to; the build path is responsible
+	// for matching them back up.
+	var groupingFields []string
+	var groupBy map[string][]string
+	if g.config.Hugo.Sidebar != nil && len(g.config.Hugo.Sidebar.GroupBy) > 0 {
+		groupBy = g.config.Hugo.Sidebar.GroupBy
+		seen := make(map[string]struct{}, len(groupBy))
+		for _, fields := range groupBy {
+			for _, f := range fields {
+				if _, dup := seen[f]; dup || f == "" {
+					continue
+				}
+				seen[f] = struct{}{}
+				groupingFields = append(groupingFields, f)
+			}
+		}
+	}
 	items := readCategoriesMenuDocs(
 		ctx.Docs.Files,
 		ctx.Docs.IsSingleRepo,
 		g.config.IsDaemonPublicOnlyEnabled(),
+		groupingFields,
 	)
 	if len(items) == 0 {
 		// Truly empty build (no docs at all). The synthetic
@@ -44,5 +64,5 @@ func (g *Generator) computeCategoriesMenu(ctx *models.BuildState) (*models.Categ
 	if g.config.Hugo.Sidebar != nil && g.config.Hugo.Sidebar.ProjectSegment != "" {
 		segment = g.config.Hugo.Sidebar.ProjectSegment
 	}
-	return buildCategoriesMenu(items, g.config.Repositories, segment)
+	return buildCategoriesMenu(items, g.config.Repositories, segment, groupBy)
 }
