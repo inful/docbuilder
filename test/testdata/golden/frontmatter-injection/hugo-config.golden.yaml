@@ -30,6 +30,17 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_test_repo
+          name: test-repo
+        - name: Page Without EditURL
+          pageRef: /no-editurl/
+          parent: cat_x__uncategorized_test_repo
+        - name: Page With Repository Metadata
+          pageRef: /metadata/
+          parent: cat_x__uncategorized_test_repo
+          weight: 10
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -62,6 +73,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

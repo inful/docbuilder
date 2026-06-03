@@ -30,6 +30,13 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_only_readme
+          name: only-readme
+        - name: README
+          pageRef: /readme/
+          parent: cat_x__uncategorized_only_readme
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +67,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

@@ -30,6 +30,28 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_backend
+          name: backend
+        - identifier: cat_x__uncategorized_frontend
+          name: frontend
+        - name: Backend API
+          pageRef: /backend/api/
+          parent: cat_x__uncategorized_backend
+          weight: 1
+        - name: Backend Authentication
+          pageRef: /backend/auth/
+          parent: cat_x__uncategorized_backend
+          weight: 2
+        - name: Frontend Guide
+          pageRef: /frontend/guide/
+          parent: cat_x__uncategorized_frontend
+          weight: 1
+        - name: Frontend Setup
+          pageRef: /frontend/setup/
+          parent: cat_x__uncategorized_frontend
+          weight: 2
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +82,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

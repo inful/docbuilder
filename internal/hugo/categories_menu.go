@@ -2,6 +2,7 @@ package hugo
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
 // categoryDoc is the minimal projection of a DocFile that the
@@ -210,9 +212,12 @@ func uncategorizedSidebarWeight(cat string) int {
 const uncategorizedSidebarWeightValue = 999
 
 // readCategoriesMenuDocs projects each doc into the categoryDoc shape
-// consumed by buildCategoriesMenu. It reads front matter from the
-// in-memory DocFile.Content (loaded during discovery), not from disk,
-// so the stage can run before the copy-content stage.
+// consumed by buildCategoriesMenu. It reads front matter from each
+// non-asset doc, loading the file content on demand if the in-memory
+// f.Content is not yet populated. The categories-menu stage runs
+// before the copy-content stage in the pipeline, so f.Content is
+// typically empty at this point; we trigger the same lazy load that
+// copyContentFiles would, then read the front matter.
 //
 // Title resolution prefers the front matter `title` field. When the
 // front matter does not declare one, the doc filename (without
@@ -224,32 +229,88 @@ const uncategorizedSidebarWeightValue = 999
 // categories (or an empty list), the function emits a single
 // categoryDoc bucketed under UncategorizedCategory so un-categorized
 // docs surface as a triage list in the rendered sidebar.
-func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]categoryDoc, error) {
+//
+// The function does not return an error today. Unreadable files
+// and malformed front matter are both bucketed under the synthetic
+// _uncategorized category with a debug log; they are not stage
+// failures because the rest of the pipeline tolerates them.
+func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryDoc {
 	out := make([]categoryDoc, 0, len(files))
 	for i := range files {
 		f := &files[i]
 		if f.IsAsset {
 			continue
 		}
+		// Load content on demand if not already loaded. This is the
+		// same lazy-load path used by the copy-content stage; it
+		// keeps the categories-menu stage self-sufficient without
+		// requiring it to run after the copy-content stage.
 		if len(f.Content) == 0 {
-			// Discovery loads content on demand; if it was not
-			// loaded, there is no front matter to read.
-			continue
+			if err := f.LoadContent(); err != nil {
+				// A doc that cannot be read is treated as having no
+				// front matter; it will be bucketed under the
+				// synthetic _uncategorized category if it has a
+				// non-empty path, or skipped otherwise. We do not
+				// fail the build for a single unreadable doc.
+				slog.Debug("Skipping doc in categories menu: cannot read content",
+					logfields.Path(f.Path), logfields.Error(err))
+				// We still want the doc to surface under the
+				// synthetic bucket when it has a discoverable path.
+				// Project that onto the uncategorized bucket.
+				if f.Path != "" {
+					hugoPath := f.GetHugoPath(isSingleRepo)
+					hugoPath = strings.TrimPrefix(hugoPath, "content/")
+					pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+					out = append(out, categoryDoc{
+						Repository: f.Repository,
+						Title:      f.Name,
+						Path:       pageRef,
+						Weight:     0,
+						Categories: []string{UncategorizedCategory},
+					})
+				}
+				continue
+			}
 		}
 		fm, _, had, _, err := frontmatterops.Read(f.Content)
 		if err != nil {
-			return nil, fmt.Errorf("categories menu: parse front matter for %s: %w", f.Path, err)
+			// A doc with malformed front matter must not fail the
+			// build; the copy-content stage tolerates it via a
+			// dedicated transform, and so do we. Bucket the doc
+			// under the synthetic _uncategorized category and
+			// log a debug message so the user can find the offender
+			// without a build failure.
+			slog.Debug("Categories menu: skipping doc with malformed front matter",
+				logfields.Path(f.Path), logfields.Error(err))
+			hugoPath := f.GetHugoPath(isSingleRepo)
+			hugoPath = strings.TrimPrefix(hugoPath, "content/")
+			pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+			out = append(out, categoryDoc{
+				Repository: f.Repository,
+				Title:      f.Name,
+				Path:       pageRef,
+				Weight:     0,
+				Categories: []string{UncategorizedCategory},
+			})
+			continue
 		}
 		if !had {
+			// No front matter: still bucket under synthetic so the
+			// doc shows up in /categories/_uncategorized/ for the
+			// user to triage.
+			hugoPath := f.GetHugoPath(isSingleRepo)
+			hugoPath = strings.TrimPrefix(hugoPath, "content/")
+			pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+			out = append(out, categoryDoc{
+				Repository: f.Repository,
+				Title:      f.Name,
+				Path:       pageRef,
+				Weight:     0,
+				Categories: []string{UncategorizedCategory},
+			})
 			continue
 		}
 		cats := extractStringSlice(fm, "categories")
-		if len(cats) == 0 {
-			// Bucket un-categorized docs under the synthetic
-			// category so they appear in the sidebar (and in
-			// /categories/_uncategorized/) for the user to triage.
-			cats = []string{UncategorizedCategory}
-		}
 		title := extractString(fm, "title")
 		if title == "" {
 			title = f.Name
@@ -261,6 +322,12 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]category
 		// the ".md" suffix stripped, and a trailing slash appended.
 		hugoPath = strings.TrimPrefix(hugoPath, "content/")
 		pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
+		if len(cats) == 0 {
+			// Bucket un-categorized docs under the synthetic
+			// category so they appear in the sidebar (and in
+			// /categories/_uncategorized/) for the user to triage.
+			cats = []string{UncategorizedCategory}
+		}
 		// Emit one categoryDoc per declared (or synthetic) category.
 		for _, cat := range cats {
 			out = append(out, categoryDoc{
@@ -281,7 +348,7 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]category
 		}
 		return out[i].Path < out[j].Path
 	})
-	return out, nil
+	return out
 }
 
 func extractString(fm map[string]any, key string) string {
