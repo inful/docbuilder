@@ -92,15 +92,16 @@ func TestHugoConfigGolden_CategoriesMode(t *testing.T) {
 		t.Fatalf("unmarshal hugo.yaml: %v", unmarshalErr)
 	}
 
-	// 1) The Documentation menu exists and is keyed at root.menu.Documentation.
+	// 1) The Documentation menu exists and is keyed at root.menu.documentation
+	// (canonical lowercase form so case variants merge).
 	menus, ok := parsed["menu"].(map[string]any)
 	if !ok {
 		t.Fatalf("expected root.menu to be a map; got %T (yaml:\n%s)", parsed["menu"], data)
 	}
-	docMenu, isList := menus["Documentation"].([]any)
+	docMenu, isList := menus["documentation"].([]any)
 	if !isList {
-		t.Fatalf("expected menu.Documentation to be a list; got %T (yaml:\n%s)",
-			menus["Documentation"], data)
+		t.Fatalf("expected menu.documentation to be a list; got %T (yaml:\n%s)",
+			menus["documentation"], data)
 	}
 	if got, want := len(docMenu), 7; got != want {
 		t.Fatalf("Documentation menu length = %d, want %d; got: %v", got, want, docMenu)
@@ -149,8 +150,8 @@ func TestHugoConfigGolden_CategoriesMode(t *testing.T) {
 	if first["type"] != "menu" {
 		t.Fatalf("first sidebar block should be type=menu; got %v", first)
 	}
-	if first["identifier"] != "Documentation" {
-		t.Fatalf("first sidebar block identifier = %v, want Documentation", first["identifier"])
+	if first["identifier"] != "documentation" {
+		t.Fatalf("first sidebar block identifier = %v, want documentation", first["identifier"])
 	}
 	// The last block must be the default main page menu.
 	last := sidebars[len(sidebars)-1].(map[string]any)

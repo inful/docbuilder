@@ -6,9 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
@@ -24,7 +21,19 @@ type categoryDoc struct {
 	Title      string
 	Path       string // Hugo path used for the menu entry's pageRef
 	Weight     int
+	// Categories holds the canonical (lowercased, trimmed) category
+	// keys for this doc. Using the canonical key for grouping merges
+	// "Minutes" and "minutes" into a single sidebar block.
 	Categories []string
+	// CategoryDisplay is the original (case-preserved, trimmed)
+	// spelling of the category as the doc author wrote it. The first
+	// occurrence of a given canonical key — under the stable input
+	// ordering produced by readCategoriesMenuDocs — wins as the
+	// rendered wrapper label. When a doc declares multiple
+	// categories, CategoryDisplay matches Categories[0]; the read
+	// pipeline emits one categoryDoc per declared category so the
+	// pairing is always one-to-one.
+	CategoryDisplay string
 }
 
 // UncategorizedCategory is the synthetic category name emitted for
@@ -68,20 +77,39 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 		repoByName[repos[i].Name] = repos[i]
 	}
 
-	// category -> project -> []doc
+	// category -> project -> []doc, keyed by the canonical
+	// (lowercased) category form so case variants merge into a
+	// single bucket. displayByKey remembers the first original
+	// spelling seen per canonical key — that becomes the wrapper
+	// label rendered in the sidebar.
 	type projectDocs = []categoryDoc
 	type categoryGroup = map[string]projectDocs
 	grouped := make(map[string]categoryGroup)
+	displayByKey := make(map[string]string)
 	for _, d := range items {
-		for _, cat := range d.Categories {
-			cat = strings.TrimSpace(cat)
-			if cat == "" {
+		for i, raw := range d.Categories {
+			raw = strings.TrimSpace(raw)
+			if raw == "" {
 				continue
 			}
-			if grouped[cat] == nil {
-				grouped[cat] = make(categoryGroup)
+			key := strings.ToLower(raw)
+			if grouped[key] == nil {
+				grouped[key] = make(categoryGroup)
 			}
-			grouped[cat][d.Repository] = append(grouped[cat][d.Repository], d)
+			grouped[key][d.Repository] = append(grouped[key][d.Repository], d)
+			if _, seen := displayByKey[key]; !seen {
+				// Prefer the doc's CategoryDisplay when present and
+				// the iteration is at the first declared category
+				// (readCategoriesMenuDocs only ever emits one
+				// category per categoryDoc, so this is the common
+				// path). Otherwise fall back to the raw spelling
+				// from this position of d.Categories.
+				display := raw
+				if i == 0 && d.CategoryDisplay != "" {
+					display = strings.TrimSpace(d.CategoryDisplay)
+				}
+				displayByKey[key] = display
+			}
 		}
 	}
 
@@ -111,7 +139,7 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 		titleID := categoryTitleIdentifier(cat)
 		cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
 			Identifier: titleID,
-			Name:       humanizeCategory(cat),
+			Name:       categoryDisplayLabel(cat, displayByKey[cat]),
 		})
 
 		// First pass: emit parent entries.
@@ -183,16 +211,21 @@ func categoryTitleIdentifier(category string) string {
 	return "cat_" + slugForIdentifier(category) + "_top"
 }
 
-// humanizeCategory turns a raw category name into the display label
-// shown above the category's sidebar block. The synthetic
-// _uncategorized bucket maps to the literal "Uncategorized"; every
-// other category is title-cased word-by-word ("release notes" ->
-// "Release Notes") and otherwise left untouched.
-func humanizeCategory(category string) string {
-	if category == UncategorizedCategory {
+// categoryDisplayLabel returns the human-visible label rendered above
+// a category's sidebar block. The synthetic _uncategorized bucket
+// always renders as the literal "Uncategorized". Every user category
+// renders with the first original spelling observed (already chosen
+// by the caller and passed in as displaySpelling); this is more
+// truthful than blanket title-casing because it preserves intentional
+// casings like "iOS" or "eBPF" exactly as the author wrote them.
+func categoryDisplayLabel(canonicalKey, displaySpelling string) string {
+	if canonicalKey == UncategorizedCategory {
 		return "Uncategorized"
 	}
-	return cases.Title(language.English).String(category)
+	if displaySpelling != "" {
+		return displaySpelling
+	}
+	return canonicalKey
 }
 
 // categorySidebarIdentifier returns the identifier to use for a
@@ -300,11 +333,12 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 					hugoPath = strings.TrimPrefix(hugoPath, "content/")
 					pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
 					out = append(out, categoryDoc{
-						Repository: f.Repository,
-						Title:      f.Name,
-						Path:       pageRef,
-						Weight:     0,
-						Categories: []string{UncategorizedCategory},
+						Repository:      f.Repository,
+						Title:           f.Name,
+						Path:            pageRef,
+						Weight:          0,
+						Categories:      []string{UncategorizedCategory},
+						CategoryDisplay: UncategorizedCategory,
 					})
 				}
 				continue
@@ -324,11 +358,12 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 			hugoPath = strings.TrimPrefix(hugoPath, "content/")
 			pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
 			out = append(out, categoryDoc{
-				Repository: f.Repository,
-				Title:      f.Name,
-				Path:       pageRef,
-				Weight:     0,
-				Categories: []string{UncategorizedCategory},
+				Repository:      f.Repository,
+				Title:           f.Name,
+				Path:            pageRef,
+				Weight:          0,
+				Categories:      []string{UncategorizedCategory},
+				CategoryDisplay: UncategorizedCategory,
 			})
 			continue
 		}
@@ -340,11 +375,12 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 			hugoPath = strings.TrimPrefix(hugoPath, "content/")
 			pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
 			out = append(out, categoryDoc{
-				Repository: f.Repository,
-				Title:      f.Name,
-				Path:       pageRef,
-				Weight:     0,
-				Categories: []string{UncategorizedCategory},
+				Repository:      f.Repository,
+				Title:           f.Name,
+				Path:            pageRef,
+				Weight:          0,
+				Categories:      []string{UncategorizedCategory},
+				CategoryDisplay: UncategorizedCategory,
 			})
 			continue
 		}
@@ -367,13 +403,22 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) []categoryD
 			cats = []string{UncategorizedCategory}
 		}
 		// Emit one categoryDoc per declared (or synthetic) category.
+		// The canonical key (lowercased + trimmed) is what we group
+		// on; the original spelling rides along in CategoryDisplay
+		// so the first-seen spelling can drive the sidebar label.
 		for _, cat := range cats {
+			display := strings.TrimSpace(cat)
+			if display == "" {
+				continue
+			}
+			key := strings.ToLower(display)
 			out = append(out, categoryDoc{
-				Repository: f.Repository,
-				Title:      title,
-				Path:       pageRef,
-				Weight:     weight,
-				Categories: []string{cat},
+				Repository:      f.Repository,
+				Title:           title,
+				Path:            pageRef,
+				Weight:          weight,
+				Categories:      []string{key},
+				CategoryDisplay: display,
 			})
 		}
 	}
