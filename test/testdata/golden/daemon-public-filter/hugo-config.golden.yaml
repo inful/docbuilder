@@ -31,6 +31,15 @@ markup:
         style: github
         tabWidth: 4
 menu:
+    announcements:
+        - identifier: cat_announcements_top
+          name: Announcements
+        - identifier: cat_announcements_public_filter_repo
+          name: public-filter-repo
+          parent: cat_announcements_top
+        - name: public-announcement
+          pageRef: /public-announcement/
+          parent: cat_announcements_public_filter_repo
     x__uncategorized:
         - identifier: cat_x__uncategorized_top
           name: Uncategorized
@@ -77,6 +86,9 @@ params:
           identifier: x__uncategorized
           type: menu
           weight: 999
+        - disableTitle: false
+          identifier: announcements
+          type: menu
         - identifier: main
           pageRef: /
           type: page

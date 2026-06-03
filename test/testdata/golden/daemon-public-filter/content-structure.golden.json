@@ -24,6 +24,14 @@
       },
       "contentHash": "sha256:f1490da339a0c27a"
     },
+    "content/public-announcement.md": {
+      "frontmatter": {
+        "public": true,
+        "title": "Public Announcement",
+        "type": "docs"
+      },
+      "contentHash": "sha256:933c18967aa2aea0"
+    },
     "content/public-page.md": {
       "frontmatter": {
         "public": true,
@@ -42,6 +50,7 @@
       "_index.md": {},
       "nested-public.md": {}
     },
+    "public-announcement.md": {},
     "public-page.md": {}
   }
 }
