@@ -1,0 +1,38 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "title": "Sidebar Group By Demo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:98da5c7caefdc5ec"
+    },
+    "content/operations.md": {
+      "frontmatter": {
+        "title": "Operations Runbook",
+        "type": "docs"
+      },
+      "contentHash": "sha256:b9654856f129ed7f"
+    },
+    "content/team-alpha-sync.md": {
+      "frontmatter": {
+        "title": "Team Alpha Sync",
+        "type": "docs"
+      },
+      "contentHash": "sha256:bcb846063fdac433"
+    },
+    "content/team-beta-sync.md": {
+      "frontmatter": {
+        "title": "Team Beta Sync",
+        "type": "docs"
+      },
+      "contentHash": "sha256:be90964f4d9dcaf5"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "operations.md": {},
+    "team-alpha-sync.md": {},
+    "team-beta-sync.md": {}
+  }
+}

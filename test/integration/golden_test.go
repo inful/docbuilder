@@ -173,6 +173,24 @@ func TestGolden_CrossRepoLinks(t *testing.T) {
 	)
 }
 
+// TestGolden_SidebarGroupBy tests the hugo.sidebar.group_by config:
+// docs in a category configured with `group_by: [project]` are
+// bucketed under their `project:` value rather than their source
+// Repository. Categories not listed in the map continue to use the
+// default Repository-based grouping.
+func TestGolden_SidebarGroupBy(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	runGoldenTest(t,
+		"../../test/testdata/repos/sidebar-group-by",
+		"../../test/testdata/configs/sidebar-group-by.yaml",
+		"../../test/testdata/golden/sidebar-group-by",
+		*updateGolden,
+	)
+}
+
 // TestGolden_EmptyDocs tests handling of repository with no markdown files.
 // This test verifies:
 // - Build succeeds even with empty docs directory

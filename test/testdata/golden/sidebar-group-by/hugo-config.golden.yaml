@@ -1,0 +1,108 @@
+baseURL: http://localhost:1313/
+defaultContentLanguage: en
+description: Testing hugo.sidebar.group_by per-category sub-grouping
+enableGitInfo: false
+languages:
+    en:
+        languageName: English
+        weight: 1
+markup:
+    goldmark:
+        extensions:
+            passthrough:
+                delimiters:
+                    block:
+                        - - \[
+                          - \]
+                        - - $$
+                          - $$
+                    inline:
+                        - - \(
+                          - \)
+                enable: true
+        parser:
+            attribute:
+                block: true
+        renderer:
+            unsafe: true
+    highlight:
+        lineNos: true
+        noClasses: false
+        style: github
+        tabWidth: 4
+menu:
+    minutes:
+        - identifier: cat_minutes_top
+          name: Minutes
+        - identifier: cat_minutes_team_alpha
+          name: team_alpha
+          parent: cat_minutes_top
+        - identifier: cat_minutes_team_beta
+          name: team_beta
+          parent: cat_minutes_top
+        - name: Team Alpha Sync
+          pageRef: /team-alpha-sync/
+          parent: cat_minutes_team_alpha
+        - name: Team Beta Sync
+          pageRef: /team-beta-sync/
+          parent: cat_minutes_team_beta
+    operations:
+        - identifier: cat_operations_top
+          name: Operations
+        - identifier: cat_operations_sidebar_group_by_repo
+          name: sidebar-group-by-repo
+          parent: cat_operations_top
+        - name: Operations Runbook
+          pageRef: /operations/
+          parent: cat_operations_sidebar_group_by_repo
+module:
+    imports:
+        - path: github.com/McShelby/hugo-theme-relearn
+          version: 9.0.3
+outputs:
+    home:
+        - HTML
+        - RSS
+        - JSON
+    taxonomy:
+        - HTML
+        - JSON
+    term:
+        - HTML
+        - JSON
+params:
+    alwaysopen: false
+    collapsibleMenu: true
+    disableBreadcrumb: false
+    disableGeneratorVersion: false
+    disableLandingPageButton: true
+    disableLanguageSwitchingButton: true
+    disableShortcutsTitle: false
+    disableTagHiddenPages: false
+    editURL: {}
+    math:
+        enable: true
+    mermaid:
+        enable: true
+    showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: minutes
+          type: menu
+        - disableTitle: false
+          identifier: operations
+          type: menu
+        - identifier: main
+          pageRef: /
+          type: page
+    themeVariant:
+        - auto
+        - zen-light
+        - zen-dark
+    themeVariantAuto:
+        - zen-light
+        - zen-dark
+taxonomies:
+    category: categories
+    tag: tags
+title: Sidebar Group By Demo

@@ -1,0 +1,21 @@
+version: "2.0"
+
+repositories:
+  - name: sidebar-group-by-repo
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Sidebar Group By Demo"
+  description: "Testing hugo.sidebar.group_by per-category sub-grouping"
+  base_url: "http://localhost:1313/"
+  sidebar:
+    mode: categories
+    group_by:
+      minutes: [project]
+
+output:
+  directory: PLACEHOLDER
+  clean: true

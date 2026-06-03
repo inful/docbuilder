@@ -40,6 +40,25 @@ type SidebarConfig struct {
 	// so future segmentations (e.g., forge, group) can be added without
 	// a schema change.
 	ProjectSegment string `yaml:"project_segment,omitempty"`
+
+	// GroupBy opts a category into a sub-grouping under its wrapper.
+	// The map is keyed by the canonical (lowercased) category name;
+	// each value is the ordered list of front-matter field names that
+	// define the sub-level axis. Only the first field in the list is
+	// honored today; subsequent entries are reserved for future use.
+	//
+	// For a doc in a configured category, the project-level key
+	// becomes the value of the first non-empty configured field. When
+	// none of the configured fields are set, the doc falls back to
+	// its source Repository so it still surfaces under a sensible
+	// heading. Categories without an entry in this map use the
+	// default Repository-based grouping.
+	//
+	// Example:
+	//   sidebar:
+	//     group_by:
+	//       minutes: [project]   # group "Minutes" docs by their `project:` field
+	GroupBy map[string][]string `yaml:"group_by,omitempty"`
 }
 
 // SidebarMode is a typed identifier for the sidebar wiring mode.
