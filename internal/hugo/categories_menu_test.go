@@ -102,9 +102,9 @@ func TestBuildCategoriesMenu_CollidingIntroFiles(t *testing.T) {
 	if got, want := len(cm.SidebarEntries), 1; got != want {
 		t.Fatalf("sidebar entries = %d, want %d; got: %+v", got, want, cm.SidebarEntries)
 	}
-	if cm.SidebarEntries[0].Identifier != "cat-Documentation" {
+	if cm.SidebarEntries[0].Identifier != "Documentation" {
 		t.Fatalf("sidebar entry identifier = %q, want %q",
-			cm.SidebarEntries[0].Identifier, "cat-Documentation")
+			cm.SidebarEntries[0].Identifier, "Documentation")
 	}
 	if cm.SidebarEntries[0].Type != "menu" {
 		t.Fatalf("sidebar entry type = %q, want \"menu\"", cm.SidebarEntries[0].Type)

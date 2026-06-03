@@ -159,12 +159,14 @@ func categoryParentIdentifier(category, project string) string {
 	return "cat_" + slugForIdentifier(category) + "_" + slugForIdentifier(project)
 }
 
-// categorySidebarIdentifier builds a stable identifier for a
-// per-category sidebar entry. It is prefixed with "cat-" so the
-// reserved-name check in lint rules does not false-positive against
-// built-in Relearn sidebar identifiers ("main", "shortcuts", etc.).
+// categorySidebarIdentifier returns the identifier to use for a
+// per-category sidebar entry. It MUST equal the key under which
+// the matching Hugo menu is emitted, because the Relearn template
+// looks up the menu with `index site.Menus $config.identifier`.
+// Returning the category name (sluggified) directly keeps the
+// sidebar identifier in sync with the menu key.
 func categorySidebarIdentifier(category string) string {
-	return "cat-" + slugForIdentifier(category)
+	return slugForIdentifier(category)
 }
 
 // slugForIdentifier replaces any non-alphanumeric character in s with

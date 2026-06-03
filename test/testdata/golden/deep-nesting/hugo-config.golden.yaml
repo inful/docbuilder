@@ -31,7 +31,7 @@ markup:
         style: github
         tabWidth: 4
 menu:
-    _uncategorized:
+    x__uncategorized:
         - identifier: cat_x__uncategorized_deep_nesting
           name: deep-nesting
         - name: Root Level
@@ -86,7 +86,7 @@ params:
     showVisitedLinks: true
     sidebarmenus:
         - disableTitle: false
-          identifier: cat-x__uncategorized
+          identifier: x__uncategorized
           type: menu
           weight: 999
         - identifier: main

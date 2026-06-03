@@ -32,7 +32,13 @@ func (g *Generator) ApplyCategoriesMenuToConfig(root *models.RootConfig) {
 		root.Menu = map[string]any{}
 	}
 	for cat, entries := range g.categoriesMenu.Menus {
-		existing, _ := root.Menu[cat].([]any)
+		// The Relearn sidebar template looks up the Hugo menu with
+		// `index site.Menus $config.identifier`, so the menu key
+		// (the slugified category name) and the sidebar
+		// identifier in the sidebarmenus block MUST match. See
+		// categorySidebarIdentifier for the slugging rules.
+		menuKey := categorySidebarIdentifier(cat)
+		existing, _ := root.Menu[menuKey].([]any)
 		merged := make([]any, 0, len(existing)+len(entries))
 		merged = append(merged, existing...)
 		for i := range entries {
@@ -60,7 +66,7 @@ func (g *Generator) ApplyCategoriesMenuToConfig(root *models.RootConfig) {
 			}
 			merged = append(merged, m)
 		}
-		root.Menu[cat] = merged
+		root.Menu[menuKey] = merged
 	}
 	// Wire sidebarmenus under params.
 	if root.Params == nil {
