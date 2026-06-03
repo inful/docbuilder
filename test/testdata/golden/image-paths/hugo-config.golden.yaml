@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_image_docs
           name: image-docs
+          parent: cat_x__uncategorized_top
         - name: Image Examples
           pageRef: /images-guide/
           parent: cat_x__uncategorized_image_docs

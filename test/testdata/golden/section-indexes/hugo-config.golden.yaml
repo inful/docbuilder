@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_section_docs
           name: section-docs
+          parent: cat_x__uncategorized_top
         - name: Custom Themes
           pageRef: /advanced/themes/
           parent: cat_x__uncategorized_section_docs

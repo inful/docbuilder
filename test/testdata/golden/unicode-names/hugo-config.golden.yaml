@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_unicode_names
           name: unicode-names
+          parent: cat_x__uncategorized_top
         - name: Documento en Español
           pageRef: /español/
           parent: cat_x__uncategorized_unicode_names

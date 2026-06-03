@@ -32,8 +32,11 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_special_chars
           name: special-chars
+          parent: cat_x__uncategorized_top
         - name: File With Spaces
           pageRef: /file with spaces/
           parent: cat_x__uncategorized_special_chars

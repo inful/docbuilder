@@ -32,10 +32,14 @@ markup:
         tabWidth: 4
 menu:
     x__uncategorized:
+        - identifier: cat_x__uncategorized_top
+          name: Uncategorized
         - identifier: cat_x__uncategorized_repository_one
           name: repository-one
+          parent: cat_x__uncategorized_top
         - identifier: cat_x__uncategorized_repository_two
           name: repository-two
+          parent: cat_x__uncategorized_top
         - name: Getting Started Guide
           pageRef: /repository-one/guide/
           parent: cat_x__uncategorized_repository_one

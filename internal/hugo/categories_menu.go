@@ -6,6 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
@@ -100,6 +103,17 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 		}
 		sort.Strings(projectNames)
 
+		// Prepend a single nameless top-level entry whose `name`
+		// Relearn renders as the sidebar block's title. This avoids
+		// needing an i18n/<lang>.toml file with a `<identifier>-menuTitle`
+		// key. See:
+		// https://mcshelby.github.io/hugo-theme-relearn/configuration/sidebar/menus/index.html#title-for-arbitrary-menus
+		titleID := categoryTitleIdentifier(cat)
+		cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+			Identifier: titleID,
+			Name:       humanizeCategory(cat),
+		})
+
 		// First pass: emit parent entries.
 		for _, projectName := range projectNames {
 			repo, ok := repoByName[projectName]
@@ -111,6 +125,7 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 			cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
 				Identifier: parentID,
 				Name:       label,
+				Parent:     titleID,
 			})
 		}
 
@@ -157,6 +172,27 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 // underscores per Hugo's menu rules.
 func categoryParentIdentifier(category, project string) string {
 	return "cat_" + slugForIdentifier(category) + "_" + slugForIdentifier(project)
+}
+
+// categoryTitleIdentifier returns the identifier of the synthetic
+// top-level wrapper entry that holds the category's display name.
+// Relearn uses the wrapper's `name` as the sidebar block title when
+// the menu has a single nameless top-level entry; see
+// https://mcshelby.github.io/hugo-theme-relearn/configuration/sidebar/menus/index.html#title-for-arbitrary-menus
+func categoryTitleIdentifier(category string) string {
+	return "cat_" + slugForIdentifier(category) + "_top"
+}
+
+// humanizeCategory turns a raw category name into the display label
+// shown above the category's sidebar block. The synthetic
+// _uncategorized bucket maps to the literal "Uncategorized"; every
+// other category is title-cased word-by-word ("release notes" ->
+// "Release Notes") and otherwise left untouched.
+func humanizeCategory(category string) string {
+	if category == UncategorizedCategory {
+		return "Uncategorized"
+	}
+	return cases.Title(language.English).String(category)
 }
 
 // categorySidebarIdentifier returns the identifier to use for a
