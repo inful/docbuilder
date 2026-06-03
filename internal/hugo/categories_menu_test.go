@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -177,4 +178,156 @@ func keys(m map[string][]models.MenuEntry) []string {
 		out = append(out, k)
 	}
 	return out
+}
+
+// TestCategoriesMenu_EmitsUncategorizedBucketForUntaggedDocs asserts
+// that a doc with no categories front matter is bucketed under the
+// synthetic _uncategorized category, while a doc with a real
+// category stays under its user-declared category. This is the core
+// "easy to find uncategorized" use case.
+func TestCategoriesMenu_EmitsUncategorizedBucketForUntaggedDocs(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		// Categorized doc: appears under Documentation only.
+		{
+			Repository: "project_a", Title: "Setup", Path: "/project_a/setup/",
+			Categories: []string{"Documentation"},
+		},
+		// Untagged doc: appears under _uncategorized only.
+		{
+			Repository: "project_a", Title: "Orphan", Path: "/project_a/orphan/",
+			Categories: []string{UncategorizedCategory},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	// Both keys must be present.
+	if _, ok := cm.Menus["Documentation"]; !ok {
+		t.Fatalf("expected Documentation menu; got keys: %v", keys(cm.Menus))
+	}
+	if _, ok := cm.Menus[UncategorizedCategory]; !ok {
+		t.Fatalf("expected %q menu; got keys: %v", UncategorizedCategory, keys(cm.Menus))
+	}
+	// Documentation: only the categorized doc.
+	for _, e := range cm.Menus["Documentation"] {
+		if e.Name == "Orphan" {
+			t.Fatalf("Orphan must not appear in Documentation menu")
+		}
+	}
+	// _uncategorized: only the orphan doc.
+	for _, e := range cm.Menus[UncategorizedCategory] {
+		if e.Name == "Setup" {
+			t.Fatalf("Setup must not appear in _uncategorized menu")
+		}
+	}
+	// Two sidebar blocks: one per category.
+	if got := len(cm.SidebarEntries); got != 2 {
+		t.Fatalf("sidebar entries = %d, want 2; got: %+v", got, cm.SidebarEntries)
+	}
+}
+
+// TestCategoriesMenu_UncategorizedSidebarBlockRendersLast asserts
+// that the synthetic _uncategorized sidebar block carries a higher
+// weight than user categories so it renders last in the Relearn
+// sidebar regardless of alphabetical sort order.
+func TestCategoriesMenu_UncategorizedSidebarBlockRendersLast(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "A1", Path: "/project_a/a1/",
+			Categories: []string{"Documentation"},
+		},
+		{
+			Repository: "project_a", Title: "B1", Path: "/project_a/b1/",
+			Categories: []string{"Operations"},
+		},
+		{
+			Repository: "project_a", Title: "O1", Path: "/project_a/o1/",
+			Categories: []string{UncategorizedCategory},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	var uncategorized, others []models.SidebarEntry
+	for _, e := range cm.SidebarEntries {
+		if e.Weight == uncategorizedSidebarWeightValue {
+			uncategorized = append(uncategorized, e)
+		} else {
+			others = append(others, e)
+		}
+	}
+	if len(uncategorized) != 1 {
+		t.Fatalf("expected exactly one _uncategorized sidebar block; got %d", len(uncategorized))
+	}
+	if len(others) != 2 {
+		t.Fatalf("expected exactly two user-category sidebar blocks; got %d", len(others))
+	}
+	if uncategorized[0].Weight <= others[0].Weight {
+		t.Fatalf("_uncategorized weight (%d) must be higher than user-category weight (%d) so it renders last",
+			uncategorized[0].Weight, others[0].Weight)
+	}
+	if uncategorized[0].Weight != uncategorizedSidebarWeightValue {
+		t.Fatalf("_uncategorized weight = %d, want %d", uncategorized[0].Weight, uncategorizedSidebarWeightValue)
+	}
+}
+
+// TestReadCategoriesMenuDocs_EmitsNothingForEmptyDocSet locks down
+// the truly-empty-build path: with no documents, the function
+// returns an empty slice so the categories-menu stage falls back to
+// the default sidebar (and emits the one-line INFO log).
+func TestReadCategoriesMenuDocs_EmitsNothingForEmptyDocSet(t *testing.T) {
+	got, err := readCategoriesMenuDocs(nil, false)
+	if err != nil {
+		t.Fatalf("readCategoriesMenuDocs(nil): %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected empty result for empty doc set; got %d entries", len(got))
+	}
+}
+
+// TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic asserts
+// the read-side bucketing: a doc with no categories front matter
+// emits exactly one categoryDoc with the synthetic category. A doc
+// with two user-declared categories emits two categoryDocs.
+func TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/a.md",
+			Name:       "a",
+			Repository: "project_a",
+			Content:    []byte("---\ntitle: A\ncategories: [Documentation, Reference]\n---\n"),
+		},
+		{
+			Path:       "/tmp/b.md",
+			Name:       "b",
+			Repository: "project_a",
+			Content:    []byte("---\ntitle: B\n---\n"),
+		},
+	}
+	got, err := readCategoriesMenuDocs(files, false)
+	if err != nil {
+		t.Fatalf("readCategoriesMenuDocs: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("expected 3 entries (1 doc × 2 categories + 1 doc × 1 synthetic); got %d", len(got))
+	}
+	var synth, userCat int
+	for _, cd := range got {
+		if len(cd.Categories) != 1 {
+			t.Fatalf("each emitted entry must have exactly one category; got %v", cd.Categories)
+		}
+		switch cd.Categories[0] {
+		case UncategorizedCategory:
+			synth++
+		default:
+			userCat++
+		}
+	}
+	if synth != 1 || userCat != 2 {
+		t.Fatalf("got synth=%d userCat=%d; want synth=1 userCat=2", synth, userCat)
+	}
 }
