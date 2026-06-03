@@ -149,8 +149,8 @@ func TestHugoConfigGolden_CategoriesMode(t *testing.T) {
 	if first["type"] != "menu" {
 		t.Fatalf("first sidebar block should be type=menu; got %v", first)
 	}
-	if first["identifier"] != "cat-Documentation" {
-		t.Fatalf("first sidebar block identifier = %v, want cat-Documentation", first["identifier"])
+	if first["identifier"] != "Documentation" {
+		t.Fatalf("first sidebar block identifier = %v, want Documentation", first["identifier"])
 	}
 	// The last block must be the default main page menu.
 	last := sidebars[len(sidebars)-1].(map[string]any)
@@ -279,8 +279,8 @@ func TestHugoConfigGolden_UnsetModeWithUntaggedDocsEmitsUncategorizedSidebar(t *
 	if !ok {
 		t.Fatalf("expected root.menu; got: %v", parsed["menu"])
 	}
-	if _, ok := menus[config.SidebarUncategorizedCategory]; !ok {
-		t.Fatalf("expected menu[%q]; got: %v", config.SidebarUncategorizedCategory, keysMenu(menus))
+	if _, ok := menus[slugForIdentifier(config.SidebarUncategorizedCategory)]; !ok {
+		t.Fatalf("expected menu[%q]; got: %v", slugForIdentifier(config.SidebarUncategorizedCategory), keysMenu(menus))
 	}
 	// The sidebar block must carry the high weight.
 	sidebars, _ := parsed["params"].(map[string]any)["sidebarmenus"].([]any)
@@ -418,7 +418,7 @@ func TestHugoConfigGolden_UncategorizedWeighedLastInSidebar(t *testing.T) {
 	for i, e := range sidebars {
 		m := e.(map[string]any)
 		id, _ := m["identifier"].(string)
-		if id == "cat-"+slugForIdentifier(config.SidebarUncategorizedCategory) {
+		if id == slugForIdentifier(config.SidebarUncategorizedCategory) {
 			uncIdx = i
 			if w, _ := m["weight"].(int); w != uncategorizedSidebarWeightValue {
 				t.Fatalf("_uncategorized block weight = %d, want %d", w, uncategorizedSidebarWeightValue)
@@ -487,6 +487,90 @@ func TestHugoConfigGolden_CategoriesModePreservesUserShortcuts(t *testing.T) {
 	// The shortcuts sidebar block must be present.
 	if !strings.Contains(s, "identifier: shortcuts") {
 		t.Fatalf("expected a shortcuts sidebar block; got:\n%s", s)
+	}
+}
+
+// TestHugoConfigGolden_CategoriesMenuKeyMatchesSidebarIdentifier is
+// the regression test for the bug where the categories menu was
+// emitted in hugo.yaml but did not appear in the rendered
+// navigation. Root cause: the Relearn sidebar template looks up the
+// menu via `index site.Menus $config.identifier`, so the menu key
+// in `menu:` and the sidebar block's `identifier` field MUST be
+// identical. This test asserts that alignment for every emitted
+// category menu.
+func TestHugoConfigGolden_CategoriesMenuKeyMatchesSidebarIdentifier(t *testing.T) {
+	out := t.TempDir()
+	cfg := &config.Config{
+		Hugo: config.HugoConfig{
+			Title: "Alignment Test",
+			// Two user categories plus the synthetic _uncategorized.
+		},
+		Repositories: []config.Repository{{Name: "project_a"}},
+	}
+	g := NewGenerator(cfg, out)
+	docA := docWithFrontMatter("project_a", "alpha",
+		"---\ntitle: Alpha\ncategories: [Documentation]\n---\n\n# Alpha\n")
+	docB := docWithFrontMatter("project_a", "ops",
+		"---\ntitle: Ops\ncategories: [Operations]\n---\n\n# Ops\n")
+	docC := docWithFrontMatter("project_a", "orphan",
+		"---\ntitle: Orphan\n---\n\n# Orphan\n")
+	cm, err := g.computeCategoriesMenu(&models.BuildState{
+		Docs: models.DocsState{Files: []docs.DocFile{docA, docB, docC}},
+	})
+	if err != nil {
+		t.Fatalf("computeCategoriesMenu: %v", err)
+	}
+	g.AttachCategoriesMenu(cm)
+	if genErr := g.GenerateHugoConfig(); genErr != nil {
+		t.Fatalf("GenerateHugoConfig: %v", genErr)
+	}
+	// #nosec G304 -- test reading from t.TempDir() output
+	data, err := os.ReadFile(filepath.Join(out, "hugo.yaml"))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	parsed, perr := parseHugoYAML(data)
+	if perr != nil {
+		t.Fatalf("parse: %v", perr)
+	}
+	menus, ok := parsed["menu"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected root.menu; got: %v", parsed["menu"])
+	}
+	sidebars, ok := parsed["params"].(map[string]any)["sidebarmenus"].([]any)
+	if !ok {
+		t.Fatalf("expected sidebarmenus; got: %v", parsed["params"])
+	}
+	// Build a set of sidebarmenus identifiers (only menu-type
+	// blocks, not page-type).
+	sidebarIDs := map[string]bool{}
+	for _, s := range sidebars {
+		m := s.(map[string]any)
+		if m["type"] == "menu" {
+			id, _ := m["identifier"].(string)
+			sidebarIDs[id] = true
+		}
+	}
+	// For every Hugo menu key emitted by the categories menu,
+	// there must be a matching sidebar identifier.
+	for menuKey := range menus {
+		// Skip user-defined menus (e.g. "shortcuts") that the
+		// user supplied outside of our categories-menu wiring.
+		// The categories menu is responsible only for its own
+		// emitted keys. We identify them by checking the
+		// associated sidebar block.
+		if !sidebarIDs[menuKey] {
+			t.Errorf("menu key %q has no matching sidebar block (sidebarIDs: %v)",
+				menuKey, sidebarIDs)
+		}
+	}
+	// And vice versa: every menu-type sidebar block must point
+	// at a real menu key.
+	for id := range sidebarIDs {
+		if _, ok := menus[id]; !ok {
+			t.Errorf("sidebar block identifier %q has no matching menu key (menus: %v)",
+				id, keysMenu(menus))
+		}
 	}
 }
 
