@@ -515,6 +515,16 @@ Minutes
 
 A doc that belongs to a configured category but has no value for the configured field falls back to its source Repository, so unannotated docs still surface somewhere sensible. The label preserves the original spelling of the front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
 
+**Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Project]`, `MINUTES: [PROJECT]`, or `minutes: [project]` in your config and pair it with `Project: team_alpha` or `project: team_alpha` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
+
+**Verifying the wiring:** Run a build with `-v` (verbose). When the categories-menu stage runs, the debug log will show the effective lowercased map and the flattened field list, e.g.:
+
+```
+DEBUG Categories menu: configured group_by categories=1 group_by=map[minutes:[project]] grouping_fields=[project]
+```
+
+If the field list is empty when you expected a match, the build is reading an empty `group_by` (typo in the config path, wrong indentation, or the field name is genuinely different from what's in your front matter).
+
 ## Output Section
 
 | Field | Type | Default | Description |
