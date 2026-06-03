@@ -68,9 +68,9 @@ func TestBuildCategoriesMenu_CollidingIntroFiles(t *testing.T) {
 	}
 
 	// The Documentation menu must exist.
-	docMenu, ok := cm.Menus["Documentation"]
+	docMenu, ok := cm.Menus["documentation"]
 	if !ok {
-		t.Fatalf("expected a Documentation menu, got keys: %v", keys(cm.Menus))
+		t.Fatalf("expected a documentation menu, got keys: %v", keys(cm.Menus))
 	}
 
 	// The menu must contain a title-wrapper entry, one parent
@@ -103,9 +103,9 @@ func TestBuildCategoriesMenu_CollidingIntroFiles(t *testing.T) {
 	if got, want := len(cm.SidebarEntries), 1; got != want {
 		t.Fatalf("sidebar entries = %d, want %d; got: %+v", got, want, cm.SidebarEntries)
 	}
-	if cm.SidebarEntries[0].Identifier != "Documentation" {
+	if cm.SidebarEntries[0].Identifier != "documentation" {
 		t.Fatalf("sidebar entry identifier = %q, want %q",
-			cm.SidebarEntries[0].Identifier, "Documentation")
+			cm.SidebarEntries[0].Identifier, "documentation")
 	}
 	if cm.SidebarEntries[0].Type != "menu" {
 		t.Fatalf("sidebar entry type = %q, want \"menu\"", cm.SidebarEntries[0].Type)
@@ -124,8 +124,8 @@ func TestBuildCategoriesMenu_SkipsDocsWithoutCategory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
-	if _, ok := cm.Menus["Docs"]; !ok {
-		t.Fatalf("expected Docs menu, got: %v", keys(cm.Menus))
+	if _, ok := cm.Menus["docs"]; !ok {
+		t.Fatalf("expected docs menu, got: %v", keys(cm.Menus))
 	}
 	if _, ok := cm.Menus[""]; ok {
 		t.Fatalf("empty category must not produce a menu")
@@ -166,7 +166,7 @@ func TestBuildCategoriesMenu_ProjectLabelUsesDisplayName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
-	entry := cm.Menus["Reference"][1]
+	entry := cm.Menus["reference"][1]
 	if entry.Name != "Platform Services" {
 		t.Fatalf("project entry name = %q, want %q (DisplayName should win over Name)", entry.Name, "Platform Services")
 	}
@@ -207,16 +207,16 @@ func TestCategoriesMenu_EmitsUncategorizedBucketForUntaggedDocs(t *testing.T) {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
 	// Both keys must be present.
-	if _, ok := cm.Menus["Documentation"]; !ok {
-		t.Fatalf("expected Documentation menu; got keys: %v", keys(cm.Menus))
+	if _, ok := cm.Menus["documentation"]; !ok {
+		t.Fatalf("expected documentation menu; got keys: %v", keys(cm.Menus))
 	}
 	if _, ok := cm.Menus[UncategorizedCategory]; !ok {
 		t.Fatalf("expected %q menu; got keys: %v", UncategorizedCategory, keys(cm.Menus))
 	}
 	// Documentation: only the categorized doc.
-	for _, e := range cm.Menus["Documentation"] {
+	for _, e := range cm.Menus["documentation"] {
 		if e.Name == "Orphan" {
-			t.Fatalf("Orphan must not appear in Documentation menu")
+			t.Fatalf("Orphan must not appear in documentation menu")
 		}
 	}
 	// _uncategorized: only the orphan doc.
@@ -356,8 +356,11 @@ func TestReadCategoriesMenuDocs_LoadsContentFromDisk(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry from on-disk doc; got %d", len(got))
 	}
-	if got[0].Categories[0] != "Documentation" {
-		t.Fatalf("expected Documentation bucket; got %q", got[0].Categories[0])
+	if got[0].Categories[0] != "documentation" {
+		t.Fatalf("expected canonical lowercase documentation bucket; got %q", got[0].Categories[0])
+	}
+	if got[0].CategoryDisplay != "Documentation" {
+		t.Fatalf("expected CategoryDisplay to preserve original spelling; got %q", got[0].CategoryDisplay)
 	}
 	if got[0].Title != "Introduction" {
 		t.Fatalf("expected title from front matter; got %q", got[0].Title)
@@ -406,17 +409,17 @@ func TestBuildCategoriesMenu_PrependsTitleWrapperEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buildCategoriesMenu: %v", err)
 	}
-	entries := cm.Menus["Documentation"]
+	entries := cm.Menus["documentation"]
 	if len(entries) == 0 {
-		t.Fatal("expected non-empty Documentation menu")
+		t.Fatal("expected non-empty documentation menu")
 	}
 	wrapper := entries[0]
-	wantWrapperID := categoryTitleIdentifier("Documentation")
+	wantWrapperID := categoryTitleIdentifier("documentation")
 	if wrapper.Identifier != wantWrapperID {
 		t.Fatalf("wrapper identifier = %q, want %q", wrapper.Identifier, wantWrapperID)
 	}
 	if wrapper.Name != "Documentation" {
-		t.Fatalf("wrapper name = %q, want %q (humanized category)", wrapper.Name, "Documentation")
+		t.Fatalf("wrapper name = %q, want %q (first-seen spelling)", wrapper.Name, "Documentation")
 	}
 	if wrapper.URL != "" || wrapper.PageRef != "" {
 		t.Fatalf("wrapper must not be clickable; got url=%q pageRef=%q", wrapper.URL, wrapper.PageRef)
@@ -459,21 +462,189 @@ func TestBuildCategoriesMenu_UncategorizedWrapperShowsHumanLabel(t *testing.T) {
 	}
 }
 
-// TestHumanizeCategory checks the display-label rules for the
-// category-name humaniser used by the title wrapper.
-func TestHumanizeCategory(t *testing.T) {
+// TestCategoryDisplayLabel checks the synthetic-vs-user category
+// label rules: the synthetic bucket always renders as "Uncategorized";
+// every other category renders with the supplied display spelling
+// verbatim; an empty display falls back to the canonical key.
+func TestCategoryDisplayLabel(t *testing.T) {
 	cases := []struct {
-		in, want string
+		key, display, want string
 	}{
-		{UncategorizedCategory, "Uncategorized"},
-		{"documentation", "Documentation"},
-		{"Documentation", "Documentation"},
-		{"release notes", "Release Notes"},
-		{"", ""},
+		{UncategorizedCategory, "anything", "Uncategorized"},
+		{UncategorizedCategory, "", "Uncategorized"},
+		{"minutes", "Minutes", "Minutes"},
+		{"minutes", "minutes", "minutes"},
+		{"ios", "iOS", "iOS"},
+		{"ebpf", "eBPF", "eBPF"},
+		{"documentation", "", "documentation"},
 	}
 	for _, c := range cases {
-		if got := humanizeCategory(c.in); got != c.want {
-			t.Errorf("humanizeCategory(%q) = %q, want %q", c.in, got, c.want)
+		if got := categoryDisplayLabel(c.key, c.display); got != c.want {
+			t.Errorf("categoryDisplayLabel(%q, %q) = %q, want %q",
+				c.key, c.display, got, c.want)
 		}
 	}
+}
+
+// TestReadCategoriesMenuDocs_LowercasesCategoryKey is the read-side
+// regression for case-insensitive grouping: the canonical Categories[0]
+// key must be lowercased, while CategoryDisplay must preserve the
+// author's original spelling so the sidebar label can use it.
+func TestReadCategoriesMenuDocs_LowercasesCategoryKey(t *testing.T) {
+	files := []docs.DocFile{
+		{
+			Path:       "/tmp/m.md",
+			Name:       "m",
+			Repository: "project_a",
+			Content:    []byte("---\ntitle: M\ncategories: [Minutes]\n---\n"),
+		},
+	}
+	got := readCategoriesMenuDocs(files, false)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry; got %d", len(got))
+	}
+	if got[0].Categories[0] != "minutes" {
+		t.Fatalf("canonical key = %q, want %q", got[0].Categories[0], "minutes")
+	}
+	if got[0].CategoryDisplay != "Minutes" {
+		t.Fatalf("CategoryDisplay = %q, want %q", got[0].CategoryDisplay, "Minutes")
+	}
+}
+
+// TestBuildCategoriesMenu_MergesCategoriesCaseInsensitively is the
+// core fix for the user-reported bug: two docs that declare the same
+// category with different capitalisations must end up in a single
+// sidebar block, with the first-seen original spelling shown as the
+// wrapper label.
+func TestBuildCategoriesMenu_MergesCategoriesCaseInsensitively(t *testing.T) {
+	repos := []config.Repository{
+		{Name: "project_a", DisplayName: "Project A"},
+		{Name: "project_b", DisplayName: "Project B"},
+	}
+	// Mimic the shape readCategoriesMenuDocs would produce: lowercased
+	// Categories[0] paired with the author's original CategoryDisplay.
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "Setup", Path: "/project_a/setup/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+		},
+		{
+			Repository: "project_b", Title: "Standup", Path: "/project_b/standup/",
+			Categories: []string{"minutes"}, CategoryDisplay: "minutes",
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	// Exactly one menu bucket, one sidebar entry.
+	if got := len(cm.Menus); got != 1 {
+		t.Fatalf("len(Menus) = %d, want 1; keys=%v", got, keys(cm.Menus))
+	}
+	entries, ok := cm.Menus["minutes"]
+	if !ok {
+		t.Fatalf("expected canonical key %q; got: %v", "minutes", keys(cm.Menus))
+	}
+	if got := len(cm.SidebarEntries); got != 1 {
+		t.Fatalf("len(SidebarEntries) = %d, want 1; got %+v", got, cm.SidebarEntries)
+	}
+	if id := cm.SidebarEntries[0].Identifier; id != "minutes" {
+		t.Fatalf("sidebar identifier = %q, want %q", id, "minutes")
+	}
+	// Wrapper carries the first-seen original spelling.
+	wrapper := entries[0]
+	if wrapper.Identifier != "cat_minutes_top" {
+		t.Fatalf("wrapper identifier = %q, want %q", wrapper.Identifier, "cat_minutes_top")
+	}
+	if wrapper.Name != "Minutes" {
+		t.Fatalf("wrapper name = %q, want %q (first-seen spelling)", wrapper.Name, "Minutes")
+	}
+	// Both project parents must be present and reference the wrapper.
+	wantParents := map[string]bool{
+		"cat_minutes_project_a": true,
+		"cat_minutes_project_b": true,
+	}
+	seen := map[string]bool{}
+	for _, e := range entries[1:] {
+		if e.Identifier == "" {
+			continue
+		}
+		if e.Parent != "cat_minutes_top" {
+			t.Errorf("project parent %q parent = %q, want %q",
+				e.Identifier, e.Parent, "cat_minutes_top")
+		}
+		seen[e.Identifier] = true
+	}
+	for id := range wantParents {
+		if !seen[id] {
+			t.Errorf("missing project parent %q; got entries %+v", id, entries)
+		}
+	}
+	// Both docs must be grouped under their respective project parents.
+	docsByParent := map[string]string{}
+	for _, e := range entries {
+		if e.PageRef != "" {
+			docsByParent[e.Parent] = e.Name
+		}
+	}
+	if docsByParent["cat_minutes_project_a"] != "Setup" {
+		t.Errorf("project_a doc = %q, want %q", docsByParent["cat_minutes_project_a"], "Setup")
+	}
+	if docsByParent["cat_minutes_project_b"] != "Standup" {
+		t.Errorf("project_b doc = %q, want %q", docsByParent["cat_minutes_project_b"], "Standup")
+	}
+}
+
+// TestBuildCategoriesMenu_IdentifiersStableAcrossCaseFlips verifies
+// that all emitted identifiers (wrapper, project parents, sidebar)
+// are derived from the canonical lowercase key, so they stay
+// byte-identical regardless of which spelling appeared first.
+func TestBuildCategoriesMenu_IdentifiersStableAcrossCaseFlips(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	mk := func(display string) []categoryDoc {
+		return []categoryDoc{
+			{
+				Repository: "project_a", Title: "T", Path: "/project_a/t/",
+				Categories: []string{"minutes"}, CategoryDisplay: display,
+			},
+		}
+	}
+	a, err := buildCategoriesMenu(mk("Minutes"), repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu(Minutes): %v", err)
+	}
+	b, err := buildCategoriesMenu(mk("minutes"), repos, "repo")
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu(minutes): %v", err)
+	}
+	idsA := idsOf(a.Menus["minutes"])
+	idsB := idsOf(b.Menus["minutes"])
+	if !equalStringSlices(idsA, idsB) {
+		t.Fatalf("identifiers diverge across casings:\n Minutes -> %v\n minutes -> %v",
+			idsA, idsB)
+	}
+	if a.SidebarEntries[0].Identifier != b.SidebarEntries[0].Identifier {
+		t.Fatalf("sidebar identifier diverges: %q vs %q",
+			a.SidebarEntries[0].Identifier, b.SidebarEntries[0].Identifier)
+	}
+}
+
+func idsOf(entries []models.MenuEntry) []string {
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, e.Identifier)
+	}
+	return out
+}
+
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
