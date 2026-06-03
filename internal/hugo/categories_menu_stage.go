@@ -42,6 +42,12 @@ func (g *Generator) computeCategoriesMenu(ctx *models.BuildState) (*models.Categ
 				groupingFields = append(groupingFields, f)
 			}
 		}
+		slog.Debug("Categories menu: configured group_by",
+			slog.Int("categories", len(groupBy)),
+			slog.Any("group_by", groupBy),
+			slog.Any("grouping_fields", groupingFields))
+	} else {
+		slog.Debug("Categories menu: no group_by configured; using Repository-based grouping")
 	}
 	items := readCategoriesMenuDocs(
 		ctx.Docs.Files,

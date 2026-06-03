@@ -479,12 +479,25 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly 
 		}
 		// Extract any user-configured grouping fields once per doc
 		// (the value is shared across every categoryDoc we emit for
-		// this file). Nil when no grouping fields were requested.
+		// this file). Nil when no grouping fields are requested.
+		//
+		// The field-name lookup is case-insensitive: if the user
+		// configures [Project] in group_by but the doc's front
+		// matter uses `project:`, we still match. Config keys
+		// (already lowercased by SidebarConfig.Normalize) and
+		// front-matter keys are both matched by lowercasing the
+		// front matter once.
 		var groupFields map[string]string
 		if len(groupingFields) > 0 {
 			groupFields = make(map[string]string, len(groupingFields))
+			lcFM := make(map[string]string, len(fm))
+			for k, v := range fm {
+				if s, ok := v.(string); ok {
+					lcFM[strings.ToLower(k)] = s
+				}
+			}
 			for _, name := range groupingFields {
-				groupFields[name] = extractString(fm, name)
+				groupFields[name] = lcFM[name] // "" if missing
 			}
 		}
 		// Emit one categoryDoc per declared (or synthetic) category.
