@@ -30,6 +30,14 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_image_docs
+          name: image-docs
+        - name: Image Examples
+          pageRef: /images-guide/
+          parent: cat_x__uncategorized_image_docs
+          weight: 1
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +68,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

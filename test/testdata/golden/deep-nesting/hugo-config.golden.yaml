@@ -30,6 +30,30 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_deep_nesting
+          name: deep-nesting
+        - name: Root Level
+          pageRef: /root/
+          parent: cat_x__uncategorized_deep_nesting
+          weight: 1
+        - name: Level 1
+          pageRef: /level1/doc/
+          parent: cat_x__uncategorized_deep_nesting
+          weight: 2
+        - name: Level 2
+          pageRef: /level1/level2/doc/
+          parent: cat_x__uncategorized_deep_nesting
+          weight: 3
+        - name: Level 3
+          pageRef: /level1/level2/level3/doc/
+          parent: cat_x__uncategorized_deep_nesting
+          weight: 4
+        - name: Level 4
+          pageRef: /level1/level2/level3/level4/deep-doc/
+          parent: cat_x__uncategorized_deep_nesting
+          weight: 5
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +84,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

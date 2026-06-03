@@ -30,6 +30,28 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_repository_one
+          name: repository-one
+        - identifier: cat_x__uncategorized_repository_two
+          name: repository-two
+        - name: Getting Started Guide
+          pageRef: /repository-one/guide/
+          parent: cat_x__uncategorized_repository_one
+          weight: 1
+        - name: API Reference
+          pageRef: /repository-one/api/
+          parent: cat_x__uncategorized_repository_one
+          weight: 2
+        - name: Advanced Tutorial
+          pageRef: /repository-two/tutorial/
+          parent: cat_x__uncategorized_repository_two
+          weight: 1
+        - name: Deployment Guide
+          pageRef: /repository-two/deployment/
+          parent: cat_x__uncategorized_repository_two
+          weight: 2
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +82,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

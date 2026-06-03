@@ -30,6 +30,22 @@ markup:
         noClasses: false
         style: github
         tabWidth: 4
+menu:
+    _uncategorized:
+        - identifier: cat_x__uncategorized_test_repo
+          name: test-repo
+        - name: With Alias No UID
+          pageRef: /with-alias-no-uid/
+          parent: cat_x__uncategorized_test_repo
+        - name: With UID Wrong Alias
+          pageRef: /with-uid-wrong-alias/
+          parent: cat_x__uncategorized_test_repo
+        - name: With UID and Alias
+          pageRef: /with-uid-and-alias/
+          parent: cat_x__uncategorized_test_repo
+        - name: With UID and Alias Already Has Line
+          pageRef: /with-uid-and-alias-already-has-line/
+          parent: cat_x__uncategorized_test_repo
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -60,6 +76,14 @@ params:
     mermaid:
         enable: true
     showVisitedLinks: true
+    sidebarmenus:
+        - disableTitle: false
+          identifier: cat-x__uncategorized
+          type: menu
+          weight: 999
+        - identifier: main
+          pageRef: /
+          type: page
     themeVariant:
         - auto
         - zen-light

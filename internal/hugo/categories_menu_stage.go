@@ -24,10 +24,7 @@ func (g *Generator) computeCategoriesMenu(ctx *models.BuildState) (*models.Categ
 	if !g.config.Hugo.Sidebar.IsCategories() {
 		return nil, models.ErrCategoriesMenuSkipped
 	}
-	items, err := readCategoriesMenuDocs(ctx.Docs.Files, ctx.Docs.IsSingleRepo)
-	if err != nil {
-		return nil, err
-	}
+	items := readCategoriesMenuDocs(ctx.Docs.Files, ctx.Docs.IsSingleRepo)
 	if len(items) == 0 {
 		// Truly empty build (no docs at all). The synthetic
 		// _uncategorized bucket covers the "has docs but none

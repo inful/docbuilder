@@ -1,6 +1,8 @@
 package hugo
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -280,10 +282,7 @@ func TestCategoriesMenu_UncategorizedSidebarBlockRendersLast(t *testing.T) {
 // returns an empty slice so the categories-menu stage falls back to
 // the default sidebar (and emits the one-line INFO log).
 func TestReadCategoriesMenuDocs_EmitsNothingForEmptyDocSet(t *testing.T) {
-	got, err := readCategoriesMenuDocs(nil, false)
-	if err != nil {
-		t.Fatalf("readCategoriesMenuDocs(nil): %v", err)
-	}
+	got := readCategoriesMenuDocs(nil, false)
 	if len(got) != 0 {
 		t.Fatalf("expected empty result for empty doc set; got %d entries", len(got))
 	}
@@ -308,10 +307,7 @@ func TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic(t *testing.T) {
 			Content:    []byte("---\ntitle: B\n---\n"),
 		},
 	}
-	got, err := readCategoriesMenuDocs(files, false)
-	if err != nil {
-		t.Fatalf("readCategoriesMenuDocs: %v", err)
-	}
+	got := readCategoriesMenuDocs(files, false)
 	if len(got) != 3 {
 		t.Fatalf("expected 3 entries (1 doc × 2 categories + 1 doc × 1 synthetic); got %d", len(got))
 	}
@@ -329,5 +325,63 @@ func TestReadCategoriesMenuDocs_BucketsUntaggedUnderSynthetic(t *testing.T) {
 	}
 	if synth != 1 || userCat != 2 {
 		t.Fatalf("got synth=%d userCat=%d; want synth=1 userCat=2", synth, userCat)
+	}
+}
+
+// TestReadCategoriesMenuDocs_LoadsContentFromDisk is the regression
+// test for the bug where the categories-menu stage ran BEFORE the
+// copy-content stage and therefore saw f.Content == nil for every
+// doc, producing no menu. The fix: readCategoriesMenuDocs now
+// triggers the same lazy LoadContent() that the copy-content stage
+// uses, so a doc with an empty Content field but a real on-disk
+// Path is read and bucketed correctly.
+func TestReadCategoriesMenuDocs_LoadsContentFromDisk(t *testing.T) {
+	dir := t.TempDir()
+	// Write a real markdown file with categories front matter.
+	mdPath := filepath.Join(dir, "intro.md")
+	if err := os.WriteFile(mdPath, []byte("---\ntitle: Introduction\ncategories: [Documentation]\n---\n\n# Introduction\n"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	files := []docs.DocFile{
+		{
+			Path:       mdPath,
+			Repository: "project_a",
+			// Content intentionally left nil to simulate the
+			// pre-copy-content state.
+			Content: nil,
+		},
+	}
+	got := readCategoriesMenuDocs(files, false)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry from on-disk doc; got %d", len(got))
+	}
+	if got[0].Categories[0] != "Documentation" {
+		t.Fatalf("expected Documentation bucket; got %q", got[0].Categories[0])
+	}
+	if got[0].Title != "Introduction" {
+		t.Fatalf("expected title from front matter; got %q", got[0].Title)
+	}
+}
+
+// TestReadCategoriesMenuDocs_ToleratesMalformedFrontmatter asserts
+// that a doc whose front matter is unparseable does not fail the
+// build. The doc is bucketed under the synthetic _uncategorized
+// category with a debug log, mirroring how the rest of the
+// pipeline tolerates malformed front matter.
+func TestReadCategoriesMenuDocs_ToleratesMalformedFrontmatter(t *testing.T) {
+	dir := t.TempDir()
+	mdPath := filepath.Join(dir, "broken.md")
+	if err := os.WriteFile(mdPath, []byte("---\ntitle: Broken [unterminated\n---\n"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	files := []docs.DocFile{
+		{Path: mdPath, Repository: "project_a", Name: "broken"},
+	}
+	got := readCategoriesMenuDocs(files, false)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry from malformed doc; got %d", len(got))
+	}
+	if got[0].Categories[0] != UncategorizedCategory {
+		t.Fatalf("malformed doc must be bucketed under _uncategorized; got %q", got[0].Categories[0])
 	}
 }
