@@ -22,6 +22,7 @@ func NormalizeConfig(c *Config) (*NormalizationResult, error) {
 	normalizeVersioning(c.Versioning, res)
 	normalizeOutput(&c.Output, res)
 	normalizeFiltering(c.Filtering, res)
+	normalizeHugoConfig(&c.Hugo, res)
 
 	// Cross-domain normalization and warnings
 	normalizeCrossDomain(c, res)

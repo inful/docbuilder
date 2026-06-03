@@ -22,6 +22,13 @@ type categoryDoc struct {
 	Categories []string
 }
 
+// UncategorizedCategory is the synthetic category name emitted for
+// docs that have no `categories:` front matter. It appears as both a
+// sidebar block and a Hugo taxonomy term page so users can audit and
+// clean up their categorization. Exported so tests and indexes code
+// can refer to it from outside the package.
+var UncategorizedCategory = config.SidebarUncategorizedCategory
+
 // buildCategoriesMenu is the pure builder used by the categories-menu
 // stage. It walks the doc set, groups docs by category, and for each
 // category emits:
@@ -131,6 +138,11 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 			Identifier:   categorySidebarIdentifier(cat),
 			Type:         "menu",
 			DisableTitle: false,
+			// The synthetic _uncategorized category renders last so
+			// it does not clutter first-impression navigation. The
+			// high weight overrides Relearn's default
+			// (alphabetical-by-identifier) ordering.
+			Weight: uncategorizedSidebarWeight(cat),
 		})
 	}
 
@@ -180,6 +192,23 @@ func slugForIdentifier(s string) string {
 	return "x_" + out
 }
 
+// uncategorizedSidebarWeight returns the weight to use for the sidebar
+// block of the given category. The synthetic _uncategorized category
+// gets a high weight (uncategorizedSidebarWeightValue) so it renders
+// last in the Relearn sidebar; user categories get zero so Relearn's
+// default ordering applies.
+func uncategorizedSidebarWeight(cat string) int {
+	if cat == UncategorizedCategory {
+		return uncategorizedSidebarWeightValue
+	}
+	return 0
+}
+
+// uncategorizedSidebarWeightValue is the weight used for the synthetic
+// _uncategorized sidebar block. High enough to outrank any plausible
+// user-configured weight, but still well within Hugo's int range.
+const uncategorizedSidebarWeightValue = 999
+
 // readCategoriesMenuDocs projects each doc into the categoryDoc shape
 // consumed by buildCategoriesMenu. It reads front matter from the
 // in-memory DocFile.Content (loaded during discovery), not from disk,
@@ -189,6 +218,12 @@ func slugForIdentifier(s string) string {
 // front matter does not declare one, the doc filename (without
 // extension) is used. This is consistent with how the rest of the
 // pipeline handles docs without a title.
+//
+// For each doc with a non-empty `categories:` list, the function
+// emits one categoryDoc per declared category. For each doc with no
+// categories (or an empty list), the function emits a single
+// categoryDoc bucketed under UncategorizedCategory so un-categorized
+// docs surface as a triage list in the rendered sidebar.
 func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]categoryDoc, error) {
 	out := make([]categoryDoc, 0, len(files))
 	for i := range files {
@@ -210,7 +245,10 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]category
 		}
 		cats := extractStringSlice(fm, "categories")
 		if len(cats) == 0 {
-			continue
+			// Bucket un-categorized docs under the synthetic
+			// category so they appear in the sidebar (and in
+			// /categories/_uncategorized/) for the user to triage.
+			cats = []string{UncategorizedCategory}
 		}
 		title := extractString(fm, "title")
 		if title == "" {
@@ -223,13 +261,16 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool) ([]category
 		// the ".md" suffix stripped, and a trailing slash appended.
 		hugoPath = strings.TrimPrefix(hugoPath, "content/")
 		pageRef := "/" + strings.TrimSuffix(hugoPath, ".md") + "/"
-		out = append(out, categoryDoc{
-			Repository: f.Repository,
-			Title:      title,
-			Path:       pageRef,
-			Weight:     weight,
-			Categories: cats,
-		})
+		// Emit one categoryDoc per declared (or synthetic) category.
+		for _, cat := range cats {
+			out = append(out, categoryDoc{
+				Repository: f.Repository,
+				Title:      title,
+				Path:       pageRef,
+				Weight:     weight,
+				Categories: []string{cat},
+			})
+		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		if out[i].Repository != out[j].Repository {

@@ -48,4 +48,10 @@ type SidebarEntry struct {
 	Type         string // "menu" or "page"
 	PageRef      string
 	DisableTitle bool
+	// Weight controls the ordering of the block within the rendered
+	// sidebar. The synthetic _uncategorized category is emitted with
+	// a high weight (999) so it renders last regardless of
+	// alphabetical sort order. Zero (or unset) leaves ordering to
+	// Relearn's defaults.
+	Weight int
 }

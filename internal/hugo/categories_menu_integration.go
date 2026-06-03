@@ -77,6 +77,9 @@ func (g *Generator) ApplyCategoriesMenuToConfig(root *models.RootConfig) {
 		if e.PageRef != "" {
 			block["pageRef"] = e.PageRef
 		}
+		if e.Weight != 0 {
+			block["weight"] = e.Weight
+		}
 		out = append(out, block)
 	}
 	// Preserve any pre-existing sidebarmenus (e.g., the user's main

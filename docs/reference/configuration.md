@@ -416,7 +416,9 @@ DocBuilder's FrontMatter model supports `tags`, `categories`, and `keywords` fie
 
 DocBuilder is a documentation aggregator: it pulls docs from many external repositories, each with its own conventions for file names, titles, and front-matter categories. When two repositories both ship an `intro.md` titled "Introduction" under `categories: [Documentation]`, the default Hugo taxonomy listing renders two indistinguishable links.
 
-The `hugo.sidebar.mode: categories` setting solves this by emitting one Relearn sidebar block per category, with each repository represented as an expandable header under which its documents are listed. The rendered sidebar tree is `Category > Project > Document`, so collisions in file names and titles are resolved structurally by the parent project entry rather than by uglified link text.
+The categories sidebar wiring solves this by emitting one Relearn sidebar block per category, with each repository represented as an expandable header under which its documents are listed. The rendered sidebar tree is `Category > Project > Document`, so collisions in file names and titles are resolved structurally by the parent project entry rather than by uglified link text.
+
+**Default behavior:** `hugo.sidebar.mode` defaults to `auto`. The categories sidebar is emitted whenever the build produces any documents, with a synthetic `_uncategorized` bucket for any doc that has no `categories:` front matter. To revert to the legacy Relearn single-page sidebar, set `hugo.sidebar.mode: default` explicitly.
 
 **Example rendered sidebar:**
 
@@ -428,6 +430,9 @@ Documentation
   Project B
     Configuration
     Introduction
+_uncategorized
+  Project A
+    Orphan           # a doc with no categories: front matter
 ```
 
 **Configuration:**
@@ -435,14 +440,14 @@ Documentation
 ```yaml
 hugo:
   sidebar:
-    mode: categories            # "default" (the current behavior) or "categories"
+    mode: auto                 # the default; "categories" and unset are equivalent
     keep_default_menu: true     # keep the full main page menu below the category menus
     project_segment: repo      # today only "repo" is supported
 ```
 
 | Field | Description |
 |-------|-------------|
-| `mode` | `"default"` keeps Relearn's default single page menu; `"categories"` wires one sidebar block per category. |
+| `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. |
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 
@@ -455,7 +460,9 @@ repositories:
     url: https://github.com/org/platform-services.git
 ```
 
-**Requirements:** Each document that should appear in a category sidebar must declare at least one `categories` entry in its front matter:
+**The `_uncategorized` bucket:** DocBuilder emits a synthetic category for any document that has no `categories:` front matter (or an empty list). It appears as both a sidebar block and a Hugo taxonomy term at `/categories/_uncategorized/`, with a `weight: 999` so it renders last in the sidebar. Use it as a triage list when adding categories to existing docs. The taxonomy listing includes a per-page link so a single click takes you from the listing to the doc, where you can add the missing `categories:` field.
+
+**Requirements:** Each document that should appear under a user-declared category must declare at least one `categories` entry in its front matter. Docs without `categories` are still surfaced (under the synthetic bucket) but not in any user-declared category:
 
 ```yaml
 ---
@@ -464,7 +471,7 @@ categories: [Documentation]
 ---
 ```
 
-**Opt-in for existing builds:** `mode: default` is the current default, so existing builds are unaffected. To migrate, set `mode: categories` under `hugo.sidebar`. The on-disk content tree does not change, so existing URLs and bookmarks remain valid.
+**Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
 
 ## Output Section
 
