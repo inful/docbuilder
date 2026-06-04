@@ -37,9 +37,6 @@ menu:
         - identifier: cat_x__uncategorized_backend
           name: backend
           parent: cat_x__uncategorized_top
-        - identifier: cat_x__uncategorized_frontend
-          name: frontend
-          parent: cat_x__uncategorized_top
         - name: Backend API
           pageRef: /backend/api/
           parent: cat_x__uncategorized_backend
@@ -48,6 +45,9 @@ menu:
           pageRef: /backend/auth/
           parent: cat_x__uncategorized_backend
           weight: 2
+        - identifier: cat_x__uncategorized_frontend
+          name: frontend
+          parent: cat_x__uncategorized_top
         - name: Frontend Guide
           pageRef: /frontend/guide/
           parent: cat_x__uncategorized_frontend

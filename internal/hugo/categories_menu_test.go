@@ -1165,3 +1165,148 @@ func TestComputeCategoriesMenu_GroupByMixedCaseConfig(t *testing.T) {
 		}
 	}
 }
+
+// TestBuildCategoriesMenu_GroupByThreeLevels is the regression for
+// N-level max-depth nesting. With group_by: [project, year] the
+// rendered tree is three levels deep:
+//   - Level 1: project (from `project:` front matter or Repository)
+//   - Level 2: year    (from `year:`    front matter or Repository)
+//   - Leaf:   the doc
+//
+// Each level's identifier is path-based, and the empty-level rule
+// (A1) is verified: a doc with a `project` but no `year` lands
+// under `<repo>` at level 2.
+func TestBuildCategoriesMenu_GroupByThreeLevels(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			// Full path: project_a > team_alpha > 2024.
+			Repository: "project_a", Title: "q1-2024", Path: "/q1-2024/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha", "year": "2024"},
+		},
+		{
+			// Missing year -> year falls back to Repository (A1).
+			Repository: "project_a", Title: "no-year", Path: "/no-year/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+		{
+			// No project, no year -> both fall back to Repository.
+			Repository: "project_a", Title: "neither", Path: "/neither/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "year"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	entries := cm.Menus["minutes"]
+
+	wantWrapperID := categoryTitleIdentifier("minutes")
+	wantL1AlphaID := categoryParentIdentifier("minutes", "team_alpha")
+	wantL2Alpha2024ID := categoryParentIdentifier("minutes", "team_alpha", "2024")
+	wantL2AlphaRepoID := categoryParentIdentifier("minutes", "team_alpha", "project_a")
+	wantL1RepoID := categoryParentIdentifier("minutes", "project_a")
+	wantL2RepoRepoID := categoryParentIdentifier("minutes", "project_a", "project_a")
+
+	wantIDs := map[string]string{
+		"wrapper":      wantWrapperID,
+		"l1-alpha":     wantL1AlphaID,
+		"l2-2024":      wantL2Alpha2024ID,
+		"l2-repo":      wantL2AlphaRepoID,
+		"l1-repo":      wantL1RepoID,
+		"l2-repo-repo": wantL2RepoRepoID,
+	}
+	seen := map[string]bool{}
+	for _, e := range entries {
+		seen[e.Identifier] = true
+	}
+	for k, id := range wantIDs {
+		if !seen[id] {
+			t.Errorf("missing %s identifier %q in entries: %+v", k, id, entries)
+		}
+	}
+
+	// Spot-check parents: wrapper is top-level; each level-1 entry
+	// points at the wrapper; each level-2 entry points at its
+	// level-1 parent.
+	for _, e := range entries {
+		switch e.Identifier {
+		case wantWrapperID:
+			if e.Parent != "" {
+				t.Errorf("wrapper must be at top level; got parent=%q", e.Parent)
+			}
+		case wantL1AlphaID, wantL1RepoID:
+			if e.Parent != wantWrapperID {
+				t.Errorf("level-1 %q parent = %q, want %q", e.Identifier, e.Parent, wantWrapperID)
+			}
+		case wantL2Alpha2024ID, wantL2AlphaRepoID, wantL2RepoRepoID:
+			if e.Parent == "" {
+				t.Errorf("level-2 %q must have a parent", e.Identifier)
+			}
+		}
+	}
+
+	// Each doc must be a child of the right level-2 node.
+	wantDocParent := map[string]string{
+		"q1-2024": wantL2Alpha2024ID,
+		"no-year": wantL2AlphaRepoID,
+		"neither": wantL2RepoRepoID,
+	}
+	for _, e := range entries {
+		want, ok := wantDocParent[e.Name]
+		if !ok {
+			continue
+		}
+		if e.PageRef == "" {
+			t.Errorf("doc entry %q has no PageRef", e.Name)
+			continue
+		}
+		if e.Parent != want {
+			t.Errorf("doc %q parent = %q, want %q (level-2 path)", e.Name, e.Parent, want)
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByThreeLevelFirstSeenSpelling pins the
+// first-seen raw-spelling rule at every level: team_alpha and
+// Team_Alpha collapse to one bucket labeled "Team_Alpha" at level
+// 1, and 2024 / 2024-Q1 collapse at level 2.
+func TestBuildCategoriesMenu_GroupByThreeLevelFirstSeenSpelling(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "first", Path: "/first/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "Team_Alpha", "year": "2024-Q1"},
+		},
+		{
+			Repository: "project_a", Title: "second", Path: "/second/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha", "year": "2024-q1"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "year"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantL1ID := categoryParentIdentifier("minutes", "team_alpha")
+	wantL2ID := categoryParentIdentifier("minutes", "team_alpha", "2024-q1")
+	for _, e := range cm.Menus["minutes"] {
+		switch e.Identifier {
+		case wantL1ID:
+			if e.Name != "Team_Alpha" {
+				t.Errorf("level-1 first-seen = %q, want %q", e.Name, "Team_Alpha")
+			}
+		case wantL2ID:
+			if e.Name != "2024-Q1" {
+				t.Errorf("level-2 first-seen = %q, want %q", e.Name, "2024-Q1")
+			}
+		}
+	}
+}

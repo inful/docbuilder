@@ -37,12 +37,12 @@ menu:
         - identifier: cat_minutes_team_alpha
           name: team_alpha
           parent: cat_minutes_top
-        - identifier: cat_minutes_team_beta
-          name: team_beta
-          parent: cat_minutes_top
         - name: Team Alpha Sync
           pageRef: /team-alpha-sync/
           parent: cat_minutes_team_alpha
+        - identifier: cat_minutes_team_beta
+          name: team_beta
+          parent: cat_minutes_top
         - name: Team Beta Sync
           pageRef: /team-beta-sync/
           parent: cat_minutes_team_beta

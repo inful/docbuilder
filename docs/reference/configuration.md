@@ -443,8 +443,8 @@ hugo:
     mode: auto                 # the default; "categories" and unset are equivalent
     keep_default_menu: true     # keep the full main page menu below the category menus
     project_segment: repo      # today only "repo" is supported
-    group_by:                  # optional: per-category sub-grouping by a front-matter field
-      minutes: [project]       # group "Minutes" docs by their `project:` value
+    group_by:                  # optional: per-category sub-grouping by front-matter fields
+      minutes: [project]       # group "Minutes" docs by their `project:` value (one level)
 ```
 
 | Field | Description |
@@ -452,7 +452,7 @@ hugo:
 | `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. |
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
-| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names to consult; the first non-empty value becomes the project-level key for that doc. Categories not present in the map use the default Repository-based grouping. Docs whose configured fields are all empty fall back to their source Repository so they still surface under a sensible heading. |
+| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names that form the level-by-level grouping path (the first field is level 1, the second is level 2, and so on — there is no fixed depth cap). Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty front-matter value falls back to the doc's source Repository so the path is always fully populated. |
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 
@@ -476,13 +476,14 @@ categories: [Documentation]
 
 **Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
 
-**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at a front-matter field and DocBuilder will use that field's value as the project-level key inside the sidebar block.
+**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap.
 
 ```yaml
 hugo:
   sidebar:
     group_by:
-      minutes: [project]   # group "Minutes" docs by their `project:` field
+      minutes: [project]            # single level: same as before
+      minutes: [project, year]      # two levels: project, then year under each project
 ```
 
 ```markdown
@@ -503,7 +504,7 @@ project: team_beta
 ---
 ```
 
-With the config above, the rendered sidebar shows:
+With `group_by: [project]` the rendered sidebar shows:
 
 ```
 Minutes
@@ -513,7 +514,19 @@ Minutes
     Team Beta Sync
 ```
 
-A doc that belongs to a configured category but has no value for the configured field falls back to its source Repository, so unannotated docs still surface somewhere sensible. The label preserves the original spelling of the front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
+With `group_by: [project, year]` and an extra `year:` field, the sidebar nests one level deeper:
+
+```
+Minutes
+  team_alpha
+    2024
+      Team Alpha Sync
+  team_beta
+    2024
+      Team Beta Sync
+```
+
+A doc that belongs to a configured category but has no value for a configured field at any level falls back to its source Repository at that level, so unannotated docs still surface somewhere sensible — the absence is visually flagged by the Repository name appearing where the configured field would have placed it. The label at each level preserves the original spelling of the first-seen front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
 
 **Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Project]`, `MINUTES: [PROJECT]`, or `minutes: [project]` in your config and pair it with `Project: team_alpha` or `project: team_alpha` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
 
