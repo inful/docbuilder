@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 5b8f9e680d8aadf5af4f690f696231a19091ec561c78a4d0eb11bc4f445e488e
-lastmod: "2026-01-27"
+fingerprint: 819d9fcc1c54f7f2e8445214898916cf6733ae0347be48d247d55698e327a586
+lastmod: "2026-06-04"
 tags:
   - configuration
   - yaml
@@ -476,54 +476,73 @@ categories: [Documentation]
 
 **Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
 
-**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap.
+**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap. A single-element list (`[project]`) gives the original 2-level shape; a longer list (`[project, year]`, `[team, year, quarter]`, …) nests deeper.
+
+**Two-level example** — `Minutes` grouped first by `project`, then by `year`:
 
 ```yaml
 hugo:
   sidebar:
     group_by:
-      minutes: [project]            # single level: same as before
-      minutes: [project, year]      # two levels: project, then year under each project
+      minutes: [project, year]    # level 1 = project, level 2 = year
 ```
 
 ```markdown
 ---
-title: Team Alpha Sync
+title: 2024 Q1 Sync
 categories: [Minutes]
 project: team_alpha
+year: 2024
 ---
-
-# Team Alpha Sync
 ```
 
 ```markdown
 ---
-title: Team Beta Sync
+title: 2023 Q4 Sync
 categories: [Minutes]
-project: team_beta
+project: team_alpha
+year: 2023
 ---
 ```
 
-With `group_by: [project]` the rendered sidebar shows:
+```markdown
+---
+title: Beta Sync
+categories: [Minutes]
+project: team_beta
+year: 2024
+---
+```
+
+With the config and docs above, the rendered sidebar shows:
 
 ```
 Minutes
   team_alpha
-    Team Alpha Sync
+    2023
+      2023 Q4 Sync
+    2024
+      2024 Q1 Sync
   team_beta
-    Team Beta Sync
+    2024
+      Beta Sync
 ```
 
-With `group_by: [project, year]` and an extra `year:` field, the sidebar nests one level deeper:
+Add a third field to nest one level deeper. With `group_by: [project, year, quarter]` and a `quarter:` field on each of the docs above, the same minutes block would render as:
 
 ```
 Minutes
   team_alpha
+    2023
+      Q4
+        2023 Q4 Sync
     2024
-      Team Alpha Sync
+      Q1
+        2024 Q1 Sync
   team_beta
     2024
-      Team Beta Sync
+      Q1
+        Beta Sync
 ```
 
 A doc that belongs to a configured category but has no value for a configured field at any level falls back to its source Repository at that level, so unannotated docs still surface somewhere sensible — the absence is visually flagged by the Repository name appearing where the configured field would have placed it. The label at each level preserves the original spelling of the first-seen front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
