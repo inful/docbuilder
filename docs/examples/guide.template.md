@@ -3,8 +3,8 @@ aliases:
   - /_uid/6359eb3d-f704-412d-9f55-373f496a1959/
 categories:
   - Templates
-fingerprint: a62c6220ba47b5643d68980cf90e82e65f30ec3dd9d0acba1b06511ad6a8545f
-lastmod: "2026-02-04"
+fingerprint: 542fa6d70553d3edd98365ceb61aa43b1cd4bcb65abbb2e0c3321decc1d30fe0
+lastmod: "2026-06-04"
 params:
   docbuilder:
     template:

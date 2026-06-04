@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 3adea9e83bbb8a570efaf476d302c27dd653b4237ed14be0b3a1119a47d48b66
-lastmod: "2026-06-02"
+fingerprint: 2d04260227d0e00f96257cdba5ce1d85c1f524d5514af9940ef6996b3dc84a79
+lastmod: "2026-06-04"
 tags:
   - forge
   - namespacing

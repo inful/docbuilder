@@ -4,13 +4,14 @@ aliases:
 categories:
   - how-to
 date: 2026-05-30T00:00:00Z
-lastmod: "2026-06-02"
+fingerprint: f9f7db99c332ca2a5ec11fd5310aab49ae480423a9e22211ae0f42f2314ce297
+lastmod: "2026-06-04"
 tags:
   - documentation
   - images
   - markdown
   - preview
-title: "How To: Write Image Links"
+title: 'How To: Write Image Links'
 uid: 57b21142-f4d9-4cb5-b0b8-f4bc55f520d8
 ---
 

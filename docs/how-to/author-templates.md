@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 34fcdbfa20b2f1802fc42fc453a8dc4a633df1a0449f4b9ba411339321e019c6
-lastmod: "2026-02-04"
+fingerprint: e040218fcfb1f087a1b1f73da619c8a70dfca5e88683ca9b14980dc04a60fa55
+lastmod: "2026-06-04"
 tags:
   - templates
   - authoring

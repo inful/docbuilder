@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 03d3879afb80d7989ccce06db5ed7fb6babfb2da55f3b34909a19e7bb902dbb9
-lastmod: "2026-02-04"
+fingerprint: 5a1d5b2d63c348825ab1992cbba85d786a8167f06802e8d937e208c547b5f05d
+lastmod: "2026-06-04"
 tags:
   - templates
   - cli
