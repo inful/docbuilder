@@ -37,9 +37,6 @@ menu:
         - identifier: cat_x__uncategorized_repo_a
           name: repo-a
           parent: cat_x__uncategorized_top
-        - identifier: cat_x__uncategorized_repo_b
-          name: repo-b
-          parent: cat_x__uncategorized_top
         - name: Setup Guide (Repository A)
           pageRef: /repo-a/setup/
           parent: cat_x__uncategorized_repo_a
@@ -48,6 +45,9 @@ menu:
           pageRef: /repo-a/api/
           parent: cat_x__uncategorized_repo_a
           weight: 2
+        - identifier: cat_x__uncategorized_repo_b
+          name: repo-b
+          parent: cat_x__uncategorized_top
         - name: Setup Guide (Repository B)
           pageRef: /repo-b/setup/
           parent: cat_x__uncategorized_repo_b

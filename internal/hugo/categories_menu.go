@@ -70,9 +70,18 @@ var UncategorizedCategory = config.SidebarUncategorizedCategory
 // groupBy, when non-empty, opts a category into a front-matter-driven
 // sub-grouping under its wrapper. The map is keyed by canonical
 // (lowercased) category name; the value is the ordered list of
-// front-matter field names to consult. Only the first field in the
-// list is used today. Categories not present in the map use the
-// default Repository-based grouping.
+// front-matter field names that form the grouping path. The first
+// field is level 1 (project), the second is level 2, and so on;
+// there is no fixed cap, so a configured chain of N fields produces
+// an N-level deep sidebar block. Categories not present in the map
+// use the default Repository-based grouping (a single project level
+// keyed by the doc's Repository).
+//
+// Empty-level rule (A1): at every level, a missing or empty
+// front-matter value falls back to the doc's Repository, so a doc's
+// path through the tree is always fully populated and a missing
+// field is visually surfaced as a Repository-named node in the
+// place the configured field would have occupied.
 func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, projectSegment string, groupBy map[string][]string) (*models.CategoriesMenu, error) {
 	if projectSegment != "repo" {
 		return nil, fmt.Errorf("unsupported sidebar project_segment %q (only \"repo\" is supported)", projectSegment)
@@ -92,42 +101,27 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 		repoByName[repos[i].Name] = repos[i]
 	}
 
-	// category -> projectKey -> []doc, where projectKey is either the
-	// doc's Repository (the default) or the value of a front-matter
-	// field when the category is configured in groupBy. We use a
-	// single two-level map and let projectKeyForDoc below decide the
-	// per-category key.
-	type projectDocs = []categoryDoc
-	type categoryGroup = map[string]projectDocs
-	grouped := make(map[string]categoryGroup)
-	// displayByKey remembers the first original spelling seen per
-	// (category, projectKey) pair. The category spelling drives the
-	// sidebar block title; the projectKey spelling drives the
-	// expandable header underneath it.
-	displayByKey := make(map[string]string)
-	displayByKeyProject := make(map[string]string)
+	// grouped[category] is the root of an N-level tree. Each
+	// internal node represents one grouping level; the leaf level
+	// holds the doc. We use a tree rather than a fixed two-level
+	// map so the depth of the rendered sidebar adapts to the
+	// configured group_by chain.
+	grouped := map[string]*treeNode{}
+
 	for _, d := range items {
 		for i, raw := range d.Categories {
 			raw = strings.TrimSpace(raw)
 			if raw == "" {
 				continue
 			}
-			key := strings.ToLower(raw)
-			if grouped[key] == nil {
-				grouped[key] = make(categoryGroup)
+			cat := strings.ToLower(raw)
+			display := raw
+			if i == 0 && d.CategoryDisplay != "" {
+				display = strings.TrimSpace(d.CategoryDisplay)
 			}
-			projectKey := projectKeyForDoc(d, key, groupBy)
-			grouped[key][projectKey] = append(grouped[key][projectKey], d)
-			if _, seen := displayByKey[key]; !seen {
-				display := raw
-				if i == 0 && d.CategoryDisplay != "" {
-					display = strings.TrimSpace(d.CategoryDisplay)
-				}
-				displayByKey[key] = display
-			}
-			if _, seen := displayByKeyProject[projectKey]; !seen {
-				displayByKeyProject[projectKey] = projectDisplayLabel(d, projectKey, repoByName)
-			}
+			fields := groupBy[cat]
+			path := pathForDoc(d, cat, groupBy)
+			insertDoc(grouped, cat, display, path, fields, d, repoByName)
 		}
 	}
 
@@ -140,130 +134,204 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 	sort.Strings(categoryNames)
 
 	for _, cat := range categoryNames {
-		catEntries := grouped[cat]
-
-		// Sort project names for stable ordering.
-		projectNames := make([]string, 0, len(catEntries))
-		for p := range catEntries {
-			projectNames = append(projectNames, p)
-		}
-		sort.Strings(projectNames)
-
-		// Prepend a single nameless top-level entry whose `name`
-		// Relearn renders as the sidebar block's title. This avoids
-		// needing an i18n/<lang>.toml file with a `<identifier>-menuTitle`
-		// key. See:
-		// https://mcshelby.github.io/hugo-theme-relearn/configuration/sidebar/menus/index.html#title-for-arbitrary-menus
-		titleID := categoryTitleIdentifier(cat)
-		cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
-			Identifier: titleID,
-			Name:       categoryDisplayLabel(cat, displayByKey[cat]),
-		})
-
-		// First pass: emit parent entries.
-		for _, projectName := range projectNames {
-			parentID := categoryParentIdentifier(cat, projectName)
-			cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
-				Identifier: parentID,
-				Name:       displayByKeyProject[projectName],
-				Parent:     titleID,
-			})
-		}
-
-		// Second pass: emit child entries grouped under parents. We
-		// sort each project's docs by weight, then by title, so the
-		// sidebar order is stable and predictable.
-		for _, projectName := range projectNames {
-			projectDocs := catEntries[projectName]
-			sort.SliceStable(projectDocs, func(i, j int) bool {
-				if projectDocs[i].Weight != projectDocs[j].Weight {
-					return projectDocs[i].Weight < projectDocs[j].Weight
-				}
-				return projectDocs[i].Title < projectDocs[j].Title
-			})
-			parentID := categoryParentIdentifier(cat, projectName)
-			for _, d := range projectDocs {
-				cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
-					Name:    d.Title,
-					PageRef: d.Path,
-					Parent:  parentID,
-					Weight:  d.Weight,
-				})
-			}
-		}
-
-		cm.SidebarEntries = append(cm.SidebarEntries, models.SidebarEntry{
-			Identifier:   categorySidebarIdentifier(cat),
-			Type:         "menu",
-			DisableTitle: false,
-			// The synthetic _uncategorized category renders last so
-			// it does not clutter first-impression navigation. The
-			// high weight overrides Relearn's default
-			// (alphabetical-by-identifier) ordering.
-			Weight: uncategorizedSidebarWeight(cat),
-		})
+		emitCategory(cm, cat, grouped[cat])
 	}
 
 	return cm, nil
 }
 
-// projectKeyForDoc returns the project-level key used to group a doc
-// under the given canonical category. When groupBy declares a
-// front-matter field for this category and the doc carries a value
-// for it, that value is used (slugified to a canonical form). When
-// the configured field is absent or empty, the doc falls back to
-// its source Repository. Categories with no entry in groupBy always
-// use Repository. The first-seen original spelling for the key is
-// recorded separately by the caller via projectDisplayLabel.
-func projectKeyForDoc(d categoryDoc, canonicalCat string, groupBy map[string][]string) string {
+// treeNode is a single node in the N-level grouping tree. The root
+// of each category tree is the category itself (its label is the
+// category display name). Each child node represents one grouping
+// level — the first level is keyed by the configured group_by field
+// (or the doc's Repository when no group_by is configured for the
+// category), the second by the next field in the chain, and so on.
+// Leaf nodes hold the docs; an intermediate node may also hold docs
+// when a doc's group_by chain ends at that level (a deeper field
+// was empty and fell back to the Repository, so the path is still
+// fully populated even though the chain had no real value past
+// that point).
+type treeNode struct {
+	label string
+	docs  []categoryDoc
+	kids  map[string]*treeNode
+}
+
+// insertDoc places d into the category tree at grouped[cat],
+// creating intermediate nodes as needed. path is the level-by-level
+// key chain (length = number of configured fields for cat, or 1 for
+// un-configured categories). The first-seen display label for each
+// node is captured here so the emit pass doesn't need to re-derive
+// it from the docs.
+func insertDoc(grouped map[string]*treeNode, cat, display string, path []string, fields []string, d categoryDoc, repoByName map[string]config.Repository) {
+	root, ok := grouped[cat]
+	if !ok {
+		root = &treeNode{
+			label: categoryDisplayLabel(cat, display),
+			kids:  map[string]*treeNode{},
+		}
+		grouped[cat] = root
+	}
+	node := root
+	for _, key := range path {
+		child, exists := node.kids[key]
+		if !exists {
+			child = &treeNode{
+				label: labelForKey(d, key, fields, repoByName),
+				kids:  map[string]*treeNode{},
+			}
+			node.kids[key] = child
+		}
+		node = child
+	}
+	node.docs = append(node.docs, d)
+}
+
+// emitCategory writes the Hugo menu entries and the sidebar entry for
+// one category. The synthetic top-level wrapper entry is emitted
+// first so Relearn can use its `name` as the sidebar block title;
+// then each level-1 child is emitted recursively, descending one
+// level in the tree per call.
+func emitCategory(cm *models.CategoriesMenu, cat string, root *treeNode) {
+	titleID := categoryTitleIdentifier(cat)
+	cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+		Identifier: titleID,
+		Name:       root.label,
+	})
+	// Emit level-1 children. Sorted for stable YAML output.
+	level1Keys := make([]string, 0, len(root.kids))
+	for k := range root.kids {
+		level1Keys = append(level1Keys, k)
+	}
+	sort.Strings(level1Keys)
+	for _, k1 := range level1Keys {
+		emitNode(cm, cat, root.kids[k1], []string{k1}, titleID)
+	}
+	cm.SidebarEntries = append(cm.SidebarEntries, models.SidebarEntry{
+		Identifier:   categorySidebarIdentifier(cat),
+		Type:         "menu",
+		DisableTitle: false,
+		// The synthetic _uncategorized category renders last so it
+		// does not clutter first-impression navigation. The high
+		// weight overrides Relearn's default (alphabetical-by-
+		// identifier) ordering.
+		Weight: uncategorizedSidebarWeight(cat),
+	})
+}
+
+// emitNode writes the menu entry for a single node, its docs (as
+// children), and recurses into its kids. path is the level-key chain
+// from the category root to this node (exclusive of the category
+// itself). parentID is the menu identifier of the node's parent in
+// the Hugo tree. The recursion is bounded only by the configured
+// group_by chain for the category.
+func emitNode(cm *models.CategoriesMenu, cat string, node *treeNode, path []string, parentID string) {
+	id := categoryParentIdentifier(append([]string{cat}, path...)...)
+	cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+		Identifier: id,
+		Name:       node.label,
+		Parent:     parentID,
+	})
+	// Docs at this level, sorted by (weight, title) for stability.
+	docs := append([]categoryDoc(nil), node.docs...)
+	sort.SliceStable(docs, func(i, j int) bool {
+		if docs[i].Weight != docs[j].Weight {
+			return docs[i].Weight < docs[j].Weight
+		}
+		return docs[i].Title < docs[j].Title
+	})
+	for _, d := range docs {
+		cm.Menus[cat] = append(cm.Menus[cat], models.MenuEntry{
+			Name:    d.Title,
+			PageRef: d.Path,
+			Parent:  id,
+			Weight:  d.Weight,
+		})
+	}
+	// Recurse into the next level. append(path, k) reuses the
+	// underlying array if it has capacity; that is safe here
+	// because path is not consulted after the loop.
+	keys := make([]string, 0, len(node.kids))
+	for k := range node.kids {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		emitNode(cm, cat, node.kids[k], append(path, k), id)
+	}
+}
+
+// pathForDoc returns the level-key path for d under the given
+// canonical category. When the category is configured in groupBy,
+// the path has one entry per configured field; each entry is the
+// (lowercased) front-matter value or, if the field is missing or
+// empty, the doc's Repository (A1: per-level Repository fallback).
+// When the category is not in groupBy, the path is a single entry
+// holding the doc's Repository — the default 2-level behavior.
+func pathForDoc(d categoryDoc, canonicalCat string, groupBy map[string][]string) []string {
 	fields, ok := groupBy[canonicalCat]
 	if !ok || len(fields) == 0 {
-		return d.Repository
+		return []string{d.Repository}
 	}
+	out := make([]string, 0, len(fields))
 	for _, f := range fields {
 		if v, present := d.GroupFields[f]; present {
 			v = strings.TrimSpace(v)
 			if v != "" {
-				return strings.ToLower(v)
+				out = append(out, strings.ToLower(v))
+				continue
+			}
+		}
+		out = append(out, d.Repository)
+	}
+	return out
+}
+
+// labelForKey returns the display label for a single level key
+// derived from d. When the key matches a front-matter value (any of
+// the configured fields, case-insensitive), the first-seen raw
+// spelling wins so intentional casings like "team_alpha" or
+// "Team-Alpha" are preserved — the same rule the legacy 2-level
+// projectDisplayLabel followed. Otherwise the key is treated as a
+// Repository name and the repo's DisplayName (or Name if DisplayName
+// is unset) is preferred, mirroring the rule the project level has
+// always used.
+func labelForKey(d categoryDoc, key string, fields []string, repoByName map[string]config.Repository) string {
+	for _, f := range fields {
+		if raw, ok := d.GroupFields[f]; ok {
+			raw = strings.TrimSpace(raw)
+			if raw != "" && strings.EqualFold(raw, key) {
+				return raw
 			}
 		}
 	}
-	return d.Repository
-}
-
-// projectDisplayLabel returns the first-seen label for a project-level
-// key. When the key is a Repository name, the repository's
-// DisplayName (or Name if DisplayName is unset) is preferred — the
-// same rule the project level has always used. When the key was
-// derived from a front-matter field, the first-seen raw spelling
-// wins so intentional casings like "team_alpha" or "Team-Alpha" are
-// preserved. Repository labels and front-matter labels can both
-// produce a key; the first to register a projectKey wins.
-func projectDisplayLabel(d categoryDoc, projectKey string, repoByName map[string]config.Repository) string {
-	// First, see if the project key was derived from one of the
-	// doc's front-matter GroupFields. If so, use the first-seen raw
-	// spelling. We match on lowercased equality because projectKey
-	// is the lowercased canonical form.
-	for _, raw := range d.GroupFields {
-		raw = strings.TrimSpace(raw)
-		if raw != "" && strings.EqualFold(raw, projectKey) {
-			return raw
-		}
-	}
-	// Otherwise the project key is the doc's Repository. Use the
-	// DisplayName if one is registered, else the name verbatim.
-	if repo, ok := repoByName[projectKey]; ok {
+	if repo, ok := repoByName[key]; ok {
 		return repo.Label()
 	}
-	return projectKey
+	return key
 }
 
 // categoryParentIdentifier builds a stable, collision-resistant
-// identifier for a category/project parent entry. Identifiers must
-// start with a letter and contain only letters, digits, and
-// underscores per Hugo's menu rules.
-func categoryParentIdentifier(category, project string) string {
-	return "cat_" + slugForIdentifier(category) + "_" + slugForIdentifier(project)
+// identifier for a menu parent at an arbitrary depth. The first
+// argument is always the category; subsequent arguments are the
+// level keys in order (level 1, level 2, …). Identifiers must start
+// with a letter and contain only letters, digits, and underscores
+// per Hugo's menu rules. The two-argument form (cat, level1)
+// produces the same identifier the legacy 2-level code did, so
+// existing fixtures and golden tests remain byte-identical.
+func categoryParentIdentifier(parts ...string) string {
+	if len(parts) == 0 {
+		return "x"
+	}
+	var b strings.Builder
+	b.WriteString("cat_")
+	for i, p := range parts {
+		if i > 0 {
+			b.WriteByte('_')
+		}
+		b.WriteString(slugForIdentifier(p))
+	}
+	return b.String()
 }
 
 // categoryTitleIdentifier returns the identifier of the synthetic
