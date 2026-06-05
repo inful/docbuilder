@@ -1,7 +1,7 @@
 ---
 title: Orphan Sync
 categories: [Minutes]
-project: solo
+projects: [solo]
 ---
 # Orphan Sync
 This doc belongs to `Minutes` but NOT to the sibling category
