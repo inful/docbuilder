@@ -1,0 +1,22 @@
+version: "2.0"
+
+repositories:
+  - name: sidebar-group-by-sibling-category-repo
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Sidebar Group By Sibling Category Demo"
+  description: "Testing hugo.sidebar.group_by with a sibling-category axis"
+  base_url: "http://localhost:1313/"
+  sidebar:
+    mode: categories
+    group_by:
+      minutes: [project, team]
+      team: [project]
+
+output:
+  directory: PLACEHOLDER
+  clean: true

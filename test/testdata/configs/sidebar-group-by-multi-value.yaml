@@ -1,0 +1,21 @@
+version: "2.0"
+
+repositories:
+  - name: sidebar-group-by-multi-value-repo
+    url: PLACEHOLDER
+    branch: main
+    paths:
+      - docs
+
+hugo:
+  title: "Sidebar Group By Multi-Value Demo"
+  description: "Testing hugo.sidebar.group_by fan-out on list-valued project"
+  base_url: "http://localhost:1313/"
+  sidebar:
+    mode: categories
+    group_by:
+      minutes: [project]
+
+output:
+  directory: PLACEHOLDER
+  clean: true

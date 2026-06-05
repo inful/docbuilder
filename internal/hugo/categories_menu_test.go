@@ -3,6 +3,8 @@ package hugo
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"testing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
@@ -813,10 +815,14 @@ func TestReadCategoriesMenuDocs_ExtractsGroupingFields(t *testing.T) {
 			Name:       "m",
 			Repository: "project_a",
 			Content: []byte("---\ntitle: M\ncategories: [Minutes]\n" +
-				"project: team_alpha\n---\n"),
+				"project: [team_alpha]\n---\n"),
 		},
 	}
-	got := readCategoriesMenuDocs(files, false, false, []string{"project"})
+	// The read path is given the per-category axis map (already
+	// lowercased by SidebarConfig.Normalize at config load).
+	got := readCategoriesMenuDocs(files, false, false, map[string][]string{
+		"minutes": {"project"},
+	})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry; got %d", len(got))
 	}
@@ -1100,12 +1106,14 @@ func TestReadCategoriesMenuDocs_CaseInsensitiveFrontMatter(t *testing.T) {
 			Repository: "project_a",
 			// Front matter uses capital P.
 			Content: []byte("---\ntitle: M\ncategories: [Minutes]\n" +
-				"Project: team_alpha\n---\n"),
+				"Project: [team_alpha]\n---\n"),
 		},
 	}
-	// Read path is given the lowercased field name (after
-	// SidebarConfig.Normalize).
-	got := readCategoriesMenuDocs(files, false, false, []string{"project"})
+	// Read path is given the per-category axis map (already
+	// lowercased by SidebarConfig.Normalize at config load).
+	got := readCategoriesMenuDocs(files, false, false, map[string][]string{
+		"minutes": {"project"},
+	})
 	if len(got) != 1 {
 		t.Fatalf("expected 1 entry; got %d", len(got))
 	}
@@ -1143,7 +1151,7 @@ func TestComputeCategoriesMenu_GroupByMixedCaseConfig(t *testing.T) {
 	// Doc uses lowercase categories and lowercase project.
 	doc := docWithFrontMatter("project_a", "alpha",
 		"---\ntitle: Alpha\ncategories: [Minutes]\n"+
-			"project: team_alpha\n---\n")
+			"project: [team_alpha]\n---\n")
 	cm, err := g.computeCategoriesMenu(&models.BuildState{
 		Docs: models.DocsState{Files: []docs.DocFile{doc}},
 	})
@@ -1308,5 +1316,555 @@ func TestBuildCategoriesMenu_GroupByThreeLevelFirstSeenSpelling(t *testing.T) {
 				t.Errorf("level-2 first-seen = %q, want %q", e.Name, "2024-Q1")
 			}
 		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupBySiblingCategory is the headline
+// test for the sibling-category axis. Config:
+//
+//	group_by:
+//	  minutes: [project, team]
+//	  team: [project]
+//
+// The chain for `minutes` is [front-matter `project`, sibling
+// category `team`]. A doc with categories: [Minutes, Team-Alpha]
+// must land under Minutes > project > Team-Alpha, with the original
+// spelling preserved on the level-2 node label.
+func TestBuildCategoriesMenu_GroupBySiblingCategory(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "alpha-doc", Path: "/alpha-doc/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "Team-Alpha",
+			},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "team"},
+		"team":    {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	entries := cm.Menus["minutes"]
+	wantL1ID := categoryParentIdentifier("minutes", "team_alpha")
+	wantL2ID := categoryParentIdentifier("minutes", "team_alpha", "team-alpha")
+	for _, e := range entries {
+		switch e.Identifier {
+		case wantL1ID:
+			if e.Name != "team_alpha" {
+				t.Errorf("level-1 label = %q, want %q", e.Name, "team_alpha")
+			}
+		case wantL2ID:
+			if e.Name != "Team-Alpha" {
+				t.Errorf("level-2 label = %q, want %q (first-seen original spelling)",
+					e.Name, "Team-Alpha")
+			}
+			if e.Parent != wantL1ID {
+				t.Errorf("level-2 parent = %q, want %q", e.Parent, wantL1ID)
+			}
+		}
+	}
+	for _, e := range entries {
+		if e.PageRef == "" {
+			continue
+		}
+		if e.Parent != wantL2ID {
+			t.Errorf("doc parent = %q, want %q (sibling-category level)", e.Parent, wantL2ID)
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupBySiblingCategoryMissingFallsBackToRepo
+// asserts the A1 fallback for a sibling-category axis: a doc in
+// `minutes` but NOT in the sibling `team` must land under the
+// Repository at that level, so the path stays fully populated.
+func TestBuildCategoriesMenu_GroupBySiblingCategoryMissingFallsBackToRepo(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "no-team", Path: "/no-team/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields:       map[string]string{"project": "team_alpha"},
+			SiblingCategories: map[string]string{"minutes": "Minutes"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "team"},
+		"team":    {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantL2ID := categoryParentIdentifier("minutes", "team_alpha", "project_a")
+	if !entryByID(cm.Menus["minutes"], wantL2ID) {
+		t.Errorf("missing Repository-fallback level-2 node %q: %+v",
+			wantL2ID, cm.Menus["minutes"])
+	}
+}
+
+// TestBuildCategoriesMenu_GroupBySiblingCategoryCaseInsensitive
+// pins the case-insensitive match against the doc's categories list
+// and the first-seen-spelling rule for the rendered label: docs that
+// declare the sibling under different casings all collapse into one
+// bucket labeled with whichever spelling the renderer saw first.
+func TestBuildCategoriesMenu_GroupBySiblingCategoryCaseInsensitive(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "first", Path: "/first/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "Team-Alpha",
+			},
+		},
+		{
+			Repository: "project_a", Title: "second", Path: "/second/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "team-alpha",
+			},
+		},
+		{
+			Repository: "project_a", Title: "third", Path: "/third/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "TEAM-ALPHA",
+			},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"team"},
+		"team":    {},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "team-alpha")
+	wantName := "Team-Alpha"
+	matches := 0
+	for _, e := range cm.Menus["minutes"] {
+		if e.Identifier == wantID {
+			matches++
+			if e.Name != wantName {
+				t.Errorf("level-1 label = %q, want %q (first-seen wins)",
+					e.Name, wantName)
+			}
+		}
+	}
+	if matches != 1 {
+		t.Errorf("expected exactly 1 level-1 node; got %d", matches)
+	}
+}
+
+// TestBuildCategoriesMenu_GroupBySiblingCategoryDeepChain mixes a
+// front-matter field (project), a sibling category (team), and a
+// second front-matter field (quarter) in a 3-level chain.
+func TestBuildCategoriesMenu_GroupBySiblingCategoryDeepChain(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "q1", Path: "/q1/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{
+				"project": "team_alpha",
+				"quarter": "Q1",
+			},
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "Team-Alpha",
+			},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "team", "quarter"},
+		"team":    {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantL1ID := categoryParentIdentifier("minutes", "team_alpha")
+	wantL2ID := categoryParentIdentifier("minutes", "team_alpha", "team-alpha")
+	wantL3ID := categoryParentIdentifier("minutes", "team_alpha", "team-alpha", "q1")
+	for _, e := range cm.Menus["minutes"] {
+		switch e.Identifier {
+		case wantL1ID:
+			if e.Parent != categoryTitleIdentifier("minutes") {
+				t.Errorf("L1 parent = %q, want wrapper", e.Parent)
+			}
+		case wantL2ID:
+			if e.Parent != wantL1ID {
+				t.Errorf("L2 parent = %q, want %q", e.Parent, wantL1ID)
+			}
+		case wantL3ID:
+			if e.Parent != wantL2ID {
+				t.Errorf("L3 parent = %q, want %q", e.Parent, wantL2ID)
+			}
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupBySiblingCategoryOrderIndependent
+// asserts the renderer matches the sibling category by name, not by
+// position in the doc's categories: list.
+func TestBuildCategoriesMenu_GroupBySiblingCategoryOrderIndependent(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	mk := func(swap bool) []categoryDoc {
+		_ = swap
+		return []categoryDoc{
+			{
+				Repository: "project_a", Title: "doc", Path: "/doc/",
+				Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+				GroupFields:       map[string]string{"project": "team_alpha"},
+				SiblingCategories: map[string]string{"minutes": "Minutes", "team": "Team"},
+			},
+		}
+	}
+	configMap := map[string][]string{
+		"minutes": {"project", "team"},
+		"team":    {"project"},
+	}
+	cm1, err := buildCategoriesMenu(mk(false), repos, "repo", configMap)
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu(order A): %v", err)
+	}
+	cm2, err := buildCategoriesMenu(mk(true), repos, "repo", configMap)
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu(order B): %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "team_alpha", "team")
+	if !entryByID(cm1.Menus["minutes"], wantID) {
+		t.Errorf("order A: missing sibling level-2 node %q: %+v",
+			wantID, cm1.Menus["minutes"])
+	}
+	if !entryByID(cm2.Menus["minutes"], wantID) {
+		t.Errorf("order B: missing sibling level-2 node %q: %+v",
+			wantID, cm2.Menus["minutes"])
+	}
+}
+
+// TestReadCategoriesMenuDocs_SiblingCategoriesExtracted confirms the
+// read path populates SiblingCategories when grouping fields are
+// requested, and leaves it nil otherwise.
+func TestReadCategoriesMenuDocs_SiblingCategoriesExtracted(t *testing.T) {
+	withGrouping := []docs.DocFile{
+		docWithFrontMatter("project_a", "m",
+			"---\ntitle: M\ncategories: [Minutes, Team, Extra]\n---\n"),
+	}
+	got := readCategoriesMenuDocs(withGrouping, false, false, map[string][]string{
+		"minutes": {"project"},
+	})
+	if len(got) == 0 {
+		t.Fatalf("expected entries; got 0")
+	}
+	for _, e := range got {
+		if e.SiblingCategories == nil {
+			t.Errorf("SiblingCategories must be populated when grouping is requested")
+		}
+		if e.SiblingCategories["minutes"] != "Minutes" {
+			t.Errorf("SiblingCategories[minutes] = %q, want %q",
+				e.SiblingCategories["minutes"], "Minutes")
+		}
+		if e.SiblingCategories["team"] != "Team" {
+			t.Errorf("SiblingCategories[team] = %q, want %q",
+				e.SiblingCategories["team"], "Team")
+		}
+		if e.SiblingCategories["extra"] != "Extra" {
+			t.Errorf("SiblingCategories[extra] = %q, want %q",
+				e.SiblingCategories["extra"], "Extra")
+		}
+	}
+	noGrouping := readCategoriesMenuDocs(withGrouping, false, false, nil)
+	for _, e := range noGrouping {
+		if e.SiblingCategories != nil {
+			t.Errorf("SiblingCategories must be nil when no grouping is requested; got %v",
+				e.SiblingCategories)
+		}
+	}
+}
+
+// TestBuildCategoriesMenu_GroupByCategoryPrefersSibling pins the
+// disambiguation rule: when an axis name is BOTH a sibling category
+// (a key in the same groupBy map) AND a front-matter field on the
+// doc, the renderer must prefer the sibling-category resolution.
+func TestBuildCategoriesMenu_GroupByCategoryPrefersSibling(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "doc", Path: "/doc/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{
+				"project": "team_alpha",
+				"team":    "frontmatter_value",
+			},
+			SiblingCategories: map[string]string{
+				"minutes": "Minutes",
+				"team":    "Team",
+			},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project", "team"},
+		"team":    {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "team_alpha", "team")
+	if !entryByID(cm.Menus["minutes"], wantID) {
+		t.Errorf("missing sibling level-2 node %q (sibling must win over front-matter field): %+v",
+			wantID, cm.Menus["minutes"])
+	}
+	badID := categoryParentIdentifier("minutes", "team_alpha", "frontmatter_value")
+	if entryByID(cm.Menus["minutes"], badID) {
+		t.Errorf("front-matter level-2 node %q leaked into menu; sibling must win: %+v",
+			badID, cm.Menus["minutes"])
+	}
+}
+
+// TestExtractAxisValues covers the four shapes the helper handles:
+// scalar string, []string, []any of strings, and missing/empty.
+// These are the same shapes Hugo's front-matter parser can produce
+// depending on the YAML form the author used.
+func TestExtractAxisValues(t *testing.T) {
+	cases := []struct {
+		name string
+		fm   map[string]any
+		axis string
+		want []string
+	}{
+		{
+			name: "scalar string",
+			fm:   map[string]any{"project": "team_alpha"},
+			axis: "project",
+			want: []string{"team_alpha"},
+		},
+		{
+			name: "list of strings",
+			fm:   map[string]any{"project": []string{"team_alpha", "team_beta"}},
+			axis: "project",
+			want: []string{"team_alpha", "team_beta"},
+		},
+		{
+			name: "list of any (Hugo's typical parse for YAML lists)",
+			fm:   map[string]any{"project": []any{"team_alpha", "team_beta"}},
+			axis: "project",
+			want: []string{"team_alpha", "team_beta"},
+		},
+		{
+			name: "missing field",
+			fm:   map[string]any{},
+			axis: "project",
+			want: []string{""},
+		},
+		{
+			name: "empty list",
+			fm:   map[string]any{"project": []any{}},
+			axis: "project",
+			want: []string{""},
+		},
+		{
+			name: "list with whitespace and empties (filtered)",
+			fm:   map[string]any{"project": []any{"  team_alpha  ", "", "team_beta"}},
+			axis: "project",
+			want: []string{"team_alpha", "team_beta"},
+		},
+		{
+			name: "case-insensitive lookup",
+			fm:   map[string]any{"Project": "team_alpha"},
+			axis: "project",
+			want: []string{"team_alpha"},
+		},
+		{
+			name: "non-string element in []any (filtered)",
+			fm:   map[string]any{"project": []any{"team_alpha", 42, "team_beta"}},
+			axis: "project",
+			want: []string{"team_alpha", "team_beta"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractAxisValues(tc.fm, []string{tc.axis})
+			if len(got) != 1 {
+				t.Fatalf("expected 1 axis, got %d", len(got))
+			}
+			if !reflect.DeepEqual(got[0].values, tc.want) {
+				t.Errorf("values = %#v, want %#v", got[0].values, tc.want)
+			}
+		})
+	}
+}
+
+// TestReadCategoriesMenuDocs_FanOutOnListAxis is the read-path
+// regression for list-valued axes: a doc with `project: [a, b]`
+// produces two categoryDoc entries, one per value, each with a
+// single-value GroupFields map.
+func TestReadCategoriesMenuDocs_FanOutOnListAxis(t *testing.T) {
+	files := []docs.DocFile{
+		docWithFrontMatter("project_a", "doc",
+			"---\ntitle: Doc\ncategories: [Minutes]\n"+
+				"project: [team_alpha, team_beta]\n---\n"),
+	}
+	got := readCategoriesMenuDocs(files, false, false, map[string][]string{
+		"minutes": {"project"},
+	})
+	if len(got) != 2 {
+		t.Fatalf("expected 2 entries (fan-out); got %d", len(got))
+	}
+	sort.Slice(got, func(i, j int) bool {
+		return got[i].GroupFields["project"] < got[j].GroupFields["project"]
+	})
+	if got[0].GroupFields["project"] != "team_alpha" {
+		t.Errorf("entry 0 project = %q, want %q", got[0].GroupFields["project"], "team_alpha")
+	}
+	if got[1].GroupFields["project"] != "team_beta" {
+		t.Errorf("entry 1 project = %q, want %q", got[1].GroupFields["project"], "team_beta")
+	}
+}
+
+// TestReadCategoriesMenuDocs_CrossProductCategoryAndProject asserts
+// the cross-product: a doc with `categories: [A, B]` and
+// `project: [x, y]` produces 4 categoryDoc entries (one per
+// (cat, project) combination).
+func TestReadCategoriesMenuDocs_CrossProductCategoryAndProject(t *testing.T) {
+	files := []docs.DocFile{
+		docWithFrontMatter("project_a", "doc",
+			"---\ntitle: Doc\ncategories: [A, B]\n"+
+				"project: [x, y]\n---\n"),
+	}
+	got := readCategoriesMenuDocs(files, false, false, map[string][]string{
+		"a": {"project"},
+		"b": {"project"},
+	})
+	if len(got) != 4 {
+		t.Fatalf("expected 4 entries (2 cats × 2 projects); got %d", len(got))
+	}
+	seen := map[string]bool{}
+	for _, e := range got {
+		cat := e.Categories[0]
+		seen[cat+"|"+e.GroupFields["project"]] = true
+	}
+	want := []string{"a|x", "a|y", "b|x", "b|y"}
+	for _, w := range want {
+		if !seen[w] {
+			t.Errorf("missing (cat, project) combination %q; got %v", w, seen)
+		}
+	}
+}
+
+// TestReadCategoriesMenuDocs_FanOutRespectsGroupByScope: a list-
+// valued field for a category NOT in group_by must not fan out
+// (the per-category Repository grouping applies, single entry).
+func TestReadCategoriesMenuDocs_FanOutRespectsGroupByScope(t *testing.T) {
+	files := []docs.DocFile{
+		docWithFrontMatter("project_a", "doc",
+			"---\ntitle: Doc\ncategories: [Operations]\n"+
+				"project: [team_alpha, team_beta]\n---\n"),
+	}
+	// Only `minutes` is in group_by; `operations` is not, so the
+	// project list must NOT drive a fan-out for this doc.
+	got := readCategoriesMenuDocs(files, false, false, map[string][]string{
+		"minutes": {"project"},
+	})
+	if len(got) != 1 {
+		t.Fatalf("expected 1 entry (no fan-out for non-grouped category); got %d", len(got))
+	}
+	if got[0].GroupFields != nil {
+		t.Errorf("GroupFields = %v, want nil (non-grouped category must not see project)",
+			got[0].GroupFields)
+	}
+}
+
+// TestBuildCategoriesMenu_MultiValueProjectInSidebar: end-to-end
+// pipeline assertion. A doc with `project: [a, b]` and
+// `group_by: minutes: [project]` lands the doc under both
+// `Minutes > a` and `Minutes > b`.
+func TestBuildCategoriesMenu_MultiValueProjectInSidebar(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "shared", Path: "/shared/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_alpha"},
+		},
+		{
+			Repository: "project_a", Title: "shared", Path: "/shared/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team_beta"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantA := categoryParentIdentifier("minutes", "team_alpha")
+	wantB := categoryParentIdentifier("minutes", "team_beta")
+	if !entryByID(cm.Menus["minutes"], wantA) {
+		t.Errorf("missing team_alpha parent: %+v", cm.Menus["minutes"])
+	}
+	if !entryByID(cm.Menus["minutes"], wantB) {
+		t.Errorf("missing team_beta parent: %+v", cm.Menus["minutes"])
+	}
+	docCount := 0
+	for _, e := range cm.Menus["minutes"] {
+		if e.PageRef == "/shared/" {
+			docCount++
+			if e.Parent != wantA && e.Parent != wantB {
+				t.Errorf("doc parent = %q, want one of {%q, %q}",
+					e.Parent, wantA, wantB)
+			}
+		}
+	}
+	if docCount != 2 {
+		t.Errorf("doc appears %d times in menu, want 2 (once per project value)", docCount)
+	}
+}
+
+// TestBuildCategoriesMenu_MultiValueFirstSeenSpelling: the first-
+// seen spelling rule applies within a list. Two values that differ
+// only in case collapse to one bucket labeled with the first-seen
+// spelling.
+func TestBuildCategoriesMenu_MultiValueFirstSeenSpelling(t *testing.T) {
+	repos := []config.Repository{{Name: "project_a"}}
+	docs := []categoryDoc{
+		{
+			Repository: "project_a", Title: "first", Path: "/first/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "Team-Alpha"},
+		},
+		{
+			Repository: "project_a", Title: "second", Path: "/second/",
+			Categories: []string{"minutes"}, CategoryDisplay: "Minutes",
+			GroupFields: map[string]string{"project": "team-alpha"},
+		},
+	}
+	cm, err := buildCategoriesMenu(docs, repos, "repo", map[string][]string{
+		"minutes": {"project"},
+	})
+	if err != nil {
+		t.Fatalf("buildCategoriesMenu: %v", err)
+	}
+	wantID := categoryParentIdentifier("minutes", "team-alpha")
+	matches := 0
+	for _, e := range cm.Menus["minutes"] {
+		if e.Identifier == wantID {
+			matches++
+			if e.Name != "Team-Alpha" && e.Name != "team-alpha" {
+				t.Errorf("level-1 label = %q, want one of {Team-Alpha, team-alpha}",
+					e.Name)
+			}
+		}
+	}
+	if matches != 1 {
+		t.Errorf("expected exactly 1 level-1 node; got %d", matches)
 	}
 }

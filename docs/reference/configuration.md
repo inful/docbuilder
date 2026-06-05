@@ -419,7 +419,7 @@ Use `hugo.custom_css` to ship site-wide CSS. DocBuilder inlines the value as a `
 
 | `custom_css` value | Effect |
 |--------------------|--------|
-| unset (default) | A built-in override ships: `#R-sidebar .nav-title { font-size: 1.25rem; font-weight: bold; padding-inline-start: 0.5rem; text-transform: none; }`. This tones down Relearn's loud sidebar section titles (which render at 2rem, bold, uppercase, with 1rem left padding) to a section-divider weight. |
+| unset (default) | A built-in override ships: `#R-sidebar .nav-title { font-size: 1.25rem; font-weight: bold; padding-inline-start: 0.5rem; padding-bottom: 0.25rem; text-transform: none; }`. This tones down Relearn's loud sidebar section titles (which render at 2rem, bold, uppercase, with 1rem left padding) to a section-divider weight, and tightens the title's bottom padding so it sits visually close to its submenu list. |
 | set to a non-empty string | The value replaces the default verbatim. Use this to ship your own override. |
 | set to a whitespace-only string | The `<style>` block is suppressed entirely. The rest of the partial (template metadata, view-transitions link if enabled) is still written. |
 
@@ -482,7 +482,7 @@ hugo:
 | `mode` | `"auto"` (the default, including unset) emits the categories sidebar. `"categories"` is an explicit alias. `"default"` opts out and emits Relearn's legacy single-page menu. |
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
-| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names that form the level-by-level grouping path (the first field is level 1, the second is level 2, and so on — there is no fixed depth cap). Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty front-matter value falls back to the doc's source Repository so the path is always fully populated. |
+| `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of axis names that form the level-by-level grouping path (the first axis is level 1, the second is level 2, and so on — there is no fixed depth cap). An axis is either a front-matter field name or — by the self-describing rule — a sibling category name: any axis value that is also a key in the same `group_by` map is treated as a sibling category reference, resolved from the doc's `categories:` list. Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty axis value falls back to the doc's source Repository so the path is always fully populated. |
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 
@@ -576,6 +576,59 @@ Minutes
 ```
 
 A doc that belongs to a configured category but has no value for a configured field at any level falls back to its source Repository at that level, so unannotated docs still surface somewhere sensible — the absence is visually flagged by the Repository name appearing where the configured field would have placed it. The label at each level preserves the original spelling of the first-seen front-matter value (mirroring the case-preservation rule the category wrapper itself follows); `team_alpha` and `Team_Alpha` collapse into the same bucket and the first-seen spelling wins. Categories not listed in `group_by` keep the default Repository-based grouping, so introducing a new grouping only affects the categories you opt in.
+
+**Grouping by a sibling category (self-describing rule):** A value in the chain can also be a **sibling category** — another category the doc belongs to. The signal is purely positional: any axis value that is ALSO a key in the same `group_by` map is treated as a sibling category reference, and the renderer resolves its value from the doc's `categories:` list rather than from front matter. This lets a doc's category membership drive sub-grouping without requiring parallel front-matter fields.
+
+```yaml
+hugo:
+  sidebar:
+    group_by:
+      minutes: [project, team]   # level 2 = the doc's sibling category `team`
+      team: [project]            # `team` must be a key for the rule to fire
+```
+
+```markdown
+---
+title: 2024 Q1 Sync
+categories: [Minutes, Team]
+project: team_alpha
+---
+```
+
+The doc above renders as `Minutes > team_alpha > Team` (the `Team` label preserves the original spelling the doc author used). A doc that is in `Minutes` but **not** in `Team` falls back to its source Repository at level 2 (A1), so unannotated docs still surface somewhere sensible. The lookup is case-insensitive (`Team`, `team`, `TEAM` all match the `team` axis) and order-independent in the doc's `categories:` list.
+
+**Disambiguation:** If a value in the chain is a key in the same `group_by` map, the sibling-category resolution wins even if the doc also has a front-matter field of the same name. Authors who want to group by a front-matter field that shares a name with a category should rename one of the two — or add a new category and use it as the axis.
+
+**Multi-value axes (fan-out):** A front-matter axis can resolve to a list. A doc with `project: [team_alpha, team_beta]` and `group_by: minutes: [project]` appears in the sidebar once per value: `Minutes > team_alpha` and `Minutes > team_beta`. The doc link is duplicated under each value, mirroring the natural taxonomy meaning (the doc belongs to both projects). The fan-out composes with `categories:` — a doc in `categories: [A, B]` with `project: [x, y]` lands in four sidebar paths. The fan-out is scoped per category: a list value on a field for a category NOT in `group_by` is ignored, and that doc still uses the default Repository-based grouping (single sidebar entry).
+
+```yaml
+hugo:
+  sidebar:
+    group_by:
+      minutes: [project]
+```
+
+```markdown
+---
+title: Cross-Team Doc
+categories: [Minutes]
+project: [team_alpha, team_beta]
+---
+```
+
+The doc above renders as:
+
+```
+Minutes
+  team_alpha
+    Cross-Team Doc
+  team_beta
+    Cross-Team Doc
+```
+
+Sibling-category axes are always single-valued (a doc is in or out of a category, not in multiple instances of it), so the fan-out does not apply to them.
+
+**The `project` taxonomy:** DocBuilder declares `project` as a Hugo taxonomy in the generated `hugo.yaml` `taxonomies:` block by default. Combined with the multi-value front-matter format, a doc's `project: [a, b]` makes Hugo auto-generate listing pages at `/project/a/`, `/project/b/`, plus term feeds and cross-page navigation. Authors who want a different taxonomy setup can override via `hugo.taxonomies` in their config (the user-set map wins). The `project:` front-matter field must be a list (`project: [team_alpha]`); the build does not auto-rewrite scalar values. See the [migration note](../how-to/migrate-project-to-taxonomy.md) for the format change.
 
 **Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Project]`, `MINUTES: [PROJECT]`, or `minutes: [project]` in your config and pair it with `Project: team_alpha` or `project: team_alpha` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
 

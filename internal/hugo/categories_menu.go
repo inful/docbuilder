@@ -3,6 +3,7 @@ package hugo
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strings"
 
@@ -42,6 +43,45 @@ type categoryDoc struct {
 	// requested at read time, which keeps the cost of the common
 	// (no-grouping) path at zero.
 	GroupFields map[string]string
+	// SiblingCategories carries the doc's own category list, keyed by
+	// the canonical (lowercased, trimmed) category name. The value is
+	// the first-seen original spelling of that category as the doc
+	// author wrote it, so the rendered label preserves intentional
+	// casings (e.g. "Team-Alpha" stays "Team-Alpha"). Used by the
+	// build path to resolve a group_by axis that is itself a
+	// sibling category (the self-describing rule: a value in
+	// group_by.<cat> that is also a key in group_by is a sibling
+	// category reference). Populated only when grouping fields are
+	// requested, on the same lazy path as GroupFields.
+	SiblingCategories map[string]string
+}
+
+// axisKind tags a single entry in a category's group_by chain. The
+// chain is a list of front-matter field names today; the sibling-
+// category extension widens the chain to also accept a canonical
+// category name. The kind is precomputed at build time from the
+// group_by map's own keys (the self-describing rule) so the read
+// path doesn't need to know which kind each axis is.
+type axisKind int
+
+const (
+	// axisField is the default kind: the axis name refers to a
+	// front-matter field on the doc.
+	axisField axisKind = iota
+	// axisCategory is the sibling-category kind: the axis name
+	// refers to a sibling category in the doc's categories: list.
+	// The axis name must equal the canonical-lowercase form of a
+	// key in the same group_by map.
+	axisCategory
+)
+
+// axisSpec is one entry in a category's group_by chain. name is the
+// canonical-lowercase axis name as it appears in the config; kind
+// tells the resolver whether to look it up as a front-matter field
+// or a sibling category.
+type axisSpec struct {
+	name string
+	kind axisKind
 }
 
 // UncategorizedCategory is the synthetic category name emitted for
@@ -108,6 +148,17 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 	// configured group_by chain.
 	grouped := map[string]*treeNode{}
 
+	// categoryAxes is the set of canonical category names that
+	// appear as keys in the group_by map. Any value in a chain
+	// that matches one of these is a sibling-category reference
+	// (the self-describing rule); everything else is a front-matter
+	// field. Precomputed once per call so the per-axis dispatch
+	// stays O(1) per chain entry.
+	categoryAxes := make(map[string]struct{}, len(groupBy))
+	for k := range groupBy {
+		categoryAxes[k] = struct{}{}
+	}
+
 	for _, d := range items {
 		for i, raw := range d.Categories {
 			raw = strings.TrimSpace(raw)
@@ -119,9 +170,9 @@ func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, project
 			if i == 0 && d.CategoryDisplay != "" {
 				display = strings.TrimSpace(d.CategoryDisplay)
 			}
-			fields := groupBy[cat]
-			path := pathForDoc(d, cat, groupBy)
-			insertDoc(grouped, cat, display, path, fields, d, repoByName)
+			axes := axesForCategory(cat, groupBy, categoryAxes)
+			path := pathForDoc(d, axes)
+			insertDoc(grouped, cat, display, path, axes, d, repoByName)
 		}
 	}
 
@@ -157,13 +208,37 @@ type treeNode struct {
 	kids  map[string]*treeNode
 }
 
+// axesForCategory returns the typed axis chain for a single
+// category. The names come from groupBy[canonicalCat]; each name is
+// tagged axisCategory if it is also a key in categoryAxes
+// (self-describing rule: a value that is itself a group_by key is a
+// sibling category), otherwise axisField. The returned slice has the
+// same length as the underlying field list; nil when the category is
+// not in groupBy (the caller falls back to Repository-based grouping
+// with a single-entry chain).
+func axesForCategory(canonicalCat string, groupBy map[string][]string, categoryAxes map[string]struct{}) []axisSpec {
+	fields, ok := groupBy[canonicalCat]
+	if !ok || len(fields) == 0 {
+		return nil
+	}
+	out := make([]axisSpec, 0, len(fields))
+	for _, f := range fields {
+		kind := axisField
+		if _, isCat := categoryAxes[f]; isCat {
+			kind = axisCategory
+		}
+		out = append(out, axisSpec{name: f, kind: kind})
+	}
+	return out
+}
+
 // insertDoc places d into the category tree at grouped[cat],
 // creating intermediate nodes as needed. path is the level-by-level
-// key chain (length = number of configured fields for cat, or 1 for
+// key chain (length = number of configured axes for cat, or 1 for
 // un-configured categories). The first-seen display label for each
 // node is captured here so the emit pass doesn't need to re-derive
 // it from the docs.
-func insertDoc(grouped map[string]*treeNode, cat, display string, path []string, fields []string, d categoryDoc, repoByName map[string]config.Repository) {
+func insertDoc(grouped map[string]*treeNode, cat, display string, path []string, axes []axisSpec, d categoryDoc, repoByName map[string]config.Repository) {
 	root, ok := grouped[cat]
 	if !ok {
 		root = &treeNode{
@@ -173,11 +248,11 @@ func insertDoc(grouped map[string]*treeNode, cat, display string, path []string,
 		grouped[cat] = root
 	}
 	node := root
-	for _, key := range path {
+	for i, key := range path {
 		child, exists := node.kids[key]
 		if !exists {
 			child = &treeNode{
-				label: labelForKey(d, key, fields, repoByName),
+				label: labelForKey(d, key, axes, i, repoByName),
 				kids:  map[string]*treeNode{},
 			}
 			node.kids[key] = child
@@ -263,45 +338,75 @@ func emitNode(cm *models.CategoriesMenu, cat string, node *treeNode, path []stri
 
 // pathForDoc returns the level-key path for d under the given
 // canonical category. When the category is configured in groupBy,
-// the path has one entry per configured field; each entry is the
-// (lowercased) front-matter value or, if the field is missing or
-// empty, the doc's Repository (A1: per-level Repository fallback).
-// When the category is not in groupBy, the path is a single entry
-// holding the doc's Repository — the default 2-level behavior.
-func pathForDoc(d categoryDoc, canonicalCat string, groupBy map[string][]string) []string {
-	fields, ok := groupBy[canonicalCat]
-	if !ok || len(fields) == 0 {
+// the path has one entry per configured axis; each entry is the
+// canonical-lowercase value (front-matter or sibling category) or,
+// if the value is missing or empty, the doc's Repository
+// (A1: per-level Repository fallback). When the category is not in
+// groupBy, the path is a single entry holding the doc's Repository
+// — the default 2-level behavior.
+func pathForDoc(d categoryDoc, axes []axisSpec) []string {
+	if len(axes) == 0 {
 		return []string{d.Repository}
 	}
-	out := make([]string, 0, len(fields))
-	for _, f := range fields {
-		if v, present := d.GroupFields[f]; present {
-			v = strings.TrimSpace(v)
-			if v != "" {
-				out = append(out, strings.ToLower(v))
-				continue
-			}
-		}
-		out = append(out, d.Repository)
+	out := make([]string, 0, len(axes))
+	for _, ax := range axes {
+		out = append(out, keyForAxis(d, ax))
 	}
 	return out
 }
 
+// keyForAxis resolves a single axis to its canonical-lowercase key
+// for d. Front-matter axes look up d.GroupFields; sibling-category
+// axes look up d.SiblingCategories. Either lookup falls back to
+// d.Repository when the value is missing or empty (A1).
+func keyForAxis(d categoryDoc, ax axisSpec) string {
+	switch ax.kind {
+	case axisCategory:
+		if v, ok := d.SiblingCategories[ax.name]; ok {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				return strings.ToLower(v)
+			}
+		}
+	case axisField:
+		fallthrough
+	default:
+		if v, present := d.GroupFields[ax.name]; present {
+			v = strings.TrimSpace(v)
+			if v != "" {
+				return strings.ToLower(v)
+			}
+		}
+	}
+	return d.Repository
+}
+
 // labelForKey returns the display label for a single level key
-// derived from d. When the key matches a front-matter value (any of
-// the configured fields, case-insensitive), the first-seen raw
+// derived from d. The axis at depth axisIndex is consulted to decide
+// whether the key came from a front-matter field (first-seen raw
 // spelling wins so intentional casings like "team_alpha" or
-// "Team-Alpha" are preserved — the same rule the legacy 2-level
-// projectDisplayLabel followed. Otherwise the key is treated as a
+// "Team-Alpha" are preserved) or a sibling category (first-seen
+// original spelling of the category wins, mirroring the wrapper's
+// case-preservation rule). Otherwise the key is treated as a
 // Repository name and the repo's DisplayName (or Name if DisplayName
 // is unset) is preferred, mirroring the rule the project level has
 // always used.
-func labelForKey(d categoryDoc, key string, fields []string, repoByName map[string]config.Repository) string {
-	for _, f := range fields {
-		if raw, ok := d.GroupFields[f]; ok {
-			raw = strings.TrimSpace(raw)
-			if raw != "" && strings.EqualFold(raw, key) {
-				return raw
+func labelForKey(d categoryDoc, key string, axes []axisSpec, axisIndex int, repoByName map[string]config.Repository) string {
+	if axisIndex < len(axes) {
+		ax := axes[axisIndex]
+		var values map[string]string
+		switch ax.kind {
+		case axisCategory:
+			values = d.SiblingCategories
+		case axisField:
+			fallthrough
+		default:
+			values = d.GroupFields
+		}
+		if v, ok := values[ax.name]; ok {
+			v = strings.TrimSpace(v)
+			if v != "" && strings.EqualFold(v, key) {
+				return v
 			}
 		}
 	}
@@ -447,13 +552,18 @@ const uncategorizedSidebarWeightValue = 999
 // and silently dropped when publicOnly is true. They are not stage
 // failures because the rest of the pipeline tolerates them.
 //
-// groupingFields is the set of front-matter field names the build
-// stage wants to consult when computing per-category sub-groupings
-// (see hugo.sidebar.group_by). When non-empty, each named field is
-// extracted from the doc's front matter and recorded on
-// categoryDoc.GroupFields. When nil or empty, no GroupFields are
-// populated and the build falls back to Repository-based grouping.
-func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly bool, groupingFields []string) []categoryDoc {
+// groupBy is the per-category axis chain from hugo.sidebar.group_by.
+// The map is keyed by canonical-lowercase category name; the value
+// is the ordered list of axis names for that category. The read
+// path uses it to scope the axis extraction: a category NOT in the
+// map emits a single categoryDoc with no GroupFields (the build
+// path falls back to Repository-based grouping for it), while a
+// category in the map emits one categoryDoc per (axis-combo)
+// value combination — a doc with `project: [a, b]` in such a
+// category appears in the sidebar under both `a` and `b`. Nil
+// when no grouping is requested (the zero-cost path stays at zero
+// cost; we never enter the fan-out loop).
+func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly bool, groupBy map[string][]string) []categoryDoc {
 	out := make([]categoryDoc, 0, len(files))
 	for i := range files {
 		f := &files[i]
@@ -545,31 +655,37 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly 
 			// /categories/_uncategorized/) for the user to triage.
 			cats = []string{UncategorizedCategory}
 		}
-		// Extract any user-configured grouping fields once per doc
-		// (the value is shared across every categoryDoc we emit for
-		// this file). Nil when no grouping fields are requested.
-		//
-		// The field-name lookup is case-insensitive: if the user
-		// configures [Project] in group_by but the doc's front
-		// matter uses `project:`, we still match. Config keys
-		// (already lowercased by SidebarConfig.Normalize) and
-		// front-matter keys are both matched by lowercasing the
-		// front matter once.
-		var groupFields map[string]string
-		if len(groupingFields) > 0 {
-			groupFields = make(map[string]string, len(groupingFields))
-			lcFM := make(map[string]string, len(fm))
-			for k, v := range fm {
-				if s, ok := v.(string); ok {
-					lcFM[strings.ToLower(k)] = s
+		// Extract the sibling-category lookup once per doc. It maps
+		// canonical-lowercase category name to the first-seen
+		// original spelling, so the build path can resolve a
+		// sibling-category axis regardless of where the category
+		// appears in the categories: list and render the label
+		// with the author's original casing. Populated only when
+		// grouping is requested (the zero-cost path stays at zero
+		// cost; we never enter the fan-out loop).
+		var siblings map[string]string
+		if len(groupBy) > 0 {
+			siblings = make(map[string]string, len(cats))
+			for _, sib := range cats {
+				display := strings.TrimSpace(sib)
+				if display == "" {
+					continue
 				}
-			}
-			for _, name := range groupingFields {
-				groupFields[name] = lcFM[name] // "" if missing
+				key := strings.ToLower(display)
+				if _, seen := siblings[key]; !seen {
+					siblings[key] = display
+				}
 			}
 		}
 		// Emit one categoryDoc per declared (or synthetic) category.
-		// The canonical key (lowercased + trimmed) is what we group
+		// For categories present in groupBy, the cross-product over
+		// their axis values drives the fan-out: a doc with
+		// `project: [a, b]` in a category configured with
+		// `group_by: <cat>: [project]` appears in the sidebar
+		// under both `a` and `b`. For categories NOT in groupBy, a
+		// single entry is emitted with no GroupFields (the build
+		// path falls back to Repository-based grouping). The
+		// canonical key (lowercased + trimmed) is what we group
 		// on; the original spelling rides along in CategoryDisplay
 		// so the first-seen spelling can drive the sidebar label.
 		for _, cat := range cats {
@@ -578,15 +694,33 @@ func readCategoriesMenuDocs(files []docs.DocFile, isSingleRepo bool, publicOnly 
 				continue
 			}
 			key := strings.ToLower(display)
-			out = append(out, categoryDoc{
-				Repository:      f.Repository,
-				Title:           title,
-				Path:            pageRef,
-				Weight:          weight,
-				Categories:      []string{key},
-				CategoryDisplay: display,
-				GroupFields:     groupFields,
-			})
+			fields := groupBy[key] // per-category scoping
+			if len(fields) == 0 {
+				// Un-scoped category: single entry, no GroupFields.
+				out = append(out, categoryDoc{
+					Repository:        f.Repository,
+					Title:             title,
+					Path:              pageRef,
+					Weight:            weight,
+					Categories:        []string{key},
+					CategoryDisplay:   display,
+					SiblingCategories: siblings,
+				})
+				continue
+			}
+			av := extractAxisValues(fm, fields)
+			for _, combo := range axisCombinations(av) {
+				out = append(out, categoryDoc{
+					Repository:        f.Repository,
+					Title:             title,
+					Path:              pageRef,
+					Weight:            weight,
+					Categories:        []string{key},
+					CategoryDisplay:   display,
+					GroupFields:       comboToGroupFields(av, combo),
+					SiblingCategories: siblings,
+				})
+			}
 		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {
@@ -680,4 +814,113 @@ func extractStringSlice(fm map[string]any, key string) []string {
 		return out
 	}
 	return nil
+}
+
+// axisValues is the per-doc list of values for a single grouping
+// axis. Always non-nil; always has at least one entry. A scalar
+// front-matter field produces a one-element values list; a list
+// field produces one entry per value (with empty/whitespace strings
+// filtered out); a missing or empty field produces [""] (a single
+// empty entry, which triggers the Repository fallback in the build
+// path per the A1 rule).
+type axisValues struct {
+	name   string
+	values []string
+}
+
+// extractAxisValues returns the per-doc values for each requested
+// axis, in the same order as names. Front-matter keys are matched
+// case-insensitively. Scalar and list values are both supported; a
+// scalar is normalised to a single-element values list so the
+// cross-product loop below has a uniform shape.
+func extractAxisValues(fm map[string]any, names []string) []axisValues {
+	lcFM := make(map[string][]string, len(fm))
+	for k, v := range fm {
+		lk := strings.ToLower(k)
+		switch x := v.(type) {
+		case string:
+			if t := strings.TrimSpace(x); t != "" {
+				lcFM[lk] = []string{t}
+			}
+		case []string:
+			out := make([]string, 0, len(x))
+			for _, s := range x {
+				if t := strings.TrimSpace(s); t != "" {
+					out = append(out, t)
+				}
+			}
+			if len(out) > 0 {
+				lcFM[lk] = out
+			}
+		case []any:
+			out := make([]string, 0, len(x))
+			for _, e := range x {
+				if s, ok := e.(string); ok {
+					if t := strings.TrimSpace(s); t != "" {
+						out = append(out, t)
+					}
+				}
+			}
+			if len(out) > 0 {
+				lcFM[lk] = out
+			}
+		}
+	}
+	out := make([]axisValues, 0, len(names))
+	for _, name := range names {
+		if vs, ok := lcFM[name]; ok {
+			out = append(out, axisValues{name: name, values: vs})
+		} else {
+			out = append(out, axisValues{name: name, values: []string{""}})
+		}
+	}
+	return out
+}
+
+// axisCombinations returns every index combination across the
+// per-axis values lists, in lexicographic (odometer) order. The
+// returned slice is reusable across calls: each element aliases
+// the same backing array, so callers must copy if they need to
+// retain a particular combination past the next call. The read
+// path consumes each combination immediately and copies the values
+// into a fresh GroupFields map, so reuse is safe there.
+func axisCombinations(axes []axisValues) [][]int {
+	if len(axes) == 0 {
+		return [][]int{nil}
+	}
+	count := 1
+	for _, ax := range axes {
+		count *= len(ax.values)
+	}
+	out := make([][]int, count)
+	indices := make([]int, len(axes))
+	for i := range count {
+		combo := make([]int, len(axes))
+		copy(combo, indices)
+		out[i] = combo
+		// Odometer increment from the rightmost axis.
+		for j := range slices.Backward(axes) {
+			indices[j]++
+			if indices[j] < len(axes[j].values) {
+				break
+			}
+			indices[j] = 0
+		}
+	}
+	return out
+}
+
+// comboToGroupFields materializes a single axis combination into a
+// fresh GroupFields map. Each emitted categoryDoc gets its own
+// map so two combos with the same value for an axis don't
+// accidentally share state.
+func comboToGroupFields(axes []axisValues, combo []int) map[string]string {
+	if len(axes) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(axes))
+	for i, ax := range axes {
+		out[ax.name] = ax.values[combo[i]]
+	}
+	return out
 }

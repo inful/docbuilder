@@ -57,21 +57,46 @@ type SidebarConfig struct {
 
 	// GroupBy opts a category into a sub-grouping under its wrapper.
 	// The map is keyed by the canonical (lowercased) category name;
-	// each value is the ordered list of front-matter field names that
-	// define the sub-level axis. Only the first field in the list is
-	// honored today; subsequent entries are reserved for future use.
+	// each value is the ordered list of axis names that define the
+	// level-by-level grouping path. An axis is either a front-matter
+	// field name or — by the self-describing rule — a sibling
+	// category name: any axis value that is ALSO a key in this same
+	// map is treated as a sibling category, and the renderer
+	// resolves its value from the doc's categories: list rather
+	// than from front matter. This lets a doc's category membership
+	// drive sub-grouping without requiring parallel front-matter
+	// fields.
 	//
-	// For a doc in a configured category, the project-level key
-	// becomes the value of the first non-empty configured field. When
-	// none of the configured fields are set, the doc falls back to
-	// its source Repository so it still surfaces under a sensible
-	// heading. Categories without an entry in this map use the
-	// default Repository-based grouping.
+	// Front-matter axes accept both scalar and list values. A scalar
+	// front-matter field (e.g. `project: team_alpha`) is normalised
+	// to a one-element list at read time; a list field (e.g.
+	// `project: [team_alpha, team_beta]`) drives a fan-out — the
+	// doc appears in the sidebar once per value, under each of its
+	// `project` values. The fan-out is scoped per category: a list
+	// value for a category NOT in this map is ignored (the default
+	// Repository-based grouping applies).
 	//
-	// Example:
+	// For a doc in a configured category, the level-1 key becomes
+	// the value of the first non-empty axis. When none of the
+	// configured axes are set at a level, the doc falls back to its
+	// source Repository (A1) so the path stays fully populated.
+	// Categories without an entry in this map use the default
+	// Repository-based grouping.
+	//
+	// Example (front-matter field, scalar):
 	//   sidebar:
 	//     group_by:
 	//       minutes: [project]   # group "Minutes" docs by their `project:` field
+	//
+	// Example (sibling category):
+	//   sidebar:
+	//     group_by:
+	//       minutes: [project, team]   # level 2 = doc's sibling category `team`
+	//       team: [project]            # `team` must be a key for the self-describing rule
+	//
+	// Example (list-valued front-matter, fan-out):
+	//   # a doc with `project: [a, b]` appears in the sidebar
+	//   # under both `Minutes > a` and `Minutes > b`.
 	GroupBy map[string][]string `yaml:"group_by,omitempty"`
 }
 
