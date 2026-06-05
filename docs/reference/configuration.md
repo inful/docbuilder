@@ -453,6 +453,7 @@ hugo:
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 | `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names that form the level-by-level grouping path (the first field is level 1, the second is level 2, and so on — there is no fixed depth cap). Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty front-matter value falls back to the doc's source Repository so the path is always fully populated. |
+| `custom_css` | CSS inlined in the Relearn `custom-header.html` partial (in a `<style>` block). When unset, a built-in default is shipped that tones down Relearn's loud sidebar section titles (`.nav-title` is reduced from 2rem/uppercase/1rem left padding to 1.25rem/title case/0.5rem). When set, the value replaces the default verbatim. A whitespace-only value suppresses the `<style>` block entirely. |
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 

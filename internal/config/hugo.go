@@ -16,6 +16,17 @@ type HugoConfig struct {
 	Taxonomies            map[string]string `yaml:"taxonomies,omitempty"` // custom taxonomies (e.g., "category": "categories", "tag": "tags")
 	Transforms            *HugoTransforms   `yaml:"transforms,omitempty"` // optional transform filtering
 	Sidebar               *SidebarConfig    `yaml:"sidebar,omitempty"`    // sidebar configuration; nil falls back to the Relearn default page menu
+
+	// CustomCSS is extra CSS appended to assets/css/extensions.css
+	// in the Hugo site source. When unset, the build emits a
+	// built-in default that tones down Relearn's loud sidebar
+	// section titles. When set, the value replaces the default
+	// verbatim. To opt out of the override entirely, set this to
+	// a no-op value (e.g., "/* no override */"). The file is
+	// always written unless the resolved value is empty after
+	// trimming, so load order and auto-discovery by Relearn are
+	// preserved in every case.
+	CustomCSS string `yaml:"custom_css,omitempty"`
 }
 
 // SidebarConfig controls how DocBuilder wires the Relearn sidebar menus.

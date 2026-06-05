@@ -227,6 +227,6 @@ func defaultTransforms(cfg *config.Config) []FileTransform {
 // defaultStaticAssetGenerators returns the standard set of static asset generators.
 func defaultStaticAssetGenerators() []StaticAssetGenerator {
 	return []StaticAssetGenerator{
-		generateViewTransitionsAssets, // Generate View Transitions API assets if enabled
+		generateCustomHeaderAssets, // Build layouts/partials/custom-header.html (custom CSS, view transitions, template metadata)
 	}
 }
