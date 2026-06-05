@@ -352,6 +352,7 @@ With versioning enabled, DocBuilder:
 | base_url | string | Hugo BaseURL. |
 | params | map[string]any | Relearn theme parameters (optional). |
 | taxonomies | map[string]string | Custom taxonomy definitions (optional). |
+| custom_css | string | Site-wide CSS inlined in the Relearn `custom-header.html` partial. See [Custom CSS](#custom-css) for default, override, and opt-out behavior. |
 
 **Note:** Theme selection has been removed. DocBuilder uses the Relearn theme exclusively.
 
@@ -412,6 +413,35 @@ topics: ["backend-development"]
 
 DocBuilder's FrontMatter model supports `tags`, `categories`, and `keywords` fields by default. Custom taxonomies can be added through the `Custom` field or by extending the FrontMatter structure.
 
+### Custom CSS
+
+Use `hugo.custom_css` to ship site-wide CSS. DocBuilder inlines the value as a `<style>` block inside the Relearn `layouts/partials/custom-header.html` partial, which Relearn auto-loads in every page head — so the rule applies site-wide without further wiring.
+
+| `custom_css` value | Effect |
+|--------------------|--------|
+| unset (default) | A built-in override ships: `#R-sidebar .nav-title { font-size: 1.25rem; font-weight: bold; padding-inline-start: 0.5rem; text-transform: none; }`. This tones down Relearn's loud sidebar section titles (which render at 2rem, bold, uppercase, with 1rem left padding) to a section-divider weight. |
+| set to a non-empty string | The value replaces the default verbatim. Use this to ship your own override. |
+| set to a whitespace-only string | The `<style>` block is suppressed entirely. The rest of the partial (template metadata, view-transitions link if enabled) is still written. |
+
+**Example — replace the default with your own rules:**
+
+```yaml
+hugo:
+  custom_css: |
+    /* My site-wide override */
+    #R-sidebar .nav-title {
+      font-size: 1.5rem;
+      color: var(--MAIN-TEXT-color);
+    }
+```
+
+**Example — opt out of the `<style>` block (keep all other partial contents):**
+
+```yaml
+hugo:
+  custom_css: "   \n   "   # any whitespace-only value
+```
+
 ### Categories Sidebar
 
 DocBuilder is a documentation aggregator: it pulls docs from many external repositories, each with its own conventions for file names, titles, and front-matter categories. When two repositories both ship an `intro.md` titled "Introduction" under `categories: [Documentation]`, the default Hugo taxonomy listing renders two indistinguishable links.
@@ -453,7 +483,6 @@ hugo:
 | `keep_default_menu` | When `true` (the default), the main page menu is appended after the category menus so users can navigate by category or by repository. Set to `false` to show only the category menus. |
 | `project_segment` | The unit used to group documents inside a category. Today only `"repo"` is supported; reserved for future segmentations (e.g., forge, group). |
 | `group_by` | Optional map keyed by the **canonical lowercase category name** that opts a category into a sub-grouping under its wrapper. Each value is the ordered list of front-matter field names that form the level-by-level grouping path (the first field is level 1, the second is level 2, and so on — there is no fixed depth cap). Categories not present in the map use the default Repository-based grouping. At every level, a missing or empty front-matter value falls back to the doc's source Repository so the path is always fully populated. |
-| `custom_css` | CSS inlined in the Relearn `custom-header.html` partial (in a `<style>` block). When unset, a built-in default is shipped that tones down Relearn's loud sidebar section titles (`.nav-title` is reduced from 2rem/uppercase/1rem left padding to 1.25rem/title case/0.5rem). When set, the value replaces the default verbatim. A whitespace-only value suppresses the `<style>` block entirely. |
 
 **Repository labels:** By default, the project entry in the sidebar uses the repository's `name`. To override the displayed label, set `display_name` on the repository:
 
