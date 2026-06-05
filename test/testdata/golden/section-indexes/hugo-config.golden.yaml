@@ -100,5 +100,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
+    project: project
     tag: tags
 title: Section Index Testing

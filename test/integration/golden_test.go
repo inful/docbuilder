@@ -191,6 +191,48 @@ func TestGolden_SidebarGroupBy(t *testing.T) {
 	)
 }
 
+// TestGolden_SidebarGroupBySiblingCategory tests the sibling-category
+// axis. Config:
+//
+//	group_by:
+//	  minutes: [project, team]
+//	  team: [project]
+//
+// The chain for `minutes` is [front-matter `project`, sibling
+// category `team`]. Docs in [Minutes, Team] nest under
+// Minutes > project > Team; docs in [Minutes] alone fall back to
+// Repository at level 2 (A1); categories not in group_by keep the
+// default Repository-based grouping.
+func TestGolden_SidebarGroupBySiblingCategory(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	runGoldenTest(t,
+		"../../test/testdata/repos/sidebar-group-by-sibling-category",
+		"../../test/testdata/configs/sidebar-group-by-sibling-category.yaml",
+		"../../test/testdata/golden/sidebar-group-by-sibling-category",
+		*updateGolden,
+	)
+}
+
+// TestGolden_SidebarGroupByMultiValueProject tests the list-valued
+// axis fan-out: a doc with `project: [a, b]` and
+// `group_by: minutes: [project]` lands the doc under both
+// `Minutes > a` and `Minutes > b` in the sidebar.
+func TestGolden_SidebarGroupByMultiValueProject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping golden test in short mode")
+	}
+
+	runGoldenTest(t,
+		"../../test/testdata/repos/sidebar-group-by-multi-value",
+		"../../test/testdata/configs/sidebar-group-by-multi-value.yaml",
+		"../../test/testdata/golden/sidebar-group-by-multi-value",
+		*updateGolden,
+	)
+}
+
 // TestGolden_EmptyDocs tests handling of repository with no markdown files.
 // This test verifies:
 // - Build succeeds even with empty docs directory

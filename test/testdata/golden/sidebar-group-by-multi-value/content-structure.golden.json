@@ -1,0 +1,30 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "title": "Sidebar Group By Multi-Value Demo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:d98c122f880c0135"
+    },
+    "content/cross-team.md": {
+      "frontmatter": {
+        "title": "Cross-Team Doc",
+        "type": "docs"
+      },
+      "contentHash": "sha256:e399b5f3d652ff64"
+    },
+    "content/solo.md": {
+      "frontmatter": {
+        "title": "Solo Doc",
+        "type": "docs"
+      },
+      "contentHash": "sha256:016f0758eea817a0"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "cross-team.md": {},
+    "solo.md": {}
+  }
+}

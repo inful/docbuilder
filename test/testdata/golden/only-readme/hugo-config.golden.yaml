@@ -87,5 +87,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
+    project: project
     tag: tags
 title: Only README Test

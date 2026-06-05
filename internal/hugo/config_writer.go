@@ -81,10 +81,17 @@ func (g *Generator) GenerateHugoConfig() error {
 	if len(g.config.Hugo.Taxonomies) > 0 {
 		root.Taxonomies = g.config.Hugo.Taxonomies
 	} else {
-		// Use Hugo's default taxonomies
+		// Use Hugo's default taxonomies. `project` is included so a
+		// doc's `project: [a, b]` front matter is indexed as a
+		// taxonomy term, which gives Hugo auto-generated listing
+		// pages at `/project/<value>/` and consistent cross-page
+		// navigation. Authors who don't want `project` treated as a
+		// taxonomy can override via `hugo.taxonomies` in their
+		// config (the user-set map above wins).
 		root.Taxonomies = map[string]string{
 			"tag":      "tags",
 			"category": "categories",
+			"project":  "project",
 		}
 	}
 

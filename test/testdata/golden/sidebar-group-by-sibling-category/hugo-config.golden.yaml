@@ -1,6 +1,6 @@
 baseURL: http://localhost:1313/
 defaultContentLanguage: en
-description: Testing hugo.sidebar.group_by per-category sub-grouping
+description: Testing hugo.sidebar.group_by with a sibling-category axis
 enableGitInfo: false
 languages:
     en:
@@ -34,27 +34,57 @@ menu:
     minutes:
         - identifier: cat_minutes_top
           name: Minutes
+        - identifier: cat_minutes_solo
+          name: solo
+          parent: cat_minutes_top
+        - identifier: cat_minutes_solo_sidebar_group_by_sibling_category_repo
+          name: sidebar-group-by-sibling-category-repo
+          parent: cat_minutes_solo
+        - name: Orphan Sync
+          pageRef: /orphan-sync/
+          parent: cat_minutes_solo_sidebar_group_by_sibling_category_repo
         - identifier: cat_minutes_team_alpha
           name: team_alpha
           parent: cat_minutes_top
+        - identifier: cat_minutes_team_alpha_team
+          name: Team
+          parent: cat_minutes_team_alpha
         - name: Team Alpha Sync
           pageRef: /team-alpha-sync/
-          parent: cat_minutes_team_alpha
+          parent: cat_minutes_team_alpha_team
         - identifier: cat_minutes_team_beta
           name: team_beta
           parent: cat_minutes_top
+        - identifier: cat_minutes_team_beta_team
+          name: Team
+          parent: cat_minutes_team_beta
         - name: Team Beta Sync
           pageRef: /team-beta-sync/
-          parent: cat_minutes_team_beta
+          parent: cat_minutes_team_beta_team
     operations:
         - identifier: cat_operations_top
           name: Operations
-        - identifier: cat_operations_sidebar_group_by_repo
-          name: sidebar-group-by-repo
+        - identifier: cat_operations_sidebar_group_by_sibling_category_repo
+          name: sidebar-group-by-sibling-category-repo
           parent: cat_operations_top
         - name: Operations Runbook
           pageRef: /operations/
-          parent: cat_operations_sidebar_group_by_repo
+          parent: cat_operations_sidebar_group_by_sibling_category_repo
+    team:
+        - identifier: cat_team_top
+          name: Team
+        - identifier: cat_team_team_alpha
+          name: team_alpha
+          parent: cat_team_top
+        - name: Team Alpha Sync
+          pageRef: /team-alpha-sync/
+          parent: cat_team_team_alpha
+        - identifier: cat_team_team_beta
+          name: team_beta
+          parent: cat_team_top
+        - name: Team Beta Sync
+          pageRef: /team-beta-sync/
+          parent: cat_team_team_beta
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -92,6 +122,9 @@ params:
         - disableTitle: false
           identifier: operations
           type: menu
+        - disableTitle: false
+          identifier: team
+          type: menu
         - identifier: main
           pageRef: /
           type: page
@@ -106,4 +139,4 @@ taxonomies:
     category: categories
     project: project
     tag: tags
-title: Sidebar Group By Demo
+title: Sidebar Group By Sibling Category Demo

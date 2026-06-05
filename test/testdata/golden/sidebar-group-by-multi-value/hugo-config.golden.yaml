@@ -1,6 +1,6 @@
-baseURL: http://localhost
+baseURL: http://localhost:1313/
 defaultContentLanguage: en
-description: Testing automatic menu generation from front matter
+description: Testing hugo.sidebar.group_by fan-out on list-valued project
 enableGitInfo: false
 languages:
     en:
@@ -31,24 +31,27 @@ markup:
         style: github
         tabWidth: 4
 menu:
-    x__uncategorized:
-        - identifier: cat_x__uncategorized_top
-          name: Uncategorized
-        - identifier: cat_x__uncategorized_menu_docs
-          name: menu-docs
-          parent: cat_x__uncategorized_top
-        - name: Introduction
-          pageRef: /intro/
-          parent: cat_x__uncategorized_menu_docs
-          weight: 1
-        - name: User Guide
-          pageRef: /guide/
-          parent: cat_x__uncategorized_menu_docs
-          weight: 2
-        - name: API Documentation
-          pageRef: /api/
-          parent: cat_x__uncategorized_menu_docs
-          weight: 3
+    minutes:
+        - identifier: cat_minutes_top
+          name: Minutes
+        - identifier: cat_minutes_team_alpha
+          name: team_alpha
+          parent: cat_minutes_top
+        - name: Cross-Team Doc
+          pageRef: /cross-team/
+          parent: cat_minutes_team_alpha
+        - identifier: cat_minutes_team_beta
+          name: team_beta
+          parent: cat_minutes_top
+        - name: Cross-Team Doc
+          pageRef: /cross-team/
+          parent: cat_minutes_team_beta
+        - identifier: cat_minutes_team_gamma
+          name: team_gamma
+          parent: cat_minutes_top
+        - name: Solo Doc
+          pageRef: /solo/
+          parent: cat_minutes_team_gamma
 module:
     imports:
         - path: github.com/McShelby/hugo-theme-relearn
@@ -81,9 +84,8 @@ params:
     showVisitedLinks: true
     sidebarmenus:
         - disableTitle: false
-          identifier: x__uncategorized
+          identifier: minutes
           type: menu
-          weight: 999
         - identifier: main
           pageRef: /
           type: page
@@ -98,4 +100,4 @@ taxonomies:
     category: categories
     project: project
     tag: tags
-title: Menu Generation Testing
+title: Sidebar Group By Multi-Value Demo

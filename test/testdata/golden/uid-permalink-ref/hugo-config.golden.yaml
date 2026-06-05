@@ -96,5 +96,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
+    project: project
     tag: tags
 title: UID Permalink Ref Test

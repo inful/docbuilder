@@ -70,5 +70,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
+    project: project
     tag: tags
 title: Relearn Site

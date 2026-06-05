@@ -1,0 +1,46 @@
+{
+  "files": {
+    "content/_index.md": {
+      "frontmatter": {
+        "title": "Sidebar Group By Sibling Category Demo",
+        "type": "docs"
+      },
+      "contentHash": "sha256:706b8964eda90c71"
+    },
+    "content/operations.md": {
+      "frontmatter": {
+        "title": "Operations Runbook",
+        "type": "docs"
+      },
+      "contentHash": "sha256:1a4239e5f2cdafd1"
+    },
+    "content/orphan-sync.md": {
+      "frontmatter": {
+        "title": "Orphan Sync",
+        "type": "docs"
+      },
+      "contentHash": "sha256:9d3992350486eef3"
+    },
+    "content/team-alpha-sync.md": {
+      "frontmatter": {
+        "title": "Team Alpha Sync",
+        "type": "docs"
+      },
+      "contentHash": "sha256:d0fa72505c780518"
+    },
+    "content/team-beta-sync.md": {
+      "frontmatter": {
+        "title": "Team Beta Sync",
+        "type": "docs"
+      },
+      "contentHash": "sha256:c18092a55351f10e"
+    }
+  },
+  "structure": {
+    "_index.md": {},
+    "operations.md": {},
+    "orphan-sync.md": {},
+    "team-alpha-sync.md": {},
+    "team-beta-sync.md": {}
+  }
+}
