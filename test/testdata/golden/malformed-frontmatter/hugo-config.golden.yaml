@@ -91,6 +91,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
-    project: project
+    project: projects
     tag: tags
 title: Malformed Front Matter Test

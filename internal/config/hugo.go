@@ -68,11 +68,11 @@ type SidebarConfig struct {
 	// fields.
 	//
 	// Front-matter axes accept both scalar and list values. A scalar
-	// front-matter field (e.g. `project: team_alpha`) is normalised
+	// front-matter field (e.g. `projects: team_alpha`) is normalised
 	// to a one-element list at read time; a list field (e.g.
-	// `project: [team_alpha, team_beta]`) drives a fan-out — the
+	// `projects: [team_alpha, team_beta]`) drives a fan-out — the
 	// doc appears in the sidebar once per value, under each of its
-	// `project` values. The fan-out is scoped per category: a list
+	// `projects` values. The fan-out is scoped per category: a list
 	// value for a category NOT in this map is ignored (the default
 	// Repository-based grouping applies).
 	//
@@ -86,16 +86,16 @@ type SidebarConfig struct {
 	// Example (front-matter field, scalar):
 	//   sidebar:
 	//     group_by:
-	//       minutes: [project]   # group "Minutes" docs by their `project:` field
+	//       minutes: [projects]   # group "Minutes" docs by their `projects:` field
 	//
 	// Example (sibling category):
 	//   sidebar:
 	//     group_by:
-	//       minutes: [project, team]   # level 2 = doc's sibling category `team`
-	//       team: [project]            # `team` must be a key for the self-describing rule
+	//       minutes: [projects, team]   # level 2 = doc's sibling category `team`
+	//       team: [projects]            # `team` must be a key for the self-describing rule
 	//
 	// Example (list-valued front-matter, fan-out):
-	//   # a doc with `project: [a, b]` appears in the sidebar
+	//   # a doc with `projects: [a, b]` appears in the sidebar
 	//   # under both `Minutes > a` and `Minutes > b`.
 	GroupBy map[string][]string `yaml:"group_by,omitempty"`
 }

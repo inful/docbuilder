@@ -474,7 +474,7 @@ hugo:
     keep_default_menu: true     # keep the full main page menu below the category menus
     project_segment: repo      # today only "repo" is supported
     group_by:                  # optional: per-category sub-grouping by front-matter fields
-      minutes: [project]       # group "Minutes" docs by their `project:` value (one level)
+      minutes: [projects]      # group "Minutes" docs by their `projects:` value (one level)
 ```
 
 | Field | Description |
@@ -506,22 +506,22 @@ categories: [Documentation]
 
 **Reverting to the legacy sidebar:** Set `hugo.sidebar.mode: default` to opt out. The on-disk content tree does not change in any mode, so existing URLs and bookmarks remain valid across the migration.
 
-**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap. A single-element list (`[project]`) gives the original 2-level shape; a longer list (`[project, year]`, `[team, year, quarter]`, …) nests deeper.
+**Per-category sub-grouping (`group_by`):** For categories where the default Repository-based grouping isn't useful (e.g. meeting notes that should be split by team rather than by source repo), point the category at one or more front-matter fields and DocBuilder will use their values as the level-by-level keys inside the sidebar block. The first field is level 1 (project), the second is level 2, and so on — there is no fixed depth cap. A single-element list (`[projects]`) gives the original 2-level shape; a longer list (`[projects, year]`, `[team, year, quarter]`, …) nests deeper.
 
-**Two-level example** — `Minutes` grouped first by `project`, then by `year`:
+**Two-level example** — `Minutes` grouped first by `projects`, then by `year`:
 
 ```yaml
 hugo:
   sidebar:
     group_by:
-      minutes: [project, year]    # level 1 = project, level 2 = year
+      minutes: [projects, year]    # level 1 = projects, level 2 = year
 ```
 
 ```markdown
 ---
 title: 2024 Q1 Sync
 categories: [Minutes]
-project: team_alpha
+projects: [team_alpha]
 year: 2024
 ---
 ```
@@ -530,7 +530,7 @@ year: 2024
 ---
 title: 2023 Q4 Sync
 categories: [Minutes]
-project: team_alpha
+projects: [team_alpha]
 year: 2023
 ---
 ```
@@ -539,7 +539,7 @@ year: 2023
 ---
 title: Beta Sync
 categories: [Minutes]
-project: team_beta
+projects: [team_beta]
 year: 2024
 ---
 ```
@@ -558,7 +558,7 @@ Minutes
       Beta Sync
 ```
 
-Add a third field to nest one level deeper. With `group_by: [project, year, quarter]` and a `quarter:` field on each of the docs above, the same minutes block would render as:
+Add a third field to nest one level deeper. With `group_by: [projects, year, quarter]` and a `quarter:` field on each of the docs above, the same minutes block would render as:
 
 ```
 Minutes
@@ -583,15 +583,15 @@ A doc that belongs to a configured category but has no value for a configured fi
 hugo:
   sidebar:
     group_by:
-      minutes: [project, team]   # level 2 = the doc's sibling category `team`
-      team: [project]            # `team` must be a key for the rule to fire
+      minutes: [projects, team]   # level 2 = the doc's sibling category `team`
+      team: [projects]            # `team` must be a key for the rule to fire
 ```
 
 ```markdown
 ---
 title: 2024 Q1 Sync
 categories: [Minutes, Team]
-project: team_alpha
+projects: [team_alpha]
 ---
 ```
 
@@ -599,20 +599,20 @@ The doc above renders as `Minutes > team_alpha > Team` (the `Team` label preserv
 
 **Disambiguation:** If a value in the chain is a key in the same `group_by` map, the sibling-category resolution wins even if the doc also has a front-matter field of the same name. Authors who want to group by a front-matter field that shares a name with a category should rename one of the two — or add a new category and use it as the axis.
 
-**Multi-value axes (fan-out):** A front-matter axis can resolve to a list. A doc with `project: [team_alpha, team_beta]` and `group_by: minutes: [project]` appears in the sidebar once per value: `Minutes > team_alpha` and `Minutes > team_beta`. The doc link is duplicated under each value, mirroring the natural taxonomy meaning (the doc belongs to both projects). The fan-out composes with `categories:` — a doc in `categories: [A, B]` with `project: [x, y]` lands in four sidebar paths. The fan-out is scoped per category: a list value on a field for a category NOT in `group_by` is ignored, and that doc still uses the default Repository-based grouping (single sidebar entry).
+**Multi-value axes (fan-out):** A front-matter axis can resolve to a list. A doc with `projects: [team_alpha, team_beta]` and `group_by: minutes: [projects]` appears in the sidebar once per value: `Minutes > team_alpha` and `Minutes > team_beta`. The doc link is duplicated under each value, mirroring the natural taxonomy meaning (the doc belongs to both projects). The fan-out composes with `categories:` — a doc in `categories: [A, B]` with `projects: [x, y]` lands in four sidebar paths. The fan-out is scoped per category: a list value on a field for a category NOT in `group_by` is ignored, and that doc still uses the default Repository-based grouping (single sidebar entry).
 
 ```yaml
 hugo:
   sidebar:
     group_by:
-      minutes: [project]
+      minutes: [projects]
 ```
 
 ```markdown
 ---
 title: Cross-Team Doc
 categories: [Minutes]
-project: [team_alpha, team_beta]
+projects: [team_alpha, team_beta]
 ---
 ```
 
@@ -628,14 +628,14 @@ Minutes
 
 Sibling-category axes are always single-valued (a doc is in or out of a category, not in multiple instances of it), so the fan-out does not apply to them.
 
-**The `project` taxonomy:** DocBuilder declares `project` as a Hugo taxonomy in the generated `hugo.yaml` `taxonomies:` block by default. Combined with the multi-value front-matter format, a doc's `project: [a, b]` makes Hugo auto-generate listing pages at `/project/a/`, `/project/b/`, plus term feeds and cross-page navigation. Authors who want a different taxonomy setup can override via `hugo.taxonomies` in their config (the user-set map wins). The `project:` front-matter field must be a list (`project: [team_alpha]`); the build does not auto-rewrite scalar values. See the [migration note](../how-to/migrate-project-to-taxonomy.md) for the format change.
+**The `project` taxonomy:** DocBuilder declares `project` as a Hugo taxonomy in the generated `hugo.yaml` `taxonomies:` block by default (`project: projects`, following the Hugo singular-key / plural-value convention used by `tag: tags` and `category: categories`). Combined with the multi-value front-matter format, a doc's `projects: [a, b]` makes Hugo auto-generate listing pages at `/project/a/`, `/project/b/`, plus term feeds and cross-page navigation. Authors who want a different taxonomy setup can override via `hugo.taxonomies` in their config (the user-set map wins). The `projects:` front-matter field must be a list (`projects: [team_alpha]`); the build does not auto-rewrite scalar values. See the [migration note](../how-to/migrate-project-to-taxonomy.md) for the format change.
 
-**Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Project]`, `MINUTES: [PROJECT]`, or `minutes: [project]` in your config and pair it with `Project: team_alpha` or `project: team_alpha` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
+**Case-insensitive matching:** The map keys (category names) and the field names inside the list are matched case-insensitively against the canonical lowercase category name and against your docs' front matter. You can therefore write `Minutes: [Projects]`, `MINUTES: [PROJECTS]`, or `minutes: [projects]` in your config and pair it with `Projects: [team_alpha]` or `projects: [team_alpha]` in your docs — all four combinations are equivalent. Both halves of the lookup are normalised at config-load time so a typo in case never silently falls back to Repository grouping.
 
 **Verifying the wiring:** Run a build with `-v` (verbose). When the categories-menu stage runs, the debug log will show the effective lowercased map and the flattened field list, e.g.:
 
 ```
-DEBUG Categories menu: configured group_by categories=1 group_by=map[minutes:[project]] grouping_fields=[project]
+DEBUG Categories menu: configured group_by categories=1 group_by=map[minutes:[projects]] grouping_fields=[projects]
 ```
 
 If the field list is empty when you expected a match, the build is reading an empty `group_by` (typo in the config path, wrong indentation, or the field name is genuinely different from what's in your front matter).

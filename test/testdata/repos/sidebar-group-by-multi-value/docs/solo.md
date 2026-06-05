@@ -1,7 +1,7 @@
 ---
 title: Solo Doc
 categories: [Minutes]
-project: [team_gamma]
+projects: [team_gamma]
 ---
 # Solo Doc
 This doc belongs only to `team_gamma` for control. The sidebar

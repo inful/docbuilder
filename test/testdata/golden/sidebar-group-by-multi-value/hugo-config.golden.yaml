@@ -98,6 +98,6 @@ params:
         - zen-dark
 taxonomies:
     category: categories
-    project: project
+    project: projects
     tag: tags
 title: Sidebar Group By Multi-Value Demo

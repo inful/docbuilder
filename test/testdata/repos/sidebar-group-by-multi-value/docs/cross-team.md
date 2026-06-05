@@ -1,7 +1,7 @@
 ---
 title: Cross-Team Doc
 categories: [Minutes]
-project: [team_alpha, team_beta]
+projects: [team_alpha, team_beta]
 ---
 # Cross-Team Doc
 This doc belongs to BOTH `team_alpha` and `team_beta`. The sidebar

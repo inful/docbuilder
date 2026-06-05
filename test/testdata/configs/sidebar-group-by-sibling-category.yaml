@@ -14,8 +14,8 @@ hugo:
   sidebar:
     mode: categories
     group_by:
-      minutes: [project, team]
-      team: [project]
+      minutes: [projects, team]
+      team: [projects]
 
 output:
   directory: PLACEHOLDER
