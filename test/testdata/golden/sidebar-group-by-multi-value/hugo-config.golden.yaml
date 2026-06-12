@@ -19,6 +19,8 @@ markup:
                     inline:
                         - - \(
                           - \)
+                        - - $
+                          - $
                 enable: true
         parser:
             attribute:

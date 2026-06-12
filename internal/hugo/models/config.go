@@ -89,7 +89,7 @@ func (rc *RootConfig) EnableMathPassthrough() {
 	ext["passthrough"] = map[string]any{
 		"delimiters": map[string]any{
 			"block":  [][]string{{"\\[", "\\]"}, {"$$", "$$"}},
-			"inline": [][]string{{"\\(", "\\)"}},
+			"inline": [][]string{{"\\(", "\\)"}, {"$", "$"}},
 		},
 		"enable": true,
 	}
