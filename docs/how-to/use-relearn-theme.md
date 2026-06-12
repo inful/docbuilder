@@ -275,6 +275,29 @@ DocBuilder automatically configures these defaults for Relearn:
 
 All defaults can be overridden in your configuration's `hugo.params` section.
 
+## Math Support
+
+Relearn renders mathematical notation through MathJax. DocBuilder wires up the standard delimiter pairs so the following forms all work out of the box:
+
+| Form | Type | Example |
+|------|------|---------|
+| `$x + y$` | inline | The sum $x + y$ is positive. |
+| `\(x + y\)` | inline | The sum \(x + y\) is positive. |
+| `$$x + y$$` | display (block) | $$x + y$$ |
+| `\[x + y\]` | display (block) | \[x + y\] |
+
+### Escaping literal `$` characters
+
+The `$...$` form is recognised as math whenever a paired `$` is found, so prose that contains a `$` character (currency, shell variables, etc.) will be misread as math. Escape a literal `$` with a backslash when it is **not** meant to start a math span:
+
+```markdown
+It costs \$5 and \$10.
+
+Use \$HOME or \$TMPDIR for paths.
+```
+
+If you cannot escape at the source (for example, the `$` appears inside a code-incompatible position), wrap the text in inline code with backticks (`` `$HOME` ``).
+
 ## Hugo Module Configuration
 
 DocBuilder uses Hugo Modules to automatically install Relearn. The theme is configured as:
