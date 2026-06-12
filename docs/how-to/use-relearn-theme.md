@@ -5,8 +5,8 @@ categories:
   - how-to
 date: 2025-12-15T00:00:00Z
 description: Relearn theme overview
-fingerprint: cad2b47a3afbbaf3e8f319d590ab1cf4d438535b3359485a2f8ca82a61db435e
-lastmod: "2026-01-22"
+fingerprint: 39f4157cdb927c0f651edabb9972670c6f58507b3f9bc8ec6d8e6e5f77d4ecaf
+lastmod: "2026-06-12"
 tags:
   - themes
   - relearn
