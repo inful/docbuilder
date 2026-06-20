@@ -137,3 +137,58 @@ func git(t *testing.T, repoDir string, args ...string) {
 		t.Fatalf("git %v failed: %v\n%s", args, err, string(out))
 	}
 }
+
+func TestRepoAbsPath(t *testing.T) {
+
+	repoRoot := filepath.Join(string(filepath.Separator)+"repo", "root")
+
+	cases := []struct {
+		name string
+
+		repoRoot string
+
+		relPath string
+
+		wantOK bool
+
+		wantAbs string
+	}{
+
+		{name: "empty relPath", repoRoot: repoRoot, relPath: "", wantOK: false},
+
+		{name: "absolute relPath is rejected", repoRoot: repoRoot, relPath: "/etc/passwd", wantOK: false},
+
+		{name: "current dir reference is rejected", repoRoot: repoRoot, relPath: ".", wantOK: false},
+
+		{name: "parent dir reference is rejected", repoRoot: repoRoot, relPath: "..", wantOK: false},
+
+		{name: "traversal segment is rejected", repoRoot: repoRoot, relPath: "../etc/passwd", wantOK: false},
+
+		{name: "nested traversal is rejected", repoRoot: repoRoot, relPath: "a/../../etc/passwd", wantOK: false},
+
+		{name: "happy path plain file", repoRoot: repoRoot, relPath: "docs/intro.md", wantOK: true, wantAbs: filepath.Join(repoRoot, "docs", "intro.md")},
+
+		{name: "happy path nested", repoRoot: repoRoot, relPath: "docs/sub/page.md", wantOK: true, wantAbs: filepath.Join(repoRoot, "docs", "sub", "page.md")},
+
+		{name: "forward slashes normalized", repoRoot: repoRoot, relPath: "docs/sub/page.md", wantOK: true, wantAbs: filepath.Join(repoRoot, "docs", "sub", "page.md")},
+	}
+
+	for _, tc := range cases {
+
+		t.Run(tc.name, func(t *testing.T) {
+
+			got, ok := repoAbsPath(tc.repoRoot, tc.relPath)
+
+			require.Equal(t, tc.wantOK, ok)
+
+			if tc.wantOK {
+
+				require.Equal(t, tc.wantAbs, got)
+
+			}
+
+		})
+
+	}
+
+}
