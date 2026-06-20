@@ -151,16 +151,6 @@ func ForgeError(message string) *ErrorBuilder {
 	return NewError(CategoryForge, message).Retryable()
 }
 
-// BuildError creates a build processing error.
-func BuildError(message string) *ErrorBuilder {
-	return NewError(CategoryBuild, message).Fatal()
-}
-
-// HugoError creates a Hugo processing error.
-func HugoError(message string) *ErrorBuilder {
-	return NewError(CategoryHugo, message).Fatal()
-}
-
 // FileSystemError creates a filesystem error.
 func FileSystemError(message string) *ErrorBuilder {
 	return NewError(CategoryFileSystem, message).Retryable()
@@ -176,11 +166,6 @@ func EventStoreError(message string) *ErrorBuilder {
 	return NewError(CategoryEventStore, message).Fatal()
 }
 
-// RuntimeError creates a runtime error.
-func RuntimeError(message string) *ErrorBuilder {
-	return NewError(CategoryRuntime, message).Fatal()
-}
-
 // DaemonError creates a daemon error.
 func DaemonError(message string) *ErrorBuilder {
 	return NewError(CategoryDaemon, message).Fatal()
@@ -194,13 +179,6 @@ func InternalError(message string) *ErrorBuilder {
 // NotFoundError creates a not-found error.
 func NotFoundError(resource string) *ErrorBuilder {
 	return NewError(CategoryNotFound, fmt.Sprintf("%s not found", resource)).
-		WithContext("resource", resource).
-		Fatal()
-}
-
-// AlreadyExistsError creates an already-exists error.
-func AlreadyExistsError(resource string) *ErrorBuilder {
-	return NewError(CategoryAlreadyExists, fmt.Sprintf("%s already exists", resource)).
 		WithContext("resource", resource).
 		Fatal()
 }

@@ -96,10 +96,7 @@ func TestErrorBuilder(t *testing.T) {
 			{"NetworkError", NetworkError("test"), CategoryNetwork, SeverityError, RetryBackoff},
 			{"GitError", GitError("test"), CategoryGit, SeverityError, RetryBackoff},
 			{"ForgeError", ForgeError("test"), CategoryForge, SeverityError, RetryBackoff},
-			{"BuildError", BuildError("test"), CategoryBuild, SeverityFatal, RetryNever},
-			{"HugoError", HugoError("test"), CategoryHugo, SeverityFatal, RetryNever},
 			{"FileSystemError", FileSystemError("test"), CategoryFileSystem, SeverityError, RetryBackoff},
-			{"RuntimeError", RuntimeError("test"), CategoryRuntime, SeverityFatal, RetryNever},
 			{"DaemonError", DaemonError("test"), CategoryDaemon, SeverityFatal, RetryNever},
 			{"InternalError", InternalError("test"), CategoryInternal, SeverityFatal, RetryNever},
 		}
