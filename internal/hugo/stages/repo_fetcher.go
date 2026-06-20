@@ -71,7 +71,7 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 		repoPath := filepath.Join(f.workspace, repo.Name)
 		if err := gitStatRepo(repoPath); err == nil {
 			attemptUpdate = true
-			if h, herr := readRepoHead(repoPath); herr == nil {
+			if h, herr := git.ReadRepoHead(repoPath); herr == nil {
 				preHead = h
 			}
 		}
@@ -95,7 +95,7 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	}
 	// Determine post head (for update path or if clone didn't set it)
 	if res.PostHead == "" {
-		if h, herr := readRepoHead(path); herr == nil {
+		if h, herr := git.ReadRepoHead(path); herr == nil {
 			res.PostHead = h
 		}
 	}
@@ -108,7 +108,7 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy conf
 	res := RepoFetchResult{Name: repo.Name}
 	repoPath := filepath.Join(f.workspace, repo.Name)
 
-	preHead, _ := readRepoHead(repoPath)
+	preHead, _ := git.ReadRepoHead(repoPath)
 	res.PreHead = preHead
 
 	// If we already have the desired commit checked out, skip fetch/update entirely.
@@ -190,7 +190,7 @@ func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repos
 
 	// For updates, try to get commit date by reading HEAD
 	if err == nil {
-		if h, herr := readRepoHead(path); herr == nil {
+		if h, herr := git.ReadRepoHead(path); herr == nil {
 			commitDate = getCommitDate(path, h)
 		}
 	}

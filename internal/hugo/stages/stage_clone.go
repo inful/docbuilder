@@ -12,7 +12,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
-	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -186,11 +185,4 @@ func recordCloneFailure(bs *models.BuildState, res RepoFetchResult) {
 			bs.Report.AddIssue(code, models.StageName("clone_repos"), models.SeverityError, res.Err.Error(), false, res.Err)
 		}
 	}
-}
-
-// readRepoHead returns the current HEAD commit hash for a repository path.
-//
-// Deprecated: Use gitpkg.ReadRepoHead directly.
-func readRepoHead(repoPath string) (string, error) {
-	return gitpkg.ReadRepoHead(repoPath)
 }
