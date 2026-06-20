@@ -9,9 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"sort"
 	"strings"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/docs"
 )
 
 type taxonomyResponse struct {
@@ -59,31 +60,7 @@ func fetchTaxonomies(ctx context.Context, baseURL string) ([]string, []string, e
 		return nil, nil, fmt.Errorf("decode taxonomy response: %w", err)
 	}
 
-	tags := normalizeTaxonomyValues(payload.Tags)
-	categories := normalizeTaxonomyValues(payload.Categories)
+	tags := docs.NormalizeTaxonomyValues(payload.Tags)
+	categories := docs.NormalizeTaxonomyValues(payload.Categories)
 	return tags, categories, nil
-}
-
-func normalizeTaxonomyValues(values []string) []string {
-	if len(values) == 0 {
-		return nil
-	}
-	seen := map[string]struct{}{}
-	result := make([]string, 0, len(values))
-	for _, value := range values {
-		trimmed := strings.TrimSpace(value)
-		if trimmed == "" {
-			continue
-		}
-		key := strings.ToLower(trimmed)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		result = append(result, trimmed)
-	}
-	sort.SliceStable(result, func(i, j int) bool {
-		return strings.ToLower(result[i]) < strings.ToLower(result[j])
-	})
-	return result
 }
