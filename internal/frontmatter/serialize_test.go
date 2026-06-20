@@ -52,21 +52,17 @@ func TestSerializeYAML_NestedMap_SortsKeysRecursively(t *testing.T) {
 }
 
 func TestNodeFromAny(t *testing.T) {
-
 	cases := []struct {
-
 		name string
 
-		in   any
+		in any
 
 		kind yaml.Kind
 
-		tag  string
+		tag string
 
-		val  string
-
+		val string
 	}{
-
 		{name: "nil", in: nil, kind: yaml.ScalarNode, tag: "!!null", val: "null"},
 
 		{name: "string", in: "hello", kind: yaml.ScalarNode, tag: "!!str", val: "hello"},
@@ -82,15 +78,10 @@ func TestNodeFromAny(t *testing.T) {
 		{name: "int64", in: int64(123456789012), kind: yaml.ScalarNode, tag: "!!int", val: "123456789012"},
 
 		{name: "float64", in: 3.14, kind: yaml.ScalarNode, tag: "!!float", val: "3.14"},
-
 	}
 
-
-
 	for _, tc := range cases {
-
 		t.Run(tc.name, func(t *testing.T) {
-
 			got, err := nodeFromAny(tc.in)
 
 			require.NoError(t, err)
@@ -102,17 +93,11 @@ func TestNodeFromAny(t *testing.T) {
 			require.Equal(t, tc.tag, got.Tag, "tag")
 
 			require.Equal(t, tc.val, got.Value, "value")
-
 		})
-
 	}
-
 }
 
-
-
 func TestNodeFromAny_StringSequence(t *testing.T) {
-
 	got, err := nodeFromAny([]string{"a", "b", "c"})
 
 	require.NoError(t, err)
@@ -122,21 +107,13 @@ func TestNodeFromAny_StringSequence(t *testing.T) {
 	require.Len(t, got.Content, 3)
 
 	for i, want := range []string{"a", "b", "c"} {
-
 		require.Equal(t, yaml.ScalarNode, got.Content[i].Kind)
-
 		require.Equal(t, "!!str", got.Content[i].Tag)
-
 		require.Equal(t, want, got.Content[i].Value)
-
 	}
-
 }
 
-
-
 func TestNodeFromAny_AnySequenceIsRecursive(t *testing.T) {
-
 	got, err := nodeFromAny([]any{"x", 1, true})
 
 	require.NoError(t, err)
@@ -150,13 +127,9 @@ func TestNodeFromAny_AnySequenceIsRecursive(t *testing.T) {
 	require.Equal(t, "1", got.Content[1].Value)
 
 	require.Equal(t, "true", got.Content[2].Value)
-
 }
 
-
-
 func TestNodeFromAny_StringMapRecurses(t *testing.T) {
-
 	got, err := nodeFromAny(map[string]any{"name": "docbuilder", "count": 3})
 
 	require.NoError(t, err)
@@ -164,13 +137,9 @@ func TestNodeFromAny_StringMapRecurses(t *testing.T) {
 	require.Equal(t, yaml.MappingNode, got.Kind)
 
 	require.Len(t, got.Content, 4) // 2 key-value pairs (each as 2 nodes)
-
 }
 
-
-
 func TestNodeFromAny_AnyMapKeysAreStringified(t *testing.T) {
-
 	got, err := nodeFromAny(map[any]any{1: "one", "two": 2})
 
 	require.NoError(t, err)
@@ -184,21 +153,15 @@ func TestNodeFromAny_AnyMapKeysAreStringified(t *testing.T) {
 	keys := make(map[string]bool)
 
 	for i := 0; i < len(got.Content); i += 2 {
-
 		keys[got.Content[i].Value] = true
-
 	}
 
 	require.True(t, keys["1"], "int key 1 should be stringified")
 
 	require.True(t, keys["two"], "string key should pass through")
-
 }
 
-
-
 func TestNodeFromAny_FallsBackToYAMLEncoderForUnknownTypes(t *testing.T) {
-
 	type custom struct{ Value int }
 
 	got, err := nodeFromAny(custom{Value: 7})
@@ -210,7 +173,4 @@ func TestNodeFromAny_FallsBackToYAMLEncoderForUnknownTypes(t *testing.T) {
 	require.Equal(t, yaml.MappingNode, got.Kind)
 
 	require.NotEmpty(t, got.Content)
-
 }
-
-

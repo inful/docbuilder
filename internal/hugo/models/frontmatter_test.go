@@ -316,43 +316,35 @@ func TestFrontMatter_Validate(t *testing.T) {
 }
 
 func TestFrontMatter_FromMap_TypeCoercion(t *testing.T) {
-
 	// Cases where the input type does not match the expected Go type.
 
 	// FromMap silently ignores values that cannot be coerced — these tests pin that behavior.
 
 	t.Run("non-string title is ignored", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"title": 42})
 
 		require.NoError(t, err)
 
 		assert.Empty(t, fm.Title)
-
 	})
 
 	t.Run("non-bool draft is ignored", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"draft": "yes"})
 
 		require.NoError(t, err)
 
 		assert.False(t, fm.Draft)
-
 	})
 
 	t.Run("non-int weight is ignored", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"weight": int64(5)})
 
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, fm.Weight)
-
 	})
 
 	t.Run("non-time non-string date leaves default (now)", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"date": 1234567890})
 
 		require.NoError(t, err)
@@ -360,11 +352,9 @@ func TestFrontMatter_FromMap_TypeCoercion(t *testing.T) {
 		// NewFrontMatter initializes Date to time.Now(); wrong-type values must not crash and must not overwrite it.
 
 		assert.WithinDuration(t, time.Now(), fm.Date, 5*time.Second)
-
 	})
 
 	t.Run("invalid date string leaves default (now)", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"date": "not-a-date"})
 
 		require.NoError(t, err)
@@ -372,11 +362,9 @@ func TestFrontMatter_FromMap_TypeCoercion(t *testing.T) {
 		// NewFrontMatter initializes Date to time.Now(); unparseable strings must not crash and must not overwrite it.
 
 		assert.WithinDuration(t, time.Now(), fm.Date, 5*time.Second)
-
 	})
 
 	t.Run("date string with custom layout is parsed", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"date": "2024-06-01T12:00:00-05:00"})
 
 		require.NoError(t, err)
@@ -384,19 +372,15 @@ func TestFrontMatter_FromMap_TypeCoercion(t *testing.T) {
 		assert.Equal(t, 2024, fm.Date.Year())
 
 		assert.Equal(t, time.June, fm.Date.Month())
-
 	})
-
 }
 
 func TestFrontMatter_FromMap_TaxonomyMixedTypes(t *testing.T) {
-
 	// When taxonomy arrays contain a mix of string and non-string values,
 
 	// FromMap preserves slice length and inserts empty strings for non-strings.
 
 	t.Run("mixed tags leaves empty entries", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"tags": []any{"real", 42, "another"}})
 
 		require.NoError(t, err)
@@ -408,11 +392,9 @@ func TestFrontMatter_FromMap_TaxonomyMixedTypes(t *testing.T) {
 		assert.Equal(t, "", fm.Tags[1])
 
 		assert.Equal(t, "another", fm.Tags[2])
-
 	})
 
 	t.Run("all-non-string taxonomy yields empty entries", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{"categories": []any{1, 2, 3}})
 
 		require.NoError(t, err)
@@ -420,15 +402,11 @@ func TestFrontMatter_FromMap_TaxonomyMixedTypes(t *testing.T) {
 		require.Len(t, fm.Categories, 3)
 
 		for i, cat := range fm.Categories {
-
 			assert.Empty(t, cat, "category %d", i)
-
 		}
-
 	})
 
 	t.Run("nil taxonomy arrays stay nil", func(t *testing.T) {
-
 		fm, err := FromMap(map[string]any{})
 
 		require.NoError(t, err)
@@ -438,15 +416,11 @@ func TestFrontMatter_FromMap_TaxonomyMixedTypes(t *testing.T) {
 		assert.Nil(t, fm.Categories)
 
 		assert.Nil(t, fm.Keywords)
-
 	})
-
 }
 
 func TestFrontMatter_FromMap_OnlyCustomFields(t *testing.T) {
-
 	fm, err := FromMap(map[string]any{
-
 		"owner": "team-platform",
 
 		"visibility": "internal",
@@ -465,5 +439,4 @@ func TestFrontMatter_FromMap_OnlyCustomFields(t *testing.T) {
 	assert.Empty(t, fm.Title)
 
 	assert.Empty(t, fm.Tags)
-
 }

@@ -139,7 +139,6 @@ func git(t *testing.T, repoDir string, args ...string) {
 }
 
 func TestRepoAbsPath(t *testing.T) {
-
 	repoRoot := filepath.Join(string(filepath.Separator)+"repo", "root")
 
 	cases := []struct {
@@ -153,7 +152,6 @@ func TestRepoAbsPath(t *testing.T) {
 
 		wantAbs string
 	}{
-
 		{name: "empty relPath", repoRoot: repoRoot, relPath: "", wantOK: false},
 
 		{name: "absolute relPath is rejected", repoRoot: repoRoot, relPath: "/etc/passwd", wantOK: false},
@@ -174,21 +172,14 @@ func TestRepoAbsPath(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-
 		t.Run(tc.name, func(t *testing.T) {
-
 			got, ok := repoAbsPath(tc.repoRoot, tc.relPath)
 
 			require.Equal(t, tc.wantOK, ok)
 
 			if tc.wantOK {
-
 				require.Equal(t, tc.wantAbs, got)
-
 			}
-
 		})
-
 	}
-
 }

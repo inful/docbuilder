@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -11,18 +10,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
 )
 
-// writeMarkdownFile is a test helper that creates parent directories and writes content.
-func writeMarkdownFile(t *testing.T, path, content string) {
-	t.Helper()
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
-}
-
-// linkRef builds a docmodel.LinkRef at the given line with the given kind/destination.
-func linkRef(fileLine int, kind markdown.LinkKind, dest string) docmodel.LinkRef {
+// linkRef builds a docmodel.LinkRef at line 1 with the given kind/destination.
+// All current test cases use line 1; the parser fixture places the only link there.
+func linkRef(kind markdown.LinkKind, dest string) docmodel.LinkRef {
 	return docmodel.LinkRef{
 		Link:     markdown.Link{Kind: kind, Destination: dest},
-		FileLine: fileLine,
+		FileLine: 1,
 	}
 }
 
@@ -85,70 +78,70 @@ func TestInferRenameMappingFromGitHead(t *testing.T) {
 			name:     "wrong destination at LineNumber returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "different.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "old-name.md")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "old-name.md")},
 		},
 		{
-			name:     "ambiguous: two matching refs at same line returns false",
-			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
-			oldAbs:   oldAbs,
+			name:   "ambiguous: two matching refs at same line returns false",
+			bl:     BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
+			oldAbs: oldAbs,
 			headRefs: []docmodel.LinkRef{
-				linkRef(1, markdown.LinkKindInline, "old-name.md"),
-				linkRef(1, markdown.LinkKindInline, "old-name.md"),
+				linkRef(markdown.LinkKindInline, "old-name.md"),
+				linkRef(markdown.LinkKindInline, "old-name.md"),
 			},
 		},
 		{
 			name:     "different link kind in HEAD vs current returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindImage, "renamed.md")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindImage, "renamed.md")},
 		},
 		{
 			name:     "empty destination in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "   ")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "   ")},
 		},
 		{
 			name:     "Hugo shortcode target in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "{{< myshortcode >}}")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "{{< myshortcode >}}")},
 		},
 		{
 			name:     "UID alias target in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "/_uid/some-doc")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "/_uid/some-doc")},
 		},
 		{
 			name:     "https URL in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "https://example.com/x")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "https://example.com/x")},
 		},
 		{
 			name:     "mailto link in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "mailto:foo@example.com")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "mailto:foo@example.com")},
 		},
 		{
 			name:     "anchor-only link in HEAD returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "#section")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "#section")},
 		},
 		{
 			name:     "HEAD destination unchanged from broken target returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "old-name.md")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "old-name.md")},
 		},
 		{
 			name:     "HEAD destination points to non-existent file returns false",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "ghost.md")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "ghost.md")},
 		},
 		{
 			name:     "curPos out of range in headRefs returns false",
@@ -160,7 +153,7 @@ func TestInferRenameMappingFromGitHead(t *testing.T) {
 			name:     "happy path: HEAD points to existing renamed file returns true",
 			bl:       BrokenLink{SourceFile: srcFile, LineNumber: 1, Target: "old-name.md"},
 			oldAbs:   oldAbs,
-			headRefs: []docmodel.LinkRef{linkRef(1, markdown.LinkKindInline, "renamed.md")},
+			headRefs: []docmodel.LinkRef{linkRef(markdown.LinkKindInline, "renamed.md")},
 			wantOK:   true,
 		},
 	}
