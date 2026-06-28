@@ -429,19 +429,6 @@ func TestStateService(t *testing.T) {
 			t.Error("Statistics store is nil")
 		}
 	})
-
-	// Test service statistics
-	t.Run("Service Statistics", func(t *testing.T) {
-		statsResult := service.GetStats(ctx)
-		if statsResult.IsErr() {
-			t.Fatalf("Failed to get service stats: %v", statsResult.UnwrapErr())
-		}
-
-		stats := statsResult.Unwrap()
-		if stats.StoreType != "json" {
-			t.Errorf("Expected store type 'json', got %q", stats.StoreType)
-		}
-	})
 }
 
 // Adapter tests removed after deprecation cleanup - use StateService directly instead

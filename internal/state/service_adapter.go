@@ -404,26 +404,10 @@ func (a *ServiceAdapter) RecordDiscovery(repoURL string, documentCount int) {
 
 // --- Test helper methods ---
 
-// RepositoryState is a simplified view of repository state for test compatibility.
-// Uses plain types instead of foundation.Option for easier test assertions.
-type RepositoryState struct {
-	URL           string
-	Name          string
-	Branch        string
-	LastDiscovery *time.Time
-	LastBuild     *time.Time
-	LastCommit    string
-	DocumentCount int
-	BuildCount    int64
-	ErrorCount    int64
-	LastError     string
-	DocFilesHash  string
-	DocFilePaths  []string
-}
-
-// GetRepository retrieves repository state by URL, returning nil if not found.
-// This is a convenience method primarily for test assertions.
-func (a *ServiceAdapter) GetRepository(url string) *RepositoryState {
+// GetRepository returns the stored repository state for url, or nil if not
+// found. It exposes the internal *Repository type so callers (notably the
+// daemon integration tests) can inspect fields directly.
+func (a *ServiceAdapter) GetRepository(url string) *Repository {
 	if url == "" {
 		return nil
 	}
@@ -437,39 +421,7 @@ func (a *ServiceAdapter) GetRepository(url string) *RepositoryState {
 	if opt.IsNone() {
 		return nil
 	}
-	repo := opt.Unwrap()
-
-	// Convert from state.Repository to RepositoryState
-	rs := &RepositoryState{
-		URL:           repo.URL,
-		Name:          repo.Name,
-		Branch:        repo.Branch,
-		DocumentCount: repo.DocumentCount,
-		BuildCount:    repo.BuildCount,
-		ErrorCount:    repo.ErrorCount,
-		DocFilePaths:  repo.DocFilePaths,
-	}
-
-	// Convert Option types to plain types/pointers
-	if repo.LastDiscovery.IsSome() {
-		t := repo.LastDiscovery.Unwrap()
-		rs.LastDiscovery = &t
-	}
-	if repo.LastBuild.IsSome() {
-		t := repo.LastBuild.Unwrap()
-		rs.LastBuild = &t
-	}
-	if repo.LastCommit.IsSome() {
-		rs.LastCommit = repo.LastCommit.Unwrap()
-	}
-	if repo.LastError.IsSome() {
-		rs.LastError = repo.LastError.Unwrap()
-	}
-	if repo.DocFilesHash.IsSome() {
-		rs.DocFilesHash = repo.DocFilesHash.Unwrap()
-	}
-
-	return rs
+	return opt.Unwrap()
 }
 
 // Compile-time verification that ServiceAdapter implements DaemonStateManager.
