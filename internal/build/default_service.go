@@ -75,6 +75,16 @@ func (s *DefaultBuildService) WithSkipEvaluatorFactory(factory SkipEvaluatorFact
 	return s
 }
 
+// WithRecorder swaps the metrics recorder used during the build.
+// Defaults to metrics.NoopRecorder (set in NewBuildService).
+func (s *DefaultBuildService) WithRecorder(recorder metrics.Recorder) *DefaultBuildService {
+	s.recorder = recorder
+	return s
+}
+
+// Compile-time assertion that *DefaultBuildService implements BuildService.
+var _ BuildService = (*DefaultBuildService)(nil)
+
 // Run executes the complete build pipeline.
 func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*BuildResult, error) {
 	startTime := time.Now()
@@ -132,11 +142,21 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	}
 	s.recorder.ObserveStageDuration("workspace", time.Since(stageStart))
 	s.recorder.IncStageResult("workspace", metrics.ResultSuccess)
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			observability.WarnContext(ctx, "Failed to cleanup workspace", slog.String("error", err.Error()))
-		}
-	}()
+
+	// Only defer cleanup for ephemeral workspaces. Persistent workspaces
+	// (BuildOptions.KeepWorkspace=true) opt out of cleanup so the directory
+	// is preserved for debugging; workspace.Manager.Cleanup also no-ops on
+	// persistent managers, so this is belt-and-braces.
+	if !req.Options.KeepWorkspace {
+		defer func() {
+			if err := wsManager.Cleanup(); err != nil {
+				observability.WarnContext(ctx, "Failed to cleanup workspace", slog.String("error", err.Error()))
+			}
+		}()
+	} else {
+		observability.InfoContext(ctx, "Workspace will be preserved for debugging",
+			slog.String("path", wsManager.GetPath()))
+	}
 
 	// Stage 2+: Unified Site Generation (Clone -> Discovery -> Transform -> Hugo)
 	// We delegate the heavy lifting to the natively refactored hugo.Generator pipeline.

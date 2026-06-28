@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // BuildCmd implements the 'build' command.
@@ -85,7 +87,9 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose, b.KeepWorkspace)
 }
 
-// RunBuild executes the build pipeline using the unified generator pipeline.
+// RunBuild executes the build pipeline using build.BuildService.
+// This is the canonical CLI entry point; it routes through the same service
+// the daemon uses (with a nil skip-evaluator and a noop recorder).
 //
 //nolint:forbidigo // fmt is used for user-facing messages
 func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, keepWorkspace bool) error {
@@ -107,44 +111,58 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		"incremental", incrementalMode,
 		"keep_workspace", keepWorkspace)
 
-	// Create workspace manager
-	wsManager, err := CreateWorkspace(cfg)
-	if err != nil {
-		return err
-	}
-	if !keepWorkspace {
-		defer CleanupWorkspace(wsManager)
-	} else {
-		slog.Info("Workspace will be preserved for debugging", "path", wsManager.GetPath())
-		fmt.Printf("Workspace preserved at: %s\n", wsManager.GetPath())
+	// Build the workspace factory. Persistent managers (KeepWorkspace=true)
+	// skip cleanup on exit; ephemeral managers (KeepWorkspace=false) are
+	// removed by BuildService's deferred cleanup.
+	wsDir := cfg.Build.WorkspaceDir
+	workspaceFactory := func() *workspace.Manager {
+		if keepWorkspace {
+			return workspace.NewPersistentManager(wsDir, "working")
+		}
+		return workspace.NewManager(wsDir)
 	}
 
-	// Initialize Generator
-	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
+	svc := build.NewBuildService().
+		WithWorkspaceFactory(workspaceFactory).
+		WithHugoGeneratorFactory(func(c *config.Config, dir string) build.HugoGenerator {
+			return hugo.NewGenerator(c, dir).WithKeepStaging(keepWorkspace)
+		}).
+		WithSkipEvaluatorFactory(func(string) build.SkipEvaluator {
+			// Skip evaluation requires daemon state; the CLI never has it.
+			return nil
+		})
 
-	// Run the unified pipeline
-	ctx := context.Background()
-	report, err := generator.GenerateFullSite(ctx, cfg.Repositories, wsManager.GetPath())
+	req := build.BuildRequest{
+		Config:      cfg,
+		OutputDir:   outputDir,
+		Incremental: incrementalMode,
+		Options: build.BuildOptions{
+			Verbose:         verbose,
+			KeepWorkspace:   keepWorkspace,
+			SkipIfUnchanged: false,
+		},
+	}
+
+	result, err := svc.Run(context.Background(), req)
 	if err != nil {
 		slog.Error("Build pipeline failed", "error", err)
-		// Show workspace location on error for debugging
 		if keepWorkspace {
-			fmt.Printf("\nError occurred. Workspace preserved at: %s\n", wsManager.GetPath())
+			fmt.Printf("\nError occurred. Workspace preserved (check above log).\n")
 			fmt.Printf("Hugo staging directory: %s_stage\n", outputDir)
 		}
 		return err
 	}
 
-	if report.FailedRepositories > 0 {
+	if result.Report != nil && result.Report.FailedRepositories > 0 {
 		slog.Warn("Some repositories were skipped due to errors",
-			"skipped", report.FailedRepositories,
+			"skipped", result.Report.FailedRepositories,
 			"total", len(cfg.Repositories))
 	}
 
 	slog.Info("Build completed successfully",
 		"output", outputDir,
-		"pages", report.RenderedPages,
-		"skipped_repos", report.FailedRepositories)
+		"pages", result.FilesProcessed,
+		"skipped_repos", result.RepositoriesSkipped)
 
 	fmt.Println("Build completed successfully")
 	return nil

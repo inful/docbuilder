@@ -38,6 +38,11 @@ type BuildOptions struct {
 
 	// SkipIfUnchanged enables skip evaluation when content hasn't changed.
 	SkipIfUnchanged bool
+
+	// KeepWorkspace prevents the build workspace from being cleaned up after
+	// the build completes. Useful for debugging failed builds. The CLI uses
+	// this when invoked with --keep-workspace.
+	KeepWorkspace bool
 }
 
 // BuildResult contains the outcome of a build execution.
