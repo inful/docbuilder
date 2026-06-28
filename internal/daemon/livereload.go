@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 )
 
 // LiveReloadHub manages SSE clients for hash-change broadcasts.
@@ -199,3 +201,7 @@ const LiveReloadScript = `(() => {
   }
   connect();
 })();`
+
+// Compile-time assertion that *LiveReloadHub satisfies the queue.LiveReloadHub
+// contract consumed by the build pipeline.
+var _ queue.LiveReloadHub = (*LiveReloadHub)(nil)

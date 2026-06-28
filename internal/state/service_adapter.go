@@ -430,3 +430,17 @@ var (
 	_ LifecycleManager   = (*ServiceAdapter)(nil)
 	_ DaemonStateManager = (*ServiceAdapter)(nil)
 )
+
+// Compile-time assertion that *ServiceAdapter satisfies validation.SkipStateAccess.
+// (validation lives in a different package; we re-export the assertion here to
+// avoid making the state package depend on build/validation.)
+// We assert each method individually rather than importing the interface.
+var (
+	_ = (*ServiceAdapter)(nil).GetRepoLastCommit
+	_ = (*ServiceAdapter)(nil).GetLastConfigHash
+	_ = (*ServiceAdapter)(nil).GetLastReportChecksum
+	_ = (*ServiceAdapter)(nil).SetLastReportChecksum
+	_ = (*ServiceAdapter)(nil).GetRepoDocFilesHash
+	_ = (*ServiceAdapter)(nil).GetLastGlobalDocFilesHash
+	_ = (*ServiceAdapter)(nil).SetLastGlobalDocFilesHash
+)

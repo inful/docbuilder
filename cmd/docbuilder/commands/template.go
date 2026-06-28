@@ -311,3 +311,6 @@ func runLintFix(path string) error {
 	_, err := fixer.Fix(path)
 	return err
 }
+
+// Compile-time assertion that *cliPrompter satisfies templating.Prompter.
+var _ templating.Prompter = (*cliPrompter)(nil)

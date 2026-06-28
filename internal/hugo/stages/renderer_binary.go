@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -264,3 +265,10 @@ func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 	}
 	return nil
 }
+
+// Compile-time assertions that the renderer implementations satisfy the
+// models.Renderer contract.
+var (
+	_ models.Renderer = (*BinaryRenderer)(nil)
+	_ models.Renderer = (*NoopRenderer)(nil)
+)

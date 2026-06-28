@@ -25,6 +25,13 @@ func (NoopObserver) OnBuildComplete(_ *BuildReport)                             
 // RecorderObserver adapts metrics.Recorder into a BuildObserver.
 type RecorderObserver struct{ Recorder metrics.Recorder }
 
+// Compile-time assertion that the canonical observer implementations satisfy
+// the BuildObserver contract.
+var (
+	_ BuildObserver = NoopObserver{}
+	_ BuildObserver = RecorderObserver{}
+)
+
 func (r RecorderObserver) OnStageStart(_ StageName) {}
 func (r RecorderObserver) OnStageComplete(stage StageName, d time.Duration, _ StageResult) {
 	if r.Recorder != nil {

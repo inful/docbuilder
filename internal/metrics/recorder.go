@@ -59,3 +59,6 @@ func (NoopRecorder) IncIssue(string, string, string, bool)                      
 func (NoopRecorder) SetEffectiveRenderMode(string)                               {}
 func (NoopRecorder) IncContentTransformFailure(string)                           {}
 func (NoopRecorder) ObserveContentTransformDuration(string, time.Duration, bool) {}
+
+// Compile-time assertion that *NoopRecorder satisfies the Recorder contract.
+var _ Recorder = NoopRecorder{}
