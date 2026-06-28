@@ -516,3 +516,17 @@ func (g *Generator) WithRenderer(r models.Renderer) *Generator {
 	}
 	return g
 }
+
+// Compile-time assertions that *Generator satisfies the per-stage narrow
+// interfaces defined in models. These lock the per-stage contract so future
+// refactors that drop methods from *Generator break loudly at compile time.
+var (
+	_ models.Generator               = (*Generator)(nil)
+	_ models.StagePrepareDeps        = (*Generator)(nil)
+	_ models.StageCloneDeps          = (*Generator)(nil)
+	_ models.StageDiscoverDeps       = (*Generator)(nil)
+	_ models.StageConfigDeps         = (*Generator)(nil)
+	_ models.StageCopyContentDeps    = (*Generator)(nil)
+	_ models.StageCategoriesMenuDeps = (*Generator)(nil)
+	_ models.StageRunHugoDeps        = (*Generator)(nil)
+)
