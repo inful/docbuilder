@@ -15,15 +15,23 @@ type SkipStateAccess = validation.SkipStateAccess
 
 // SkipEvaluator decides whether a build can be safely skipped based on
 // persisted state + prior build report + filesystem probes.
-// This is now a thin wrapper around the validation-based evaluator.
+// This is a thin wrapper around the validation-based evaluator; it owns the
+// responsibility of detecting the current Hugo version and forwarding it.
 type SkipEvaluator struct {
 	validator *validation.SkipEvaluator
 }
 
-// NewSkipEvaluator constructs a new evaluator.
+// NewSkipEvaluator constructs a new evaluator. The current Hugo version is
+// detected up front and passed into the validator; empty string when Hugo
+// is unavailable (validation will treat that as "no Hugo used previously"
+// if the previous report's HugoVersion is also empty).
 func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *SkipEvaluator {
+	hugoVersion := ""
+	if gen != nil {
+		hugoVersion = hugo.DetectHugoVersion(context.Background())
+	}
 	return &SkipEvaluator{
-		validator: validation.NewSkipEvaluator(outDir, st, gen),
+		validator: validation.NewSkipEvaluator(outDir, st, gen, hugoVersion),
 	}
 }
 

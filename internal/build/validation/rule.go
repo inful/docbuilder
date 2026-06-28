@@ -5,8 +5,14 @@ import (
 	"log/slog"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
+
+// GeneratorInfo is the slice of *hugo.Generator that validation rules need.
+// Defined locally so this package does not depend on internal/hugo (avoiding
+// the build/validation -> hugo layering inversion).
+type GeneratorInfo interface {
+	ComputeConfigHashForPersistence() string
+}
 
 // SkipStateAccess encapsulates the subset of state manager methods required for validation.
 type SkipStateAccess interface {
@@ -21,12 +27,13 @@ type SkipStateAccess interface {
 
 // Context contains all the data needed by validation rules.
 type Context struct {
-	OutDir     string
-	State      SkipStateAccess
-	Generator  *hugo.Generator
-	Repos      []cfg.Repository
-	PrevReport *PreviousReport
-	Logger     *slog.Logger
+	OutDir      string
+	State       SkipStateAccess
+	Generator   GeneratorInfo
+	Repos       []cfg.Repository
+	PrevReport  *PreviousReport
+	Logger      *slog.Logger
+	HugoVersion string // Detected Hugo version, populated by the caller.
 }
 
 // PreviousReport holds parsed data from the previous build report.
