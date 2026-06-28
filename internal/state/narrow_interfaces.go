@@ -74,7 +74,6 @@ type ConfigurationStateStore interface {
 }
 
 // LifecycleManager provides lifecycle operations for state managers.
-// This mirrors services.StateManager for compatibility.
 type LifecycleManager interface {
 	Load() error
 	Save() error

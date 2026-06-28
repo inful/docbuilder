@@ -6,16 +6,6 @@ import (
 	"time"
 )
 
-// StateManager defines the minimal interface for persistent state lifecycle and status.
-// Components that need state persistence operations type assert to this interface
-// or more specific interfaces like state.DaemonStateManager.
-type StateManager interface {
-	Load() error
-	Save() error
-	IsLoaded() bool
-	LastSaved() *time.Time
-}
-
 // ManagedService defines the interface for services with lifecycle management.
 type ManagedService interface {
 	// Name returns the service name for logging and identification.
@@ -40,12 +30,3 @@ type HealthStatus struct {
 	Message string    `json:"message,omitempty"`
 	CheckAt time.Time `json:"check_at"`
 }
-
-var (
-	// HealthStatusHealthy is a reusable healthy status value.
-	HealthStatusHealthy = HealthStatus{Status: "healthy", CheckAt: time.Now()}
-	// HealthStatusUnhealthy returns a HealthStatus indicating an unhealthy state with a message.
-	HealthStatusUnhealthy = func(message string) HealthStatus {
-		return HealthStatus{Status: "unhealthy", Message: message, CheckAt: time.Now()}
-	}
-)

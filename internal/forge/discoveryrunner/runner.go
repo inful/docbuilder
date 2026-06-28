@@ -11,7 +11,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
 // Discovery is the minimal interface required to run forge discovery.
@@ -31,7 +30,6 @@ type Metrics interface {
 
 // StateManager is the minimal interface used for persistence and discovery bookkeeping.
 type StateManager interface {
-	services.StateManager
 	EnsureRepositoryState(url, name, branch string)
 	RecordDiscovery(repoURL string, documentCount int)
 }
@@ -256,7 +254,6 @@ func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *for
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config:      r.config,
 			Repositories:  converted,
-			StateManager:  r.stateManager,
 			LiveReloadHub: r.liveReload,
 		},
 	}

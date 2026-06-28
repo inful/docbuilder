@@ -424,5 +424,9 @@ func (a *ServiceAdapter) GetRepository(url string) *Repository {
 	return opt.Unwrap()
 }
 
-// Compile-time verification that ServiceAdapter implements DaemonStateManager.
-var _ DaemonStateManager = (*ServiceAdapter)(nil)
+// Compile-time verification that ServiceAdapter implements the canonical
+// state interfaces consumed by the daemon, build, and hugo packages.
+var (
+	_ LifecycleManager   = (*ServiceAdapter)(nil)
+	_ DaemonStateManager = (*ServiceAdapter)(nil)
+)
