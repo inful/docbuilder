@@ -9,9 +9,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 )
 
-func TestManager_CreateAuth(t *testing.T) {
-	manager := NewManager()
-
+func TestCreateAuth(t *testing.T) {
 	const testToken = "test-token"
 
 	tests := []struct {
@@ -101,7 +99,7 @@ func TestManager_CreateAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			auth, err := manager.CreateAuth(tt.authConfig)
+			auth, err := CreateAuth(tt.authConfig)
 
 			if tt.expectError && err == nil {
 				t.Errorf("CreateAuth() expected error but got none - %s", tt.description)
@@ -188,19 +186,27 @@ func verifyBasicAuth(t *testing.T, auth transport.AuthMethod, expectedUsername, 
 	}
 }
 
-func TestConvenienceFunctions(t *testing.T) {
-	// Test package-level convenience function
+func TestCreateAuth_NilConfig(t *testing.T) {
+	auth, err := CreateAuth(nil)
+	if err != nil {
+		t.Errorf("CreateAuth(nil) returned error: %v", err)
+	}
+	if auth != nil {
+		t.Errorf("CreateAuth(nil) returned non-nil auth: %T", auth)
+	}
+}
+
+func TestCreateAuth_Token(t *testing.T) {
 	authConfig := &config.AuthConfig{
 		Type:  config.AuthTypeToken,
 		Token: "test-token",
 	}
 
-	// Test CreateAuth convenience function
 	auth, err := CreateAuth(authConfig)
 	if err != nil {
-		t.Errorf("CreateAuth() convenience function error: %v", err)
+		t.Errorf("CreateAuth() error: %v", err)
 	}
 	if auth == nil {
-		t.Errorf("CreateAuth() convenience function returned nil")
+		t.Errorf("CreateAuth() returned nil auth")
 	}
 }
