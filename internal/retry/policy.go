@@ -1,10 +1,12 @@
 package retry
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Policy encapsulates retry/backoff settings for transient failures.
@@ -89,4 +91,80 @@ func (p Policy) Validate() error {
 		return errors.New("max retries cannot be negative")
 	}
 	return nil
+}
+
+// RetryHooks customizes per-error behavior of Policy.Do.
+//
+// All fields are optional. Nil callbacks fall back to conservative defaults:
+//   - IsRetryable: retry unless the error classifies as RetryNever.
+//   - AdjustDelay: use the policy's base backoff as-is.
+//   - OnRetry: no observability.
+//
+// OnRetry fires *before* the per-retry delay (so the recorded attempt number
+// is the attempt that just failed; the next attempt will be attempt+1).
+// The attempt value is 1-based: it counts how many calls of fn have been made.
+type RetryHooks struct {
+	IsRetryable func(err error) bool
+	AdjustDelay func(err error, base time.Duration) time.Duration
+	OnRetry     func(attempt int, err error)
+}
+
+// Do executes fn with retry+backoff as configured by p.
+//
+// fn is invoked up to MaxRetries+1 times. The first failure short-circuits
+// when IsRetryable (or the default classifier fallback) reports the error
+// as non-retryable. Returns:
+//
+//   - nil if fn succeeds at any attempt;
+//   - the last fn error if it is non-retryable or MaxRetries is exhausted;
+//   - ctx.Err() if ctx is canceled mid-backoff.
+//
+// Do honors ctx during the backoff sleep; cancellation returned to the caller.
+// The MaxRetries<=0 short-circuit skips the loop entirely (single fn call).
+func (p Policy) Do(ctx context.Context, fn func(context.Context) error, hooks RetryHooks) error {
+	if p.MaxRetries <= 0 {
+		return fn(ctx)
+	}
+	var lastErr error
+	for attempt := 0; attempt <= p.MaxRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		lastErr = fn(ctx)
+		if lastErr == nil {
+			return nil
+		}
+		if !shouldRetry(lastErr, hooks) {
+			return lastErr
+		}
+		if attempt == p.MaxRetries {
+			break
+		}
+		delay := p.Delay(attempt + 1)
+		if hooks.AdjustDelay != nil {
+			delay = hooks.AdjustDelay(lastErr, delay)
+		}
+		if hooks.OnRetry != nil {
+			hooks.OnRetry(attempt+1, lastErr)
+		}
+		select {
+		case <-time.After(delay):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return lastErr
+}
+
+// shouldRetry centralizes the default vs hook override for error retryability.
+func shouldRetry(err error, hooks RetryHooks) bool {
+	if hooks.IsRetryable != nil {
+		return hooks.IsRetryable(err)
+	}
+	if ce, ok := derrors.AsClassified(err); ok {
+		return ce.RetryStrategy() != derrors.RetryNever
+	}
+	// Unclassified errors are retried; matches the prior
+	// git/build_queue behavior of "retry unless proven permanent".
+	return true
 }
