@@ -212,7 +212,7 @@ func detectForgeConfig(ctx detectionContext) detectionResult {
 		return detectionResult{Found: false}
 	}
 
-	fullName := extractFullNameFromURL(ctx.cloneURL)
+	_, fullName := forge.SplitCloneURL(ctx.cloneURL)
 	if fullName == "" {
 		return detectionResult{Found: false}
 	}
@@ -231,7 +231,7 @@ func resolveForgeForRepository(cfg *config.Config, repoURL string) (config.Forge
 		return "", ""
 	}
 
-	normalized := normalizeSSHURL(repoURL)
+	normalized := forge.SplitCloneURLHelper(repoURL)
 
 	for _, fc := range cfg.Forges {
 		if fc == nil || fc.BaseURL == "" {
@@ -260,64 +260,21 @@ func detectHeuristic(ctx detectionContext) detectionResult {
 		return detectionResult{Found: false}
 	}
 
-	forgeType := detectForgeTypeFromHost(cloneURL)
+	forgeType := forge.DetectForgeTypeFromURL(cloneURL)
 	if forgeType == "" {
 		return detectionResult{Found: false}
 	}
 
-	fullName := extractFullNameFromURL(cloneURL)
-	if fullName == "" {
+	baseURL, fullName := forge.SplitCloneURL(cloneURL)
+	if fullName == "" || baseURL == "" {
 		return detectionResult{Found: false}
 	}
 
 	return detectionResult{
 		ForgeType: forgeType,
-		BaseURL:   determineBaseURL(cloneURL, forgeType),
+		BaseURL:   baseURL,
 		FullName:  fullName,
 		Found:     true,
-	}
-}
-
-// detectForgeTypeFromHost determines forge type based on hostname patterns.
-func detectForgeTypeFromHost(cloneURL string) config.ForgeType {
-	switch {
-	case strings.Contains(cloneURL, "github."):
-		return config.ForgeGitHub
-	case strings.Contains(cloneURL, "gitlab."):
-		return config.ForgeGitLab
-	case strings.Contains(cloneURL, "bitbucket.org"):
-		// Special case: Bitbucket uses custom URL format.
-		return config.ForgeForgejo // Placeholder since Bitbucket isn't defined.
-	case strings.Contains(cloneURL, "forgejo") || strings.Contains(cloneURL, "gitea"):
-		return config.ForgeForgejo
-	default:
-		// Assume Forgejo/Gitea for unknown self-hosted instances.
-		return config.ForgeForgejo
-	}
-}
-
-// determineBaseURL calculates the base URL for a given clone URL and forge type.
-func determineBaseURL(cloneURL string, forgeType config.ForgeType) string {
-	normalized := normalizeSSHURL(cloneURL)
-
-	if strings.Contains(cloneURL, "bitbucket.org") {
-		return "https://bitbucket.org"
-	}
-
-	if u, err := url.Parse(normalized); err == nil && u.Scheme != "" && u.Host != "" {
-		return fmt.Sprintf("%s://%s", u.Scheme, u.Host)
-	}
-
-	switch forgeType {
-	case config.ForgeGitHub:
-		return "https://github.com"
-	case config.ForgeGitLab:
-		return "https://gitlab.com"
-	case config.ForgeForgejo, config.ForgeLocal:
-		// For self-hosted/local forges, use the clone URL as base.
-		return cloneURL
-	default:
-		return ""
 	}
 }
 
@@ -335,20 +292,6 @@ func isLocalPath(urlStr string) bool {
 	return true
 }
 
-// normalizeSSHURL converts SSH URLs to HTTPS format for easier parsing.
-func normalizeSSHURL(repoURL string) string {
-	if !strings.HasPrefix(repoURL, "git@") {
-		return repoURL
-	}
-
-	parts := strings.SplitN(strings.TrimPrefix(repoURL, "git@"), ":", 2)
-	if len(parts) == 2 {
-		return "https://" + parts[0] + "/" + parts[1]
-	}
-
-	return repoURL
-}
-
 // hostsMatch checks if two URLs have the same host.
 func hostsMatch(url1, url2 string) bool {
 	u1, err1 := url.Parse(url1)
@@ -357,20 +300,6 @@ func hostsMatch(url1, url2 string) bool {
 		return false
 	}
 	return u1.Host != "" && u1.Host == u2.Host
-}
-
-// extractFullNameFromURL extracts the repository full name (owner/repo) from a URL.
-func extractFullNameFromURL(cloneURL string) string {
-	normalized := normalizeSSHURL(cloneURL)
-
-	u, err := url.Parse(normalized)
-	if err != nil {
-		return ""
-	}
-
-	path := strings.Trim(u.Path, "/")
-	path = strings.TrimSuffix(path, ".git")
-	return path
 }
 
 // buildURL constructs the final edit URL from a detection result.

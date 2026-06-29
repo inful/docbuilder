@@ -83,7 +83,7 @@ func generateRepositoryIndex(ctx *GenerationContext) ([]*Document, error) {
 		if !hasIndex {
 			// Generate repository index
 			repoMeta := ctx.RepositoryMetadata[repo]
-			title := titleCase(repo)
+			title := titleCaseSlug(repo)
 			description := fmt.Sprintf("Documentation for %s", repo)
 
 			// Build the content path via the single source of truth
@@ -206,21 +206,21 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 	return generated, nil
 }
 
-// titleCase converts a string to title case (simple version).
-// Replaces dashes and underscores with spaces and capitalizes words.
-func titleCase(s string) string {
-	// Replace separators with spaces
+// titleCaseSlug is the slug-aware variant of title-casing: '-' and '_'
+// become spaces first, then each word is capitalized. Mirrors the
+// canonical internal/hugo.TitleCaseSlug but lives here to avoid an
+// import cycle (hugo imports hugo/pipeline, not the other way round).
+// When the pipeline can be lifted into a leaf package, drop this
+// helper in favor of internal/hugo.TitleCaseSlug.
+func titleCaseSlug(s string) string {
 	s = strings.ReplaceAll(s, "-", " ")
 	s = strings.ReplaceAll(s, "_", " ")
-
-	// Capitalize first letter of each word
 	words := strings.Fields(s)
 	for i, word := range words {
 		if len(word) > 0 {
 			words[i] = strings.ToUpper(word[:1]) + word[1:]
 		}
 	}
-
 	return strings.Join(words, " ")
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
 
 func TestResolver(t *testing.T) {
@@ -141,8 +142,8 @@ func TestNormalizeSSHURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := normalizeSSHURL(tt.in); got != tt.want {
-				t.Errorf("normalizeSSHURL(%q) = %q, want %q", tt.in, got, tt.want)
+			if got := forge.NormalizeCloneURL(tt.in); got != tt.want {
+				t.Errorf("NormalizeCloneURL(%q) = %q, want %q", tt.in, got, tt.want)
 			}
 		})
 	}
@@ -161,8 +162,9 @@ func TestExtractFullNameFromURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := extractFullNameFromURL(tt.in); got != tt.want {
-				t.Errorf("extractFullNameFromURL(%q) = %q, want %q", tt.in, got, tt.want)
+			_, got := forge.SplitCloneURL(tt.in)
+			if got != tt.want {
+				t.Errorf("SplitCloneURL(%q) fullName = %q, want %q", tt.in, got, tt.want)
 			}
 		})
 	}
