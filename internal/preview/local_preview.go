@@ -17,6 +17,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/preview/runtime"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
@@ -88,10 +89,12 @@ func validateAndResolveDocsDir(cfg *config.Config) (string, error) {
 	}
 	absDocs, err := filepath.Abs(docsDir)
 	if err != nil {
-		return "", fmt.Errorf("resolve docs dir: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "resolve docs dir").Build()
 	}
 	if st, statErr := os.Stat(absDocs); statErr != nil || !st.IsDir() {
-		return "", fmt.Errorf("docs dir not found or not a directory: %s", absDocs)
+		return "", derrors.NewError(derrors.CategoryNotFound, "docs dir not found or not a directory").
+			WithContext("path", absDocs).
+			Build()
 	}
 	return absDocs, nil
 }
@@ -119,7 +122,7 @@ func startHTTPServer(ctx context.Context, cfg *config.Config, previewRt *runtime
 		BuildStatus:   buildStat,
 	})
 	if err := httpServer.Start(ctx); err != nil {
-		return nil, fmt.Errorf("failed to start HTTP server: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
 	}
 	slog.Info("Preview server listening", "port", port, "docs_url", fmt.Sprintf("http://localhost:%d", port))
 	return httpServer, nil
@@ -129,7 +132,7 @@ func startHTTPServer(ctx context.Context, cfg *config.Config, previewRt *runtime
 func setupFileWatcher(absDocs string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, fmt.Errorf("fsnotify: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "create fsnotify watcher").Build()
 	}
 	if err := addDirsRecursive(watcher, absDocs); err != nil {
 		_ = watcher.Close()
@@ -248,7 +251,7 @@ func writeVSCodeArtifactsIfEnabled(ctx context.Context, cfg *config.Config, absD
 
 func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o750); err != nil {
-		return fmt.Errorf("create vscode settings directory: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "create vscode settings directory").Build()
 	}
 
 	settings := map[string]any{}
@@ -256,11 +259,11 @@ func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 	if data, readErr := os.ReadFile(settingsPath); readErr == nil {
 		if len(strings.TrimSpace(string(data))) > 0 {
 			if err := json.Unmarshal(data, &settings); err != nil {
-				return fmt.Errorf("parse vscode settings: %w", err)
+				return derrors.WrapError(err, derrors.CategoryValidation, "parse vscode settings").Build()
 			}
 		}
 	} else if !os.IsNotExist(readErr) {
-		return fmt.Errorf("read vscode settings: %w", readErr)
+		return derrors.WrapError(readErr, derrors.CategoryFileSystem, "read vscode settings").Build()
 	}
 
 	markdownSettings := map[string]any{}
@@ -283,12 +286,12 @@ func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 
 	serialized, err := json.MarshalIndent(settings, "", "    ")
 	if err != nil {
-		return fmt.Errorf("marshal vscode settings: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "marshal vscode settings").Build()
 	}
 	serialized = append(serialized, '\n')
 
 	if err := os.WriteFile(settingsPath, serialized, 0o600); err != nil {
-		return fmt.Errorf("write vscode settings: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "write vscode settings").Build()
 	}
 
 	return nil

@@ -120,7 +120,6 @@ issues:
     - internal/lint/.*\.go$
     - internal/linkverify/extractor\.go$
     - internal/markdown/.*\.go$
-    - internal/preview/local_preview\.go$
     - internal/server/httpserver/(http_server|http_server_webhook)\.go$
     - internal/state/json_store\.go$
     - internal/templates/(discovery|http_fetch|inputs|output_path|render|schema|template_page|writer)\.go$
