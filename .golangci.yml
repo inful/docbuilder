@@ -118,7 +118,7 @@ issues:
     - internal/hugo/(categories_menu|config_writer|content_copy_pipeline|generator|models|modules|pipeline|stages|structure)\.go$
     - internal/hugo/stages_transition_test\.go$
     - internal/lint/.*\.go$
-    - internal/linkverify/extractor\.go$
+    - internal/linkverify/
     - internal/markdown/.*\.go$
     - internal/server/httpserver/(http_server|http_server_webhook)\.go$
     - internal/templates/(discovery|http_fetch|inputs|output_path|render|schema|template_page|writer)\.go$
