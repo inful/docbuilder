@@ -2,11 +2,12 @@ package templates
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 
 	"golang.org/x/net/html"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // TemplateMeta contains metadata extracted from docbuilder:* HTML meta tags.
@@ -81,7 +82,7 @@ type TemplatePage struct {
 func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 	doc, err := html.Parse(r)
 	if err != nil {
-		return nil, fmt.Errorf("parse template HTML: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "parse template HTML").Build()
 	}
 
 	meta := make(map[string]string)
@@ -126,7 +127,9 @@ func ParseTemplatePage(r io.Reader) (*TemplatePage, error) {
 
 	missing := missingRequiredTemplateMeta(result.Meta)
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("missing required template metadata: %s", strings.Join(missing, ", "))
+		return nil, derrors.NewError(derrors.CategoryValidation, "missing required template metadata: "+strings.Join(missing, ", ")).
+			WithContext("missing", missing).
+			Build()
 	}
 
 	if len(markdownBlocks) == 0 {

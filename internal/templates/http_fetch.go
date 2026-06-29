@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // maxTemplateResponseBytes is the maximum size of template page responses (5MB).
@@ -123,25 +125,30 @@ func FetchTemplatePage(ctx context.Context, templateURL string, client *http.Cli
 func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("build request: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "build request").Build()
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch %s: %w", pageURL, err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "fetch page").
+			WithContext("url", pageURL).
+			Build()
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("fetch %s: HTTP %d", pageURL, resp.StatusCode)
+		return nil, derrors.NewError(derrors.CategoryNetwork, fmt.Sprintf("fetch %s: HTTP %d", pageURL, resp.StatusCode)).
+			WithContext("url", pageURL).
+			WithContext("status", resp.StatusCode).
+			Build()
 	}
 
 	limited := io.LimitReader(resp.Body, maxTemplateResponseBytes+1)
 	data, err := io.ReadAll(limited)
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "read response").Build()
 	}
 	if len(data) > maxTemplateResponseBytes {
 		return nil, errors.New("response too large")
@@ -156,10 +163,12 @@ func fetchHTML(ctx context.Context, pageURL string, client *http.Client) ([]byte
 func validateTemplateURL(raw string) (*url.URL, error) {
 	parsed, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("invalid URL: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "invalid URL").Build()
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return nil, fmt.Errorf("unsupported URL scheme: %s", parsed.Scheme)
+		return nil, derrors.NewError(derrors.CategoryValidation, "unsupported URL scheme").
+			WithContext("scheme", parsed.Scheme).
+			Build()
 	}
 	return parsed, nil
 }

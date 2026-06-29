@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // FieldType defines the supported input field types for template schemas.
@@ -162,7 +164,9 @@ func validateRequiredFields(schema TemplateSchema, values map[string]any) error 
 		}
 		value, ok := values[field.Key]
 		if !ok || value == nil {
-			return fmt.Errorf("missing required field: %s", field.Key)
+			return derrors.NewError(derrors.CategoryValidation, "missing required template field").
+				WithContext("field", field.Key).
+				Build()
 		}
 	}
 	return nil
@@ -186,7 +190,9 @@ func parseInputValue(field SchemaField, input string) (any, bool, error) {
 			if slices.Contains(field.Options, value) {
 				return value, true, nil
 			}
-			return nil, false, fmt.Errorf("invalid value for %s", field.Key)
+			return nil, false, derrors.NewError(derrors.CategoryValidation, "invalid value for "+field.Key).
+				WithContext("field", field.Key).
+				Build()
 		}
 		return value, true, nil
 	case FieldTypeStringList:
@@ -205,10 +211,14 @@ func parseInputValue(field SchemaField, input string) (any, bool, error) {
 	case FieldTypeBool:
 		parsed, err := strconv.ParseBool(strings.ToLower(value))
 		if err != nil {
-			return nil, false, fmt.Errorf("invalid boolean for %s", field.Key)
+			return nil, false, derrors.NewError(derrors.CategoryValidation, "invalid boolean for template field").
+				WithContext("field", field.Key).
+				Build()
 		}
 		return parsed, true, nil
 	default:
-		return nil, false, fmt.Errorf("unsupported field type: %s", field.Type)
+		return nil, false, derrors.NewError(derrors.CategoryValidation, fmt.Sprintf("unsupported field type: %s", field.Type)).
+			WithContext("type", field.Type).
+			Build()
 	}
 }

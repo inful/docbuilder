@@ -8,11 +8,12 @@ package templates
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // WriteGeneratedFile writes the generated content to a file under the docs directory.
@@ -58,7 +59,9 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	}
 
 	if err = os.MkdirAll(filepath.Dir(fullPath), 0o750); err != nil {
-		return "", fmt.Errorf("create output directory: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "create output directory").
+			WithContext("path", filepath.Dir(fullPath)).
+			Build()
 	}
 
 	// #nosec G304 -- fullPath is validated to stay under docsDir.
@@ -66,16 +69,22 @@ func WriteGeneratedFile(docsDir, relativePath, content string) (string, error) {
 	if err != nil {
 		// Check if error is due to file already existing
 		if errors.Is(err, os.ErrExist) || errors.Is(err, syscall.EEXIST) {
-			return "", fmt.Errorf("file already exists: %s", fullPath)
+			return "", derrors.NewError(derrors.CategoryValidation, "output file already exists").
+				WithContext("path", fullPath).
+				Build()
 		}
-		return "", fmt.Errorf("write output file: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "open output file").
+			WithContext("path", fullPath).
+			Build()
 	}
 	defer func() {
 		_ = file.Close()
 	}()
 
 	if _, err := file.WriteString(content); err != nil {
-		return "", fmt.Errorf("write output file: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "write output file").
+			WithContext("path", fullPath).
+			Build()
 	}
 
 	return fullPath, nil

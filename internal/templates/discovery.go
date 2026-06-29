@@ -2,13 +2,14 @@ package templates
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/url"
 	"slices"
 	"strings"
 
 	"golang.org/x/net/html"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // TemplateLink represents a template discovered from the rendered documentation site.
@@ -55,12 +56,12 @@ func ParseTemplateDiscovery(r io.Reader, baseURL string) ([]TemplateLink, error)
 	}
 	parsedBase, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse base URL: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "parse base URL").Build()
 	}
 
 	doc, err := html.Parse(r)
 	if err != nil {
-		return nil, fmt.Errorf("parse discovery HTML: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "parse discovery HTML").Build()
 	}
 
 	var results []TemplateLink
