@@ -23,7 +23,7 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
 	report.Errors = nil
 	report.Warnings = append(report.Warnings, se)
 	report.StageErrorKinds[models.StageCloneRepos] = se.Kind
-	report.RecordStageResult(models.StageCloneRepos, models.StageResultWarning, nil)
+	report.RecordStageResult(models.StageCloneRepos, models.StageResultWarning)
 	// emulate runStages logic for issue creation
 	issue := models.ReportIssue{Stage: models.StageCloneRepos, Message: se.Error(), Transient: se.Transient(), Severity: models.SeverityWarning}
 	issue.Code = models.IssuePartialClone
@@ -49,7 +49,7 @@ func TestIssueTaxonomyHugoWarning(t *testing.T) {
 	se := models.NewWarnStageError(models.StageRunHugo, errors.New("wrap: "+build.ErrHugo.Error()))
 	report.StageErrorKinds[models.StageRunHugo] = se.Kind
 	report.Warnings = append(report.Warnings, se)
-	report.RecordStageResult(models.StageRunHugo, models.StageResultWarning, nil)
+	report.RecordStageResult(models.StageRunHugo, models.StageResultWarning)
 	issue := models.ReportIssue{Stage: models.StageRunHugo, Message: se.Error(), Transient: se.Transient(), Severity: models.SeverityWarning, Code: models.IssueHugoExecution}
 	report.Issues = append(report.Issues, issue)
 	report.Finish()

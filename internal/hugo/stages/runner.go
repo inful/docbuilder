@@ -18,7 +18,7 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 			out := StageOutcome{Stage: st.Name, Error: se, Result: models.StageResultCanceled, IssueCode: models.IssueCanceled, Severity: models.SeverityError, Transient: false, Abort: true}
 			bs.Report.StageErrorKinds[st.Name] = se.Kind
 			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, se.Error(), out.Transient, se)
-			bs.Report.RecordStageResult(out.Stage, out.Result, bs.Generator.Recorder())
+			bs.Report.RecordStageResult(out.Stage, out.Result)
 			if bs.Generator != nil && bs.Generator.Observer() != nil {
 				bs.Generator.Observer().OnStageComplete(st.Name, 0, models.StageResultCanceled)
 			}
@@ -43,7 +43,7 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 			bs.Report.AddIssue(out.IssueCode, out.Stage, out.Severity, out.Error.Error(), out.Transient, out.Error)
 		}
 
-		bs.Report.RecordStageResult(st.Name, out.Result, bs.Generator.Recorder())
+		bs.Report.RecordStageResult(st.Name, out.Result)
 
 		if bs.Generator != nil && bs.Generator.Observer() != nil {
 			bs.Generator.Observer().OnStageComplete(st.Name, dur, out.Result)

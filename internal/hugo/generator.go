@@ -18,7 +18,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 	"git.home.luguber.info/inful/docbuilder/internal/versioning"
@@ -33,8 +32,7 @@ type Generator struct {
 	stageDir  string // ephemeral staging dir for current build
 	// optional instrumentation callbacks (not exported)
 	onPageRendered func()
-	recorder       metrics.Recorder
-	observer       models.BuildObserver // high-level observer (decouples metrics recorder)
+	observer       models.BuildObserver // high-level observer (decouples recorder from stages)
 	renderer       models.Renderer      // pluggable renderer abstraction (defaults to BinaryRenderer)
 	// editLinkResolver centralizes per-page edit link resolution
 	editLinkResolver *EditLinkResolver
@@ -52,11 +50,10 @@ type Generator struct {
 
 // NewGenerator creates a new Hugo site generator.
 func NewGenerator(cfg *config.Config, outputDir string) *Generator {
-	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), recorder: metrics.NoopRecorder{}, indexTemplateUsage: make(map[string]models.IndexTemplateInfo)}
+	g := &Generator{config: cfg, outputDir: filepath.Clean(outputDir), indexTemplateUsage: make(map[string]models.IndexTemplateInfo)}
 	// Renderer defaults to nil; models.StageRunHugo will use BinaryRenderer when needed.
 	// Use WithRenderer to inject custom/test renderers.
-	// Default observer bridges to recorder until dedicated observers added.
-	g.observer = models.RecorderObserver{Recorder: g.recorder}
+	g.observer = models.NoopObserver{}
 	// Initialize resolver eagerly (cheap) to simplify call sites.
 	g.editLinkResolver = NewEditLinkResolver(cfg)
 
@@ -229,19 +226,7 @@ func (g *Generator) outputHasNonRootMarkdownContent() bool {
 
 // Config exposes the underlying configuration (read-only usage by themes).
 
-// SetRecorder injects a metrics recorder (optional). Returns the generator for chaining.
-func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
-	if r == nil {
-		g.recorder = metrics.NoopRecorder{}
-		g.observer = models.RecorderObserver{Recorder: g.recorder}
-		return g
-	}
-	g.recorder = r
-	g.observer = models.RecorderObserver{Recorder: r}
-	return g
-}
-
-// WithObserver overrides the BuildObserver (takes precedence over internal recorder adapter).
+// WithObserver overrides the BuildObserver (takes precedence over the default no-op observer).
 func (g *Generator) WithObserver(o models.BuildObserver) *Generator {
 	if o != nil {
 		g.observer = o
@@ -370,11 +355,6 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	if err := report.Persist(g.outputDir); err != nil {
 		slog.Warn("Failed to persist build report", "error", err)
 	}
-	// record build-level metrics
-	if g.recorder != nil {
-		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
-	}
 	slog.Info("Hugo site generation completed",
 		slog.String("output", g.outputDir),
 		slog.Int("repos", report.Repositories),
@@ -457,10 +437,6 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		if err := report.Persist(g.outputDir); err != nil {
 			slog.Warn("Failed to persist build report", "error", err)
 		}
-		if g.recorder != nil {
-			g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-			g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
-		}
 		return report, nil
 	}
 	// Stage durations already written directly to report.
@@ -471,10 +447,6 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	}
 	if err := report.Persist(g.outputDir); err != nil {
 		slog.Warn("Failed to persist build report", "error", err)
-	}
-	if g.recorder != nil {
-		g.recorder.ObserveBuildDuration(report.End.Sub(report.Start))
-		g.recorder.IncBuildOutcome(metrics.BuildOutcomeLabel(report.Outcome))
 	}
 	return report, nil
 }
@@ -499,7 +471,6 @@ func (g *Generator) ExistingSiteValidForSkip() bool { return g.existingSiteValid
 
 func (g *Generator) OutputDir() string                            { return g.outputDir }
 func (g *Generator) StageDir() string                             { return g.stageDir }
-func (g *Generator) Recorder() metrics.Recorder                   { return g.recorder }
 func (g *Generator) StateManager() state.RepositoryMetadataWriter { return g.stateManager }
 func (g *Generator) Observer() models.BuildObserver               { return g.observer }
 func (g *Generator) Renderer() models.Renderer                    { return g.renderer }

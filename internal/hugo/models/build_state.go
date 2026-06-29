@@ -6,7 +6,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
@@ -20,7 +19,6 @@ type Generator interface {
 	Config() *config.Config
 	OutputDir() string
 	StageDir() string
-	Recorder() metrics.Recorder
 	StateManager() state.RepositoryMetadataWriter
 	ComputeConfigHash() string
 	GenerateHugoConfig() error
@@ -46,7 +44,6 @@ type StagePrepareDeps interface {
 	OutputDir() string
 	StageDir() string
 	BuildRoot() string
-	Recorder() metrics.Recorder
 	CreateHugoStructure() error
 	ExistingSiteValidForSkip() bool
 }
@@ -54,7 +51,6 @@ type StagePrepareDeps interface {
 // StageCloneDeps is what StageClone needs.
 type StageCloneDeps interface {
 	BuildRoot() string
-	Recorder() metrics.Recorder
 	StateManager() state.RepositoryMetadataWriter
 }
 

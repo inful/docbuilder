@@ -10,7 +10,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
@@ -41,7 +40,6 @@ type DefaultBuildService struct {
 	workspaceFactory     func() *workspace.Manager
 	hugoGeneratorFactory HugoGeneratorFactory
 	skipEvaluatorFactory SkipEvaluatorFactory
-	recorder             metrics.Recorder
 }
 
 // NewBuildService creates a new DefaultBuildService with default factories.
@@ -50,7 +48,6 @@ func NewBuildService() *DefaultBuildService {
 		workspaceFactory: func() *workspace.Manager {
 			return workspace.NewManager("")
 		},
-		recorder: metrics.NoopRecorder{},
 		// hugoGeneratorFactory must be set via WithHugoGeneratorFactory to avoid import cycle
 	}
 }
@@ -75,13 +72,6 @@ func (s *DefaultBuildService) WithSkipEvaluatorFactory(factory SkipEvaluatorFact
 	return s
 }
 
-// WithRecorder swaps the metrics recorder used during the build.
-// Defaults to metrics.NoopRecorder (set in NewBuildService).
-func (s *DefaultBuildService) WithRecorder(recorder metrics.Recorder) *DefaultBuildService {
-	s.recorder = recorder
-	return s
-}
-
 // Compile-time assertion that *DefaultBuildService implements BuildService.
 var _ BuildService = (*DefaultBuildService)(nil)
 
@@ -103,7 +93,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
@@ -112,8 +101,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusSuccess
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
-		s.recorder.ObserveBuildDuration(result.Duration)
 		return result, nil
 	}
 
@@ -128,7 +115,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	}
 
 	// Stage 1: Create workspace
-	stageStart := time.Now()
 	ctx = observability.WithStage(ctx, "workspace")
 	observability.InfoContext(ctx, "Creating build workspace")
 	wsManager := s.workspaceFactory()
@@ -136,12 +122,8 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncStageResult("workspace", metrics.ResultFatal)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.FileSystemError("failed to create workspace").WithContext("error", err.Error()).Build()
 	}
-	s.recorder.ObserveStageDuration("workspace", time.Since(stageStart))
-	s.recorder.IncStageResult("workspace", metrics.ResultSuccess)
 
 	// Only defer cleanup for ephemeral workspaces. Persistent workspaces
 	// (BuildOptions.KeepWorkspace=true) opt out of cleanup so the directory
@@ -164,7 +146,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.ConfigError("hugo generator factory required").Build()
 	}
 
@@ -183,7 +164,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 
 	if err != nil {
 		result.Status = BuildStatusFailed
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, err
 	}
 
@@ -198,30 +178,24 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	result.FilesProcessed = report.Files
 	result.RepositoriesSkipped = report.FailedRepositories
 
-	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
-	s.recorder.ObserveBuildDuration(result.Duration)
-
 	return result, nil
 }
 
 // evaluateSkip performs skip evaluation and returns a result if build should be skipped.
 // Returns nil if build should proceed.
 func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest, startTime time.Time) *BuildResult {
-	stageStart := time.Now()
 	ctx = observability.WithStage(ctx, "skip_evaluation")
 	observability.InfoContext(ctx, "Evaluating if build can be skipped")
 
 	evaluator := s.skipEvaluatorFactory(req.OutputDir)
 	if evaluator == nil {
 		observability.WarnContext(ctx, "Skip evaluator factory returned nil - skipping evaluation disabled")
-		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
 		return nil
 	}
 
 	skipReport, canSkip := evaluator.Evaluate(ctx, req.Config.Repositories)
 	if !canSkip {
-		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
 		return nil
 	}
@@ -236,9 +210,6 @@ func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest
 		EndTime:    time.Now(),
 	}
 	result.Duration = result.EndTime.Sub(startTime)
-	s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
-	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
-	s.recorder.ObserveBuildDuration(result.Duration)
 	return result
 }
 

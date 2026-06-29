@@ -21,7 +21,7 @@ func TestBuildReportStability(t *testing.T) {
 	r.ClonedRepositories = 1
 	r.RenderedPages = 3
 	r.StageDurations["prepare_output"] = 123 * time.Millisecond
-	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess, nil)
+	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess)
 	r.Finish()
 	r.DeriveOutcome()
 	r.ConfigHash = "deadbeef" // deterministic stub

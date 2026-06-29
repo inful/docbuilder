@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -190,8 +189,8 @@ type StageCount struct {
 // Finish sets the end time of the report.
 func (r *BuildReport) Finish() { r.End = time.Now() }
 
-// RecordStageResult updates BuildReport counters and emits metrics (if recorder non-nil).
-func (r *BuildReport) RecordStageResult(stage StageName, res StageResult, recorder metrics.Recorder) {
+// RecordStageResult updates BuildReport counters.
+func (r *BuildReport) RecordStageResult(stage StageName, res StageResult) {
 	if r.StageCounts == nil {
 		r.StageCounts = make(map[StageName]StageCount)
 	}
@@ -199,24 +198,12 @@ func (r *BuildReport) RecordStageResult(stage StageName, res StageResult, record
 	switch res {
 	case StageResultSuccess:
 		sc.Success++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultSuccess)
-		}
 	case StageResultWarning:
 		sc.Warning++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultWarning)
-		}
 	case StageResultFatal:
 		sc.Fatal++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultFatal)
-		}
 	case StageResultCanceled:
 		sc.Canceled++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultCanceled)
-		}
 	case StageResultSkipped:
 		// No counters for skipped yet
 	}

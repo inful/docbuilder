@@ -47,9 +47,6 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	if concurrency < 1 {
 		concurrency = 1
 	}
-	if bs.Generator != nil && bs.Generator.Recorder() != nil {
-		bs.Generator.Recorder().SetCloneConcurrency(concurrency)
-	}
 	type cloneTask struct{ repo config.Repository }
 	tasks := make(chan cloneTask)
 	var wg sync.WaitGroup
@@ -64,7 +61,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 			}
 			start := time.Now()
 			res := fetcher.Fetch(ctx, strategy, task.repo)
-			dur := time.Since(start)
+			_ = time.Since(start) // duration reserved for future per-repo metrics
 			success := res.Err == nil
 			mu.Lock()
 			if success {
@@ -73,10 +70,6 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 				recordCloneFailure(bs, res)
 			}
 			mu.Unlock()
-			if bs.Generator != nil && bs.Generator.Recorder() != nil {
-				bs.Generator.Recorder().ObserveCloneRepoDuration(task.repo.Name, dur, success)
-				bs.Generator.Recorder().IncCloneRepoResult(success)
-			}
 		}
 	}
 	wg.Add(concurrency)
