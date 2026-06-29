@@ -230,6 +230,8 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(),
 		StatusHandle:          statusHandlers.HandleStatusPage,
+		Triggers:              daemon,
+		Metrics:               daemon,
 	})
 
 	// Initialize link verification service if enabled
@@ -636,6 +638,14 @@ func (d *Daemon) GetQueueLength() int {
 func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
+
+// Compile-time assertions that *Daemon implements the optional httpserver
+// runtime surfaces supplied to httpserver.New(cfg, daemon, opts).
+var (
+	_ httpserver.Status        = (*Daemon)(nil)
+	_ httpserver.Triggers      = (*Daemon)(nil)
+	_ httpserver.MetricsSource = (*Daemon)(nil)
+)
 
 // BuildEventEmitter is implemented by *EventEmitter; see event_emitter.go.
 // Daemon no longer claims to implement it (the methods were pure

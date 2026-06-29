@@ -46,7 +46,11 @@ type Server struct {
 }
 
 // New constructs a new HTTP server wiring instance.
-func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
+//
+// status is the always-required Status surface. opts.Triggers and
+// opts.Metrics are optional; pass nil to disable trigger/metrics
+// routes (preview-mode wiring).
+func New(cfg *config.Config, status Status, opts Options) *Server {
 	if opts.ForgeClients == nil {
 		opts.ForgeClients = map[string]forge.Client{}
 	}
@@ -62,37 +66,25 @@ func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
 		vscodeFindIPCSocket: findVSCodeIPCSocket,
 	}
 
-	adapter := &runtimeAdapter{runtime: runtime}
+	// Compose one small adapter per handler group. Each adapter forwards
+	// to the optional surface if present, and returns zero values when
+	// the surface is nil (preview-mode wiring).
+	mon := &monitoringAdapter{status: status, metrics: opts.Metrics}
+	api := &apiAdapter{status: status}
+	bld := &buildAdapter{status: status, triggers: opts.Triggers}
+	wh := &webhookAdapter{triggers: opts.Triggers}
 
 	// Initialize handler modules
-	s.monitoringHandlers = handlers.NewMonitoringHandlers(adapter)
-	s.apiHandlers = handlers.NewAPIHandlers(cfg, adapter)
-	s.buildHandlers = handlers.NewBuildHandlers(adapter)
-	s.webhookHandlers = handlers.NewWebhookHandlers(adapter, opts.ForgeClients, opts.WebhookConfigs)
+	s.monitoringHandlers = handlers.NewMonitoringHandlers(mon)
+	s.apiHandlers = handlers.NewAPIHandlers(cfg, api)
+	s.buildHandlers = handlers.NewBuildHandlers(bld)
+	s.webhookHandlers = handlers.NewWebhookHandlers(wh, opts.ForgeClients, opts.WebhookConfigs)
 
 	// Initialize middleware chain
 	s.mchain = smw.Chain(slog.Default(), s.errorAdapter)
 
 	return s
 }
-
-type runtimeAdapter struct {
-	runtime Runtime
-}
-
-func (a *runtimeAdapter) GetStatus() string             { return a.runtime.GetStatus() }
-func (a *runtimeAdapter) GetActiveJobs() int            { return a.runtime.GetActiveJobs() }
-func (a *runtimeAdapter) GetStartTime() time.Time       { return a.runtime.GetStartTime() }
-func (a *runtimeAdapter) HTTPRequestsTotal() int        { return a.runtime.HTTPRequestsTotal() }
-func (a *runtimeAdapter) RepositoriesTotal() int        { return a.runtime.RepositoriesTotal() }
-func (a *runtimeAdapter) LastDiscoveryDurationSec() int { return a.runtime.LastDiscoveryDurationSec() }
-func (a *runtimeAdapter) LastBuildDurationSec() int     { return a.runtime.LastBuildDurationSec() }
-func (a *runtimeAdapter) TriggerDiscovery() string      { return a.runtime.TriggerDiscovery() }
-func (a *runtimeAdapter) TriggerBuild() string          { return a.runtime.TriggerBuild() }
-func (a *runtimeAdapter) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
-	return a.runtime.TriggerWebhookBuild(forgeName, repoFullName, branch, changedFiles)
-}
-func (a *runtimeAdapter) GetQueueLength() int { return a.runtime.GetQueueLength() }
 
 // Start initializes and starts all HTTP servers.
 func (s *Server) Start(ctx context.Context) error {

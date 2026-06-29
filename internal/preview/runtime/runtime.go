@@ -1,12 +1,9 @@
 // Package runtime exposes the narrow Runtime surface that the preview CLI
-// needs. It exists so the preview package does not have to import the
-// (much larger) daemon package just to obtain a LiveReloadHub.
-//
-// Runtime satisfies the httpserver.Runtime interface, but preview mode
-// only uses a tiny subset of those methods (the build status tracker is
-// passed alongside, and the httpserver is told to not start the admin /
-// docs / webhook servers). The other methods are no-ops returning zero
-// values; they exist purely so the type satisfies httpserver.Runtime.
+// needs. The httpserver.New(...) entry point only requires Status for
+// preview-mode wiring; trigger and metrics surfaces are nil since
+// preview does not run admin/webhook/metrics routes. This file drops the
+// 9 zero-value stubs that the previous httpserver.Runtime interface
+// required.
 package runtime
 
 import (
@@ -16,10 +13,11 @@ import (
 )
 
 // Runtime is the preview-mode substitute for the daemon. It exposes
-// only what the preview HTTP server needs: a LiveReloadHub. All other
-// httpserver.Runtime methods are stubs returning zero values.
+// only what the preview HTTP server needs: a Status triple plus a
+// LiveReloadHub.
 type Runtime struct {
 	liveReload queue.LiveReloadHub
+	startTime  time.Time
 }
 
 // New constructs a preview Runtime. The hub is a fresh in-memory
@@ -27,30 +25,22 @@ type Runtime struct {
 func New() *Runtime {
 	return &Runtime{
 		liveReload: newHub(),
+		startTime:  time.Now(),
 	}
 }
+
+// Status triple (required by httpserver.New).
+
+// GetStatus returns the preview runtime status. Preview only runs the docs
+// site + livereload SSE; admin/webhook routes are not registered.
+func (r *Runtime) GetStatus() string { return "preview" }
+
+// GetActiveJobs is zero in preview (builds are not run as jobs).
+func (r *Runtime) GetActiveJobs() int { return 0 }
+
+// GetStartTime records when the preview process started; surfaced for /status.
+func (r *Runtime) GetStartTime() time.Time { return r.startTime }
 
 // LiveReloadHub returns the hub for broadcasting rebuild notifications
 // to connected SSE clients.
 func (r *Runtime) LiveReloadHub() queue.LiveReloadHub { return r.liveReload }
-
-// --- httpserver.Runtime surface ---
-//
-// Preview's HTTP server doesn't run admin/docs/webhook routes (preview
-// only serves the docs site + livereload SSE), so these are no-ops.
-
-func (r *Runtime) GetStatus() string             { return "running" }
-func (r *Runtime) GetActiveJobs() int            { return 0 }
-func (r *Runtime) GetStartTime() time.Time       { return time.Time{} }
-func (r *Runtime) HTTPRequestsTotal() int        { return 0 }
-func (r *Runtime) RepositoriesTotal() int        { return 0 }
-func (r *Runtime) LastDiscoveryDurationSec() int { return 0 }
-func (r *Runtime) LastBuildDurationSec() int     { return 0 }
-func (r *Runtime) GetQueueLength() int           { return 0 }
-func (r *Runtime) TriggerDiscovery() string      { return "" }
-func (r *Runtime) TriggerBuild() string          { return "" }
-
-// TriggerWebhookBuild is a no-op for preview mode.
-func (r *Runtime) TriggerWebhookBuild(_, _, _ string, _ []string) string {
-	return ""
-}
