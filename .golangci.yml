@@ -113,7 +113,7 @@ issues:
     - internal/doctemplate/.*\.go$
     - internal/forge/
     - internal/foundation/.*\.go$
-    - internal/git/.*\.go$
+    - internal/git/
     - internal/hugo/(categories_menu|config_writer|content_copy_pipeline|generator|models|modules|pipeline|stages|structure)\.go$
     - internal/hugo/stages_transition_test\.go$
     - internal/lint/.*\.go$

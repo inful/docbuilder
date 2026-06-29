@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 
 	appcfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -105,7 +105,9 @@ func (c *Client) GetRemoteHead(repo appcfg.Repository, branch string) (string, e
 		}
 	}
 
-	return "", fmt.Errorf("branch %s not found on remote", branch)
+	return "", derrors.NewError(derrors.CategoryNotFound, "branch not found on remote").
+		WithContext("branch", branch).
+		Build()
 }
 
 // CheckRemoteChanged checks if remote HEAD has changed since last fetch.
@@ -203,7 +205,7 @@ func (c *RemoteHeadCache) Save() error {
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(c.path), 0o750); err != nil {
-		return errors.NewError(errors.CategoryFileSystem, "failed to create cache directory").
+		return derrors.NewError(derrors.CategoryFileSystem, "failed to create cache directory").
 			WithCause(err).
 			WithContext("path", filepath.Dir(c.path)).
 			Build()
@@ -217,7 +219,7 @@ func (c *RemoteHeadCache) Save() error {
 	}
 
 	if err := os.WriteFile(c.path, data, 0o600); err != nil {
-		return errors.NewError(errors.CategoryFileSystem, "failed to write cache file").
+		return derrors.NewError(derrors.CategoryFileSystem, "failed to write cache file").
 			WithCause(err).
 			WithContext("path", c.path).
 			Build()

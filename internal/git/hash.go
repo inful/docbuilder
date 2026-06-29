@@ -12,6 +12,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RepoTree represents a snapshot of a repository at a specific commit.
@@ -74,7 +76,7 @@ func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 		if path == "." || path == "" {
 			// Hash entire tree
 			if err := hashTree(tree, "", &fileHashes); err != nil {
-				return "", fmt.Errorf("hash tree: %w", err)
+				return "", derrors.WrapError(err, derrors.CategoryInternal, "hash tree").Build()
 			}
 			continue
 		}
@@ -96,7 +98,9 @@ func ComputeRepoHash(repoPath, commit string, paths []string) (string, error) {
 				continue
 			}
 			if err := hashTree(subtree, path, &fileHashes); err != nil {
-				return "", fmt.Errorf("hash subtree %s: %w", path, err)
+				return "", derrors.WrapError(err, derrors.CategoryInternal, "hash subtree").
+					WithContext("path", path).
+					Build()
 			}
 		}
 	}
