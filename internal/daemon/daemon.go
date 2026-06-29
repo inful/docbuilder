@@ -75,7 +75,6 @@ type Daemon struct {
 	// Runtime state
 	activeJobs  int32
 	queueLength atomic.Int32
-	lastBuild   *time.Time
 
 	// Background worker tracking (started in Start, awaited in Stop).
 	workers WorkerGroup
@@ -638,5 +637,7 @@ func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
 
-// Compile-time check that Daemon implements BuildEventEmitter.
-var _ BuildEventEmitter = (*Daemon)(nil)
+// BuildEventEmitter is implemented by *EventEmitter; see event_emitter.go.
+// Daemon no longer claims to implement it (the methods were pure
+// delegates to d.eventEmitter). Wire BuildQueue with d.eventEmitter
+// directly.
