@@ -131,21 +131,6 @@ func (ss *Service) GetRepositoryStore() RepositoryStore {
 	return ss.store.Repositories()
 }
 
-// GetBuildStore provides typed access to build operations.
-func (ss *Service) GetBuildStore() BuildStore {
-	return ss.store.Builds()
-}
-
-// GetScheduleStore provides typed access to schedule operations.
-func (ss *Service) GetScheduleStore() ScheduleStore {
-	return ss.store.Schedules()
-}
-
-// GetStatisticsStore provides typed access to statistics operations.
-func (ss *Service) GetStatisticsStore() StatisticsStore {
-	return ss.store.Statistics()
-}
-
 // GetConfigurationStore provides typed access to configuration operations.
 func (ss *Service) GetConfigurationStore() ConfigurationStore {
 	return ss.store.Configuration()
@@ -167,27 +152,5 @@ func (ss *Service) WithTransaction(ctx context.Context, fn func(Store) error) fo
 func (ss *Service) Migrate(_ context.Context, _, _ string) foundation.Result[struct{}, error] {
 	// Placeholder for future migration logic
 	// In a real implementation, this would handle schema changes between versions
-	return foundation.Ok[struct{}, error](struct{}{})
-}
-
-// Compact performs maintenance operations on the state store.
-// For the JSON store, this might involve cleaning up old builds, compacting data, etc.
-func (ss *Service) Compact(ctx context.Context) foundation.Result[struct{}, error] {
-	// Clean up old builds to prevent unbounded growth
-	buildStore := ss.GetBuildStore()
-	cleanupResult := buildStore.Cleanup(ctx, 1000) // Keep last 1000 builds
-	if cleanupResult.IsErr() {
-		return foundation.Err[struct{}, error](
-			errors.InternalError("failed to cleanup old builds").
-				WithCause(cleanupResult.UnwrapErr()).
-				Build(),
-		)
-	}
-
-	// Could add other maintenance operations here:
-	// - Statistics cleanup
-	// - Configuration validation
-	// - Data integrity checks
-
 	return foundation.Ok[struct{}, error](struct{}{})
 }

@@ -1,8 +1,6 @@
 package state
 
 import (
-	"sync"
-
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
@@ -17,40 +15,6 @@ type Validatable interface {
 type ptrValidatable[T any] interface {
 	~*T
 	Validatable
-}
-
-// createEntity is a generic helper for creating entities with timestamp setting and auto-save.
-// T must be a pointer type to an entity with ID, CreatedAt, and UpdatedAt fields.
-func createEntity[T Validatable](
-	entity T,
-	entityName string,
-	mu *sync.RWMutex,
-	setTimestamps func(T),
-	addToStore func(T),
-	removeFromStore func(T),
-	autoSaveEnabled bool,
-	saveToDisk func() error,
-) foundation.Result[T, error] {
-	if validationResult := entity.Validate(); !validationResult.Valid {
-		return foundation.Err[T, error](validationResult.ToError())
-	}
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	setTimestamps(entity)
-	addToStore(entity)
-
-	if autoSaveEnabled {
-		if err := saveToDisk(); err != nil {
-			removeFromStore(entity)
-			return foundation.Err[T, error](
-				errors.InternalError("failed to save " + entityName).WithCause(err).Build(),
-			)
-		}
-	}
-
-	return foundation.Ok[T, error](entity)
 }
 
 // updateValidatableEntity is a generic helper for update flows where:

@@ -97,21 +97,6 @@ func (js *JSONStore) Repositories() RepositoryStore {
 	return &jsonRepositoryStore{store: js}
 }
 
-// Builds returns the build store interface.
-func (js *JSONStore) Builds() BuildStore {
-	return &jsonBuildStore{store: js}
-}
-
-// Schedules returns the schedule store interface.
-func (js *JSONStore) Schedules() ScheduleStore {
-	return &jsonScheduleStore{store: js}
-}
-
-// Statistics returns the statistics store interface.
-func (js *JSONStore) Statistics() StatisticsStore {
-	return &jsonStatisticsStore{store: js}
-}
-
 // Configuration returns the configuration store interface.
 func (js *JSONStore) Configuration() ConfigurationStore {
 	return &jsonConfigurationStore{store: js}

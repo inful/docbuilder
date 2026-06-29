@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -13,8 +12,6 @@ import (
 // TestJSONStore demonstrates basic functionality of the new state management system.
 func TestJSONStore(t *testing.T) {
 	t.Run("Repository Operations", testRepositoryOperations)
-	t.Run("Build Operations", testBuildOperations)
-	t.Run("Statistics Operations", testStatisticsOperations)
 	t.Run("Transaction Operations", testTransactionOperations)
 	t.Run("Health Check", testHealthCheck)
 	t.Run("Persistence", testPersistence)
@@ -151,100 +148,6 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 	}
 }
 
-func testBuildOperations(t *testing.T) {
-	store := createTestStore(t)
-	ctx := t.Context()
-	buildStore := store.Builds()
-
-	// Create a build
-	build := &Build{
-		ID:          "build-123",
-		Status:      BuildStatusRunning,
-		StartTime:   time.Now(),
-		TriggeredBy: "manual",
-	}
-
-	createResult := buildStore.Create(ctx, build)
-	if createResult.IsErr() {
-		t.Fatalf("Failed to create build: %v", createResult.UnwrapErr())
-	}
-
-	// Retrieve the build
-	getResult := buildStore.GetByID(ctx, build.ID)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get build: %v", getResult.UnwrapErr())
-	}
-
-	if getResult.Unwrap().IsNone() {
-		t.Fatal("Build not found after creation")
-	}
-
-	retrieved := getResult.Unwrap().Unwrap()
-	if retrieved.Status != build.Status {
-		t.Errorf("Expected status %v, got %v", build.Status, retrieved.Status)
-	}
-
-	// Update build status
-	build.Status = BuildStatusCompleted
-	build.EndTime = foundation.Some(time.Now())
-
-	updateResult := buildStore.Update(ctx, build)
-	if updateResult.IsErr() {
-		t.Fatalf("Failed to update build: %v", updateResult.UnwrapErr())
-	}
-
-	// List builds
-	listResult := buildStore.List(ctx, ListOptions{})
-	if listResult.IsErr() {
-		t.Fatalf("Failed to list builds: %v", listResult.UnwrapErr())
-	}
-
-	builds := listResult.Unwrap()
-	if len(builds) != 1 {
-		t.Errorf("Expected 1 build, got %d", len(builds))
-	}
-}
-
-func testStatisticsOperations(t *testing.T) {
-	store := createTestStore(t)
-	ctx := t.Context()
-	statsStore := store.Statistics()
-
-	// Get initial statistics
-	getResult := statsStore.Get(ctx)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get statistics: %v", getResult.UnwrapErr())
-	}
-
-	stats := getResult.Unwrap()
-	initialBuilds := stats.TotalBuilds
-
-	// Record a build
-	build := &Build{
-		ID:     "stats-test-build",
-		Status: BuildStatusCompleted,
-	}
-
-	recordResult := statsStore.RecordBuild(ctx, build)
-	if recordResult.IsErr() {
-		t.Fatalf("Failed to record build: %v", recordResult.UnwrapErr())
-	}
-
-	// Verify statistics updated
-	getResult = statsStore.Get(ctx)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get updated statistics: %v", getResult.UnwrapErr())
-	}
-
-	updatedStats := getResult.Unwrap()
-	if updatedStats.TotalBuilds != initialBuilds+1 {
-		t.Errorf("Expected total builds %d, got %d", initialBuilds+1, updatedStats.TotalBuilds)
-	}
-	if updatedStats.SuccessfulBuilds == 0 {
-		t.Error("Expected successful builds to be incremented")
-	}
-}
-
 func testTransactionOperations(t *testing.T) {
 	t.Skip("FIXME: Deadlock in transaction test - needs refactoring of lock-free operations")
 
@@ -252,7 +155,7 @@ func testTransactionOperations(t *testing.T) {
 	ctx := t.Context()
 
 	txResult := store.WithTransaction(ctx, func(txStore Store) error {
-		// Create repository and build in transaction
+		// Create repository in transaction (build store removed as dead code)
 		repo := &Repository{
 			URL:    "https://github.com/tx/repo.git",
 			Name:   "tx-repo",
@@ -264,18 +167,6 @@ func testTransactionOperations(t *testing.T) {
 			return createResult.UnwrapErr()
 		}
 
-		build := &Build{
-			ID:          "tx-build",
-			Status:      BuildStatusCompleted,
-			StartTime:   time.Now(),
-			TriggeredBy: "transaction-test",
-		}
-
-		buildResult := txStore.Builds().Create(ctx, build)
-		if buildResult.IsErr() {
-			return buildResult.UnwrapErr()
-		}
-
 		return nil
 	})
 
@@ -283,15 +174,10 @@ func testTransactionOperations(t *testing.T) {
 		t.Fatalf("Transaction failed: %v", txResult.UnwrapErr())
 	}
 
-	// Verify both items were created
+	// Verify the repository was created
 	getRepoResult := store.Repositories().GetByURL(ctx, "https://github.com/tx/repo.git")
 	if getRepoResult.IsErr() || getRepoResult.Unwrap().IsNone() {
 		t.Error("Repository not found after transaction")
-	}
-
-	getBuildResult := store.Builds().GetByID(ctx, "tx-build")
-	if getBuildResult.IsErr() || getBuildResult.Unwrap().IsNone() {
-		t.Error("Build not found after transaction")
 	}
 }
 
@@ -416,17 +302,9 @@ func TestStateService(t *testing.T) {
 	// Test store access through service
 	t.Run("Store Access", func(t *testing.T) {
 		repoStore := service.GetRepositoryStore()
-		buildStore := service.GetBuildStore()
-		statsStore := service.GetStatisticsStore()
 
 		if repoStore == nil {
 			t.Error("Repository store is nil")
-		}
-		if buildStore == nil {
-			t.Error("Build store is nil")
-		}
-		if statsStore == nil {
-			t.Error("Statistics store is nil")
 		}
 	})
 }

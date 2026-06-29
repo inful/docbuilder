@@ -15,11 +15,8 @@ func (a *ServiceAdapter) RecordDiscovery(repoURL string, documentCount int) {
 	}
 	ctx := context.Background()
 
-	// Update statistics using RecordDiscovery method
-	statsStore := a.service.GetStatisticsStore()
-	_ = statsStore.RecordDiscovery(ctx, documentCount)
-
-	// Update repository state
+	// Update repository state. Statistics tracking is gone (the
+	// StatisticsStore was deleted as dead code in M12).
 	repoStore := a.service.GetRepositoryStore()
 	result := repoStore.GetByURL(ctx, repoURL)
 	if result.IsOk() {
