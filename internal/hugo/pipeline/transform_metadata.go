@@ -7,6 +7,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
 )
 
 // addRepositoryMetadata adds repository, section, and custom metadata to front matter.
@@ -110,7 +111,7 @@ func generateEditURL(doc *Document) string {
 	switch {
 	case doc.EditURLBase != "":
 		cloneURL = doc.EditURLBase
-	case doc.SourceURL != "" && isForgeURL(doc.SourceURL):
+	case doc.SourceURL != "" && urlutil.IsForgeURL(doc.SourceURL):
 		cloneURL = doc.SourceURL
 	default:
 		return ""
@@ -155,17 +156,4 @@ func detectForgeTypeFromField(forgeField, cloneURL string) config.ForgeType {
 		return config.ForgeForgejo
 	}
 	return forge.DetectForgeTypeFromURL(cloneURL)
-}
-
-// isForgeURL checks if a URL is a real forge URL (not a local path).
-func isForgeURL(url string) bool {
-	// Real forge URLs start with http://, https://, or git@
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-		return true
-	}
-	if strings.HasPrefix(url, "git@") {
-		return true
-	}
-	// Anything else (./path, /path, relative paths) is local
-	return false
 }

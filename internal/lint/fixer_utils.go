@@ -149,10 +149,7 @@ func collectMarkdownFiles(rootPath string) ([]string, error) {
 	return filesToScan, nil
 }
 
-// isExternalURL checks if a link target is an external URL.
-func isExternalURL(target string) bool {
-	return strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://")
-}
+// isExternalURL migrated to internal/urlutil.IsExternalURL.
 
 // isInsideInlineCode checks if a position in a line is inside inline code (backticks).
 func isInsideInlineCode(line string, pos int) bool {

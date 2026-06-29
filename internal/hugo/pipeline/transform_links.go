@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
 )
 
 // rewriteRelativeLinks rewrites relative markdown links to work with Hugo.
@@ -74,7 +76,7 @@ func tryProcessLink(content string, i int, repository, forge string, isIndex boo
 	path := content[closeBracket+2 : closeParen]
 
 	// If it's an image or absolute URL, write as-is
-	if isImage || isAbsoluteOrSpecialURL(path) {
+	if isImage || urlutil.IsAbsoluteOrSpecialURL(path) {
 		result.WriteString(content[i : closeParen+1])
 		return closeParen + 1, true
 	}
@@ -124,13 +126,7 @@ func findClosingParen(content string, start int) int {
 	return -1
 }
 
-// isAbsoluteOrSpecialURL checks if a path is absolute or special (http, anchor, mailto, etc).
-func isAbsoluteOrSpecialURL(path string) bool {
-	return strings.HasPrefix(path, "http://") ||
-		strings.HasPrefix(path, "https://") ||
-		strings.HasPrefix(path, "#") ||
-		strings.HasPrefix(path, "mailto:")
-}
+// isAbsoluteOrSpecialURL migrated to internal/urlutil.IsAbsoluteOrSpecialURL.
 
 // rewriteImageLinks rewrites image paths to work with Hugo.
 func rewriteImageLinks(doc *Document) ([]*Document, error) {
@@ -225,15 +221,10 @@ func rewriteLinkPath(path, repository, forge string, isIndex bool, docPath strin
 	}
 	suffix := query + anchor
 
-	// Remove .md/.markdown extension (case-insensitive)
+	// Remove .md / .markdown extension via the canonical docmodel helper.
+	// The case of the body is preserved.
+	path = docmodel.StripMarkdownExt(path)
 	lowerPath := strings.ToLower(path)
-	if strings.HasSuffix(lowerPath, ".md") {
-		path = path[:len(path)-3]
-		lowerPath = lowerPath[:len(lowerPath)-3]
-	} else if strings.HasSuffix(lowerPath, ".markdown") {
-		path = path[:len(path)-9]
-		lowerPath = lowerPath[:len(lowerPath)-9]
-	}
 
 	// Handle README/index special case - these become section URLs with trailing slash
 	if strings.HasSuffix(lowerPath, "/readme") {

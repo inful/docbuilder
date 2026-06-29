@@ -22,6 +22,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
 )
 
 // Resolver provides edit link resolution.
@@ -256,7 +257,7 @@ func detectHeuristic(ctx detectionContext) detectionResult {
 	if cloneURL == "" {
 		return detectionResult{Found: false}
 	}
-	if isLocalPath(cloneURL) {
+	if urlutil.IsLocalPath(cloneURL) {
 		return detectionResult{Found: false}
 	}
 
@@ -278,19 +279,7 @@ func detectHeuristic(ctx detectionContext) detectionResult {
 	}
 }
 
-// isLocalPath checks if a URL is a local file path (not a remote git URL).
-func isLocalPath(urlStr string) bool {
-	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") {
-		return false
-	}
-	if strings.HasPrefix(urlStr, "git@") || strings.HasPrefix(urlStr, "ssh://") {
-		return false
-	}
-	if strings.HasPrefix(urlStr, "git://") {
-		return false
-	}
-	return true
-}
+// isLocalPath migrated to internal/urlutil.IsLocalPath.
 
 // hostsMatch checks if two URLs have the same host.
 func hostsMatch(url1, url2 string) bool {

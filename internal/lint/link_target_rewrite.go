@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 )
 
 // computeUpdatedLinkTarget computes the new link destination text when a target
@@ -90,17 +92,9 @@ func hasURLScheme(target string) bool {
 }
 
 func hasKnownMarkdownExtension(target string) bool {
-	lower := strings.ToLower(target)
-	return strings.HasSuffix(lower, ".md") || strings.HasSuffix(lower, ".markdown")
+	return docmodel.IsMarkdownFile(target)
 }
 
 func stripKnownMarkdownExtension(target string) string {
-	lower := strings.ToLower(target)
-	if strings.HasSuffix(lower, ".md") {
-		return target[:len(target)-len(".md")]
-	}
-	if strings.HasSuffix(lower, ".markdown") {
-		return target[:len(target)-len(".markdown")]
-	}
-	return target
+	return docmodel.StripMarkdownExt(target)
 }

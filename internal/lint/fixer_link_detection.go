@@ -8,6 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
 )
 
 // findLinksToFile finds all markdown links that reference the given target file.
@@ -94,7 +95,7 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 		if dest == "" {
 			continue
 		}
-		if isExternalURL(dest) {
+		if urlutil.IsExternalURL(dest) {
 			continue
 		}
 		if strings.HasPrefix(dest, "#") {
