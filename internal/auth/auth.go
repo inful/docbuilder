@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // CreateAuth builds a go-git transport.AuthMethod from the given config.
@@ -41,7 +41,9 @@ func CreateAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
 	case config.AuthTypeBasic:
 		return newBasicAuth(authCfg)
 	default:
-		return nil, fmt.Errorf("auth: unsupported authentication type %q", authCfg.Type)
+		return nil, derrors.NewError(derrors.CategoryConfig, "auth: unsupported authentication type").
+			WithContext("type", authCfg.Type).
+			Build()
 	}
 }
 
@@ -53,12 +55,16 @@ func newSSHAuth(authCfg *config.AuthConfig) (transport.AuthMethod, error) {
 
 	// Validate up front so callers get a clear error before go-git does.
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) { //nolint:gosec // keyPath is a local, user-configured file path
-		return nil, fmt.Errorf("auth: SSH key file does not exist: %s", keyPath)
+		return nil, derrors.NewError(derrors.CategoryNotFound, "auth: SSH key file does not exist").
+			WithContext("path", keyPath).
+			Build()
 	}
 
 	publicKeys, err := ssh.NewPublicKeysFromFile("git", keyPath, "")
 	if err != nil {
-		return nil, fmt.Errorf("auth: failed to load SSH key from %s: %w", keyPath, err)
+		return nil, derrors.WrapError(err, derrors.CategoryAuth, "auth: failed to load SSH key").
+			WithContext("path", keyPath).
+			Build()
 	}
 	return publicKeys, nil
 }
