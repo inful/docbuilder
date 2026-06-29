@@ -3,11 +3,12 @@ package daemon
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Scheduler wraps gocron scheduler for managing periodic tasks.
@@ -19,7 +20,7 @@ type Scheduler struct {
 func NewScheduler() (*Scheduler, error) {
 	s, err := gocron.NewScheduler()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create gocron scheduler: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create gocron scheduler").Build()
 	}
 
 	return &Scheduler{
@@ -54,7 +55,7 @@ func (s *Scheduler) ScheduleEvery(name string, interval time.Duration, task func
 		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to create duration job: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryInternal, "failed to create duration job").Build()
 	}
 
 	return job.ID().String(), nil
@@ -71,7 +72,7 @@ func (s *Scheduler) ScheduleCron(name, expression string, task func()) (string, 
 		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to create cron job: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryInternal, "failed to create cron job").Build()
 	}
 
 	return job.ID().String(), nil

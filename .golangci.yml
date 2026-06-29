@@ -108,7 +108,7 @@ issues:
   exclude-dirs:
     - cmd
   exclude-files:
-    - internal/daemon/(daemon_postbuild|event_emitter|scheduler)\.go$
+    - internal/daemon/
     - internal/docs/.*\.go$
     - internal/doctemplate/.*\.go$
     - internal/forge/

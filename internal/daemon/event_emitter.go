@@ -2,10 +2,10 @@ package daemon
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -34,7 +34,7 @@ func (e *EventEmitter) EmitEvent(ctx context.Context, event eventstore.Event) er
 
 	// Persist to store
 	if err := e.store.Append(ctx, event.BuildID(), event.Type(), event.Payload(), event.Metadata()); err != nil {
-		return fmt.Errorf("failed to persist event: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to persist event").Build()
 	}
 
 	// Update projection
