@@ -133,6 +133,22 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 
+	// Initialize state manager using the typed state.Service.
+	// This must be done before the build service so that the
+	// SkipEvaluatorFactory closure can capture a non-nil
+	// daemon.stateManager pointer and skip-evaluation is never silently
+	// disabled. The state service has no external dependencies, so it
+	// can be created before the build pipeline is wired.
+	stateDir := cfg.Daemon.Storage.RepoCacheDir
+	if stateDir == "" {
+		stateDir = "./daemon-data" // Default data directory
+	}
+	stateServiceResult := state.NewService(stateDir)
+	if stateServiceResult.IsErr() {
+		return nil, derrors.WrapError(stateServiceResult.UnwrapErr(), derrors.CategoryInternal, "failed to create state service").Build()
+	}
+	daemon.stateManager = stateServiceResult.Unwrap()
+
 	// Create canonical BuildService (Phase D - Single Execution Pipeline)
 	buildService := build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
@@ -143,12 +159,11 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			return hugo.NewGenerator(cfg, outputDir)
 		}).
 		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
-			// Create skip evaluator with state manager access
-			// Will be populated after state manager is initialized
-			if daemon.stateManager == nil {
-				slog.Warn("Skip evaluator factory called before state manager initialized - skipping evaluation")
-				return nil
-			}
+			// daemon.stateManager is guaranteed non-nil here: state
+			// service is initialized above before BuildService is
+			// constructed. This factory is only invoked lazily inside
+			// DefaultBuildService.Run, by which point the assignment
+			// has long completed.
 			gen := hugo.NewGenerator(daemon.config, outputDir)
 			return NewSkipEvaluator(outputDir, daemon.stateManager, gen)
 		})
@@ -165,18 +180,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create scheduler").Build()
 	}
 	daemon.scheduler = scheduler
-
-	// Initialize state manager using the typed state.Service wrapped in ServiceAdapter.
-	// This bridges the new typed state system with the daemon's interface requirements.
-	stateDir := cfg.Daemon.Storage.RepoCacheDir
-	if stateDir == "" {
-		stateDir = "./daemon-data" // Default data directory
-	}
-	stateServiceResult := state.NewService(stateDir)
-	if stateServiceResult.IsErr() {
-		return nil, derrors.WrapError(stateServiceResult.UnwrapErr(), derrors.CategoryInternal, "failed to create state service").Build()
-	}
-	daemon.stateManager = stateServiceResult.Unwrap()
 
 	// Initialize event store and build history projection (Phase B - Event Sourcing)
 	eventStorePath := filepath.Join(stateDir, "events.db")
