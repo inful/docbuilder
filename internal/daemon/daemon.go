@@ -254,7 +254,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Initialize discovery runner (Phase H - extracted component)
 	daemon.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
 		Discovery:      daemon.discovery,
-		ForgeManager:   daemon.forgeManager,
 		DiscoveryCache: daemon.discoveryCache,
 		Metrics:        daemon.metrics,
 		StateManager:   daemon.stateManager,

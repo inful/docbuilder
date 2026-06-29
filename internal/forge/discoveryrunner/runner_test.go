@@ -16,7 +16,6 @@ func TestRunner_Run_WhenDiscoveryFails_CachesErrorAndDoesNotEnqueue(t *testing.T
 
 	cache := NewCache()
 	metrics := &fakeMetrics{}
-	enq := &fakeEnqueuer{}
 
 	discovery := &fakeDiscovery{
 		err: forgeError("discovery failed"),
@@ -26,7 +25,6 @@ func TestRunner_Run_WhenDiscoveryFails_CachesErrorAndDoesNotEnqueue(t *testing.T
 		Discovery:      discovery,
 		DiscoveryCache: cache,
 		Metrics:        metrics,
-		BuildQueue:     enq,
 		Now:            func() time.Time { return time.Unix(123, 0).UTC() },
 		NewJobID:       func() string { return jobID },
 		Config:         &config.Config{Version: "2.0"},
@@ -37,15 +35,13 @@ func TestRunner_Run_WhenDiscoveryFails_CachesErrorAndDoesNotEnqueue(t *testing.T
 
 	_, cachedErr := cache.Get()
 	require.Error(t, cachedErr)
-	require.Equal(t, 0, enq.calls)
 }
 
-func TestRunner_Run_WhenReposDiscovered_UpdatesCacheAndEnqueuesBuild(t *testing.T) {
+func TestRunner_Run_WhenReposDiscovered_UpdatesCacheAndRequestsBuild(t *testing.T) {
 	const jobID = "job-1"
 
 	cache := NewCache()
 	metrics := &fakeMetrics{}
-	enq := &fakeEnqueuer{}
 	appCfg := &config.Config{Version: "2.0"}
 
 	r1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
@@ -62,14 +58,22 @@ func TestRunner_Run_WhenReposDiscovered_UpdatesCacheAndEnqueuesBuild(t *testing.
 		converted: []config.Repository{{Name: "r1"}, {Name: "r2"}},
 	}
 
+	var (
+		calledID     string
+		calledReason string
+	)
+
 	r := New(Config{
 		Discovery:      discovery,
 		DiscoveryCache: cache,
 		Metrics:        metrics,
-		BuildQueue:     enq,
-		Now:            func() time.Time { return time.Unix(123, 0).UTC() },
-		NewJobID:       func() string { return jobID },
-		Config:         appCfg,
+		BuildRequester: func(_ context.Context, jobID, reason string) {
+			calledID = jobID
+			calledReason = reason
+		},
+		Now:      func() time.Time { return time.Unix(123, 0).UTC() },
+		NewJobID: func() string { return "job-1" },
+		Config:   appCfg,
 	})
 
 	err := r.Run(context.Background())
@@ -78,10 +82,8 @@ func TestRunner_Run_WhenReposDiscovered_UpdatesCacheAndEnqueuesBuild(t *testing.
 	res, cachedErr := cache.Get()
 	require.NoError(t, cachedErr)
 	require.Same(t, discovery.result, res)
-	require.Equal(t, 1, enq.calls)
-	require.NotNil(t, enq.last)
-	require.Same(t, appCfg, enq.last.cfg)
-	require.Len(t, enq.last.repos, 2)
+	require.Equal(t, jobID, calledID)
+	require.Equal(t, "discovery", calledReason)
 }
 
 func TestRunner_Run_WhenBuildOnDiscoveryDisabled_UpdatesCacheAndDoesNotEnqueueBuild(t *testing.T) {
@@ -89,19 +91,20 @@ func TestRunner_Run_WhenBuildOnDiscoveryDisabled_UpdatesCacheAndDoesNotEnqueueBu
 
 	cache := NewCache()
 	metrics := &fakeMetrics{}
-	enq := &fakeEnqueuer{}
-	buildOnDiscovery := false
-	appCfg := &config.Config{Version: "2.0", Daemon: &config.DaemonConfig{Sync: config.SyncConfig{BuildOnDiscovery: &buildOnDiscovery}}}
-
-	r1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
+	appCfg := &config.Config{Version: "2.0"}
+	if appCfg.Daemon == nil {
+		appCfg.Daemon = &config.DaemonConfig{}
+	}
+	appCfg.Daemon.Sync.BuildOnDiscovery = ptr(false)
 
 	discovery := &fakeDiscovery{
 		result: &forge.DiscoveryResult{
-			Repositories: []*forge.Repository{r1},
-			Filtered:     []*forge.Repository{},
-			Errors:       map[string]error{},
-			Timestamp:    time.Unix(100, 0).UTC(),
-			Duration:     2 * time.Second,
+			Repositories: []*forge.Repository{
+				{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}},
+			},
+			Filtered:  []*forge.Repository{},
+			Errors:    map[string]error{},
+			Timestamp: time.Unix(100, 0).UTC(),
 		},
 		converted: []config.Repository{{Name: "r1"}},
 	}
@@ -110,19 +113,15 @@ func TestRunner_Run_WhenBuildOnDiscoveryDisabled_UpdatesCacheAndDoesNotEnqueueBu
 		Discovery:      discovery,
 		DiscoveryCache: cache,
 		Metrics:        metrics,
-		BuildQueue:     enq,
 		Now:            func() time.Time { return time.Unix(123, 0).UTC() },
 		NewJobID:       func() string { return jobID },
 		Config:         appCfg,
 	})
 
-	err := r.Run(context.Background())
-	require.NoError(t, err)
+	require.NoError(t, r.Run(context.Background()))
 
-	res, cachedErr := cache.Get()
+	_, cachedErr := cache.Get()
 	require.NoError(t, cachedErr)
-	require.Same(t, discovery.result, res)
-	require.Equal(t, 0, enq.calls)
 }
 
 func TestRunner_Run_WhenBuildRequesterProvided_DoesNotEnqueueBuild(t *testing.T) {
@@ -130,109 +129,38 @@ func TestRunner_Run_WhenBuildRequesterProvided_DoesNotEnqueueBuild(t *testing.T)
 
 	cache := NewCache()
 	metrics := &fakeMetrics{}
-	enq := &fakeEnqueuer{}
 	appCfg := &config.Config{Version: "2.0"}
-
-	r1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
 
 	discovery := &fakeDiscovery{
 		result: &forge.DiscoveryResult{
-			Repositories: []*forge.Repository{r1},
-			Filtered:     []*forge.Repository{},
-			Errors:       map[string]error{},
-			Timestamp:    time.Unix(100, 0).UTC(),
-			Duration:     2 * time.Second,
+			Repositories: []*forge.Repository{
+				{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}},
+			},
+			Filtered:  []*forge.Repository{},
+			Errors:    map[string]error{},
+			Timestamp: time.Unix(100, 0).UTC(),
 		},
 		converted: []config.Repository{{Name: "r1"}},
 	}
 
-	var (
-		called     bool
-		gotJobID   string
-		gotReason  string
-		calledWith context.Context
-	)
-
+	calls := 0
 	r := New(Config{
 		Discovery:      discovery,
 		DiscoveryCache: cache,
 		Metrics:        metrics,
-		BuildQueue:     enq,
-		BuildRequester: func(ctx context.Context, jobID, reason string) {
-			called = true
-			calledWith = ctx
-			gotJobID = jobID
-			gotReason = reason
-		},
-		Now:      func() time.Time { return time.Unix(123, 0).UTC() },
-		NewJobID: func() string { return jobID },
-		Config:   appCfg,
+		BuildRequester: func(_ context.Context, _, _ string) { calls++ },
+		Now:            func() time.Time { return time.Unix(123, 0).UTC() },
+		NewJobID:       func() string { return jobID },
+		Config:         appCfg,
 	})
 
-	err := r.Run(context.Background())
-	require.NoError(t, err)
-	require.True(t, called)
-	require.NotNil(t, calledWith)
-	require.Equal(t, jobID, gotJobID)
-	require.Equal(t, "discovery", gotReason)
-	require.Equal(t, 0, enq.calls)
-}
-
-func TestRunner_Run_WhenRepoRemoved_InvokesRepoRemovedNotifier(t *testing.T) {
-	cache := NewCache()
-	metrics := &fakeMetrics{}
-	enq := &fakeEnqueuer{}
-	appCfg := &config.Config{Version: "2.0"}
-
-	prev1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git"}
-	prev2 := &forge.Repository{Name: "r2", CloneURL: "https://example.com/r2.git"}
-	cache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{prev1, prev2}})
-
-	cur1 := &forge.Repository{Name: "r1", CloneURL: "https://example.com/r1.git", Metadata: map[string]string{"forge_name": "f"}}
-	discovery := &fakeDiscovery{
-		result: &forge.DiscoveryResult{
-			Repositories: []*forge.Repository{cur1},
-			Filtered:     []*forge.Repository{},
-			Errors:       map[string]error{},
-			Timestamp:    time.Unix(100, 0).UTC(),
-			Duration:     2 * time.Second,
-		},
-		converted: []config.Repository{{Name: "r1"}},
-	}
-
-	var (
-		calls    int
-		gotURL   string
-		gotName  string
-		calledCt context.Context
-	)
-
-	r := New(Config{
-		Discovery:      discovery,
-		DiscoveryCache: cache,
-		Metrics:        metrics,
-		BuildQueue:     enq,
-		RepoRemoved: func(ctx context.Context, repoURL, repoName string) {
-			calls++
-			calledCt = ctx
-			gotURL = repoURL
-			gotName = repoName
-		},
-		Now:    func() time.Time { return time.Unix(123, 0).UTC() },
-		Config: appCfg,
-	})
-
-	err := r.Run(context.Background())
-	require.NoError(t, err)
+	require.NoError(t, r.Run(context.Background()))
 	require.Equal(t, 1, calls)
-	require.NotNil(t, calledCt)
-	require.Equal(t, "https://example.com/r2.git", gotURL)
-	require.Equal(t, "r2", gotName)
 }
 
 type fakeDiscovery struct {
-	result    *forge.DiscoveryResult
 	err       error
+	result    *forge.DiscoveryResult
 	converted []config.Repository
 }
 
@@ -261,18 +189,4 @@ func (m *fakeMetrics) IncrementCounter(name string) {
 func (m *fakeMetrics) RecordHistogram(string, float64) {}
 func (m *fakeMetrics) SetGauge(string, int64)          {}
 
-type fakeEnqueuer struct {
-	calls int
-	last  *fakeBuildJob
-}
-
-type fakeBuildJob struct {
-	repos []config.Repository
-	cfg   *config.Config
-}
-
-func (e *fakeEnqueuer) EnqueueDiscoveryBuild(_ context.Context, _ string, repos []config.Repository, cfg *config.Config) error {
-	e.calls++
-	e.last = &fakeBuildJob{repos: repos, cfg: cfg}
-	return nil
-}
+func ptr[T any](v T) *T { return &v }
