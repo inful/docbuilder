@@ -159,9 +159,16 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 			"total", len(cfg.Repositories))
 	}
 
+	// Preserve the original log shape: "pages" = rendered HTML pages (not
+	// markdown files). The CLI used to read report.RenderedPages directly;
+	// BuildService exposes that via BuildResult.Report.RenderedPages.
+	renderedPages := 0
+	if result.Report != nil {
+		renderedPages = result.Report.RenderedPages
+	}
 	slog.Info("Build completed successfully",
 		"output", outputDir,
-		"pages", result.FilesProcessed,
+		"pages", renderedPages,
 		"skipped_repos", result.RepositoriesSkipped)
 
 	fmt.Println("Build completed successfully")
