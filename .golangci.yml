@@ -127,7 +127,7 @@ issues:
     - internal/lint/.*\.go$
     - internal/linkverify/
     - internal/markdown/
-    - internal/server/httpserver/(http_server|http_server_webhook)\.go$
+    - internal/server/httpserver/
     - internal/templates/
     - internal/versioning/.*\.go$
     - internal/workspace/.*\.go$
