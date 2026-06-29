@@ -8,7 +8,6 @@ package state
 import (
 	"context"
 	"errors"
-	"fmt"
 	"maps"
 	"sort"
 	"time"
@@ -35,7 +34,7 @@ func (js *JSONStore) RepositoryCreate(_ context.Context, repo *Repository) found
 	defer js.mu.Unlock()
 
 	if _, exists := js.repositories[repo.URL]; exists {
-		return foundation.Err[*Repository, error](fmt.Errorf("repository already exists: %s", repo.URL))
+		return foundation.Err[*Repository, error](derrors.NewError(derrors.CategoryValidation, "repository already exists: "+repo.URL).Build())
 	}
 
 	now := time.Now()
@@ -46,7 +45,7 @@ func (js *JSONStore) RepositoryCreate(_ context.Context, repo *Repository) found
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
 			delete(js.repositories, repo.URL)
-			return foundation.Err[*Repository, error](fmt.Errorf("failed to save repository: %s", err.Error()))
+			return foundation.Err[*Repository, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save repository").Build())
 		}
 	}
 	return foundation.Ok[*Repository, error](repo)
@@ -77,13 +76,13 @@ func (js *JSONStore) RepositoryUpdate(_ context.Context, repo *Repository) found
 	js.mu.Lock()
 	defer js.mu.Unlock()
 	if _, ok := js.repositories[repo.URL]; !ok {
-		return foundation.Err[*Repository, error](fmt.Errorf("repository not found: %s", repo.URL))
+		return foundation.Err[*Repository, error](derrors.NewError(derrors.CategoryNotFound, "repository not found: "+repo.URL).Build())
 	}
 	repo.UpdatedAt = time.Now()
 	js.repositories[repo.URL] = repo
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*Repository, error](fmt.Errorf("failed to save repository update: %s", err.Error()))
+			return foundation.Err[*Repository, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save repository update").Build())
 		}
 	}
 	return foundation.Ok[*Repository, error](repo)
@@ -113,7 +112,7 @@ func (js *JSONStore) RepositoryDelete(_ context.Context, url string) foundation.
 	delete(js.repositories, url)
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save repository deletion: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save repository deletion").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -136,7 +135,7 @@ func (js *JSONStore) RepositoryIncrementBuildCount(_ context.Context, url string
 	repo.UpdatedAt = now
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save build count update: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save build count update").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -157,7 +156,7 @@ func (js *JSONStore) RepositorySetDocumentCount(_ context.Context, url string, c
 	repo.UpdatedAt = time.Now()
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save document count update: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save document count update").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -175,7 +174,7 @@ func (js *JSONStore) RepositorySetDocFilesHash(_ context.Context, url, hash stri
 	repo.UpdatedAt = time.Now()
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save doc files hash update: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save doc files hash update").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -193,7 +192,7 @@ func (js *JSONStore) RepositorySetDocFilePaths(_ context.Context, url string, pa
 	repo.UpdatedAt = time.Now()
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save doc file paths update: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save doc file paths update").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -211,7 +210,7 @@ func (js *JSONStore) ConfigurationSet(_ context.Context, key string, value any) 
 	js.configuration[key] = value
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save configuration: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save configuration").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -234,7 +233,7 @@ func (js *JSONStore) ConfigurationDelete(_ context.Context, key string) foundati
 	delete(js.configuration, key)
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save configuration deletion: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save configuration deletion").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})
@@ -272,7 +271,7 @@ func (js *JSONStore) DaemonInfoUpdate(_ context.Context, info *DaemonInfo) found
 	js.daemonInfo = info
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[*DaemonInfo, error](fmt.Errorf("failed to save daemon info update: %s", err.Error()))
+			return foundation.Err[*DaemonInfo, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save daemon info update").Build())
 		}
 	}
 	return foundation.Ok[*DaemonInfo, error](info)
@@ -288,7 +287,7 @@ func (js *JSONStore) DaemonInfoUpdateStatus(_ context.Context, status string) fo
 	js.daemonInfo.Status = status
 	if js.autoSaveEnabled {
 		if err := js.saveToDiskUnsafe(); err != nil {
-			return foundation.Err[void, error](fmt.Errorf("failed to save daemon status update: %s", err.Error()))
+			return foundation.Err[void, error](derrors.WrapError(err, derrors.CategoryInternal, "failed to save daemon status update").Build())
 		}
 	}
 	return foundation.Ok[void, error](void{})

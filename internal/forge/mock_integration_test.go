@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const authFailureMessage = "authentication failed: invalid credentials"
+const authFailureMessage = "[auth:error] authentication failed: invalid credentials"
 
 // TestPhase3BIntegrationDemo demonstrates how the enhanced mock system integrates
 // with existing DocBuilder test patterns and provides backward compatibility.

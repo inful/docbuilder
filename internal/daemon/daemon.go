@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
@@ -126,12 +126,10 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	for _, forgeConfig := range cfg.Forges {
 		client, err := forge.NewForgeClient(forgeConfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create forge client").WithContext("forge", forgeConfig.Name).Build()
 		}
 		forgeManager.AddForge(forgeConfig, client)
 	}
-	daemon.forgeManager = forgeManager
-
 	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 
@@ -164,7 +162,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Initialize scheduler (after build queue)
 	scheduler, err := NewScheduler()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create scheduler: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create scheduler").Build()
 	}
 	daemon.scheduler = scheduler
 
@@ -176,7 +174,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 	stateServiceResult := state.NewService(stateDir)
 	if stateServiceResult.IsErr() {
-		return nil, fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
+		return nil, derrors.WrapError(stateServiceResult.UnwrapErr(), derrors.CategoryInternal, "failed to create state service").Build()
 	}
 	daemon.stateManager = stateServiceResult.Unwrap()
 
@@ -184,7 +182,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	eventStorePath := filepath.Join(stateDir, "events.db")
 	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create event store: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create event store").Build()
 	}
 	daemon.eventStore = eventStore
 	daemon.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
@@ -281,7 +279,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create build debouncer: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create build debouncer").Build()
 	}
 	daemon.buildDebouncer = debouncer
 
@@ -305,14 +303,14 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.QuietWindow); v != "" {
 		parsed, err := time.ParseDuration(v)
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.quiet_window: %w", err)
+			return 0, 0, derrors.WrapError(err, derrors.CategoryConfig, "failed to parse daemon.build_debounce.quiet_window").Build()
 		}
 		quietWindow = parsed
 	}
 	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.MaxDelay); v != "" {
 		parsed, err := time.ParseDuration(v)
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.max_delay: %w", err)
+			return 0, 0, derrors.WrapError(err, derrors.CategoryConfig, "failed to parse daemon.build_debounce.max_delay").Build()
 		}
 		maxDelay = parsed
 	}
@@ -328,7 +326,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Lock()
 	if d.GetStatus() != StatusStopped {
 		d.mu.Unlock()
-		return fmt.Errorf("daemon is not in stopped state: %s", d.GetStatus())
+		return derrors.NewError(derrors.CategoryValidation, "daemon is not in stopped state: "+d.GetStatus()).Build()
 	}
 
 	d.status.Store(StatusStarting)
@@ -358,7 +356,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 		d.runCancel = nil
 		runCancel()
 		d.mu.Unlock()
-		return fmt.Errorf("failed to start HTTP server: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
 	}
 
 	// Start build queue processing
@@ -374,7 +372,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 			d.runCancel = nil
 		}
 		d.mu.Unlock()
-		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to schedule daemon jobs").Build()
 	}
 
 	// Start scheduler

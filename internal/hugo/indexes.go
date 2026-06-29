@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
@@ -105,7 +106,7 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 		slog.Info("Main index already exists; skipping generation", logfields.Path(indexPath))
 		return nil
 	} else if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("stat main index at %s: %w", indexPath, err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "stat main index").WithContext("path", indexPath).Build()
 	}
 
 	repoGroups := make(map[string][]docs.DocFile)
@@ -122,20 +123,20 @@ func (g *Generator) generateMainIndex(docFiles []docs.DocFile) error {
 	ctx := buildIndexTemplateContext(g, docFiles, repoGroups, frontMatter)
 	tpl, err := template.New("main_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 	if err != nil {
-		return fmt.Errorf("parse main index template: %w", err)
+		return derrors.WrapError(err, derrors.CategoryValidation, "parse main index template").Build()
 	}
 	var buf bytes.Buffer
 	if execErr := tpl.Execute(&buf, ctx); execErr != nil {
-		return fmt.Errorf("exec main index template: %w", execErr)
+		return derrors.WrapError(execErr, derrors.CategoryInternal, "exec main index template").Build()
 	}
 	body := buf.String()
 	content, err := buildIndexContent(frontMatter, body)
 	if err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrIndexGenerationFailed, err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "index generation failed").Build()
 	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("failed to write index at %s: %w", indexPath, err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write index").WithContext("path", indexPath).Build()
 	}
 	slog.Info("Generated main index page", logfields.Path(indexPath))
 	return nil
@@ -161,7 +162,7 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		relPath := docs.HugoContentPath("", "", repoName, "", "index", ".md", false)
 		indexPath := filepath.Join(g.BuildRoot(), relPath)
 		if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
-			return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create directory").WithContext("path", indexPath).Build()
 		}
 
 		// Check if repository has index.md or README.md at root level to use instead
@@ -235,20 +236,20 @@ func (g *Generator) generateRepositoryIndexes(docFiles []docs.DocFile) error {
 		}
 		tpl, err := template.New("repo_index").Funcs(template.FuncMap{"titleCase": titleCase, "replaceAll": strings.ReplaceAll, "lower": strings.ToLower}).Parse(tplRaw)
 		if err != nil {
-			return fmt.Errorf("parse repository index template: %w", err)
+			return derrors.WrapError(err, derrors.CategoryValidation, "parse repository index template").Build()
 		}
 		var buf bytes.Buffer
 		if execErr := tpl.Execute(&buf, ctx); execErr != nil {
-			return fmt.Errorf("exec repository index template: %w", execErr)
+			return derrors.WrapError(execErr, derrors.CategoryInternal, "exec repository index template").Build()
 		}
 		body := buf.String()
 		content, err := buildIndexContent(frontMatter, body)
 		if err != nil {
-			return fmt.Errorf("failed to marshal front matter: %w", err)
+			return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal front matter").Build()
 		}
 		// #nosec G306 -- index pages are public content
 		if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
-			return fmt.Errorf("failed to write repository index: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write repository index").Build()
 		}
 		slog.Debug("Generated repository index", logfields.Repository(repoName), logfields.Path(indexPath))
 	}
@@ -304,8 +305,11 @@ func (g *Generator) handleReadmeFile(readmeFile *docs.DocFile, indexPath, repoNa
 func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoName string) error {
 	// Use already-transformed content from the transform pipeline
 	if len(readmeFile.TransformedBytes) == 0 {
-		return fmt.Errorf("%w: README not yet transformed: %s (ensure copyContentFiles ran first)",
-			herrors.ErrContentTransformFailed, readmeFile.Path)
+		return derrors.NewError(derrors.CategoryInternal, "README not yet transformed").
+			WithCause(herrors.ErrContentTransformFailed).
+			WithContext("readme", readmeFile.Path).
+			WithContext("hint", "ensure copyContentFiles ran first").
+			Build()
 	}
 
 	slog.Debug("Using transformed README as index",
@@ -318,7 +322,9 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 	// Parse front matter if it exists
 	fm, body, err := parseFrontMatterFromContent(contentStr)
 	if err != nil {
-		return fmt.Errorf("failed to parse front matter in %s: %w", readmeFile.RelativePath, err)
+		return derrors.NewError(derrors.CategoryValidation, "failed to parse front matter in "+readmeFile.RelativePath).
+			WithCause(err).
+			Build()
 	}
 
 	// If no front matter exists, create it
@@ -340,13 +346,13 @@ func (g *Generator) useReadmeAsIndex(readmeFile *docs.DocFile, indexPath, repoNa
 
 	// Create directory if needed
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
-		return fmt.Errorf("failed to create index directory: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create index directory").Build()
 	}
 
 	// Write the index file
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(contentStr), 0o644); err != nil {
-		return fmt.Errorf("failed to write repository index from README: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write repository index from README").Build()
 	}
 
 	// Remove the original readme.md file since we've promoted to _index.md
@@ -455,7 +461,7 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 	relPath := docs.HugoContentPath("", "", repoName, sectionName, "index", ".md", false)
 	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create directory").WithContext("path", indexPath).Build()
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
@@ -468,11 +474,11 @@ func (g *Generator) generateSectionIndex(repoName, sectionName string, files []d
 
 	content, err := buildIndexContent(frontMatter, body)
 	if err != nil {
-		return fmt.Errorf("failed to marshal front matter: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal front matter").Build()
 	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("failed to write section index: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write section index").Build()
 	}
 	slog.Debug("Generated section index", logfields.Repository(repoName), logfields.Section(sectionName), logfields.Path(indexPath))
 	return nil
@@ -538,12 +544,12 @@ func (g *Generator) renderSectionTemplate(files []docs.DocFile, repoName, sectio
 		"lower":      strings.ToLower,
 	}).Parse(tplRaw)
 	if err != nil {
-		return "", fmt.Errorf("parse section index template: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "parse section index template").Build()
 	}
 
 	var buf bytes.Buffer
 	if err := tpl.Execute(&buf, ctx); err != nil {
-		return "", fmt.Errorf("exec section index template: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryInternal, "exec section index template").Build()
 	}
 	return buf.String(), nil
 }
@@ -571,7 +577,7 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 	relPath := docs.HugoContentPath("", "", repoName, sectionName, "index", ".md", false)
 	indexPath := filepath.Join(g.BuildRoot(), relPath)
 	if err := os.MkdirAll(filepath.Dir(indexPath), 0o750); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %w", indexPath, err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create directory").WithContext("path", indexPath).Build()
 	}
 
 	frontMatter := g.buildSectionFrontMatter(repoName, sectionName)
@@ -589,21 +595,21 @@ func (g *Generator) generateIntermediateSectionIndex(repoName, sectionName strin
 		"lower":      strings.ToLower,
 	}).Parse(tplRaw)
 	if err != nil {
-		return fmt.Errorf("parse section index template: %w", err)
+		return derrors.WrapError(err, derrors.CategoryValidation, "parse section index template").Build()
 	}
 
 	var buf bytes.Buffer
 	if execErr := tpl.Execute(&buf, ctx); execErr != nil {
-		return fmt.Errorf("exec section index template: %w", execErr)
+		return derrors.WrapError(execErr, derrors.CategoryInternal, "exec section index template").Build()
 	}
 
 	content, err := buildIndexContent(frontMatter, buf.String())
 	if err != nil {
-		return fmt.Errorf("failed to marshal front matter: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal front matter").Build()
 	}
 	// #nosec G306 -- index pages are public content
 	if err := os.WriteFile(indexPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("failed to write intermediate section index: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write intermediate section index").Build()
 	}
 	slog.Debug("Generated intermediate section index", logfields.Repository(repoName), logfields.Section(sectionName), logfields.Path(indexPath))
 	return nil
@@ -655,7 +661,7 @@ func (g *Generator) loadIndexTemplate(kind string) (string, error) {
 			return string(b), nil
 		}
 	}
-	return "", fmt.Errorf("no template override for kind %s", kind)
+	return "", derrors.NewError(derrors.CategoryValidation, "no template override for kind: "+kind).Build()
 }
 
 //go:embed templates_defaults/index/*.tmpl
@@ -714,7 +720,7 @@ func reconstructContentWithFrontMatter(fm map[string]any, body string) (string, 
 	style := frontmatter.Style{Newline: "\n"}
 	out, err := frontmatterops.Write(fm, []byte(body), true, style)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal front matter: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal front matter").Build()
 	}
 	return string(out), nil
 }

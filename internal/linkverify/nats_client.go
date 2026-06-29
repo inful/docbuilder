@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"sync"
 	"sync/atomic"
@@ -17,6 +16,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ErrCacheMiss is returned when a cache entry is not found.
@@ -106,14 +106,14 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 	// Connect to NATS
 	conn, err := nats.Connect(c.cfg.NATSURL, opts...)
 	if err != nil {
-		return fmt.Errorf("failed to connect to NATS: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to connect to NATS").Build()
 	}
 
 	// Create JetStream context
 	js, err := jetstream.New(conn)
 	if err != nil {
 		conn.Close()
-		return fmt.Errorf("failed to create JetStream context: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to create JetStream context").Build()
 	}
 
 	c.conn = conn
@@ -124,7 +124,7 @@ func (c *NATSClient) connectWithContext(ctx context.Context) error {
 		conn.Close()
 		c.conn = nil
 		c.js = nil
-		return fmt.Errorf("failed to initialize KV bucket: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to initialize KV bucket").Build()
 	}
 
 	// Initialize stream for broken link events
@@ -204,7 +204,7 @@ func (c *NATSClient) initKVBucket(ctx context.Context) error {
 		TTL:         ttl,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create or update KV bucket: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to create or update KV bucket").Build()
 	}
 
 	c.kv = kv
@@ -238,7 +238,7 @@ func (c *NATSClient) initStream(ctx context.Context) error {
 		Discard:     jetstream.DiscardOld,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create stream: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to create stream").Build()
 	}
 
 	slog.Info("Created NATS stream for broken link events",
@@ -251,7 +251,7 @@ func (c *NATSClient) initStream(ctx context.Context) error {
 func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEvent) error {
 	// Ensure we're connected before publishing
 	if err := c.ensureConnected(ctx); err != nil {
-		return fmt.Errorf("NATS not connected: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "NATS not connected").Build()
 	}
 
 	pubCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -261,7 +261,7 @@ func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEve
 
 	data, err := json.Marshal(event)
 	if err != nil {
-		return fmt.Errorf("failed to marshal event: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal event").Build()
 	}
 
 	c.mu.RLock()
@@ -274,7 +274,7 @@ func (c *NATSClient) PublishBrokenLink(ctx context.Context, event *BrokenLinkEve
 
 	_, err = js.Publish(pubCtx, c.subject, data)
 	if err != nil {
-		return fmt.Errorf("failed to publish event: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to publish event").Build()
 	}
 
 	slog.Debug("Published broken link event",
@@ -325,12 +325,12 @@ func (c *NATSClient) GetCachedResult(ctx context.Context, url string) (*CacheEnt
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return nil, ErrCacheMiss
 		}
-		return nil, fmt.Errorf("failed to get cache entry: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "failed to get cache entry").Build()
 	}
 
 	var cached CacheEntry
 	if err := json.Unmarshal(entry.Value(), &cached); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal cache entry: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to unmarshal cache entry").Build()
 	}
 
 	return &cached, nil
@@ -351,7 +351,7 @@ func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) err
 
 	data, err := json.Marshal(entry)
 	if err != nil {
-		return fmt.Errorf("failed to marshal cache entry: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal cache entry").Build()
 	}
 
 	// Note: NATS KV doesn't support per-key TTL in current API
@@ -371,7 +371,7 @@ func (c *NATSClient) SetCachedResult(ctx context.Context, entry *CacheEntry) err
 	// Put entry in KV store
 	_, err = kv.Put(cacheCtx, key, data)
 	if err != nil {
-		return fmt.Errorf("failed to put cache entry: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to put cache entry").Build()
 	}
 
 	return nil
@@ -442,7 +442,7 @@ func (c *NATSClient) GetPageHash(ctx context.Context, pagePath string) (string, 
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return "", errors.New("page hash not cached")
 		}
-		return "", fmt.Errorf("failed to get page hash: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryNetwork, "failed to get page hash").Build()
 	}
 
 	return string(entry.Value()), nil
@@ -473,7 +473,7 @@ func (c *NATSClient) SetPageHash(ctx context.Context, pagePath, hash string) err
 
 	_, err := kv.Put(hashCtx, key, []byte(hash))
 	if err != nil {
-		return fmt.Errorf("failed to put page hash: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to put page hash").Build()
 	}
 
 	return nil

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -13,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +20,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ErrNoFrontMatter is returned when content has no front matter.
@@ -59,7 +60,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 	// Create NATS client
 	natsClient, err := NewNATSClient(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create NATS client: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create NATS client").Build()
 	}
 
 	// Parse timeout
@@ -83,7 +84,7 @@ func NewVerificationService(cfg *config.LinkVerificationConfig) (*VerificationSe
 			// len(via) is the number of previous requests already made.
 			// If MaxRedirects is 3, we should allow 3 redirects (i.e., 4 total requests).
 			if len(via) > cfg.MaxRedirects {
-				return fmt.Errorf("stopped after %d redirects", cfg.MaxRedirects)
+				return derrors.NewError(derrors.CategoryValidation, "stopped after N redirects").WithContext("redirects", cfg.MaxRedirects).Build()
 			}
 			return nil
 		},
@@ -327,12 +328,12 @@ func checkInternalLink(page *PageMetadata, absoluteURL string) (int, error) {
 	st, err := os.Stat(localPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return http.StatusNotFound, fmt.Errorf("internal file not found: %s", localPath)
+			return http.StatusNotFound, derrors.NewError(derrors.CategoryNotFound, "internal file not found: "+localPath).Build()
 		}
-		return 0, fmt.Errorf("failed to stat internal file: %w", err)
+		return 0, derrors.WrapError(err, derrors.CategoryInternal, "failed to stat internal file").Build()
 	}
 	if st.IsDir() {
-		return http.StatusNotFound, fmt.Errorf("internal path is a directory: %s", localPath)
+		return http.StatusNotFound, derrors.NewError(derrors.CategoryValidation, "internal path is a directory: "+localPath).Build()
 	}
 	return http.StatusOK, nil
 }
@@ -344,7 +345,7 @@ func localPathForInternalURL(page *PageMetadata, absoluteURL string) (string, er
 	}
 	u, err := url.Parse(absoluteURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid URL: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "invalid URL").Build()
 	}
 	urlPath := u.EscapedPath()
 	if urlPath == "" {
@@ -445,7 +446,7 @@ func (s *VerificationService) doExternalRequest(ctx context.Context, method, lin
 
 	req, err := http.NewRequestWithContext(ctx, method, linkURL, nil)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create request: %w", err)
+		return 0, derrors.WrapError(err, derrors.CategoryNetwork, "failed to create request").Build()
 	}
 
 	// Headers that improve compatibility with WAF/CDN protected sites.
@@ -458,7 +459,7 @@ func (s *VerificationService) doExternalRequest(ctx context.Context, method, lin
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("request failed: %w", err)
+		return 0, derrors.WrapError(err, derrors.CategoryNetwork, "request failed").Build()
 	}
 	defer func() {
 		_ = resp.Body.Close() // Ignore close errors after reading
@@ -474,7 +475,7 @@ func (s *VerificationService) doExternalRequest(ctx context.Context, method, lin
 	}
 
 	if resp.StatusCode >= 400 {
-		return resp.StatusCode, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+		return resp.StatusCode, derrors.NewError(derrors.CategoryNetwork, "HTTP "+strconv.Itoa(resp.StatusCode)).WithContext("status", resp.Status).Build()
 	}
 
 	return resp.StatusCode, nil
@@ -597,7 +598,7 @@ func ParseFrontMatter(content []byte) (map[string]any, error) {
 
 	fm, err := doc.FrontmatterFields()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse front matter: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to parse front matter").Build()
 	}
 	return fm, nil
 }

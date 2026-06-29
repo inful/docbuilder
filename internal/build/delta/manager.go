@@ -3,7 +3,6 @@ package delta
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -135,7 +135,7 @@ func (m *Manager) scanForDeletions(repo cfg.Repository, workspace string, persis
 			return nil
 		})
 		if err != nil {
-			return persistedPaths, 0, fmt.Errorf("walking directory %s: %w", base, err)
+			return persistedPaths, 0, derrors.WrapError(err, derrors.CategoryFileSystem, "walking directory").WithContext("path", base).Build()
 		}
 	}
 
