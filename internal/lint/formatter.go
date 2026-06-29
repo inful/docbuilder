@@ -12,16 +12,23 @@ type Formatter interface {
 	Format(w io.Writer, result *Result, detectedPath string, wasAutoDetected bool) error
 }
 
-// TextFormatter formats results as human-readable text.
-type TextFormatter struct{}
-
-// NewTextFormatter creates a text formatter.
-func NewTextFormatter(useColor bool) *TextFormatter {
-	return &TextFormatter{}
+// NewFormatter returns the appropriate formatter based on format string.
+// The returned Formatter is one of two unexported implementations; callers
+// should treat the result as opaque.
+func NewFormatter(format string, useColor bool) Formatter {
+	switch format {
+	case "json":
+		return &jsonFormatter{}
+	default:
+		return &textFormatter{}
+	}
 }
 
+// textFormatter formats results as human-readable text.
+type textFormatter struct{}
+
 // Format outputs results in human-readable text format.
-func (f *TextFormatter) Format(w io.Writer, result *Result, detectedPath string, wasAutoDetected bool) error {
+func (f *textFormatter) Format(w io.Writer, result *Result, detectedPath string, wasAutoDetected bool) error {
 	// Header
 	if wasAutoDetected {
 		if _, err := fmt.Fprintf(w, "Detected documentation directory: %s\n", detectedPath); err != nil {
@@ -109,7 +116,7 @@ func (f *TextFormatter) Format(w io.Writer, result *Result, detectedPath string,
 }
 
 // printFinalMessage prints the appropriate final message based on the result.
-func (f *TextFormatter) printFinalMessage(w io.Writer, result *Result) error {
+func (f *textFormatter) printFinalMessage(w io.Writer, result *Result) error {
 	if result.HasErrors() {
 		return f.printMessages(w,
 			"❌ Documentation has errors that will prevent Hugo build.",
@@ -127,7 +134,7 @@ func (f *TextFormatter) printFinalMessage(w io.Writer, result *Result) error {
 }
 
 // printMessages prints multiple lines to the writer.
-func (f *TextFormatter) printMessages(w io.Writer, messages ...string) error {
+func (f *textFormatter) printMessages(w io.Writer, messages ...string) error {
 	for _, msg := range messages {
 		if _, err := fmt.Fprintln(w, msg); err != nil {
 			return err
@@ -137,7 +144,7 @@ func (f *TextFormatter) printMessages(w io.Writer, messages ...string) error {
 }
 
 // formatIssue formats a single issue.
-func (f *TextFormatter) formatIssue(w io.Writer, filePath string, issue Issue) error {
+func (f *textFormatter) formatIssue(w io.Writer, filePath string, issue Issue) error {
 	// Icon based on severity
 	var icon string
 	switch issue.Severity {
@@ -180,27 +187,22 @@ func (f *TextFormatter) formatIssue(w io.Writer, filePath string, issue Issue) e
 	return nil
 }
 
-// JSONFormatter formats results as JSON.
-type JSONFormatter struct{}
+// jsonFormatter formats results as JSON.
+type jsonFormatter struct{}
 
-// NewJSONFormatter creates a JSON formatter.
-func NewJSONFormatter() *JSONFormatter {
-	return &JSONFormatter{}
-}
-
-// JSONOutput represents the JSON output structure.
-type JSONOutput struct {
+// jsonOutput represents the JSON output structure.
+type jsonOutput struct {
 	Path            string      `json:"path"`
 	WasAutoDetected bool        `json:"was_auto_detected"`
 	FilesTotal      int         `json:"files_total"`
 	ErrorCount      int         `json:"error_count"`
 	WarningCount    int         `json:"warning_count"`
 	InfoCount       int         `json:"info_count"`
-	Issues          []JSONIssue `json:"issues"`
+	Issues          []jsonIssue `json:"issues"`
 }
 
-// JSONIssue represents a single issue in JSON format.
-type JSONIssue struct {
+// jsonIssue represents a single issue in JSON format.
+type jsonIssue struct {
 	FilePath    string `json:"file_path"`
 	Severity    string `json:"severity"`
 	Rule        string `json:"rule"`
@@ -211,8 +213,8 @@ type JSONIssue struct {
 }
 
 // Format outputs results in JSON format.
-func (f *JSONFormatter) Format(w io.Writer, result *Result, detectedPath string, wasAutoDetected bool) error {
-	output := JSONOutput{
+func (f *jsonFormatter) Format(w io.Writer, result *Result, detectedPath string, wasAutoDetected bool) error {
+	output := jsonOutput{
 		Path:            detectedPath,
 		WasAutoDetected: wasAutoDetected,
 		FilesTotal:      result.FilesTotal,
@@ -226,7 +228,7 @@ func (f *JSONFormatter) Format(w io.Writer, result *Result, detectedPath string,
 			output.InfoCount++
 		}
 
-		output.Issues = append(output.Issues, JSONIssue{
+		output.Issues = append(output.Issues, jsonIssue{
 			FilePath:    issue.FilePath,
 			Severity:    issue.Severity.String(),
 			Rule:        issue.Rule,
@@ -240,16 +242,6 @@ func (f *JSONFormatter) Format(w io.Writer, result *Result, detectedPath string,
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
-}
-
-// NewFormatter creates the appropriate formatter based on format string.
-func NewFormatter(format string, useColor bool) Formatter {
-	switch format {
-	case "json":
-		return NewJSONFormatter()
-	default:
-		return NewTextFormatter(useColor)
-	}
 }
 
 // pluralize returns "s" if count != 1, otherwise empty string.
