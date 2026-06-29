@@ -116,21 +116,15 @@ issues:
   exclude-dirs:
     - cmd
   exclude-files:
-    - internal/daemon/
     - internal/docs/
     - internal/doctemplate/
     - internal/forge/
-    - internal/foundation/.*\.go$
     - internal/git/
     - internal/hugo/(categories_menu|config_writer|content_copy_pipeline|generator|models|modules|pipeline|stages|structure)\.go$
     - internal/hugo/stages_transition_test\.go$
     - internal/lint/.*\.go$
-    - internal/linkverify/
     - internal/markdown/
-    - internal/server/httpserver/
     - internal/templates/
-    - internal/versioning/
-    - internal/workspace/
   exclude-rules:
     # The old //nolint:forbidigo directives in cmd/ now target fmt.Println;
     # forbidigo fmt.Errorf never matches in those functions, so the
