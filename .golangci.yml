@@ -118,7 +118,7 @@ issues:
   exclude-files:
     - internal/daemon/
     - internal/docs/
-    - internal/doctemplate/.*\.go$
+    - internal/doctemplate/
     - internal/forge/
     - internal/foundation/.*\.go$
     - internal/git/
