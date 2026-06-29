@@ -1,11 +1,12 @@
 package lint
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // computeUpdatedLinkTarget computes the new link destination text when a target
@@ -54,11 +55,11 @@ func computeUpdatedLinkPath(sourceFile string, newAbs string, isSiteAbsolute boo
 	if isSiteAbsolute {
 		contentRoot := findContentRoot(sourceFile)
 		if contentRoot == "" {
-			return "", fmt.Errorf("failed to compute site-absolute link: content root not found for %q", sourceFile)
+			return "", derrors.NewError(derrors.CategoryInternal, "failed to compute site-absolute link: content root not found").WithContext("source_file", sourceFile).Build()
 		}
 		rel, err := filepath.Rel(contentRoot, newAbs)
 		if err != nil {
-			return "", fmt.Errorf("failed to compute site-absolute link relpath: %w", err)
+			return "", derrors.WrapError(err, derrors.CategoryFileSystem, "failed to compute site-absolute link relpath").Build()
 		}
 		return "/" + filepath.ToSlash(rel), nil
 	}
@@ -66,7 +67,7 @@ func computeUpdatedLinkPath(sourceFile string, newAbs string, isSiteAbsolute boo
 	sourceDir := filepath.Dir(sourceFile)
 	rel, err := filepath.Rel(sourceDir, newAbs)
 	if err != nil {
-		return "", fmt.Errorf("failed to compute relative link relpath: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "failed to compute relative link relpath").Build()
 	}
 	updatedPath := filepath.ToSlash(rel)
 	if wantsDotSlash && !strings.HasPrefix(updatedPath, "../") && !strings.HasPrefix(updatedPath, "./") {

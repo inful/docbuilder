@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"github.com/inful/mdfp"
@@ -49,7 +50,7 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 	// #nosec G304 -- filePath comes from controlled doc discovery/lint walk.
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "read file").Build()
 	}
 
 	frontmatterBytes, bodyBytes, hadFrontmatter, _, splitErr := frontmatter.Split(data)
@@ -124,7 +125,7 @@ func (r *FrontmatterFingerprintRule) Check(filePath string) ([]Issue, error) {
 
 	expected, err := frontmatterops.ComputeFingerprint(fields, bodyBytes)
 	if err != nil {
-		return nil, fmt.Errorf("compute fingerprint for check: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "compute fingerprint for check").Build()
 	}
 	if expected == currentFingerprint {
 		return nil, nil

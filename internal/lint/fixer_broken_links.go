@@ -1,12 +1,13 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // detectBrokenLinks scans all markdown files in a path for links to non-existent files.
@@ -16,7 +17,7 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 	// Determine if rootPath is a file or directory
 	info, err := os.Stat(rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat path: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to stat path").Build()
 	}
 
 	var filesToScan []string
@@ -46,12 +47,12 @@ func detectBrokenLinks(rootPath string) ([]BrokenLink, error) {
 func detectBrokenLinksInFile(sourceFile string) ([]BrokenLink, error) {
 	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse file: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "failed to parse file").Build()
 	}
 
 	refs, err := doc.LinkRefs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse markdown links: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "failed to parse markdown links").Build()
 	}
 
 	brokenLinks := make([]BrokenLink, 0)
