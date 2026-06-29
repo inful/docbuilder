@@ -12,7 +12,8 @@ import (
 
 func main() {
 	cli := &commands.CLI{}
-	parser := kong.Parse(cli,
+	parser := kong.Parse(
+		cli,
 		kong.Description("DocBuilder: aggregate multi-repo documentation into a Hugo site."),
 		kong.Vars{"version": version.Version},
 	)

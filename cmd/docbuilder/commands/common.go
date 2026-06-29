@@ -15,6 +15,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
@@ -83,7 +84,7 @@ func LoadEnvFile() error {
 	for _, p := range envPaths {
 		if _, err := os.Stat(p); err == nil {
 			if err := godotenv.Load(p); err != nil {
-				return fmt.Errorf("failed loading %s: %w", p, err)
+				return derrors.WrapError(err, derrors.CategoryFileSystem, "failed loading").WithContext("path", p).Build()
 			}
 			return nil
 		}
@@ -215,7 +216,7 @@ func ApplyAutoDiscovery(ctx context.Context, cfg *config.Config) error {
 	if len(cfg.Repositories) == 0 && len(cfg.Forges) > 0 {
 		repos, err := AutoDiscoverRepositories(ctx, cfg)
 		if err != nil {
-			return fmt.Errorf("auto-discovery failed: %w", err)
+			return derrors.WrapError(err, derrors.CategoryInternal, "auto-discovery failed").Build()
 		}
 		cfg.Repositories = repos
 	}

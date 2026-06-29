@@ -2,11 +2,11 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -23,7 +23,7 @@ func (d *DiscoverCmd) Run(ctx context.Context, _ *Global, root *CLI) error {
 
 	result, cfg, err := config.LoadWithResult(root.Config)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return derrors.WrapError(err, derrors.CategoryConfig, "load config").Build()
 	}
 	// Print any normalization warnings
 	for _, w := range result.Warnings {
@@ -62,7 +62,7 @@ func RunDiscover(ctx context.Context, cfg *config.Config, specificRepo string) e
 			}
 		}
 		if len(reposToProcess) == 0 {
-			return fmt.Errorf("repository '%s' not found in configuration", specificRepo)
+			return derrors.NewError(derrors.CategoryConfig, "repository not found in configuration").WithContext("repository", specificRepo).Build()
 		}
 	} else {
 		reposToProcess = cfg.Repositories

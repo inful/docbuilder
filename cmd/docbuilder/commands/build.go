@@ -10,6 +10,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
@@ -47,7 +48,7 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	} else {
 		_, loadedCfg, err := config.LoadWithResult(root.Config)
 		if err != nil {
-			return fmt.Errorf("load config: %w", err)
+			return derrors.WrapError(err, derrors.CategoryConfig, "load config").Build()
 		}
 		cfg = loadedCfg
 		slog.Info("Loaded config from file", "config", root.Config)
@@ -221,12 +222,12 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	// Resolve absolute path to docs directory
 	docsPath, err := filepath.Abs(b.DocsDir)
 	if err != nil {
-		return fmt.Errorf("resolve docs dir: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "resolve docs dir").Build()
 	}
 
 	// Verify docs directory exists
 	if st, statErr := os.Stat(docsPath); statErr != nil || !st.IsDir() {
-		return fmt.Errorf("docs dir not found or not a directory: %s (use -d to specify a different path)", docsPath)
+		return derrors.NewError(derrors.CategoryNotFound, "docs dir not found or not a directory (use -d to specify a different path)").WithContext("path", docsPath).Build()
 	}
 
 	slog.Info("Building from local directory",
@@ -242,12 +243,12 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	slog.Info("Discovering documentation files")
 	docFiles, discErr := discovery.DiscoverDocs(repoPaths)
 	if discErr != nil {
-		return fmt.Errorf("discovery failed: %w", discErr)
+		return derrors.WrapError(discErr, derrors.CategoryInternal, "discovery failed").Build()
 	}
 
 	if len(docFiles) == 0 {
 		slog.Warn("No documentation files found in directory", "dir", docsPath)
-		return fmt.Errorf("no documentation files found in %s", docsPath)
+		return derrors.NewError(derrors.CategoryNotFound, "no documentation files found").WithContext("path", docsPath).Build()
 	}
 
 	slog.Info("Documentation discovered", "files", len(docFiles))
@@ -264,7 +265,7 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 		if keepWorkspace {
 			fmt.Printf("\nError occurred. Hugo staging directory: %s_stage\n", outputDir)
 		}
-		return fmt.Errorf("site generation failed: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "site generation failed").Build()
 	}
 
 	slog.Info("Hugo site generated successfully",

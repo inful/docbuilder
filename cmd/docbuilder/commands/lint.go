@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 )
 
@@ -55,7 +56,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 
 	// Validate path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("path does not exist: %s", path)
+		return derrors.NewError(derrors.CategoryNotFound, "path does not exist").WithContext("path", path).Build()
 	}
 
 	// Create linter configuration
@@ -78,7 +79,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Run linting
 	result, err := linter.LintPath(path)
 	if err != nil {
-		return fmt.Errorf("linting failed: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "linting failed").Build()
 	}
 
 	// Check if color output is supported
@@ -87,7 +88,7 @@ func (lp *LintPathCmd) Run(parent *LintCmd, _ *Global, root *CLI) error {
 	// Format and output results
 	formatter := lint.NewFormatter(parent.Format, useColor)
 	if err := formatter.Format(os.Stdout, result, path, wasAutoDetected); err != nil {
-		return fmt.Errorf("formatting output: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "formatting output").Build()
 	}
 
 	// Determine exit code based on results
@@ -126,7 +127,7 @@ func runFixer(linter *lint.Linter, path string, dryRun bool) error {
 	fixer := lint.NewFixer(linter, dryRun, false) // force=false for safety
 	fixResult, err := fixer.Fix(path)
 	if err != nil {
-		return fmt.Errorf("fixing failed: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "fixing failed").Build()
 	}
 
 	// Display what was fixed
