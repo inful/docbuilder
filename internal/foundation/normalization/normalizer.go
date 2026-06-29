@@ -1,9 +1,10 @@
 package normalization
 
 import (
-	"fmt"
 	"sort"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Normalizer provides type-safe string-to-enum normalization with error handling.
@@ -55,7 +56,10 @@ func (n *Normalizer[T]) NormalizeWithError(raw string) (T, error) {
 	}
 
 	var zero T
-	return zero, fmt.Errorf("invalid value %q, valid options: %v", raw, n.validKeys)
+	return zero, derrors.NewError(derrors.CategoryValidation, "invalid value; not a recognized enum member").
+		WithContext("input", raw).
+		WithContext("valid_options", n.validKeys).
+		Build()
 }
 
 // ValidateEnum checks if a value is valid without normalization.
