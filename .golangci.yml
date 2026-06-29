@@ -117,7 +117,7 @@ issues:
     - cmd
   exclude-files:
     - internal/daemon/
-    - internal/docs/.*\.go$
+    - internal/docs/
     - internal/doctemplate/.*\.go$
     - internal/forge/
     - internal/foundation/.*\.go$
