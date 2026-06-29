@@ -2,10 +2,10 @@ package stages
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
@@ -53,7 +53,7 @@ func RunStages(ctx context.Context, bs *models.BuildState, stages []models.Stage
 			if out.Error != nil {
 				return out.Error
 			}
-			return fmt.Errorf("stage %s aborted", st.Name)
+			return derrors.NewError(derrors.CategoryInternal, "stage aborted").WithContext("stage", st.Name).Build()
 		}
 
 		if st.Name == models.StageCloneRepos && bs.Git.AllReposUnchanged {

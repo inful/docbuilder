@@ -2,7 +2,6 @@ package stages
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -221,7 +221,7 @@ func gitStatRepo(path string) error {
 		return err
 	}
 	if _, err := os.Stat(path + "/.git"); err != nil { // missing .git
-		return fmt.Errorf("no git dir: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "no git dir").Build()
 	}
 	return nil
 }
@@ -244,19 +244,19 @@ func getCommitDate(repoPath, commitSHA string) time.Time {
 func checkoutExactCommit(repoPath, commitSHA string) (time.Time, error) {
 	repo, err := ggit.PlainOpen(repoPath)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("open repo for checkout: %w", err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryFileSystem, "open repo for checkout").Build()
 	}
 	wt, err := repo.Worktree()
 	if err != nil {
-		return time.Time{}, fmt.Errorf("get worktree for checkout: %w", err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryInternal, "get worktree for checkout").Build()
 	}
 	h := plumbing.NewHash(commitSHA)
 	if checkoutErr := wt.Checkout(&ggit.CheckoutOptions{Hash: h, Force: true}); checkoutErr != nil {
-		return time.Time{}, fmt.Errorf("checkout commit %s: %w", commitSHA, checkoutErr)
+		return time.Time{}, derrors.WrapError(checkoutErr, derrors.CategoryInternal, "checkout commit").WithContext("commit_sha", commitSHA).Build()
 	}
 	commit, err := repo.CommitObject(h)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("read commit %s: %w", commitSHA, err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryInternal, "read commit").WithContext("commit_sha", commitSHA).Build()
 	}
 	return commit.Author.When, nil
 }

@@ -115,7 +115,6 @@ issues:
   exclude-dirs-use-default: false
   exclude-dirs:
   exclude-files:
-    - internal/hugo/(categories_menu|config_writer|content_copy_pipeline|generator|models|modules|pipeline|stages|structure)\.go$
     - internal/hugo/stages_transition_test\.go$
   exclude-rules:
     # The old //nolint:forbidigo directives in cmd/ now target fmt.Println;

@@ -2,12 +2,12 @@ package hugo
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -27,7 +27,7 @@ func (g *Generator) CreateHugoStructure() error {
 	for _, dir := range dirs {
 		path := filepath.Join(root, dir)
 		if err := os.MkdirAll(path, 0o750); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", path, err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create directory").WithContext("path", path).Build()
 		}
 	}
 	slog.Debug("Created Hugo directory structure", "root", root)
@@ -88,7 +88,7 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("staging", g.stageDir),
 			slog.String("output", g.outputDir),
 			slog.String("error", err.Error()))
-		return fmt.Errorf("staging directory missing: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "staging directory missing").Build()
 	} else {
 		slog.Debug("Staging directory verified",
 			slog.String("path", g.stageDir),
@@ -111,7 +111,7 @@ func (g *Generator) finalizeStaging() error {
 				slog.String("from", g.outputDir),
 				slog.String("to", prev),
 				slog.String("error", err.Error()))
-			return fmt.Errorf("backup existing output: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "backup existing output").Build()
 		}
 		slog.Debug("Successfully backed up current output")
 	} else {
@@ -128,7 +128,7 @@ func (g *Generator) finalizeStaging() error {
 			slog.String("from", g.stageDir),
 			slog.String("to", g.outputDir),
 			slog.String("error", err.Error()))
-		return fmt.Errorf("promote staging: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "promote staging").Build()
 	}
 	g.stageDir = ""
 	slog.Info("Successfully promoted staging directory",

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Processor runs the complete content processing pipeline.
@@ -63,7 +64,7 @@ func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[strin
 	for i, generator := range p.generators {
 		docs, err := generator(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("generator %d failed: %w", i, err)
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, fmt.Sprintf("generator %d failed", i)).Build()
 		}
 		if len(docs) > 0 {
 			slog.Debug("Generator created files", slog.Int("count", len(docs)), slog.Int("generator", i))
@@ -79,7 +80,7 @@ func (p *Processor) ProcessContent(documents []*Document, repoMetadata map[strin
 
 	processedDocs, err := p.processTransforms(documents)
 	if err != nil {
-		return nil, fmt.Errorf("transformation phase failed: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "transformation phase failed").Build()
 	}
 
 	slog.Info("Pipeline: Transformation phase complete", slog.Int("processed", len(processedDocs)))
@@ -102,15 +103,14 @@ func (p *Processor) processTransforms(docs []*Document) ([]*Document, error) {
 		for i, transform := range p.transforms {
 			newDocs, err := transform(doc)
 			if err != nil {
-				return nil, fmt.Errorf("transform %d failed for %s: %w", i, doc.Path, err)
+				return nil, derrors.WrapError(err, derrors.CategoryInternal, fmt.Sprintf("transform %d failed for %s", i, doc.Path)).Build()
 			}
 
 			// Prevent generated documents from creating new documents (infinite loop protection)
 			if len(newDocs) > 0 && doc.Generated {
-				return nil, fmt.Errorf(
-					"generated document %s attempted to create new documents (transforms should not generate from generated docs)",
-					doc.Path,
-				)
+				return nil, derrors.NewError(derrors.CategoryValidation, "generated document attempted to create new documents (transforms should not generate from generated docs)").
+					WithContext("path", doc.Path).
+					Build()
 			}
 
 			// Queue new documents for full transform pipeline
@@ -168,7 +168,7 @@ func (p *Processor) GenerateStaticAssets() ([]*StaticAsset, error) {
 	for i, generator := range p.staticAssetGenerators {
 		assets, err := generator(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("static asset generator %d failed: %w", i, err)
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, fmt.Sprintf("static asset generator %d failed", i)).Build()
 		}
 		if len(assets) > 0 {
 			slog.Debug("Static asset generator created assets",

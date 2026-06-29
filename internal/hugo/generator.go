@@ -17,6 +17,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
@@ -321,7 +322,7 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 	report.DeriveOutcome()
 	report.Finish()
 	if err := g.finalizeStaging(); err != nil {
-		return nil, fmt.Errorf("finalize staging: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "finalize staging").Build()
 	}
 
 	// Verify public directory exists and log details
@@ -443,7 +444,7 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 	report.DeriveOutcome()
 	report.Finish()
 	if err := g.finalizeStaging(); err != nil {
-		return report, fmt.Errorf("finalize staging: %w", err)
+		return report, derrors.WrapError(err, derrors.CategoryFileSystem, "finalize staging").Build()
 	}
 	if err := report.Persist(g.outputDir); err != nil {
 		slog.Warn("Failed to persist build report", "error", err)

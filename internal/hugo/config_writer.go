@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
@@ -135,12 +135,14 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	data, err := yaml.Marshal(root)
 	if err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal hugo config").
+			WithCause(herrors.ErrConfigMarshalFailed).
+			Build()
 	}
 
 	// #nosec G306 -- hugo.yaml is a public configuration file
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write hugo config: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write hugo config").Build()
 	}
 
 	// Ensure go.mod for Hugo Modules (Relearn requires this)

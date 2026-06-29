@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"sort"
 
@@ -12,11 +11,12 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 	if len(bs.Git.RepoPaths) == 0 {
-		return models.NewWarnStageError(models.StageDiscoverDocs, fmt.Errorf("%w: no repositories cloned", models.ErrDiscovery))
+		return models.NewWarnStageError(models.StageDiscoverDocs, derrors.NewError(derrors.CategoryInternal, "no repositories cloned").WithCause(models.ErrDiscovery).Build())
 	}
 	select {
 	case <-ctx.Done():
@@ -26,7 +26,7 @@ func StageDiscoverDocs(ctx context.Context, bs *models.BuildState) error {
 	discovery := docs.NewDiscovery(bs.Git.Repositories, &bs.Generator.Config().Build)
 	docFiles, err := discovery.DiscoverDocs(bs.Git.RepoPaths)
 	if err != nil {
-		return models.NewFatalStageError(models.StageDiscoverDocs, fmt.Errorf("%w: %w", models.ErrDiscovery, err))
+		return models.NewFatalStageError(models.StageDiscoverDocs, derrors.WrapError(err, derrors.CategoryInternal, "discovery failed").WithCause(models.ErrDiscovery).Build())
 	}
 	prevCount := len(bs.Docs.Files)
 	prevFiles := bs.Docs.Files
