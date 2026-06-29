@@ -222,3 +222,117 @@ func (s *DefaultBuildService) logSkipEvaluationDisabled(ctx context.Context, req
 		observability.WarnContext(ctx, "Skip evaluator factory not configured - cannot evaluate skip conditions")
 	}
 }
+
+// ---------------------------------------------------------------------------
+// BuildService surface: shared contracts + result types.
+//
+// The shapes below describe the canonical "build a docs site" input and
+// output. Both CLI (`cmd/docbuilder`) and daemon (`internal/build/queue`)
+// consume them through this interface. The queue's Builder interface is
+// narrower (BuildJob -> BuildReport) and bridges via BuildServiceAdapter
+// (see internal/build/queue/build_service_adapter.go for the rationale).
+//
+// Plan review-overlapping-functionality.md: M14 marked this for
+// consolidation. We align the surface here and document why two
+// single-method interfaces (BuildService.Run + queue.Builder.Build)
+// coexist; the adapter is the deliberate seam.
+//
+// History: service.go held these types as a thin file; merging them
+// into default_service.go keeps the package's service surface in one
+// file, matching the rest of the codebase's organization.
+// ---------------------------------------------------------------------------
+
+// BuildService is the canonical interface for executing documentation builds.
+// Both CLI and daemon/server should implement thin wrappers over this interface.
+type BuildService interface {
+	// Run executes a complete build pipeline: clone → discover → transform → generate.
+	// Returns a BuildResult with detailed outcomes and any error encountered.
+	Run(ctx context.Context, req BuildRequest) (*BuildResult, error)
+}
+
+// BuildRequest contains all inputs required to execute a documentation build.
+type BuildRequest struct {
+	// Config is the loaded configuration for this build.
+	Config *appcfg.Config
+
+	// OutputDir is the target directory for the generated Hugo site.
+	OutputDir string
+
+	// Incremental enables incremental updates (git pull vs fresh clone).
+	Incremental bool
+
+	// Options provides optional build behavior modifiers.
+	Options BuildOptions
+}
+
+// BuildOptions provides optional configuration for build behavior.
+type BuildOptions struct {
+	// Verbose enables detailed logging during the build.
+	Verbose bool
+
+	// SkipIfUnchanged enables skip evaluation when content hasn't changed.
+	SkipIfUnchanged bool
+
+	// KeepWorkspace prevents the build workspace from being cleaned up after
+	// the build completes. Useful for debugging failed builds. The CLI uses
+	// this when invoked with --keep-workspace.
+	KeepWorkspace bool
+}
+
+// BuildResult contains the outcome of a build execution.
+type BuildResult struct {
+	// Status indicates overall build outcome.
+	Status BuildStatus
+
+	// Report contains detailed build metrics and diagnostics.
+	Report *models.BuildReport
+
+	// OutputPath is the final output directory (may differ from request).
+	OutputPath string
+
+	// Repositories is the count of processed repositories.
+	Repositories int
+
+	// RepositoriesSkipped is the count of repositories that failed to clone/process.
+	RepositoriesSkipped int
+
+	// FilesProcessed is the count of documentation files handled.
+	FilesProcessed int
+
+	// Duration is the total build execution time.
+	Duration time.Duration
+
+	// StartTime is when the build started.
+	StartTime time.Time
+
+	// EndTime is when the build completed.
+	EndTime time.Time
+
+	// Skipped indicates the build was skipped due to no changes.
+	Skipped bool
+
+	// SkipReason explains why the build was skipped (if Skipped is true).
+	SkipReason string
+}
+
+// BuildStatus represents the outcome of a build execution.
+type BuildStatus string
+
+const (
+	// BuildStatusSuccess indicates the build completed successfully.
+	BuildStatusSuccess BuildStatus = "success"
+
+	// BuildStatusFailed indicates the build encountered an error.
+	BuildStatusFailed BuildStatus = "failed"
+
+	// BuildStatusSkipped indicates the build was skipped (e.g., no changes).
+	BuildStatusSkipped BuildStatus = "skipped"
+
+	// BuildStatusCancelled indicates the build was canceled.
+	BuildStatusCancelled BuildStatus = "canceled"
+)
+
+// IsSuccess returns true if the build completed successfully.
+func (s BuildStatus) IsSuccess() bool {
+	return s == BuildStatusSuccess || s == BuildStatusSkipped
+}
