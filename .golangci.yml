@@ -119,7 +119,7 @@ issues:
     - internal/hugo/stages_transition_test\.go$
     - internal/lint/.*\.go$
     - internal/linkverify/
-    - internal/markdown/.*\.go$
+    - internal/markdown/
     - internal/server/httpserver/(http_server|http_server_webhook)\.go$
     - internal/templates/(discovery|http_fetch|inputs|output_path|render|schema|template_page|writer)\.go$
     - internal/versioning/.*\.go$
