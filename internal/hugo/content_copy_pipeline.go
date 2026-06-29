@@ -11,6 +11,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/pipeline"
 )

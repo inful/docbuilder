@@ -8,6 +8,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 

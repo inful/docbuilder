@@ -1,8 +1,12 @@
-package errors
-
-// Package errors provides sentinel errors for Hugo site generation stages.
-// These enable consistent classification (expanded in Phase 4) while keeping
-// user‑facing messages descriptive via wrapping.
+// Package hugoerrors provides sentinel errors for Hugo site generation stages.
+// These enable consistent classification (via errors.Is) while keeping
+// user-facing messages descriptive via wrapping.
+//
+// Consumers should import this package with an alias (e.g. 'herrors')
+// to avoid shadowing the stdlib errors package. The package name
+// 'hugoerrors' is intentionally distinct so the consumer's `errors.`
+// references continue to refer to the stdlib package.
+package hugoerrors
 
 import "errors"
 
@@ -12,7 +16,7 @@ var (
 	// ErrGoBinaryNotFound indicates the go executable was not detected on PATH.
 	// Hugo Modules requires the go toolchain to download/resolve module dependencies.
 	ErrGoBinaryNotFound = errors.New("go binary not found")
-	// ErrHugoExecutionFailed indicates the hugo command returned a non‑zero exit status.
+	// ErrHugoExecutionFailed indicates the hugo command returned a non-zero exit status.
 	ErrHugoExecutionFailed = errors.New("hugo execution failed")
 	// ErrConfigMarshalFailed indicates marshaling the generated Hugo configuration failed.
 	ErrConfigMarshalFailed = errors.New("hugo config marshal failed")

@@ -17,6 +17,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
