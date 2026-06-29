@@ -173,12 +173,12 @@ func (js *JSONStore) loadFromDisk() error {
 		if os.IsNotExist(err) {
 			return nil // No existing state file
 		}
-		return fmt.Errorf("failed to read state file: %w", err)
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to read state file").Build()
 	}
 
 	snapshot, err := decodeStateSnapshot(data)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal state: %w", err)
+		return errors.WrapError(err, errors.CategoryValidation, "failed to unmarshal state").Build()
 	}
 	js.applySnapshot(snapshot)
 	return nil
@@ -192,7 +192,7 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	snapshot := js.snapshot()
 	data, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal state: %w", err)
+		return errors.WrapError(err, errors.CategoryInternal, "failed to marshal state").Build()
 	}
 
 	statePath := filepath.Join(js.dataDir, "daemon-state.json")
@@ -201,11 +201,11 @@ func (js *JSONStore) saveToDiskUnsafe() error {
 	// Atomic write using temporary file
 	// #nosec G306 -- state file needs to be readable by the process, 0644 is acceptable
 	if err := os.WriteFile(tempPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write temporary state file: %w", err)
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to write temporary state file").Build()
 	}
 
 	if err := os.Rename(tempPath, statePath); err != nil {
-		return fmt.Errorf("failed to replace state file: %w", err)
+		return errors.WrapError(err, errors.CategoryFileSystem, "failed to replace state file").Build()
 	}
 
 	js.lastSaved = &now
@@ -221,7 +221,10 @@ func decodeStateSnapshot(data []byte) (stateSnapshot, error) {
 		return stateSnapshot{}, stderr.New("state snapshot missing format_version (legacy files are no longer supported)")
 	}
 	if snapshot.FormatVersion != stateSnapshotFormatVersion {
-		return stateSnapshot{}, fmt.Errorf("unsupported state snapshot format_version %q (expected %s)", snapshot.FormatVersion, stateSnapshotFormatVersion)
+		return stateSnapshot{}, errors.NewError(errors.CategoryValidation, "unsupported state snapshot format_version").
+			WithContext("actual", snapshot.FormatVersion).
+			WithContext("expected", stateSnapshotFormatVersion).
+			Build()
 	}
 	return snapshot, nil
 }
