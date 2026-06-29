@@ -112,7 +112,7 @@ issues:
     - internal/daemon/(daemon_postbuild|event_emitter|scheduler)\.go$
     - internal/docs/.*\.go$
     - internal/doctemplate/.*\.go$
-    - internal/forge/(discoveryrunner|helpers)\.go$
+    - internal/forge/
     - internal/foundation/normalization/.*\.go$
     - internal/git/.*\.go$
     - internal/hugo/(categories_menu|config_writer|content_copy_pipeline|generator|models|modules|pipeline|stages|structure)\.go$

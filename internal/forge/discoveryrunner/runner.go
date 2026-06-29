@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -145,7 +146,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		if r.discoveryCache != nil {
 			r.discoveryCache.SetError(err)
 		}
-		return fmt.Errorf("discovery failed: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "discovery failed").Build()
 	}
 
 	duration := time.Since(start)

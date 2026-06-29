@@ -2,12 +2,12 @@ package forge
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // newHTTPClient30s returns a shared HTTP client with a 30s timeout.
@@ -45,7 +45,9 @@ func tokenFromConfig(fg *Config, forgeName string) (string, error) {
 	if fg != nil && fg.Auth != nil && fg.Auth.Type == cfg.AuthTypeToken {
 		return fg.Auth.Token, nil
 	}
-	return "", fmt.Errorf("%s client requires token authentication", forgeName)
+	return "", derrors.NewError(derrors.CategoryAuth, forgeName+" client requires token authentication").
+		WithContext("forge", forgeName).
+		Build()
 }
 
 // fetchAndConvertReposGeneric is a generic helper to reduce duplication between
