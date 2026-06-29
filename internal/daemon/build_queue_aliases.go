@@ -1,19 +1,23 @@
 package daemon
 
-import "git.home.luguber.info/inful/docbuilder/internal/build/queue"
+import (
+	"git.home.luguber.info/inful/docbuilder/internal/build"
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
+)
 
 // Type and constant aliases keep the daemon package API stable while the
 // implementation lives in internal/build/queue.
 
 type (
-	BuildType         = queue.BuildType
-	BuildPriority     = queue.BuildPriority
-	BuildStatus       = queue.BuildStatus
-	BuildJob          = queue.BuildJob
-	BuildJobMetadata  = queue.BuildJobMetadata
-	BuildQueue        = queue.BuildQueue
-	BuildEventEmitter = queue.BuildEventEmitter
-	Builder           = queue.Builder
+	BuildType           = queue.BuildType
+	BuildPriority       = queue.BuildPriority
+	BuildStatus         = queue.BuildStatus
+	BuildJob            = queue.BuildJob
+	BuildJobMetadata    = queue.BuildJobMetadata
+	BuildQueue          = queue.BuildQueue
+	BuildEventEmitter   = queue.BuildEventEmitter
+	Builder             = queue.Builder
+	BuildServiceAdapter = queue.BuildServiceAdapter
 )
 
 const (
@@ -38,4 +42,9 @@ func EnsureTypedMeta(job *BuildJob) *BuildJobMetadata { return queue.EnsureTyped
 
 func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 	return queue.NewBuildQueue(maxSize, workers, builder)
+}
+
+// NewBuildServiceAdapter wraps a build.BuildService as a queue Builder.
+func NewBuildServiceAdapter(svc build.BuildService) *BuildServiceAdapter {
+	return queue.NewBuildServiceAdapter(svc)
 }

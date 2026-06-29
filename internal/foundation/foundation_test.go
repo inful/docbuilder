@@ -6,11 +6,6 @@ import (
 	"testing"
 )
 
-const (
-	forgeGitHub = "github"
-	forgeGitLab = "gitlab"
-)
-
 func TestResult(t *testing.T) {
 	t.Run("Ok result", func(t *testing.T) {
 		result := Ok[string, error]("success")
@@ -122,35 +117,5 @@ func TestOption(t *testing.T) {
 	})
 }
 
-func TestNormalizer(t *testing.T) {
-	normalizer := NewNormalizer(map[string]string{
-		forgeGitHub: forgeGitHub,
-		forgeGitLab: forgeGitLab,
-		"forgejo":   "forgejo",
-	}, forgeGitHub)
-
-	t.Run("Valid values", func(t *testing.T) {
-		if normalizer.Normalize("GitHub") != forgeGitHub {
-			t.Error("Expected 'GitHub' to normalize to 'github'")
-		}
-
-		if normalizer.Normalize(" gitlab ") != forgeGitLab {
-			t.Error("Expected ' gitlab ' to normalize to 'gitlab'")
-		}
-	})
-
-	t.Run("Invalid value", func(t *testing.T) {
-		if normalizer.Normalize("bitbucket") != forgeGitHub {
-			t.Error("Expected 'bitbucket' to return default 'github'")
-		}
-	})
-
-	t.Run("With error", func(t *testing.T) {
-		_, err := normalizer.NormalizeWithError("invalid")
-		if err == nil {
-			t.Error("Expected error for invalid value")
-		}
-	})
-}
-
 // Note: ClassifiedError tests have been moved to internal/foundation/errors/errors_test.go
+// Note: Normalizer tests have been moved to internal/foundation/normalization/normalizer_test.go
