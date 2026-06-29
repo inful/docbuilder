@@ -129,8 +129,8 @@ issues:
     - internal/markdown/
     - internal/server/httpserver/
     - internal/templates/
-    - internal/versioning/.*\.go$
-    - internal/workspace/.*\.go$
+    - internal/versioning/
+    - internal/workspace/
   exclude-rules:
     # The old //nolint:forbidigo directives in cmd/ now target fmt.Println;
     # forbidigo fmt.Errorf never matches in those functions, so the

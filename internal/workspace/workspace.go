@@ -1,12 +1,12 @@
 package workspace
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -51,7 +51,9 @@ func (m *Manager) Create() error {
 	if m.persistent {
 		// Persistent mode: use fixed directory
 		if err := os.MkdirAll(m.tempDir, 0o750); err != nil {
-			return fmt.Errorf("failed to create persistent workspace directory: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create persistent workspace directory").
+				WithContext("path", m.tempDir).
+				Build()
 		}
 		slog.Info("Using persistent workspace", logfields.Path(m.tempDir))
 		return nil
@@ -59,10 +61,12 @@ func (m *Manager) Create() error {
 
 	// Ephemeral mode: create timestamped directory
 	timestamp := time.Now().Format("20060102-150405")
-	tempDir := filepath.Join(m.baseDir, fmt.Sprintf("docbuilder-%s", timestamp))
+	tempDir := filepath.Join(m.baseDir, "docbuilder-"+timestamp)
 
 	if err := os.MkdirAll(tempDir, 0o750); err != nil {
-		return fmt.Errorf("failed to create workspace directory: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create workspace directory").
+			WithContext("path", tempDir).
+			Build()
 	}
 
 	m.tempDir = tempDir
@@ -91,7 +95,9 @@ func (m *Manager) Cleanup() error {
 
 	// Ephemeral mode: remove directory
 	if err := os.RemoveAll(m.tempDir); err != nil {
-		return fmt.Errorf("failed to cleanup workspace: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to cleanup workspace").
+			WithContext("path", m.tempDir).
+			Build()
 	}
 
 	slog.Info("Cleaned up workspace", logfields.Path(m.tempDir))
