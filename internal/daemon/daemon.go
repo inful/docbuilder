@@ -260,7 +260,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		StateManager:   daemon.stateManager,
 		BuildRequester: daemon.onDiscoveryBuildRequest,
 		RepoRemoved:    daemon.onDiscoveryRepoRemoved,
-		LiveReload:     daemon.liveReload,
 		Config:         cfg,
 	})
 

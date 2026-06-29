@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 )
@@ -81,11 +80,8 @@ func TestRunner_Run_WhenReposDiscovered_UpdatesCacheAndEnqueuesBuild(t *testing.
 	require.Same(t, discovery.result, res)
 	require.Equal(t, 1, enq.calls)
 	require.NotNil(t, enq.last)
-	require.Equal(t, jobID, enq.last.ID)
-	require.Equal(t, queue.BuildTypeDiscovery, enq.last.Type)
-	require.NotNil(t, enq.last.TypedMeta)
-	require.Same(t, appCfg, enq.last.TypedMeta.V2Config)
-	require.Len(t, enq.last.TypedMeta.Repositories, 2)
+	require.Same(t, appCfg, enq.last.cfg)
+	require.Len(t, enq.last.repos, 2)
 }
 
 func TestRunner_Run_WhenBuildOnDiscoveryDisabled_UpdatesCacheAndDoesNotEnqueueBuild(t *testing.T) {
@@ -267,11 +263,16 @@ func (m *fakeMetrics) SetGauge(string, int64)          {}
 
 type fakeEnqueuer struct {
 	calls int
-	last  *queue.BuildJob
+	last  *fakeBuildJob
 }
 
-func (e *fakeEnqueuer) Enqueue(job *queue.BuildJob) error {
+type fakeBuildJob struct {
+	repos []config.Repository
+	cfg   *config.Config
+}
+
+func (e *fakeEnqueuer) EnqueueDiscoveryBuild(_ context.Context, _ string, repos []config.Repository, cfg *config.Config) error {
 	e.calls++
-	e.last = job
+	e.last = &fakeBuildJob{repos: repos, cfg: cfg}
 	return nil
 }

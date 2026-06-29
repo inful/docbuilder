@@ -57,6 +57,23 @@ func (f *fakeBuildQueue) Enqueue(job *queue.BuildJob) error {
 	return nil
 }
 
+// EnqueueDiscoveryBuild implements discoveryrunner.BuildEnqueuer for the
+// fake so daemon tests can wire the discovery runner with the same fake.
+func (f *fakeBuildQueue) EnqueueDiscoveryBuild(ctx context.Context, jobID string, repos []config.Repository, cfg *config.Config) error {
+	// Match the production adapter's behavior: synthesize a discovery-type
+	// job carrying the converted repositories and the passed-in config.
+	return f.Enqueue(&queue.BuildJob{
+		ID:        jobID,
+		Type:      queue.BuildTypeDiscovery,
+		Priority:  queue.PriorityNormal,
+		CreatedAt: time.Now(),
+		TypedMeta: &queue.BuildJobMetadata{
+			V2Config:     cfg,
+			Repositories: repos,
+		},
+	})
+}
+
 func (f *fakeBuildQueue) Jobs() []*queue.BuildJob {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -78,7 +95,6 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			Metrics:        nil,
 			StateManager:   nil,
 			BuildQueue:     fakeQ,
-			LiveReload:     nil,
 			Config:         cfg,
 			Now:            func() time.Time { return time.Unix(123, 0).UTC() },
 			NewJobID:       func() string { return "job-1" },
@@ -110,7 +126,6 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			Metrics:        nil,
 			StateManager:   nil,
 			BuildQueue:     fakeQ,
-			LiveReload:     nil,
 			Config:         cfg,
 			Now:            func() time.Time { return time.Unix(123, 0).UTC() },
 			NewJobID:       func() string { return "job-1" },
@@ -158,7 +173,6 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			Metrics:        nil,
 			StateManager:   nil,
 			BuildQueue:     fakeQ,
-			LiveReload:     nil,
 			Config:         cfg,
 		})
 
