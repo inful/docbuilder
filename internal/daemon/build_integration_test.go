@@ -60,7 +60,7 @@ func TestDaemonStateBuildCounters(t *testing.T) {
 	if svcResult.IsErr() {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm := svcResult.Unwrap()
 	gen := hugo.NewGenerator(config, out).WithStateManager(sm).WithRenderer(&stages.NoopRenderer{})
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
 	defer cancel()

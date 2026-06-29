@@ -92,24 +92,9 @@ func NewJSONStore(dataDir string) foundation.Result[*JSONStore, error] {
 	return foundation.Ok[*JSONStore, error](store)
 }
 
-// Repositories returns the repository store interface.
-func (js *JSONStore) Repositories() RepositoryStore {
-	return &jsonRepositoryStore{store: js}
-}
-
-// Configuration returns the configuration store interface.
-func (js *JSONStore) Configuration() ConfigurationStore {
-	return &jsonConfigurationStore{store: js}
-}
-
-// DaemonInfo returns the daemon info store interface.
-func (js *JSONStore) DaemonInfo() DaemonInfoStore {
-	return &jsonDaemonInfoStore{store: js}
-}
-
 // WithTransaction executes a function within a transaction-like context.
 // For the JSON store, this uses a mutex to ensure consistency.
-func (js *JSONStore) WithTransaction(_ context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
+func (js *JSONStore) WithTransaction(_ context.Context, fn func(*JSONStore) error) foundation.Result[struct{}, error] {
 	js.mu.Lock()
 	defer js.mu.Unlock()
 

@@ -178,7 +178,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	if stateServiceResult.IsErr() {
 		return nil, fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
 	}
-	daemon.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
+	daemon.stateManager = stateServiceResult.Unwrap()
 
 	// Initialize event store and build history projection (Phase B - Event Sourcing)
 	eventStorePath := filepath.Join(stateDir, "events.db")

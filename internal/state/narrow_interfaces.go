@@ -100,5 +100,6 @@ type DaemonStateManager interface {
 	DiscoveryRecorder
 }
 
-// Compile-time verification that ServiceAdapter implements DaemonStateManager.
-var _ DaemonStateManager = (*ServiceAdapter)(nil)
+// Compile-time verification that *Service implements DaemonStateManager
+// (the canonical aggregate of all narrow interfaces above).
+var _ DaemonStateManager = (*Service)(nil)

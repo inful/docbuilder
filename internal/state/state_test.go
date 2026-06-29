@@ -20,7 +20,6 @@ func TestJSONStore(t *testing.T) {
 func testRepositoryOperations(t *testing.T) {
 	store := createTestStore(t)
 	ctx := t.Context()
-	repoStore := store.Repositories()
 
 	// Create a repository
 	repo := &Repository{
@@ -29,28 +28,28 @@ func testRepositoryOperations(t *testing.T) {
 		Branch: defaultBranchMain,
 	}
 
-	createResult := repoStore.Create(ctx, repo)
+	createResult := store.RepositoryCreate(ctx, repo)
 	if createResult.IsErr() {
 		t.Fatalf("Failed to create repository: %v", createResult.UnwrapErr())
 	}
 
 	// Retrieve the repository
-	getResult := repoStore.GetByURL(ctx, repo.URL)
+	getResult := store.RepositoryGetByURL(ctx, repo.URL)
 	if getResult.IsErr() {
-		t.Fatalf("Failed to get repository: %v", getResult.UnwrapErr())
+		t.Fatalf("Failed to get repository: %v", createResult.UnwrapErr())
 	}
 
-	if getResult.Unwrap().IsNone() {
+	if getResult.Unwrap() == nil {
 		t.Fatal("Repository not found after creation")
 	}
 
-	retrieved := getResult.Unwrap().Unwrap()
+	retrieved := getResult.Unwrap()
 	if retrieved.Name != repo.Name {
 		t.Errorf("Expected name %q, got %q", repo.Name, retrieved.Name)
 	}
 
 	// List repositories
-	listResult := repoStore.List(ctx)
+	listResult := store.RepositoryList(ctx)
 	if listResult.IsErr() {
 		t.Fatalf("Failed to list repositories: %v", listResult.UnwrapErr())
 	}
@@ -61,35 +60,35 @@ func testRepositoryOperations(t *testing.T) {
 	}
 
 	// Increment build count
-	incrementResult := repoStore.IncrementBuildCount(ctx, repo.URL, true)
+	incrementResult := store.RepositoryIncrementBuildCount(ctx, repo.URL, true)
 	if incrementResult.IsErr() {
 		t.Fatalf("Failed to increment build count: %v", incrementResult.UnwrapErr())
 	}
 
 	// Verify build count increased
-	getResult = repoStore.GetByURL(ctx, repo.URL)
+	getResult = store.RepositoryGetByURL(ctx, repo.URL)
 	if getResult.IsErr() {
 		t.Fatalf("Failed to get repository after increment: %v", getResult.UnwrapErr())
 	}
 
-	updated := getResult.Unwrap().Unwrap()
+	updated := getResult.Unwrap()
 	if updated.BuildCount != 1 {
 		t.Errorf("Expected build count 1, got %d", updated.BuildCount)
 	}
 
 	// Update repository metadata for existing record
-	if hashResult := repoStore.SetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
+	if hashResult := store.RepositorySetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
 		t.Fatalf("Failed to set doc files hash: %v", hashResult.UnwrapErr())
 	}
-	if pathsResult := repoStore.SetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
+	if pathsResult := store.RepositorySetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
 		t.Fatalf("Failed to set doc file paths: %v", pathsResult.UnwrapErr())
 	}
 
-	metaResult := repoStore.GetByURL(ctx, repo.URL)
-	if metaResult.IsErr() || metaResult.Unwrap().IsNone() {
+	metaResult := store.RepositoryGetByURL(ctx, repo.URL)
+	if metaResult.IsErr() || metaResult.Unwrap() == nil {
 		t.Fatalf("Failed to reload repository for metadata checks: %v", metaResult.UnwrapErr())
 	}
-	meta := metaResult.Unwrap().Unwrap()
+	meta := metaResult.Unwrap()
 	if meta.DocFilesHash.IsNone() || meta.DocFilesHash.Unwrap() != "abc123" {
 		t.Fatalf("Doc files hash not stored correctly: %+v", meta.DocFilesHash)
 	}
@@ -98,11 +97,11 @@ func testRepositoryOperations(t *testing.T) {
 	}
 
 	t.Run("Repository metadata requires existing repo", func(t *testing.T) {
-		testRepositoryMetadataValidation(t, repoStore)
+		testRepositoryMetadataValidation(t, store)
 	})
 }
 
-func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
+func testRepositoryMetadataValidation(t *testing.T, store *JSONStore) {
 	t.Helper()
 	ctx := t.Context()
 	missingURL := "https://github.com/example/missing.git"
@@ -113,25 +112,25 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 		{
 			name: "increment",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.IncrementBuildCount(ctx, missingURL, true)
+				return store.RepositoryIncrementBuildCount(ctx, missingURL, true)
 			},
 		},
 		{
 			name: "doc-count",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocumentCount(ctx, missingURL, 1)
+				return store.RepositorySetDocumentCount(ctx, missingURL, 1)
 			},
 		},
 		{
 			name: "doc-hash",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocFilesHash(ctx, missingURL, "hash")
+				return store.RepositorySetDocFilesHash(ctx, missingURL, "hash")
 			},
 		},
 		{
 			name: "doc-paths",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocFilePaths(ctx, missingURL, []string{"a"})
+				return store.RepositorySetDocFilePaths(ctx, missingURL, []string{"a"})
 			},
 		},
 	}
@@ -154,7 +153,7 @@ func testTransactionOperations(t *testing.T) {
 	store := createTestStore(t)
 	ctx := t.Context()
 
-	txResult := store.WithTransaction(ctx, func(txStore Store) error {
+	txResult := store.WithTransaction(ctx, func(txStore *JSONStore) error {
 		// Create repository in transaction (build store removed as dead code)
 		repo := &Repository{
 			URL:    "https://github.com/tx/repo.git",
@@ -162,7 +161,7 @@ func testTransactionOperations(t *testing.T) {
 			Branch: defaultBranchMain,
 		}
 
-		createResult := txStore.Repositories().Create(ctx, repo)
+		createResult := txStore.RepositoryCreate(ctx, repo)
 		if createResult.IsErr() {
 			return createResult.UnwrapErr()
 		}
@@ -175,8 +174,8 @@ func testTransactionOperations(t *testing.T) {
 	}
 
 	// Verify the repository was created
-	getRepoResult := store.Repositories().GetByURL(ctx, "https://github.com/tx/repo.git")
-	if getRepoResult.IsErr() || getRepoResult.Unwrap().IsNone() {
+	getRepoResult := store.RepositoryGetByURL(ctx, "https://github.com/tx/repo.git")
+	if getRepoResult.IsErr() || getRepoResult.Unwrap() == nil {
 		t.Error("Repository not found after transaction")
 	}
 }
@@ -213,7 +212,7 @@ func testPersistence(t *testing.T) {
 		Name:   "persist-repo",
 		Branch: defaultBranchMain,
 	}
-	if createResult := store.Repositories().Create(ctx, repo); createResult.IsErr() {
+	if createResult := store.RepositoryCreate(ctx, repo); createResult.IsErr() {
 		t.Fatalf("Failed to create test repository: %v", createResult.UnwrapErr())
 	}
 
@@ -231,7 +230,7 @@ func testPersistence(t *testing.T) {
 	newStore := newStoreResult.Unwrap()
 
 	// Verify data persisted
-	listResult := newStore.Repositories().List(ctx)
+	listResult := newStore.RepositoryList(ctx)
 	if listResult.IsErr() {
 		t.Fatalf("Failed to list repositories from new store: %v", listResult.UnwrapErr())
 	}
@@ -249,7 +248,7 @@ func testPersistence(t *testing.T) {
 }
 
 // createTestStore is a helper to create a test store.
-func createTestStore(t *testing.T) Store {
+func createTestStore(t *testing.T) *JSONStore {
 	t.Helper()
 	tmpDir := t.TempDir()
 	storeResult := NewJSONStore(tmpDir)
@@ -301,10 +300,10 @@ func TestStateService(t *testing.T) {
 
 	// Test store access through service
 	t.Run("Store Access", func(t *testing.T) {
-		repoStore := service.GetRepositoryStore()
+		store := service.Store()
 
-		if repoStore == nil {
-			t.Error("Repository store is nil")
+		if store == nil {
+			t.Error("Store is nil")
 		}
 	})
 }

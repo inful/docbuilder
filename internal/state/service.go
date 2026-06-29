@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
+	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -14,7 +16,12 @@ import (
 // and integrates it with the service orchestrator. This bridges the gap between
 // the monolithic StateManager and the new composable state stores.
 type Service struct {
-	store Store
+	store *JSONStore
+
+	// Cached lifecycle values (formerly on ServiceAdapter).
+	mu        sync.RWMutex
+	loaded    bool
+	lastSaved *time.Time
 }
 
 // NewService creates a new state service with the default JSON store.
@@ -31,7 +38,7 @@ func NewService(dataDir string) foundation.Result[*Service, error] {
 
 // NewServiceWithStore creates a new state service with a custom store.
 // This allows for dependency injection and testing with mock stores.
-func NewServiceWithStore(store Store, dataDir string) *Service {
+func NewServiceWithStore(store *JSONStore, dataDir string) *Service {
 	return &Service{
 		store: store,
 	}
@@ -61,8 +68,7 @@ func (ss *Service) Start(ctx context.Context) error {
 	}
 
 	// Update daemon status to running
-	daemonStore := ss.store.DaemonInfo()
-	updateResult := daemonStore.UpdateStatus(ctx, "running")
+	updateResult := ss.store.DaemonInfoUpdateStatus(ctx, "running")
 	if updateResult.IsErr() {
 		return errors.InternalError("failed to update daemon status to running").
 			WithCause(updateResult.UnwrapErr()).
@@ -76,8 +82,7 @@ func (ss *Service) Start(ctx context.Context) error {
 // This gracefully shuts down the state service and ensures data is persisted.
 func (ss *Service) Stop(ctx context.Context) error {
 	// Update daemon status to stopping
-	daemonStore := ss.store.DaemonInfo()
-	updateResult := daemonStore.UpdateStatus(ctx, "stopping")
+	updateResult := ss.store.DaemonInfoUpdateStatus(ctx, "stopping")
 	if updateResult.IsErr() {
 		// Log error but continue with shutdown
 		slog.Warn("failed to update daemon status during shutdown", "error", updateResult.UnwrapErr())
@@ -120,30 +125,68 @@ func (ss *Service) Dependencies() []string {
 	return []string{} // State service has no dependencies
 }
 
-// Store returns the underlying state store for direct access.
-// This allows other services to interact with state through the interfaces.
-func (ss *Service) Store() Store {
+// --- LifecycleManager surface (formerly on ServiceAdapter) ---
+
+// Load loads state from the underlying store. The typed JSON store
+// loads on creation, so this is mostly a health check.
+func (ss *Service) Load() error {
+	ctx := context.Background()
+	health := ss.store.Health(ctx)
+	if health.IsErr() {
+		return health.UnwrapErr()
+	}
+	if health.Unwrap().Status != healthyStatus {
+		return errors.InternalError("state store unhealthy").
+			WithContext("status", health.Unwrap().Status).
+			Build()
+	}
+	ss.mu.Lock()
+	ss.loaded = true
+	ss.mu.Unlock()
+	return nil
+}
+
+// Save persists state to the underlying store. The typed JSON store
+// auto-persists on every mutation; this method just updates the cached
+// lastSaved timestamp and triggers a health-check flush.
+func (ss *Service) Save() error {
+	ctx := context.Background()
+	ss.mu.Lock()
+	now := time.Now()
+	ss.lastSaved = &now
+	ss.mu.Unlock()
+
+	health := ss.store.Health(ctx)
+	if health.IsErr() {
+		return health.UnwrapErr()
+	}
+	return nil
+}
+
+// IsLoaded returns whether the state has been loaded.
+func (ss *Service) IsLoaded() bool {
+	ss.mu.RLock()
+	defer ss.mu.RUnlock()
+	return ss.loaded
+}
+
+// LastSaved returns the last save timestamp.
+func (ss *Service) LastSaved() *time.Time {
+	ss.mu.RLock()
+	defer ss.mu.RUnlock()
+	return ss.lastSaved
+}
+
+// Store returns the underlying *JSONStore for direct access.
+// Callers can invoke the inlined per-capability methods directly
+// (RepositoryCreate, ConfigurationGet, DaemonInfoUpdateStatus, etc).
+func (ss *Service) Store() *JSONStore {
 	return ss.store
-}
-
-// GetRepositoryStore provides typed access to repository operations.
-func (ss *Service) GetRepositoryStore() RepositoryStore {
-	return ss.store.Repositories()
-}
-
-// GetConfigurationStore provides typed access to configuration operations.
-func (ss *Service) GetConfigurationStore() ConfigurationStore {
-	return ss.store.Configuration()
-}
-
-// GetDaemonInfoStore provides typed access to daemon info operations.
-func (ss *Service) GetDaemonInfoStore() DaemonInfoStore {
-	return ss.store.DaemonInfo()
 }
 
 // WithTransaction executes operations within a transaction-like context.
 // This ensures consistency across multiple state operations.
-func (ss *Service) WithTransaction(ctx context.Context, fn func(Store) error) foundation.Result[struct{}, error] {
+func (ss *Service) WithTransaction(ctx context.Context, fn func(*JSONStore) error) foundation.Result[struct{}, error] {
 	return ss.store.WithTransaction(ctx, fn)
 }
 
