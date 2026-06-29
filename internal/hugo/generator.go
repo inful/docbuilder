@@ -287,11 +287,8 @@ func (g *Generator) GenerateSiteWithReportContext(ctx context.Context, docFiles 
 		Add(models.StagePrepareOutput, stages.StagePrepareOutput).
 		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).
-		Add(models.StageIndexes, stages.StageIndexes).
 		Add(models.StageRunHugo, stages.StageRunHugo).
-		Add(models.StagePostProcess, stages.StagePostProcess).
 		Build()
 
 	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
@@ -440,11 +437,8 @@ func (g *Generator) GenerateFullSite(ctx context.Context, repositories []config.
 		Add(models.StageDiscoverDocs, stages.StageDiscoverDocs).
 		Add(models.StageCategoriesMenu, stages.StageCategoriesMenu).
 		Add(models.StageGenerateConfig, stages.StageGenerateConfig).
-		Add(models.StageLayouts, stages.StageLayouts).
 		Add(models.StageCopyContent, stages.StageCopyContent).
-		Add(models.StageIndexes, stages.StageIndexes).
 		Add(models.StageRunHugo, stages.StageRunHugo).
-		Add(models.StagePostProcess, stages.StagePostProcess).
 		Build()
 	if err := stages.RunStages(ctx, bs, pipeline); err != nil {
 		// derive outcome even on error for observability; cleanup staging
