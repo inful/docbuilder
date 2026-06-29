@@ -43,7 +43,7 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
-		mergeParams(params, g.config.Hugo.Params)
+		mergeParamsInline(params, g.config.Hugo.Params)
 	}
 
 	// Phase 4: Dynamic fields
@@ -309,3 +309,25 @@ func hasAutoVariant(themeVariant any) bool {
 }
 
 // (legacy param helpers removed)
+
+// mergeParamsInline deep-merges src into dst (map[string]any).
+// - Maps: merged recursively
+// - Slices & scalars: replaced.
+func mergeParamsInline(dst, src map[string]any) {
+	if src == nil {
+		return
+	}
+	for k, v := range src {
+		if mv, ok := v.(map[string]any); ok {
+			if existing, ok2 := dst[k].(map[string]any); ok2 {
+				mergeParamsInline(existing, mv)
+			} else {
+				cp := map[string]any{}
+				mergeParamsInline(cp, mv)
+				dst[k] = cp
+			}
+			continue
+		}
+		dst[k] = v
+	}
+}
