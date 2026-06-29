@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
@@ -167,97 +166,4 @@ type StoreHealth struct {
 	LastBackup  *time.Time `json:"last_backup,omitempty"`
 	StorageSize *int64     `json:"storage_size_bytes,omitempty"`
 	CheckedAt   time.Time  `json:"checked_at"`
-}
-
-// Manager orchestrates state operations across multiple stores.
-// This is a much smaller, focused component compared to the original 620-line Manager.
-type Manager struct {
-	store     Store
-	lastSaved foundation.Option[time.Time]
-}
-
-// NewManager creates a new state manager with the given store.
-func NewManager(store Store) *Manager {
-	return &Manager{
-		store:     store,
-		lastSaved: foundation.None[time.Time](),
-	}
-}
-
-// WithAutoSave configures automatic saving.
-func (sm *Manager) WithAutoSave(enabled bool, interval time.Duration) *Manager {
-	// Auto-save configuration removed - no longer needed
-	return sm
-}
-
-// GetRepository retrieves repository state by URL.
-func (sm *Manager) GetRepository(ctx context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
-	return sm.store.Repositories().GetByURL(ctx, url)
-}
-
-// IncrementRepoBuild increments build counters for a repository.
-func (sm *Manager) IncrementRepoBuild(ctx context.Context, url string, success bool) foundation.Result[struct{}, error] {
-	return sm.store.Repositories().IncrementBuildCount(ctx, url, success)
-}
-
-// RecordBuild records a build operation.
-func (sm *Manager) RecordBuild(ctx context.Context, build *Build) foundation.Result[*Build, error] {
-	// Validate the build
-	if validationResult := build.Validate(); !validationResult.Valid {
-		return foundation.Err[*Build, error](validationResult.ToError())
-	}
-
-	// Create or update the build
-	result := sm.store.Builds().Create(ctx, build)
-	if result.IsErr() {
-		return result
-	}
-
-	// Update statistics
-	statsResult := sm.store.Statistics().RecordBuild(ctx, build)
-	if statsResult.IsErr() {
-		// Log but don't fail the operation.
-		// In a production system, you might want different error handling.
-		slog.Warn("statistics record failed", "error", statsResult.UnwrapErr())
-	}
-
-	return result
-}
-
-// GetStatistics retrieves current daemon statistics.
-func (sm *Manager) GetStatistics(ctx context.Context) foundation.Result[*Statistics, error] {
-	return sm.store.Statistics().Get(ctx)
-}
-
-// Health returns the health status of the state management system.
-func (sm *Manager) Health(ctx context.Context) foundation.Result[StoreHealth, error] {
-	return sm.store.Health(ctx)
-}
-
-// Close gracefully shuts down the state manager.
-func (sm *Manager) Close(ctx context.Context) foundation.Result[struct{}, error] {
-	return sm.store.Close(ctx)
-}
-
-// IsLoaded returns whether the state manager is properly initialized.
-func (sm *Manager) IsLoaded() bool {
-	// For this interface-based design, we consider it loaded if we have a store
-	return sm.store != nil
-}
-
-// LastSaved returns the last time state was saved.
-func (sm *Manager) LastSaved() *time.Time {
-	return sm.lastSaved.ToPointer()
-}
-
-// Load is a no-op in this design since loading is handled by the store implementation.
-func (sm *Manager) Load() error {
-	// In the interface-based design, loading is handled by the concrete store
-	return nil
-}
-
-// Save is a no-op in this design since saving is handled automatically by stores.
-func (sm *Manager) Save() error {
-	sm.lastSaved = foundation.Some(time.Now())
-	return nil
 }
