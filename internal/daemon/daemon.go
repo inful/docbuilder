@@ -15,6 +15,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/lifecycle"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -657,7 +658,7 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
-			workCtx, cancel := d.stopAwareContext(ctx)
+			workCtx, cancel := lifecycle.StopAwareContext(ctx, d.stopChan)
 			defer cancel()
 			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}

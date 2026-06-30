@@ -1,4 +1,12 @@
-package daemon
+// Package lifecycle owns the daemon's lifecycle primitives: the cron-style
+// Scheduler, the WorkerGroup that tracks background goroutines, and the
+// StopAwareContext helper that lets long-running work be canceled when the
+// daemon's stop channel closes.
+//
+// The package has no dependency on the rest of the daemon package. The daemon
+// owns a single Scheduler and WorkerGroup instance and calls them through
+// type aliases defined in internal/daemon/lifecycle_aliases.go.
+package lifecycle
 
 import (
 	"context"
