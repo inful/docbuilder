@@ -435,6 +435,13 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 var defaultDaemonInstance *Daemon
 
 // Start starts the daemon and all its components.
+//
+// The start sequence is split into per-subsystem helpers (startCore,
+// startHTTP, startBuildQueue, startScheduler, startPostSchedule). Start
+// itself acquires d.mu once, drives the helpers, releases the lock, then
+// blocks on mainLoop. Error paths (StatusError + runCancel) are visible
+// in Start's body rather than buried in helpers so the bookkeeping stays
+// in one place.
 func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Lock()
 	if d.GetStatus() != StatusStopped {
@@ -442,6 +449,53 @@ func (d *Daemon) Start(ctx context.Context) error {
 		return derrors.NewError(derrors.CategoryValidation, "daemon is not in stopped state: "+d.GetStatus()).Build()
 	}
 
+	runCtx, runCancel := d.startCore(ctx)
+
+	if err := d.startHTTP(runCtx); err != nil {
+		d.status.Store(StatusError)
+		d.runCancel = nil
+		if runCancel != nil {
+			runCancel()
+		}
+		d.mu.Unlock()
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
+	}
+
+	d.startBuildQueue(runCtx)
+	d.startWorkers(runCtx)
+
+	if err := d.startScheduler(ctx, runCtx); err != nil {
+		d.status.Store(StatusError)
+		if d.runCancel != nil {
+			d.runCancel()
+			d.runCancel = nil
+		}
+		d.mu.Unlock()
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to schedule daemon jobs").Build()
+	}
+
+	d.startPostSchedule()
+	d.mu.Unlock()
+
+	// Run main daemon loop (blocks until stopped)
+	d.mainLoop(runCtx)
+
+	// When mainLoop exits, we're stopping
+	d.status.Store(StatusStopping)
+	slog.Info("Main loop exited, daemon stopping")
+
+	return nil
+}
+
+// startCore moves the daemon from StatusStopped into the in-progress start
+// sequence: status, start time, initial metrics, the global metrics
+// reference for the optional Prometheus bridge, the "starting" log line,
+// state load (warn-only), the run context, and workers.Reset.
+//
+// The runCtx is returned to the caller; runCancel is also returned AND
+// stored on d.runCancel so Stop can cancel it from outside. Callers must
+// hold d.mu (Start does, then releases it before mainLoop).
+func (d *Daemon) startCore(ctx context.Context) (context.Context, context.CancelFunc) {
 	d.status.Store(StatusStarting)
 	d.startTime = time.Now()
 
@@ -462,35 +516,41 @@ func (d *Daemon) Start(ctx context.Context) error {
 	runCtx, runCancel := context.WithCancel(ctx)
 	d.runCancel = runCancel
 	d.workers.Reset()
+	return runCtx, runCancel
+}
 
-	// Start HTTP servers
-	if err := d.httpServer.Start(runCtx); err != nil {
-		d.status.Store(StatusError)
-		d.runCancel = nil
-		runCancel()
-		d.mu.Unlock()
-		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
-	}
+// startHTTP starts the HTTP server. Returns the underlying error; the
+// caller is responsible for the error-path bookkeeping (StatusError,
+// d.runCancel = nil, runCancel, mu release).
+func (d *Daemon) startHTTP(runCtx context.Context) error {
+	return d.httpServer.Start(runCtx)
+}
 
-	// Start build queue processing
+// startBuildQueue starts the build queue processing. The queue has no
+// error return; failures are surfaced via the orchestration bus.
+func (d *Daemon) startBuildQueue(runCtx context.Context) {
 	d.buildQueue.Start(runCtx)
+}
 
-	d.startWorkers(runCtx)
-
-	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
+// startScheduler registers the periodic jobs (cron + intervals) and
+// starts the scheduler loop. The scheduler loop is bound to parentCtx
+// (matching the pre-refactor semantics), while the registered jobs
+// capture runCtx so they are canceled on Stop's runCancel.
+//
+// Returns any error from schedulePeriodicJobs; the caller is responsible
+// for the error-path bookkeeping.
+func (d *Daemon) startScheduler(parentCtx, runCtx context.Context) error {
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
-		d.status.Store(StatusError)
-		if d.runCancel != nil {
-			d.runCancel()
-			d.runCancel = nil
-		}
-		d.mu.Unlock()
-		return derrors.WrapError(err, derrors.CategoryInternal, "failed to schedule daemon jobs").Build()
+		return err
 	}
+	d.scheduler.Start(parentCtx)
+	return nil
+}
 
-	// Start scheduler
-	d.scheduler.Start(ctx)
-
+// startPostSchedule marks the daemon as Running, updates the success
+// metrics, and emits the operator-facing summary logs (forge/port counts
+// + storage path resolution). Callers must hold d.mu.
+func (d *Daemon) startPostSchedule() {
 	d.status.Store(StatusRunning)
 	d.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
 	d.metrics.IncrementCounter("daemon_successful_starts")
@@ -533,18 +593,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 		slog.String("repo_cache_dir", repoCache),
 		slog.String("workspace_resolved", wsPredict),
 		slog.String("clone_strategy", string(strategy)))
-
-	// Release lock before entering long-running loop to avoid blocking read operations (e.g., /status)
-	d.mu.Unlock()
-
-	// Run main daemon loop (blocks until stopped)
-	d.mainLoop(runCtx)
-
-	// When mainLoop exits, we're stopping
-	d.status.Store(StatusStopping)
-	slog.Info("Main loop exited, daemon stopping")
-
-	return nil
 }
 
 func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
@@ -636,8 +684,26 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 	d.status.Store(StatusStopping)
 	slog.Info("Stopping DocBuilder daemon")
+	d.mu.Unlock()
 
-	// Snapshot pointers so we can stop without holding the daemon mutex.
+	d.stopSubsystems(ctx)
+
+	d.mu.Lock()
+	d.status.Store(StatusStopped)
+	d.mu.Unlock()
+
+	uptime := time.Since(d.startTime)
+	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
+
+	return nil
+}
+
+// stopSubsystems performs the orderly shutdown of every subsystem in
+// reverse-construction order. Pointers are snapshotted under d.mu so the
+// rest of the shutdown runs without holding the daemon mutex (matching
+// the pre-refactor pattern: snapshot, release mu, operate on snapshots).
+func (d *Daemon) stopSubsystems(ctx context.Context) {
+	d.mu.Lock()
 	runCancel := d.runCancel
 	d.runCancel = nil
 	stopChan := d.stopChan
@@ -715,15 +781,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	if err := d.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
-
-	d.mu.Lock()
-	d.status.Store(StatusStopped)
-	d.mu.Unlock()
-
-	uptime := time.Since(d.startTime)
-	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
-
-	return nil
 }
 
 // GetStatus returns the current daemon status.
