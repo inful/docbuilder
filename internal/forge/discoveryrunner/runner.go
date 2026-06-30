@@ -7,11 +7,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
-	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
 // Discovery is the minimal interface required to run forge discovery.
@@ -31,20 +30,16 @@ type Metrics interface {
 
 // StateManager is the minimal interface used for persistence and discovery bookkeeping.
 type StateManager interface {
-	services.StateManager
 	EnsureRepositoryState(url, name, branch string)
 	RecordDiscovery(repoURL string, documentCount int)
-}
-
-// Enqueuer is the minimal interface required to enqueue build jobs.
-type Enqueuer interface {
-	Enqueue(job *queue.BuildJob) error
 }
 
 // BuildRequester is an optional hook used to request a build without directly
 // enqueueing a build job. This supports higher-level orchestration (ADR-021).
 //
-// If set, the runner will call it instead of enqueuing a queue.BuildJob.
+// If set, the runner will call it instead of returning without triggering
+// a build. If unset, the runner just records the discovery in metrics and
+// leaves build triggering to the next scheduled sync tick or webhook.
 type BuildRequester func(ctx context.Context, jobID, reason string)
 
 // RepoRemovedNotifier is an optional hook invoked when a repository that existed
@@ -57,14 +52,11 @@ type RepoRemovedNotifier func(ctx context.Context, repoURL, repoName string)
 // Config holds the dependencies for creating a Runner.
 type Config struct {
 	Discovery      Discovery
-	ForgeManager   *forge.Manager
 	DiscoveryCache *Cache
 	Metrics        Metrics
 	StateManager   StateManager
-	BuildQueue     Enqueuer
 	BuildRequester BuildRequester
 	RepoRemoved    RepoRemovedNotifier
-	LiveReload     queue.LiveReloadHub
 	Config         *config.Config
 
 	// Now allows tests to inject deterministic time.
@@ -77,14 +69,11 @@ type Config struct {
 // across all configured forges and triggering builds for discovered repositories.
 type Runner struct {
 	discovery      Discovery
-	forgeManager   *forge.Manager
 	discoveryCache *Cache
 	metrics        Metrics
 	stateManager   StateManager
-	buildQueue     Enqueuer
 	buildRequester BuildRequester
 	repoRemoved    RepoRemovedNotifier
-	liveReload     queue.LiveReloadHub
 	config         *config.Config
 
 	now      func() time.Time
@@ -108,14 +97,11 @@ func New(cfg Config) *Runner {
 
 	return &Runner{
 		discovery:      cfg.Discovery,
-		forgeManager:   cfg.ForgeManager,
 		discoveryCache: cfg.DiscoveryCache,
 		metrics:        cfg.Metrics,
 		stateManager:   cfg.StateManager,
-		buildQueue:     cfg.BuildQueue,
 		buildRequester: cfg.BuildRequester,
 		repoRemoved:    cfg.RepoRemoved,
-		liveReload:     cfg.LiveReload,
 		config:         cfg.Config,
 		now:            now,
 		newJobID:       newJobID,
@@ -160,7 +146,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		if r.discoveryCache != nil {
 			r.discoveryCache.SetError(err)
 		}
-		return fmt.Errorf("discovery failed: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "discovery failed").Build()
 	}
 
 	duration := time.Since(start)
@@ -243,27 +229,11 @@ func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *for
 		return
 	}
 
-	if r.buildQueue == nil {
-		return
-	}
-
-	converted := r.discovery.ConvertToConfigRepositories(result.Repositories, r.forgeManager)
-	job := &queue.BuildJob{
-		ID:        jobID,
-		Type:      queue.BuildTypeDiscovery,
-		Priority:  queue.PriorityNormal,
-		CreatedAt: r.now(),
-		TypedMeta: &queue.BuildJobMetadata{
-			V2Config:      r.config,
-			Repositories:  converted,
-			StateManager:  r.stateManager,
-			LiveReloadHub: r.liveReload,
-		},
-	}
-
-	if err := r.buildQueue.Enqueue(job); err != nil {
-		slog.Error("Failed to enqueue auto-build", logfields.Error(err))
-	}
+	// No build requester wired — the runner records discovery but
+	// does not directly schedule a build. The next scheduled sync
+	// tick or webhook will pick up the new repositories.
+	slog.Debug("Discovery found repositories; no build requester wired",
+		logfields.JobID(jobID), slog.Int("repositories", len(result.Repositories)))
 }
 
 // SafeRun executes discovery with a timeout and panic protection.
@@ -335,9 +305,4 @@ func (r *Runner) UpdateConfig(cfg *config.Config) {
 // UpdateDiscoveryService updates the discovery service (used during config reload).
 func (r *Runner) UpdateDiscoveryService(discovery Discovery) {
 	r.discovery = discovery
-}
-
-// UpdateForgeManager updates the forge manager (used during config reload).
-func (r *Runner) UpdateForgeManager(forgeManager *forge.Manager) {
-	r.forgeManager = forgeManager
 }

@@ -1,9 +1,6 @@
 package delta
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
@@ -11,6 +8,8 @@ import (
 	"strings"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/hashutil"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -93,7 +92,6 @@ func (m *Manager) RecomputeGlobalDocHash(
 	}
 
 	if len(allPaths) > 0 {
-		sort.Strings(allPaths)
 		report.DocFilesHash = m.computePathsHash(allPaths)
 	}
 
@@ -135,7 +133,7 @@ func (m *Manager) scanForDeletions(repo cfg.Repository, workspace string, persis
 			return nil
 		})
 		if err != nil {
-			return persistedPaths, 0, fmt.Errorf("walking directory %s: %w", base, err)
+			return persistedPaths, 0, derrors.WrapError(err, derrors.CategoryFileSystem, "walking directory").WithContext("path", base).Build()
 		}
 	}
 
@@ -164,10 +162,5 @@ func (m *Manager) scanForDeletions(repo cfg.Repository, workspace string, persis
 }
 
 func (m *Manager) computePathsHash(paths []string) string {
-	h := sha256.New()
-	for _, p := range paths {
-		h.Write([]byte(p))
-		h.Write([]byte{0})
-	}
-	return hex.EncodeToString(h.Sum(nil))
+	return hashutil.PathsHash(paths)
 }

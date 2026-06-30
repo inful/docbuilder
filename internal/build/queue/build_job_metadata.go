@@ -5,7 +5,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-	"git.home.luguber.info/inful/docbuilder/internal/services"
 )
 
 // LiveReloadHub is the minimal interface the daemon uses for live reload.
@@ -32,9 +31,6 @@ type BuildJobMetadata struct {
 
 	// Delta analysis
 	DeltaRepoReasons map[string]string `json:"delta_repo_reasons,omitempty"`
-
-	// State management
-	StateManager services.StateManager `json:"-"`
 
 	// Live reload
 	LiveReloadHub LiveReloadHub `json:"-"`

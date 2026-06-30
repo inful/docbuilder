@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/preview"
 )
 
@@ -86,7 +87,7 @@ func (p *PreviewCmd) Run(_ *Global, _ *CLI) error {
 	if outDir == "" {
 		tmp, err := os.MkdirTemp("", "docbuilder-preview-*")
 		if err != nil {
-			return fmt.Errorf("create temp output: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "create temp output").Build()
 		}
 		outDir = tmp
 		tempOut = tmp

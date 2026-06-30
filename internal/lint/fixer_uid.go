@@ -1,7 +1,6 @@
 package lint
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func preserveUIDAcrossContentRewrite(original, updated string) string {
@@ -47,40 +48,13 @@ func addUIDIfMissingWithValue(content, uid string) (string, bool) {
 	if strings.TrimSpace(uid) == "" {
 		return content, false
 	}
-
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
+	out, changed, err := frontmatterops.UpsertFields(content, true, func(fields map[string]any) (bool, error) {
+		return frontmatterops.EnsureUIDValue(fields, uid)
+	})
 	if err != nil {
 		return content, false
 	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-	if fields == nil {
-		fields = map[string]any{}
-	}
-
-	uidChanged, err := frontmatterops.EnsureUIDValue(fields, uid)
-	if err != nil {
-		return content, false
-	}
-	if !uidChanged {
-		return content, false
-	}
-
-	if !had {
-		had = true
-		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
-			body = append([]byte(style.Newline), body...)
-		} else if len(body) == 0 {
-			body = append([]byte(style.Newline), body...)
-		}
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
-	if err != nil {
-		return content, false
-	}
-	return string(out), true
+	return out, changed
 }
 
 func (f *Fixer) applyUIDFixes(targets map[string]struct{}, uidIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -126,7 +100,7 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("read file for uid update: %w", err)
+		op.Error = derrors.WrapError(err, derrors.CategoryFileSystem, "read file for uid update").Build()
 		return op
 	}
 
@@ -142,13 +116,13 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 	info, statErr := os.Stat(filePath)
 	if statErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("stat file for uid update: %w", statErr)
+		op.Error = derrors.WrapError(statErr, derrors.CategoryFileSystem, "stat file for uid update").Build()
 		return op
 	}
 
 	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
-		op.Error = fmt.Errorf("write file for uid update: %w", writeErr)
+		op.Error = derrors.WrapError(writeErr, derrors.CategoryFileSystem, "write file for uid update").Build()
 		return op
 	}
 
@@ -156,40 +130,21 @@ func (f *Fixer) ensureFrontmatterUID(filePath string) UIDUpdate {
 }
 
 func addUIDIfMissing(content string) (string, bool) {
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
-	if err != nil {
-		// Malformed frontmatter; don't try to guess.
-		return content, false
-	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-	if fields == nil {
-		fields = map[string]any{}
-	}
-
-	uid, uidChanged, err := frontmatterops.EnsureUID(fields)
-	if err != nil || !uidChanged {
-		return content, false
-	}
-
-	// Best-effort: if this fails, keep UID but skip alias.
-	_, _ = frontmatterops.EnsureUIDAlias(fields, uid)
-
-	if !had {
-		had = true
-		if len(body) > 0 && !bytes.HasPrefix(body, []byte(style.Newline)) {
-			body = append([]byte(style.Newline), body...)
-		} else if len(body) == 0 {
-			body = append([]byte(style.Newline), body...)
+	out, changed, err := frontmatterops.UpsertFields(content, true, func(fields map[string]any) (bool, error) {
+		uid, changed, err := frontmatterops.EnsureUID(fields)
+		if err != nil || !changed {
+			return false, err
 		}
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
+		// Best-effort: if alias insertion fails, keep the UID we just
+		// wrote and skip the alias. The fix run will surface that as a
+		// separate issue on the next pass.
+		_, _ = frontmatterops.EnsureUIDAlias(fields, uid)
+		return true, nil
+	})
 	if err != nil {
 		return content, false
 	}
-	return string(out), true
+	return out, changed
 }
 
 func (f *Fixer) applyUIDAliasesFixes(targets map[string]struct{}, uidAliasIssueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}) {
@@ -229,7 +184,7 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("read file for uid alias update: %w", err)
+		op.Error = derrors.WrapError(err, derrors.CategoryFileSystem, "read file for uid alias update").Build()
 		return op
 	}
 
@@ -253,13 +208,13 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 	info, statErr := os.Stat(filePath)
 	if statErr != nil {
 		op.Success = false
-		op.Error = fmt.Errorf("stat file for uid alias update: %w", statErr)
+		op.Error = derrors.WrapError(statErr, derrors.CategoryFileSystem, "stat file for uid alias update").Build()
 		return op
 	}
 
 	if writeErr := os.WriteFile(filePath, []byte(updated), info.Mode().Perm()); writeErr != nil { //nolint:gosec // filePath is derived from the lint target set
 		op.Success = false
-		op.Error = fmt.Errorf("write file for uid alias update: %w", writeErr)
+		op.Error = derrors.WrapError(writeErr, derrors.CategoryFileSystem, "write file for uid alias update").Build()
 		return op
 	}
 
@@ -267,22 +222,16 @@ func (f *Fixer) ensureFrontmatterUIDAlias(filePath string) UIDUpdate {
 }
 
 func addUIDAliasIfMissing(content, uid string) (string, bool) {
-	fields, body, had, style, err := frontmatterops.Read([]byte(content))
-	if err != nil || !had {
-		return content, false
-	}
-	if style.Newline == "" {
-		style.Newline = "\n"
-	}
-
-	changed, err := frontmatterops.EnsureUIDAlias(fields, uid)
-	if err != nil || !changed {
-		return content, false
-	}
-
-	out, err := frontmatterops.Write(fields, body, had, style)
+	// Aliases can only be inserted when the doc already has a
+	// frontmatter block (the alias points at the existing UID; without
+	// a UID there's nothing to alias). Pass createIfMissing=false so
+	// UpsertFields returns (content, false, nil) on docs that have no
+	// frontmatter -- exactly the prior behavior.
+	out, changed, err := frontmatterops.UpsertFields(content, false, func(fields map[string]any) (bool, error) {
+		return frontmatterops.EnsureUIDAlias(fields, uid)
+	})
 	if err != nil {
 		return content, false
 	}
-	return string(out), true
+	return out, changed
 }

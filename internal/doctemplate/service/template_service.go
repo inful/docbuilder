@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
 )
@@ -86,7 +86,9 @@ func (s *TemplateService) BuildSequenceResolver(page *templating.TemplatePage, d
 	return func(name string) (int, error) {
 		def, ok := defs[name]
 		if !ok {
-			return 0, fmt.Errorf("unknown sequence: %s", name)
+			return 0, derrors.NewError(derrors.CategoryValidation, "unknown sequence").
+				WithContext("name", name).
+				Build()
 		}
 		return templating.ComputeNextInSequence(def, docsDir)
 	}, nil

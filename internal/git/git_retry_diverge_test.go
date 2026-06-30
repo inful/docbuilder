@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func TestWithRetryBehavior(t *testing.T) {
 
 	attempts := 0
 	// Transient failure first 2 attempts, then success
-	path, err := c.withRetry("clone", "repo", func() (string, error) {
+	path, err := withRetry(context.Background(), c, "clone", "repo", func() (string, error) {
 		if attempts < 2 {
 			attempts++
 			return "", errors.New("temporary network failure")
@@ -43,7 +44,7 @@ func TestWithRetryBehavior(t *testing.T) {
 
 	// Permanent error should not retry
 	attempts = 0
-	_, err = c.withRetry("clone", "repo", func() (string, error) {
+	_, err = withRetry(context.Background(), c, "clone", "repo", func() (string, error) {
 		attempts++
 		return "", errors.New("authentication failed: permission denied")
 	})

@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const taxonomyBaseURLEnvVar = "DOCBUILDER_TEMPLATE_BASE_URL"
@@ -34,7 +36,9 @@ type taxonomiesResponse struct {
 func WriteVSCodeTaxonomySnippets(ctx context.Context, contentDir, snippetsPath string) error {
 	tags, categories, err := taxonomyValuesForSnippets(ctx, contentDir)
 	if err != nil {
-		return fmt.Errorf("collect taxonomies: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "collect taxonomies").
+			WithContext("content_dir", contentDir).
+			Build()
 	}
 
 	snippets := make(map[string]vscodeSnippet, len(tags)+len(categories))
@@ -54,17 +58,23 @@ func WriteVSCodeTaxonomySnippets(ctx context.Context, contentDir, snippetsPath s
 	}
 
 	if mkErr := os.MkdirAll(filepath.Dir(snippetsPath), 0o750); mkErr != nil {
-		return fmt.Errorf("create snippets directory: %w", mkErr)
+		return derrors.WrapError(mkErr, derrors.CategoryFileSystem, "create snippets directory").
+			WithContext("path", snippetsPath).
+			Build()
 	}
 
 	data, err := json.MarshalIndent(snippets, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal snippets: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "marshal snippets").
+			WithContext("path", snippetsPath).
+			Build()
 	}
 	data = append(data, '\n')
 
 	if err := os.WriteFile(snippetsPath, data, 0o600); err != nil {
-		return fmt.Errorf("write snippets file: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "write snippets file").
+			WithContext("path", snippetsPath).
+			Build()
 	}
 
 	return nil
@@ -80,10 +90,12 @@ func taxonomyValuesForSnippets(ctx context.Context, contentDir string) ([]string
 func fetchTaxonomiesFromBaseURL(ctx context.Context, baseURL string) ([]string, []string, error) {
 	parsed, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parse base URL: %w", err)
+		return nil, nil, derrors.WrapError(err, derrors.CategoryValidation, "parse base URL").Build()
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return nil, nil, fmt.Errorf("unsupported base URL scheme: %s", parsed.Scheme)
+		return nil, nil, derrors.NewError(derrors.CategoryValidation, "unsupported base URL scheme").
+			WithContext("scheme", parsed.Scheme).
+			Build()
 	}
 	if parsed.Host == "" {
 		return nil, nil, errors.New("base URL host is required")
@@ -93,31 +105,33 @@ func fetchTaxonomiesFromBaseURL(ctx context.Context, baseURL string) ([]string, 
 	//nolint:gosec // URL comes from explicit user configuration via environment variable.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.String(), nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("build taxonomy request: %w", err)
+		return nil, nil, derrors.WrapError(err, derrors.CategoryNetwork, "build taxonomy request").Build()
 	}
 
 	client := &http.Client{Timeout: 4 * time.Second}
 	//nolint:gosec // Target is restricted to validated http/https URL set by the local user.
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fetch taxonomies: %w", err)
+		return nil, nil, derrors.WrapError(err, derrors.CategoryNetwork, "fetch taxonomies").Build()
 	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("fetch taxonomies: status %d", resp.StatusCode)
+		return nil, nil, derrors.NewError(derrors.CategoryNetwork, fmt.Sprintf("fetch taxonomies: status %d", resp.StatusCode)).
+			WithContext("status", resp.StatusCode).
+			Build()
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read taxonomy response: %w", err)
+		return nil, nil, derrors.WrapError(err, derrors.CategoryNetwork, "read taxonomy response").Build()
 	}
 
 	var payload taxonomiesResponse
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, nil, fmt.Errorf("decode taxonomy response: %w", err)
+		return nil, nil, derrors.WrapError(err, derrors.CategoryValidation, "decode taxonomy response").Build()
 	}
 
 	tags := normalizeSnippetTaxonomyValues(payload.Tags)

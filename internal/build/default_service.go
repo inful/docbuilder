@@ -10,7 +10,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
 	dberrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/observability"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
@@ -41,7 +40,6 @@ type DefaultBuildService struct {
 	workspaceFactory     func() *workspace.Manager
 	hugoGeneratorFactory HugoGeneratorFactory
 	skipEvaluatorFactory SkipEvaluatorFactory
-	recorder             metrics.Recorder
 }
 
 // NewBuildService creates a new DefaultBuildService with default factories.
@@ -50,7 +48,6 @@ func NewBuildService() *DefaultBuildService {
 		workspaceFactory: func() *workspace.Manager {
 			return workspace.NewManager("")
 		},
-		recorder: metrics.NoopRecorder{},
 		// hugoGeneratorFactory must be set via WithHugoGeneratorFactory to avoid import cycle
 	}
 }
@@ -75,6 +72,9 @@ func (s *DefaultBuildService) WithSkipEvaluatorFactory(factory SkipEvaluatorFact
 	return s
 }
 
+// Compile-time assertion that *DefaultBuildService implements BuildService.
+var _ BuildService = (*DefaultBuildService)(nil)
+
 // Run executes the complete build pipeline.
 func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*BuildResult, error) {
 	startTime := time.Now()
@@ -93,7 +93,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.ConfigError("config required").Build()
 	}
 
@@ -102,8 +101,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusSuccess
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
-		s.recorder.ObserveBuildDuration(result.Duration)
 		return result, nil
 	}
 
@@ -118,7 +115,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	}
 
 	// Stage 1: Create workspace
-	stageStart := time.Now()
 	ctx = observability.WithStage(ctx, "workspace")
 	observability.InfoContext(ctx, "Creating build workspace")
 	wsManager := s.workspaceFactory()
@@ -126,17 +122,23 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncStageResult("workspace", metrics.ResultFatal)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.FileSystemError("failed to create workspace").WithContext("error", err.Error()).Build()
 	}
-	s.recorder.ObserveStageDuration("workspace", time.Since(stageStart))
-	s.recorder.IncStageResult("workspace", metrics.ResultSuccess)
-	defer func() {
-		if err := wsManager.Cleanup(); err != nil {
-			observability.WarnContext(ctx, "Failed to cleanup workspace", slog.String("error", err.Error()))
-		}
-	}()
+
+	// Only defer cleanup for ephemeral workspaces. Persistent workspaces
+	// (BuildOptions.KeepWorkspace=true) opt out of cleanup so the directory
+	// is preserved for debugging; workspace.Manager.Cleanup also no-ops on
+	// persistent managers, so this is belt-and-braces.
+	if !req.Options.KeepWorkspace {
+		defer func() {
+			if err := wsManager.Cleanup(); err != nil {
+				observability.WarnContext(ctx, "Failed to cleanup workspace", slog.String("error", err.Error()))
+			}
+		}()
+	} else {
+		observability.InfoContext(ctx, "Workspace will be preserved for debugging",
+			slog.String("path", wsManager.GetPath()))
+	}
 
 	// Stage 2+: Unified Site Generation (Clone -> Discovery -> Transform -> Hugo)
 	// We delegate the heavy lifting to the natively refactored hugo.Generator pipeline.
@@ -144,7 +146,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		result.Status = BuildStatusFailed
 		result.EndTime = time.Now()
 		result.Duration = result.EndTime.Sub(startTime)
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, dberrors.ConfigError("hugo generator factory required").Build()
 	}
 
@@ -163,7 +164,6 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 
 	if err != nil {
 		result.Status = BuildStatusFailed
-		s.recorder.IncBuildOutcome(metrics.BuildOutcomeFailed)
 		return result, err
 	}
 
@@ -178,30 +178,24 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	result.FilesProcessed = report.Files
 	result.RepositoriesSkipped = report.FailedRepositories
 
-	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSuccess)
-	s.recorder.ObserveBuildDuration(result.Duration)
-
 	return result, nil
 }
 
 // evaluateSkip performs skip evaluation and returns a result if build should be skipped.
 // Returns nil if build should proceed.
 func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest, startTime time.Time) *BuildResult {
-	stageStart := time.Now()
 	ctx = observability.WithStage(ctx, "skip_evaluation")
 	observability.InfoContext(ctx, "Evaluating if build can be skipped")
 
 	evaluator := s.skipEvaluatorFactory(req.OutputDir)
 	if evaluator == nil {
 		observability.WarnContext(ctx, "Skip evaluator factory returned nil - skipping evaluation disabled")
-		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
 		return nil
 	}
 
 	skipReport, canSkip := evaluator.Evaluate(ctx, req.Config.Repositories)
 	if !canSkip {
-		s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
 		observability.InfoContext(ctx, "Skip evaluation complete - proceeding with build")
 		return nil
 	}
@@ -216,9 +210,6 @@ func (s *DefaultBuildService) evaluateSkip(ctx context.Context, req BuildRequest
 		EndTime:    time.Now(),
 	}
 	result.Duration = result.EndTime.Sub(startTime)
-	s.recorder.ObserveStageDuration("skip_evaluation", time.Since(stageStart))
-	s.recorder.IncBuildOutcome(metrics.BuildOutcomeSkipped)
-	s.recorder.ObserveBuildDuration(result.Duration)
 	return result
 }
 
@@ -230,4 +221,118 @@ func (s *DefaultBuildService) logSkipEvaluationDisabled(ctx context.Context, req
 	if factory == nil {
 		observability.WarnContext(ctx, "Skip evaluator factory not configured - cannot evaluate skip conditions")
 	}
+}
+
+// ---------------------------------------------------------------------------
+// BuildService surface: shared contracts + result types.
+//
+// The shapes below describe the canonical "build a docs site" input and
+// output. Both CLI (`cmd/docbuilder`) and daemon (`internal/build/queue`)
+// consume them through this interface. The queue's Builder interface is
+// narrower (BuildJob -> BuildReport) and bridges via BuildServiceAdapter
+// (see internal/build/queue/build_service_adapter.go for the rationale).
+//
+// Plan review-overlapping-functionality.md: M14 marked this for
+// consolidation. We align the surface here and document why two
+// single-method interfaces (BuildService.Run + queue.Builder.Build)
+// coexist; the adapter is the deliberate seam.
+//
+// History: service.go held these types as a thin file; merging them
+// into default_service.go keeps the package's service surface in one
+// file, matching the rest of the codebase's organization.
+// ---------------------------------------------------------------------------
+
+// BuildService is the canonical interface for executing documentation builds.
+// Both CLI and daemon/server should implement thin wrappers over this interface.
+type BuildService interface {
+	// Run executes a complete build pipeline: clone → discover → transform → generate.
+	// Returns a BuildResult with detailed outcomes and any error encountered.
+	Run(ctx context.Context, req BuildRequest) (*BuildResult, error)
+}
+
+// BuildRequest contains all inputs required to execute a documentation build.
+type BuildRequest struct {
+	// Config is the loaded configuration for this build.
+	Config *appcfg.Config
+
+	// OutputDir is the target directory for the generated Hugo site.
+	OutputDir string
+
+	// Incremental enables incremental updates (git pull vs fresh clone).
+	Incremental bool
+
+	// Options provides optional build behavior modifiers.
+	Options BuildOptions
+}
+
+// BuildOptions provides optional configuration for build behavior.
+type BuildOptions struct {
+	// Verbose enables detailed logging during the build.
+	Verbose bool
+
+	// SkipIfUnchanged enables skip evaluation when content hasn't changed.
+	SkipIfUnchanged bool
+
+	// KeepWorkspace prevents the build workspace from being cleaned up after
+	// the build completes. Useful for debugging failed builds. The CLI uses
+	// this when invoked with --keep-workspace.
+	KeepWorkspace bool
+}
+
+// BuildResult contains the outcome of a build execution.
+type BuildResult struct {
+	// Status indicates overall build outcome.
+	Status BuildStatus
+
+	// Report contains detailed build metrics and diagnostics.
+	Report *models.BuildReport
+
+	// OutputPath is the final output directory (may differ from request).
+	OutputPath string
+
+	// Repositories is the count of processed repositories.
+	Repositories int
+
+	// RepositoriesSkipped is the count of repositories that failed to clone/process.
+	RepositoriesSkipped int
+
+	// FilesProcessed is the count of documentation files handled.
+	FilesProcessed int
+
+	// Duration is the total build execution time.
+	Duration time.Duration
+
+	// StartTime is when the build started.
+	StartTime time.Time
+
+	// EndTime is when the build completed.
+	EndTime time.Time
+
+	// Skipped indicates the build was skipped due to no changes.
+	Skipped bool
+
+	// SkipReason explains why the build was skipped (if Skipped is true).
+	SkipReason string
+}
+
+// BuildStatus represents the outcome of a build execution.
+type BuildStatus string
+
+const (
+	// BuildStatusSuccess indicates the build completed successfully.
+	BuildStatusSuccess BuildStatus = "success"
+
+	// BuildStatusFailed indicates the build encountered an error.
+	BuildStatusFailed BuildStatus = "failed"
+
+	// BuildStatusSkipped indicates the build was skipped (e.g., no changes).
+	BuildStatusSkipped BuildStatus = "skipped"
+
+	// BuildStatusCancelled indicates the build was canceled.
+	BuildStatusCancelled BuildStatus = "canceled"
+)
+
+// IsSuccess returns true if the build completed successfully.
+func (s BuildStatus) IsSuccess() bool {
+	return s == BuildStatusSuccess || s == BuildStatusSkipped
 }

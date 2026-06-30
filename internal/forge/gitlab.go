@@ -666,3 +666,6 @@ func (c *GitLabClient) convertGitLabProject(gProject *gitlabProject) *Repository
 		},
 	}
 }
+
+// Compile-time assertion that *GitLabClient satisfies the Client contract.
+var _ Client = (*GitLabClient)(nil)

@@ -1,6 +1,10 @@
 package lint
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
+)
 
 const (
 	docExtensionMarkdown     = ".md"
@@ -123,9 +127,11 @@ type Config struct {
 }
 
 // IsDocFile returns true if the file is a documentation file.
+// Delegates to docmodel.IsMarkdownFile for the canonical
+// (case-insensitive, multi-extension) match so the lint and discovery
+// paths agree on every casing / extension variant.
 func IsDocFile(path string) bool {
-	ext := filepath.Ext(path)
-	return ext == docExtensionMarkdown || ext == docExtensionMarkdownLong
+	return docmodel.IsMarkdownFile(path)
 }
 
 // IsAssetFile returns true if the file is an image asset.

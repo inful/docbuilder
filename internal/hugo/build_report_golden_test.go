@@ -17,7 +17,7 @@ func TestBuildReportGolden(t *testing.T) {
 	r.RenderedPages = 5
 	r.StageDurations["prepare_output"] = 10 * time.Millisecond
 	r.StageErrorKinds[models.StagePrepareOutput] = "" // no error
-	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess, nil)
+	r.RecordStageResult(models.StagePrepareOutput, models.StageResultSuccess)
 	r.Finish()
 	r.DeriveOutcome()
 

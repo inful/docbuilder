@@ -80,7 +80,7 @@ func classifyIssueCode(se *models.StageError, bs *models.BuildState) models.Repo
 		return classifyDiscoveryIssue(se, bs)
 	case models.StageRunHugo:
 		return classifyHugoIssue(se)
-	case models.StagePrepareOutput, models.StageCategoriesMenu, models.StageGenerateConfig, models.StageLayouts, models.StageCopyContent, models.StageIndexes, models.StagePostProcess:
+	case models.StagePrepareOutput, models.StageCategoriesMenu, models.StageGenerateConfig, models.StageCopyContent:
 		// These stages use generic issue codes
 		return models.IssueGenericStageError
 	default:

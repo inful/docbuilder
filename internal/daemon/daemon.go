@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"maps"
 	"net/http"
@@ -16,8 +15,10 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/lifecycle"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
@@ -75,7 +76,6 @@ type Daemon struct {
 	// Runtime state
 	activeJobs  int32
 	queueLength atomic.Int32
-	lastBuild   *time.Time
 
 	// Background worker tracking (started in Start, awaited in Stop).
 	workers WorkerGroup
@@ -102,11 +102,26 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 }
 
 // NewDaemonWithConfigFile creates a new daemon instance with config file watching.
+//
+// This constructor wires up every subsystem in dependency order. Each
+// subsystem is built by a dedicated private helper (newX) so the top-level
+// function reads as a sequence of "initialize X" calls.
+//
+// Construction order matters: forge manager must exist before discovery
+// and HTTP wiring; state service must exist before BuildService (the
+// SkipEvaluatorFactory closure captures d.stateManager); BuildService
+// must exist before BuildQueue (the queue wraps it); scheduler runs
+// after BuildQueue so periodic jobs can target it; event store comes
+// after state so the event store path joins the same state directory;
+// liveReload and linkVerifier are opt-in; the HTTP server is wired
+// after both; buildQueue.SetEventEmitter closes the loop between the
+// queue and the emitter (must run after newEventStore); finally the
+// orchestration subsystems (discovery runner, build debouncer, repo
+// updater) hang off d.orchestrationBus.
 func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is required")
 	}
-
 	if cfg.Daemon == nil {
 		return nil, errors.New("daemon configuration is required")
 	}
@@ -119,94 +134,169 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		discoveryCache:   NewDiscoveryCache(),
 		orchestrationBus: events.NewBus(),
 	}
-
 	daemon.status.Store(StatusStopped)
 
-	// Initialize forge manager
-	forgeManager := forge.NewForgeManager()
-	for _, forgeConfig := range cfg.Forges {
-		client, err := forge.NewForgeClient(forgeConfig)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
-		}
-		forgeManager.AddForge(forgeConfig, client)
+	// Forge manager (and per-forge clients) + discovery service.
+	forgeManager, err := daemon.newForgeManager()
+	if err != nil {
+		return nil, err
 	}
-	daemon.forgeManager = forgeManager
-
-	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 
-	// Create canonical BuildService (Phase D - Single Execution Pipeline)
-	buildService := build.NewBuildService().
-		WithWorkspaceFactory(func() *workspace.Manager {
-			// Use persistent workspace for incremental builds (repo_cache_dir/working)
-			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
-		}).
-		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfg, outputDir)
-		}).
-		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
-			// Create skip evaluator with state manager access
-			// Will be populated after state manager is initialized
-			if daemon.stateManager == nil {
-				slog.Warn("Skip evaluator factory called before state manager initialized - skipping evaluation")
-				return nil
-			}
-			gen := hugo.NewGenerator(daemon.config, outputDir)
-			return NewSkipEvaluator(outputDir, daemon.stateManager, gen)
-		})
-	buildAdapter := NewBuildServiceAdapter(buildService)
+	// State service first: SkipEvaluatorFactory closure inside
+	// newBuildService captures d.stateManager and must not see nil.
+	stateDir := daemon.resolveStateDir()
+	if err = daemon.newStateService(stateDir); err != nil {
+		return nil, err
+	}
 
-	// Initialize build queue with the canonical builder
-	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, buildAdapter)
-	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
-	daemon.buildQueue.ConfigureRetry(cfg.Build)
+	// Build pipeline.
+	buildService := daemon.newBuildService()
+	daemon.newBuildQueue(buildService)
 
-	// Initialize scheduler (after build queue)
-	scheduler, err := NewScheduler()
+	// Scheduler runs after the build queue so periodic jobs can target it.
+	daemon.scheduler, err = NewScheduler()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create scheduler: %w", err)
-	}
-	daemon.scheduler = scheduler
-
-	// Initialize state manager using the typed state.Service wrapped in ServiceAdapter.
-	// This bridges the new typed state system with the daemon's interface requirements.
-	stateDir := cfg.Daemon.Storage.RepoCacheDir
-	if stateDir == "" {
-		stateDir = "./daemon-data" // Default data directory
-	}
-	stateServiceResult := state.NewService(stateDir)
-	if stateServiceResult.IsErr() {
-		return nil, fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
-	}
-	daemon.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
-
-	// Initialize event store and build history projection (Phase B - Event Sourcing)
-	eventStorePath := filepath.Join(stateDir, "events.db")
-	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create event store: %w", err)
-	}
-	daemon.eventStore = eventStore
-	daemon.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
-	daemon.eventEmitter = NewEventEmitter(eventStore, daemon.buildProjection)
-	daemon.eventEmitter.daemon = daemon // Wire back reference for hooks
-
-	// Rebuild projection from existing events
-	if rebuildErr := daemon.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
-		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
-		// Non-fatal: projection will start empty
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create scheduler").Build()
 	}
 
-	// Initialize livereload hub (opt-in)
+	// Event sourcing.
+	if err = daemon.newEventStore(stateDir); err != nil {
+		return nil, err
+	}
+
+	// Opt-in subsystems.
 	if cfg.Build.LiveReload {
 		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
 		slog.Info("LiveReload hub initialized")
 	}
 
-	// Initialize HTTP server wiring (extracted package)
+	// HTTP server wiring.
+	webhookConfigs, forgeClients := daemon.collectHTTPInputs()
+	daemon.newHTTPServer(webhookConfigs, forgeClients)
+	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
+		daemon.initLinkVerifier()
+	}
+
+	// Close the loop between the build queue and the event emitter.
+	daemon.buildQueue.SetEventEmitter(daemon.eventEmitter)
+
+	// Orchestration: discovery runner, build debouncer, repo updater.
+	daemon.newDiscoveryRunner()
+	if err = daemon.newBuildDebouncer(cfg); err != nil {
+		return nil, err
+	}
+	daemon.newRepoUpdater()
+
+	return daemon, nil
+}
+
+// newForgeManager constructs the forge manager and per-forge clients from
+// d.config.Forges. The manager is stored on d (needed by the discovery
+// service, HTTP server wiring, orchestrated builds, webhook forge-name
+// lookup, and health checks). Returns any error from client construction.
+func (d *Daemon) newForgeManager() (*forge.Manager, error) {
+	fm := forge.NewForgeManager()
+	for _, fc := range d.config.Forges {
+		client, err := forge.NewForgeClient(fc)
+		if err != nil {
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to create forge client").
+				WithContext("forge", fc.Name).Build()
+		}
+		fm.AddForge(fc, client)
+	}
+	d.forgeManager = fm
+	return fm, nil
+}
+
+// resolveStateDir returns the directory used for daemon persistent state
+// (state service + SQLite event store). Falls back to "./daemon-data" when
+// the configured RepoCacheDir is empty.
+func (d *Daemon) resolveStateDir() string {
+	stateDir := d.config.Daemon.Storage.RepoCacheDir
+	if stateDir == "" {
+		return "./daemon-data"
+	}
+	return stateDir
+}
+
+// newStateService initializes d.stateManager using state.NewService backed
+// by the given state directory. Must run before newBuildService so the
+// SkipEvaluatorFactory closure captures a non-nil d.stateManager.
+func (d *Daemon) newStateService(stateDir string) error {
+	result := state.NewService(stateDir)
+	if result.IsErr() {
+		return derrors.WrapError(result.UnwrapErr(), derrors.CategoryInternal, "failed to create state service").Build()
+	}
+	d.stateManager = result.Unwrap()
+	return nil
+}
+
+// newBuildService constructs the canonical BuildService with the workspace,
+// Hugo generator, and skip evaluator factories wired to the daemon.
+//
+// d.stateManager must be initialized (via newStateService) before this is
+// called: the skip-evaluator factory closure captures d.stateManager and
+// would silently disable skip-evaluation otherwise.
+func (d *Daemon) newBuildService() build.BuildService {
+	return build.NewBuildService().
+		WithWorkspaceFactory(func() *workspace.Manager {
+			// Use persistent workspace for incremental builds (repo_cache_dir/working).
+			return workspace.NewPersistentManager(d.config.Daemon.Storage.RepoCacheDir, "working")
+		}).
+		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) build.HugoGenerator {
+			return hugo.NewGenerator(cfg, outputDir)
+		}).
+		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
+			gen := hugo.NewGenerator(d.config, outputDir)
+			return NewSkipEvaluator(outputDir, d.stateManager, gen)
+		})
+}
+
+// newBuildQueue initializes d.buildQueue with the adapter wrapping the
+// canonical BuildService, then configures the retry policy from
+// d.config.Build.
+func (d *Daemon) newBuildQueue(svc build.BuildService) {
+	adapter := NewBuildServiceAdapter(svc)
+	d.buildQueue = NewBuildQueue(
+		d.config.Daemon.Sync.QueueSize,
+		d.config.Daemon.Sync.ConcurrentBuilds,
+		adapter,
+	)
+	// Configure retry policy from build config (recorder injection handled elsewhere if added later).
+	d.buildQueue.ConfigureRetry(d.config.Build)
+}
+
+// newEventStore initializes d.eventStore, d.buildProjection, and
+// d.eventEmitter from a SQLite-backed store at stateDir/events.db, then
+// rebuilds the build-history projection from any existing events.
+//
+// A failure to rebuild is logged but non-fatal: the projection starts
+// empty and fills in as new events arrive.
+func (d *Daemon) newEventStore(stateDir string) error {
+	eventStorePath := filepath.Join(stateDir, "events.db")
+	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
+	if err != nil {
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to create event store").Build()
+	}
+	d.eventStore = eventStore
+	d.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
+	d.eventEmitter = NewEventEmitter(eventStore, d.buildProjection)
+	d.eventEmitter.daemon = d // Wire back reference for hooks (e.g. link verification).
+
+	if rebuildErr := d.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
+		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
+		// Non-fatal: projection will start empty.
+	}
+	return nil
+}
+
+// collectHTTPInputs builds the per-forge webhook configs and forge clients
+// maps consumed by newHTTPServer. Forge clients are sourced from
+// d.forgeManager (set by newForgeManager).
+func (d *Daemon) collectHTTPInputs() (map[string]*config.WebhookConfig, map[string]forge.Client) {
 	webhookConfigs := make(map[string]*config.WebhookConfig)
-	for _, forgeCfg := range cfg.Forges {
+	for _, forgeCfg := range d.config.Forges {
 		if forgeCfg == nil {
 			continue
 		}
@@ -215,86 +305,107 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		}
 	}
 	forgeClients := make(map[string]forge.Client)
-	if daemon.forgeManager != nil {
-		maps.Copy(forgeClients, daemon.forgeManager.GetAllForges())
+	if d.forgeManager != nil {
+		maps.Copy(forgeClients, d.forgeManager.GetAllForges())
 	}
+	return webhookConfigs, forgeClients
+}
+
+// newHTTPServer initializes d.httpServer with the given webhook configs and
+// forge clients. Other wiring (status page, enhanced health, detailed
+// metrics, prometheus, triggers, metrics source) is sourced from d.
+func (d *Daemon) newHTTPServer(webhookConfigs map[string]*config.WebhookConfig, forgeClients map[string]forge.Client) {
 	var detailedMetrics http.HandlerFunc
-	if daemon.metrics != nil {
-		detailedMetrics = daemon.metrics.MetricsHandler
+	if d.metrics != nil {
+		detailedMetrics = d.metrics.MetricsHandler
 	}
-	statusHandlers := handlers.NewStatusPageHandlers(daemon)
-	daemon.httpServer = httpserver.New(cfg, daemon, httpserver.Options{
+	statusHandlers := handlers.NewStatusPageHandlers(d)
+	d.httpServer = httpserver.New(d.config, d, httpserver.Options{
 		ForgeClients:          forgeClients,
 		WebhookConfigs:        webhookConfigs,
-		LiveReloadHub:         daemon.liveReload,
-		EnhancedHealthHandle:  daemon.EnhancedHealthHandler,
+		LiveReloadHub:         d.liveReload,
+		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(),
 		StatusHandle:          statusHandlers.HandleStatusPage,
+		Triggers:              d,
+		Metrics:               d,
 	})
+}
 
-	// Initialize link verification service if enabled
-	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
-		linkVerifier, linkVerifierErr := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
-		if linkVerifierErr != nil {
-			slog.Warn("Failed to initialize link verification service",
-				logfields.Error(linkVerifierErr),
-				slog.Bool("enabled", false))
-		} else {
-			daemon.linkVerifier = linkVerifier
-			slog.Info("Link verification service initialized",
-				"nats_url", cfg.Daemon.LinkVerification.NATSURL,
-				"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
-		}
+// initLinkVerifier initializes d.linkVerifier when link verification is
+// enabled. A failure to initialize is logged but non-fatal: the daemon can
+// still run without link verification.
+func (d *Daemon) initLinkVerifier() {
+	cfg := d.config.Daemon.LinkVerification
+	lv, err := linkverify.NewVerificationService(cfg)
+	if err != nil {
+		slog.Warn("Failed to initialize link verification service",
+			logfields.Error(err),
+			slog.Bool("enabled", false))
+		return
 	}
+	d.linkVerifier = lv
+	slog.Info("Link verification service initialized",
+		"nats_url", cfg.NATSURL,
+		"kv_bucket", cfg.KVBucket)
+}
 
-	// Wire up event emitter for build queue (Phase B)
-	daemon.buildQueue.SetEventEmitter(daemon.eventEmitter)
-
-	// Initialize discovery runner (Phase H - extracted component)
-	daemon.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
-		Discovery:      daemon.discovery,
-		ForgeManager:   daemon.forgeManager,
-		DiscoveryCache: daemon.discoveryCache,
-		Metrics:        daemon.metrics,
-		StateManager:   daemon.stateManager,
-		BuildRequester: daemon.onDiscoveryBuildRequest,
-		RepoRemoved:    daemon.onDiscoveryRepoRemoved,
-		LiveReload:     daemon.liveReload,
-		Config:         cfg,
+// newDiscoveryRunner initializes d.discoveryRunner with the Phase H extracted
+// component. It depends on d.discovery, d.discoveryCache, d.metrics,
+// d.stateManager, d.config, and the daemon's discovery callbacks.
+func (d *Daemon) newDiscoveryRunner() {
+	d.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
+		Discovery:      d.discovery,
+		DiscoveryCache: d.discoveryCache,
+		Metrics:        d.metrics,
+		StateManager:   d.stateManager,
+		BuildRequester: d.onDiscoveryBuildRequest,
+		RepoRemoved:    d.onDiscoveryRepoRemoved,
+		Config:         d.config,
 	})
+}
 
-	// Initialize build debouncer (ADR-021 Phase 2).
-	// Note: this is passive until components start publishing BuildRequested events.
+// newBuildDebouncer initializes d.buildDebouncer with the parsed debounce
+// durations and a callback that checks whether the build queue is busy.
+//
+// The debouncer is passive until components start publishing
+// BuildRequested events onto d.orchestrationBus.
+func (d *Daemon) newBuildDebouncer(cfg *config.Config) error {
 	quietWindow, maxDelay, err := getBuildDebounceDurations(cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	debouncer, err := NewBuildDebouncer(daemon.orchestrationBus, BuildDebouncerConfig{
+	debouncer, err := NewBuildDebouncer(d.orchestrationBus, BuildDebouncerConfig{
 		QuietWindow: quietWindow,
 		MaxDelay:    maxDelay,
-		Metrics:     daemon.metrics,
+		Metrics:     d.metrics,
 		CheckBuildRunning: func() bool {
-			if daemon.buildQueue == nil {
+			if d.buildQueue == nil {
 				return false
 			}
-			return len(daemon.buildQueue.GetActiveJobs()) > 0
+			return len(d.buildQueue.GetActiveJobs()) > 0
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create build debouncer: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to create build debouncer").Build()
 	}
-	daemon.buildDebouncer = debouncer
+	d.buildDebouncer = debouncer
+	return nil
+}
 
-	remoteCache, cacheErr := git.NewRemoteHeadCache(cfg.Daemon.Storage.RepoCacheDir)
+// newRepoUpdater initializes the git client and d.repoUpdater. The git
+// client is wired with a remote-HEAD cache rooted at the configured repo
+// cache directory; if persistence fails the daemon logs a warning and
+// falls back to an in-memory cache.
+func (d *Daemon) newRepoUpdater() {
+	remoteCache, cacheErr := git.NewRemoteHeadCache(d.config.Daemon.Storage.RepoCacheDir)
 	if cacheErr != nil {
 		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
 		remoteCache, _ = git.NewRemoteHeadCache("")
 	}
-	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
-	daemon.repoUpdater = NewRepoUpdater(daemon.orchestrationBus, gitClient, remoteCache, daemon.currentReposForOrchestratedBuild)
-
-	return daemon, nil
+	gitClient := git.NewClient(d.config.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
+	d.repoUpdater = NewRepoUpdater(d.orchestrationBus, gitClient, remoteCache, d.currentReposForOrchestratedBuild)
 }
 
 func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration, error) {
@@ -306,14 +417,14 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.QuietWindow); v != "" {
 		parsed, err := time.ParseDuration(v)
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.quiet_window: %w", err)
+			return 0, 0, derrors.WrapError(err, derrors.CategoryConfig, "failed to parse daemon.build_debounce.quiet_window").Build()
 		}
 		quietWindow = parsed
 	}
 	if v := strings.TrimSpace(cfg.Daemon.BuildDebounce.MaxDelay); v != "" {
 		parsed, err := time.ParseDuration(v)
 		if err != nil {
-			return 0, 0, fmt.Errorf("failed to parse daemon.build_debounce.max_delay: %w", err)
+			return 0, 0, derrors.WrapError(err, derrors.CategoryConfig, "failed to parse daemon.build_debounce.max_delay").Build()
 		}
 		maxDelay = parsed
 	}
@@ -325,13 +436,67 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 var defaultDaemonInstance *Daemon
 
 // Start starts the daemon and all its components.
+//
+// The start sequence is split into per-subsystem helpers (startCore,
+// startHTTP, startBuildQueue, startScheduler, startPostSchedule). Start
+// itself acquires d.mu once, drives the helpers, releases the lock, then
+// blocks on mainLoop. Error paths (StatusError + runCancel) are visible
+// in Start's body rather than buried in helpers so the bookkeeping stays
+// in one place.
 func (d *Daemon) Start(ctx context.Context) error {
 	d.mu.Lock()
 	if d.GetStatus() != StatusStopped {
 		d.mu.Unlock()
-		return fmt.Errorf("daemon is not in stopped state: %s", d.GetStatus())
+		return derrors.NewError(derrors.CategoryValidation, "daemon is not in stopped state: "+d.GetStatus()).Build()
 	}
 
+	runCtx, runCancel := d.startCore(ctx)
+
+	if err := d.startHTTP(runCtx); err != nil {
+		d.status.Store(StatusError)
+		d.runCancel = nil
+		if runCancel != nil {
+			runCancel()
+		}
+		d.mu.Unlock()
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
+	}
+
+	d.startBuildQueue(runCtx)
+	d.startWorkers(runCtx)
+
+	if err := d.startScheduler(ctx, runCtx); err != nil {
+		d.status.Store(StatusError)
+		if d.runCancel != nil {
+			d.runCancel()
+			d.runCancel = nil
+		}
+		d.mu.Unlock()
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to schedule daemon jobs").Build()
+	}
+
+	d.startPostSchedule()
+	d.mu.Unlock()
+
+	// Run main daemon loop (blocks until stopped)
+	d.mainLoop(runCtx)
+
+	// When mainLoop exits, we're stopping
+	d.status.Store(StatusStopping)
+	slog.Info("Main loop exited, daemon stopping")
+
+	return nil
+}
+
+// startCore moves the daemon from StatusStopped into the in-progress start
+// sequence: status, start time, initial metrics, the global metrics
+// reference for the optional Prometheus bridge, the "starting" log line,
+// state load (warn-only), the run context, and workers.Reset.
+//
+// The runCtx is returned to the caller; runCancel is also returned AND
+// stored on d.runCancel so Stop can cancel it from outside. Callers must
+// hold d.mu (Start does, then releases it before mainLoop).
+func (d *Daemon) startCore(ctx context.Context) (context.Context, context.CancelFunc) {
 	d.status.Store(StatusStarting)
 	d.startTime = time.Now()
 
@@ -352,35 +517,41 @@ func (d *Daemon) Start(ctx context.Context) error {
 	runCtx, runCancel := context.WithCancel(ctx)
 	d.runCancel = runCancel
 	d.workers.Reset()
+	return runCtx, runCancel
+}
 
-	// Start HTTP servers
-	if err := d.httpServer.Start(runCtx); err != nil {
-		d.status.Store(StatusError)
-		d.runCancel = nil
-		runCancel()
-		d.mu.Unlock()
-		return fmt.Errorf("failed to start HTTP server: %w", err)
-	}
+// startHTTP starts the HTTP server. Returns the underlying error; the
+// caller is responsible for the error-path bookkeeping (StatusError,
+// d.runCancel = nil, runCancel, mu release).
+func (d *Daemon) startHTTP(runCtx context.Context) error {
+	return d.httpServer.Start(runCtx)
+}
 
-	// Start build queue processing
+// startBuildQueue starts the build queue processing. The queue has no
+// error return; failures are surfaced via the orchestration bus.
+func (d *Daemon) startBuildQueue(runCtx context.Context) {
 	d.buildQueue.Start(runCtx)
+}
 
-	d.startWorkers(runCtx)
-
-	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
+// startScheduler registers the periodic jobs (cron + intervals) and
+// starts the scheduler loop. The scheduler loop is bound to parentCtx
+// (matching the pre-refactor semantics), while the registered jobs
+// capture runCtx so they are canceled on Stop's runCancel.
+//
+// Returns any error from schedulePeriodicJobs; the caller is responsible
+// for the error-path bookkeeping.
+func (d *Daemon) startScheduler(parentCtx, runCtx context.Context) error {
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
-		d.status.Store(StatusError)
-		if d.runCancel != nil {
-			d.runCancel()
-			d.runCancel = nil
-		}
-		d.mu.Unlock()
-		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
+		return err
 	}
+	d.scheduler.Start(parentCtx)
+	return nil
+}
 
-	// Start scheduler
-	d.scheduler.Start(ctx)
-
+// startPostSchedule marks the daemon as Running, updates the success
+// metrics, and emits the operator-facing summary logs (forge/port counts
+// + storage path resolution). Callers must hold d.mu.
+func (d *Daemon) startPostSchedule() {
 	d.status.Store(StatusRunning)
 	d.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
 	d.metrics.IncrementCounter("daemon_successful_starts")
@@ -423,18 +594,6 @@ func (d *Daemon) Start(ctx context.Context) error {
 		slog.String("repo_cache_dir", repoCache),
 		slog.String("workspace_resolved", wsPredict),
 		slog.String("clone_strategy", string(strategy)))
-
-	// Release lock before entering long-running loop to avoid blocking read operations (e.g., /status)
-	d.mu.Unlock()
-
-	// Run main daemon loop (blocks until stopped)
-	d.mainLoop(runCtx)
-
-	// When mainLoop exits, we're stopping
-	d.status.Store(StatusStopping)
-	slog.Info("Main loop exited, daemon stopping")
-
-	return nil
 }
 
 func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
@@ -499,7 +658,7 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 		if d.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
-			workCtx, cancel := d.stopAwareContext(ctx)
+			workCtx, cancel := lifecycle.StopAwareContext(ctx, d.stopChan)
 			defer cancel()
 			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
@@ -526,8 +685,26 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 	d.status.Store(StatusStopping)
 	slog.Info("Stopping DocBuilder daemon")
+	d.mu.Unlock()
 
-	// Snapshot pointers so we can stop without holding the daemon mutex.
+	d.stopSubsystems(ctx)
+
+	d.mu.Lock()
+	d.status.Store(StatusStopped)
+	d.mu.Unlock()
+
+	uptime := time.Since(d.startTime)
+	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
+
+	return nil
+}
+
+// stopSubsystems performs the orderly shutdown of every subsystem in
+// reverse-construction order. Pointers are snapshotted under d.mu so the
+// rest of the shutdown runs without holding the daemon mutex (matching
+// the pre-refactor pattern: snapshot, release mu, operate on snapshots).
+func (d *Daemon) stopSubsystems(ctx context.Context) {
+	d.mu.Lock()
 	runCancel := d.runCancel
 	d.runCancel = nil
 	stopChan := d.stopChan
@@ -605,15 +782,6 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	if err := d.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
-
-	d.mu.Lock()
-	d.status.Store(StatusStopped)
-	d.mu.Unlock()
-
-	uptime := time.Since(d.startTime)
-	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
-
-	return nil
 }
 
 // GetStatus returns the current daemon status.
@@ -640,5 +808,15 @@ func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
 
-// Compile-time check that Daemon implements BuildEventEmitter.
-var _ BuildEventEmitter = (*Daemon)(nil)
+// Compile-time assertions that *Daemon implements the optional httpserver
+// runtime surfaces supplied to httpserver.New(cfg, daemon, opts).
+var (
+	_ httpserver.Status        = (*Daemon)(nil)
+	_ httpserver.Triggers      = (*Daemon)(nil)
+	_ httpserver.MetricsSource = (*Daemon)(nil)
+)
+
+// BuildEventEmitter is implemented by *EventEmitter; see event_emitter.go.
+// Daemon no longer claims to implement it (the methods were pure
+// delegates to d.eventEmitter). Wire BuildQueue with d.eventEmitter
+// directly.

@@ -2,12 +2,13 @@ package lint
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // applyLinkUpdates applies link updates to markdown files atomically.
@@ -30,7 +31,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 		if err != nil {
 			// Rollback any previous changes
 			f.rollbackLinkUpdates(backupPaths)
-			return nil, fmt.Errorf("failed to read %s: %w", sourceFile, err)
+			return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to read").WithContext("path", sourceFile).Build()
 		}
 
 		originalContent := append([]byte(nil), content...)
@@ -80,7 +81,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			}})
 			if err != nil {
 				f.rollbackLinkUpdates(backupPaths)
-				return nil, fmt.Errorf("failed to apply link updates to %s: %w", sourceFile, err)
+				return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to apply link updates").WithContext("path", sourceFile).Build()
 			}
 
 			content = updated
@@ -103,7 +104,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
-				return nil, fmt.Errorf("failed to create backup for %s: %w", sourceFile, err)
+				return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create backup").WithContext("path", sourceFile).Build()
 			}
 			backupPaths = append(backupPaths, backupPath)
 
@@ -113,7 +114,7 @@ func (f *Fixer) applyLinkUpdates(links []LinkReference, oldPath, newPath string)
 			if err != nil {
 				// Rollback previous changes
 				f.rollbackLinkUpdates(backupPaths)
-				return nil, fmt.Errorf("failed to write updated %s: %w", sourceFile, err)
+				return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write updated").WithContext("path", sourceFile).Build()
 			}
 		}
 	}

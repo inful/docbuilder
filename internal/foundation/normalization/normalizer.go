@@ -1,9 +1,10 @@
 package normalization
 
 import (
-	"fmt"
 	"sort"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Normalizer provides type-safe string-to-enum normalization with error handling.
@@ -55,7 +56,10 @@ func (n *Normalizer[T]) NormalizeWithError(raw string) (T, error) {
 	}
 
 	var zero T
-	return zero, fmt.Errorf("invalid value %q, valid options: %v", raw, n.validKeys)
+	return zero, derrors.NewError(derrors.CategoryValidation, "invalid value; not a recognized enum member").
+		WithContext("input", raw).
+		WithContext("valid_options", n.validKeys).
+		Build()
 }
 
 // ValidateEnum checks if a value is valid without normalization.
@@ -80,27 +84,4 @@ func (n *Normalizer[T]) ValidKeys() []string {
 // This matches the existing pattern used throughout the config package.
 func defaultNormalization(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
-}
-
-// Func allows custom normalization behavior.
-type Func func(string) string
-
-// WithCustomNormalizer creates a normalizer with custom string normalization.
-func WithCustomNormalizer[T comparable](values map[string]T, defaultValue T, normalizer Func) *Normalizer[T] {
-	normalized := make(map[string]T, len(values))
-	validKeys := make([]string, 0, len(values))
-
-	for k, v := range values {
-		normalizedKey := normalizer(k)
-		normalized[normalizedKey] = v
-		validKeys = append(validKeys, normalizedKey)
-	}
-
-	sort.Strings(validKeys)
-
-	return &Normalizer[T]{
-		validValues:  normalized,
-		defaultValue: defaultValue,
-		validKeys:    validKeys,
-	}
 }

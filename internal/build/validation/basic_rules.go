@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -14,7 +13,7 @@ type BasicPrerequisitesRule struct{}
 
 func (r BasicPrerequisitesRule) Name() string { return "basic_prerequisites" }
 
-func (r BasicPrerequisitesRule) Validate(ctx context.Context, vctx Context) Result {
+func (r BasicPrerequisitesRule) Validate(_ context.Context, vctx Context) Result {
 	if vctx.State == nil {
 		return Failure("state manager is nil")
 	}
@@ -32,7 +31,7 @@ type ConfigHashRule struct{}
 
 func (r ConfigHashRule) Name() string { return "config_hash" }
 
-func (r ConfigHashRule) Validate(ctx context.Context, vctx Context) Result {
+func (r ConfigHashRule) Validate(_ context.Context, vctx Context) Result {
 	currentHash := vctx.Generator.ComputeConfigHashForPersistence()
 	if currentHash == "" {
 		return Failure("current config hash is empty")
@@ -51,7 +50,7 @@ type PublicDirectoryRule struct{}
 
 func (r PublicDirectoryRule) Name() string { return "public_directory" }
 
-func (r PublicDirectoryRule) Validate(ctx context.Context, vctx Context) Result {
+func (r PublicDirectoryRule) Validate(_ context.Context, vctx Context) Result {
 	publicDir := filepath.Join(vctx.OutDir, "public")
 
 	// Check if directory exists and is a directory
@@ -78,28 +77,27 @@ func (r PublicDirectoryRule) Validate(ctx context.Context, vctx Context) Result 
 // VersionMismatchRule validates that DocBuilder and Hugo versions haven't changed.
 // If either version differs from the previous build, a rebuild is forced to ensure
 // compatibility and that new features/fixes take effect.
+//
+// The current Hugo version is read from vctx.HugoVersion, populated by the
+// caller (validation is intentionally unaware of how the version is detected).
 type VersionMismatchRule struct{}
 
 func (r VersionMismatchRule) Name() string { return "version_mismatch" }
 
-func (r VersionMismatchRule) Validate(ctx context.Context, vctx Context) Result {
+func (r VersionMismatchRule) Validate(_ context.Context, vctx Context) Result {
 	if vctx.PrevReport == nil {
 		return Failure("no previous report available")
 	}
 
 	// Check DocBuilder version
-	currentDocBuilderVersion := version.Version
-	if currentDocBuilderVersion != vctx.PrevReport.DocBuilderVersion {
+	if version.Version != vctx.PrevReport.DocBuilderVersion {
 		return Failure("docbuilder version changed")
 	}
 
 	// Check Hugo version (only if Hugo was used in previous build)
 	// Empty previous Hugo version means Hugo wasn't executed
-	if vctx.PrevReport.HugoVersion != "" {
-		currentHugoVersion := hugo.DetectHugoVersion(ctx)
-		if currentHugoVersion != vctx.PrevReport.HugoVersion {
-			return Failure("hugo version changed")
-		}
+	if vctx.PrevReport.HugoVersion != "" && vctx.HugoVersion != vctx.PrevReport.HugoVersion {
+		return Failure("hugo version changed")
 	}
 
 	return Success()

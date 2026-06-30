@@ -119,8 +119,8 @@ func testEnhancedMockForgeClientFailureModes(t *testing.T) {
 	if err == nil {
 		t.Error("Expected rate limit failure, got nil")
 	}
-	if err.Error() != "rate limit exceeded: 100 requests per hour" {
-		t.Errorf("Expected rate limit message, got: %s", err.Error())
+	if err.Error() != "[network:error] rate limit exceeded" {
+		t.Errorf("Expected classified rate-limit error, got: %s", err.Error())
 	}
 
 	// Test network timeout
@@ -130,7 +130,7 @@ func testEnhancedMockForgeClientFailureModes(t *testing.T) {
 	if err == nil {
 		t.Error("Expected network timeout failure, got nil")
 	}
-	expectedMsg := "network timeout: connection to https://api.github.com timed out"
+	expectedMsg := "[network:error] network timeout: connection to https://api.github.com timed out"
 	if err.Error() != expectedMsg {
 		t.Errorf("Expected timeout message, got: %s", err.Error())
 	}

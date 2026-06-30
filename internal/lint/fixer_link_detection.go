@@ -1,13 +1,15 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/markdown"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // findLinksToFile finds all markdown links that reference the given target file.
@@ -19,13 +21,13 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 	// Get absolute path of target for comparison
 	absTarget, err := filepath.Abs(targetPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for target: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to get absolute path for target").Build()
 	}
 
 	// Ensure rootPath is a directory
 	rootInfo, err := os.Stat(rootPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to stat root path: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to stat root path").Build()
 	}
 
 	searchRoot := rootPath
@@ -51,7 +53,7 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 		// Find links in this file
 		fileLinks, err := f.findLinksInFile(path, absTarget)
 		if err != nil {
-			return fmt.Errorf("failed to scan %s: %w", path, err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to scan").WithContext("path", path).Build()
 		}
 
 		links = append(links, fileLinks...)
@@ -65,12 +67,12 @@ func (f *Fixer) findLinksToFile(targetPath, rootPath string) ([]LinkReference, e
 func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference, error) {
 	doc, err := docmodel.ParseFile(sourceFile, docmodel.Options{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to read file").Build()
 	}
 
 	refs, err := doc.LinkRefs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse markdown links: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "failed to parse markdown links").Build()
 	}
 
 	links := make([]LinkReference, 0)
@@ -94,7 +96,7 @@ func (f *Fixer) findLinksInFile(sourceFile, targetPath string) ([]LinkReference,
 		if dest == "" {
 			continue
 		}
-		if isExternalURL(dest) {
+		if urlutil.IsExternalURL(dest) {
 			continue
 		}
 		if strings.HasPrefix(dest, "#") {

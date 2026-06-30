@@ -3,8 +3,9 @@ package templates
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"text/template"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RenderOutputPath renders the output path template string using Go's text/template engine.
@@ -45,12 +46,12 @@ func RenderOutputPath(pathTemplate string, data map[string]any, nextSequence fun
 
 	tpl, err := template.New("output_path").Funcs(funcs).Option("missingkey=error").Parse(pathTemplate)
 	if err != nil {
-		return "", fmt.Errorf("parse output path template: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "parse output path template").Build()
 	}
 
 	var buf bytes.Buffer
 	if err := tpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("render output path template: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "render output path template").Build()
 	}
 	return buf.String(), nil
 }

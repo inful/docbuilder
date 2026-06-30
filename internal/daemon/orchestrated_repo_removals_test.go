@@ -37,7 +37,7 @@ func TestDaemon_handleRepoRemoved_PrunesStateAndCache(t *testing.T) {
 
 	svcResult := state.NewService(tmp)
 	require.True(t, svcResult.IsOk())
-	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm := svcResult.Unwrap()
 	sm.EnsureRepositoryState(repoURL, repoName, "main")
 	require.NotNil(t, sm.GetRepository(repoURL))
 
@@ -67,7 +67,7 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteOutsideRepoCacheDir(t *testing.T)
 
 	svcResult := state.NewService(tmp)
 	require.True(t, svcResult.IsOk())
-	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm := svcResult.Unwrap()
 	d := &Daemon{
 		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
 		stateManager: sm,
@@ -92,7 +92,7 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteRepoCacheBaseDir(t *testing.T) {
 
 	svcResult := state.NewService(tmp)
 	require.True(t, svcResult.IsOk())
-	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm := svcResult.Unwrap()
 
 	d := &Daemon{
 		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},

@@ -14,20 +14,14 @@ func TestHelperKeyNames(t *testing.T) {
 		attr    any
 	}{
 		{"JobID", KeyJobID, "123", JobID("123")},
-		{"JobType", KeyJobType, "build", JobType("build")},
-		{"JobStatus", KeyJobStatus, "queued", JobStatus("queued")},
-		{"ScheduleID", KeyScheduleID, "sch1", ScheduleID("sch1")},
-		{"ScheduleName", KeySchedule, "nightly", ScheduleName("nightly")},
 		{"Repository", KeyRepo, "repo1", Repository("repo1")},
 		{"Section", KeySection, "sec", Section("sec")},
 		{"Path", KeyPath, "/tmp/x", Path("/tmp/x")},
 		{"File", KeyFile, "file.md", File("file.md")},
-		{"Worker", KeyWorker, "w1", Worker("w1")},
 		{"Method", KeyMethod, "GET", Method("GET")},
 		{"UserAgent", KeyUserAgent, "ua", UserAgent("ua")},
 		{"RemoteAddr", KeyRemoteAddr, "1.2.3.4", RemoteAddr("1.2.3.4")},
-		{"RequestID", KeyRequestID, "rid", RequestID("rid")},
-		{"ForgeType", KeyForgeType, "github", ForgeType("github")},
+		{"Status", KeyStatus, "200", Status(200)},
 		{"Name", KeyName, "n", Name("n")},
 		{"URL", KeyURL, "http://example", URL("http://example")},
 	}
@@ -38,28 +32,9 @@ func TestHelperKeyNames(t *testing.T) {
 			// Key drift would break log ingestion schemas.
 			t.Fatalf("%s: expected key %s, got %s", tc.name, tc.attrKey, a.Key)
 		}
-		if got := a.Value.String(); got != tc.attrVal { // Value is slog.Value
+		if got := a.Value.String(); got != tc.attrVal {
 			t.Fatalf("%s: expected value %s, got %v", tc.name, tc.attrVal, got)
 		}
-	}
-}
-
-// TestNumericHelpers verifies keys for numeric & float helpers.
-func TestNumericHelpers(t *testing.T) {
-	if v := JobPriority(5); v.Key != KeyJobPriority {
-		t.Fatalf("JobPriority key mismatch: %s", v.Key)
-	}
-	if v := Status(200); v.Key != KeyStatus {
-		t.Fatalf("Status key mismatch: %s", v.Key)
-	}
-	if v := ResponseSize(42); v.Key != KeyResponseSz {
-		t.Fatalf("ResponseSize key mismatch: %s", v.Key)
-	}
-	if v := DurationMS(12.5); v.Key != KeyDurationMS {
-		t.Fatalf("DurationMS key mismatch: %s", v.Key)
-	}
-	if v := ContentLength(1234); v.Key != KeyContentLen {
-		t.Fatalf("ContentLength key mismatch: %s", v.Key)
 	}
 }
 

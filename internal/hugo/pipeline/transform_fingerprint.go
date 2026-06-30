@@ -2,7 +2,6 @@ package pipeline
 
 import (
 	"log/slog"
-	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
@@ -13,7 +12,7 @@ import (
 //
 // This transform operates on the serialized doc.Raw and should be run after serializeDocument.
 func fingerprintContent(doc *Document) ([]*Document, error) {
-	if !strings.HasSuffix(strings.ToLower(doc.Path), ".md") {
+	if !docmodel.IsMarkdownFile(doc.Path) {
 		return nil, nil
 	}
 

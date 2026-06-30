@@ -5,6 +5,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/foundation/normalization"
 )
 
 // ForgeTyped represents a type-safe forge type using the foundation enum system.
@@ -19,7 +20,7 @@ var (
 	ForgeTypedForgejo = ForgeTyped{string(ForgeForgejo)}
 
 	// Registry for validation and parsing.
-	forgeTypeNormalizer = foundation.NewNormalizer(map[string]ForgeTyped{
+	forgeTypeNormalizer = normalization.NewNormalizer(map[string]ForgeTyped{
 		string(ForgeGitHub):  ForgeTypedGitHub,
 		string(ForgeGitLab):  ForgeTypedGitLab,
 		string(ForgeForgejo): ForgeTypedForgejo,

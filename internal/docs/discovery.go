@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	derrors "git.home.luguber.info/inful/docbuilder/internal/docs/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -354,10 +355,12 @@ func HugoContentPath(forge, group, repository, section, name, ext string, isSing
 	return filepath.Join(parts...)
 }
 
-// isMarkdownFile checks if a file is a markdown file.
+// isMarkdownFile delegates to docmodel.IsMarkdownFile (case-insensitive,
+// recognizing .md, .markdown, .mdown, .mkd). Kept as a package-level
+// forward so the discovery pipeline doesn't grow an import edge to
+// docmodel only at the call site; the helper is now a one-liner.
 func isMarkdownFile(filename string) bool {
-	ext := strings.ToLower(filepath.Ext(filename))
-	return ext == markdownExtension || ext == ".markdown" || ext == ".mdown" || ext == ".mkd"
+	return docmodel.IsMarkdownFile(filename)
 }
 
 // isAsset checks if a file is an asset (image, etc.)

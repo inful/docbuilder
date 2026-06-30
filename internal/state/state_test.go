@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/foundation"
 	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
@@ -13,8 +12,6 @@ import (
 // TestJSONStore demonstrates basic functionality of the new state management system.
 func TestJSONStore(t *testing.T) {
 	t.Run("Repository Operations", testRepositoryOperations)
-	t.Run("Build Operations", testBuildOperations)
-	t.Run("Statistics Operations", testStatisticsOperations)
 	t.Run("Transaction Operations", testTransactionOperations)
 	t.Run("Health Check", testHealthCheck)
 	t.Run("Persistence", testPersistence)
@@ -23,7 +20,6 @@ func TestJSONStore(t *testing.T) {
 func testRepositoryOperations(t *testing.T) {
 	store := createTestStore(t)
 	ctx := t.Context()
-	repoStore := store.Repositories()
 
 	// Create a repository
 	repo := &Repository{
@@ -32,28 +28,28 @@ func testRepositoryOperations(t *testing.T) {
 		Branch: defaultBranchMain,
 	}
 
-	createResult := repoStore.Create(ctx, repo)
+	createResult := store.RepositoryCreate(ctx, repo)
 	if createResult.IsErr() {
 		t.Fatalf("Failed to create repository: %v", createResult.UnwrapErr())
 	}
 
 	// Retrieve the repository
-	getResult := repoStore.GetByURL(ctx, repo.URL)
+	getResult := store.RepositoryGetByURL(ctx, repo.URL)
 	if getResult.IsErr() {
-		t.Fatalf("Failed to get repository: %v", getResult.UnwrapErr())
+		t.Fatalf("Failed to get repository: %v", createResult.UnwrapErr())
 	}
 
-	if getResult.Unwrap().IsNone() {
+	if getResult.Unwrap() == nil {
 		t.Fatal("Repository not found after creation")
 	}
 
-	retrieved := getResult.Unwrap().Unwrap()
+	retrieved := getResult.Unwrap()
 	if retrieved.Name != repo.Name {
 		t.Errorf("Expected name %q, got %q", repo.Name, retrieved.Name)
 	}
 
 	// List repositories
-	listResult := repoStore.List(ctx)
+	listResult := store.RepositoryList(ctx)
 	if listResult.IsErr() {
 		t.Fatalf("Failed to list repositories: %v", listResult.UnwrapErr())
 	}
@@ -64,35 +60,35 @@ func testRepositoryOperations(t *testing.T) {
 	}
 
 	// Increment build count
-	incrementResult := repoStore.IncrementBuildCount(ctx, repo.URL, true)
+	incrementResult := store.RepositoryIncrementBuildCount(ctx, repo.URL, true)
 	if incrementResult.IsErr() {
 		t.Fatalf("Failed to increment build count: %v", incrementResult.UnwrapErr())
 	}
 
 	// Verify build count increased
-	getResult = repoStore.GetByURL(ctx, repo.URL)
+	getResult = store.RepositoryGetByURL(ctx, repo.URL)
 	if getResult.IsErr() {
 		t.Fatalf("Failed to get repository after increment: %v", getResult.UnwrapErr())
 	}
 
-	updated := getResult.Unwrap().Unwrap()
+	updated := getResult.Unwrap()
 	if updated.BuildCount != 1 {
 		t.Errorf("Expected build count 1, got %d", updated.BuildCount)
 	}
 
 	// Update repository metadata for existing record
-	if hashResult := repoStore.SetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
+	if hashResult := store.RepositorySetDocFilesHash(ctx, repo.URL, "abc123"); hashResult.IsErr() {
 		t.Fatalf("Failed to set doc files hash: %v", hashResult.UnwrapErr())
 	}
-	if pathsResult := repoStore.SetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
+	if pathsResult := store.RepositorySetDocFilePaths(ctx, repo.URL, []string{"docs/a.md", "docs/b.md"}); pathsResult.IsErr() {
 		t.Fatalf("Failed to set doc file paths: %v", pathsResult.UnwrapErr())
 	}
 
-	metaResult := repoStore.GetByURL(ctx, repo.URL)
-	if metaResult.IsErr() || metaResult.Unwrap().IsNone() {
+	metaResult := store.RepositoryGetByURL(ctx, repo.URL)
+	if metaResult.IsErr() || metaResult.Unwrap() == nil {
 		t.Fatalf("Failed to reload repository for metadata checks: %v", metaResult.UnwrapErr())
 	}
-	meta := metaResult.Unwrap().Unwrap()
+	meta := metaResult.Unwrap()
 	if meta.DocFilesHash.IsNone() || meta.DocFilesHash.Unwrap() != "abc123" {
 		t.Fatalf("Doc files hash not stored correctly: %+v", meta.DocFilesHash)
 	}
@@ -101,11 +97,11 @@ func testRepositoryOperations(t *testing.T) {
 	}
 
 	t.Run("Repository metadata requires existing repo", func(t *testing.T) {
-		testRepositoryMetadataValidation(t, repoStore)
+		testRepositoryMetadataValidation(t, store)
 	})
 }
 
-func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
+func testRepositoryMetadataValidation(t *testing.T, store *JSONStore) {
 	t.Helper()
 	ctx := t.Context()
 	missingURL := "https://github.com/example/missing.git"
@@ -116,25 +112,25 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 		{
 			name: "increment",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.IncrementBuildCount(ctx, missingURL, true)
+				return store.RepositoryIncrementBuildCount(ctx, missingURL, true)
 			},
 		},
 		{
 			name: "doc-count",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocumentCount(ctx, missingURL, 1)
+				return store.RepositorySetDocumentCount(ctx, missingURL, 1)
 			},
 		},
 		{
 			name: "doc-hash",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocFilesHash(ctx, missingURL, "hash")
+				return store.RepositorySetDocFilesHash(ctx, missingURL, "hash")
 			},
 		},
 		{
 			name: "doc-paths",
 			call: func() foundation.Result[struct{}, error] {
-				return repoStore.SetDocFilePaths(ctx, missingURL, []string{"a"})
+				return store.RepositorySetDocFilePaths(ctx, missingURL, []string{"a"})
 			},
 		},
 	}
@@ -151,129 +147,23 @@ func testRepositoryMetadataValidation(t *testing.T, repoStore RepositoryStore) {
 	}
 }
 
-func testBuildOperations(t *testing.T) {
-	store := createTestStore(t)
-	ctx := t.Context()
-	buildStore := store.Builds()
-
-	// Create a build
-	build := &Build{
-		ID:          "build-123",
-		Status:      BuildStatusRunning,
-		StartTime:   time.Now(),
-		TriggeredBy: "manual",
-	}
-
-	createResult := buildStore.Create(ctx, build)
-	if createResult.IsErr() {
-		t.Fatalf("Failed to create build: %v", createResult.UnwrapErr())
-	}
-
-	// Retrieve the build
-	getResult := buildStore.GetByID(ctx, build.ID)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get build: %v", getResult.UnwrapErr())
-	}
-
-	if getResult.Unwrap().IsNone() {
-		t.Fatal("Build not found after creation")
-	}
-
-	retrieved := getResult.Unwrap().Unwrap()
-	if retrieved.Status != build.Status {
-		t.Errorf("Expected status %v, got %v", build.Status, retrieved.Status)
-	}
-
-	// Update build status
-	build.Status = BuildStatusCompleted
-	build.EndTime = foundation.Some(time.Now())
-
-	updateResult := buildStore.Update(ctx, build)
-	if updateResult.IsErr() {
-		t.Fatalf("Failed to update build: %v", updateResult.UnwrapErr())
-	}
-
-	// List builds
-	listResult := buildStore.List(ctx, ListOptions{})
-	if listResult.IsErr() {
-		t.Fatalf("Failed to list builds: %v", listResult.UnwrapErr())
-	}
-
-	builds := listResult.Unwrap()
-	if len(builds) != 1 {
-		t.Errorf("Expected 1 build, got %d", len(builds))
-	}
-}
-
-func testStatisticsOperations(t *testing.T) {
-	store := createTestStore(t)
-	ctx := t.Context()
-	statsStore := store.Statistics()
-
-	// Get initial statistics
-	getResult := statsStore.Get(ctx)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get statistics: %v", getResult.UnwrapErr())
-	}
-
-	stats := getResult.Unwrap()
-	initialBuilds := stats.TotalBuilds
-
-	// Record a build
-	build := &Build{
-		ID:     "stats-test-build",
-		Status: BuildStatusCompleted,
-	}
-
-	recordResult := statsStore.RecordBuild(ctx, build)
-	if recordResult.IsErr() {
-		t.Fatalf("Failed to record build: %v", recordResult.UnwrapErr())
-	}
-
-	// Verify statistics updated
-	getResult = statsStore.Get(ctx)
-	if getResult.IsErr() {
-		t.Fatalf("Failed to get updated statistics: %v", getResult.UnwrapErr())
-	}
-
-	updatedStats := getResult.Unwrap()
-	if updatedStats.TotalBuilds != initialBuilds+1 {
-		t.Errorf("Expected total builds %d, got %d", initialBuilds+1, updatedStats.TotalBuilds)
-	}
-	if updatedStats.SuccessfulBuilds == 0 {
-		t.Error("Expected successful builds to be incremented")
-	}
-}
-
 func testTransactionOperations(t *testing.T) {
 	t.Skip("FIXME: Deadlock in transaction test - needs refactoring of lock-free operations")
 
 	store := createTestStore(t)
 	ctx := t.Context()
 
-	txResult := store.WithTransaction(ctx, func(txStore Store) error {
-		// Create repository and build in transaction
+	txResult := store.WithTransaction(ctx, func(txStore *JSONStore) error {
+		// Create repository in transaction (build store removed as dead code)
 		repo := &Repository{
 			URL:    "https://github.com/tx/repo.git",
 			Name:   "tx-repo",
 			Branch: defaultBranchMain,
 		}
 
-		createResult := txStore.Repositories().Create(ctx, repo)
+		createResult := txStore.RepositoryCreate(ctx, repo)
 		if createResult.IsErr() {
 			return createResult.UnwrapErr()
-		}
-
-		build := &Build{
-			ID:          "tx-build",
-			Status:      BuildStatusCompleted,
-			StartTime:   time.Now(),
-			TriggeredBy: "transaction-test",
-		}
-
-		buildResult := txStore.Builds().Create(ctx, build)
-		if buildResult.IsErr() {
-			return buildResult.UnwrapErr()
 		}
 
 		return nil
@@ -283,15 +173,10 @@ func testTransactionOperations(t *testing.T) {
 		t.Fatalf("Transaction failed: %v", txResult.UnwrapErr())
 	}
 
-	// Verify both items were created
-	getRepoResult := store.Repositories().GetByURL(ctx, "https://github.com/tx/repo.git")
-	if getRepoResult.IsErr() || getRepoResult.Unwrap().IsNone() {
+	// Verify the repository was created
+	getRepoResult := store.RepositoryGetByURL(ctx, "https://github.com/tx/repo.git")
+	if getRepoResult.IsErr() || getRepoResult.Unwrap() == nil {
 		t.Error("Repository not found after transaction")
-	}
-
-	getBuildResult := store.Builds().GetByID(ctx, "tx-build")
-	if getBuildResult.IsErr() || getBuildResult.Unwrap().IsNone() {
-		t.Error("Build not found after transaction")
 	}
 }
 
@@ -327,7 +212,7 @@ func testPersistence(t *testing.T) {
 		Name:   "persist-repo",
 		Branch: defaultBranchMain,
 	}
-	if createResult := store.Repositories().Create(ctx, repo); createResult.IsErr() {
+	if createResult := store.RepositoryCreate(ctx, repo); createResult.IsErr() {
 		t.Fatalf("Failed to create test repository: %v", createResult.UnwrapErr())
 	}
 
@@ -345,7 +230,7 @@ func testPersistence(t *testing.T) {
 	newStore := newStoreResult.Unwrap()
 
 	// Verify data persisted
-	listResult := newStore.Repositories().List(ctx)
+	listResult := newStore.RepositoryList(ctx)
 	if listResult.IsErr() {
 		t.Fatalf("Failed to list repositories from new store: %v", listResult.UnwrapErr())
 	}
@@ -363,7 +248,7 @@ func testPersistence(t *testing.T) {
 }
 
 // createTestStore is a helper to create a test store.
-func createTestStore(t *testing.T) Store {
+func createTestStore(t *testing.T) *JSONStore {
 	t.Helper()
 	tmpDir := t.TempDir()
 	storeResult := NewJSONStore(tmpDir)
@@ -415,31 +300,10 @@ func TestStateService(t *testing.T) {
 
 	// Test store access through service
 	t.Run("Store Access", func(t *testing.T) {
-		repoStore := service.GetRepositoryStore()
-		buildStore := service.GetBuildStore()
-		statsStore := service.GetStatisticsStore()
+		store := service.Store()
 
-		if repoStore == nil {
-			t.Error("Repository store is nil")
-		}
-		if buildStore == nil {
-			t.Error("Build store is nil")
-		}
-		if statsStore == nil {
-			t.Error("Statistics store is nil")
-		}
-	})
-
-	// Test service statistics
-	t.Run("Service Statistics", func(t *testing.T) {
-		statsResult := service.GetStats(ctx)
-		if statsResult.IsErr() {
-			t.Fatalf("Failed to get service stats: %v", statsResult.UnwrapErr())
-		}
-
-		stats := statsResult.Unwrap()
-		if stats.StoreType != "json" {
-			t.Errorf("Expected store type 'json', got %q", stats.StoreType)
+		if store == nil {
+			t.Error("Store is nil")
 		}
 	})
 }

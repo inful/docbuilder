@@ -3,7 +3,6 @@ package stages
 import (
 	"context"
 	stdErrors "errors"
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
@@ -11,7 +10,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
@@ -26,7 +25,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	fetcher := NewDefaultRepoFetcher(bs.Git.WorkspaceDir, &bs.Generator.Config().Build)
 	// Ensure workspace directory structure (previously via git client)
 	if err := os.MkdirAll(bs.Git.WorkspaceDir, 0o750); err != nil {
-		return models.NewFatalStageError(models.StageCloneRepos, fmt.Errorf("ensure workspace: %w", err))
+		return models.NewFatalStageError(models.StageCloneRepos, derrors.WrapError(err, derrors.CategoryFileSystem, "ensure workspace").Build())
 	}
 	strategy := config.CloneStrategyFresh
 	if bs.Generator != nil {
@@ -47,9 +46,6 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 	if concurrency < 1 {
 		concurrency = 1
 	}
-	if bs.Generator != nil && bs.Generator.Recorder() != nil {
-		bs.Generator.Recorder().SetCloneConcurrency(concurrency)
-	}
 	type cloneTask struct{ repo config.Repository }
 	tasks := make(chan cloneTask)
 	var wg sync.WaitGroup
@@ -64,7 +60,7 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 			}
 			start := time.Now()
 			res := fetcher.Fetch(ctx, strategy, task.repo)
-			dur := time.Since(start)
+			_ = time.Since(start) // duration reserved for future per-repo metrics
 			success := res.Err == nil
 			mu.Lock()
 			if success {
@@ -73,10 +69,6 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 				recordCloneFailure(bs, res)
 			}
 			mu.Unlock()
-			if bs.Generator != nil && bs.Generator.Recorder() != nil {
-				bs.Generator.Recorder().ObserveCloneRepoDuration(task.repo.Name, dur, success)
-				bs.Generator.Recorder().IncCloneRepoResult(success)
-			}
 		}
 	}
 	wg.Add(concurrency)
@@ -106,10 +98,10 @@ func StageCloneRepos(ctx context.Context, bs *models.BuildState) error {
 		slog.Info("No repository head changes detected", slog.Int("repos", len(bs.Git.PostHeads)))
 	}
 	if bs.Report.ClonedRepositories == 0 && bs.Report.FailedRepositories > 0 {
-		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: all clones failed", models.ErrClone))
+		return models.NewWarnStageError(models.StageCloneRepos, derrors.NewError(derrors.CategoryInternal, "all clones failed").WithCause(models.ErrClone).Build())
 	}
 	if bs.Report.FailedRepositories > 0 {
-		return models.NewWarnStageError(models.StageCloneRepos, fmt.Errorf("%w: %d failed out of %d", models.ErrClone, bs.Report.FailedRepositories, len(bs.Git.Repositories)))
+		return models.NewWarnStageError(models.StageCloneRepos, derrors.NewError(derrors.CategoryInternal, "clone failures exceeded budget").WithCause(models.ErrClone).WithContext("failed", bs.Report.FailedRepositories).WithContext("total", len(bs.Git.Repositories)).Build())
 	}
 	return nil
 }
@@ -121,23 +113,23 @@ func classifyGitFailure(err error) models.ReportIssueCode {
 	}
 
 	// Use structured error classification (ADR-000)
-	if ce, ok := errors.AsClassified(err); ok {
+	if ce, ok := derrors.AsClassified(err); ok {
 		switch ce.Category() {
-		case errors.CategoryAuth:
+		case derrors.CategoryAuth:
 			return models.IssueAuthFailure
-		case errors.CategoryNotFound:
+		case derrors.CategoryNotFound:
 			return models.IssueRepoNotFound
-		case errors.CategoryConfig:
+		case derrors.CategoryConfig:
 			return models.IssueUnsupportedProto
-		case errors.CategoryNetwork:
-			if ce.RetryStrategy() == errors.RetryRateLimit {
+		case derrors.CategoryNetwork:
+			if ce.RetryStrategy() == derrors.RetryRateLimit {
 				return models.IssueRateLimit
 			}
 			return models.IssueNetworkTimeout
-		case errors.CategoryValidation, errors.CategoryAlreadyExists, errors.CategoryGit,
-			errors.CategoryForge, errors.CategoryBuild, errors.CategoryHugo, errors.CategoryFileSystem,
-			errors.CategoryDocs, errors.CategoryEventStore, errors.CategoryRuntime,
-			errors.CategoryDaemon, errors.CategoryInternal:
+		case derrors.CategoryValidation, derrors.CategoryAlreadyExists, derrors.CategoryGit,
+			derrors.CategoryForge, derrors.CategoryBuild, derrors.CategoryHugo, derrors.CategoryFileSystem,
+			derrors.CategoryDocs, derrors.CategoryEventStore, derrors.CategoryRuntime,
+			derrors.CategoryDaemon, derrors.CategoryInternal:
 			// Other categories use heuristic handling below
 		}
 		if diverged, ok := ce.Context().Get("diverged"); ok && diverged == true {

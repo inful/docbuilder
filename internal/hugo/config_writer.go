@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
@@ -43,7 +43,7 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	// Phase 3: User overrides (deep merge)
 	if g.config.Hugo.Params != nil {
-		mergeParams(params, g.config.Hugo.Params)
+		mergeParamsInline(params, g.config.Hugo.Params)
 	}
 
 	// Phase 4: Dynamic fields
@@ -135,12 +135,14 @@ func (g *Generator) GenerateHugoConfig() error {
 
 	data, err := yaml.Marshal(root)
 	if err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrConfigMarshalFailed, err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to marshal hugo config").
+			WithCause(herrors.ErrConfigMarshalFailed).
+			Build()
 	}
 
 	// #nosec G306 -- hugo.yaml is a public configuration file
 	if err := os.WriteFile(configPath, data, 0o644); err != nil {
-		return fmt.Errorf("failed to write hugo config: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write hugo config").Build()
 	}
 
 	// Ensure go.mod for Hugo Modules (Relearn requires this)
@@ -309,3 +311,25 @@ func hasAutoVariant(themeVariant any) bool {
 }
 
 // (legacy param helpers removed)
+
+// mergeParamsInline deep-merges src into dst (map[string]any).
+// - Maps: merged recursively
+// - Slices & scalars: replaced.
+func mergeParamsInline(dst, src map[string]any) {
+	if src == nil {
+		return
+	}
+	for k, v := range src {
+		if mv, ok := v.(map[string]any); ok {
+			if existing, ok2 := dst[k].(map[string]any); ok2 {
+				mergeParamsInline(existing, mv)
+			} else {
+				cp := map[string]any{}
+				mergeParamsInline(cp, mv)
+				dst[k] = cp
+			}
+			continue
+		}
+		dst[k] = v
+	}
+}

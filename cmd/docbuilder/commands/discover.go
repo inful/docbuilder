@@ -2,11 +2,11 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -15,7 +15,7 @@ type DiscoverCmd struct {
 	Repository string `short:"r" help:"Specific repository to discover (optional)"`
 }
 
-func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
+func (d *DiscoverCmd) Run(ctx context.Context, _ *Global, root *CLI) error {
 	// Load .env file if it exists (before config)
 	if err := LoadEnvFile(); err == nil && root.Verbose {
 		slog.Info("Loaded environment variables from .env file")
@@ -23,19 +23,19 @@ func (d *DiscoverCmd) Run(_ *Global, root *CLI) error {
 
 	result, cfg, err := config.LoadWithResult(root.Config)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return derrors.WrapError(err, derrors.CategoryConfig, "load config").Build()
 	}
 	// Print any normalization warnings
 	for _, w := range result.Warnings {
 		slog.Warn(w)
 	}
-	if err := ApplyAutoDiscovery(context.Background(), cfg); err != nil {
+	if err := ApplyAutoDiscovery(ctx, cfg); err != nil {
 		return err
 	}
-	return RunDiscover(cfg, d.Repository)
+	return RunDiscover(ctx, cfg, d.Repository)
 }
 
-func RunDiscover(cfg *config.Config, specificRepo string) error {
+func RunDiscover(ctx context.Context, cfg *config.Config, specificRepo string) error {
 	slog.Info("Starting documentation discovery", "repositories", len(cfg.Repositories))
 
 	// Create workspace manager
@@ -62,7 +62,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 			}
 		}
 		if len(reposToProcess) == 0 {
-			return fmt.Errorf("repository '%s' not found in configuration", specificRepo)
+			return derrors.NewError(derrors.CategoryConfig, "repository not found in configuration").WithContext("repository", specificRepo).Build()
 		}
 	} else {
 		reposToProcess = cfg.Repositories
@@ -75,7 +75,7 @@ func RunDiscover(cfg *config.Config, specificRepo string) error {
 		slog.Info("Cloning repository", "name", repo.Name, "url", repo.URL)
 
 		var result git.CloneResult
-		result, err = gitClient.CloneRepoWithMetadata(*repo)
+		result, err = gitClient.CloneRepoWithMetadata(ctx, *repo)
 		if err != nil {
 			slog.Error("Failed to clone repository", "name", repo.Name, "error", err)
 			return err

@@ -16,9 +16,10 @@ import (
 	"github.com/fsnotify/fsnotify"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/preview/runtime"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 )
 
@@ -58,9 +59,9 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	}
 
 	buildStat := &buildStatus{}
-	previewDaemon := initializePreviewDaemon(ctx, cfg, absDocs, buildStat)
+	previewRt := initializePreviewRuntime(ctx, cfg, absDocs, buildStat)
 
-	httpServer, err := startHTTPServer(ctx, cfg, previewDaemon, port, buildStat)
+	httpServer, err := startHTTPServer(ctx, cfg, previewRt, port, buildStat)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func StartLocalPreview(ctx context.Context, cfg *config.Config, port int, tempOu
 	defer func() { _ = watcher.Close() }()
 
 	rebuildReq, trigger := setupRebuildDebouncer()
-	startRebuildWorker(ctx, cfg, absDocs, previewDaemon, buildStat, rebuildReq)
+	startRebuildWorker(ctx, cfg, absDocs, previewRt, buildStat, rebuildReq)
 
 	return runPreviewLoop(ctx, watcher, trigger, rebuildReq, httpServer, tempOutputDir)
 }
@@ -88,16 +89,20 @@ func validateAndResolveDocsDir(cfg *config.Config) (string, error) {
 	}
 	absDocs, err := filepath.Abs(docsDir)
 	if err != nil {
-		return "", fmt.Errorf("resolve docs dir: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "resolve docs dir").Build()
 	}
 	if st, statErr := os.Stat(absDocs); statErr != nil || !st.IsDir() {
-		return "", fmt.Errorf("docs dir not found or not a directory: %s", absDocs)
+		return "", derrors.NewError(derrors.CategoryNotFound, "docs dir not found or not a directory").
+			WithContext("path", absDocs).
+			Build()
 	}
 	return absDocs, nil
 }
 
-// initializePreviewDaemon performs initial build and creates daemon instance.
-func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) *daemon.Daemon {
+// initializePreviewRuntime performs the initial build and returns the
+// preview Runtime (an in-process replacement for the daemon's
+// NewPreviewDaemon stub).
+func initializePreviewRuntime(ctx context.Context, cfg *config.Config, absDocs string, buildStat *buildStatus) *runtime.Runtime {
 	// Initial build
 	if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Error("initial build failed", "error", err)
@@ -107,17 +112,17 @@ func initializePreviewDaemon(ctx context.Context, cfg *config.Config, absDocs st
 		buildStat.setSuccess()
 	}
 
-	return daemon.NewPreviewDaemon(cfg)
+	return runtime.New()
 }
 
 // startHTTPServer initializes and starts the HTTP server.
-func startHTTPServer(ctx context.Context, cfg *config.Config, previewDaemon *daemon.Daemon, port int, buildStat *buildStatus) (*httpserver.Server, error) {
-	httpServer := httpserver.New(cfg, previewDaemon, httpserver.Options{
-		LiveReloadHub: previewDaemon.LiveReloadHub(),
+func startHTTPServer(ctx context.Context, cfg *config.Config, previewRt *runtime.Runtime, port int, buildStat *buildStatus) (*httpserver.Server, error) {
+	httpServer := httpserver.New(cfg, previewRt, httpserver.Options{
+		LiveReloadHub: previewRt.LiveReloadHub(),
 		BuildStatus:   buildStat,
 	})
 	if err := httpServer.Start(ctx); err != nil {
-		return nil, fmt.Errorf("failed to start HTTP server: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "failed to start HTTP server").Build()
 	}
 	slog.Info("Preview server listening", "port", port, "docs_url", fmt.Sprintf("http://localhost:%d", port))
 	return httpServer, nil
@@ -127,7 +132,7 @@ func startHTTPServer(ctx context.Context, cfg *config.Config, previewDaemon *dae
 func setupFileWatcher(absDocs string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, fmt.Errorf("fsnotify: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "create fsnotify watcher").Build()
 	}
 	if err := addDirsRecursive(watcher, absDocs); err != nil {
 		_ = watcher.Close()
@@ -160,7 +165,7 @@ func setupRebuildDebouncer() (chan struct{}, func()) {
 }
 
 // startRebuildWorker starts background goroutine to process rebuild requests.
-func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string, previewDaemon *daemon.Daemon, buildStat *buildStatus, rebuildReq chan struct{}) {
+func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string, previewRt *runtime.Runtime, buildStat *buildStatus, rebuildReq chan struct{}) {
 	var mu sync.Mutex
 	running := false
 	pending := false
@@ -183,7 +188,7 @@ func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string,
 				running = true
 				mu.Unlock()
 
-				processRebuild(ctx, cfg, absDocs, previewDaemon, buildStat)
+				processRebuild(ctx, cfg, absDocs, previewRt, buildStat)
 
 				mu.Lock()
 				running = false
@@ -203,18 +208,18 @@ func startRebuildWorker(ctx context.Context, cfg *config.Config, absDocs string,
 }
 
 // processRebuild performs the actual rebuild and notifies browsers.
-func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, previewDaemon *daemon.Daemon, buildStat *buildStatus) {
+func processRebuild(ctx context.Context, cfg *config.Config, absDocs string, previewRt *runtime.Runtime, buildStat *buildStatus) {
 	slog.Info("Change detected; rebuilding site")
 	if err := buildFromLocal(ctx, cfg, absDocs); err != nil {
 		slog.Warn("rebuild failed", "error", err)
 		buildStat.setError(err)
-		if lr := previewDaemon.LiveReloadHub(); lr != nil {
+		if lr := previewRt.LiveReloadHub(); lr != nil {
 			lr.Broadcast(fmt.Sprintf("error:%d", time.Now().UnixNano()))
 		}
 	} else {
 		writeVSCodeArtifactsIfEnabled(ctx, cfg, absDocs)
 		buildStat.setSuccess()
-		if lr := previewDaemon.LiveReloadHub(); lr != nil {
+		if lr := previewRt.LiveReloadHub(); lr != nil {
 			lr.Broadcast(strconv.FormatInt(time.Now().UnixNano(), 10))
 		}
 	}
@@ -246,7 +251,7 @@ func writeVSCodeArtifactsIfEnabled(ctx context.Context, cfg *config.Config, absD
 
 func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o750); err != nil {
-		return fmt.Errorf("create vscode settings directory: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "create vscode settings directory").Build()
 	}
 
 	settings := map[string]any{}
@@ -254,11 +259,11 @@ func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 	if data, readErr := os.ReadFile(settingsPath); readErr == nil {
 		if len(strings.TrimSpace(string(data))) > 0 {
 			if err := json.Unmarshal(data, &settings); err != nil {
-				return fmt.Errorf("parse vscode settings: %w", err)
+				return derrors.WrapError(err, derrors.CategoryValidation, "parse vscode settings").Build()
 			}
 		}
 	} else if !os.IsNotExist(readErr) {
-		return fmt.Errorf("read vscode settings: %w", readErr)
+		return derrors.WrapError(readErr, derrors.CategoryFileSystem, "read vscode settings").Build()
 	}
 
 	markdownSettings := map[string]any{}
@@ -281,12 +286,12 @@ func ensureVSCodeMarkdownSnippetSettings(settingsPath string) error {
 
 	serialized, err := json.MarshalIndent(settings, "", "    ")
 	if err != nil {
-		return fmt.Errorf("marshal vscode settings: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "marshal vscode settings").Build()
 	}
 	serialized = append(serialized, '\n')
 
 	if err := os.WriteFile(settingsPath, serialized, 0o600); err != nil {
-		return fmt.Errorf("write vscode settings: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "write vscode settings").Build()
 	}
 
 	return nil

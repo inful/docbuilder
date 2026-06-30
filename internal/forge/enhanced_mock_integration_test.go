@@ -48,7 +48,7 @@ func TestEnhancedMockForgeClient_FailureSimulation(t *testing.T) {
 		t.Error("Expected auth failure error, got nil")
 	}
 
-	if err.Error() != "authentication failed: invalid credentials" {
+	if err.Error() != "[auth:error] authentication failed: invalid credentials" {
 		t.Errorf("Expected auth failure message, got: %s", err.Error())
 	}
 
@@ -78,8 +78,8 @@ func TestEnhancedMockForgeClient_RateLimitSimulation(t *testing.T) {
 		t.Error("Expected rate limit error, got nil")
 	}
 
-	if err.Error() != "rate limit exceeded: 100 requests per hour" {
-		t.Errorf("Expected rate limit message, got: %s", err.Error())
+	if err.Error() != "[network:error] rate limit exceeded" {
+		t.Errorf("Expected classified rate-limit error, got: %s", err.Error())
 	}
 }
 
@@ -95,7 +95,7 @@ func TestEnhancedMockForgeClient_NetworkTimeoutSimulation(t *testing.T) {
 		t.Error("Expected network timeout error, got nil")
 	}
 
-	expectedMsg := "network timeout: connection to https://api.github.com timed out"
+	expectedMsg := "[network:error] network timeout: connection to https://api.github.com timed out"
 	if err.Error() != expectedMsg {
 		t.Errorf("Expected network timeout message, got: %s", err.Error())
 	}

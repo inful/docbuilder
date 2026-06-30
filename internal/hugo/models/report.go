@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"time"
 
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
@@ -190,8 +190,8 @@ type StageCount struct {
 // Finish sets the end time of the report.
 func (r *BuildReport) Finish() { r.End = time.Now() }
 
-// RecordStageResult updates BuildReport counters and emits metrics (if recorder non-nil).
-func (r *BuildReport) RecordStageResult(stage StageName, res StageResult, recorder metrics.Recorder) {
+// RecordStageResult updates BuildReport counters.
+func (r *BuildReport) RecordStageResult(stage StageName, res StageResult) {
 	if r.StageCounts == nil {
 		r.StageCounts = make(map[StageName]StageCount)
 	}
@@ -199,24 +199,12 @@ func (r *BuildReport) RecordStageResult(stage StageName, res StageResult, record
 	switch res {
 	case StageResultSuccess:
 		sc.Success++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultSuccess)
-		}
 	case StageResultWarning:
 		sc.Warning++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultWarning)
-		}
 	case StageResultFatal:
 		sc.Fatal++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultFatal)
-		}
 	case StageResultCanceled:
 		sc.Canceled++
-		if recorder != nil {
-			recorder.IncStageResult(string(stage), metrics.ResultCanceled)
-		}
 	case StageResultSkipped:
 		// No counters for skipped yet
 	}
@@ -256,29 +244,29 @@ func (r *BuildReport) Persist(root string) error {
 		r.DeriveOutcome()
 	}
 	if err := os.MkdirAll(root, 0o750); err != nil {
-		return fmt.Errorf("ensure root for report: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "ensure root for report").Build()
 	}
 	// JSON
 	jb, err := json.MarshalIndent(r.SanitizedCopy(), "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal report json: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "marshal report json").Build()
 	}
 	jsonPath := filepath.Join(root, "build-report.json")
 	tmpJSON := jsonPath + ".tmp"
 	if err := os.WriteFile(tmpJSON, jb, 0o600); err != nil {
-		return fmt.Errorf("write temp report json: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "write temp report json").Build()
 	}
 	if err := os.Rename(tmpJSON, jsonPath); err != nil {
-		return fmt.Errorf("atomic rename json: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "atomic rename json").Build()
 	}
 	// Text summary
 	summaryPath := filepath.Join(root, "build-report.txt")
 	tmpTxt := summaryPath + ".tmp"
 	if err := os.WriteFile(tmpTxt, []byte(r.Summary()+"\n"), 0o600); err != nil {
-		return fmt.Errorf("write temp report summary: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "write temp report summary").Build()
 	}
 	if err := os.Rename(tmpTxt, summaryPath); err != nil {
-		return fmt.Errorf("atomic rename summary: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "atomic rename summary").Build()
 	}
 	return nil
 }

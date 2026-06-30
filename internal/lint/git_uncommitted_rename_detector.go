@@ -5,12 +5,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // GitUncommittedRenameDetector detects renames in the working tree and index
@@ -27,7 +28,7 @@ type GitUncommittedRenameDetector struct{}
 func (d *GitUncommittedRenameDetector) DetectRenames(ctx context.Context, repoRoot string) ([]RenameMapping, error) {
 	repoRootAbs, err := filepath.Abs(repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("failed to make repo root absolute: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to make repo root absolute").Build()
 	}
 
 	isGit := isGitWorkTree(ctx, repoRootAbs)
@@ -77,9 +78,9 @@ func gitDiffRenames(ctx context.Context, repoRoot string, cached bool) ([]Rename
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			return nil, fmt.Errorf("git diff failed: %w: %s", err, string(ee.Stderr))
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, "git diff failed").WithContext("stderr", string(ee.Stderr)).Build()
 		}
-		return nil, fmt.Errorf("git diff failed: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "git diff failed").Build()
 	}
 
 	if len(out) == 0 {
@@ -196,9 +197,9 @@ func gitNameOnly(ctx context.Context, repoRoot string, args []string) ([]string,
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			return nil, fmt.Errorf("git %v failed: %w: %s", args, err, string(ee.Stderr))
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, "git command failed").WithContext("args", args).WithContext("stderr", string(ee.Stderr)).Build()
 		}
-		return nil, fmt.Errorf("git %v failed: %w", args, err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "git command failed").WithContext("args", args).Build()
 	}
 	if len(out) == 0 {
 		return nil, nil

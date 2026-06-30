@@ -21,6 +21,7 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/field"
 	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/service"
 	"git.home.luguber.info/inful/docbuilder/internal/doctemplate/suggest"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
 )
 
@@ -748,7 +749,9 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 		switch f.spec.Type {
 		case templating.FieldTypeBool:
 			if err := f.boolValue.Validate(); err != nil {
-				return nil, fmt.Errorf("%s: required boolean value is missing", f.spec.Key)
+				return nil, derrors.NewError(derrors.CategoryValidation, "required boolean value is missing").
+					WithContext("field", f.spec.Key).
+					Build()
 			}
 			if value, ok := f.boolValue.Value(); ok {
 				result[f.spec.Key] = value
@@ -759,7 +762,9 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 			value := strings.TrimSpace(f.textValue)
 			if value == "" {
 				if f.spec.Required {
-					return nil, fmt.Errorf("%s: required value is missing", f.spec.Key)
+					return nil, derrors.NewError(derrors.CategoryValidation, "required value is missing").
+						WithContext("field", f.spec.Key).
+						Build()
 				}
 				delete(result, f.spec.Key)
 				continue
@@ -769,20 +774,27 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 			value := strings.TrimSpace(f.textValue)
 			if value == "" {
 				if f.spec.Required {
-					return nil, fmt.Errorf("%s: required value is missing", f.spec.Key)
+					return nil, derrors.NewError(derrors.CategoryValidation, "required value is missing").
+						WithContext("field", f.spec.Key).
+						Build()
 				}
 				delete(result, f.spec.Key)
 				continue
 			}
 			if len(f.spec.Options) > 0 && !slices.Contains(f.spec.Options, value) {
-				return nil, fmt.Errorf("%s: invalid option %q", f.spec.Key, value)
+				return nil, derrors.NewError(derrors.CategoryValidation, "invalid template field option").
+					WithContext("field", f.spec.Key).
+					WithContext("value", value).
+					Build()
 			}
 			result[f.spec.Key] = value
 		case templating.FieldTypeStringList:
 			raw := strings.TrimSpace(f.textValue)
 			if raw == "" {
 				if f.spec.Required {
-					return nil, fmt.Errorf("%s: required value is missing", f.spec.Key)
+					return nil, derrors.NewError(derrors.CategoryValidation, "required value is missing").
+						WithContext("field", f.spec.Key).
+						Build()
 				}
 				delete(result, f.spec.Key)
 				continue
@@ -796,7 +808,9 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 				}
 			}
 			if f.spec.Required && len(items) == 0 {
-				return nil, fmt.Errorf("%s: required value is missing", f.spec.Key)
+				return nil, derrors.NewError(derrors.CategoryValidation, "required value is missing").
+					WithContext("field", f.spec.Key).
+					Build()
 			}
 			if len(items) > 0 {
 				result[f.spec.Key] = items
@@ -804,7 +818,10 @@ func collectData(fields []formField, defaults map[string]any) (map[string]any, e
 				delete(result, f.spec.Key)
 			}
 		default:
-			return nil, fmt.Errorf("%s: unsupported field type %q", f.spec.Key, f.spec.Type)
+			return nil, derrors.NewError(derrors.CategoryValidation, "unsupported template field type").
+				WithContext("field", f.spec.Key).
+				WithContext("type", f.spec.Type).
+				Build()
 		}
 	}
 

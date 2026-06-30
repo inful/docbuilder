@@ -1,10 +1,11 @@
 package lint
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // fileExists checks if a file exists (case-insensitive on applicable filesystems).
@@ -89,7 +90,7 @@ func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
 	// Get absolute path
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve absolute path: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "failed to resolve absolute path").Build()
 	}
 
 	return absPath, nil
@@ -144,15 +145,12 @@ func collectMarkdownFiles(rootPath string) ([]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk directory: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to walk directory").Build()
 	}
 	return filesToScan, nil
 }
 
-// isExternalURL checks if a link target is an external URL.
-func isExternalURL(target string) bool {
-	return strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://")
-}
+// isExternalURL migrated to internal/urlutil.IsExternalURL.
 
 // isInsideInlineCode checks if a position in a line is inside inline code (backticks).
 func isInsideInlineCode(line string, pos int) bool {

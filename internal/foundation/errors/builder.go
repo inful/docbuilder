@@ -197,10 +197,3 @@ func NotFoundError(resource string) *ErrorBuilder {
 		WithContext("resource", resource).
 		Fatal()
 }
-
-// AlreadyExistsError creates an already-exists error.
-func AlreadyExistsError(resource string) *ErrorBuilder {
-	return NewError(CategoryAlreadyExists, fmt.Sprintf("%s already exists", resource)).
-		WithContext("resource", resource).
-		Fatal()
-}

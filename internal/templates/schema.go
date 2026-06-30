@@ -2,8 +2,9 @@ package templates
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // ParseTemplateSchema parses a JSON string into a TemplateSchema structure.
@@ -30,7 +31,7 @@ func ParseTemplateSchema(raw string) (TemplateSchema, error) {
 
 	var schema TemplateSchema
 	if err := json.Unmarshal([]byte(raw), &schema); err != nil {
-		return TemplateSchema{}, fmt.Errorf("parse template schema: %w", err)
+		return TemplateSchema{}, derrors.WrapError(err, derrors.CategoryValidation, "parse template schema").Build()
 	}
 	return schema, nil
 }
@@ -59,7 +60,7 @@ func ParseTemplateDefaults(raw string) (map[string]any, error) {
 
 	var defaults map[string]any
 	if err := json.Unmarshal([]byte(raw), &defaults); err != nil {
-		return nil, fmt.Errorf("parse template defaults: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "parse template defaults").Build()
 	}
 	return defaults, nil
 }

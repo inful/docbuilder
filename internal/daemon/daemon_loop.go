@@ -9,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
+	"git.home.luguber.info/inful/docbuilder/internal/daemon/lifecycle"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -32,7 +33,7 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 			slog.Info("Main loop stopped by stop signal")
 			return
 		case <-initialDiscoveryTimer.C:
-			workCtx, cancel := d.stopAwareContext(ctx)
+			workCtx, cancel := lifecycle.StopAwareContext(ctx, d.stopChan)
 			d.goWorker("initial_discovery", func() {
 				defer cancel()
 				d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })

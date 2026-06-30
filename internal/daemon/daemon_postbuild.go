@@ -5,7 +5,6 @@ import (
 	// #nosec G501 -- MD5 used for content change detection, not cryptographic security
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	ggit "github.com/go-git/go-git/v5"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 )
@@ -205,7 +205,9 @@ func (d *Daemon) collectPageMetadata(buildID string) ([]*linkverify.PageMetadata
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to walk public directory %s: %w", publicDir, err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to walk public directory").
+			WithContext("path", publicDir).
+			Build()
 	}
 
 	slog.Debug("Collected page metadata for link verification",

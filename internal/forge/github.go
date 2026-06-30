@@ -525,3 +525,6 @@ func (c *GitHubClient) splitFullName(fullName string) (owner, repo string) {
 	}
 	return "", fullName
 }
+
+// Compile-time assertion that *GitHubClient satisfies the Client contract.
+var _ Client = (*GitHubClient)(nil)

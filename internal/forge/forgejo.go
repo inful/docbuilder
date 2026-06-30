@@ -553,3 +553,6 @@ func (c *ForgejoClient) splitFullName(fullName string) (owner, repo string) {
 	}
 	return "", fullName
 }
+
+// Compile-time assertion that *ForgejoClient satisfies the Client contract.
+var _ Client = (*ForgejoClient)(nil)

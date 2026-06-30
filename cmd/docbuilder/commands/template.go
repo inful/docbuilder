@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
 )
@@ -168,12 +169,12 @@ func loadConfigForTemplates(path string) (*config.Config, error) {
 		if os.IsNotExist(err) {
 			return &config.Config{}, nil
 		}
-		return nil, fmt.Errorf("stat config: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "stat config").Build()
 	}
 
 	result, cfg, err := config.LoadWithResult(path)
 	if err != nil {
-		return nil, fmt.Errorf("load config: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryConfig, "load config").Build()
 	}
 	for _, warning := range result.Warnings {
 		_, _ = fmt.Fprintln(os.Stderr, warning)
@@ -201,7 +202,7 @@ func selectTemplate(templates []templating.TemplateLink, autoYes bool) (templati
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return templating.TemplateLink{}, fmt.Errorf("read selection: %w", err)
+		return templating.TemplateLink{}, derrors.WrapError(err, derrors.CategoryValidation, "read selection").Build()
 	}
 
 	line = strings.TrimSpace(line)
@@ -217,7 +218,7 @@ func parseSetFlags(values []string) (map[string]string, error) {
 	for _, entry := range values {
 		parts := strings.SplitN(entry, "=", 2)
 		if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" {
-			return nil, fmt.Errorf("invalid --set value: %s", entry)
+			return nil, derrors.NewError(derrors.CategoryValidation, "invalid --set value").WithContext("value", entry).Build()
 		}
 		result[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 	}
@@ -242,7 +243,7 @@ func (c *cliPrompter) Prompt(field templating.SchemaField) (string, error) {
 
 	line, err := c.reader.ReadString('\n')
 	if err != nil {
-		return "", fmt.Errorf("read input: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "read input").Build()
 	}
 	return strings.TrimSpace(line), nil
 }
@@ -250,7 +251,7 @@ func (c *cliPrompter) Prompt(field templating.SchemaField) (string, error) {
 func resolveDocsDir() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return "", fmt.Errorf("resolve working directory: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryFileSystem, "resolve working directory").Build()
 	}
 	return filepath.Join(cwd, "docs"), nil
 }
@@ -283,7 +284,7 @@ func buildSequenceResolver(page *templating.TemplatePage, docsDir string) (func(
 	return func(name string) (int, error) {
 		def, ok := defs[name]
 		if !ok {
-			return 0, fmt.Errorf("unknown sequence: %s", name)
+			return 0, derrors.NewError(derrors.CategoryValidation, "unknown sequence").WithContext("name", name).Build()
 		}
 		return templating.ComputeNextInSequence(def, docsDir)
 	}, nil
@@ -294,7 +295,7 @@ func confirmOutputPath(path string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return false, fmt.Errorf("read confirmation: %w", err)
+		return false, derrors.WrapError(err, derrors.CategoryValidation, "read confirmation").Build()
 	}
 	answer := strings.TrimSpace(strings.ToLower(line))
 	return answer == "y" || answer == "yes", nil
@@ -311,3 +312,6 @@ func runLintFix(path string) error {
 	_, err := fixer.Fix(path)
 	return err
 }
+
+// Compile-time assertion that *cliPrompter satisfies templating.Prompter.
+var _ templating.Prompter = (*cliPrompter)(nil)

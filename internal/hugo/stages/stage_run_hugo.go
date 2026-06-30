@@ -8,6 +8,8 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
 )
 
@@ -42,7 +44,7 @@ func StageRunHugo(ctx context.Context, bs *models.BuildState) error {
 			slog.String("error", err.Error()),
 			slog.String("root", root))
 		// Return error regardless of mode - let caller decide how to handle
-		return models.NewFatalStageError(models.StageRunHugo, fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err))
+		return models.NewFatalStageError(models.StageRunHugo, derrors.WrapError(err, derrors.CategoryInternal, "hugo execution failed").WithCause(herrors.ErrHugoExecutionFailed).Build())
 	}
 	bs.Report.StaticRendered = true
 	slog.Info("Hugo renderer completed successfully",

@@ -107,7 +107,7 @@ func TestSkipEvaluator_ValidationRulesIntegration(t *testing.T) {
 	writePrevReport(t, out, 1, 2, 2, "abc123", st)
 	st.lastGlobalDocFiles = "abc123"
 
-	evaluator := NewSkipEvaluator(out, st, gen)
+	evaluator := NewSkipEvaluator(out, st, gen, "")
 	rep, ok := evaluator.Evaluate(t.Context(), []cfg.Repository{repo})
 
 	if !ok {

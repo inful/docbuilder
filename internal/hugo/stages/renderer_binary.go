@@ -3,14 +3,15 @@ package stages
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	herrors "git.home.luguber.info/inful/docbuilder/internal/hugo/errors"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // Renderer abstracts how the final static site rendering step is performed after
@@ -90,14 +91,14 @@ func ensurePATHContainsDir(env []string, dir string) []string {
 
 func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	if _, err := exec.LookPath("hugo"); err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrHugoBinaryNotFound, err)
+		return derrors.WrapError(err, derrors.CategoryConfig, "hugo binary not found").WithCause(herrors.ErrHugoBinaryNotFound).Build()
 	}
 	// Relearn is pulled via Hugo Modules, which shells out to `go mod ...`.
 	// If Go isn't available, fail fast with a clear message instead of Hugo's
 	// often-opaque module download error.
 	goPath, err := exec.LookPath("go")
 	if err != nil {
-		return fmt.Errorf("%w: %w", herrors.ErrGoBinaryNotFound, err)
+		return derrors.WrapError(err, derrors.CategoryConfig, "go binary not found").WithCause(herrors.ErrGoBinaryNotFound).Build()
 	}
 	goDir := filepath.Dir(goPath)
 
@@ -105,7 +106,7 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 	stat, statErr := os.Stat(rootDir)
 	if statErr != nil {
 		slog.Error("Staging directory missing before Hugo execution", "dir", rootDir, "error", statErr)
-		return fmt.Errorf("staging directory not found: %w", statErr)
+		return derrors.WrapError(statErr, derrors.CategoryNotFound, "staging directory not found").Build()
 	}
 	slog.Debug("Staging directory confirmed before Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 
@@ -159,13 +160,13 @@ func (b *BinaryRenderer) Execute(ctx context.Context, rootDir string) error {
 
 	if err != nil {
 		logHugoExecutionError(outStr, errStr)
-		return fmt.Errorf("%w: %w", herrors.ErrHugoExecutionFailed, err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "hugo execution failed").WithCause(herrors.ErrHugoExecutionFailed).Build()
 	}
 
 	// Check staging directory still exists after Hugo runs
 	if stat, err := os.Stat(rootDir); err != nil {
 		slog.Error("Staging directory MISSING after Hugo execution", "dir", rootDir, "error", err)
-		return fmt.Errorf("staging directory disappeared during Hugo execution: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "staging directory disappeared during Hugo execution").Build()
 	} else {
 		slog.Debug("Staging directory confirmed after Hugo", "dir", rootDir, "is_dir", stat.IsDir())
 	}
@@ -260,7 +261,14 @@ func (n *NoopRenderer) Execute(_ context.Context, rootDir string) error {
 	// Maintain the invariant expected by the pipeline/reporting:
 	// if rendering is considered successful, a publish directory exists.
 	if err := os.MkdirAll(filepath.Join(rootDir, "public"), 0o750); err != nil {
-		return fmt.Errorf("create public dir: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "create public dir").Build()
 	}
 	return nil
 }
+
+// Compile-time assertions that the renderer implementations satisfy the
+// models.Renderer contract.
+var (
+	_ models.Renderer = (*BinaryRenderer)(nil)
+	_ models.Renderer = (*NoopRenderer)(nil)
+)

@@ -57,7 +57,7 @@ func TestManager_RecomputeGlobalDocHash_RecomposesUnion(t *testing.T) {
 	if svcResult.IsErr() {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	meta := state.NewServiceAdapter(svcResult.Unwrap())
+	meta := svcResult.Unwrap()
 
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
 	meta.EnsureRepositoryState(repoAURL, repoAName, "")
@@ -103,7 +103,7 @@ func TestManager_RecomputeGlobalDocHash_DetectsDeletionsInUnchangedRepo(t *testi
 	if svcResult.IsErr() {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	meta := state.NewServiceAdapter(svcResult.Unwrap())
+	meta := svcResult.Unwrap()
 
 	repos := []cfg.Repository{{Name: repoAName, URL: repoAURL}, {Name: repoBName, URL: repoBURL}}
 	meta.EnsureRepositoryState(repoAURL, repoAName, "")

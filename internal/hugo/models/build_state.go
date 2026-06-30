@@ -6,16 +6,19 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
 // Generator defines the interface required by stages to interact with the site generator.
+//
+// New code should prefer one of the per-stage narrow interfaces below
+// (StagePrepareDeps, StageCloneDeps, etc.) so that stages do not reach into
+// *config.Config. The full Generator is kept for the runner, which legitimately
+// needs access to many of these surfaces together.
 type Generator interface {
 	Config() *config.Config
 	OutputDir() string
 	StageDir() string
-	Recorder() metrics.Recorder
 	StateManager() state.RepositoryMetadataWriter
 	ComputeConfigHash() string
 	GenerateHugoConfig() error
@@ -28,6 +31,62 @@ type Generator interface {
 	ComputeCategoriesMenu(bs *BuildState) (*CategoriesMenu, error)
 	AttachCategoriesMenu(*CategoriesMenu)
 	ApplyCategoriesMenuToConfig(root *RootConfig)
+}
+
+// Per-stage narrow interfaces. Each captures only what one stage needs;
+// stages that adopt these interfaces cannot reach into *config.Config.
+//
+// *hugo.Generator satisfies all of these structurally (compile-time
+// assertions live in internal/hugo/generator.go).
+
+// StagePrepareDeps is what StagePrepare needs.
+type StagePrepareDeps interface {
+	OutputDir() string
+	StageDir() string
+	BuildRoot() string
+	CreateHugoStructure() error
+	ExistingSiteValidForSkip() bool
+}
+
+// StageCloneDeps is what StageClone needs.
+type StageCloneDeps interface {
+	BuildRoot() string
+	StateManager() state.RepositoryMetadataWriter
+}
+
+// StageDiscoverDeps is what StageDiscoverDocs needs.
+type StageDiscoverDeps interface {
+	BuildRoot() string
+	StateManager() state.RepositoryMetadataWriter
+}
+
+// StageConfigDeps is what StageGenerateConfig needs.
+type StageConfigDeps interface {
+	ComputeConfigHash() string
+	GenerateHugoConfig() error
+	ApplyCategoriesMenuToConfig(root *RootConfig)
+}
+
+// StageCopyContentDeps is what StageCopyContent needs.
+type StageCopyContentDeps interface {
+	OutputDir() string
+	StageDir() string
+	BuildRoot() string
+	Observer() BuildObserver
+	CopyContentFilesWithState(ctx context.Context, docFiles []docs.DocFile, bs *BuildState) error
+}
+
+// StageCategoriesMenuDeps is what StageCategoriesMenu needs.
+type StageCategoriesMenuDeps interface {
+	ComputeCategoriesMenu(bs *BuildState) (*CategoriesMenu, error)
+	AttachCategoriesMenu(*CategoriesMenu)
+}
+
+// StageRunHugoDeps is what StageRunHugo needs.
+type StageRunHugoDeps interface {
+	OutputDir() string
+	BuildRoot() string
+	Renderer() Renderer
 }
 
 // GitState manages git repository operations and state tracking.

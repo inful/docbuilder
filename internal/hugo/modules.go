@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 )
 
@@ -134,7 +135,7 @@ func (g *Generator) createNewGoMod(goModPath string) error {
 
 	// #nosec G306 -- go.mod is a module configuration file
 	if err := os.WriteFile(goModPath, []byte(content), 0o644); err != nil {
-		return fmt.Errorf("failed to write go.mod: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write go.mod").Build()
 	}
 
 	slog.Debug("Created go.mod for Hugo Modules", logfields.Path(goModPath))

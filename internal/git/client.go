@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -45,8 +46,8 @@ func (c *Client) WithRemoteHeadCache(cache *RemoteHeadCache) *Client {
 // Returns the local filesystem path and any error.
 //
 // Deprecated: Use CloneRepoWithMetadata for commit metadata.
-func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
-	result, err := c.CloneRepoWithMetadata(repo)
+func (c *Client) CloneRepo(ctx context.Context, repo appcfg.Repository) (string, error) {
+	result, err := c.CloneRepoWithMetadata(ctx, repo)
 	if err != nil {
 		return "", err
 	}
@@ -55,22 +56,22 @@ func (c *Client) CloneRepo(repo appcfg.Repository) (string, error) {
 
 // UpdateRepo updates an existing repository in the workspace.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) UpdateRepo(repo appcfg.Repository) (string, error) {
+func (c *Client) UpdateRepo(ctx context.Context, repo appcfg.Repository) (string, error) {
 	if c.inRetry {
 		return c.updateOnce(repo)
 	}
-	return c.withRetry("update", repo.Name, func() (string, error) {
+	return withRetry(ctx, c, "update", repo.Name, func() (string, error) {
 		return c.updateOnce(repo)
 	})
 }
 
 // CloneRepoWithMetadata clones a repository and returns metadata including commit date.
 // If retry is enabled, it wraps the operation with retry logic.
-func (c *Client) CloneRepoWithMetadata(repo appcfg.Repository) (CloneResult, error) {
+func (c *Client) CloneRepoWithMetadata(ctx context.Context, repo appcfg.Repository) (CloneResult, error) {
 	if c.inRetry {
 		return c.cloneOnceWithMetadata(repo)
 	}
-	return c.withRetryMetadata("clone", repo.Name, func() (CloneResult, error) {
+	return withRetry(ctx, c, "clone", repo.Name, func() (CloneResult, error) {
 		return c.cloneOnceWithMetadata(repo)
 	})
 }

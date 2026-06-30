@@ -104,7 +104,7 @@ func testProductionFailureSimulation(t *testing.T) {
 	if err == nil {
 		t.Error("Expected auth failure, got nil")
 	}
-	if err.Error() != "authentication failed: invalid credentials" {
+	if err.Error() != "[auth:error] authentication failed: invalid credentials" {
 		t.Errorf("Expected auth failure message, got: %s", err.Error())
 	}
 

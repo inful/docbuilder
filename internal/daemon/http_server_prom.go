@@ -7,8 +7,7 @@ import (
 
 	prom "github.com/prometheus/client_golang/prometheus"
 	promcollect "github.com/prometheus/client_golang/prometheus/collectors"
-
-	m "git.home.luguber.info/inful/docbuilder/internal/metrics"
+	promhttp "github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -91,5 +90,5 @@ func atomicStoreInt64(p *int64, v int64) { atomic.StoreInt64(p, v) }
 // prometheusOptionalHandler returns handler and periodically syncs daemon metrics.
 func prometheusOptionalHandler() http.Handler {
 	registerBaseCollectors()
-	return m.HTTPHandler(promRegistry)
+	return promhttp.HandlerFor(promRegistry, promhttp.HandlerOpts{Registry: promRegistry})
 }

@@ -3,8 +3,9 @@ package templates
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"text/template"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RenderTemplateBody renders a template body using Go's text/template engine.
@@ -45,12 +46,12 @@ func RenderTemplateBody(bodyTemplate string, data map[string]any, nextSequence f
 
 	tpl, err := template.New("body").Funcs(funcs).Option("missingkey=error").Parse(bodyTemplate)
 	if err != nil {
-		return "", fmt.Errorf("parse template body: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "parse template body").Build()
 	}
 
 	var buf bytes.Buffer
 	if err := tpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("render template body: %w", err)
+		return "", derrors.WrapError(err, derrors.CategoryValidation, "render template body").Build()
 	}
 	return buf.String(), nil
 }

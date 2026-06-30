@@ -3,11 +3,12 @@ package lint
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // renameFile renames a file to fix filename issues.
@@ -43,7 +44,7 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 		newInfo, _ := os.Stat(newPath)
 		oldInfo, oldStatErr := os.Stat(oldPath)
 		if oldStatErr != nil || !os.SameFile(newInfo, oldInfo) {
-			op.Error = fmt.Errorf("target file already exists: %s", newPath)
+			op.Error = derrors.NewError(derrors.CategoryValidation, "target file already exists").WithContext("path", newPath).Build()
 			return op
 		}
 	}
@@ -59,14 +60,14 @@ func (f *Fixer) renameFile(oldPath string) RenameOperation {
 		// Use git mv to preserve history
 		err := f.gitMv(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("git mv failed: %w", err)
+			op.Error = derrors.WrapError(err, derrors.CategoryInternal, "git mv failed").Build()
 			return op
 		}
 	} else {
 		// Use regular file system rename
 		err := os.Rename(oldPath, newPath)
 		if err != nil {
-			op.Error = fmt.Errorf("rename failed: %w", err)
+			op.Error = derrors.WrapError(err, derrors.CategoryFileSystem, "rename failed").Build()
 			return op
 		}
 	}
@@ -94,7 +95,7 @@ func (f *Fixer) gitMv(oldPath, newPath string) error {
 	cmd := exec.CommandContext(context.Background(), "git", "mv", oldPath, newPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%w: %s", err, string(output))
+		return derrors.WrapError(err, derrors.CategoryInternal, "git command failed").WithContext("stderr", string(output)).Build()
 	}
 	return nil
 }

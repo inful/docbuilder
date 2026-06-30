@@ -1,7 +1,6 @@
 package hugo
 
 import (
-	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
@@ -9,6 +8,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatterops"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -124,7 +124,10 @@ var UncategorizedCategory = config.SidebarUncategorizedCategory
 // place the configured field would have occupied.
 func buildCategoriesMenu(items []categoryDoc, repos []config.Repository, projectSegment string, groupBy map[string][]string) (*models.CategoriesMenu, error) {
 	if projectSegment != "repo" {
-		return nil, fmt.Errorf("unsupported sidebar project_segment %q (only \"repo\" is supported)", projectSegment)
+		return nil, derrors.NewError(derrors.CategoryConfig, "unsupported sidebar project_segment").
+			WithContext("project_segment", projectSegment).
+			WithContext("supported", "repo").
+			Build()
 	}
 	cm := &models.CategoriesMenu{
 		Menus:          map[string][]models.MenuEntry{},

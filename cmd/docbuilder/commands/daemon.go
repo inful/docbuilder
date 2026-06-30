@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os/signal"
 	"syscall"
@@ -10,6 +9,7 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // DaemonCmd implements the 'daemon' command.
@@ -25,7 +25,7 @@ func (d *DaemonCmd) Run(_ *Global, root *CLI) error {
 
 	result, cfg, err := config.LoadWithResult(root.Config)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return derrors.WrapError(err, derrors.CategoryConfig, "load config").Build()
 	}
 	// Print any normalization warnings
 	for _, w := range result.Warnings {
@@ -44,7 +44,7 @@ func RunDaemon(cfg *config.Config, dataDir, configPath string) error {
 	// Create and start the daemon with config file watching
 	d, err := daemon.NewDaemonWithConfigFile(cfg, configPath)
 	if err != nil {
-		return fmt.Errorf("failed to create daemon: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to create daemon").Build()
 	}
 
 	// Start daemon in a goroutine
@@ -59,7 +59,7 @@ func RunDaemon(cfg *config.Config, dataDir, configPath string) error {
 	select {
 	case err := <-errChan:
 		if err != nil {
-			return fmt.Errorf("daemon error: %w", err)
+			return derrors.WrapError(err, derrors.CategoryInternal, "daemon error").Build()
 		}
 	case <-ctx.Done():
 		slog.Info("Shutdown signal received, stopping daemon...")
@@ -70,7 +70,7 @@ func RunDaemon(cfg *config.Config, dataDir, configPath string) error {
 	defer stopCancel()
 
 	if err := d.Stop(stopCtx); err != nil {
-		return fmt.Errorf("failed to stop daemon: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "failed to stop daemon").Build()
 	}
 
 	slog.Info("Daemon stopped successfully")

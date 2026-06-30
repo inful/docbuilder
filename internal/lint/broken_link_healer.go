@@ -3,7 +3,6 @@ package lint
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 type mappingKey struct {
@@ -112,13 +113,13 @@ func detectScopedGitRenames(ctx context.Context, repoDir string, docsRoot string
 	uncommittedDetector := &GitUncommittedRenameDetector{}
 	uncommitted, err := uncommittedDetector.DetectRenames(ctx, repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to detect git uncommitted renames: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to detect git uncommitted renames").Build()
 	}
 
 	historyDetector := &GitHistoryRenameDetector{}
 	history, err := historyDetector.DetectRenames(ctx, repoDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to detect git history renames: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to detect git history renames").Build()
 	}
 
 	combined := append(append([]RenameMapping(nil), uncommitted...), history...)
@@ -128,7 +129,7 @@ func detectScopedGitRenames(ctx context.Context, repoDir string, docsRoot string
 
 	normalized, err := NormalizeRenameMappings(combined, []string{docsRoot})
 	if err != nil {
-		return nil, fmt.Errorf("failed to normalize rename mappings: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to normalize rename mappings").Build()
 	}
 	return normalized, nil
 }

@@ -13,11 +13,12 @@ func (d *Daemon) GetConfigFilePath() string {
 	return d.configFilePath
 }
 
-// GetLastBuildTime returns the last successful build time (if any).
+// GetLastBuildTime is part of the StatusProvider interface but the
+// lastBuild field was removed (never written in production). Always
+// returns nil; callers should treat this as "no successful build
+// recorded yet" and fall back to other timestamps.
 func (d *Daemon) GetLastBuildTime() *time.Time {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.lastBuild
+	return nil
 }
 
 // GetLastDiscovery returns the last successful discovery time (if any).

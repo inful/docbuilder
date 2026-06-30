@@ -1,10 +1,10 @@
 package commands
 
 import (
-	"fmt"
 	"os"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const templateBaseURLEnv = "DOCBUILDER_TEMPLATE_BASE_URL"
@@ -20,5 +20,5 @@ func ResolveTemplateBaseURL(flagBaseURL string, cfg *config.Config) (string, err
 	if cfg != nil && cfg.Hugo.BaseURL != "" {
 		return cfg.Hugo.BaseURL, nil
 	}
-	return "", fmt.Errorf("template base URL is required (set --base-url, %s, or hugo.base_url)", templateBaseURLEnv)
+	return "", derrors.NewError(derrors.CategoryConfig, "template base URL is required (set --base-url, "+templateBaseURLEnv+", or hugo.base_url)").Build()
 }

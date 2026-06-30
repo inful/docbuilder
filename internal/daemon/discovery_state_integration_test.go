@@ -63,7 +63,7 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	if svcResult.IsErr() {
 		t.Fatalf("state service: %v", svcResult.UnwrapErr())
 	}
-	sm := state.NewServiceAdapter(svcResult.Unwrap())
+	sm := svcResult.Unwrap()
 	gen := hugo.NewGenerator(conf, outputDir).WithStateManager(sm).WithRenderer(&stages.NoopRenderer{})
 
 	ctx, cancel := context.WithTimeout(t.Context(), 30*time.Second)
@@ -84,13 +84,13 @@ func TestDiscoveryStagePersistsPerRepoDocFilesHash(t *testing.T) {
 	if rs.DocumentCount != 1 {
 		t.Fatalf("expected document_count=1 got %d", rs.DocumentCount)
 	}
-	if rs.DocFilesHash == "" {
+	if rs.DocFilesHash.IsNone() {
 		t.Fatalf("expected non-empty doc_files_hash")
 	}
 	if report.DocFilesHash == "" {
 		t.Fatalf("expected build report doc_files_hash set")
 	}
-	if rs.DocFilesHash != report.DocFilesHash {
-		t.Fatalf("per-repo hash %s != report hash %s (single-repo build)", rs.DocFilesHash, report.DocFilesHash)
+	if rs.DocFilesHash.Unwrap() != report.DocFilesHash {
+		t.Fatalf("per-repo hash %s != report hash %s (single-repo build)", rs.DocFilesHash.Unwrap(), report.DocFilesHash)
 	}
 }

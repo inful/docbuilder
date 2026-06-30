@@ -21,11 +21,8 @@ const (
 	StageDiscoverDocs   StageName = "discover_docs"
 	StageCategoriesMenu StageName = "categories_menu"
 	StageGenerateConfig StageName = "generate_config"
-	StageLayouts        StageName = "layouts"
 	StageCopyContent    StageName = "copy_content"
-	StageIndexes        StageName = "indexes"
 	StageRunHugo        StageName = "run_hugo"
-	StagePostProcess    StageName = "post_process"
 )
 
 // StageErrorKind classifies the outcome of a stage.
@@ -74,7 +71,7 @@ func (e *StageError) Transient() bool {
 		if isSentinel(ErrDiscovery) {
 			return e.Kind == StageErrorWarning
 		}
-	case StagePrepareOutput, StageCategoriesMenu, StageGenerateConfig, StageLayouts, StageCopyContent, StageIndexes, StagePostProcess:
+	case StagePrepareOutput, StageCategoriesMenu, StageGenerateConfig, StageCopyContent:
 		return false
 	}
 	return false

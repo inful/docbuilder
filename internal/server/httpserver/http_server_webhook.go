@@ -2,11 +2,12 @@ package httpserver
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 func normalizeWebhookPath(p string) string {
@@ -37,7 +38,11 @@ func (s *Server) webhookMux() (*http.ServeMux, error) {
 		}
 
 		if prev, ok := seen[path]; ok {
-			return nil, fmt.Errorf("duplicate webhook path %q for forges %q and %q", path, prev, forgeCfg.Name)
+			return nil, derrors.NewError(derrors.CategoryConfig, "duplicate webhook path").
+				WithContext("path", path).
+				WithContext("forge", forgeCfg.Name).
+				WithContext("previous_forge", prev).
+				Build()
 		}
 		seen[path] = forgeCfg.Name
 

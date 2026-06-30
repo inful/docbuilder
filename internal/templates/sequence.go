@@ -3,13 +3,14 @@ package templates
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // maxSequenceFiles is the maximum number of files to scan when computing sequences.
@@ -72,7 +73,7 @@ func ParseSequenceDefinition(raw string) (*SequenceDefinition, error) {
 
 	var def SequenceDefinition
 	if err := json.Unmarshal([]byte(raw), &def); err != nil {
-		return nil, fmt.Errorf("parse sequence definition: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryValidation, "parse sequence definition").Build()
 	}
 	if def.Name == "" || def.Dir == "" || def.Glob == "" || def.Regex == "" {
 		return nil, errors.New("sequence definition missing required fields")
@@ -133,7 +134,7 @@ func ComputeNextInSequence(def SequenceDefinition, docsDir string) (int, error) 
 
 	re, err := regexp.Compile(def.Regex)
 	if err != nil {
-		return 0, fmt.Errorf("invalid sequence regex: %w", err)
+		return 0, derrors.WrapError(err, derrors.CategoryValidation, "invalid sequence regex").Build()
 	}
 	if re.NumSubexp() != 1 {
 		return 0, errors.New("sequence regex must have exactly one capture group")
@@ -141,11 +142,14 @@ func ComputeNextInSequence(def SequenceDefinition, docsDir string) (int, error) 
 
 	matches, err := filepath.Glob(filepath.Join(dirPath, def.Glob))
 	if err != nil {
-		return 0, fmt.Errorf("sequence glob failed: %w", err)
+		return 0, derrors.WrapError(err, derrors.CategoryFileSystem, "sequence glob failed").Build()
 	}
 
 	if len(matches) > maxSequenceFiles {
-		return 0, fmt.Errorf("sequence scan exceeded %d files", maxSequenceFiles)
+		return 0, derrors.NewError(derrors.CategoryInternal, "sequence scan exceeded max files").
+			WithContext("max", maxSequenceFiles).
+			WithContext("matches", len(matches)).
+			Build()
 	}
 
 	maxValue := 0

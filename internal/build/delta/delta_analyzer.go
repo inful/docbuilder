@@ -1,15 +1,14 @@
 package delta
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/hashutil"
 )
 
 // DeltaDecision represents the analyzer's chosen build strategy.
@@ -106,18 +105,13 @@ func (da *DeltaAnalyzer) computeQuickRepoHash(repoName string) string {
 		return ""
 	}
 	sort.Strings(paths)
-	h := sha256.New()
-	for _, p := range paths {
-		h.Write([]byte(p))
-		h.Write([]byte{0})
-	}
-	return hex.EncodeToString(h.Sum(nil))
+	return hashutil.PathsHash(paths)
 }
 
 // Analyze returns a DeltaPlan describing whether a partial rebuild could be attempted.
 // currentConfigHash: hash of current configuration (same value used by skip logic)
 // repos: repositories requested for this build.
-func (da *DeltaAnalyzer) Analyze(_ string, repos []cfg.Repository) DeltaPlan {
+func (da *DeltaAnalyzer) Analyze(_ string, repos []config.Repository) DeltaPlan {
 	if da == nil || da.state == nil || len(repos) == 0 {
 		return DeltaPlan{Decision: DeltaDecisionFull, Reason: "insufficient_context"}
 	}

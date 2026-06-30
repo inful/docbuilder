@@ -2,7 +2,6 @@ package stages
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -46,7 +46,7 @@ func NewDefaultRepoFetcher(workspace string, buildCfg *config.BuildConfig) RepoF
 	return &defaultRepoFetcher{workspace: workspace, buildCfg: buildCfg}
 }
 
-func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
+func (f *defaultRepoFetcher) Fetch(ctx context.Context, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
 	res := RepoFetchResult{Name: repo.Name}
 	client := git.NewClient(f.workspace)
 	if f.buildCfg != nil {
@@ -56,7 +56,7 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	// Snapshot builds: if a specific commit SHA is pinned for this repo, ensure the
 	// working copy is checked out at that exact commit.
 	if repo.PinnedCommit != "" {
-		return f.fetchPinnedCommit(client, strategy, repo)
+		return f.fetchPinnedCommit(ctx, client, strategy, repo)
 	}
 
 	attemptUpdate := false
@@ -82,9 +82,9 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	var err error
 	var commitDate time.Time
 	if attemptUpdate {
-		path, commitDate, err = f.performUpdate(client, repo)
+		path, commitDate, err = f.performUpdate(ctx, client, repo)
 	} else {
-		path, commitDate, err = f.performClone(client, repo, &res)
+		path, commitDate, err = f.performClone(ctx, client, repo, &res)
 	}
 	res.Path = path
 	res.CommitDate = commitDate
@@ -104,7 +104,7 @@ func (f *defaultRepoFetcher) Fetch(_ context.Context, strategy config.CloneStrat
 	return res
 }
 
-func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
+func (f *defaultRepoFetcher) fetchPinnedCommit(ctx context.Context, client *git.Client, strategy config.CloneStrategy, repo config.Repository) RepoFetchResult {
 	res := RepoFetchResult{Name: repo.Name}
 	repoPath := filepath.Join(f.workspace, repo.Name)
 
@@ -159,9 +159,9 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy conf
 	var err error
 	var commitDate time.Time
 	if attemptUpdate {
-		path, commitDate, err = f.performUpdate(client, repo)
+		path, commitDate, err = f.performUpdate(ctx, client, repo)
 	} else {
-		path, commitDate, err = f.performClone(client, repo, &res)
+		path, commitDate, err = f.performClone(ctx, client, repo, &res)
 	}
 	res.Path = path
 	res.CommitDate = commitDate
@@ -184,8 +184,8 @@ func (f *defaultRepoFetcher) fetchPinnedCommit(client *git.Client, strategy conf
 }
 
 // performUpdate updates an existing repository and returns its path, commit date, and error.
-func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repository) (string, time.Time, error) {
-	path, err := client.UpdateRepo(repo)
+func (f *defaultRepoFetcher) performUpdate(ctx context.Context, client *git.Client, repo config.Repository) (string, time.Time, error) {
+	path, err := client.UpdateRepo(ctx, repo)
 	var commitDate time.Time
 
 	// For updates, try to get commit date by reading HEAD
@@ -200,8 +200,8 @@ func (f *defaultRepoFetcher) performUpdate(client *git.Client, repo config.Repos
 
 // performClone performs a fresh clone and returns its path, commit date, and error.
 // It also sets the PostHead field in res.
-func (f *defaultRepoFetcher) performClone(client *git.Client, repo config.Repository, res *RepoFetchResult) (string, time.Time, error) {
-	result, err := client.CloneRepoWithMetadata(repo)
+func (f *defaultRepoFetcher) performClone(ctx context.Context, client *git.Client, repo config.Repository, res *RepoFetchResult) (string, time.Time, error) {
+	result, err := client.CloneRepoWithMetadata(ctx, repo)
 	var path string
 	var commitDate time.Time
 
@@ -221,7 +221,7 @@ func gitStatRepo(path string) error {
 		return err
 	}
 	if _, err := os.Stat(path + "/.git"); err != nil { // missing .git
-		return fmt.Errorf("no git dir: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "no git dir").Build()
 	}
 	return nil
 }
@@ -244,19 +244,19 @@ func getCommitDate(repoPath, commitSHA string) time.Time {
 func checkoutExactCommit(repoPath, commitSHA string) (time.Time, error) {
 	repo, err := ggit.PlainOpen(repoPath)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("open repo for checkout: %w", err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryFileSystem, "open repo for checkout").Build()
 	}
 	wt, err := repo.Worktree()
 	if err != nil {
-		return time.Time{}, fmt.Errorf("get worktree for checkout: %w", err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryInternal, "get worktree for checkout").Build()
 	}
 	h := plumbing.NewHash(commitSHA)
 	if checkoutErr := wt.Checkout(&ggit.CheckoutOptions{Hash: h, Force: true}); checkoutErr != nil {
-		return time.Time{}, fmt.Errorf("checkout commit %s: %w", commitSHA, checkoutErr)
+		return time.Time{}, derrors.WrapError(checkoutErr, derrors.CategoryInternal, "checkout commit").WithContext("commit_sha", commitSHA).Build()
 	}
 	commit, err := repo.CommitObject(h)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("read commit %s: %w", commitSHA, err)
+		return time.Time{}, derrors.WrapError(err, derrors.CategoryInternal, "read commit").WithContext("commit_sha", commitSHA).Build()
 	}
 	return commit.Author.When, nil
 }

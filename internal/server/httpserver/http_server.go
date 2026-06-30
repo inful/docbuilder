@@ -46,7 +46,11 @@ type Server struct {
 }
 
 // New constructs a new HTTP server wiring instance.
-func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
+//
+// status is the always-required Status surface. opts.Triggers and
+// opts.Metrics are optional; pass nil to disable trigger/metrics
+// routes (preview-mode wiring).
+func New(cfg *config.Config, status Status, opts Options) *Server {
 	if opts.ForgeClients == nil {
 		opts.ForgeClients = map[string]forge.Client{}
 	}
@@ -62,37 +66,25 @@ func New(cfg *config.Config, runtime Runtime, opts Options) *Server {
 		vscodeFindIPCSocket: findVSCodeIPCSocket,
 	}
 
-	adapter := &runtimeAdapter{runtime: runtime}
+	// Compose one small adapter per handler group. Each adapter forwards
+	// to the optional surface if present, and returns zero values when
+	// the surface is nil (preview-mode wiring).
+	mon := &monitoringAdapter{status: status, metrics: opts.Metrics}
+	api := &apiAdapter{status: status}
+	bld := &buildAdapter{status: status, triggers: opts.Triggers}
+	wh := &webhookAdapter{triggers: opts.Triggers}
 
 	// Initialize handler modules
-	s.monitoringHandlers = handlers.NewMonitoringHandlers(adapter)
-	s.apiHandlers = handlers.NewAPIHandlers(cfg, adapter)
-	s.buildHandlers = handlers.NewBuildHandlers(adapter)
-	s.webhookHandlers = handlers.NewWebhookHandlers(adapter, opts.ForgeClients, opts.WebhookConfigs)
+	s.monitoringHandlers = handlers.NewMonitoringHandlers(mon)
+	s.apiHandlers = handlers.NewAPIHandlers(cfg, api)
+	s.buildHandlers = handlers.NewBuildHandlers(bld)
+	s.webhookHandlers = handlers.NewWebhookHandlers(wh, opts.ForgeClients, opts.WebhookConfigs)
 
 	// Initialize middleware chain
 	s.mchain = smw.Chain(slog.Default(), s.errorAdapter)
 
 	return s
 }
-
-type runtimeAdapter struct {
-	runtime Runtime
-}
-
-func (a *runtimeAdapter) GetStatus() string             { return a.runtime.GetStatus() }
-func (a *runtimeAdapter) GetActiveJobs() int            { return a.runtime.GetActiveJobs() }
-func (a *runtimeAdapter) GetStartTime() time.Time       { return a.runtime.GetStartTime() }
-func (a *runtimeAdapter) HTTPRequestsTotal() int        { return a.runtime.HTTPRequestsTotal() }
-func (a *runtimeAdapter) RepositoriesTotal() int        { return a.runtime.RepositoriesTotal() }
-func (a *runtimeAdapter) LastDiscoveryDurationSec() int { return a.runtime.LastDiscoveryDurationSec() }
-func (a *runtimeAdapter) LastBuildDurationSec() int     { return a.runtime.LastBuildDurationSec() }
-func (a *runtimeAdapter) TriggerDiscovery() string      { return a.runtime.TriggerDiscovery() }
-func (a *runtimeAdapter) TriggerBuild() string          { return a.runtime.TriggerBuild() }
-func (a *runtimeAdapter) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
-	return a.runtime.TriggerWebhookBuild(forgeName, repoFullName, branch, changedFiles)
-}
-func (a *runtimeAdapter) GetQueueLength() int { return a.runtime.GetQueueLength() }
 
 // Start initializes and starts all HTTP servers.
 func (s *Server) Start(ctx context.Context) error {
@@ -122,7 +114,10 @@ func (s *Server) Start(ctx context.Context) error {
 		addr := fmt.Sprintf(":%d", binds[i].port)
 		ln, err := lc.Listen(ctx, "tcp", addr)
 		if err != nil {
-			bindErrs = append(bindErrs, fmt.Errorf("%s port %d: %w", binds[i].name, binds[i].port, err))
+			bindErrs = append(bindErrs, derrors.WrapError(err, derrors.CategoryNetwork, "pre-bind failed").
+				WithContext("server", binds[i].name).
+				WithContext("port", binds[i].port).
+				Build())
 			continue
 		}
 		binds[i].ln = ln
@@ -134,24 +129,24 @@ func (s *Server) Start(ctx context.Context) error {
 				_ = b.ln.Close()
 			}
 		}
-		return fmt.Errorf("http startup failed: %w", errors.Join(bindErrs...))
+		return derrors.WrapError(errors.Join(bindErrs...), derrors.CategoryNetwork, "http startup failed").Build()
 	}
 
 	// All ports bound successfully – now start servers handing them their pre-bound listeners.
 	if err := s.startDocsServerWithListener(ctx, binds[0].ln); err != nil {
-		return fmt.Errorf("failed to start docs server: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start docs server").Build()
 	}
 	if err := s.startWebhookServerWithListener(ctx, binds[1].ln); err != nil {
-		return fmt.Errorf("failed to start webhook server: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start webhook server").Build()
 	}
 	if err := s.startAdminServerWithListener(ctx, binds[2].ln); err != nil {
-		return fmt.Errorf("failed to start admin server: %w", err)
+		return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start admin server").Build()
 	}
 
 	// Start LiveReload server if enabled
 	if s.cfg.Build.LiveReload && s.opts.LiveReloadHub != nil && len(binds) > 3 {
 		if err := s.startLiveReloadServerWithListener(ctx, binds[3].ln); err != nil {
-			return fmt.Errorf("failed to start livereload server: %w", err)
+			return derrors.WrapError(err, derrors.CategoryNetwork, "failed to start livereload server").Build()
 		}
 		slog.Info("HTTP servers started",
 			slog.Int("docs_port", s.cfg.Daemon.HTTP.DocsPort),
@@ -174,30 +169,30 @@ func (s *Server) Stop(ctx context.Context) error {
 	// Stop servers in reverse order
 	if s.liveReloadServer != nil {
 		if err := s.liveReloadServer.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("livereload server shutdown: %w", err))
+			errs = append(errs, derrors.WrapError(err, derrors.CategoryNetwork, "livereload server shutdown").Build())
 		}
 	}
 
 	if s.adminServer != nil {
 		if err := s.adminServer.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("admin server shutdown: %w", err))
+			errs = append(errs, derrors.WrapError(err, derrors.CategoryNetwork, "admin server shutdown").Build())
 		}
 	}
 
 	if s.webhookServer != nil {
 		if err := s.webhookServer.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("webhook server shutdown: %w", err))
+			errs = append(errs, derrors.WrapError(err, derrors.CategoryNetwork, "webhook server shutdown").Build())
 		}
 	}
 
 	if s.docsServer != nil {
 		if err := s.docsServer.Shutdown(ctx); err != nil {
-			errs = append(errs, fmt.Errorf("docs server shutdown: %w", err))
+			errs = append(errs, derrors.WrapError(err, derrors.CategoryNetwork, "docs server shutdown").Build())
 		}
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown errors: %v", errs)
+		return derrors.WrapError(errors.Join(errs...), derrors.CategoryNetwork, "shutdown errors").Build()
 	}
 
 	slog.Info("HTTP servers stopped")

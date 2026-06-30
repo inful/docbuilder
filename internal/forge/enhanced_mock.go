@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const (
@@ -233,7 +234,7 @@ func (m *EnhancedMockForgeClient) GetRepository(_ context.Context, owner, repo s
 		}
 	}
 
-	return nil, fmt.Errorf("repository %s not found", fullName)
+	return nil, derrors.NewError(derrors.CategoryNotFound, "repository not found: "+fullName).Build()
 }
 
 // CheckDocumentation checks if repository has documentation.
@@ -360,7 +361,7 @@ func (m *EnhancedMockForgeClient) RegisterWebhook(_ context.Context, _ *Reposito
 
 	// Simple URL validation - must start with http:// or https://
 	if !strings.HasPrefix(webhookURL, "http://") && !strings.HasPrefix(webhookURL, "https://") {
-		return fmt.Errorf("invalid webhook URL format: %s", webhookURL)
+		return derrors.NewError(derrors.CategoryValidation, "invalid webhook URL format: "+webhookURL).Build()
 	}
 
 	return nil // Mock success
@@ -447,25 +448,25 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 	if m.networkTimeout > 0 && m.networkTimeout < time.Millisecond*100 {
 		switch m.forgeType {
 		case TypeGitHub:
-			return errors.New("network timeout: connection to https://api.github.com timed out")
+			return derrors.NewError(derrors.CategoryNetwork, "network timeout: connection to https://api.github.com timed out").Build()
 		case TypeGitLab:
-			return errors.New("network timeout: connection to https://gitlab.com/api/v4 timed out")
+			return derrors.NewError(derrors.CategoryNetwork, "network timeout: connection to https://gitlab.com/api/v4 timed out").Build()
 		case TypeForgejo:
-			return errors.New("network timeout: connection to https://forgejo.org/api/v1 timed out")
+			return derrors.NewError(derrors.CategoryNetwork, "network timeout: connection to https://forgejo.org/api/v1 timed out").Build()
 		default:
-			return fmt.Errorf("network timeout after %v", m.networkTimeout)
+			return derrors.NewError(derrors.CategoryNetwork, "network timeout").WithContext("timeout", m.networkTimeout.String()).Build()
 		}
 	}
 
 	// Simulate authentication failure
 	if m.authFailure {
-		return errors.New("authentication failed: invalid credentials")
+		return derrors.NewError(derrors.CategoryAuth, "authentication failed: invalid credentials").Build()
 	}
 
 	// Simulate rate limiting
 	if m.rateLimit != nil {
 		if time.Now().Before(m.rateLimit.ResetTime) {
-			return fmt.Errorf("rate limit exceeded: %d requests per hour", m.rateLimit.RequestsPerHour)
+			return derrors.NewError(derrors.CategoryNetwork, "rate limit exceeded").RateLimit().WithContext("requests_per_hour", m.rateLimit.RequestsPerHour).Build()
 		}
 	}
 

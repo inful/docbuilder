@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 const defaultHistoryFallbackCommits = 50
@@ -33,7 +35,7 @@ type GitHistoryRenameDetector struct {
 func (d *GitHistoryRenameDetector) DetectRenames(ctx context.Context, repoRoot string) ([]RenameMapping, error) {
 	repoRootAbs, err := filepath.Abs(repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("failed to make repo root absolute: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryFileSystem, "failed to make repo root absolute").Build()
 	}
 
 	isGit := isGitWorkTree(ctx, repoRootAbs)
@@ -123,9 +125,9 @@ func gitDiffRenamesRange(ctx context.Context, repoRoot string, rangeSpec string)
 	if err != nil {
 		var ee *exec.ExitError
 		if errors.As(err, &ee) {
-			return nil, fmt.Errorf("git diff %s failed: %w: %s", rangeSpec, err, string(ee.Stderr))
+			return nil, derrors.WrapError(err, derrors.CategoryInternal, "git diff failed").WithContext("range", rangeSpec).WithContext("stderr", string(ee.Stderr)).Build()
 		}
-		return nil, fmt.Errorf("git diff %s failed: %w", rangeSpec, err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "git diff failed").WithContext("range", rangeSpec).Build()
 	}
 
 	if len(out) == 0 {

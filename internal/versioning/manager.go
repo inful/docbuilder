@@ -1,7 +1,6 @@
 package versioning
 
 import (
-	"fmt"
 	"log/slog"
 	"path/filepath"
 	"regexp"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
 )
 
@@ -55,13 +55,17 @@ func (vm *DefaultVersionManager) DiscoverVersionsWithAuth(repoURL string, config
 	// Get Git references from the repository with auth
 	refs, err := vm.getGitReferencesWithAuth(repoURL, authConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get git references: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "failed to get git references").
+			WithContext("repo", repoURL).
+			Build()
 	}
 
 	// Determine default branch
 	defaultBranch, err := vm.getDefaultBranch(repoURL, refs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to determine default branch: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryInternal, "failed to determine default branch").
+			WithContext("repo", repoURL).
+			Build()
 	}
 	result.Repository.DefaultBranch = defaultBranch
 
@@ -124,7 +128,9 @@ func (vm *DefaultVersionManager) CleanupOldVersions(repoURL string, config *Vers
 
 	versions, exists := vm.repositories[repoURL]
 	if !exists {
-		return fmt.Errorf("repository not found: %s", repoURL)
+		return derrors.NewError(derrors.CategoryNotFound, "repository not found in version manager").
+			WithContext("repo", repoURL).
+			Build()
 	}
 
 	originalCount := len(versions.Versions)
@@ -193,7 +199,9 @@ func (vm *DefaultVersionManager) getGitReferencesWithAuth(repoURL string, authCo
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to list remote references: %w", err)
+		return nil, derrors.WrapError(err, derrors.CategoryNetwork, "failed to list remote references").
+			WithContext("repo", repoURL).
+			Build()
 	}
 
 	gitRefs := make([]*GitReference, 0, len(refs))
@@ -241,7 +249,9 @@ func (vm *DefaultVersionManager) getDefaultBranch(repoURL string, refs []*GitRef
 		}
 	}
 
-	return "", fmt.Errorf("no branches found in repository: %s", repoURL)
+	return "", derrors.NewError(derrors.CategoryNotFound, "no branches found in repository").
+		WithContext("repo", repoURL).
+		Build()
 }
 
 // filterAndConvertReferences filters Git references based on configuration and converts to versions.

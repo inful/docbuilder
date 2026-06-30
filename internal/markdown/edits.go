@@ -2,8 +2,9 @@ package markdown
 
 import (
 	"errors"
-	"fmt"
 	"sort"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // Edit represents a targeted byte-range replacement.
@@ -39,13 +40,20 @@ func ApplyEdits(source []byte, edits []Edit) ([]byte, error) {
 
 	for i, e := range sorted {
 		if e.Start < 0 || e.End < 0 {
-			return nil, fmt.Errorf("invalid edit[%d]: negative range", i)
+			return nil, derrors.NewError(derrors.CategoryValidation, "invalid edit: negative range").
+				WithContext("edit_index", i).
+				Build()
 		}
 		if e.End < e.Start {
-			return nil, fmt.Errorf("invalid edit[%d]: end before start", i)
+			return nil, derrors.NewError(derrors.CategoryValidation, "invalid edit: end before start").
+				WithContext("edit_index", i).
+				Build()
 		}
 		if e.End > len(source) {
-			return nil, fmt.Errorf("invalid edit[%d]: range out of bounds", i)
+			return nil, derrors.NewError(derrors.CategoryValidation, "invalid edit: range out of bounds").
+				WithContext("edit_index", i).
+				WithContext("source_length", len(source)).
+				Build()
 		}
 		if i > 0 {
 			prev := sorted[i-1]

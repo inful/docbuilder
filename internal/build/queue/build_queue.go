@@ -12,7 +12,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-	"git.home.luguber.info/inful/docbuilder/internal/metrics"
 	"git.home.luguber.info/inful/docbuilder/internal/retry"
 )
 
@@ -93,7 +92,6 @@ type BuildQueue struct {
 	builder     Builder
 
 	retryPolicy retry.Policy
-	recorder    metrics.Recorder
 
 	eventEmitter BuildEventEmitter
 }
@@ -125,7 +123,6 @@ func NewBuildQueue(maxSize, workers int, builder Builder) *BuildQueue {
 		stopChan:    make(chan struct{}),
 		builder:     builder,
 		retryPolicy: retry.DefaultPolicy(),
-		recorder:    metrics.NoopRecorder{},
 	}
 }
 
@@ -134,14 +131,6 @@ func (bq *BuildQueue) ConfigureRetry(cfg config.BuildConfig) {
 	retryInitialDelay, _ := time.ParseDuration(cfg.RetryInitialDelay)
 	maxDelay, _ := time.ParseDuration(cfg.RetryMaxDelay)
 	bq.retryPolicy = retry.NewPolicy(cfg.RetryBackoff, retryInitialDelay, maxDelay, cfg.MaxRetries)
-}
-
-// SetRecorder injects a metrics recorder for retry metrics (optional).
-func (bq *BuildQueue) SetRecorder(r metrics.Recorder) {
-	if r == nil {
-		r = metrics.NoopRecorder{}
-	}
-	bq.recorder = r
 }
 
 // SetEventEmitter injects a build event emitter.
@@ -382,14 +371,12 @@ func (bq *BuildQueue) executeBuild(ctx context.Context, job *BuildJob) error {
 
 		transient, transientStage := findTransientError(report)
 		if shouldStopRetrying(transient, totalRetries, policy.MaxRetries) {
-			handleRetriesExhausted(report, transient, totalRetries, transientStage, bq.recorder)
+			handleRetriesExhausted(report, transient, totalRetries, transientStage)
 			return err
 		}
 
 		totalRetries++
-		if transientStage != "" {
-			bq.recorder.IncBuildRetry(transientStage)
-		}
+		_ = transientStage // reserved for future retry telemetry
 		delay := policy.Delay(totalRetries)
 		slog.Warn("Transient build error, retrying",
 			"job_id", job.ID,
@@ -412,7 +399,7 @@ func shouldStopRetrying(transient bool, totalRetries, maxRetries int) bool {
 	return !transient || totalRetries >= maxRetries
 }
 
-func handleRetriesExhausted(report *models.BuildReport, transient bool, totalRetries int, transientStage string, recorder metrics.Recorder) {
+func handleRetriesExhausted(report *models.BuildReport, transient bool, totalRetries int, transientStage string) {
 	if !transient || totalRetries < 1 {
 		return
 	}
@@ -421,9 +408,7 @@ func handleRetriesExhausted(report *models.BuildReport, transient bool, totalRet
 		report.Retries = totalRetries
 		report.RetriesExhausted = true
 	}
-	if transientStage != "" {
-		recorder.IncBuildRetryExhausted(transientStage)
-	}
+	_ = transientStage // reserved for future retry telemetry
 }
 
 func findTransientError(report *models.BuildReport) (bool, string) {

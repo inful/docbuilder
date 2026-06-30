@@ -11,26 +11,29 @@ import (
 	"time"
 
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 // SkipEvaluator decides whether a build can be safely skipped based on
 // persisted state + prior build report + filesystem probes using validation rules.
 type SkipEvaluator struct {
-	outDir    string
-	state     SkipStateAccess
-	generator *hugo.Generator
+	outDir      string
+	state       SkipStateAccess
+	generator   GeneratorInfo
+	hugoVersion string
 }
 
 // NewSkipEvaluator constructs a new evaluator with the standard validation rules.
-func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *SkipEvaluator {
-	// Rules are created on-demand in the evaluator since PreviousReportRule
-	// requires special handling to populate the context
+//
+// hugoVersion is the currently-detected Hugo version (e.g. "0.152.2") or ""
+// when Hugo isn't installed. Validation is intentionally unaware of how the
+// version is detected — the caller does the detection and passes the result in.
+func NewSkipEvaluator(outDir string, st SkipStateAccess, gen GeneratorInfo, hugoVersion string) *SkipEvaluator {
 	return &SkipEvaluator{
-		outDir:    outDir,
-		state:     st,
-		generator: gen,
+		outDir:      outDir,
+		state:       st,
+		generator:   gen,
+		hugoVersion: hugoVersion,
 	}
 }
 
@@ -38,11 +41,12 @@ func NewSkipEvaluator(outDir string, st SkipStateAccess, gen *hugo.Generator) *S
 // It never returns an error; corrupt/missing data simply disables the skip and a full rebuild proceeds.
 func (se *SkipEvaluator) Evaluate(ctx context.Context, repos []cfg.Repository) (*models.BuildReport, bool) {
 	vctx := Context{
-		OutDir:    se.outDir,
-		State:     se.state,
-		Generator: se.generator,
-		Repos:     repos,
-		Logger:    slog.Default(),
+		OutDir:      se.outDir,
+		State:       se.state,
+		Generator:   se.generator,
+		Repos:       repos,
+		Logger:      slog.Default(),
+		HugoVersion: se.hugoVersion,
 	}
 
 	// Special handling for PreviousReportRule since it needs to populate context

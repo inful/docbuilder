@@ -1,10 +1,11 @@
 package lint
 
 import (
-	"fmt"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // RenameSource records where a rename mapping came from.
@@ -44,7 +45,7 @@ func NormalizeRenameMappings(mappings []RenameMapping, docsRoots []string) ([]Re
 			continue
 		}
 		if !filepath.IsAbs(root) {
-			return nil, fmt.Errorf("docs root must be an absolute path: %q", root)
+			return nil, derrors.NewError(derrors.CategoryValidation, "docs root must be an absolute path").WithContext("root", root).Build()
 		}
 		absDocsRoots = append(absDocsRoots, filepath.Clean(root))
 	}
@@ -52,7 +53,7 @@ func NormalizeRenameMappings(mappings []RenameMapping, docsRoots []string) ([]Re
 	filtered := make([]RenameMapping, 0, len(mappings))
 	for _, m := range mappings {
 		if !filepath.IsAbs(m.OldAbs) || !filepath.IsAbs(m.NewAbs) {
-			return nil, fmt.Errorf("rename mapping paths must be absolute: old=%q new=%q", m.OldAbs, m.NewAbs)
+			return nil, derrors.NewError(derrors.CategoryValidation, "rename mapping paths must be absolute").WithContext("old", m.OldAbs).WithContext("new", m.NewAbs).Build()
 		}
 		m.OldAbs = filepath.Clean(m.OldAbs)
 		m.NewAbs = filepath.Clean(m.NewAbs)

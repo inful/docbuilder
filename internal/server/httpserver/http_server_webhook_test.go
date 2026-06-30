@@ -20,16 +20,13 @@ type webhookRuntimeStub struct {
 	branch string
 }
 
-func (r *webhookRuntimeStub) GetStatus() string             { return "running" }
-func (r *webhookRuntimeStub) GetActiveJobs() int            { return 0 }
-func (r *webhookRuntimeStub) GetStartTime() time.Time       { return time.Unix(0, 0) }
-func (r *webhookRuntimeStub) HTTPRequestsTotal() int        { return 0 }
-func (r *webhookRuntimeStub) RepositoriesTotal() int        { return 0 }
-func (r *webhookRuntimeStub) LastDiscoveryDurationSec() int { return 0 }
-func (r *webhookRuntimeStub) LastBuildDurationSec() int     { return 0 }
-func (r *webhookRuntimeStub) TriggerDiscovery() string      { return "" }
-func (r *webhookRuntimeStub) TriggerBuild() string          { return "" }
-func (r *webhookRuntimeStub) GetQueueLength() int           { return 0 }
+func (r *webhookRuntimeStub) GetStatus() string       { return "running" }
+func (r *webhookRuntimeStub) GetStartTime() time.Time { return time.Unix(0, 0) }
+func (r *webhookRuntimeStub) GetActiveJobs() int      { return 0 }
+
+func (r *webhookRuntimeStub) TriggerDiscovery() string { return "" }
+func (r *webhookRuntimeStub) TriggerBuild() string     { return "" }
+func (r *webhookRuntimeStub) GetQueueLength() int      { return 0 }
 
 func (r *webhookRuntimeStub) TriggerWebhookBuild(forgeName, repoFullName, branch string, changedFiles []string) string {
 	r.called = true
@@ -67,6 +64,7 @@ func TestWebhookMux_ConfiguredForgePath_TriggersBuild(t *testing.T) {
 
 	runtime := &webhookRuntimeStub{}
 	srv := New(cfg, runtime, Options{
+		Triggers: runtime,
 		ForgeClients: map[string]forge.Client{
 			forgeName: client,
 		},

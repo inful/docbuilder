@@ -79,3 +79,6 @@ func (c *LocalClient) RegisterWebhook(ctx context.Context, repo *Repository, web
 	return nil
 }
 func (c *LocalClient) GetEditURL(repo *Repository, filePath string, branch string) string { return "" }
+
+// Compile-time assertion that *LocalClient satisfies the Client contract.
+var _ Client = (*LocalClient)(nil)

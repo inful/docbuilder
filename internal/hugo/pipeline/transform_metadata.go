@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	"git.home.luguber.info/inful/docbuilder/internal/forge"
+	"git.home.luguber.info/inful/docbuilder/internal/urlutil"
 )
 
 // addRepositoryMetadata adds repository, section, and custom metadata to front matter.
@@ -91,6 +93,10 @@ func addEditLink(cfg *config.Config) FileTransform {
 // generateEditURL creates a forge-appropriate edit URL for a document.
 // Only generates URLs for documents with repository metadata.
 // For preview mode in VS Code, VS Code edit URLs are handled separately.
+//
+// Splits the (clone|override) URL once via forge.SplitCloneURL and delegates
+// the per-forge URL formatting to forge.GenerateEditURL, which is shared
+// with internal/hugo/editlink.
 func generateEditURL(doc *Document) string {
 	// Preview mode with VS Code: generate local edit URL
 	if doc.VSCodeEditLinks && doc.IsSingleRepo {
@@ -99,18 +105,20 @@ func generateEditURL(doc *Document) string {
 		return fmt.Sprintf("/_edit/%s", doc.RelativePath)
 	}
 
-	// Production builds: generate forge-specific edit URLs
-	// Use EditURLBase override if provided, otherwise use SourceURL
-	var baseURL string
+	// Production builds: generate forge-specific edit URLs.
+	// Use EditURLBase override if provided, otherwise use SourceURL.
+	var cloneURL string
 	switch {
 	case doc.EditURLBase != "":
-		// CLI override provided
-		baseURL = strings.TrimSuffix(doc.EditURLBase, ".git")
-	case doc.SourceURL != "" && isForgeURL(doc.SourceURL):
-		// Use SourceURL if it's a real forge URL
-		baseURL = strings.TrimSuffix(doc.SourceURL, ".git")
+		cloneURL = doc.EditURLBase
+	case doc.SourceURL != "" && urlutil.IsForgeURL(doc.SourceURL):
+		cloneURL = doc.SourceURL
 	default:
-		// No valid base URL for edit links
+		return ""
+	}
+
+	baseURL, fullName := forge.SplitCloneURL(cloneURL)
+	if baseURL == "" || fullName == "" {
 		return ""
 	}
 
@@ -120,81 +128,32 @@ func generateEditURL(doc *Document) string {
 		branch = "main"
 	}
 
-	// Build path relative to repository root
-	// RelativePath is already relative to docs base, need to prepend DocsBase if it's not already there
-	// Skip if DocsBase is "." (current directory marker used in local builds)
+	// Build path relative to repository root. RelativePath is already
+	// relative to docs base; prepend DocsBase when it isn't already.
+	// Skip when DocsBase is "." (current-directory marker for local builds).
 	filePath := doc.RelativePath
 	if doc.DocsBase != "" && doc.DocsBase != "." && !strings.HasPrefix(filePath, doc.DocsBase+"/") {
 		filePath = doc.DocsBase + "/" + filePath
 	}
 
-	// Determine forge type from the Forge field or URL patterns
-	forgeType := detectForgeType(doc.Forge, baseURL)
+	// ForgeType is sourced from the explicit forge field (if set),
+	// otherwise classified via the centralized forge.DetectForgeTypeFromURL.
+	forgeType := detectForgeTypeFromField(doc.Forge, cloneURL)
 
-	// Generate URL based on forge type
-	switch forgeType {
-	case config.ForgeGitHub:
-		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)
-	case config.ForgeGitLab:
-		return fmt.Sprintf("%s/-/edit/%s/%s", baseURL, branch, filePath)
-	case config.ForgeForgejo:
-		// Forgejo and Gitea both use /_edit/ pattern
-		return fmt.Sprintf("%s/_edit/%s/%s", baseURL, branch, filePath)
-	case config.ForgeLocal:
-		// Local forges don't have web UI edit URLs
-		return ""
-	default:
-		// Fallback to GitHub-style for unknown forges
-		return fmt.Sprintf("%s/edit/%s/%s", baseURL, branch, filePath)
-	}
+	return forge.GenerateEditURL(forgeType, baseURL, fullName, branch, filePath)
 }
 
-// detectForgeType determines the forge type from metadata or URL patterns.
-func detectForgeType(forgeField, baseURL string) config.ForgeType {
-	// First check if we have explicit forge metadata
-	if forgeField != "" {
-		switch strings.ToLower(forgeField) {
-		case "github":
-			return config.ForgeGitHub
-		case "gitlab":
-			return config.ForgeGitLab
-		case "forgejo", "gitea":
-			return config.ForgeForgejo
-		}
-	}
-
-	// Fallback to URL pattern detection
-	lowerURL := strings.ToLower(baseURL)
-	if strings.Contains(lowerURL, "github.com") {
+// detectForgeTypeFromField consults the explicit forge metadata field
+// first; on a miss or empty field it falls back to
+// forge.DetectForgeTypeFromURL on the clone URL.
+func detectForgeTypeFromField(forgeField, cloneURL string) config.ForgeType {
+	switch strings.ToLower(forgeField) {
+	case "github":
 		return config.ForgeGitHub
-	}
-	if strings.Contains(lowerURL, "gitlab.com") || strings.Contains(lowerURL, "gitlab") {
+	case "gitlab":
 		return config.ForgeGitLab
-	}
-	// Forgejo and Gitea use similar patterns - check for common hostnames
-	if strings.Contains(lowerURL, "forgejo") || strings.Contains(lowerURL, "gitea") {
+	case "forgejo", "gitea":
 		return config.ForgeForgejo
 	}
-
-	// For self-hosted instances that aren't GitHub/GitLab, default to Forgejo/Gitea pattern
-	// as it's becoming the most common self-hosted option
-	if !strings.Contains(lowerURL, "github.com") && !strings.Contains(lowerURL, "gitlab.com") {
-		return config.ForgeForgejo
-	}
-
-	// Final fallback to GitHub
-	return config.ForgeGitHub
-}
-
-// isForgeURL checks if a URL is a real forge URL (not a local path).
-func isForgeURL(url string) bool {
-	// Real forge URLs start with http://, https://, or git@
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-		return true
-	}
-	if strings.HasPrefix(url, "git@") {
-		return true
-	}
-	// Anything else (./path, /path, relative paths) is local
-	return false
+	return forge.DetectForgeTypeFromURL(cloneURL)
 }

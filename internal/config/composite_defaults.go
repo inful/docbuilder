@@ -1,6 +1,8 @@
 package config
 
-import "fmt"
+import (
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
+)
 
 // CompositeDefaultApplier applies defaults across all configuration domains.
 type CompositeDefaultApplier struct {
@@ -27,7 +29,7 @@ func NewDefaultApplier() *CompositeDefaultApplier {
 func (c *CompositeDefaultApplier) ApplyDefaults(cfg *Config) error {
 	for _, applier := range c.appliers {
 		if err := applier.ApplyDefaults(cfg); err != nil {
-			return fmt.Errorf("applying defaults for %s: %w", applier.Domain(), err)
+			return derrors.WrapError(err, derrors.CategoryConfig, "applying defaults").WithContext("domain", applier.Domain()).Build()
 		}
 	}
 	return nil

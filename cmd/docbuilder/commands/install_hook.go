@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
 // InstallHookCmd implements the 'lint install-hook' command.
@@ -22,7 +24,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 	// Find git directory
 	gitDir, err := findGitDir()
 	if err != nil {
-		return fmt.Errorf("not in a Git repository: %w", err)
+		return derrors.WrapError(err, derrors.CategoryInternal, "not in a Git repository").Build()
 	}
 
 	hooksDir := filepath.Join(gitDir, "hooks")
@@ -30,7 +32,7 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 
 	// Create hooks directory if it doesn't exist
 	if err := os.MkdirAll(hooksDir, 0o750); err != nil {
-		return fmt.Errorf("failed to create hooks directory: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create hooks directory").Build()
 	}
 
 	// Backup existing hook unless --force
@@ -41,11 +43,11 @@ func (cmd *InstallHookCmd) Run(_ *Global, _ *CLI) error {
 		// #nosec G304 -- hookPath is constructed from git directory, not user input
 		content, err := os.ReadFile(hookPath)
 		if err != nil {
-			return fmt.Errorf("failed to read existing hook: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to read existing hook").Build()
 		}
 
 		if err := os.WriteFile(backupPath, content, 0o600); err != nil { //nolint:gosec // backupPath is derived from the git directory
-			return fmt.Errorf("failed to create backup: %w", err)
+			return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to create backup").Build()
 		}
 	}
 
@@ -116,13 +118,13 @@ fi
 
 	// Write hook file with restrictive permissions first
 	if err := os.WriteFile(hookPath, []byte(hookContent), 0o600); err != nil {
-		return fmt.Errorf("failed to write hook file: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to write hook file").Build()
 	}
 
 	// Make it executable (owner and group only)
 	// #nosec G302 -- intentional executable permission for git hook
 	if err := os.Chmod(hookPath, 0o750); err != nil {
-		return fmt.Errorf("failed to make hook executable: %w", err)
+		return derrors.WrapError(err, derrors.CategoryFileSystem, "failed to make hook executable").Build()
 	}
 
 	fmt.Println("✅ Pre-commit hook installed successfully")

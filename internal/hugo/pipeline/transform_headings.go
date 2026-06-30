@@ -29,7 +29,7 @@ func extractIndexTitle(doc *Document) ([]*Document, error) {
 	isDocsBase := doc.Section != "" && doc.DocsBase == doc.Section && doc.Repository != ""
 
 	if isRepositoryRoot || isDocsBase {
-		repoTitle := titleCase(doc.Repository)
+		repoTitle := titleCaseSlug(doc.Repository)
 		if repoTitle != "" {
 			doc.FrontMatter["title"] = repoTitle
 		}

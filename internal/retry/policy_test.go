@@ -1,116 +1,222 @@
 package retry
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/config"
+	derrors "git.home.luguber.info/inful/docbuilder/internal/foundation/errors"
 )
 
-// TestDefaultPolicy verifies the baseline default values.
-func TestDefaultPolicy(t *testing.T) {
-	p := DefaultPolicy()
-	if p.Mode != config.RetryBackoffLinear {
-		t.Fatalf("expected linear default mode got %s", p.Mode)
+// TestDo_SuccessFirstTry ensures fn succeeding on first try returns nil without retry hooks firing.
+func TestDo_SuccessFirstTry(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffLinear, 1*time.Millisecond, 5*time.Millisecond, 3)
+	calls := 0
+	hooks := RetryHooks{
+		OnRetry: func(int, error) { t.Errorf("OnRetry should not run when fn succeeds") },
 	}
-	if p.Initial != time.Second {
-		t.Fatalf("expected initial 1s got %v", p.Initial)
+	err := p.Do(context.Background(), func(_ context.Context) error {
+		calls++
+		return nil
+	}, hooks)
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
 	}
-	if p.Max != 30*time.Second {
-		t.Fatalf("expected max 30s got %v", p.Max)
-	}
-	if p.MaxRetries != 2 {
-		t.Fatalf("expected max retries 2 got %d", p.MaxRetries)
-	}
-}
-
-// TestNewPolicyOverrides checks override precedence and clamping when initial > max.
-func TestNewPolicyOverrides(t *testing.T) {
-	p := NewPolicy(config.RetryBackoffFixed, 5*time.Second, 2*time.Second, 5)
-	// initial > max -> clamped
-	if p.Initial != 2*time.Second {
-		t.Fatalf("expected clamped initial 2s got %v", p.Initial)
-	}
-	if p.Max != 2*time.Second {
-		t.Fatalf("expected max 2s got %v", p.Max)
-	}
-	if p.Mode != config.RetryBackoffFixed {
-		t.Fatalf("expected fixed mode got %s", p.Mode)
-	}
-	if p.MaxRetries != 5 {
-		t.Fatalf("expected maxRetries 5 got %d", p.MaxRetries)
+	if calls != 1 {
+		t.Fatalf("expected 1 call, got %d", calls)
 	}
 }
 
-// TestDelayModes ensures fixed, linear, exponential behave and respect cap.
-func TestDelayModes(t *testing.T) {
-	fixed := NewPolicy(config.RetryBackoffFixed, 100*time.Millisecond, 500*time.Millisecond, 3)
-	for i := 1; i <= 3; i++ {
-		if d := fixed.Delay(i); d != 100*time.Millisecond {
-			t.Fatalf("fixed attempt %d expected 100ms got %v", i, d)
+// TestDo_RetriesUntilSuccess ensures fn failing twice then succeeding returns nil and
+// OnRetry fires for each retry.
+func TestDo_RetriesUntilSuccess(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffFixed, 1*time.Millisecond, 5*time.Millisecond, 5)
+	calls := 0
+	retryNotices := 0
+	hooks := RetryHooks{
+		IsRetryable: func(err error) bool { return true },
+		OnRetry: func(attempt int, err error) {
+			retryNotices++
+			if attempt < 1 {
+				t.Errorf("attempt should be 1-based")
+			}
+		},
+	}
+	err := p.Do(context.Background(), func(_ context.Context) error {
+		calls++
+		if calls < 3 {
+			return errors.New("transient")
+		}
+		return nil
+	}, hooks)
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+	if calls != 3 {
+		t.Fatalf("expected 3 calls, got %d", calls)
+	}
+	if retryNotices != 2 {
+		t.Fatalf("expected 2 OnRetry invocations (after attempt 1 and 2), got %d", retryNotices)
+	}
+}
+
+// TestDo_NonRetryableHook ensures IsRetryable=false returns the error without further retries.
+func TestDo_NonRetryableHook(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffLinear, 1*time.Millisecond, 5*time.Millisecond, 5)
+	calls := 0
+	hooks := RetryHooks{
+		IsRetryable: func(err error) bool { return false },
+	}
+	err := p.Do(context.Background(), func(_ context.Context) error {
+		calls++
+		return errors.New("permanent")
+	}, hooks)
+	if err == nil || err.Error() != "permanent" {
+		t.Fatalf("expected permanent error, got %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected 1 call, got %d", calls)
+	}
+}
+
+// TestDo_ExhaustsMaxRetries ensures fn failing MaxRetries+1 times returns the last error.
+func TestDo_ExhaustsMaxRetries(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffFixed, 1*time.Millisecond, 5*time.Millisecond, 2)
+	calls := 0
+	err := p.Do(context.Background(), func(_ context.Context) error {
+		calls++
+		return errors.New("always fails")
+	}, RetryHooks{IsRetryable: func(error) bool { return true }})
+	if err == nil || err.Error() != "always fails" {
+		t.Fatalf("expected 'always fails', got %v", err)
+	}
+	if calls != 3 {
+		t.Fatalf("expected 3 calls (1 + MaxRetries=2 retries), got %d", calls)
+	}
+}
+
+// TestDo_DefaultRetryableUsesClassifier ensures that without an IsRetryable hook,
+// a classified error with RetryNever stops the loop while RetryBackoff continues.
+func TestDo_DefaultRetryableUsesClassifier(t *testing.T) {
+	permanent := derrors.NewError(derrors.CategoryNotFound, "nope").Build()
+	transient := derrors.NewError(derrors.CategoryNetwork, "blip").Retryable().Build()
+
+	t.Run("RetryNever stops", func(t *testing.T) {
+		p := NewPolicy(config.RetryBackoffFixed, 1*time.Millisecond, 5*time.Millisecond, 5)
+		calls := 0
+		err := p.Do(context.Background(), func(_ context.Context) error {
+			calls++
+			return permanent
+		}, RetryHooks{})
+		if err == nil {
+			t.Fatalf("expected error to surface, got nil")
+		}
+		if calls != 1 {
+			t.Fatalf("permanent classified must short-circuit, got %d calls", calls)
+		}
+	})
+
+	t.Run("RetryBackoff continues", func(t *testing.T) {
+		p := NewPolicy(config.RetryBackoffFixed, 1*time.Millisecond, 5*time.Millisecond, 2)
+		calls := 0
+		err := p.Do(context.Background(), func(_ context.Context) error {
+			calls++
+			if calls < 3 {
+				return transient
+			}
+			return nil
+		}, RetryHooks{})
+		if err != nil {
+			t.Fatalf("expected nil on eventual success, got %v", err)
+		}
+		if calls != 3 {
+			t.Fatalf("expected 3 calls, got %d", calls)
+		}
+	})
+}
+
+// TestDo_AdjustDelay ensures AdjustDelay can override the base delay before sleeping.
+func TestDo_AdjustDelay(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffFixed, 50*time.Millisecond, 100*time.Millisecond, 1)
+	adjusted := false
+	hooks := RetryHooks{
+		IsRetryable: func(error) bool { return true },
+		AdjustDelay: func(_ error, base time.Duration) time.Duration {
+			adjusted = true
+			return time.Millisecond // force the sleep to be tiny for the test
+		},
+	}
+	start := time.Now()
+	err := p.Do(context.Background(), func(_ context.Context) error { return errors.New("x") }, hooks)
+	elapsed := time.Since(start)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if !adjusted {
+		t.Fatalf("AdjustDelay was not invoked")
+	}
+	if elapsed > 30*time.Millisecond {
+		t.Fatalf("AdjustDelay didn't compress the sleep, elapsed=%v", elapsed)
+	}
+}
+
+// TestDo_RespectsContextCancellation ensures ctx cancellation mid-sleep returns ctx.Err.
+func TestDo_RespectsContextCancellation(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffFixed, 50*time.Millisecond, time.Second, 5)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancel()
+	}()
+	start := time.Now()
+	err := p.Do(ctx, func(_ context.Context) error { return errors.New("x") }, RetryHooks{
+		IsRetryable: func(error) bool { return true },
+	})
+	elapsed := time.Since(start)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if elapsed > 200*time.Millisecond {
+		t.Fatalf("should have returned quickly after cancellation, elapsed=%v", elapsed)
+	}
+}
+
+// TestDo_ZeroMaxRetries ensures MaxRetries<=0 short-circuits to a single fn call.
+func TestDo_ZeroMaxRetries(t *testing.T) {
+	hooks := RetryHooks{}
+	for _, max := range []int{-1, 0} {
+		p := Policy{Mode: config.RetryBackoffFixed, Initial: time.Second, Max: 10 * time.Second, MaxRetries: max}
+		calls := 0
+		err := p.Do(context.Background(), func(_ context.Context) error {
+			calls++
+			return errors.New("once")
+		}, hooks)
+		if err == nil {
+			t.Fatalf("expected error for MaxRetries=%d", max)
+		}
+		if calls != 1 {
+			t.Fatalf("expected 1 call for MaxRetries=%d, got %d", max, calls)
 		}
 	}
+}
 
-	linear := NewPolicy(config.RetryBackoffLinear, 100*time.Millisecond, 250*time.Millisecond, 5)
-	// attempts: 1->100ms,2->200ms,3->cap 250ms,4->cap 250ms
-	cases := []struct {
-		attempt int
-		want    time.Duration
-	}{{1, 100 * time.Millisecond}, {2, 200 * time.Millisecond}, {3, 250 * time.Millisecond}, {4, 250 * time.Millisecond}}
-	for _, c := range cases {
-		if got := linear.Delay(c.attempt); got != c.want {
-			t.Fatalf("linear attempt %d expected %v got %v", c.attempt, c.want, got)
+// TestDo_NilHooksAllowed ensures callers can pass an empty RetryHooks struct.
+func TestDo_NilHooksAllowed(t *testing.T) {
+	p := NewPolicy(config.RetryBackoffFixed, 1*time.Millisecond, 5*time.Millisecond, 2)
+	calls := 0
+	err := p.Do(context.Background(), func(_ context.Context) error {
+		calls++
+		if calls < 2 {
+			return errors.New("transient")
 		}
+		return nil
+	}, RetryHooks{})
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
 	}
-
-	exp := NewPolicy(config.RetryBackoffExponential, 50*time.Millisecond, 160*time.Millisecond, 5)
-	// 1->50,2->100,3->160 (cap),4->160
-	expCases := []struct {
-		attempt int
-		want    time.Duration
-	}{{1, 50 * time.Millisecond}, {2, 100 * time.Millisecond}, {3, 160 * time.Millisecond}, {4, 160 * time.Millisecond}}
-	for _, c := range expCases {
-		if got := exp.Delay(c.attempt); got != c.want {
-			t.Fatalf("exp attempt %d expected %v got %v", c.attempt, c.want, got)
-		}
-	}
-}
-
-// TestDelayEdgeCases ensures non-positive attempts yield zero and negative attempts don't panic.
-func TestDelayEdgeCases(t *testing.T) {
-	p := NewPolicy(config.RetryBackoffLinear, 10*time.Millisecond, 20*time.Millisecond, 1)
-	if d := p.Delay(0); d != 0 {
-		t.Fatalf("attempt 0 expected 0 got %v", d)
-	}
-	if d := p.Delay(-1); d != 0 {
-		t.Fatalf("attempt -1 expected 0 got %v", d)
-	}
-}
-
-// TestValidate covers validation error paths.
-func TestValidate(t *testing.T) {
-	badInitial := Policy{Mode: config.RetryBackoffLinear, Initial: 0, Max: time.Second, MaxRetries: 1}
-	if err := badInitial.Validate(); err == nil {
-		t.Fatalf("expected error for zero initial")
-	}
-	badMax := Policy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 0, MaxRetries: 1}
-	if err := badMax.Validate(); err == nil {
-		t.Fatalf("expected error for zero max")
-	}
-	badRetries := Policy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 2 * time.Second, MaxRetries: -1}
-	if err := badRetries.Validate(); err == nil {
-		t.Fatalf("expected error for negative retries")
-	}
-	good := Policy{Mode: config.RetryBackoffLinear, Initial: time.Second, Max: 2 * time.Second, MaxRetries: 0}
-	if err := good.Validate(); err != nil {
-		t.Fatalf("unexpected validation error: %v", err)
-	}
-}
-
-// TestUnknownModeFallsBack leaves mode default when unknown string supplied.
-func TestUnknownModeFallsBack(t *testing.T) {
-	p := NewPolicy("weird", 250*time.Millisecond, 500*time.Millisecond, 1)
-	if p.Mode != config.RetryBackoffLinear {
-		t.Fatalf("unknown mode should fall back to linear got %s", p.Mode)
+	if calls != 2 {
+		t.Fatalf("expected 2 calls, got %d", calls)
 	}
 }

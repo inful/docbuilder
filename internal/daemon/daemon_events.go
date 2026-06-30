@@ -3,7 +3,6 @@ package daemon
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
@@ -22,30 +21,6 @@ func (d *Daemon) EmitBuildEvent(ctx context.Context, event eventstore.Event) err
 		return nil
 	}
 	return d.eventEmitter.EmitEvent(ctx, event)
-}
-
-// EmitBuildStarted implements BuildEventEmitter for the daemon.
-func (d *Daemon) EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error {
-	if d.eventEmitter == nil {
-		return nil
-	}
-	return d.eventEmitter.EmitBuildStarted(ctx, buildID, meta)
-}
-
-// EmitBuildCompleted implements BuildEventEmitter for the daemon.
-func (d *Daemon) EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error {
-	if d.eventEmitter == nil {
-		return nil
-	}
-	return d.eventEmitter.EmitBuildCompleted(ctx, buildID, duration, artifacts)
-}
-
-// EmitBuildFailed implements BuildEventEmitter for the daemon.
-func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error {
-	if d.eventEmitter == nil {
-		return nil
-	}
-	return d.eventEmitter.EmitBuildFailed(ctx, buildID, stage, errorMsg)
 }
 
 // onBuildReportEmitted is called after a build report is emitted to the event store.
@@ -82,14 +57,4 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 	}
 
 	return nil
-}
-
-// EmitBuildReport implements BuildEventEmitter for the daemon (legacy/compatibility).
-// This is now handled by EventEmitter calling onBuildReportEmitted.
-func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error {
-	// Delegate to event emitter which will call back to onBuildReportEmitted.
-	if d.eventEmitter == nil {
-		return nil
-	}
-	return d.eventEmitter.EmitBuildReport(ctx, buildID, report)
 }
