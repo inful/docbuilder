@@ -130,6 +130,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		}
 		forgeManager.AddForge(forgeConfig, client)
 	}
+	daemon.forgeManager = forgeManager
 	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 
