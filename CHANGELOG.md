@@ -43,6 +43,35 @@ commits; pin to a SHA for reproducibility per the README.
   `coverage_review.out`, `coverage.html`). They were never tracked by git;
   `.gitignore` already excluded them. This file (`CHANGELOG.md`) is now the
   source of truth for release notes.
+- Dead code surfaced by the `analyze kind=dead_code` graph pass (each item
+  verified to have zero in-tree callers, including tests):
+  - `internal/hugo/models/typed_transformers.go` (entire file) — four unused
+    `V2`/`V3` transformers (`FrontMatterParserV2`, `FrontMatterBuilderV3`,
+    `EditLinkInjectorV3`, `ContentProcessorV2`) and their tests.
+  - `internal/hugo/stages/stage_execution.go` (entire file) —
+    `StageExecution` type and outcome helpers (`ExecutionSuccess*` /
+    `ExecutionFailure*`).
+  - `internal/hugo/models/early_skip.go` (entire file) — `EarlySkipDecision`
+    type and `EvaluateEarlySkip`, `NoSkip`, `SkipAfter` (the runner already
+    inlines the early-skip decision at line 59 of
+    `internal/hugo/stages/runner.go`).
+  - Per-forge webhook handlers `HandleGitHubWebhook`, `HandleGitLabWebhook`,
+    `HandleForgejoWebhook` in `internal/server/handlers/webhook.go` — the
+    dispatcher `HandleForgeWebhook` (wired by config) and the generic
+    `HandleWebhook` (wired at `/webhook`) remain the single entry points.
+  - `foundation.Option.Match` / `UnwrapOrElse`,
+    `foundation.Result.ToTuple`, `ContentPage.GetOriginalFrontMatter` /
+    `SetOriginalFrontMatter` / `AddTransformationRecord` /
+    `GetTransformationHistory` / `HasBeenTransformed`,
+    `TransformationPipeline.SetContext`, `TransformationResult.SetSource`,
+    `Pipeline.AddIf`, `Statistics.UpdateDiscoveryStats`,
+    `Manager.WithAutoSave`, `Service.GetScheduleStore` /
+    `GetDaemonInfoStore`, `Resolve.WithObserver`,
+    `Generator.WithObserver`, `GitState.SetCommitDate`, `Report.GetDocBuilderVersion`,
+    `MigrationHelper.ConvertLegacyFrontMatter`,
+    `EditorLinkResolver.NewResolverWithChain`, `CommitDetector.Clear`, and
+    the testutil fluent helpers `WithTitle` / `WithTheme` / `WithOutputDir` /
+    `WithEnv` / `AssertFailure`.
 
 ## [0.x] — Recent themes
 
