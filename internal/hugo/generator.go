@@ -241,14 +241,6 @@ func (g *Generator) SetRecorder(r metrics.Recorder) *Generator {
 	return g
 }
 
-// WithObserver overrides the BuildObserver (takes precedence over internal recorder adapter).
-func (g *Generator) WithObserver(o models.BuildObserver) *Generator {
-	if o != nil {
-		g.observer = o
-	}
-	return g
-}
-
 // GenerateSite creates a complete Hugo site from discovered documentation.
 func (g *Generator) GenerateSite(docFiles []docs.DocFile) error {
 	_, err := g.GenerateSiteWithReport(docFiles)

@@ -37,12 +37,6 @@ func (r *CLITestRunner) WithWorkingDir(dir string) *CLITestRunner {
 	return r
 }
 
-// WithEnv sets environment variables for CLI commands.
-func (r *CLITestRunner) WithEnv(env []string) *CLITestRunner {
-	r.env = env
-	return r
-}
-
 // WithTimeout sets the timeout for CLI commands.
 func (r *CLITestRunner) WithTimeout(timeout time.Duration) *CLITestRunner {
 	r.timeout = timeout
@@ -138,15 +132,6 @@ func (result *CLIResult) AssertSuccess(t *testing.T) *CLIResult {
 	if result.ExitCode != 0 {
 		t.Errorf("Command failed with exit code %d\nStdout: %s\nStderr: %s",
 			result.ExitCode, result.Stdout, result.Stderr)
-	}
-	return result
-}
-
-// AssertFailure validates that the command failed (non-zero exit code).
-func (result *CLIResult) AssertFailure(t *testing.T) *CLIResult {
-	t.Helper()
-	if result.ExitCode == 0 {
-		t.Errorf("Expected command to fail, but it succeeded\nStdout: %s", result.Stdout)
 	}
 	return result
 }

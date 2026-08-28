@@ -55,13 +55,6 @@ func (gs *GitState) SetPostHead(repoName, hash string) {
 	gs.PostHeads[repoName] = hash
 }
 
-func (gs *GitState) SetCommitDate(repoName string, date time.Time) {
-	if gs.CommitDates == nil {
-		gs.CommitDates = make(map[string]time.Time)
-	}
-	gs.CommitDates[repoName] = date
-}
-
 func (gs *GitState) GetCommitDate(repoName string) (time.Time, bool) {
 	if gs.CommitDates == nil {
 		return time.Time{}, false

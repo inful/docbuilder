@@ -39,23 +39,6 @@ func NewConfigBuilder(t *testing.T) *ConfigBuilder {
 	}
 }
 
-// WithTitle sets the Hugo title.
-func (cb *ConfigBuilder) WithTitle(title string) *ConfigBuilder {
-	cb.config.Hugo.Title = title
-	return cb
-}
-
-// WithTheme sets the Hugo theme.
-func (cb *ConfigBuilder) WithTheme(theme string) *ConfigBuilder {
-	return cb
-}
-
-// WithOutputDir sets the output directory.
-func (cb *ConfigBuilder) WithOutputDir(dir string) *ConfigBuilder {
-	cb.config.Output.Directory = dir
-	return cb
-}
-
 // WithGitHubForge adds a GitHub forge configuration.
 func (cb *ConfigBuilder) WithGitHubForge(name, token string, organizations ...string) *ConfigBuilder {
 	forge := &config.ForgeConfig{

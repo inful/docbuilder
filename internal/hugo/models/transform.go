@@ -282,12 +282,6 @@ func (tr *TransformationResult) SetError(err error) *TransformationResult {
 	return tr
 }
 
-// SetSource sets the source transformer name for this result.
-func (tr *TransformationResult) SetSource(source string) *TransformationResult {
-	tr.Source = source
-	return tr
-}
-
 // AddChange records a change made during transformation.
 func (tr *TransformationResult) AddChange(changeType ChangeType, field string, oldValue, newValue any, reason, source string) *TransformationResult {
 	change := ChangeRecord{
@@ -358,18 +352,6 @@ func NewTransformationPipeline(name, description, version string) *Transformatio
 		Transformations: make([]ContentTransformation, 0),
 		Results:         make([]TransformationResult, 0),
 	}
-}
-
-// AddTransformation adds a transformation to the pipeline.
-func (tp *TransformationPipeline) AddTransformation(transformation ContentTransformation) *TransformationPipeline {
-	tp.Transformations = append(tp.Transformations, transformation)
-	return tp
-}
-
-// SetContext sets the transform context for the pipeline.
-func (tp *TransformationPipeline) SetContext(context *TransformContext) *TransformationPipeline {
-	tp.Context = context
-	return tp
 }
 
 // Start marks the pipeline as started.

@@ -17,6 +17,3 @@ var capabilities = map[config.ForgeType]Capabilities{
 	config.ForgeForgejo: {SupportsEditLinks: true, SupportsWebhooks: true},
 	// Additional forges added here.
 }
-
-// GetCapabilities returns capability flags for the given forge type.
-func GetCapabilities(t config.ForgeType) Capabilities { return capabilities[t] }

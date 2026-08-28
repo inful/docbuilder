@@ -27,14 +27,6 @@ func NewResolver() *Resolver {
 	}
 }
 
-// NewResolverWithChain creates a resolver with a custom detector chain (for testing).
-func NewResolverWithChain(chain *DetectorChain, builder EditURLBuilder) *Resolver {
-	return &Resolver{
-		detectorChain: chain,
-		urlBuilder:    builder,
-	}
-}
-
 // Resolve determines the edit URL for a DocFile.
 // Returns empty string if edit links should not be generated.
 func (r *Resolver) Resolve(file docs.DocFile, cfg *config.Config) string {

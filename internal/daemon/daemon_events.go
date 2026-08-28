@@ -15,15 +15,6 @@ func (d *Daemon) GetBuildProjection() *eventstore.BuildHistoryProjection {
 	return d.buildProjection
 }
 
-// EmitBuildEvent persists an event to the event store and updates the projection.
-// This delegates to the eventEmitter component.
-func (d *Daemon) EmitBuildEvent(ctx context.Context, event eventstore.Event) error {
-	if d.eventEmitter == nil {
-		return nil
-	}
-	return d.eventEmitter.EmitEvent(ctx, event)
-}
-
 // EmitBuildStarted implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error {
 	if d.eventEmitter == nil {

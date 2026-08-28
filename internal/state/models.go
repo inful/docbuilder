@@ -221,13 +221,6 @@ func (s *Statistics) UpdateBuildStats(build *Build) {
 	s.LastUpdated = time.Now()
 }
 
-// UpdateDiscoveryStats updates statistics when a discovery completes.
-func (s *Statistics) UpdateDiscoveryStats(documentCount int) {
-	s.TotalDiscoveries++
-	s.DocumentsFound += int64(documentCount)
-	s.LastUpdated = time.Now()
-}
-
 // Reset resets statistics counters.
 func (s *Statistics) Reset() {
 	s.TotalBuilds = 0

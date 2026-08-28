@@ -113,11 +113,6 @@ func (e *ClassifiedError) IsFatal() bool {
 	return e.severity == SeverityFatal
 }
 
-// IsTransient checks if the error represents a transient condition.
-func (e *ClassifiedError) IsTransient() bool {
-	return e.retry == RetryImmediate || e.retry == RetryBackoff || e.retry == RetryRateLimit
-}
-
 // Helper functions for error detection and extraction
 
 // IsClassified checks if an error is a ClassifiedError.

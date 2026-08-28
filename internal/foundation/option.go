@@ -51,23 +51,6 @@ func (o Option[T]) UnwrapOr(fallback T) T {
 	return fallback
 }
 
-// UnwrapOrElse returns the value if present, otherwise calls the function and returns its result.
-func (o Option[T]) UnwrapOrElse(fn func() T) T {
-	if o.present {
-		return o.value
-	}
-	return fn()
-}
-
-// Match executes onSome if the Option has a value, onNone if empty.
-func (o Option[T]) Match(onSome func(T), onNone func()) {
-	if o.present {
-		onSome(o.value)
-	} else {
-		onNone()
-	}
-}
-
 // MapOption transforms an Option[T] to Option[U] using the given function.
 // If the Option is None, it returns None[U].
 func MapOption[T, U any](o Option[T], fn func(T) U) Option[U] {

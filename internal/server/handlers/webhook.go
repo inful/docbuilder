@@ -286,23 +286,3 @@ func collectChangedFiles(event *forge.WebhookEvent) []string {
 
 	return out
 }
-
-// HandleGitHubWebhook handles GitHub webhooks.
-func (h *WebhookHandlers) HandleGitHubWebhook(w http.ResponseWriter, r *http.Request) {
-	h.handleForgeWebhookWithValidation(w, r, "X-GitHub-Event", "X-Hub-Signature-256", "github")
-}
-
-// HandleGitLabWebhook handles GitLab webhooks.
-func (h *WebhookHandlers) HandleGitLabWebhook(w http.ResponseWriter, r *http.Request) {
-	h.handleForgeWebhookWithValidation(w, r, "X-Gitlab-Event", "X-Gitlab-Token", "gitlab")
-}
-
-// HandleForgejoWebhook handles Forgejo (Gitea-compatible) webhooks.
-func (h *WebhookHandlers) HandleForgejoWebhook(w http.ResponseWriter, r *http.Request) {
-	// Forgejo uses X-Forgejo-Event or X-Gitea-Event
-	eventHeader := "X-Forgejo-Event"
-	if r.Header.Get(eventHeader) == "" {
-		eventHeader = "X-Gitea-Event"
-	}
-	h.handleForgeWebhookWithValidation(w, r, eventHeader, "X-Hub-Signature-256", "forgejo")
-}

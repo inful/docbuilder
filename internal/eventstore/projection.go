@@ -35,12 +35,11 @@ type BuildSummary struct {
 // BuildHistoryProjection maintains an in-memory view of build history,
 // reconstructed from events stored in the event store.
 type BuildHistoryProjection struct {
-	mu       sync.RWMutex
-	store    Store
-	builds   map[string]*BuildSummary // buildID -> summary
-	history  []*BuildSummary          // ordered by start time, newest first
-	maxSize  int
-	lastSync time.Time
+	mu      sync.RWMutex
+	store   Store
+	builds  map[string]*BuildSummary // buildID -> summary
+	history []*BuildSummary          // ordered by start time, newest first
+	maxSize int
 }
 
 // NewBuildHistoryProjection creates a new projection backed by the given store.
@@ -87,7 +86,6 @@ func (p *BuildHistoryProjection) Rebuild(ctx context.Context) error {
 		p.history = p.history[:p.maxSize]
 	}
 
-	p.lastSync = time.Now()
 	return nil
 }
 
@@ -261,11 +259,4 @@ func (p *BuildHistoryProjection) GetLastCompletedBuild() *BuildSummary {
 	// History is sorted newest first
 	cp := *p.history[0]
 	return &cp
-}
-
-// LastSyncTime returns when the projection was last synchronized.
-func (p *BuildHistoryProjection) LastSyncTime() time.Time {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	return p.lastSync
 }

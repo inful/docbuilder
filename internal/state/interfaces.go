@@ -184,12 +184,6 @@ func NewManager(store Store) *Manager {
 	}
 }
 
-// WithAutoSave configures automatic saving.
-func (sm *Manager) WithAutoSave(enabled bool, interval time.Duration) *Manager {
-	// Auto-save configuration removed - no longer needed
-	return sm
-}
-
 // GetRepository retrieves repository state by URL.
 func (sm *Manager) GetRepository(ctx context.Context, url string) foundation.Result[foundation.Option[*Repository], error] {
 	return sm.store.Repositories().GetByURL(ctx, url)

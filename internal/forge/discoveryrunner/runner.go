@@ -326,18 +326,3 @@ func (r *Runner) TriggerManual(shouldRun func() bool, activeJobs *int32) string 
 func (r *Runner) GetLastDiscovery() *time.Time {
 	return r.lastDiscovery
 }
-
-// UpdateConfig updates the configuration used for discovery.
-func (r *Runner) UpdateConfig(cfg *config.Config) {
-	r.config = cfg
-}
-
-// UpdateDiscoveryService updates the discovery service (used during config reload).
-func (r *Runner) UpdateDiscoveryService(discovery Discovery) {
-	r.discovery = discovery
-}
-
-// UpdateForgeManager updates the forge manager (used during config reload).
-func (r *Runner) UpdateForgeManager(forgeManager *forge.Manager) {
-	r.forgeManager = forgeManager
-}
