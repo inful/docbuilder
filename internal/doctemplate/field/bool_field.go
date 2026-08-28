@@ -69,8 +69,3 @@ func (f BoolField) Validate() error {
 	}
 	return nil
 }
-
-// RequiredUnsetError reports whether err indicates an unset required bool.
-func RequiredUnsetError(err error) bool {
-	return errors.Is(err, errRequiredBoolUnset)
-}

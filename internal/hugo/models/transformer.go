@@ -437,17 +437,6 @@ func (p *ContentPage) GetFrontMatter() *FrontMatter {
 	return p.FrontMatter
 }
 
-// SetOriginalFrontMatter sets the original front matter (immutable baseline).
-func (p *ContentPage) SetOriginalFrontMatter(fm *FrontMatter, had bool) {
-	p.OriginalFrontMatter = fm
-	p.HadOriginalFrontMatter = had
-}
-
-// GetOriginalFrontMatter returns the original front matter.
-func (p *ContentPage) GetOriginalFrontMatter() *FrontMatter {
-	return p.OriginalFrontMatter
-}
-
 // AddFrontMatterPatch adds a front matter patch.
 func (p *ContentPage) AddFrontMatterPatch(patch *FrontMatterPatch) {
 	if patch != nil {
@@ -475,21 +464,6 @@ func (p *ContentPage) ApplyFrontMatterPatches() error {
 
 	p.SetFrontMatter(result)
 	return nil
-}
-
-// AddTransformationRecord records a transformation operation.
-func (p *ContentPage) AddTransformationRecord(record TransformationRecord) {
-	p.TransformationHistory = append(p.TransformationHistory, record)
-}
-
-// GetTransformationHistory returns the transformation history.
-func (p *ContentPage) GetTransformationHistory() []TransformationRecord {
-	return p.TransformationHistory
-}
-
-// HasBeenTransformed returns true if any transformations have been applied.
-func (p *ContentPage) HasBeenTransformed() bool {
-	return len(p.TransformationHistory) > 0
 }
 
 // IsModified returns true if the page has been modified.

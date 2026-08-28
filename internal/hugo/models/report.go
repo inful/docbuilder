@@ -380,7 +380,3 @@ type BuildReportSerializable struct {
 	DocBuilderVersion   string                       `json:"docbuilder_version,omitempty"`
 	HugoVersion         string                       `json:"hugo_version,omitempty"`
 }
-
-func GetDocBuilderVersion() string {
-	return version.Version
-}

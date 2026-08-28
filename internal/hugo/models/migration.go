@@ -121,11 +121,6 @@ func (m *MigrationHelper) ConvertLegacyPatch(legacyPatch map[string]any) (*Front
 	return patch, nil
 }
 
-// ConvertLegacyFrontMatter converts a legacy map[string]any front matter to typed FrontMatter.
-func (m *MigrationHelper) ConvertLegacyFrontMatter(legacy map[string]any) (*FrontMatter, error) {
-	return FromMap(legacy)
-}
-
 // CreateBasePatch creates a base front matter patch with DocBuilder-specific fields.
 // This replaces the ComputeBaseFrontMatter function from the legacy system.
 func (m *MigrationHelper) CreateBasePatch(title, repository, forge, section string) *FrontMatterPatch {

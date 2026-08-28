@@ -122,14 +122,6 @@ func (p *Pipeline) Add(name StageName, fn Stage) *Pipeline {
 	return p
 }
 
-// AddIf appends a stage only if cond is true.
-func (p *Pipeline) AddIf(cond bool, name StageName, fn Stage) *Pipeline {
-	if cond {
-		p.Add(name, fn)
-	}
-	return p
-}
-
 // Build returns a defensive copy of the stage definitions slice.
 func (p *Pipeline) Build() []StageDef {
 	out := make([]StageDef, len(p.Defs))

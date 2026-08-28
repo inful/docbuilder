@@ -29,14 +29,6 @@ func NewService(dataDir string) foundation.Result[*Service, error] {
 	})
 }
 
-// NewServiceWithStore creates a new state service with a custom store.
-// This allows for dependency injection and testing with mock stores.
-func NewServiceWithStore(store Store, dataDir string) *Service {
-	return &Service{
-		store: store,
-	}
-}
-
 // Name returns the service name for the orchestrator.
 func (ss *Service) Name() string {
 	return "state"
@@ -136,11 +128,6 @@ func (ss *Service) GetBuildStore() BuildStore {
 	return ss.store.Builds()
 }
 
-// GetScheduleStore provides typed access to schedule operations.
-func (ss *Service) GetScheduleStore() ScheduleStore {
-	return ss.store.Schedules()
-}
-
 // GetStatisticsStore provides typed access to statistics operations.
 func (ss *Service) GetStatisticsStore() StatisticsStore {
 	return ss.store.Statistics()
@@ -149,11 +136,6 @@ func (ss *Service) GetStatisticsStore() StatisticsStore {
 // GetConfigurationStore provides typed access to configuration operations.
 func (ss *Service) GetConfigurationStore() ConfigurationStore {
 	return ss.store.Configuration()
-}
-
-// GetDaemonInfoStore provides typed access to daemon info operations.
-func (ss *Service) GetDaemonInfoStore() DaemonInfoStore {
-	return ss.store.DaemonInfo()
 }
 
 // WithTransaction executes operations within a transaction-like context.
