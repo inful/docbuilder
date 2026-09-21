@@ -73,6 +73,7 @@ jobs:
           echo "🌿 Branch: $BRANCH"
 
       - name: Generate CHANGELOG
+        if: steps.version.outputs.is_release != 'true'
         run: |
           echo "# Changelog" > CHANGELOG.md
           echo "" >> CHANGELOG.md
