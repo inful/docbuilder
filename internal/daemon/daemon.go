@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -93,6 +94,11 @@ type Daemon struct {
 
 	// Link verification service
 	linkVerifier *linkverify.VerificationService
+
+	// Outbound dispatcher (opt-in). When nil, no document content is pushed
+	// to external consumers. Constructed only when daemon.outbound.ragabast
+	// is configured with enabled: true.
+	outboundDispatcher *OutboundDispatcher
 }
 
 // NewDaemon creates a new daemon instance
@@ -143,7 +149,11 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		}).
 		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfg, outputDir)
+			gen := hugo.NewGenerator(cfg, outputDir)
+			if daemon.outboundDispatcher != nil {
+				gen = gen.WithDocumentReady(daemon.outboundDispatcher.Enqueue)
+			}
+			return gen
 		}).
 		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
 			// Create skip evaluator with state manager access
@@ -161,6 +171,38 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, buildAdapter)
 	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
 	daemon.buildQueue.ConfigureRetry(cfg.Build)
+
+	// Initialize outbound dispatcher (daemon-mode-only, opt-in). When the
+	// ragabast block is absent or Enabled is false, this is a no-op and the
+	// factory below installs no callback on the Generator.
+	if ragCfg := ragabastConfigOrNil(cfg); ragCfg != nil {
+		token := ""
+		if ragCfg.AuthTokenEnv != "" {
+			token = os.Getenv(ragCfg.AuthTokenEnv)
+		}
+		timeout := 10 * time.Second
+		if t := strings.TrimSpace(ragCfg.Timeout); t != "" {
+			parsed, err := time.ParseDuration(t)
+			if err != nil {
+				return nil, fmt.Errorf("invalid daemon.outbound.ragabast.timeout: %w", err)
+			}
+			timeout = parsed
+		}
+		dispatcher, err := NewOutboundDispatcher(DispatcherConfig{
+			IngestURL: ragCfg.IngestURL,
+			Token:     token,
+			Workers:   ragCfg.Workers,
+			QueueSize: ragCfg.QueueSize,
+			Timeout:   timeout,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct outbound dispatcher: %w", err)
+		}
+		daemon.outboundDispatcher = dispatcher
+		slog.Info("Outbound dispatcher initialized (ragabast)",
+			slog.String("ingest_url", ragCfg.IngestURL),
+			slog.Bool("auth_enabled", token != ""))
+	}
 
 	// Initialize scheduler (after build queue)
 	scheduler, err := NewScheduler()
@@ -320,6 +362,23 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 	return quietWindow, maxDelay, nil
 }
 
+// ragabastConfigOrNil returns the ragabast outbound config when both the
+// daemon.outbound.ragabast block is present AND explicitly enabled. Returns
+// nil otherwise (caller treats nil as "feature disabled — do nothing").
+//
+// Centralising this check here keeps the construction site free of repeated
+// nil-pointer guards and makes the opt-in semantics testable.
+func ragabastConfigOrNil(cfg *config.Config) *config.RagabastConfig {
+	if cfg == nil || cfg.Daemon == nil || cfg.Daemon.Outbound == nil {
+		return nil
+	}
+	r := cfg.Daemon.Outbound.Ragabast
+	if r == nil || !r.Enabled {
+		return nil
+	}
+	return r
+}
+
 // defaultDaemonInstance is used by optional Prometheus integration to pull metrics
 // into the Prometheus registry when the build tag is enabled.
 var defaultDaemonInstance *Daemon
@@ -364,6 +423,11 @@ func (d *Daemon) Start(ctx context.Context) error {
 
 	// Start build queue processing
 	d.buildQueue.Start(runCtx)
+
+	// Start outbound dispatcher (opt-in). When nil, this is a no-op.
+	if d.outboundDispatcher != nil {
+		d.outboundDispatcher.Start(runCtx)
+	}
 
 	d.startWorkers(runCtx)
 
@@ -539,6 +603,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 	linkVerifier := d.linkVerifier
 	stateManager := d.stateManager
 	eventStore := d.eventStore
+	outboundDispatcher := d.outboundDispatcher
 	d.mu.Unlock()
 
 	// Cancel the run context to stop all background workers.
@@ -586,6 +651,13 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		if err := linkVerifier.Close(); err != nil {
 			slog.Error("Failed to close link verifier", logfields.Error(err))
 		}
+	}
+
+	// Stop the outbound dispatcher last among workers — it has its own
+	// drain semantics (workers process remaining queue items, then exit).
+	// Cancelling runCtx above cancels in-flight POSTs; Stop then drains.
+	if outboundDispatcher != nil {
+		outboundDispatcher.Stop()
 	}
 
 	// Save state

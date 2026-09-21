@@ -46,6 +46,21 @@ daemon:
     webhook_immediate: true         # Webhooks bypass quiet window but still coalesce while a build is running
   storage:
     repo_cache_dir: "./daemon-data/repos"
+  # Outbound integrations (daemon-mode-only, opt-in).
+  # Leaving the block out entirely disables every outbound hook.
+  outbound:
+    # Push each generated document to ragabast's async-ingest endpoint so a
+    # RAG index stays in sync with newly built docs. Daemon-only; one-shot
+    # `docbuilder build` invocations never construct the dispatcher.
+    ragabast:
+      enabled: false                # must be explicitly true to fire
+      ingest_url: "https://ragabast.example.com/api/ingest/async"
+      # Name of the env var that holds the bearer token. Read at daemon
+      # startup; never logged or written to disk. Empty / unset = anonymous.
+      auth_token_env: "RAGABAST_INGEST_TOKEN"
+      workers: 4                    # concurrent POST goroutines
+      queue_size: 256               # in-memory buffer; overflow drops (with counter)
+      timeout: "10s"                # per-POST HTTP timeout
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"

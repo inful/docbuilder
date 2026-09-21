@@ -137,6 +137,14 @@ func (g *Generator) copyContentFilesPipeline(ctx context.Context, docFiles []doc
 			slog.Int("bytes", len(contentBytes)),
 			slog.Bool("generated", doc.Generated))
 
+		// Notify downstream consumers (e.g. ragabast async ingest) that a
+		// document is ready. Skip generated docs (_index.md and friends) —
+		// they're not useful as RAG sources and would double-count on every
+		// build. The callback must be non-blocking; copy if you need to.
+		if !doc.Generated && g.onDocumentReady != nil {
+			g.onDocumentReady(contentBytes, doc.Path)
+		}
+
 		// Update page counter
 		if g.onPageRendered != nil {
 			g.onPageRendered()
