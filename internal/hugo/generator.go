@@ -48,6 +48,12 @@ type Generator struct {
 	// the sidebar mode is "categories". The config writer picks it up
 	// when emitting hugo.yaml. nil means "no categories menu".
 	categoriesMenu *models.CategoriesMenu
+	// onDocumentReady (optional) is invoked once per non-generated document
+	// immediately after it has been written to disk. It is the daemon-mode
+	// hook for pushing document content to a downstream consumer (e.g.
+	// ragabast for async ingest). nil disables the hook entirely. The
+	// callback receives the raw markdown bytes and the Hugo content path.
+	onDocumentReady func(content []byte, path string)
 }
 
 // NewGenerator creates a new Hugo site generator.
@@ -506,5 +512,18 @@ func (g *Generator) WithRenderer(r models.Renderer) *Generator {
 	if r != nil {
 		g.renderer = r
 	}
+	return g
+}
+
+// WithDocumentReady installs a callback invoked once per non-generated
+// document immediately after it has been written to the Hugo content
+// directory. The callback receives the raw markdown bytes (including YAML
+// frontmatter) and the Hugo content path. Pass nil to disable.
+//
+// This is the daemon-mode hook for pushing document content to a downstream
+// consumer such as ragabast for async ingest. The callback MUST be
+// non-blocking — copy content if you need to retain it past the call.
+func (g *Generator) WithDocumentReady(fn func(content []byte, path string)) *Generator {
+	g.onDocumentReady = fn
 	return g
 }

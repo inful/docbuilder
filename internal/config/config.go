@@ -66,6 +66,46 @@ type DaemonConfig struct {
 	Content          DaemonContentConfig     `yaml:"content,omitempty"`
 	BuildDebounce    *BuildDebounceConfig    `yaml:"build_debounce,omitempty"`
 	LinkVerification *LinkVerificationConfig `yaml:"link_verification,omitempty"`
+	Outbound         *OutboundConfig         `yaml:"outbound,omitempty"`
+}
+
+// OutboundConfig controls outbound integrations that the daemon pushes
+// document data to after a successful build. All sub-configurations are
+// opt-in: leaving the section out entirely disables every outbound hook.
+type OutboundConfig struct {
+	// Ragabast, when non-nil and Enabled, fires a per-document async ingest
+	// POST to ragabast's /api/ingest/async endpoint after each non-generated
+	// document is written to disk.
+	Ragabast *RagabastConfig `yaml:"ragabast,omitempty"`
+}
+
+// RagabastConfig configures the outbound dispatcher that pushes each
+// generated document to ragabast for async ingest. The section is
+// completely absent in defaults — operators opt in by adding the block to
+// their config and setting enabled: true.
+type RagabastConfig struct {
+	// Enabled toggles the dispatcher. Defaults to false; must be set
+	// explicitly to true to construct the dispatcher.
+	Enabled bool `yaml:"enabled"`
+	// IngestURL is the full async-ingest endpoint, e.g.
+	// "https://ragabast.example.com/api/ingest/async". Required when Enabled.
+	IngestURL string `yaml:"ingest_url"`
+	// AuthTokenEnv is the name of the environment variable that holds the
+	// bearer token sent in the Authorization header. The token is read from
+	// os.Getenv at daemon startup — never written to disk or logs.
+	// Empty token (when AuthTokenEnv is unset or the env var is empty)
+	// means anonymous requests, which ragabast accepts when its own
+	// auth_token config is empty.
+	AuthTokenEnv string `yaml:"auth_token_env"`
+	// Workers is the number of concurrent POST goroutines. Defaults to 4.
+	Workers int `yaml:"workers,omitempty"`
+	// QueueSize is the in-memory buffer capacity between document write
+	// and HTTP POST. Defaults to 256. When the buffer is full, additional
+	// documents are dropped (with a counter) rather than blocking the
+	// pipeline — ragabast's uid+fingerprint dedup makes drops self-healing.
+	QueueSize int `yaml:"queue_size,omitempty"`
+	// Timeout is the per-POST HTTP timeout. Defaults to "10s".
+	Timeout string `yaml:"timeout,omitempty"`
 }
 
 // BuildDebounceConfig controls debouncing/coalescing behavior for build requests.
