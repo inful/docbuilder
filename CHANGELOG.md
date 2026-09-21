@@ -10,6 +10,14 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
+- **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
+  each generated document to ragabast's `/api/ingest/async` endpoint
+  immediately after it has been written to disk. Daemon-mode-only and
+  off by default; operators enable it via `daemon.outbound.ragabast` in
+  config. The bearer token is read from `RAGABAST_INGEST_TOKEN` at
+  daemon startup; the dispatcher is bounded, drops on overflow, and
+  honours ragabast's persistent job queue + `uid`/`fingerprint` dedup
+  for self-healing delivery.
 - **Tests**: direct unit tests for `nodeFromAny` (`internal/frontmatter/serialize.go`)
   covering all scalar, sequence, and map branches.
 - **Tests**: edge-case coverage for `FromMap` (`internal/hugo/models/frontmatter.go`)
