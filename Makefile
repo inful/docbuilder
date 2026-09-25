@@ -1,4 +1,4 @@
-.PHONY: build test clean install run init fmt lint
+.PHONY: build test clean install run init fmt lint discover dev dev-setup
 
 # Build the application
 build:
