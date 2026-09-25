@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: da55d229d4da3bb511c77d88c79fe3f92bd36d24e2b5c3ca203c7e7331f77d46
-lastmod: "2026-02-04"
+fingerprint: 4e67f9198af49c4587f991120d46343a5d23f8fa96fa0b59666d995f522671f1
+lastmod: "2026-09-25"
 tags:
   - cli
   - commands
@@ -29,6 +29,35 @@ DocBuilder provides a unified command-line interface for building documentation 
 | `template` | Create new documentation pages from templates |
 | `daemon` | Run continuous documentation server with webhooks |
 | `preview` | Preview local documentation with live reload |
+
+## `docbuilder-mcp` — MCP server for LLM integration
+
+A separate binary (`cmd/mcp-server/`) speaks the
+[Model Context Protocol](https://modelcontextprotocol.io/) over stdio so LLM
+hosts (Claude Desktop, Cursor, VS Code, etc.) can drive doc-maintenance
+tasks directly. It is built and released alongside `docbuilder` (same
+tag, same archive). For full tool reference, configuration, and host
+setup, see the **MCP Server (LLM Integration)** section in the root
+README. Quick reference:
+
+```bash
+# Build
+go build -o bin/docbuilder-mcp ./cmd/mcp-server
+
+# Run (stdio JSON-RPC; meant to be spawned by an MCP host)
+docbuilder-mcp --config config.yaml --docs-dir ./docs
+```
+
+| Flag | Description |
+|------|-------------|
+| `-c, --config PATH` | Docbuilder config file. Tools degrade gracefully if missing. |
+| `--base-url URL` | Override the template discovery base URL. |
+| `--docs-dir DIR` | Default docs root for `read_doc` / `create_doc` / `update_doc`. Default `./docs`. |
+| `-v, --verbose` | Enable debug logging to stderr. |
+| `--version` | Print version and exit. |
+
+The template base URL resolves in this order: `--base-url` →
+`DOCBUILDER_TEMPLATE_BASE_URL` → `hugo.base_url` from `--config`.
 
 ## Global Flags
 

@@ -31,7 +31,7 @@ func TestServerInstructions_ContainsKeyPhases(t *testing.T) {
 		"create_doc",
 		// Safety
 		"confirm: true",
-		"confined to --docs-dir",
+		"refuse to operate outside --docs-dir",
 		"\"***\"",
 		// Pitfalls
 		"Pitfalls",
