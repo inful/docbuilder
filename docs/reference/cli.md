@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 4e67f9198af49c4587f991120d46343a5d23f8fa96fa0b59666d995f522671f1
+fingerprint: 75f40e4ad3b816f2bc35bda3bdc39226ab736f4987fffc287bcd463d90d56a13
 lastmod: "2026-09-25"
 tags:
   - cli

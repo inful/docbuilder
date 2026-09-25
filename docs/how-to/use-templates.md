@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: ad4c7dda1f34d0c5f91a92e0d4a9cc4d1c70e9f8c5442e0b12e78227fdeac873
+fingerprint: 17e7d79673463d43fbe85d5f87d9462e1e4e4bd0c6acd703ade4a2fbd38fcaa4
 lastmod: "2026-09-25"
 tags:
   - templates
