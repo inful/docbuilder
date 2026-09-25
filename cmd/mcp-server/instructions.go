@@ -28,6 +28,8 @@ Read-only discovery tools (no confirm needed): get_config, list_templates, descr
 
 Before create_doc / create_from_template / update_doc, read the structure://doc-page resource for the canonical schema (required + optional frontmatter, body rules, filename conventions, worked example). Do not invent your own frontmatter shape.
 
+Before authoring or invoking templates, also read the structure://template resource for the canonical template shape (params.docbuilder.template.* fields, schema field types, output-path template variables, sequence configuration, body block rules). The schema returned by describe_template is a subset of this.
+
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
 - create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.

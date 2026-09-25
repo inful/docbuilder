@@ -44,6 +44,23 @@ func registerResources(srv *server.MCPServer, state *serverState) {
 			return resourceDocPageStructure(ctx, state)
 		},
 	)
+
+	// structure://template — canonical shape of a docbuilder template.
+	// LLMs that are authoring templates or invoking them via
+	// create_from_template should read this for the schema-field types,
+	// output-path template syntax, sequence configuration, and the
+	// one-fenced-markdown-block body rule.
+	srv.AddResource(
+		mcp.NewResource(
+			"structure://template",
+			"documentation template structure",
+			mcp.WithResourceDescription("Canonical schema for a docbuilder documentation template: required/optional params.docbuilder.template.* frontmatter fields, schema field types and properties, output-path template variables, sequence configuration, and the one-block body rule. Read this before invoking or authoring templates."),
+			mcp.WithMIMEType("text/markdown"),
+		),
+		func(ctx context.Context, _ mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+			return resourceDocTemplateStructure(ctx, state)
+		},
+	)
 }
 
 // resourceConfigCurrent returns the redacted config as a JSON resource so the
@@ -73,6 +90,21 @@ func resourceDocPageStructure(_ context.Context, _ *serverState) ([]mcp.Resource
 			URI:      "structure://doc-page",
 			MIMEType: "text/markdown",
 			Text:     docPageStructureSchema,
+		},
+	}, nil
+}
+
+// resourceDocTemplateStructure returns the canonical schema for a
+// docbuilder documentation template. The content lives in
+// `docTemplateStructureSchema` (structure_template_resource.go); the
+// full human-readable counterpart is
+// `docs/reference/doc-template-structure.md`.
+func resourceDocTemplateStructure(_ context.Context, _ *serverState) ([]mcp.ResourceContents, error) {
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI:      "structure://template",
+			MIMEType: "text/markdown",
+			Text:     docTemplateStructureSchema,
 		},
 	}, nil
 }
