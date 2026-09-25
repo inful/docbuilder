@@ -1,0 +1,10 @@
+[tools]
+delta = "latest"
+"github:aovestdipaperino/tokensave" = "latest"
+"github:zzet/gortex" = "latest"
+golangci-lint = "latest"
+just = "latest"
+lazygit = "latest"
+lefthook = "latest"
+neovim = "latest"
+ripgrep = "latest"
