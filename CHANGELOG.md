@@ -10,18 +10,6 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
-- **MCP server (`docbuilder-mcp`)**: a new standalone binary in `cmd/mcp-server`
-  that speaks the [Model Context Protocol](https://modelcontextprotocol.io/)
-  over stdio, letting LLM hosts (Claude Desktop, Cursor, VS Code, etc.)
-  drive doc maintenance tasks. Surfaces 10 tools — 6 read-only
-  (`get_config`, `list_templates`, `describe_template`,
-  `resolve_template_inputs`, `lint_docs`, `read_doc`) and 4 mutating
-  (`create_from_template`, `lint_fix`, `create_doc`, `update_doc`) — plus
-  a `config://current` resource. Mutating tools advertise
-  `destructiveHint` and require `confirm=true` so hosts gate them behind
-  user prompts. Auth tokens, passwords, and key paths are redacted as
-  `***` in every response. Write tools are path-contained to the
-  configured `--docs-dir`. Built on `github.com/mark3labs/mcp-go`.
 - **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
   each generated document to ragabast's `/api/ingest/async` endpoint
   immediately after it has been written to disk. Daemon-mode-only and
@@ -119,6 +107,30 @@ The last 90 days focused on four themes:
 - `feat(templates)`: add `GlobSuggestion` field to `SchemaField`.
 - `fix(tui)`: only suggest directories for glob patterns ending with `*/`.
 - `fix(templates)`: support metadata headers without transitions.
+
+### MCP server for LLM integration (v0.14.0–v0.14.3)
+- **New `docbuilder-mcp` binary** in `cmd/mcp-server` speaking the
+  [Model Context Protocol](https://modelcontextprotocol.io/) over stdio.
+  Surfaces 10 tools — 6 read-only (`get_config`, `list_templates`,
+  `describe_template`, `resolve_template_inputs`, `lint_docs`,
+  `read_doc`) and 4 mutating (`create_from_template`, `lint_fix`,
+  `create_doc`, `update_doc`) — plus a `config://current` resource.
+  Mutating tools advertise `destructiveHint` and require `confirm=true`
+  so hosts gate them behind user prompts. Auth tokens, passwords, and
+  key paths are redacted as `***` in every response. Write tools are
+  path-contained to the configured `--docs-dir` (read & lint tools
+  accept any path the caller provides, since lint is a general tool).
+  Built on `github.com/mark3labs/mcp-go`.
+- **Patch releases in this series:**
+  - v0.14.0 — initial MCP server release.
+  - v0.14.1 — added `docbuilder-mcp` to GoReleaser config so the
+    release tarball ships it.
+  - v0.14.2 — added a workflow + safety + pitfalls instructions
+    string sent in the `initialize` response so LLMs learn the
+    recommended tool order at session start.
+  - v0.14.3 — security bump: `go-git` v5.19.1 → v5.19.2, clearing two
+    Dependabot advisories (malicious reference names; worktree
+    symlink follow).
 
 ### Daemon & webhooks
 - `fix(daemon)`: recheck filtered repos on webhook (#61).

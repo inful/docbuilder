@@ -28,14 +28,15 @@ Read-only discovery tools (no confirm needed): get_config, list_templates, descr
 
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
-- Writes are confined to --docs-dir; path-escape attempts return an error.
+- create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.
+- lint_docs / lint_fix accept any path; they only touch markdown files, so the practical risk is small, but treat them as unconfined.
 - Every response masks Auth.token / password / key_path as "***". Do not try to bypass.
 
 Pitfalls:
 - create_from_template already runs lint-fix on the result; do not call lint_fix again immediately afterward.
 - create_doc refuses to overwrite an existing file unless overwrite: true.
 - update_doc fails if the file does not exist; use create_doc for new files.
-- describe_template returns a JSON schema; pass its fields straight back as create_from_template.inputs.
+- describe_template returns JSON with a top-level "schema" field (an array of fields with key/type/required) and a "defaults" object. To feed create_from_template, pass defaults as the starting point and overlay user-provided overrides into a flat {field_key: value} map.
 - lint_docs is read-only; lint_fix is the version that mutates files.
 - resolve_template_inputs never writes — use it to dry-run before create_from_template.
 - Use merge_strategy: "merge" (default) to add/overwrite individual frontmatter keys; use "replace" to overwrite the whole frontmatter block.

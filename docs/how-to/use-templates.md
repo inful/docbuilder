@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 5a1d5b2d63c348825ab1992cbba85d786a8167f06802e8d937e208c547b5f05d
-lastmod: "2026-06-04"
+fingerprint: ad4c7dda1f34d0c5f91a92e0d4a9cc4d1c70e9f8c5442e0b12e78227fdeac873
+lastmod: "2026-09-25"
 tags:
   - templates
   - cli
@@ -25,6 +25,15 @@ Templates are:
 - **Discovered automatically** - The CLI finds templates by scanning your published documentation site
 - **Interactive** - Prompts guide you through required fields
 - **Flexible** - Support defaults, sequences, and custom output paths
+
+## Driving templates from an LLM (MCP)
+
+The same template workflow can be driven non-interactively from an LLM
+host via the `docbuilder-mcp` binary, which exposes `list_templates`,
+`describe_template`, `resolve_template_inputs` (dry-run preview), and
+`create_from_template` (write + auto-lint-fix) as MCP tools. See the
+**MCP Server (LLM Integration)** section in the root README for setup,
+tool catalog, and Claude Desktop / Cursor configuration.
 
 ## Prerequisites
 

@@ -529,7 +529,8 @@ Resource:
 ### Safety
 
 - All `Auth.token` / `Auth.password` / `Auth.key_path` values are masked as `***` in every response, even when an LLM explicitly asks.
-- `create_doc` / `update_doc` / `lint_fix` / `create_from_template` refuse to operate outside the configured `--docs-dir` (prefix-collision safe).
+- `create_doc` / `update_doc` / `create_from_template` / `read_doc` refuse to operate outside the configured `--docs-dir` (prefix-collision safe).
+- `lint_docs` / `lint_fix` accept any filesystem path the caller provides; they only operate on markdown files, so the practical blast radius is small, but if you need the linter to also be path-contained, gate it with `lint_fix {path: <inside docs dir>}` yourself.
 - Mutating tools advertise `destructiveHint` so hosts display a confirmation prompt.
 
 ## Testing
