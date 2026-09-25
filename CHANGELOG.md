@@ -10,6 +10,18 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Added
+- **MCP server (`docbuilder-mcp`)**: a new standalone binary in `cmd/mcp-server`
+  that speaks the [Model Context Protocol](https://modelcontextprotocol.io/)
+  over stdio, letting LLM hosts (Claude Desktop, Cursor, VS Code, etc.)
+  drive doc maintenance tasks. Surfaces 10 tools — 6 read-only
+  (`get_config`, `list_templates`, `describe_template`,
+  `resolve_template_inputs`, `lint_docs`, `read_doc`) and 4 mutating
+  (`create_from_template`, `lint_fix`, `create_doc`, `update_doc`) — plus
+  a `config://current` resource. Mutating tools advertise
+  `destructiveHint` and require `confirm=true` so hosts gate them behind
+  user prompts. Auth tokens, passwords, and key paths are redacted as
+  `***` in every response. Write tools are path-contained to the
+  configured `--docs-dir`. Built on `github.com/mark3labs/mcp-go`.
 - **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
   each generated document to ragabast's `/api/ingest/async` endpoint
   immediately after it has been written to disk. Daemon-mode-only and
