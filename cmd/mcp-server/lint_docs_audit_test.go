@@ -201,9 +201,13 @@ func TestAudit_LintDocs(t *testing.T) {
 		}
 		t.Logf("after fix: %d files, %d errors, %d warnings",
 			reParsed.FilesTotal, reParsed.ErrorCount, reParsed.WarningCount)
-		if reParsed.ErrorCount >= parsed.ErrorCount {
-			t.Errorf("lint_fix did not reduce error count (%d -> %d)",
-				parsed.ErrorCount, reParsed.ErrorCount)
+		if reParsed.ErrorCount > 0 {
+			// lint_fix didn't take us to zero. Fail loudly: leaving
+			// errors in the tree after a fix means a doc audit
+			// round-trip is broken, which is exactly what this test
+			// exists to catch.
+			t.Fatalf("lint_fix left %d error(s) in the docs tree; original error count was %d — fix is incomplete",
+				reParsed.ErrorCount, parsed.ErrorCount)
 		}
 	}
 }

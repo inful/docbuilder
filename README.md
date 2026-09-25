@@ -526,8 +526,9 @@ Resource:
 
 - `config://current` — same as `get_config` but readable as a resource
 - `structure://doc-page` — canonical schema for a docbuilder documentation page (required/optional frontmatter, body rules, filename conventions, worked example). Read this before calling `create_doc` / `create_from_template` / `update_doc`.
+- `structure://template` — canonical schema for a docbuilder documentation template (`params.docbuilder.template.*` fields, schema field types, output-path template variables, sequence configuration, body block rules). Read this before authoring or invoking templates.
 
-See [`docs/reference/doc-page-structure.md`](docs/reference/doc-page-structure.md) for the full human-readable counterpart.
+See [`docs/reference/doc-page-structure.md`](docs/reference/doc-page-structure.md) and [`docs/reference/doc-template-structure.md`](docs/reference/doc-template-structure.md) for the full human-readable counterparts.
 
 ### Safety
 
