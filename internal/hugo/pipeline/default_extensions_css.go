@@ -15,14 +15,16 @@ const defaultCustomCSS = `/* DocBuilder default override for the Relearn theme.
  * The Relearn theme renders the sidebar's section titles
  * (.nav-title) at 2rem, bold, uppercase, with a 1rem left padding.
  * For documentation sites with many small category blocks, that
- * looks loud and ragged. These four values bring it back to a
+ * looks loud and ragged. These five values bring it back to a
  * section-divider weight: title case, 1.25rem, bold, 0.5rem left
- * padding.
+ * padding, 0.25rem bottom padding so the title sits visually close
+ * to its submenu list.
  */
 #R-sidebar .nav-title {
   font-size: 1.25rem;
   font-weight: bold;
   padding-inline-start: 0.5rem;
+  padding-bottom: 0.25rem;
   text-transform: none;
 }
 `
