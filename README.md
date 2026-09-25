@@ -458,6 +458,80 @@ Warnings are emitted if every repository is filtered out so you can adjust patte
 - `docbuilder init` - Initialize a new configuration file
 - `docbuilder build --incremental` - Update existing repositories instead of fresh clone
 
+## MCP Server (LLM Integration)
+
+`docbuilder-mcp` is a standalone binary in `cmd/mcp-server` that speaks the
+[Model Context Protocol](https://modelcontextprotocol.io/) over stdio. It lets
+LLM hosts (Claude Desktop, Cursor, VS Code, etc.) drive doc maintenance
+tasks — listing templates, scaffolding new docs, linting, and editing files —
+without shelling out to the CLI.
+
+### Build
+
+```bash
+go build -o bin/docbuilder-mcp ./cmd/mcp-server
+```
+
+### Run
+
+```bash
+docbuilder-mcp --config config.yaml --docs-dir ./docs
+```
+
+Flags:
+
+- `--config` — path to `config.yaml` (optional; tools degrade gracefully if missing)
+- `--base-url` — override for the template discovery URL
+- `--docs-dir` — default docs root for `read_doc` / `create_doc` / `update_doc` (default `./docs`)
+- `-v, --verbose` — debug logging to stderr
+
+The template base URL falls back through: `--base-url` → `DOCBUILDER_TEMPLATE_BASE_URL` → `config.hugo.base_url`.
+
+### Configure Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "docbuilder": {
+      "command": "/absolute/path/to/docbuilder-mcp",
+      "args": ["--config", "/absolute/path/to/config.yaml"]
+    }
+  }
+}
+```
+
+Restart Claude Desktop; `docbuilder` tools will appear in the tool menu.
+
+### Tools
+
+Read-only:
+
+- `get_config` — current config with secrets redacted
+- `list_templates` — templates discovered from the docs site
+- `describe_template` — schema + defaults for a template
+- `resolve_template_inputs` — preview output path & body for given field values
+- `lint_docs` — structured lint findings for a path
+- `read_doc` — parsed frontmatter + body for a file
+
+Mutating (require `confirm=true`; host prompts user):
+
+- `create_from_template` — scaffold + write + auto-lint-fix
+- `lint_fix` — apply fixes to a path
+- `create_doc` — write a new file (with optional frontmatter)
+- `update_doc` — modify an existing file (merge or replace frontmatter, optionally replace body)
+
+Resource:
+
+- `config://current` — same as `get_config` but readable as a resource
+
+### Safety
+
+- All `Auth.token` / `Auth.password` / `Auth.key_path` values are masked as `***` in every response, even when an LLM explicitly asks.
+- `create_doc` / `update_doc` / `lint_fix` / `create_from_template` refuse to operate outside the configured `--docs-dir` (prefix-collision safe).
+- Mutating tools advertise `destructiveHint` so hosts display a confirmation prompt.
+
 ## Testing
 
 DocBuilder includes comprehensive test coverage through multiple testing strategies:
