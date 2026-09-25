@@ -25,7 +25,7 @@ Use `go run ./cmd/docbuilder <command> -v` for verbose logging during developmen
 
 ### Configuration System
 - YAML configuration with `${ENV_VAR}` expansion
-- Loads environment variables from the first existing file: `.env` then `.env.local` (does not overwrite existing process env)
+- Loads environment variables from the first existing file only: `.env` if present, otherwise `.env.local` (does not overwrite existing process env)
 - Repository-specific paths (defaults to `["docs"]`)
 - Three auth types: `ssh`, `token`, `basic`
 
@@ -46,6 +46,7 @@ DocBuilder currently **hard-pins** the Hugo theme to **Relearn**.
 
 - The Hugo Modules import is always `github.com/McShelby/hugo-theme-relearn`.
 - Any user-provided `hugo.theme` (or older theme fields) should be treated as legacy/no-op; internally the theme is normalized to `relearn`.
+- When a user-provided `hugo.theme` value is detected and differs from `relearn`, emit a structured warning log at INFO level: `user-supplied theme "<value>" ignored; DocBuilder is Relearn-only and normalizes theme to "relearn"`. Do not return an error.
 
 Theme configuration is generated in `internal/hugo/config_writer.go` and (at a high level) follows these phases:
 1. Core defaults (title/description/baseURL, markup defaults)
@@ -61,13 +62,14 @@ If you need support for another Hugo theme, treat it as a larger refactor (new c
 
 ### File Discovery
 Documentation discovery (`internal/docs/discovery.go`) walks configured paths and:
-- Discovers markdown files (`.md`, `.markdown`, plus a few common variants) and a small allowlist of static assets (images, pdf, etc.)
+- Discovers markdown files with extensions: `.md`, `.markdown`, `.mdx`, `.mdown` (exhaustive list)
 - Skips hidden files (leading `.`)
-- Ignores standard files **at the docs root**, with one exception: root `README.md` is kept so it can be used as repository index content
+- Ignores the following files at the docs root: `CHANGELOG.md`, `LICENSE.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` — with one exception: root `README.md` is kept so it can be used as repository index content.
 - Skips entire repositories that contain a `.docignore` file at the repository root
 - Preserves directory structure as Hugo sections
 - Normalizes `index.md` → `_index.md` for Hugo section pages
 - Detects case-insensitive Hugo path collisions (to prevent Hugo ambiguous reference errors)
+- Forge-level namespace collisions (two repositories sharing the same `{forge}/{repository}` prefix after normalization) must be detected at discovery time and reported as a fatal configuration error, not a warning.
 
 Hugo path shapes:
 - Single-repository build: `content/{section}/{file}.md`
@@ -134,7 +136,9 @@ make build
 ### TDD Workflow (Strict)
 - Follow strict TDD: write the test first, watch it fail, then implement the change.
 - When fixing a bug, always add a test that reproduces the issue **before** the fix.
+- The reproducer test must follow the same file organization rules (unit test in `<source_file>_test.go`, integration test in `<feature>_test.go`). If no suitable test file exists yet, create it before writing the fix.
 - The reproducer test must remain after the fix as a long-term regression test (do not add temporary/throwaway tests).
+- When refactoring with no behavior change, TDD does not apply; run `go test ./...` after each individual file is moved to catch breakage early before proceeding to the next file. Apply strict TDD only when adding new behavior or fixing a bug.
 
 ### Test File Organization
 
@@ -248,7 +252,7 @@ When creating or reorganizing test files:
 
 Follow the existing patterns in the repo (eg. the Hugo config golden tests under `internal/hugo/`).
 
-Avoid hard-coding a theme in test configs/snippets: DocBuilder always normalizes to Relearn.
+Omit the `hugo.theme` field from all test configs and snippets; do not set it to any value, including `relearn`. The normalization happens internally and tests should not depend on it being set.
 
 Golden file location: `internal/hugo/testdata/hugo_config/feature_name.yaml`
 
@@ -304,12 +308,21 @@ func TestGolden_<Feature>(t *testing.T) {
         t.Skip("Skipping golden test in short mode")
     }
 
-    // Setup test repository (automatically initializes git)
+    // Setup test repository (automatically initializes git).
+    // The testdata repo directory must contain at least one committed file.
+    // setupTestRepo() runs git init, git add ., and git commit on directory contents.
+    // Ensure all files in test/testdata/repos/<feature>/ are present before generating golden files.
+    // If the testdata directory already contains a .git folder, setupTestRepo() must remove it before re-initializing.
+    // Never commit .git directories inside test/testdata/repos/.
     repoPath := setupTestRepo(t, "../../test/testdata/repos/<feature>")
 
     // Load and configure
     cfg := loadGoldenConfig(t, "../../test/testdata/configs/<theme>-<feature>.yaml")
-    cfg.Repositories[0].URL = repoPath
+    // Replace PLACEHOLDER URLs for all configured repositories.
+    for i := range cfg.Repositories {
+      // repoPath is already an initialized git repo; use it directly as a file URL for all repositories in this single-repo test.
+      cfg.Repositories[i].URL = "file://" + repoPath
+    }
     outputDir := t.TempDir()
     cfg.Output.Directory = outputDir
 
@@ -441,17 +454,32 @@ Available in `test/integration/helpers.go`:
 - **Realistic Content**: Test repositories should have realistic markdown content with proper frontmatter
 - **Documentation**: Add comments explaining what each golden file verifies
 - **Coverage**: Test both enabled and disabled states of features
+- **Multi-repo/Multi-forge Coverage**: For multi-repo and multi-forge scenarios, add multiple entries under `repositories:` in the test config and set each URL via the loop pattern. Verify that golden `content-structure.golden.json` reflects the `content/{repository}/` or `content/{forge}/{repository}/` path shapes accordingly.
 - **Regression Testing**: Run all tests after changes to ensure no existing functionality breaks
 
 ## Task Completion Checklist
 
 **Before marking any task as complete, you MUST complete all steps in this checklist:**
 
+Completion order summary:
+1. Run lint (`golangci-lint`) and fix issues.
+2. Run golden tests (`go test ./test/integration -v`).
+3. Run full tests (`go test ./...`).
+4. Stage only task-related files.
+5. Commit using Conventional Commits.
+
 ### 1. Run golangci-lint and Fix All Issues
 
 ```bash
 # DocBuilder uses golangci-lint v2.12.2
 golangci-lint version
+
+# If the installed version does not match v2.12.2, install the correct version before proceeding
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
+
+# If the install script fails or network access is unavailable, halt and report:
+# "golangci-lint v2.12.2 is required but could not be installed. Install it manually and re-run."
+# Do not proceed with the task completion checklist.
 
 # Run linter and format code
 golangci-lint run --fix
@@ -472,10 +500,11 @@ go test ./test/integration -v
 # All tests must pass - no failures or skips
 ```
 
-If golden tests fail:
-- Check if feature changes require updating golden files
-- Use `-update-golden` flag if output changes are intentional and correct
-- Re-run tests to verify they pass against updated golden files
+**If golden tests fail:**
+1. Determine whether the output change is intentional.
+2. If intentional, run with `-update-golden`, inspect diffs, then re-run without the flag to confirm pass.
+3. If not intentional, fix the regression before proceeding.
+4. Do not proceed to step 3 until step 2 passes.
 
 ### 3. Run Full Test Suite
 
@@ -491,6 +520,7 @@ All tests must pass without failures. If any test fails:
 - Fix the issue causing the failure
 - Do not commit broken tests
 - Re-run full suite until all tests pass
+- If failures persist, keep addressing them and re-run this step until it passes.
 
 ### 4. Stage Only Task-Related Files
 
@@ -518,11 +548,11 @@ git diff --cached --name-only
 Use the [Conventional Commits](https://www.conventionalcommits.org/) format:
 
 ```
-<type>[optional scope]: <description>
+<type>(optional scope): <description>
 
-[optional body]
+(optional body)
 
-[optional footer(s)]
+(optional footer(s))
 ```
 
 **Common types:**
@@ -625,7 +655,8 @@ rm -rf /tmp/output_stage
 ```
 
 ### Working with Configuration
-- Always test environment variable expansion with `.env` files  
+- Follow the env-file loading rule from **Configuration System** above (single source of truth): `.env` is primary; `.env.local` is used only when `.env` is absent.
+- This order is intentional for this project and should not be inverted.
 - Repository names become Hugo content sections - avoid spaces/special chars
 - The `paths` array allows multiple doc directories per repo
 
@@ -663,8 +694,7 @@ fixer_broken_links.go     // Broken link detection
 - Verify test coverage remains the same
 
 **5. Refactoring checklist:**
-- [ ] When adding a new feature, use a strict TDD approach.
-- [ ] When fixing a bug, first add a failing reproducer test, then fix the bug; keep the test as a permanent regression test.
+- [ ] Run `go test ./...` after each file is moved (TDD does not apply to pure refactoring; do not write new tests before moving code).
 - [ ] Each file has single, clear responsibility
 - [ ] File names clearly indicate content
 - [ ] No circular dependencies between new files
@@ -706,7 +736,7 @@ internal/lint/fixer_confirmation.go     # 112 lines - user confirmation
 
 ## Code Conventions
 
-**See [docs/STYLE_GUIDE.md](../docs/STYLE_GUIDE.md) for complete naming conventions and style rules.**
+**See the project style guide in the repository docs for complete naming conventions and style rules.**
 
 ### Quick Reference
 
@@ -750,6 +780,7 @@ internal/lint/fixer_confirmation.go     # 112 lines - user confirmation
 - `github.com/alecthomas/kong` for CLI parsing  
 - `gopkg.in/yaml.v3` for configuration
 - Hugo must be available in PATH for final site building
+- If `hugo` is not found in PATH, the build pipeline must fail fast with an actionable error: `hugo binary not found in PATH; install Hugo >= 0.120.0 and ensure it is on your PATH.` Do not proceed to site generation.
 
 **File System Layout:**
 - Temporary workspaces in `/tmp/docbuilder-{timestamp}/`
