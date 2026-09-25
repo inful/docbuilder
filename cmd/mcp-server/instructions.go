@@ -26,6 +26,8 @@ Workflow for a from-scratch doc (no template):
 
 Read-only discovery tools (no confirm needed): get_config, list_templates, describe_template, resolve_template_inputs, lint_docs, read_doc.
 
+Before create_doc / create_from_template / update_doc, read the structure://doc-page resource for the canonical schema (required + optional frontmatter, body rules, filename conventions, worked example). Do not invent your own frontmatter shape.
+
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
 - create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.
