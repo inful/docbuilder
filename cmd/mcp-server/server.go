@@ -70,6 +70,7 @@ func run(ctx context.Context, cfg serverConfig) error {
 		server.WithToolCapabilities(true),
 		server.WithResourceCapabilities(true, true),
 		server.WithLogging(),
+		server.WithInstructions(serverInstructions),
 	)
 
 	registerTools(srv, state)
