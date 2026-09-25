@@ -25,6 +25,25 @@ func registerResources(srv *server.MCPServer, state *serverState) {
 			return resourceConfigCurrent(ctx, state)
 		},
 	)
+
+	// structure://doc-page — canonical shape of a docbuilder doc, in a
+	// form an LLM can act on. LLMs that are about to call create_doc /
+	// update_doc should read this first so they know the required and
+	// optional frontmatter fields, body rules, and filename conventions.
+	// The full human-readable counterpart lives in
+	// docs/reference/doc-page-structure.md; the test
+	// TestDocPageStructure_StaysInSyncWithDoc keeps the two in step.
+	srv.AddResource(
+		mcp.NewResource(
+			"structure://doc-page",
+			"documentation page structure",
+			mcp.WithResourceDescription("Canonical schema for a docbuilder documentation page: required and optional frontmatter fields, body rules, filename conventions, and a worked example. Read this before calling create_doc / create_from_template / update_doc."),
+			mcp.WithMIMEType("text/markdown"),
+		),
+		func(ctx context.Context, _ mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+			return resourceDocPageStructure(ctx, state)
+		},
+	)
 }
 
 // resourceConfigCurrent returns the redacted config as a JSON resource so the
@@ -40,6 +59,20 @@ func resourceConfigCurrent(_ context.Context, state *serverState) ([]mcp.Resourc
 			URI:      "config://current",
 			MIMEType: "application/json",
 			Text:     string(b),
+		},
+	}, nil
+}
+
+// resourceDocPageStructure returns the canonical schema for a docbuilder
+// documentation page. The content lives in `docPageStructureSchema`
+// (structure_resource.go); the full human-readable counterpart is
+// `docs/reference/doc-page-structure.md`.
+func resourceDocPageStructure(_ context.Context, _ *serverState) ([]mcp.ResourceContents, error) {
+	return []mcp.ResourceContents{
+		mcp.TextResourceContents{
+			URI:      "structure://doc-page",
+			MIMEType: "text/markdown",
+			Text:     docPageStructureSchema,
 		},
 	}, nil
 }

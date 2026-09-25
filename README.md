@@ -525,6 +525,9 @@ Mutating (require `confirm=true`; host prompts user):
 Resource:
 
 - `config://current` — same as `get_config` but readable as a resource
+- `structure://doc-page` — canonical schema for a docbuilder documentation page (required/optional frontmatter, body rules, filename conventions, worked example). Read this before calling `create_doc` / `create_from_template` / `update_doc`.
+
+See [`docs/reference/doc-page-structure.md`](docs/reference/doc-page-structure.md) for the full human-readable counterpart.
 
 ### Safety
 
