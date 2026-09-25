@@ -1,16 +1,18 @@
 ---
 aliases:
   - /_uid/project-taxonomy-migration/
+  - /_uid/33bcaf83-941a-478a-b86f-531e79c2a3e2/
 categories:
   - how-to
 date: 2026-06-05T00:00:00Z
-fingerprint: 6a1f3b8d4e9c2a5f8d7b1e4c9f3a6d2e5b8c1f4a7d9e2c5b8f1a4d7e0c3b6f9a
-lastmod: "2026-06-05"
+fingerprint: 5b0fd6a6907ee7f6a0c04c347b37967c3decad6f56c9109534e5a0e4ede6cb43
+lastmod: "2026-09-25"
 tags:
   - migration
   - sidebar
   - taxonomy
-title: "Migrate `project:` to the new `projects:` front matter"
+title: Migrate `project:` to the new `projects:` front matter
+uid: 33bcaf83-941a-478a-b86f-531e79c2a3e2
 weight: 50
 ---
 
