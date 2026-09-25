@@ -87,6 +87,20 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 		t.Errorf("serverInfo.name: got %v want docbuilder-mcp", got)
 	}
 
+	// The server should advertise instructions telling the LLM how to use
+	// it. Verify a few signature phrases — the full text is asserted in a
+	// separate test against the const directly.
+	instr, _ := initResp.Result["instructions"].(string)
+	for _, want := range []string{
+		"--docs-dir",
+		"create_from_template",
+		"confirm: true",
+	} {
+		if !strings.Contains(instr, want) {
+			t.Errorf("instructions missing %q; got: %s", want, instr)
+		}
+	}
+
 	// initialized notification (no response expected)
 	if err := client.notify("notifications/initialized", map[string]any{}); err != nil {
 		t.Fatalf("initialized notification: %v", err)
