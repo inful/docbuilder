@@ -3,8 +3,8 @@ aliases:
   - /_uid/88a81f71-5a61-405e-a1ef-908b9ca6cabe/
 categories:
   - explanation
-fingerprint: 236edab1ee3fcf8e1b1ae1edc44ab641b307bf498362583d8b55a2f6c0bdb171
-lastmod: "2026-09-25"
+fingerprint: 11164ebfe1d591ed944ccef98329c1bce2eeb9d3e6a1f6ca74b7e111c5283a6e
+lastmod: "2026-09-26"
 tags:
   - best-practices
   - documentation
@@ -560,27 +560,34 @@ That's the entire enforced surface. Everything else in this doc is
 ## 11. Linter-feature candidates
 
 Each unenforced SHOULD above is a candidate for a new linter rule.
-Roughly ordered by ROI:
+Roughly ordered by ROI. Each candidate is tracked as a GitHub issue
+so the work can be picked up incrementally:
 
-1. **Body H1 detection** — flag `^# ` in the body (rule 5.1). Easy;
-   the linter already parses lines.
-2. **Directory / category consistency** — `docs/how-to/*.md` must have
-   `categories: [how-to]` (rule 1.1 / 8.1). One regex per directory.
+1. **Body H1 detection** — flag `^# ` in the body (rule 5.1). —
+   [#68](https://github.com/inful/docbuilder/issues/68)
+2. **Directory / category consistency** — `docs/how-to/*.md` must
+   have `categories: [how-to]` (rule 1.1 / 8.1). —
+   [#69](https://github.com/inful/docbuilder/issues/69)
 3. **`_index.md` per directory** — warn on directories with ≥3
-   children and no `_index.md` (rule 2.2).
+   children and no `_index.md` (rule 2.2). —
+   [#70](https://github.com/inful/docbuilder/issues/70)
 4. **Category naming** — warn on `Templates` (capitalized) or other
-   inconsistent casings (rule 1.1 / 6.4).
+   inconsistent casings (rule 1.1 / 6.4). —
+   [#71](https://github.com/inful/docbuilder/issues/71)
 5. **Required frontmatter completeness** — check `title`, `date`,
-   `lastmod`, `categories`, `tags` are present (rule 4.4). Most of
-   these are already validated by Hugo at build time but a lint
-   check would catch them earlier.
+   `lastmod`, `categories`, `tags` are present (rule 4.4). —
+   [#72](https://github.com/inful/docbuilder/issues/72)
 6. **Sequence-prefix filenames** — `adr-NNN-slug.md` for known
-   sequence directories (rule 3.3).
+   sequence directories (rule 3.3). —
+   [#73](https://github.com/inful/docbuilder/issues/73)
 7. **Cross-mode category check** — flag if a doc has both
-   `categories: [how-to]` and `categories: [reference]` (rule 6.4).
-8. **Tag count** — warn when `len(tags) > 10` (rule 6.3).
+   `categories: [how-to]` and `categories: [reference]` (rule 6.4). —
+   [#74](https://github.com/inful/docbuilder/issues/74)
+8. **Tag count** — warn when `len(tags) > 10` (rule 6.3). —
+   [#75](https://github.com/inful/docbuilder/issues/75)
 9. **Internal-link style** — flag `../foo` or site-rooted links in
-   body text (rule 5.3).
+   body text (rule 5.3). —
+   [#76](https://github.com/inful/docbuilder/issues/76)
 
 Each is a 30-100 line PR. Together they'd close most of the
 "convention, not policy" gap in §10.
