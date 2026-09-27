@@ -1,9 +1,11 @@
 ---
 aliases:
   - /_uid/bf6c5071-2095-472f-89fc-5319bc2e362b/
+categories:
+  - how-to
 description: examples for integrating DocBuilder lint results into pull request comments across different platforms
-fingerprint: 838a29e48cc5bd9934cddc3eb050068507bc3539870f705436bf37eb9c1f74b1
-lastmod: "2026-01-22"
+fingerprint: 3e02c9163d021ab65ebade9337a47c71c9b026fce03fd1241eff8c0701df812d
+lastmod: "2026-09-27"
 uid: bf6c5071-2095-472f-89fc-5319bc2e362b
 ---
 

@@ -3,12 +3,10 @@ aliases:
   - /_uid/663991b1-bfe7-4c55-bd54-8f09e1120e06/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: e0930feaae293ab682ab1f82f81a6fcb1727905643295ba504ced507f36078d5
-lastmod: "2026-01-22"
+fingerprint: 5859edbfeb15b377ec1697ad7659d87cb1301717121b887ac563666da3c39f98
+lastmod: "2026-09-27"
 tags:
-  - architecture
   - diagrams
   - layers
 title: High-Level System Architecture

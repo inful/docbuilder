@@ -2,11 +2,10 @@
 aliases:
   - /_uid/591c7ad3-3af8-47f8-9d01-531da3233a5d/
 categories:
-  - development
-  - ci-cd
+  - how-to
 date: 2026-01-01T00:00:00Z
-fingerprint: 7a9ca7186836135fd3b4ec05a1c38dfaa66e76e531a3ef8af674c5bec8656171
-lastmod: "2026-01-22"
+fingerprint: 3abf6bbef8e48c6f84ef1410ee2570b667f893e2a60408c2c419fd0c895341d3
+lastmod: "2026-09-27"
 tags:
   - releases
   - devcontainer

@@ -50,6 +50,7 @@ func NewLinter(cfg *Config) *Linter {
 			&InternalLinkStyleRule{},
 			&CategoryNamingRule{},
 			&CrossModeCategoryRule{},
+			&DirectoryCategoryConsistencyRule{},
 			// Additional rules will be added here in future phases
 		},
 	}

@@ -2,10 +2,10 @@
 aliases:
   - /_uid/138c1d38-5a96-4820-8a74-dbb45c94a0e3/
 categories:
-  - architecture
+  - architecture-decisions
 date: 2025-12-18T00:00:00Z
-fingerprint: d6f1d74f5bdd59c20b6139da505245c1f85623e2a5611ff3e8d5044114d9fefa
-lastmod: "2026-01-22"
+fingerprint: 90a13ac3beab76b5bfe27fc8e0fb033e7f5b8b62b5abcd97ecf468e124dfde7f
+lastmod: "2026-09-27"
 status: proposed
 tags:
   - adr

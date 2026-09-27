@@ -2,11 +2,13 @@
 adr: docs/adr/adr-015-centralize-parsed-doc-model.md
 aliases:
   - /_uid/722ac346-6481-4ff0-ab00-93dd6b5e8c70/
+categories:
+  - architecture-decisions
 date_created: "2026-01-21"
-fingerprint: 477428273e879612e43e1e9d0a5073246437f993d246e6f92e198449a9c9c1e6
+fingerprint: 34bf2511f1aac1054db4c850cacb8be1e6e1d2e276a874b8163c969c519be30e
 goal: 'Implement ADR-015: central parsed document model (frontmatter + Markdown body)'
 last_updated: "2026-01-22"
-lastmod: "2026-01-22"
+lastmod: "2026-09-27"
 owner: DocBuilder Core Team
 status: Done
 tags:

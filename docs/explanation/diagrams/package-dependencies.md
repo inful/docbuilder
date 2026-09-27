@@ -3,10 +3,9 @@ aliases:
   - /_uid/a12d6319-3e23-4e1f-a276-920b402b50d6/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: 3aa5826db4df7277d1b0d1dd39b7c7f307f1c9d4f52230d13eafc98756e0979f
-lastmod: "2026-01-22"
+fingerprint: 54e58d2903d1268784be7c04c81c69273bb08659619fe90ac178b1b13e67f9ff
+lastmod: "2026-09-27"
 tags:
   - packages
   - dependencies

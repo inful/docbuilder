@@ -3,10 +3,9 @@ aliases:
   - /_uid/13690187-bce4-4683-a34a-3743ba03d7ac/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: c561063e90f8c3e8c8675dc6772a7e823d9bc0fb2cac9aef2f392199659a53f7
-lastmod: "2026-01-22"
+fingerprint: d40d8ac1ec7c4aad01ad9189a36c32dea389a7cb0eda7de89bbddf340e200a5f
+lastmod: "2026-09-27"
 tags:
   - data-flow
   - sequences

@@ -1,8 +1,10 @@
 ---
 aliases:
   - /_uid/56d0f48e-5ebc-47c1-b781-63027faf0a52/
-fingerprint: 92418ac8f4af0f23eb0f234746bdd32a3b5af28880ec24b76281abae6d0cd992
-lastmod: "2026-01-22"
+categories:
+  - architecture-decisions
+fingerprint: 6b17e2ce9df30b87a58ae594ccccfeeac1191b750c22e0fc308577bc0abd6fcc
+lastmod: "2026-09-27"
 uid: 56d0f48e-5ebc-47c1-b781-63027faf0a52
 ---
 

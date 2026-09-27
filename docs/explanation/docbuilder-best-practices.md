@@ -3,7 +3,7 @@ aliases:
   - /_uid/88a81f71-5a61-405e-a1ef-908b9ca6cabe/
 categories:
   - explanation
-fingerprint: aa835a3b8e206926014347eee22c38c66cd2e4b612ca8da58de776fdf099970b
+fingerprint: 80c266ec9142ebdda2ebbbdf5217cb1f62ac776ee26b96ae241e296b4296f2d2
 lastmod: "2026-09-27"
 tags:
   - best-practices
@@ -558,6 +558,7 @@ This is what you can rely on without re-reading code:
 | `internal-link-style` | WARNING when internal link is missing `.md` extension or starts with `/` (site-rooted) | `internal/lint/rule_internal_link_style.go` |
 | `category-naming` | ERROR when a category doesn't match `^[a-z][a-z0-9-]*$` (kebab-case) | `internal/lint/rule_category_naming.go` |
 | `cross-mode-category` | ERROR when `categories:` lists two distinct doc modes not in `AllowedPairs` | `internal/lint/rule_cross_mode_category.go` |
+| `directory-category-consistency` | ERROR when a doc in a mode-specific directory (how-to/reference/explanation/security/adr/tutorials/examples) doesn't carry the matching `categories:` value | `internal/lint/rule_directory_category_consistency.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 

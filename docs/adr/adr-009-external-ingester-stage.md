@@ -1,8 +1,11 @@
 ---
-uid: 327c9967-2b83-47fc-8ebc-996964bb7001
 aliases:
   - /_uid/327c9967-2b83-47fc-8ebc-996964bb7001/
-fingerprint: 54d6e6636f3f67c1ef601ab8a88f6ea0ee089a7ebb5cfea1d33a52e84c8fa02d
+categories:
+  - architecture-decisions
+fingerprint: 2d0d2256af19fc64084277bf8faabfa7833da27d4da97dbd1d2caca63ec47be4
+lastmod: "2026-09-27"
+uid: 327c9967-2b83-47fc-8ebc-996964bb7001
 ---
 
 # ADR-009: Push Documents to an External Ingester During Builds

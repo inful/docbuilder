@@ -1,8 +1,11 @@
 ---
-uid: 971ae5a9-db88-47b9-8ca3-62406912b554
 aliases:
   - /_uid/971ae5a9-db88-47b9-8ca3-62406912b554/
-fingerprint: f6d7efaeaccd2f271db9a32ef3bebb1ff43a3e852a2cd5635a3a3c54ce72bb31
+categories:
+  - architecture-decisions
+fingerprint: b58d5e586a9f895d6b9b27eeff4b871a730ad92d605f542ca43784640bfc7260
+lastmod: "2026-09-27"
+uid: 971ae5a9-db88-47b9-8ca3-62406912b554
 ---
 
 # ADR-006: Drop "local" Namespace for Single-Project Preview and Build

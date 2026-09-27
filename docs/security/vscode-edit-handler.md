@@ -1,8 +1,11 @@
 ---
-uid: 2fc65921-3513-436e-aa99-8cb4202560cb
 aliases:
   - /_uid/2fc65921-3513-436e-aa99-8cb4202560cb/
-fingerprint: f8485bd6fbe4733f3b5213bb986ebdc62c2742982f827de91f006f3e26448702
+categories:
+  - security
+fingerprint: 56b0291b5d24fb241ea5480d5c461103d401f861f4dc6f3f210df88eca281ecb
+lastmod: "2026-09-27"
+uid: 2fc65921-3513-436e-aa99-8cb4202560cb
 ---
 
 # VS Code Edit Handler Security

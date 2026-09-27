@@ -3,10 +3,9 @@ aliases:
   - /_uid/fd65129c-5904-4cef-bc9b-6cdae00b8891/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: 421bf9ea107f1b488c580345890772f190c11a8bbe9565a5654a3b92300edb5c
-lastmod: "2026-01-22"
+fingerprint: 0d74c89cd9fa93e400d310c27d568cc3d79c7acbaf1bbbb7b1142e34426298d5
+lastmod: "2026-09-27"
 tags:
   - pipeline
   - stages

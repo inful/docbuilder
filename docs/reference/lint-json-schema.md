@@ -1,8 +1,11 @@
 ---
-uid: 29426dd7-62c7-4e24-8378-5487c13fbee7
 aliases:
   - /_uid/29426dd7-62c7-4e24-8378-5487c13fbee7/
-fingerprint: dd2cc4c7e6aa9f24885bcc4aeb55515edfe0a680534abb0872c84fbfbf63efb1
+categories:
+  - reference
+fingerprint: f63a7ce0a8af8a76351814238295f5d978481cc9580aadc86a0548bc5156a454
+lastmod: "2026-09-27"
+uid: 29426dd7-62c7-4e24-8378-5487c13fbee7
 ---
 
 # JSON Output Schema
