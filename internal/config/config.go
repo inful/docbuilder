@@ -25,10 +25,24 @@ type Config struct {
 	Hugo       HugoConfig        `yaml:"hugo"`
 	Monitoring *MonitoringConfig `yaml:"monitoring,omitempty"`
 	Output     OutputConfig      `yaml:"output"`
+	// Lint configures the documentation linter. Optional; if absent the
+	// linter uses its built-in defaults (see internal/lint.DefaultExcludes).
+	Lint *LintConfig `yaml:"lint,omitempty"`
 	// Optional explicit repository list (direct mode) – replaces legacy v1 top‑level repositories.
 	// When present, these are used directly for build/discover operations. If empty and forges are
 	// configured, auto‑discovery can populate repositories dynamically.
 	Repositories []Repository `yaml:"repositories,omitempty"`
+}
+
+// LintConfig configures the documentation linter. The Excludes list is
+// the cross-forge union of git-forge-conventional files that should be
+// skipped from lint and schema enforcement.
+type LintConfig struct {
+	// Excludes is the list of glob patterns identifying files that should
+	// be skipped from lint and schema enforcement. When nil, the linter's
+	// built-in DefaultExcludes applies. An explicit empty slice disables
+	// all excludes.
+	Excludes []string `yaml:"excludes,omitempty"`
 }
 
 // IsDaemonPublicOnlyEnabled returns true if the daemon is configured and public-only mode is enabled.

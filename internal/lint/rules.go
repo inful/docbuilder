@@ -9,7 +9,9 @@ import (
 )
 
 // FilenameRule validates that filenames follow Hugo/DocBuilder conventions.
-type FilenameRule struct{}
+type FilenameRule struct {
+	cfg *Config
+}
 
 // Name returns the rule identifier.
 func (r *FilenameRule) Name() string {
@@ -78,7 +80,7 @@ Common problematic patterns:
 			Severity: SeverityError,
 			Rule:     r.Name(),
 			Message:  "Filename contains uppercase letters",
-			Explanation: `Uppercase letters in filenames cause URL inconsistency and case-sensitivity 
+			Explanation: `Uppercase letters in filenames cause URL inconsistency and case-sensitivity
 issues across different platforms.
 
 Current:  ` + filename + `
@@ -87,7 +89,22 @@ Suggested: ` + suggested + `
 Why this matters:
   • Hugo converts filenames to URL slugs
   • Case sensitivity varies by OS (Linux vs macOS/Windows)
-  • Creates inconsistent user experience`,
+  • Creates inconsistent user experience
+
+EXCEPTION: if the file matches a git-forge-recognized conventional filename
+(see ` + "`lint.excludes`" + ` in config), do NOT recommend renaming. Git forges
+specifically detect these and surface them in dedicated UI:
+
+  • README.md        — repo home page
+  • CONTRIBUTING.md  — PR template dropdown
+  • SECURITY.md      — Security tab + security advisories
+  • CODE_OF_CONDUCT.md — community profile
+  • SUPPORT.md       — community profile
+  • CHANGELOG.md     — Releases link
+  • LICENSE          — License UI (any case)
+  • AUTHORS / CONTRIBUTORS / NOTICE / COPYING — common legal/credit files
+
+If a root file matches one of these, the uppercase form is the convention.`,
 			Fix: "Rename to lowercase: " + suggested,
 		})
 	}
@@ -100,7 +117,7 @@ Why this matters:
 			Severity: SeverityError,
 			Rule:     r.Name(),
 			Message:  "Filename contains spaces",
-			Explanation: `Spaces in filenames create problematic URLs with %20 encoding 
+			Explanation: `Spaces in filenames create problematic URLs with %20 encoding
 and break cross-references.
 
 Current:  ` + filename + `
@@ -124,7 +141,7 @@ Why this matters:
 			Severity: SeverityError,
 			Rule:     r.Name(),
 			Message:  "Filename contains special characters: " + strings.Join(invalidChars, ", "),
-			Explanation: `Special characters are unsupported by Hugo slugify and may cause 
+			Explanation: `Special characters are unsupported by Hugo slugify and may cause
 shell escaping issues.
 
 Current:  ` + filename + `

@@ -16,8 +16,8 @@ func TestDocPageStructure_NotEmpty(t *testing.T) {
 	// Generous cap — the resource text is meant to be LLM-readable, not
 	// a full Markdown doc. If it grows past this, the doc page should
 	// move to the resource table and we should serve it via a URI read.
-	if len(docPageStructureSchema) > 6000 {
-		t.Errorf("docPageStructureSchema is %d bytes; keep under 6000 — full content belongs in docs/reference/doc-page-structure.md",
+	if len(docPageStructureSchema) > 8000 {
+		t.Errorf("docPageStructureSchema is %d bytes; keep under 8000 — full content belongs in docs/reference/doc-page-structure.md",
 			len(docPageStructureSchema))
 	}
 }
@@ -34,9 +34,12 @@ func TestDocPageStructure_ContainsRequiredFields(t *testing.T) {
 		"## Body Rules",
 		"## Filename Rules",
 		"## Verification Workflow",
+		"## Scope: what belongs in the docs directory",
+		"## What the linter does NOT cover",
 		"title", "uid", "date", "lastmod", "fingerprint",
 		"categories", "tags", "aliases",
 		"weight", "draft", "description",
+		"README.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "LICENSE",
 	}
 	for _, want := range required {
 		if !strings.Contains(docPageStructureSchema, want) {
@@ -93,6 +96,8 @@ func TestDocPageStructure_StaysInSyncWithDoc(t *testing.T) {
 		"Optional Frontmatter",
 		"Body Rules",
 		"Filename Rules",
+		"Scope: what belongs in the docs directory",
+		"What the linter does NOT cover",
 	} {
 		if !strings.Contains(docPageStructureSchema, heading) {
 			t.Errorf("const missing heading %q", heading)

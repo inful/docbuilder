@@ -1,10 +1,12 @@
 ---
-title: "DocBuilder Documentation"
-date: 2025-12-15
 categories:
   - documentation
+date: 2025-12-15T00:00:00Z
+fingerprint: 7c4ffb847464b65211991fb17df5135938ee6d42459b265fcb6201421d2c3847
+lastmod: "2026-09-27"
 tags:
   - overview
+title: DocBuilder Documentation
 ---
 
 # DocBuilder Documentation
@@ -54,7 +56,7 @@ Technical specifications:
 
 Architecture and design rationale:
 
-- [Architecture Documentation Index](explanation/README.md)
+- [Architecture Documentation Index](explanation/readme.md)
 - [Comprehensive Architecture](explanation/comprehensive-architecture.md)
 - [Architecture Diagrams](explanation/architecture-diagrams.md)
 - [Package Architecture](explanation/package-architecture.md)
@@ -82,7 +84,7 @@ Architecture and design rationale:
 3. [Configuration Reference](reference/configuration.md)
 
 **Developers:**
-1. [Architecture Documentation](explanation/README.md)
+1. [Architecture Documentation](explanation/readme.md)
 2. [Package Architecture](explanation/package-architecture.md)
 3. [Contributing Guide](../CONTRIBUTING.md)
 
@@ -117,7 +119,7 @@ See [Contributing Guide](../CONTRIBUTING.md) for details.
 
 - **Questions:** Open a GitHub Discussion
 - **Issues:** Report bugs or feature requests via GitHub Issues
-- **Architecture Questions:** Review [Architecture Documentation](explanation/README.md) first
+- **Architecture Questions:** Review [Architecture Documentation](explanation/readme.md) first
 - **Usage Help:** Start with [Tutorials](tutorials/) and [How-To Guides](how-to/)
 
 ## Documentation Status

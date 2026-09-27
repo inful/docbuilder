@@ -18,6 +18,42 @@ const docPageStructureSchema = `# DocBuilder Documentation Page Structure
 Every page is a Markdown file (extension .md or .markdown) inside the
 configured docs directory.
 
+## Scope: what belongs in the docs directory
+
+The docs directory is for operator- and developer-facing documentation
+that benefits from docbuilder's schema enforcement (stable uids,
+fingerprints, categories, tags, lint). It is NOT for project
+meta-files.
+
+The following files are git-forge ecosystem conventions and should
+stay at the repo root even when a docs directory exists. They are
+not doc-pages:
+
+| File                | Why it stays at root                                   |
+|---------------------|--------------------------------------------------------|
+| README.md           | GitHub / GitLab / Forgejo render it on the repo home page |
+| CONTRIBUTING.md     | PR template dropdown surfaces it on every forge       |
+| SECURITY.md         | Security tab + security advisories on GitHub/GitLab   |
+| CODE_OF_CONDUCT.md   | Community profile / Code of conduct tab               |
+| SUPPORT.md          | Community profile / Support link                      |
+| CHANGELOG.md        | Releases page links it on every forge                 |
+| LICENSE             | Auto-detected by every forge; UI depends on casing    |
+
+These files SHOULD NOT carry docbuilder frontmatter and SHOULD NOT
+be moved into docs. They are out of scope for docbuilder schema
+enforcement. The lint walks skip them automatically via the
+default 'lint.excludes' patterns. A short stub of README.md at root
+that points at docs/index.md is fine — the stub itself is plain
+markdown, not a doc-page.
+
+If the user asks to "move everything to docs", interpret this as
+moving the operator documentation. Do not move the git-forge-conventional
+files at root.
+
+Nested files with these names (for example docs/explanation/readme.md)
+are normal doc-pages and SHOULD be linted normally — git-forge
+recognition applies at the repo root only.
+
 ## Required Frontmatter
 
 | Field | Type | Format | Notes |
@@ -63,6 +99,18 @@ repository, forge, section, edit_url — overwritten on every build.
 - Conventional sequence prefixes (not enforced by lint): adr-NNN-slug.md,
   tutorial-NN-slug.md with zero-padded numbers.
 
+## What the linter does NOT cover
+
+- Whether docs cover the right topics for the audience
+- Whether internal cross-links are accurate / non-circular
+- Whether references to source files (e.g. internal/foo.go) resolve
+  to files that exist in the codebase
+- Whether git-forge-conventional files (README, CONTRIBUTING, etc.)
+  should be in docs or at root — see "Scope" above
+
+A "0 errors" lint result means schema compliance, not content
+correctness.
+
 ## Minimal Worked Example
 
 ---
@@ -105,4 +153,6 @@ absolute URLs for external sites.
 - Uppercase or spaces in filename → ERROR. Rename to lowercase-hyphenated.
 - Broken internal link → ERROR. Fix path or create target.
 - H1 in body duplicates the rendered title.
+- Moving a git-forge-conventional file (README.md, CONTRIBUTING.md, etc.)
+  into docs — these belong at the repo root.
 `

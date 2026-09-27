@@ -113,8 +113,9 @@ func findContentRoot(sourceFile string) string {
 }
 
 // collectMarkdownFiles walks a directory tree and returns all markdown files,
-// skipping hidden directories and ignored files.
+// skipping hidden directories and files matched by DefaultExcludes.
 func collectMarkdownFiles(rootPath string) ([]string, error) {
+	globs := compileGlobs(DefaultExcludes)
 	var filesToScan []string
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -133,8 +134,8 @@ func collectMarkdownFiles(rootPath string) ([]string, error) {
 			return nil
 		}
 
-		// Skip standard ignored files (case-insensitive)
-		if isIgnoredFile(info.Name()) {
+		// Skip git-forge-conventional files
+		if isExcludedPath(path, rootPath, globs) {
 			return nil
 		}
 
@@ -147,6 +148,28 @@ func collectMarkdownFiles(rootPath string) ([]string, error) {
 		return nil, fmt.Errorf("failed to walk directory: %w", err)
 	}
 	return filesToScan, nil
+}
+
+// isExcludedPath reports whether path matches any compiled glob, relative
+// to baseDir. Exposed as a package-level helper so non-Linter callers
+// (such as the fixer walk) can reuse the same matching logic.
+func isExcludedPath(path, baseDir string, globs []globPattern) bool {
+	if len(globs) == 0 {
+		return false
+	}
+	rel := path
+	if baseDir != "" {
+		if r, err := filepath.Rel(baseDir, path); err == nil {
+			rel = r
+		}
+	}
+	rel = filepath.ToSlash(rel)
+	for _, g := range globs {
+		if matchGlob(g, rel) {
+			return true
+		}
+	}
+	return false
 }
 
 // isExternalURL checks if a link target is an external URL.

@@ -46,4 +46,6 @@ Pitfalls:
 - lint_docs is read-only; lint_fix is the version that mutates files.
 - resolve_template_inputs never writes — use it to dry-run before create_from_template.
 - Use merge_strategy: "merge" (default) to add/overwrite individual frontmatter keys; use "replace" to overwrite the whole frontmatter block.
+
+Documentation boundary: When the user asks to restructure a repo's documentation, default to keeping git-forge-conventional files (README.md, CONTRIBUTING.md, SECURITY.md, CHANGELOG.md, LICENSE) at the repo root. Move only the operator documentation into the configured docs directory. The lint walks skip these files automatically; do not move them into docs or they will lose their git-forge recognition. See structure://doc-page § "Scope".
 `
