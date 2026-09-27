@@ -193,10 +193,18 @@ func TestFixer_UpdatesFrontmatterFingerprint_DoesNotUpdateLastmodWhenFingerprint
 	tmpDir := t.TempDir()
 	path := filepath.Join(tmpDir, "doc.md")
 
-	// Create a file with valid fingerprint and lastmod
+	// Create a file with valid fingerprint and lastmod. Include all the
+	// frontmatter fields so the new frontmatter-fields fixer doesn't
+	// add any (which would invalidate the fingerprint and trigger a
+	// lastmod update).
 	seed := buildDocWithFingerprint(t, map[string]any{
 		testFrontmatterKeyTitle:   "Title",
 		testFrontmatterKeyLastmod: "2000-01-01",
+		"date":                     "2000-01-01T00:00:00Z",
+		"categories":               []string{"reference"},
+		"tags":                     []string{"test"},
+		"uid":                      "11111111-1111-1111-1111-111111111111",
+		"aliases":                  []string{"/_uid/11111111-1111-1111-1111-111111111111/"},
 	}, "# Title\n\nHello\n")
 	require.NoError(t, os.WriteFile(path, []byte(seed), 0o600))
 
