@@ -3,7 +3,7 @@ aliases:
   - /_uid/88a81f71-5a61-405e-a1ef-908b9ca6cabe/
 categories:
   - explanation
-fingerprint: 94be6a54130201c4c4d900999b907a5dd092fc9202ee5971eb1f8b39f82df67d
+fingerprint: aa835a3b8e206926014347eee22c38c66cd2e4b612ca8da58de776fdf099970b
 lastmod: "2026-09-27"
 tags:
   - best-practices
@@ -556,6 +556,7 @@ This is what you can rely on without re-reading code:
 | `sequence-prefix-filename` | ERROR if a file in a configured sequence directory (`adr/` by default) doesn't match `<prefix>-NNN-slug.md` | `internal/lint/rule_sequence_prefix_filename.go` |
 | `tag-count` | WARNING when `len(tags) > 10` (threshold configurable) | `internal/lint/rule_tag_count.go` |
 | `internal-link-style` | WARNING when internal link is missing `.md` extension or starts with `/` (site-rooted) | `internal/lint/rule_internal_link_style.go` |
+| `category-naming` | ERROR when a category doesn't match `^[a-z][a-z0-9-]*$` (kebab-case) | `internal/lint/rule_category_naming.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 

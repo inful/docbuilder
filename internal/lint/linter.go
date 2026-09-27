@@ -48,6 +48,7 @@ func NewLinter(cfg *Config) *Linter {
 			&SequencePrefixFilenameRule{},
 			&TagCountRule{},
 			&InternalLinkStyleRule{},
+			&CategoryNamingRule{},
 			// Additional rules will be added here in future phases
 		},
 	}

@@ -7,5 +7,6 @@ const (
 	ruleSequencePrefixFilename  = "sequence-prefix-filename"
 	ruleTagCount                = "tag-count"
 	ruleInternalLinkStyle       = "internal-link-style"
+	ruleCategoryNaming          = "category-naming"
 	gitCommandDiff              = "diff"
 )
