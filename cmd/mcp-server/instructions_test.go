@@ -33,6 +33,10 @@ func TestServerInstructions_ContainsKeyPhases(t *testing.T) {
 		"confirm: true",
 		"refuse to operate outside --docs-dir",
 		"\"***\"",
+		// Review workflow
+		"Before reviewing documentation",
+		"structure://doc-page",
+		"lint_docs",
 		// Pitfalls
 		"Pitfalls",
 		"lint_fix",

@@ -30,6 +30,8 @@ Before create_doc / create_from_template / update_doc, read the structure://doc-
 
 Before authoring or invoking templates, also read the structure://template resource for the canonical template shape (params.docbuilder.template.* fields, schema field types, output-path template variables, sequence configuration, body block rules). The schema returned by describe_template is a subset of this.
 
+Before reviewing documentation (e.g. when asked to audit or critique an existing doc), read structure://doc-page and run lint_docs <path> so the review covers schema conformance AND lint findings — not just one or the other.
+
 Safety:
 - Every mutating tool requires confirm: true. The host will prompt the user.
 - create_doc / update_doc / create_from_template / read_doc refuse to operate outside --docs-dir; path-escape attempts return an error.
