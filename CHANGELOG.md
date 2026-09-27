@@ -143,4 +143,58 @@ The last 90 days focused on four themes:
 - `fix(hugo)`: lowercase repository names in index paths.
 - `fix(docs)`: only include GitLab group in content path when needed.
 
-[Unreleased]: https://github.com/inful/docbuilder/compare/main...HEAD
+## [0.17.0] - 2026-09-27
+
+### Added
+- **Lint (cross-forge excludes)**: new `lint.excludes` config block with a
+  cross-forge union of git-forge-conventional filenames (GitHub / GitLab /
+  Forgejo — `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`,
+  `LICENSE`, etc.). The walk skips these files from schema checks and the
+  `filename-conventions` rename suggestion. Closes #77.
+- **Lint (new rules)**:
+  - `body-h1` (WARNING) — flags `# Title` at the start of a body, which
+    duplicates the rendered H1 from frontmatter `title`. Closes #68.
+  - `missing-index-page` (WARNING) — flags directories with ≥3 `.md`
+    children and no `_index.md`. Closes #70.
+  - `sequence-prefix-filename` (ERROR) — flags files in sequence-numbered
+    directories (`adr/` by default) that don't match `prefix-NNN-slug.md`.
+    Closes #73.
+  - `tag-count` (WARNING) — flags `tags:` lists with more than 10 entries.
+    Closes #75.
+  - `internal-link-style` (WARNING) — flags `[text](relative/path)` without
+    `.md` extension or site-rooted (`/foo`) targets. Closes #76.
+  - `category-naming` (ERROR) — flags categories that don't match
+    `^[a-z][a-z0-9-]*$` (kebab-case). Closes #71.
+  - `cross-mode-category` (ERROR) — flags docs whose `categories:` lists
+    two distinct doc modes without a configured parent/child relation.
+    Closes #74.
+  - `directory-category-consistency` (ERROR) — flags docs in mode-specific
+    directories (`how-to/`, `reference/`, etc.) whose `categories:` is
+    missing the expected mode value. Closes #69.
+  - `frontmatter-required-fields` (ERROR for missing/empty, WARNING for
+    malformed dates) — verifies `title`, `date`, `lastmod`,
+    `categories`, `tags` per the doc-builder contract. Closes #72.
+- **Lint (auto-fixers)**: new `lint_fix` phases for the auto-fixable
+  rules (`frontmatter-required-fields`, `category-naming`,
+  `directory-category-consistency`, `internal-link-style`,
+  `sequence-prefix-filename`, `missing-index-page`). The fixer's
+  audit-test path (`lint_docs` → `lint_fix` → `lint_docs`) now reaches
+  zero ERRORs without manual intervention for the auto-fixable subset.
+- **MCP (lint-fix hints)**: server `instructions` and the `lint_docs`
+  tool description now mention that each issue carries a `fix` field
+  with a concrete remediation hint. `lint_fix`'s response includes a
+  `manual_required` array listing issues that couldn't be auto-fixed
+  (typically `body-h1`, `tag-count`, `cross-mode-category`) so the LLM
+  can surface them with their fix hints verbatim.
+
+### Changed
+- **Lint (issue iteration)**: the fixer's issue-collection loop now keeps
+  both `SeverityError` and `SeverityWarning` so the new warning-level
+  rules participate in target building.
+- **Lint (filename matcher)**: the cross-forge `excludes` list supports
+  recursive globs (`**`) for nested template directories
+  (`.github/ISSUE_TEMPLATE/**/*.md`, `.gitlab/issue_templates/*.md`,
+  `.gitea/ISSUE_TEMPLATE/**/*.md`).
+
+[0.17.0]: https://github.com/inful/docbuilder/compare/v0.16.1...v0.17.0
+[Unreleased]: https://github.com/inful/docbuilder/compare/v0.17.0...HEAD
