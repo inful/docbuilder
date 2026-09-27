@@ -2,11 +2,13 @@
 adr: docs/adr/adr-016-centralize-frontmatter-mutations.md
 aliases:
   - /_uid/6df43140-ba90-4590-b923-0847aabee743/
+categories:
+  - architecture-decisions
 date_created: "2026-01-22"
-fingerprint: 4824d5692343ce613ebfefb6e44f64946a7556ae29e78ef24ae4fc6f7d2d74bb
+fingerprint: 443c35eea49635d6eeb344a056a0fc6937e58e756f9adb43cf3bf5a252b9e01d
 goal: 'Implement ADR-016: centralize frontmatter mutations (map-based ops)'
 last_updated: "2026-01-22"
-lastmod: "2026-01-22"
+lastmod: "2026-09-27"
 owner: DocBuilder Core Team
 status: Complete
 tags:

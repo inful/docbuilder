@@ -1,8 +1,10 @@
 ---
 aliases:
   - /_uid/4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7/
-fingerprint: 55984b3453b9761e72ed5412a09cbed1abedb82b6e99d553f9e41ae043576c29
-lastmod: "2026-01-22"
+categories:
+  - how-to
+fingerprint: 3ba6ae74aba2038f54207b3a58e0ef6a3dac276d704bfc8bc4911100c260d8d9
+lastmod: "2026-09-27"
 uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
 ---
 

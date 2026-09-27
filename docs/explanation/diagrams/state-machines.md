@@ -3,10 +3,9 @@ aliases:
   - /_uid/bd04a400-e6bb-431f-8c5e-032a486559f7/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: 65125bcf15de54437562d4f3004290a0eee640e7ad84cf06b290016f0da44d06
-lastmod: "2026-01-22"
+fingerprint: 2eefd2c893972e4ff2348598c2cb9c950f61b0aef1ef3690c4676af3aaefaede
+lastmod: "2026-09-27"
 tags:
   - state-machines
   - lifecycle

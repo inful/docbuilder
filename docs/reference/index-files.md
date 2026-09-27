@@ -1,8 +1,11 @@
 ---
-uid: 7d804d6f-42df-436f-8b7c-cadc4c6b88c4
 aliases:
   - /_uid/7d804d6f-42df-436f-8b7c-cadc4c6b88c4/
-fingerprint: 26e67b00465e2dff8ea87c8cdcc80d08f42b7cbd6d521baa673428e3342b5f97
+categories:
+  - reference
+fingerprint: d7a47bcf62125d7cee0e7c6d9eef48a816992a7910becc3ac9cf7a1eb3bf444e
+lastmod: "2026-09-27"
+uid: 7d804d6f-42df-436f-8b7c-cadc4c6b88c4
 ---
 
 # Index File Handling

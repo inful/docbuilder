@@ -3,10 +3,9 @@ aliases:
   - /_uid/36766002-6e10-4a98-9c90-981b15fa6f99/
 categories:
   - explanation
-  - architecture
 date: 2026-01-04T00:00:00Z
-fingerprint: 15700ccee9a59acfde7bec960d3b7bac8d3c347aea994194e7f13811a3109147
-lastmod: "2026-01-22"
+fingerprint: a8906c34f6273d18c6edbee956a37ea29d53d5399389515fe62dc6333f420e13
+lastmod: "2026-09-27"
 tags:
   - components
   - interactions
