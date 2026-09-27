@@ -104,6 +104,17 @@ type Rule interface {
 	AppliesTo(filePath string) bool
 }
 
+// DirectoryRule is an optional interface that a Rule can implement to
+// also run a single check against the lint root directory. Used for
+// rules whose semantics span multiple files (e.g. missing-index-page
+// which inspects subdirectory layout).
+//
+// The Linter type-asserts each registered Rule to this interface after
+// the per-file walk; rules that don't implement it are simply skipped.
+type DirectoryRule interface {
+	CheckDirectory(rootPath string) ([]Issue, error)
+}
+
 // DefaultExcludes is the cross-forge union of git-forge-conventional files
 // that should be exempted from lint and schema checks. It covers GitHub,
 // GitLab, and Forgejo conventions plus the nested-glob entries for the
