@@ -86,7 +86,9 @@ func toolResolveTemplateInputs() mcp.Tool {
 func toolLintDocs() mcp.Tool {
 	return mcp.NewTool("lint_docs",
 		mcp.WithDescription("Lint a file or directory and return structured findings. Does not modify files. "+
-			"Use lint_fix to apply fixes."),
+			"Use lint_fix to apply fixes. Each issue carries a `fix` field with a concrete remediation "+
+			"hint — surface it verbatim when reporting issues to the user, especially for rules "+
+			"that lint_fix does not auto-fix (body-h1, tag-count, cross-mode-category)."),
 		mcp.WithString("path", mcp.Description("Path to lint (file or directory). Defaults to the configured docs dir.")),
 		mcp.WithBoolean("quiet", mcp.Description("Suppress warnings, only return errors.")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -395,11 +397,88 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	if err != nil {
 		return toolErr("fix", err)
 	}
-	b, err := json.MarshalIndent(fixResult, "", "  ")
+
+	// After the fix completes, surface the issues that couldn't be
+	// auto-fixed so the LLM can present them to the user with their
+	// per-issue `fix` hints. We re-lint (read-only) and filter to rules
+	// the fixer knows how to handle.
+	manualRequired := computeManualRequired(path, state)
+
+	type fixResponse struct {
+		*lint.FixResult
+		ManualRequired []manualIssueOut `json:"manual_required,omitempty"`
+	}
+	resp := fixResponse{
+		FixResult:       fixResult,
+		ManualRequired: manualRequired,
+	}
+	b, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
 		return toolErr("marshal", err)
 	}
 	return mcp.NewToolResultText(string(b)), nil
+}
+
+// autoFixableRules is the closed set of lint rules for which the fixer
+// has a built-in remediation. Issues for rules NOT in this set are
+// surfaced to the caller as `manual_required` (they need a human
+// decision: removing an H1, curating tags, picking a primary doc mode).
+var autoFixableRules = map[string]bool{
+	"filename-conventions":            true,
+	"frontmatter-uid":                 true,
+	"frontmatter-fingerprint":         true,
+	"frontmatter-required-fields":     true,
+	"directory-category-consistency":  true,
+	"category-naming":                 true,
+	"internal-link-style":             true,
+	"sequence-prefix-filename":        true,
+	"missing-index-page":              true,
+	"broken-links":                    true,
+}
+
+// manualIssueOut is a slimmed-down view of an issue for the
+// `manual_required` array in the lint_fix response. We omit the
+// heavy `explanation` text and surface only the high-signal fields
+// the LLM needs to action the fix.
+type manualIssueOut struct {
+	File        string `json:"file"`
+	Line        int    `json:"line"`
+	Severity    string `json:"severity"`
+	Rule        string `json:"rule"`
+	Message     string `json:"message"`
+	Fix         string `json:"fix"`
+}
+
+// computeManualRequired re-lints the docs tree after a fix and
+// returns issues whose rule isn't auto-fixable. It runs as a read-only
+// lint pass so the fixer's own output isn't re-fixed in a loop.
+func computeManualRequired(path string, _ *serverState) []manualIssueOut {
+	//nolint:contextcheck // local file walk; context.Background() is appropriate
+	linter := lint.NewLinter(&lint.Config{Format: "text"})
+	lintResult, err := linter.LintPath(path)
+	if err != nil {
+		// Lint failures are non-fatal here: the manual_required list
+		// is an enhancement, not a critical path.
+		return nil
+	}
+	var out []manualIssueOut
+	for _, iss := range lintResult.Issues {
+		if iss.Severity != lint.SeverityError && iss.Severity != lint.SeverityWarning {
+			continue
+		}
+		if autoFixableRules[iss.Rule] {
+			continue
+		}
+		out = append(out, manualIssueOut{
+			File:     iss.FilePath,
+			Line:     iss.Line,
+			Severity: iss.Severity.String(),
+			Rule:     iss.Rule,
+			Message:  iss.Message,
+			Fix:      iss.Fix,
+		})
+	}
+	return out
 }
 
 func handleReadDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
