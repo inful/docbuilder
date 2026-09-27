@@ -46,7 +46,8 @@ func (fakeForgeClient) ParseWebhookEvent([]byte, string) (*forge.WebhookEvent, e
 }
 
 func (fakeForgeClient) RegisterWebhook(context.Context, *forge.Repository, string) error { return nil }
-func (fakeForgeClient) GetEditURL(*forge.Repository, string, string) string              { return "" }
+
+func (fakeForgeClient) GetEditURL(*forge.Repository, string, string) string { return "" }
 
 func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())

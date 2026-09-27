@@ -216,7 +216,7 @@ func TestOutboundDispatcher_QueueFull_Drops(t *testing.T) {
 	d.Enqueue([]byte("content-3"), "p3.md")
 
 	// These 10 must overflow and be dropped at enqueue time.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		d.Enqueue([]byte("overflow"), "over.md")
 	}
 
@@ -307,7 +307,7 @@ func TestOutboundDispatcher_StopDrainsQueue(t *testing.T) {
 	d.Start(t.Context())
 
 	const n = 5
-	for i := 0; i < n; i++ {
+	for range n {
 		d.Enqueue([]byte("content"), "p.md")
 	}
 
@@ -389,10 +389,10 @@ func TestOutboundDispatcher_ConcurrentEnqueue(t *testing.T) {
 	const perGoroutine = 16
 	var wg sync.WaitGroup
 	wg.Add(goroutines)
-	for g := 0; g < goroutines; g++ {
+	for range goroutines {
 		go func() {
 			defer wg.Done()
-			for i := 0; i < perGoroutine; i++ {
+			for range perGoroutine {
 				d.Enqueue([]byte("content"), "p.md")
 			}
 		}()

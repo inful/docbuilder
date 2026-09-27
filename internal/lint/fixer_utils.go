@@ -46,8 +46,8 @@ func pathsEqualCaseInsensitive(path1, path2 string) bool {
 
 // resolveRelativePath resolves a relative link path from a source file to an absolute path.
 func resolveRelativePath(sourceFile, linkTarget string) (string, error) {
-	// Remove any URL fragments (#section)
-	targetPath := strings.Split(linkTarget, "#")[0]
+	// Remove any URL fragments (#section).
+	targetPath, _, _ := strings.Cut(linkTarget, "#")
 
 	var resolvedPath string
 

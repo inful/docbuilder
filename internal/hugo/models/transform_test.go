@@ -276,7 +276,9 @@ func (m *mockTransformer) Stage() TransformStage {
 	}
 	return m.stage
 }
+
 func (m *mockTransformer) Dependencies() TransformerDependencies { return TransformerDependencies{} }
+
 func (m *mockTransformer) Configuration() TransformerConfiguration {
 	return TransformerConfiguration{Enabled: m.enabled}
 }

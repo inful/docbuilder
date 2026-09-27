@@ -26,7 +26,7 @@ import (
 // working directory), so it is gated behind a build tag if you ever want
 // to skip it in CI.
 //
-// Run with: go test ./cmd/mcp-server/ -run TestAudit_LintDocs -v
+// Run with: go test ./cmd/mcp-server/ -run TestAudit_LintDocs -v.
 func TestAudit_LintDocs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("audit test skipped in short mode")
@@ -35,6 +35,7 @@ func TestAudit_LintDocs(t *testing.T) {
 	// Build the binary into a temp dir.
 	binDir := t.TempDir()
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
+	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
 	build := exec.Command("go", "build", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -51,7 +52,7 @@ func TestAudit_LintDocs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, binPath,
+	cmd := exec.CommandContext(ctx, binPath, //nolint:gosec // G204: binPath is t.TempDir()-scoped; docsDir is repoRoot+docs (validated)
 		"--config", filepath.Join(repoRoot, "config.yaml"),
 		"--docs-dir", docsDir,
 	)
@@ -64,8 +65,8 @@ func TestAudit_LintDocs(t *testing.T) {
 		t.Fatalf("stdout: %v", err)
 	}
 	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("start: %v", err)
+	if startErr := cmd.Start(); startErr != nil {
+		t.Fatalf("start: %v", startErr)
 	}
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()
@@ -75,15 +76,15 @@ func TestAudit_LintDocs(t *testing.T) {
 	client := newAuditClient(stdin, stdout)
 
 	// initialize
-	if _, err := client.request(ctx, "initialize", map[string]any{
+	if _, reqErr := client.request(ctx, "initialize", map[string]any{
 		"protocolVersion": "2024-11-05",
 		"capabilities":    map[string]any{},
 		"clientInfo":      map[string]any{"name": "audit-test", "version": "0"},
-	}); err != nil {
-		t.Fatalf("initialize: %v", err)
+	}); reqErr != nil {
+		t.Fatalf("initialize: %v", reqErr)
 	}
-	if err := client.notify("notifications/initialized", map[string]any{}); err != nil {
-		t.Fatalf("initialized: %v", err)
+	if notifyErr := client.notify("notifications/initialized", map[string]any{}); notifyErr != nil {
+		t.Fatalf("initialized: %v", notifyErr)
 	}
 
 	// lint_docs over the entire docs/ tree.
@@ -163,52 +164,56 @@ func TestAudit_LintDocs(t *testing.T) {
 	// Second pass: ask the MCP server to fix the fingerprints via lint_fix
 	// (dry_run: false), then re-lint and confirm the error count dropped.
 	if parsed.ErrorCount > 0 {
-		t.Log("\n--- applying lint_fix via MCP ---")
-		fixResp, err := client.request(ctx, "tools/call", map[string]any{
-			"name": "lint_fix",
-			"arguments": map[string]any{
-				"path":    docsDir,
-				"confirm": true,
-			},
-		})
-		if err != nil {
-			t.Fatalf("lint_fix: %v", err)
-		}
-		if fixResp.Error != nil {
-			t.Fatalf("lint_fix error: %+v", fixResp.Error)
-		}
-		t.Logf("lint_fix result: %v", fixResp.Result["content"])
+		runLintFixRoundTrip(t, ctx, client, docsDir, parsed.ErrorCount)
+	}
+}
 
-		// Re-lint.
-		reResp, err := client.request(ctx, "tools/call", map[string]any{
-			"name": "lint_docs",
-			"arguments": map[string]any{"path": docsDir},
-		})
-		if err != nil {
-			t.Fatalf("re-lint_docs: %v", err)
-		}
-		if reResp.Error != nil {
-			t.Fatalf("re-lint_docs error: %+v", reResp.Error)
-		}
-		reText := reResp.Result["content"].([]any)[0].(map[string]any)["text"].(string)
-		var reParsed struct {
-			FilesTotal   int `json:"files_total"`
-			ErrorCount   int `json:"error_count"`
-			WarningCount int `json:"warning_count"`
-		}
-		if err := json.Unmarshal([]byte(reText), &reParsed); err != nil {
-			t.Fatalf("re-unmarshal: %v\n%s", err, reText)
-		}
-		t.Logf("after fix: %d files, %d errors, %d warnings",
-			reParsed.FilesTotal, reParsed.ErrorCount, reParsed.WarningCount)
-		if reParsed.ErrorCount > 0 {
-			// lint_fix didn't take us to zero. Fail loudly: leaving
-			// errors in the tree after a fix means a doc audit
-			// round-trip is broken, which is exactly what this test
-			// exists to catch.
-			t.Fatalf("lint_fix left %d error(s) in the docs tree; original error count was %d — fix is incomplete",
-				reParsed.ErrorCount, parsed.ErrorCount)
-		}
+// runLintFixRoundTrip applies lint_fix via MCP and re-lints to confirm the
+// error count drops. Failure to reach zero errors fails the test loudly,
+// because a broken round-trip is exactly what this audit is designed to catch.
+func runLintFixRoundTrip(t *testing.T, ctx context.Context, client *auditClient, docsDir string, originalErrCount int) {
+	t.Helper()
+	t.Log("\n--- applying lint_fix via MCP ---")
+	fixResp, err := client.request(ctx, "tools/call", map[string]any{
+		"name": "lint_fix",
+		"arguments": map[string]any{
+			"path":    docsDir,
+			"confirm": true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("lint_fix: %v", err)
+	}
+	if fixResp.Error != nil {
+		t.Fatalf("lint_fix error: %+v", fixResp.Error)
+	}
+	t.Logf("lint_fix result: %v", fixResp.Result["content"])
+
+	// Re-lint.
+	reResp, err := client.request(ctx, "tools/call", map[string]any{
+		"name":      "lint_docs",
+		"arguments": map[string]any{"path": docsDir},
+	})
+	if err != nil {
+		t.Fatalf("re-lint_docs: %v", err)
+	}
+	if reResp.Error != nil {
+		t.Fatalf("re-lint_docs error: %+v", reResp.Error)
+	}
+	reText := reResp.Result["content"].([]any)[0].(map[string]any)["text"].(string)
+	var reParsed struct {
+		FilesTotal   int `json:"files_total"`
+		ErrorCount   int `json:"error_count"`
+		WarningCount int `json:"warning_count"`
+	}
+	if err := json.Unmarshal([]byte(reText), &reParsed); err != nil {
+		t.Fatalf("re-unmarshal: %v\n%s", err, reText)
+	}
+	t.Logf("after fix: %d files, %d errors, %d warnings",
+		reParsed.FilesTotal, reParsed.ErrorCount, reParsed.WarningCount)
+	if reParsed.ErrorCount > 0 {
+		t.Fatalf("lint_fix left %d error(s) in the docs tree; original error count was %d — fix is incomplete",
+			reParsed.ErrorCount, originalErrCount)
 	}
 }
 
@@ -221,7 +226,7 @@ func repoRootFromHere() (string, error) {
 		return "", err
 	}
 	dir := wd
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 			return dir, nil
 		}
@@ -247,9 +252,9 @@ type auditClient struct {
 }
 
 type auditResp struct {
-	ID      json.RawMessage `json:"id,omitempty"`
-	Result  map[string]any  `json:"result,omitempty"`
-	Error   *struct {
+	ID     json.RawMessage `json:"id,omitempty"`
+	Result map[string]any  `json:"result,omitempty"`
+	Error  *struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	} `json:"error,omitempty"`

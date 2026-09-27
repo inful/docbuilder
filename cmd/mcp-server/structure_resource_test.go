@@ -64,7 +64,7 @@ func TestDocPageStructure_StaysInSyncWithDoc(t *testing.T) {
 	if err != nil {
 		t.Skipf("could not locate docs/reference/doc-page-structure.md (running outside repo?): %v", err)
 	}
-	body, err := os.ReadFile(docPath)
+	body, err := os.ReadFile(docPath) // #nosec G304 -- docPath is found via findDocPageStructureFile which validates the path
 	if err != nil {
 		t.Fatalf("read %s: %v", docPath, err)
 	}
@@ -109,7 +109,7 @@ func findDocPageStructureFile() (string, error) {
 		return "", err
 	}
 	dir := wd
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		candidate := filepath.Join(dir, "docs", "reference", "doc-page-structure.md")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, nil
@@ -147,7 +147,7 @@ func sectionBetween(body, start, end string) string {
 // (e.g., 'uuidgen', 'how-to', 'true').
 func tableFirstColumn(s string) []string {
 	var out []string
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, "|") {
 			continue
@@ -178,7 +178,7 @@ func tableFirstColumn(s string) []string {
 // any Markdown table row inside `body`. We use this to confirm the const
 // hasn't drifted from the doc's tables.
 func fieldPresent(body, field string) bool {
-	for _, line := range strings.Split(body, "\n") {
+	for line := range strings.SplitSeq(body, "\n") {
 		line = strings.TrimSpace(line)
 		if !strings.HasPrefix(line, "|") {
 			continue

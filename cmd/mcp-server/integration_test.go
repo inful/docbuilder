@@ -35,6 +35,7 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
 
 	// Build the binary from this package.
+	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
 	build := exec.Command("go", "build", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -45,6 +46,7 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	//nolint:gosec // G204: binPath is t.TempDir()-scoped; docsDir is t.TempDir() too
 	cmd := exec.CommandContext(ctx, binPath,
 		"--config", filepath.Join(binDir, "nonexistent.yaml"), // missing config is fine
 		"--docs-dir", t.TempDir(),
@@ -58,8 +60,8 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 		t.Fatalf("stdout pipe: %v", err)
 	}
 	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("start: %v", err)
+	if startErr := cmd.Start(); startErr != nil {
+		t.Fatalf("start: %v", startErr)
 	}
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()
@@ -102,8 +104,8 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 	}
 
 	// initialized notification (no response expected)
-	if err := client.notify("notifications/initialized", map[string]any{}); err != nil {
-		t.Fatalf("initialized notification: %v", err)
+	if notifyErr := client.notify("notifications/initialized", map[string]any{}); notifyErr != nil {
+		t.Fatalf("initialized notification: %v", notifyErr)
 	}
 
 	// tools/list
@@ -153,6 +155,7 @@ func TestIntegration_GetConfigTool(t *testing.T) {
 
 	binDir := t.TempDir()
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
+	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
 	build := exec.Command("go", "build", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
@@ -162,6 +165,7 @@ func TestIntegration_GetConfigTool(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	//nolint:gosec // G204: binPath is t.TempDir()-scoped; docsDir is t.TempDir() too
 	cmd := exec.CommandContext(ctx, binPath,
 		"--config", filepath.Join(binDir, "nonexistent.yaml"),
 		"--docs-dir", t.TempDir(),
@@ -175,8 +179,8 @@ func TestIntegration_GetConfigTool(t *testing.T) {
 		t.Fatalf("stdout: %v", err)
 	}
 	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		t.Fatalf("start: %v", err)
+	if startErr := cmd.Start(); startErr != nil {
+		t.Fatalf("start: %v", startErr)
 	}
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()
@@ -185,15 +189,15 @@ func TestIntegration_GetConfigTool(t *testing.T) {
 
 	client := newMCPTestClient(stdin, stdout)
 
-	if _, err := client.request(ctx, "initialize", map[string]any{
+	if _, reqErr := client.request(ctx, "initialize", map[string]any{
 		"protocolVersion": "2024-11-05",
 		"capabilities":    map[string]any{},
 		"clientInfo":      map[string]any{"name": "test", "version": "0"},
-	}); err != nil {
-		t.Fatalf("initialize: %v", err)
+	}); reqErr != nil {
+		t.Fatalf("initialize: %v", reqErr)
 	}
-	if err := client.notify("notifications/initialized", map[string]any{}); err != nil {
-		t.Fatalf("initialized: %v", err)
+	if notifyErr := client.notify("notifications/initialized", map[string]any{}); notifyErr != nil {
+		t.Fatalf("initialized: %v", notifyErr)
 	}
 
 	resp, err := client.request(ctx, "tools/call", map[string]any{

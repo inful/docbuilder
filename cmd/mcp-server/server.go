@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -33,12 +32,11 @@ type serverConfig struct {
 // handler. It is wrapped in a context key so handlers can reach it without
 // relying on package globals.
 type serverState struct {
-	cfg        *config.Config // nil if config failed to load or no path given
-	cfgPath    string         // original --config value, for resource reporting
-	baseURL    string         // resolved template base URL
-	docsDir    string         // absolute, resolved docs directory
-	logger     *slog.Logger
-	version    string
+	cfg     *config.Config // nil if config failed to load or no path given
+	cfgPath string         // original --config value, for resource reporting
+	baseURL string         // resolved template base URL
+	docsDir string         // absolute, resolved docs directory
+	version string
 }
 
 // ctxKey is a private type so context.Value can't be accidentally collided.
@@ -49,8 +47,9 @@ const stateKey ctxKey = 1
 // run is the binary's entry point: load config, register tools/resources,
 // and serve over stdio until the host closes the connection or a signal arrives.
 func run(ctx context.Context, cfg serverConfig) error {
+	_ = ctx // reserved for future cancellation hooks
 	if cfg.Logger == nil {
-		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
 
 	// Best-effort .env load — the CLI does this too; we mirror so an MCP
@@ -90,27 +89,13 @@ func run(ctx context.Context, cfg serverConfig) error {
 func buildServerState(cfg serverConfig) (*serverState, error) {
 	st := &serverState{
 		cfgPath: cfg.ConfigPath,
-		logger:  cfg.Logger,
 		version: cfg.Version,
 	}
 
 	// Load config — never fatal; many tools (read_doc, lint, template ops)
 	// are useful even with no config.
 	if cfg.ConfigPath != "" {
-		if _, err := os.Stat(cfg.ConfigPath); err == nil {
-			result, loaded, err := config.LoadWithResult(cfg.ConfigPath)
-			if err != nil {
-				cfg.Logger.Warn("failed to load config; continuing with empty config",
-					"path", cfg.ConfigPath, "error", err)
-			} else {
-				st.cfg = loaded
-				for _, w := range result.Warnings {
-					cfg.Logger.Warn("config warning", "warning", w)
-				}
-			}
-		} else if !errors.Is(err, os.ErrNotExist) {
-			cfg.Logger.Warn("config path not accessible", "path", cfg.ConfigPath, "error", err)
-		}
+		st.loadConfigFromPath(cfg)
 	}
 
 	// Resolve template base URL using CLI precedence: flag > env > config.
@@ -143,6 +128,28 @@ func buildServerState(cfg serverConfig) (*serverState, error) {
 	}
 
 	return st, nil
+}
+
+// loadConfigFromPath attempts to load the docbuilder config from the given
+// path. Failure is non-fatal: the caller continues with an empty config so
+// read-only tools (get_config, list_templates, lint) still work.
+func (st *serverState) loadConfigFromPath(cfg serverConfig) {
+	if _, err := os.Stat(cfg.ConfigPath); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			cfg.Logger.Warn("config path not accessible", "path", cfg.ConfigPath, "error", err)
+		}
+		return
+	}
+	result, loaded, err := config.LoadWithResult(cfg.ConfigPath)
+	if err != nil {
+		cfg.Logger.Warn("failed to load config; continuing with empty config",
+			"path", cfg.ConfigPath, "error", err)
+		return
+	}
+	st.cfg = loaded
+	for _, w := range result.Warnings {
+		cfg.Logger.Warn("config warning", "warning", w)
+	}
 }
 
 // stateFromContext is the canonical way tool/resource handlers reach server state.
