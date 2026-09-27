@@ -43,10 +43,12 @@ func (r *TagCountRule) Check(filePath string) ([]Issue, error) {
 	}
 	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
 	if splitErr != nil || !had {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	fields, parseErr := frontmatter.ParseYAML(fmBytes)
 	if parseErr != nil {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	tagsAny, ok := fields["tags"]

@@ -2,6 +2,7 @@ package lint
 
 import (
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -25,13 +26,7 @@ func TestDefaultExcludes_ContainsExpected(t *testing.T) {
 	}
 
 	for _, e := range expected {
-		found := false
-		for _, p := range DefaultExcludes {
-			if p == e {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(DefaultExcludes, e)
 		if !found {
 			t.Errorf("DefaultExcludes missing expected pattern %q", e)
 		}
@@ -164,9 +159,9 @@ func TestIsExcludedPath_FixerStyle(t *testing.T) {
 	globs := compileGlobs(DefaultExcludes)
 
 	cases := []struct {
-		path     string
-		baseDir  string
-		want     bool
+		path    string
+		baseDir string
+		want    bool
 	}{
 		{filepath.Join("/repo", "README.md"), "/repo", true},
 		{filepath.Join("/repo", "docs", "README.md"), "/repo", false},

@@ -3,6 +3,7 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
@@ -13,13 +14,14 @@ import (
 // directory's expected mode.
 //
 // Mapping (per docs/explanation/docbuilder-best-practices.md §1.1):
-//   how-to            → how-to
-//   reference         → reference
-//   explanation       → explanation
-//   security          → security
-//   adr               → architecture-decisions
-//   tutorials         → tutorials
-//   examples          → templates (the source-of-truth template files)
+//
+//	how-to            → how-to
+//	reference         → reference
+//	explanation       → explanation
+//	security          → security
+//	adr               → architecture-decisions
+//	tutorials         → tutorials
+//	examples          → templates (the source-of-truth template files)
 //
 // Nested directories inside these (e.g. `docs/explanation/diagrams/`)
 // don't have an expected category and are not flagged.
@@ -64,10 +66,12 @@ func (r *DirectoryCategoryConsistencyRule) Check(filePath string) ([]Issue, erro
 	}
 	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
 	if splitErr != nil || !had {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	fields, parseErr := frontmatter.ParseYAML(fmBytes)
 	if parseErr != nil {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	catsAny, ok := fields["categories"]
@@ -75,10 +79,8 @@ func (r *DirectoryCategoryConsistencyRule) Check(filePath string) ([]Issue, erro
 		return r.missingCategoriesIssue(filePath, expected), nil
 	}
 	cats := listStrings(catsAny)
-	for _, c := range cats {
-		if c == expected {
-			return nil, nil
-		}
+	if slices.Contains(cats, expected) {
+		return nil, nil
 	}
 	return r.mismatchIssue(filePath, expected, cats), nil
 }

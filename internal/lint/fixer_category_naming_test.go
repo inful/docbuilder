@@ -40,7 +40,7 @@ body
 		t.Errorf("expected CategoryRenames to be populated, got 0")
 	}
 
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ body
 	if len(result.CategoryRenames) == 0 {
 		t.Errorf("expected dry-run to still report CategoryRenames operations")
 	}
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}

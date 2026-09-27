@@ -127,9 +127,9 @@ body
 	} {
 		// Use the rule to check
 		catRule := &CategoryNamingRule{}
-		issues, err := catRule.Check(path)
-		if err != nil {
-			t.Fatalf("check %s: %v", path, err)
+		issues, lerr := catRule.Check(path)
+		if lerr != nil {
+			t.Fatalf("check %s: %v", path, lerr)
 		}
 		for _, iss := range issues {
 			t.Errorf("%s: category-naming still flags %q", path, iss.Message)

@@ -52,10 +52,10 @@ func (f *Fixer) applyDirectoryCategoryFixes(targets map[string]struct{}, issueCo
 
 // CategoryInjectUpdate records a directory-category-consistency fix.
 type CategoryInjectUpdate struct {
-	FilePath  string
-	Category  string
-	Success   bool
-	Error     error
+	FilePath string
+	Category string
+	Success  bool
+	Error    error
 }
 
 // injectCategory appends the given category to a doc's `categories:`

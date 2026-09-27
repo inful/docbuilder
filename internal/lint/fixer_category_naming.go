@@ -53,15 +53,13 @@ func (f *Fixer) applyCategoryNamingFixes(targets map[string]struct{}, issueCount
 
 // CategoryRenameUpdate records a category-naming fix.
 type CategoryRenameUpdate struct {
-	FilePath   string
-	Renamed    map[string]string // old → new (only successful conversions)
-	Success    bool
-	Error      error
+	FilePath string
+	Renamed  map[string]string // old → new (only successful conversions)
+	Success  bool
+	Error    error
 }
 
-var (
-	lowerFirstChar = regexp.MustCompile(`^[A-Z]`)
-)
+var lowerFirstChar = regexp.MustCompile(`^[A-Z]`)
 
 // kebabCaseCategories rewrites the categories field so each value
 // matches `^[a-z][a-z0-9-]*$`. Categories already matching are skipped.

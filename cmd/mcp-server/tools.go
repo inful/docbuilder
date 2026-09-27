@@ -409,7 +409,7 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 		ManualRequired []manualIssueOut `json:"manual_required,omitempty"`
 	}
 	resp := fixResponse{
-		FixResult:       fixResult,
+		FixResult:      fixResult,
 		ManualRequired: manualRequired,
 	}
 	b, err := json.MarshalIndent(resp, "", "  ")
@@ -424,16 +424,16 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 // surfaced to the caller as `manual_required` (they need a human
 // decision: removing an H1, curating tags, picking a primary doc mode).
 var autoFixableRules = map[string]bool{
-	"filename-conventions":            true,
-	"frontmatter-uid":                 true,
-	"frontmatter-fingerprint":         true,
-	"frontmatter-required-fields":     true,
-	"directory-category-consistency":  true,
-	"category-naming":                 true,
-	"internal-link-style":             true,
-	"sequence-prefix-filename":        true,
-	"missing-index-page":              true,
-	"broken-links":                    true,
+	"filename-conventions":           true,
+	"frontmatter-uid":                true,
+	"frontmatter-fingerprint":        true,
+	"frontmatter-required-fields":    true,
+	"directory-category-consistency": true,
+	"category-naming":                true,
+	"internal-link-style":            true,
+	"sequence-prefix-filename":       true,
+	"missing-index-page":             true,
+	"broken-links":                   true,
 }
 
 // manualIssueOut is a slimmed-down view of an issue for the
@@ -441,19 +441,18 @@ var autoFixableRules = map[string]bool{
 // heavy `explanation` text and surface only the high-signal fields
 // the LLM needs to action the fix.
 type manualIssueOut struct {
-	File        string `json:"file"`
-	Line        int    `json:"line"`
-	Severity    string `json:"severity"`
-	Rule        string `json:"rule"`
-	Message     string `json:"message"`
-	Fix         string `json:"fix"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Severity string `json:"severity"`
+	Rule     string `json:"rule"`
+	Message  string `json:"message"`
+	Fix      string `json:"fix"`
 }
 
 // computeManualRequired re-lints the docs tree after a fix and
 // returns issues whose rule isn't auto-fixable. It runs as a read-only
 // lint pass so the fixer's own output isn't re-fixed in a loop.
 func computeManualRequired(path string, _ *serverState) []manualIssueOut {
-	//nolint:contextcheck // local file walk; context.Background() is appropriate
 	linter := lint.NewLinter(&lint.Config{Format: "text"})
 	lintResult, err := linter.LintPath(path)
 	if err != nil {

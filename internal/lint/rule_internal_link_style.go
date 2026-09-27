@@ -11,6 +11,7 @@ import (
 // the canonical `.md` form. Specifically:
 //   - `[text](relative/path)` without `.md` extension → WARNING
 //   - `[text](/site-rooted)` (absolute path starting with `/`) → WARNING
+//
 // External URLs (`http://`, `https://`) and in-page anchors (`#foo`)
 // are not flagged.
 type InternalLinkStyleRule struct{}
@@ -67,8 +68,8 @@ func (r *InternalLinkStyleRule) Check(filePath string) ([]Issue, error) {
 func splitLines(s string) []string {
 	var lines []string
 	start := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
+	for i, ch := range s {
+		if ch == '\n' {
 			lines = append(lines, s[start:i])
 			start = i + 1
 		}
@@ -116,7 +117,7 @@ func (r *InternalLinkStyleRule) missingExtIssue(filePath, target string, line in
 		Rule:     r.Name(),
 		Message:  "Internal link missing .md extension",
 		Explanation: "Internal link target `" + target + "` doesn't end in `.md`. " +
-			"Docbuilder's broken-link detector only walks the `.md` form; standardising " +
+			"Docbuilder's broken-link detector only walks the `.md` form; standardizing " +
 			"on the canonical extension makes link checking uniform.",
 		Fix:  "Append `.md` to the link target: `(" + target + ".md)`.",
 		Line: line,

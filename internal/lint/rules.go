@@ -9,9 +9,7 @@ import (
 )
 
 // FilenameRule validates that filenames follow Hugo/DocBuilder conventions.
-type FilenameRule struct {
-	cfg *Config
-}
+type FilenameRule struct{}
 
 // Name returns the rule identifier.
 func (r *FilenameRule) Name() string {

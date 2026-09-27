@@ -112,8 +112,8 @@ func TestMissingIndexPageRule_FlatCollectionSkipped(t *testing.T) {
 		if err := os.MkdirAll(dir, 0o750); err != nil {
 			t.Fatal(err)
 		}
-		for i := 0; i < 5; i++ {
-			writeDocFile(t, dir, "doc"+string(rune('a'+i))+".md")
+		for idx := range 5 {
+			writeDocFile(t, dir, "doc"+string(rune('a'+idx))+".md")
 		}
 	}
 
@@ -131,7 +131,7 @@ func TestMissingIndexPageRule_FlatCollectionSkipped(t *testing.T) {
 	}
 }
 
-// TestMissingIndexPageRule_CustomThreshold verifies MinChildren is honoured.
+// TestMissingIndexPageRule_CustomThreshold verifies MinChildren is honored.
 func TestMissingIndexPageRule_CustomThreshold(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, "small")

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -35,7 +34,7 @@ type MissingIndexPageUpdate struct {
 // The new files are queued for fingerprint regeneration AND for uid
 // fixup so the next phases (applyFingerprintFixes, applyUIDFixes)
 // populate them automatically.
-func (f *Fixer) applyMissingIndexPageFixes(targets map[string]struct{}, issueCounts map[string]int, fixResult *FixResult, fingerprintTargets map[string]struct{}, uidTargets map[string]struct{}) {
+func (f *Fixer) applyMissingIndexPageFixes(targets map[string]struct{}, fixResult *FixResult, fingerprintTargets map[string]struct{}, uidTargets map[string]struct{}) {
 	if len(targets) == 0 {
 		return
 	}
@@ -72,7 +71,7 @@ func (f *Fixer) applyMissingIndexPageFixes(targets map[string]struct{}, issueCou
 			continue
 		}
 
-		if err := os.WriteFile(indexPath, []byte(body), 0o600); err != nil { //nolint:gosec // directory path comes from lint walk
+		if err := os.WriteFile(indexPath, []byte(body), 0o600); err != nil {
 			fixResult.Errors = append(fixResult.Errors, fmt.Errorf("write %s: %w", indexPath, err))
 			continue
 		}
@@ -126,12 +125,10 @@ func (f *Fixer) buildIndexBody(dir string) string {
 	return indexTemplate(dir, children)
 }
 
-var firstH1 = regexp.MustCompile(`(?m)^#\s+(.+?)\s*$`)
-
 // readFrontmatter reads the frontmatter fields from a markdown file
 // without parsing the body. Returns an empty map on any error.
 func readFrontmatter(path string) (map[string]any, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path comes from the lint walk over controlled directories.
 	if err != nil {
 		return nil, err
 	}

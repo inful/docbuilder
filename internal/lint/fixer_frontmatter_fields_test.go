@@ -38,7 +38,7 @@ body
 	}
 
 	// Re-read the file and confirm fields are present.
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatalf("read after fix: %v", err)
 	}
@@ -73,7 +73,7 @@ body
 	}
 
 	// File content should be unchanged.
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ body
 		t.Errorf("expected CategoryInjects to be populated, got 0")
 	}
 
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}
