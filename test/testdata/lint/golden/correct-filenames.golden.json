@@ -1,8 +1,36 @@
 {
-  "issues": [],
+  "issues": [
+    {
+      "file": "valid/correct-filenames/api-reference.md",
+      "severity": "WARNING",
+      "rule": "body-h1",
+      "message": "Body begins with a top-level H1",
+      "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
+      "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
+      "line": 1
+    },
+    {
+      "file": "valid/correct-filenames/getting-started.md",
+      "severity": "WARNING",
+      "rule": "body-h1",
+      "message": "Body begins with a top-level H1",
+      "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
+      "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
+      "line": 1
+    },
+    {
+      "file": "valid/correct-filenames/installation_guide.md",
+      "severity": "WARNING",
+      "rule": "body-h1",
+      "message": "Body begins with a top-level H1",
+      "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
+      "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
+      "line": 1
+    }
+  ],
   "file_count": 3,
   "error_count": 0,
-  "warn_count": 0,
+  "warn_count": 3,
   "info_count": 0,
   "has_errors": false
 }

@@ -548,9 +548,10 @@ This is what you can rely on without re-reading code:
 
 | Rule | Behaviour | Source |
 |---|---|---|
-| `filename-conventions` | Lowercase + ASCII alphanumerics/hyphens/underscores/dots only | `internal/lint/rule_filename_conventions.go` (FilenameRule) |
+| `filename-conventions` | Lowercase + ASCII alphanumerics/hyphens/underscores/dots only | `internal/lint/rules.go` (FilenameRule) |
 | `frontmatter-uid` | ERROR if `uid` is missing or not a valid UUID | `internal/lint/rule_frontmatter_uid.go` |
 | `frontmatter-fingerprint` | ERROR if `fingerprint` is missing or doesn't match content hash | `internal/lint/rule_frontmatter_fingerprint.go` |
+| `body-h1` | WARNING if the markdown body opens with `# ` (duplicates the rendered `title`) | `internal/lint/rule_body_h1.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 
