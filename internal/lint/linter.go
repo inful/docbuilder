@@ -45,6 +45,7 @@ func NewLinter(cfg *Config) *Linter {
 			&FrontmatterFingerprintRule{},
 			&BodyH1Rule{},
 			&MissingIndexPageRule{},
+			&SequencePrefixFilenameRule{},
 			// Additional rules will be added here in future phases
 		},
 	}

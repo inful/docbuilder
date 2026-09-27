@@ -1,10 +1,15 @@
 ---
-title: "Explanation Documentation"
-date: 2025-12-15
+aliases:
+  - /_uid/b8a5e4d4-4dd9-463d-b665-f75977bf1296/
 categories:
   - explanation
+date: 2025-12-15T00:00:00Z
+fingerprint: 0f06d47a5e2b23bf119778f7f2e9a4a68e0274e086c99eab4f5a9cf7ce75e7bd
+lastmod: "2026-09-27"
 tags:
   - documentation
+title: Explanation Documentation
+uid: b8a5e4d4-4dd9-463d-b665-f75977bf1296
 ---
 
 # Architecture Documentation Index
