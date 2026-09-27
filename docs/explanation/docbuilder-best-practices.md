@@ -557,6 +557,7 @@ This is what you can rely on without re-reading code:
 | `tag-count` | WARNING when `len(tags) > 10` (threshold configurable) | `internal/lint/rule_tag_count.go` |
 | `internal-link-style` | WARNING when internal link is missing `.md` extension or starts with `/` (site-rooted) | `internal/lint/rule_internal_link_style.go` |
 | `category-naming` | ERROR when a category doesn't match `^[a-z][a-z0-9-]*$` (kebab-case) | `internal/lint/rule_category_naming.go` |
+| `cross-mode-category` | ERROR when `categories:` lists two distinct doc modes not in `AllowedPairs` | `internal/lint/rule_cross_mode_category.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 

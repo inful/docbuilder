@@ -8,5 +8,6 @@ const (
 	ruleTagCount                = "tag-count"
 	ruleInternalLinkStyle       = "internal-link-style"
 	ruleCategoryNaming          = "category-naming"
+	ruleCrossModeCategory       = "cross-mode-category"
 	gitCommandDiff              = "diff"
 )
