@@ -9,6 +9,44 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-09-27
+
+### Fixed
+- **Hugo (auto-generated _index.md)**: the `generateMainIndex` function in
+  the pipeline now pre-populates the root `_index.md` Document with all
+  `frontmatter-required-fields` rule fields (`date`, `lastmod`,
+  `categories`, `tags`, `uid`). Previously the downstream
+  `transformFrontmatter` only filled `date`; the generated page failed
+  the new lint rule and the `Detect Lint Rule Drift` workflow flagged it
+  as ERROR. `date` and `lastmod` are pinned to a deterministic epoch
+  (matching the manual index path) so generated index frontmatter is
+  stable across rebuilds.
+
+### Changed
+- **Lint (idiomatic cleanups)**: replaced manual loops with
+  `slices.Contains` and `strings.Cut`, dropped `+=` string concatenation
+  for `strings.Builder` in three test helpers, removed unused fields
+  (`FilenameRule.cfg`, `FixResult.uidTargetsAdded`) and the unused
+  `issueCounts` parameter on `applyMissingIndexPageFixes`, extracted
+  `runDirectoryRules` from `LintPath` to keep branch complexity under
+  the `nestif` threshold, and renamed the local `min` shadowing the
+  builtin in `MissingIndexPageRule` to `threshold`. No rule semantics
+  changed.
+
+### Tests
+- **Lint (golden fixtures + fixture swap)**: `TestIntegration_RenameWithLinkUpdates`
+  was vacuous against the default excludes — its `docs/README.md`
+  fixture was being skipped from the fix pass. Renamed it to
+  `docs/introduction.md` so the integration actually exercises the
+  rename-update path. `TestFixer_RenameFile` assertion updated
+  (`ErrorsFixed: 3 → 4`) to count the new `frontmatter-required-fields`
+  fixer pass. Golden files (`fix-dry-run.golden.txt`,
+  `fix-with-links.golden.json`) updated to reflect the new error count
+  and shifted link-update line numbers from the auto-generated
+  `_index.md` frontmatter block.
+
+## [0.18.0] - TBD
+
 ### Added
 - **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
   each generated document to ragabast's `/api/ingest/async` endpoint
@@ -196,5 +234,6 @@ The last 90 days focused on four themes:
   (`.github/ISSUE_TEMPLATE/**/*.md`, `.gitlab/issue_templates/*.md`,
   `.gitea/ISSUE_TEMPLATE/**/*.md`).
 
+[0.17.1]: https://github.com/inful/docbuilder/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/inful/docbuilder/compare/v0.16.1...v0.17.0
-[Unreleased]: https://github.com/inful/docbuilder/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/inful/docbuilder/compare/v0.17.1...HEAD
