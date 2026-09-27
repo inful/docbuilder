@@ -48,9 +48,9 @@ func (r *MissingIndexPageRule) Check(filePath string) ([]Issue, error) {
 // CheckDirectory walks the given directory and reports one issue per
 // subdirectory with ≥ minChildren .md children and no _index.md.
 func (r *MissingIndexPageRule) CheckDirectory(rootPath string) ([]Issue, error) {
-	min := r.MinChildren
-	if min <= 0 {
-		min = 3
+	threshold := r.MinChildren
+	if threshold <= 0 {
+		threshold = 3
 	}
 	flat := r.FlatCollections
 	if flat == nil {
@@ -97,7 +97,7 @@ func (r *MissingIndexPageRule) CheckDirectory(rootPath string) ([]Issue, error) 
 				mdCount++
 			}
 		}
-		if mdCount >= min && !hasIndex {
+		if mdCount >= threshold && !hasIndex {
 			issues = append(issues, r.missingIndexIssue(path, mdCount))
 		}
 		return nil

@@ -58,6 +58,7 @@ func (r *FrontmatterRequiredFieldsRule) Check(filePath string) ([]Issue, error) 
 	}
 	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
 	if splitErr != nil || !had {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return []Issue{r.missingIssue(filePath, "frontmatter")}, nil
 	}
 	fields, parseErr := frontmatter.ParseYAML(fmBytes)
@@ -149,7 +150,7 @@ func (r *FrontmatterRequiredFieldsRule) missingIssue(filePath, field string) Iss
 			"`title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; " +
 			"`lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` " +
 			"drives the /tags/ index pages.",
-		Fix: "Add `" + field + ": <value>` to the frontmatter.",
+		Fix:  "Add `" + field + ": <value>` to the frontmatter.",
 		Line: 0,
 	}
 }
@@ -163,7 +164,7 @@ func (r *FrontmatterRequiredFieldsRule) emptyCategoriesIssue(filePath string) Is
 		Explanation: "The `categories:` field is present but contains no items. " +
 			"Hugo renders one sidebar section per category; an empty list leaves " +
 			"the doc without a sidebar slot.",
-		Fix: "Add at least one category, e.g. `categories: [explanation]`.",
+		Fix:  "Add at least one category, e.g. `categories: [explanation]`.",
 		Line: 0,
 	}
 }
@@ -183,22 +184,22 @@ func (r *FrontmatterRequiredFieldsRule) malformedDateIssue(filePath, value strin
 
 func (r *FrontmatterRequiredFieldsRule) malformedLastmodIssue(filePath, value string) Issue {
 	return Issue{
-		FilePath: filePath,
-		Severity: SeverityWarning,
-		Rule:     r.Name(),
-		Message:  "lastmod does not match YYYY-MM-DD",
+		FilePath:    filePath,
+		Severity:    SeverityWarning,
+		Rule:        r.Name(),
+		Message:     "lastmod does not match YYYY-MM-DD",
 		Explanation: "`lastmod` should be a `YYYY-MM-DD` date (e.g. `2026-01-01`). Got `" + value + "`.",
-		Fix:  "Update `lastmod:` to a `YYYY-MM-DD` date.",
-		Line: 0,
+		Fix:         "Update `lastmod:` to a `YYYY-MM-DD` date.",
+		Line:        0,
 	}
 }
 
 func (r *FrontmatterRequiredFieldsRule) malformedYAMLError(filePath string, err error) Issue {
 	return Issue{
-		FilePath: filePath,
-		Severity: SeverityError,
-		Rule:     r.Name(),
-		Message:  "Frontmatter YAML could not be parsed",
+		FilePath:    filePath,
+		Severity:    SeverityError,
+		Rule:        r.Name(),
+		Message:     "Frontmatter YAML could not be parsed",
 		Explanation: "The YAML frontmatter could not be parsed: " + err.Error(),
 		Fix:         "Fix the YAML syntax error reported above.",
 		Line:        0,

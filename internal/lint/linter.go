@@ -40,7 +40,7 @@ func NewLinter(cfg *Config) *Linter {
 		cfg:          cfg,
 		excludeGlobs: compileGlobs(excludes),
 		rules: []Rule{
-			&FilenameRule{cfg: cfg},
+			&FilenameRule{},
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
 			&BodyH1Rule{},
@@ -70,20 +70,8 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 
 	if info.IsDir() {
 		err = l.lintDirectory(path, result)
-		// Run directory-level rules (e.g. missing-index-page) once per lint root.
-		for _, rule := range l.rules {
-			if dr, ok := rule.(DirectoryRule); ok {
-				issues, drErr := dr.CheckDirectory(path)
-				if drErr != nil {
-					return nil, drErr
-				}
-				for _, issue := range issues {
-					if l.cfg.Quiet && issue.Severity != SeverityError {
-						continue
-					}
-					result.Issues = append(result.Issues, issue)
-				}
-			}
+		if dirErr := l.runDirectoryRules(path, result); dirErr != nil {
+			return nil, dirErr
 		}
 	} else {
 		err = l.lintFile(path, result)
@@ -245,8 +233,8 @@ func compileGlobs(patterns []string) []globPattern {
 func compileGlob(p string) globPattern {
 	// Split on the first `**` to find the literal base prefix.
 	base := p
-	if i := strings.Index(p, "**"); i >= 0 {
-		base = p[:i]
+	if before, _, ok := strings.Cut(p, "**"); ok {
+		base = before
 	}
 	base = strings.TrimRight(base, "/")
 	re := globToRegexp(p)
@@ -292,6 +280,30 @@ func globToRegexp(glob string) *regexp.Regexp {
 	return regexp.MustCompile(b.String())
 }
 
+// runDirectoryRules runs every rule that implements DirectoryRule
+// against the lint root, appending any findings to result. Extracted
+// from LintPath to keep LintPath's branch complexity under the nestif
+// threshold.
+func (l *Linter) runDirectoryRules(path string, result *Result) error {
+	for _, rule := range l.rules {
+		dr, ok := rule.(DirectoryRule)
+		if !ok {
+			continue
+		}
+		issues, drErr := dr.CheckDirectory(path)
+		if drErr != nil {
+			return drErr
+		}
+		for _, issue := range issues {
+			if l.cfg.Quiet && issue.Severity != SeverityError {
+				continue
+			}
+			result.Issues = append(result.Issues, issue)
+		}
+	}
+	return nil
+}
+
 // matchGlob returns true if the relative path matches the compiled glob.
 //
 // Semantics:
@@ -299,7 +311,7 @@ func globToRegexp(glob string) *regexp.Regexp {
 //     base prefix (or anywhere if no prefix).
 //   - Globs without `**` are exact and match only when the relative path
 //     equals the glob string exactly. This avoids `README.md` accidentally
-//     matching `docs/README.md` — git forges only recognise these filenames
+//     matching `docs/README.md` — git forges only recognize these filenames
 //     at the repo root.
 func matchGlob(g globPattern, rel string) bool {
 	if g.raw == "" {

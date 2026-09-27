@@ -4,7 +4,7 @@ aliases:
 categories:
   - templates
 date: 2026-01-01T00:00:00Z
-fingerprint: 5300387b22e09ff06dc74d783627c90cfa871c1fd8047c8fc3cace7cef53d008
+fingerprint: c664334ea09728d48ffad4412881f9e6e18b647028ccd1a659feb2322768d1bc
 lastmod: "2026-09-27"
 params:
   docbuilder:

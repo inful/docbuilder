@@ -1,6 +1,7 @@
 package frontmatterops
 
 import (
+	"slices"
 	"strings"
 	"time"
 )
@@ -126,10 +127,8 @@ func EnsureCategory(fields map[string]any, category string) (changed bool) {
 		fields["categories"] = append(v, category)
 		return true
 	case []string:
-		for _, s := range v {
-			if s == category {
-				return false
-			}
+		if slices.Contains(v, category) {
+			return false
 		}
 		fields["categories"] = append(v, category)
 		return true

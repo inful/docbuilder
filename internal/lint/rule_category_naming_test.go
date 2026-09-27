@@ -3,15 +3,22 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func writeDocWithCategories(t *testing.T, dir, name string, categories []string) {
 	t.Helper()
-	catYAML := "  - " + categories[0] + "\n"
+	var b strings.Builder
+	b.WriteString("  - ")
+	b.WriteString(categories[0])
+	b.WriteString("\n")
 	for _, c := range categories[1:] {
-		catYAML += "  - " + c + "\n"
+		b.WriteString("  - ")
+		b.WriteString(c)
+		b.WriteString("\n")
 	}
+	catYAML := b.String()
 	body := `---
 title: CatTest
 uid: 88888888-8888-8888-8888-888888888888

@@ -116,7 +116,7 @@ func TestFixer_RenameFile(t *testing.T) {
 	assert.True(t, result.FilesRenamed[0].Success)
 	assert.Equal(t, oldFile, result.FilesRenamed[0].OldPath)
 	assert.Equal(t, expectedNewFile, result.FilesRenamed[0].NewPath)
-	assert.Equal(t, 3, result.ErrorsFixed) // rename + frontmatter uid + frontmatter fingerprint
+	assert.Equal(t, 4, result.ErrorsFixed) // rename + frontmatter uid + frontmatter fingerprint + frontmatter-required-fields
 
 	// #nosec G304 -- test reads a temp file path under t.TempDir().
 	updatedBytes, readErr := os.ReadFile(expectedNewFile)

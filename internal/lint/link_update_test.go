@@ -439,7 +439,7 @@ func TestIntegration_RenameWithLinkUpdates(t *testing.T) {
 	// Create a documentation structure with a file that violates naming conventions
 	apiFile := filepath.Join(tmpDir, "API_Guide.md") // Uppercase - violates kebab-case
 	indexFile := filepath.Join(tmpDir, "index.md")
-	readmeFile := filepath.Join(tmpDir, "docs", "README.md")
+	readmeFile := filepath.Join(tmpDir, "docs", "introduction.md")
 	require.NoError(t, os.MkdirAll(filepath.Dir(readmeFile), 0o750))
 
 	// Create files with cross-references
@@ -487,7 +487,7 @@ Check [API](../API_Guide.md).
 	summary := result.Summary()
 	assert.Contains(t, summary, "Links updated:")
 	assert.Contains(t, summary, "index.md")
-	assert.Contains(t, summary, "README.md")
+	assert.Contains(t, summary, "introduction.md")
 }
 
 func TestIntegration_RenameWithLinkUpdates_SpacesInFilename_SkipsInlineCodeAndCodeBlocks(t *testing.T) {

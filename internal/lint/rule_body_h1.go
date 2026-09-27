@@ -50,7 +50,7 @@ func (r *BodyH1Rule) Check(filePath string) ([]Issue, error) {
 			continue
 		}
 		// First non-blank content line: if it starts with `# ` (H1), flag it.
-		if bytes.HasPrefix([]byte(line), []byte("# ")) {
+		if strings.HasPrefix(line, "# ") {
 			return []Issue{r.bodyH1Issue(filePath)}, nil
 		}
 		return nil, nil
@@ -67,7 +67,7 @@ func (r *BodyH1Rule) bodyH1Issue(filePath string) Issue {
 		Explanation: "The page's H1 is rendered from the `title` frontmatter field. " +
 			"A body H1 duplicates the rendered heading and confuses the reader " +
 			"(which title is the real one?). Start the body with H2 or deeper.",
-		Fix: "Remove the `# Title` line from the body, or change it to `## Title`.",
+		Fix:  "Remove the `# Title` line from the body, or change it to `## Title`.",
 		Line: 1,
 	}
 }

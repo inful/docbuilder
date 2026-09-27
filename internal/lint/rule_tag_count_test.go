@@ -3,15 +3,22 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func writeDocWithTags(t *testing.T, dir, name string, tags []string) {
 	t.Helper()
-	tagsYAML := "  - " + tags[0] + "\n"
+	var b strings.Builder
+	b.WriteString("  - ")
+	b.WriteString(tags[0])
+	b.WriteString("\n")
 	for _, tg := range tags[1:] {
-		tagsYAML += "  - " + tg + "\n"
+		b.WriteString("  - ")
+		b.WriteString(tg)
+		b.WriteString("\n")
 	}
+	tagsYAML := b.String()
 	body := `---
 title: TagsTest
 uid: 66666666-6666-6666-6666-666666666666
@@ -90,7 +97,7 @@ func TestTagCountRule_OverThreshold(t *testing.T) {
 	}
 }
 
-// TestTagCountRule_CustomThreshold verifies Threshold is honoured.
+// TestTagCountRule_CustomThreshold verifies Threshold is honored.
 func TestTagCountRule_CustomThreshold(t *testing.T) {
 	dir := t.TempDir()
 	writeDocWithTags(t, dir, "x.md", []string{"a", "b", "c"})

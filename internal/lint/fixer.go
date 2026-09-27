@@ -117,7 +117,6 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		FrontmatterFields: make([]FrontmatterFieldsUpdate, 0),
 		BrokenLinks:       make([]BrokenLink, 0),
 		HealSkipped:       make([]BrokenLinkHealSkip, 0),
-		uidTargetsAdded:    make(map[string]struct{}),
 		Errors:            make([]error, 0),
 	}
 
@@ -211,7 +210,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	f.applyCategoryNamingFixes(categoryNamingTargets, categoryNamingIssueCounts, fixResult, fingerprintTargets)
 
 	// Phase 0b: inject the expected category for directory-category-consistency.
-	// Runs after category-naming so kebab-cased categories are recognised.
+	// Runs after category-naming so kebab-cased categories are recognized.
 	f.applyDirectoryCategoryFixes(directoryCategoryTargets, directoryCategoryIssueCounts, fixResult, fingerprintTargets)
 
 	// Phase 1: add missing frontmatter uids (and corresponding aliases).
@@ -243,7 +242,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Phase 3.8: generate placeholder _index.md files for directories
 	// that the missing-index-page rule flagged. The new files don't yet
 	// have fingerprints or UIDs; their paths are queued for both phases.
-	f.applyMissingIndexPageFixes(missingIndexPageTargets, missingIndexPageIssueCounts, fixResult, fingerprintTargets, uidTargets)
+	f.applyMissingIndexPageFixes(missingIndexPageTargets, fixResult, fingerprintTargets, uidTargets)
 
 	// Phase 4: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)

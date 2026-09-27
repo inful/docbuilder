@@ -43,7 +43,7 @@ See [CLI](../cli) and [Other](other) and [External](https://example.com) and [An
 		t.Errorf("expected ≥2 links updated (cli and other), got %d", result.LinkStyleUpdates[0].Updated)
 	}
 
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ See [CLI](../cli).
 	if len(result.LinkStyleUpdates) == 0 {
 		t.Errorf("expected dry-run to still report LinkStyleUpdates")
 	}
-	out, err := os.ReadFile(path)
+	out, err := os.ReadFile(path) // #nosec G304 -- test reads a temp file path under t.TempDir().
 	if err != nil {
 		t.Fatal(err)
 	}

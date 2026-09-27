@@ -12,7 +12,7 @@ import (
 // applySequencePrefixFilenameFixes renames files in sequence-numbered
 // directories so the filename matches the required pattern:
 //
-//   <prefix>-NNN-slug.md (3-digit zero-padded)
+//	<prefix>-NNN-slug.md (3-digit zero-padded)
 //
 // For example, `adr-foo.md` in `docs/adr/` becomes `adr-001-foo.md`.
 // When there are multiple files in the same directory, the fixer
@@ -173,7 +173,9 @@ func highestSequenceInDir(dir, prefix string) int {
 			continue
 		}
 		var n int
-		fmt.Sscanf(m[2], "%d", &n)
+		if _, err := fmt.Sscanf(m[2], "%d", &n); err != nil {
+			continue
+		}
 		if n > highest {
 			highest = n
 		}

@@ -45,10 +45,12 @@ func (r *CrossModeCategoryRule) Check(filePath string) ([]Issue, error) {
 	}
 	fmBytes, _, had, _, splitErr := frontmatter.Split(data)
 	if splitErr != nil || !had {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	fields, parseErr := frontmatter.ParseYAML(fmBytes)
 	if parseErr != nil {
+		//nolint:nilerr // reported as lint issue, not a hard error
 		return nil, nil
 	}
 	catsAny, ok := fields["categories"]
@@ -67,9 +69,9 @@ func (r *CrossModeCategoryRule) Check(filePath string) ([]Issue, error) {
 	}
 
 	var issues []Issue
-	for i := 0; i < len(unique); i++ {
+	for i, a := range unique {
 		for j := i + 1; j < len(unique); j++ {
-			a, b := unique[i], unique[j]
+			b := unique[j]
 			if !r.isPairAllowed(a, b) {
 				issues = append(issues, r.badPairIssue(filePath, a, b))
 			}
@@ -101,7 +103,7 @@ func (r *CrossModeCategoryRule) badPairIssue(filePath, a, b string) Issue {
 			"Hugo renders the doc in each sidebar section, which produces a confusing entry " +
 			"that mixes doc kinds. Pick one — if the doc is genuinely cross-cutting, " +
 			"split it into two pages with cross-links.",
-		Fix: "Reduce `categories:` to a single doc mode, or split the doc into two pages.",
+		Fix:  "Reduce `categories:` to a single doc mode, or split the doc into two pages.",
 		Line: 0,
 	}
 }

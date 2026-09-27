@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: 08c2d67caa40263b9619f33879bb4556bcdfea4d03fbdf1b45d79ff4da78cadc
+fingerprint: b33991592027f679358c4f37050943d5ee50e2ba82e737e1a5feb7dc14f5f61a
 lastmod: "2026-09-27"
 tags:
   - best-practices
