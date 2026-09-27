@@ -44,6 +44,7 @@ func NewLinter(cfg *Config) *Linter {
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
 			&BodyH1Rule{},
+			&MissingIndexPageRule{},
 			// Additional rules will be added here in future phases
 		},
 	}
@@ -62,6 +63,21 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 
 	if info.IsDir() {
 		err = l.lintDirectory(path, result)
+		// Run directory-level rules (e.g. missing-index-page) once per lint root.
+		for _, rule := range l.rules {
+			if dr, ok := rule.(DirectoryRule); ok {
+				issues, drErr := dr.CheckDirectory(path)
+				if drErr != nil {
+					return nil, drErr
+				}
+				for _, issue := range issues {
+					if l.cfg.Quiet && issue.Severity != SeverityError {
+						continue
+					}
+					result.Issues = append(result.Issues, issue)
+				}
+			}
+		}
 	} else {
 		err = l.lintFile(path, result)
 		result.FilesTotal = 1

@@ -3,8 +3,8 @@ aliases:
   - /_uid/88a81f71-5a61-405e-a1ef-908b9ca6cabe/
 categories:
   - explanation
-fingerprint: 11164ebfe1d591ed944ccef98329c1bce2eeb9d3e6a1f6ca74b7e111c5283a6e
-lastmod: "2026-09-26"
+fingerprint: 2aacb3f6f4cd8d2251e5e86fb328cd0b0e28f0e291de7e9b50e6425e83535973
+lastmod: "2026-09-27"
 tags:
   - best-practices
   - documentation
@@ -552,6 +552,7 @@ This is what you can rely on without re-reading code:
 | `frontmatter-uid` | ERROR if `uid` is missing or not a valid UUID | `internal/lint/rule_frontmatter_uid.go` |
 | `frontmatter-fingerprint` | ERROR if `fingerprint` is missing or doesn't match content hash | `internal/lint/rule_frontmatter_fingerprint.go` |
 | `body-h1` | WARNING if the markdown body opens with `# ` (duplicates the rendered `title`) | `internal/lint/rule_body_h1.go` |
+| `missing-index-page` | WARNING on directories with ≥3 `.md` children and no `_index.md`; skips flat collections (`adr/`, `examples/`) | `internal/lint/rule_missing_index_page.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 
