@@ -4,17 +4,17 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-20T00:00:00Z
-fingerprint: ecbafb24b55170dbaab1bc19a9d81c7668f369088f6490bfd9b4a2c6a969d0a3
-lastmod: "2026-01-22"
+fingerprint: 8750cfacfcc4382ca09e357e2ee46ea7cb32d81c90260056794af7903a11f579
+lastmod: "2026-09-27"
 tags:
   - markdown
   - parsing
   - linting
   - links
   - hugo
+title: 'ADR-013: Use Goldmark for internal Markdown parsing'
 uid: 1f1a9e2c-3a7e-4d8f-b35e-60c9d78d0a4c
 ---
-
 # ADR-013: Use Goldmark for internal Markdown parsing
 
 **Status**: Proposed  

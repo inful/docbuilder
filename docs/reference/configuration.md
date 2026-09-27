@@ -4,7 +4,7 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: c21515f62ecb655aeffe639694dc1ec3e6579a848ad466870d1512a2f5bb1124
+fingerprint: b47ff06d70933b3e12901e7122a92f23041958ff415147ed59296b05fd5f7f99
 lastmod: "2026-09-27"
 tags:
   - configuration
@@ -13,7 +13,6 @@ tags:
 title: Configuration Reference
 uid: d7e42918-9daa-47e0-9e29-8cda2e13dd7a
 ---
-
 # Configuration Reference
 
 This page enumerates the primary configuration sections and fields supported by DocBuilder for both direct build and daemon modes.

@@ -4,17 +4,17 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 435cc7b0a266fcd63889fc50daeb9c5d548ea10c08974fdaffe73ea1dbb4e15f
-lastmod: "2026-01-24"
+fingerprint: 15787f89ed1c2cf44d872bdb5dcdc42fe59920eb46fd9887601ab1625e867e57
+lastmod: "2026-09-27"
 tags:
   - daemon
   - security
   - content
   - frontmatter
   - implementation-plan
+title: 'ADR-019 Implementation Plan: Daemon public-only frontmatter filter'
 uid: 7cdb5485-fbbb-4d2c-8ff2-1e5aa5d8f1b1
 ---
-
 # ADR-019 Implementation Plan: Daemon public-only frontmatter filter
 
 **Status**: Draft / Tracking  

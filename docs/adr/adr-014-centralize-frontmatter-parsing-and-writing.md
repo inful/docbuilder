@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-20T00:00:00Z
-fingerprint: 9e2a41f720ad06c6bd5bc83291277dedb8482645c1b5335e703979ed56dcbca8
-lastmod: "2026-01-22"
+fingerprint: 1557269565e0808da88399b2f7aae551918ec4f05cc7288e3484d5f3b3b5da68
+lastmod: "2026-09-27"
 tags:
   - frontmatter
   - yaml
@@ -13,9 +13,9 @@ tags:
   - parsing
   - hugo
   - linting
+title: 'ADR-014: Centralize frontmatter parsing and writing'
 uid: 5b920f1e-30f3-40ab-9c34-86eb5f8f8db4
 ---
-
 # ADR-014: Centralize frontmatter parsing and writing
 
 **Status**: Accepted 

@@ -3,11 +3,13 @@ aliases:
   - /_uid/d374b432-e8a1-4f9a-903b-553d63964670/
 categories:
   - architecture-decisions
-fingerprint: 97aa3d80d239fec1f4859498bc23c47dc0599ab3a5e6f8230639a6175c94f66c
+date: 2026-01-01T00:00:00Z
+fingerprint: a4fad78eb8cb01d344c482f34790d49030ca73a0e5f309eb431a2cdcdf9e20be
 lastmod: "2026-09-27"
+tags: []
+title: 'ADR-008: Staged Pipeline Architecture'
 uid: d374b432-e8a1-4f9a-903b-553d63964670
 ---
-
 # ADR-008: Staged Pipeline Architecture
 
 **Status**: Accepted  

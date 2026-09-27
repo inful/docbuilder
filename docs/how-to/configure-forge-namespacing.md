@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 2d04260227d0e00f96257cdba5ce1d85c1f524d5514af9940ef6996b3dc84a79
-lastmod: "2026-06-04"
+fingerprint: 5b7d042357aa9f55a1a88f6cc5165f3ba6e5c080bd2072ebb5a042aaade210fd
+lastmod: "2026-09-27"
 tags:
   - forge
   - namespacing
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Configure Forge Namespacing'
 uid: a8161eb4-7b61-46e5-81c8-cfa763e8d26e
 ---
-
 # How To: Configure Forge Namespacing
 
 Forge namespacing helps avoid repository name collisions when aggregating multiple hosting platforms (GitHub, GitLab, Forgejo, etc.).

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-15T00:00:00Z
-fingerprint: 2c9cc8f32005572f619cdc0469f79851f5443f4cf95d950e69385d5cdc8dcce4
-lastmod: "2026-01-22"
+fingerprint: 65811bcf7c1ae542c821a83117a0778aea7f2bd47409ac470e6c8689a33f0276
+lastmod: "2026-09-27"
 tags:
   - frontmatter
   - fingerprint
@@ -14,7 +14,6 @@ tags:
 title: 'ADR-011: Set lastmod When Fingerprint Changes'
 uid: f94cf6fb-b200-44e5-9177-0daf24be4367
 ---
-
 # ADR-011: Set lastmod When Fingerprint Changes
 
 **Status**: Accepted  

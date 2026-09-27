@@ -4,17 +4,17 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 16664189e38f1c60b592da8f3bbc762ff896ccd24400c8e43ba606240b648639
-lastmod: "2026-01-23"
+fingerprint: 9a86cd623a58827fe3820a388be2201928d837f758aadaa984ddbc7689043819
+lastmod: "2026-09-27"
 tags:
   - vscode
   - preview
   - http
   - security
   - daemon
+title: 'ADR-018: Register VS Code edit handler only in local preview'
 uid: 6b9c3b0c-1f76-45fb-8d3b-7bc8d0d8ab2b
 ---
-
 # ADR-018: Register VS Code edit handler only in local preview
 
 **Status**: Proposed  

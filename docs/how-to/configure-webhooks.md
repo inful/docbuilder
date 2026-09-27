@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-17T00:00:00Z
-fingerprint: 10895057fbd9d196ea73922773fec323e0988e1f6de9da5370b43681b7d8be8d
-lastmod: "2026-01-27"
+fingerprint: b908434f1f18e1a83c7a85e60ad0391ac37d3bb1a57cbecb1e35df9241c1da5d
+lastmod: "2026-09-27"
 tags:
   - webhooks
   - automation
@@ -13,7 +13,6 @@ tags:
 title: Configure Webhooks for Automatic Rebuilds
 uid: a32222c2-182c-47b4-9744-2a0dd1794367
 ---
-
 # Configure Webhooks for Automatic Rebuilds
 
 Webhooks allow DocBuilder to automatically rebuild documentation when changes are pushed to your repositories. This guide shows you how to configure webhooks for GitHub, GitLab, and Forgejo.

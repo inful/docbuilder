@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 54e58d2903d1268784be7c04c81c69273bb08659619fe90ac178b1b13e67f9ff
+fingerprint: 52abe510f329695502e6ae9b0ec0477c4b15c4f35669f02e29bef5118c6789bf
 lastmod: "2026-09-27"
 tags:
   - packages
@@ -13,7 +13,6 @@ tags:
 title: Package Dependencies Diagram
 uid: a12d6319-3e23-4e1f-a276-920b402b50d6
 ---
-
 # Package Dependencies Diagram
 
 This document visualizes the dependency relationships between DocBuilder packages, showing how different layers interact and the import rules that must be followed.

@@ -4,8 +4,9 @@ aliases:
   - /_uid/722ac346-6481-4ff0-ab00-93dd6b5e8c70/
 categories:
   - architecture-decisions
+date: 2026-01-01T00:00:00Z
 date_created: "2026-01-21"
-fingerprint: 34bf2511f1aac1054db4c850cacb8be1e6e1d2e276a874b8163c969c519be30e
+fingerprint: e6f98c769ea12b38b2c47a61cbc31fa10037477db1b738a614985daca4613dd2
 goal: 'Implement ADR-015: central parsed document model (frontmatter + Markdown body)'
 last_updated: "2026-01-22"
 lastmod: "2026-09-27"
@@ -19,10 +20,10 @@ tags:
   - frontmatter
   - lint
   - performance
+title: 'ADR-015 Implementation Plan: Centralize parsed document model'
 uid: 722ac346-6481-4ff0-ab00-93dd6b5e8c70
 version: "1.0"
 ---
-
 # ADR-015 Implementation Plan: Centralize parsed document model
 
 ## Guardrails (must hold after every step)

@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: 353995dbe6d099953fd10c0cc256ebea079f85f0014d193dc476df4599846209
-lastmod: "2026-01-22"
+fingerprint: b9a9f5d13a5c10317fa37c05a480559b3b7cf59de47375f8b69ba4e90a497d69
+lastmod: "2026-09-27"
 tags:
   - ci-cd
   - linting
@@ -15,7 +15,6 @@ tags:
 title: 'How To: CI/CD Linting Integration'
 uid: a89ff86e-31ab-43b5-b751-05c37768b0ba
 ---
-
 # CI/CD Linting Integration
 
 This guide shows how to integrate documentation linting into your CI/CD pipeline for automated validation.

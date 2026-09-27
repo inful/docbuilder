@@ -4,16 +4,16 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: 815d489894225fee98bb2d7b96877875a8119d1200af03ac927be4199655b8f0
-lastmod: "2026-01-22"
+fingerprint: c18477c983fda5ff532b26c3fd6708b6776fc572184ba9f77abbef401eb6800c
+lastmod: "2026-09-27"
 tags:
   - linting
   - validation
   - git-hooks
   - developer-experience
+title: Setup Documentation Linting
 uid: fb886a4a-1a7f-4d2d-9789-791247e160a0
 ---
-
 # Setup Documentation Linting
 
 This guide explains how to set up documentation linting in your repository to catch issues before commit and during CI/CD.

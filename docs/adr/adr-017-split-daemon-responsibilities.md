@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: 256410563f3517d356c6330f413d409c5c39af556665ef19cc05ed970fb6731b
-lastmod: "2026-01-22"
+fingerprint: f9c710d0cb647877901f0694e1a1608627485c6112ce650c67c913dedd49006f
+lastmod: "2026-09-27"
 tags:
   - daemon
   - refactor
@@ -14,9 +14,9 @@ tags:
   - http
   - discovery
   - build
+title: 'ADR-017: Split daemon responsibilities (package boundaries)'
 uid: 2d7f1a48-79a7-4dc2-8e59-13f97e3b0a79
 ---
-
 # ADR-017: Split daemon responsibilities (package boundaries)
 
 **Status**: Proposed  

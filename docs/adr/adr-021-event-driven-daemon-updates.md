@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: eaa05c8d0420964dd15139ff38feae39519aec3b286b8ca2f44d2d1b6624910f
-lastmod: "2026-01-27"
+fingerprint: e127c27e4c339d49851ea15cc722d11cb7e08f7abfd6a52ec62df4d79466f3b8
+lastmod: "2026-09-27"
 tags:
   - daemon
   - events
@@ -13,9 +13,9 @@ tags:
   - discovery
   - build
   - git
+title: 'ADR-021: Event-driven daemon updates and debounced builds'
 uid: 6dbdbcb0-6ed4-4b8f-8f1c-4cd14a89de14
 ---
-
 # ADR-021: Event-driven daemon updates and debounced builds
 
 **Status**: Proposed

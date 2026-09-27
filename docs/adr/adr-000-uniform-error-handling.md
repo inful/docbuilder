@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-10-03T00:00:00Z
-fingerprint: 41efe11b9c3cec375070b036024f1877b4d27a41c0098f78e650441271929ff5
-lastmod: "2026-01-22"
+fingerprint: ddbdfb4f0698efdb889cecf522ce6f62ff3e5c7da9e4233413f3e23ea3871bd8
+lastmod: "2026-09-27"
 tags:
   - error-handling
   - foundation
@@ -14,7 +14,6 @@ title: 'ADR-000: Uniform Error Handling'
 uid: d81afd2a-5a6f-4721-ab3a-d8c4950bd162
 weight: 1
 ---
-
 # ADR-000: Uniform Error Handling Across DocBuilder
 
 Date: 2025-10-03  

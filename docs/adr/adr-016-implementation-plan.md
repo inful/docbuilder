@@ -4,8 +4,9 @@ aliases:
   - /_uid/6df43140-ba90-4590-b923-0847aabee743/
 categories:
   - architecture-decisions
+date: 2026-01-01T00:00:00Z
 date_created: "2026-01-22"
-fingerprint: 443c35eea49635d6eeb344a056a0fc6937e58e756f9adb43cf3bf5a252b9e01d
+fingerprint: bc11202528a902804ad351851548a4b76a61cc64de4c940789eb8f6201a4ac12
 goal: 'Implement ADR-016: centralize frontmatter mutations (map-based ops)'
 last_updated: "2026-01-22"
 lastmod: "2026-09-27"
@@ -20,10 +21,10 @@ tags:
   - lint
   - fingerprint
   - uid
+title: 'ADR-016 Implementation Plan: Centralize frontmatter mutations (map-based ops)'
 uid: 6df43140-ba90-4590-b923-0847aabee743
 version: "1.0"
 ---
-
 # ADR-016 Implementation Plan: Centralize frontmatter mutations (map-based ops)
 
 Related ADR: [adr-016-centralize-frontmatter-mutations.md](adr-016-centralize-frontmatter-mutations.md)

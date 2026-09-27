@@ -3,7 +3,8 @@ aliases:
   - /_uid/6359eb3d-f704-412d-9f55-373f496a1959/
 categories:
   - templates
-fingerprint: 820fc4d10b3b9d706b394734d73e836638ef159c4e191d36fadb7498a7eef9f6
+date: 2026-01-01T00:00:00Z
+fingerprint: ef171b5392aea52dc5576a0ac807e20f387f1bd061baa9cc451e31d0d790c037
 lastmod: "2026-09-27"
 params:
   docbuilder:
@@ -14,10 +15,10 @@ params:
       output_path: guides/{{ .Slug }}.md
       schema: '{"fields":[{"key":"Tags","type":"string_list","required":true},{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true,"glob-suggestion":"*/"},{"key":"Selection","type":"string_enum","required":true,"options":["getting-started","advanced","reference"]},{"key":"Categories","type":"string_list","required":true},{"key":"false","type":"bool","required":true}]}'
       type: guide
+tags: []
 title: Guide Template
 uid: 6359eb3d-f704-412d-9f55-373f496a1959
 ---
-
 # Guide Template
 
 Use this template to create new user guides with consistent structure.

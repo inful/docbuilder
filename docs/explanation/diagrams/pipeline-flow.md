@@ -4,7 +4,7 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 0d74c89cd9fa93e400d310c27d568cc3d79c7acbaf1bbbb7b1142e34426298d5
+fingerprint: 8c52c4c8b03aa99595177b82162bcac524c5e13100fd90b5e3bb9e44044e05c1
 lastmod: "2026-09-27"
 tags:
   - pipeline
@@ -13,7 +13,6 @@ tags:
 title: Pipeline Flow Diagrams
 uid: fd65129c-5904-4cef-bc9b-6cdae00b8891
 ---
-
 # Pipeline Flow Diagrams
 
 This document visualizes the sequential execution flow of DocBuilder's build pipeline and the detailed operations within key stages.

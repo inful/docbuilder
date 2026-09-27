@@ -3,12 +3,13 @@ aliases:
   - /_uid/0135c423-8777-4292-99e9-19ab7b82b852/
 categories:
   - templates
-fingerprint: 48122f383673cfaf5fe3c66e5f1ee30da306390034634a8b2793b3e5bb29e3c8
+date: 2026-01-01T00:00:00Z
+fingerprint: 5300387b22e09ff06dc74d783627c90cfa871c1fd8047c8fc3cace7cef53d008
 lastmod: "2026-09-27"
 params:
   docbuilder:
     template:
-      defaults: '{"categories":["architecture-decisions"]}'
+      defaults: '{"categories":["architecture-decisions"],"tags":[]}'
       description: Create a new Architecture Decision Record following the standard ADR format
       name: Architecture Decision Record
       output_path: adr/adr-{{ printf "%03d" (nextInSequence "adr") }}-{{ .Slug }}.md
@@ -21,10 +22,10 @@ params:
         start: 1
         width: 3
       type: adr
+tags: []
 title: ADR Template
 uid: 0135c423-8777-4292-99e9-19ab7b82b852
 ---
-
 # Architecture Decision Record Template
 
 This template helps you create new Architecture Decision Records (ADRs) that follow a consistent format.
@@ -48,6 +49,7 @@ The template will automatically:
 title: "{{ .Title }}"
 categories:
   - {{ index .categories 0 }}
+tags: []
 date: 2026-01-01T00:00:00Z
 slug: "{{ .Slug }}"
 ---

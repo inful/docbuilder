@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 080a69d86bd28ec4de582541baa62e5c4f629d9582d5b418a91ea0050776d002
-lastmod: "2026-01-22"
+fingerprint: c101fc02d15bbdf4f9e58c91ee8b57aab29eaacaacd6dc62111a02d7604068f2
+lastmod: "2026-09-27"
 tags:
   - ui
   - transitions
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Enable Page Transitions'
 uid: 771a70f5-88cb-4508-9b69-baebfdf90b48
 ---
-
 # Enable Page Transitions
 
 This guide explains how to enable smooth page transitions using the View Transitions API in your Hugo-themed documentation site.

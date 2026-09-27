@@ -3,11 +3,13 @@ aliases:
   - /_uid/4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7/
 categories:
   - how-to
-fingerprint: 3ba6ae74aba2038f54207b3a58e0ef6a3dac276d704bfc8bc4911100c260d8d9
+date: 2026-01-01T00:00:00Z
+fingerprint: 690b0a0f8ca48c8b5be9f73d3d118e9d61356e2c13d35433408656328489af83
 lastmod: "2026-09-27"
+tags: []
+title: VS Code Edit Link Integration for Preview Mode
 uid: 4b36f3b0-fb0f-4c79-9ef2-1140347fdbf7
 ---
-
 # VS Code Edit Link Integration for Preview Mode
 
 ## Overview

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-14T00:00:00Z
-fingerprint: 3572a5b8963a9f86f9e2de63c22dedf1d902a9111426527962f9cbfb1d8403e2
-lastmod: "2026-01-22"
+fingerprint: 06c9f56f81e69c6f4f56a8933e6712d45a5a0c4523e206dc1f2451d9d810ea7d
+lastmod: "2026-09-27"
 tags:
   - document-identity
   - redirects
@@ -14,7 +14,6 @@ tags:
 title: 'ADR-010: Stable Document Identity via UID Aliases'
 uid: 96c8f654-7ff8-4022-b290-cbc2c2c5fbe7
 ---
-
 # ADR-010: Stable Document Identity via UID Aliases
 
 **Status**: Accepted  

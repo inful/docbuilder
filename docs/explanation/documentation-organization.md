@@ -3,8 +3,9 @@ aliases:
   - /_uid/4734c3fa-f748-4571-a7df-81d7c2097b2b/
 categories:
   - explanation
-fingerprint: 84912e15364399a47a11876b6c1c80643676917db0f0060f6b437fc7d03d2f21
-lastmod: "2026-09-25"
+date: 2026-01-01T00:00:00Z
+fingerprint: aeea55ec0f24185dcd344b888a6ec98fcb5d56d0c9e9326bf2ee795634f0d836
+lastmod: "2026-09-27"
 tags:
   - documentation
   - diataxis
@@ -12,7 +13,6 @@ tags:
 title: Documentation Organization
 uid: 4734c3fa-f748-4571-a7df-81d7c2097b2b
 ---
-
 # Documentation Organization
 
 A snapshot of how the docbuilder documentation site is currently

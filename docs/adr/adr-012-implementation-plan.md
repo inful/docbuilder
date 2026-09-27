@@ -4,16 +4,18 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-23T00:00:00Z
-fingerprint: 1a4342592c6e4fc14af21742a13769445493e0cc36c536effaa1a8f99b0dbe46
-lastmod: "2026-01-23"
+fingerprint: 1df7364ec63cc3d4e5d2cbfb9f9224722e3130fed069b80b71da9253d7c4230a
+lastmod: "2026-09-27"
 tags:
   - linting
   - links
   - file-system
   - implementation-plan
   - git
+title: 'ADR-012 Implementation Plan: Autoheal links to files moved'
 uid: f967d658-528f-4f12-a1d8-62c203356882
 ---
+
 # ADR-012 Implementation Plan: Autoheal links to files moved
 
 **Status**: Draft / Tracking  
