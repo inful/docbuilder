@@ -83,7 +83,7 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 **Adding New Theme Support:**
 1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Theme System
 2. Review [Package Architecture Guide](package-architecture.md) - internal/hugo section
-3. Follow [How-To Guide](../how-to/add-theme-support.md)
+3. Follow [How-To: Use Relearn Theme](../how-to/use-relearn-theme.md)
 
 **Implementing Forge Integration:**
 1. Read [Comprehensive Architecture](comprehensive-architecture.md) - Forge Integration
@@ -132,13 +132,11 @@ This directory contains comprehensive architecture documentation for DocBuilder.
 
 ## Architecture Evolution
 
-The architecture has undergone significant evolution documented in:
-
-- **[Architecture Migration Plan (2025)](../archive/architecture-migration-plan-2025.md)** - Completed
-  - 19 completed phases (A-M, O-P, R-S-T-U)
-  - 2 deferred phases (Q, J)
-  - ~1,290 lines eliminated
-  - Zero breaking changes
+The architecture has undergone significant evolution across multiple
+phases, including a 2025 migration plan (now archived — see git history
+for the historical plan). The current architecture reflects all completed
+work: clean architecture layering, event sourcing, typed state, unified
+errors, and the staged pipeline.
 
 ## Architecture Decision Records (ADRs)
 

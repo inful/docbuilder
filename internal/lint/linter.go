@@ -43,6 +43,7 @@ func NewLinter(cfg *Config) *Linter {
 			&FilenameRule{cfg: cfg},
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
+			&BodyH1Rule{},
 			// Additional rules will be added here in future phases
 		},
 	}

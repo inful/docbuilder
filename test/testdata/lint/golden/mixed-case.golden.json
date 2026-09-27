@@ -9,17 +9,35 @@
       "fix": "Rename to lowercase: api_guide.md"
     },
     {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "WARNING",
+      "rule": "body-h1",
+      "message": "Body begins with a top-level H1",
+      "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
+      "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
+      "line": 1
+    },
+    {
       "file": "invalid/mixed-case/GettingStarted.md",
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
       "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity\nissues across different platforms.\n\nCurrent:  GettingStarted.md\nSuggested: gettingstarted.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience\n\nEXCEPTION: if the file matches a git-forge-recognized conventional filename\n(see `lint.excludes` in config), do NOT recommend renaming. Git forges\nspecifically detect these and surface them in dedicated UI:\n\n  • README.md        — repo home page\n  • CONTRIBUTING.md  — PR template dropdown\n  • SECURITY.md      — Security tab + security advisories\n  • CODE_OF_CONDUCT.md — community profile\n  • SUPPORT.md       — community profile\n  • CHANGELOG.md     — Releases link\n  • LICENSE          — License UI (any case)\n  • AUTHORS / CONTRIBUTORS / NOTICE / COPYING — common legal/credit files\n\nIf a root file matches one of these, the uppercase form is the convention.",
       "fix": "Rename to lowercase: gettingstarted.md"
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "WARNING",
+      "rule": "body-h1",
+      "message": "Body begins with a top-level H1",
+      "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
+      "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
+      "line": 1
     }
   ],
   "file_count": 2,
   "error_count": 2,
-  "warn_count": 0,
+  "warn_count": 2,
   "info_count": 0,
   "has_errors": true
 }
