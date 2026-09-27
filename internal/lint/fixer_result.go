@@ -8,14 +8,24 @@ import (
 
 // FixResult contains the results of a fix operation.
 type FixResult struct {
-	FilesRenamed  []RenameOperation
-	LinksUpdated  []LinkUpdate
-	Fingerprints  []FingerprintUpdate
-	BrokenLinks   []BrokenLink // Links to non-existent files
-	HealSkipped   []BrokenLinkHealSkip
-	ErrorsFixed   int
-	WarningsFixed int
-	Errors        []error
+	FilesRenamed       []RenameOperation
+	LinksUpdated       []LinkUpdate
+	Fingerprints       []FingerprintUpdate
+	FrontmatterFields  []FrontmatterFieldsUpdate
+	CategoryInjects    []CategoryInjectUpdate
+	CategoryRenames    []CategoryRenameUpdate
+	LinkStyleUpdates   []LinkStyleUpdate
+	MissingIndexPages  []MissingIndexPageUpdate
+	// uidTargetsAdded collects new files (e.g. generated _index.md)
+	// that need a uid fixup after the lint pass — applied by the
+	// missing-index-page fixer so the next uid-fixer phase picks them
+	// up automatically.
+	uidTargetsAdded     map[string]struct{}
+	BrokenLinks        []BrokenLink // Links to non-existent files
+	HealSkipped        []BrokenLinkHealSkip
+	ErrorsFixed        int
+	WarningsFixed      int
+	Errors             []error
 }
 
 // BrokenLinkHealSkip records when the broken-link healer intentionally

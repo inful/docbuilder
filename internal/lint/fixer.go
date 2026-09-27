@@ -111,12 +111,14 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	}
 
 	fixResult := &FixResult{
-		FilesRenamed: make([]RenameOperation, 0),
-		LinksUpdated: make([]LinkUpdate, 0),
-		Fingerprints: make([]FingerprintUpdate, 0),
-		BrokenLinks:  make([]BrokenLink, 0),
-		HealSkipped:  make([]BrokenLinkHealSkip, 0),
-		Errors:       make([]error, 0),
+		FilesRenamed:      make([]RenameOperation, 0),
+		LinksUpdated:      make([]LinkUpdate, 0),
+		Fingerprints:      make([]FingerprintUpdate, 0),
+		FrontmatterFields: make([]FrontmatterFieldsUpdate, 0),
+		BrokenLinks:       make([]BrokenLink, 0),
+		HealSkipped:       make([]BrokenLinkHealSkip, 0),
+		uidTargetsAdded:    make(map[string]struct{}),
+		Errors:            make([]error, 0),
 	}
 
 	// Get absolute path for the root directory (for searching links)
@@ -144,11 +146,23 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	fingerprintTargets := make(map[string]struct{})
 	uidTargets := make(map[string]struct{})
 	uidAliasTargets := make(map[string]struct{})
+	frontmatterFieldTargets := make(map[string]struct{})
+	directoryCategoryTargets := make(map[string]struct{})
+	categoryNamingTargets := make(map[string]struct{})
+	internalLinkStyleTargets := make(map[string]struct{})
+	sequencePrefixTargets := make(map[string]struct{})
+	missingIndexPageTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
 	uidAliasIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
+	frontmatterFieldIssueCounts := make(map[string]int)
+	directoryCategoryIssueCounts := make(map[string]int)
+	categoryNamingIssueCounts := make(map[string]int)
+	internalLinkStyleIssueCounts := make(map[string]int)
+	sequencePrefixIssueCounts := make(map[string]int)
+	missingIndexPageIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
-		if issue.Severity != SeverityError {
+		if issue.Severity != SeverityError && issue.Severity != SeverityWarning {
 			continue
 		}
 		fileIssues[issue.FilePath] = append(fileIssues[issue.FilePath], issue)
@@ -164,7 +178,42 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 			fingerprintTargets[issue.FilePath] = struct{}{}
 			fingerprintIssueCounts[issue.FilePath]++
 		}
+		if issue.Rule == ruleFrontmatterRequiredFields {
+			frontmatterFieldTargets[issue.FilePath] = struct{}{}
+			frontmatterFieldIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleDirectoryCategoryConsistency {
+			directoryCategoryTargets[issue.FilePath] = struct{}{}
+			directoryCategoryIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleCategoryNaming {
+			categoryNamingTargets[issue.FilePath] = struct{}{}
+			categoryNamingIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleInternalLinkStyle {
+			internalLinkStyleTargets[issue.FilePath] = struct{}{}
+			internalLinkStyleIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleSequencePrefixFilename {
+			sequencePrefixTargets[issue.FilePath] = struct{}{}
+			sequencePrefixIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleMissingIndexPage {
+			missingIndexPageTargets[issue.FilePath] = struct{}{}
+			missingIndexPageIssueCounts[issue.FilePath]++
+		}
 	}
+	// Phase 0: fill missing required frontmatter fields (title/date/lastmod/tags).
+	// Runs before other frontmatter fixers so the file has a complete baseline.
+	f.applyFrontmatterFieldsFixes(frontmatterFieldTargets, frontmatterFieldIssueCounts, fixResult, fingerprintTargets)
+
+	// Phase 0a: convert non-kebab-case categories to kebab-case.
+	f.applyCategoryNamingFixes(categoryNamingTargets, categoryNamingIssueCounts, fixResult, fingerprintTargets)
+
+	// Phase 0b: inject the expected category for directory-category-consistency.
+	// Runs after category-naming so kebab-cased categories are recognised.
+	f.applyDirectoryCategoryFixes(directoryCategoryTargets, directoryCategoryIssueCounts, fixResult, fingerprintTargets)
+
 	// Phase 1: add missing frontmatter uids (and corresponding aliases).
 	// We never rewrite an existing uid (even if invalid), because uid must be stable.
 	f.applyUIDFixes(uidTargets, uidIssueCounts, fixResult, fingerprintTargets)
@@ -180,6 +229,21 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Phase 3.5: heal broken links caused by Git renames/moves.
 	// (No-op when not in a git repository or when no broken links are found.)
 	f.healBrokenLinksFromGitRenames(rootPath, brokenLinksWorklist, fixResult, fingerprintTargets)
+
+	// Phase 3.6: append `.md` extension to bare internal links.
+	f.applyInternalLinkStyleFixes(internalLinkStyleTargets, internalLinkStyleIssueCounts, fixResult, fingerprintTargets)
+
+	// Phase 3.7: rename files in sequence-numbered directories.
+	// Renames also need link-rewrite passes, which are handled
+	// implicitly by the existing rename logic in processFileWithIssues.
+	// Since sequence-prefix issues weren't covered there, we run a
+	// dedicated phase here.
+	f.applySequencePrefixFilenameFixes(sequencePrefixTargets, sequencePrefixIssueCounts, fixResult, rootPath, fingerprintTargets)
+
+	// Phase 3.8: generate placeholder _index.md files for directories
+	// that the missing-index-page rule flagged. The new files don't yet
+	// have fingerprints or UIDs; their paths are queued for both phases.
+	f.applyMissingIndexPageFixes(missingIndexPageTargets, missingIndexPageIssueCounts, fixResult, fingerprintTargets, uidTargets)
 
 	// Phase 4: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)
