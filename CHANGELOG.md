@@ -45,80 +45,6 @@ commits; pin to a SHA for reproducibility per the README.
   and shifted link-update line numbers from the auto-generated
   `_index.md` frontmatter block.
 
-## [0.18.0] - TBD
-
-### Added
-- **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
-  each generated document to ragabast's `/api/ingest/async` endpoint
-  immediately after it has been written to disk. Daemon-mode-only and
-  off by default; operators enable it via `daemon.outbound.ragabast` in
-  config. The bearer token is read from `RAGABAST_INGEST_TOKEN` at
-  daemon startup; the dispatcher is bounded, drops on overflow, and
-  honours ragabast's persistent job queue + `uid`/`fingerprint` dedup
-  for self-healing delivery.
-- **Tests**: direct unit tests for `nodeFromAny` (`internal/frontmatter/serialize.go`)
-  covering all scalar, sequence, and map branches.
-- **Tests**: edge-case coverage for `FromMap` (`internal/hugo/models/frontmatter.go`)
-  including wrong-type coercion, invalid date strings, and mixed-type taxonomy arrays.
-- **Tests**: focused unit tests for `inferRenameMappingFromGitHead`
-  (`internal/lint/broken_link_healer.go`) covering all 17 branches without requiring
-  a git repository.
-- **Tests**: direct unit tests for `repoAbsPath`
-  (`internal/lint/git_uncommitted_rename_detector.go`) including traversal
-  rejection.
-
-### Changed
-- **Refactor (hugo)**: extracted the duplicated `normalizeTaxonomyValues` /
-  `normalizeSnippetTaxonomyValues` into a single shared `docs.NormalizeTaxonomyValues`.
-  Both `internal/doctemplate/app/taxonomy_client.go` and
-  `internal/docs/taxonomy_snippets.go` now call the shared helper.
-
-### Fixed
-- **Refactor (forge)**: broke a call-graph cycle between
-  `internal/forge/enhanced_mock.go` and `internal/forge/enhanced_mock_factory.go`
-  by moving the `EnhancedMockBuilder` type and the `CreateRealistic*Mock`
-  constructors into `enhanced_mock.go` (where `EnhancedMockForgeClient` lives).
-- **Refactor (stages)**: broke a call-graph cycle between
-  `internal/hugo/stages/repo_fetcher.go` and `internal/hugo/stages/stage_clone.go`
-  by removing the deprecated `readRepoHead` wrapper. Callers now use
-  `gitpkg.ReadRepoHead` directly.
-
-### Removed
-- Six stale coverage artefacts at the repo root (`coverage.out`,
-  `coverage_cmd.out`, `coverage_final.out`, `coverage_new.out`,
-  `coverage_review.out`, `coverage.html`). They were never tracked by git;
-  `.gitignore` already excluded them. This file (`CHANGELOG.md`) is now the
-  source of truth for release notes.
-- Dead code surfaced by the `analyze kind=dead_code` graph pass (each item
-  verified to have zero in-tree callers, including tests):
-  - `internal/hugo/models/typed_transformers.go` (entire file) — four unused
-    `V2`/`V3` transformers (`FrontMatterParserV2`, `FrontMatterBuilderV3`,
-    `EditLinkInjectorV3`, `ContentProcessorV2`) and their tests.
-  - `internal/hugo/stages/stage_execution.go` (entire file) —
-    `StageExecution` type and outcome helpers (`ExecutionSuccess*` /
-    `ExecutionFailure*`).
-  - `internal/hugo/models/early_skip.go` (entire file) — `EarlySkipDecision`
-    type and `EvaluateEarlySkip`, `NoSkip`, `SkipAfter` (the runner already
-    inlines the early-skip decision at line 59 of
-    `internal/hugo/stages/runner.go`).
-  - Per-forge webhook handlers `HandleGitHubWebhook`, `HandleGitLabWebhook`,
-    `HandleForgejoWebhook` in `internal/server/handlers/webhook.go` — the
-    dispatcher `HandleForgeWebhook` (wired by config) and the generic
-    `HandleWebhook` (wired at `/webhook`) remain the single entry points.
-  - `foundation.Option.Match` / `UnwrapOrElse`,
-    `foundation.Result.ToTuple`, `ContentPage.GetOriginalFrontMatter` /
-    `SetOriginalFrontMatter` / `AddTransformationRecord` /
-    `GetTransformationHistory` / `HasBeenTransformed`,
-    `TransformationPipeline.SetContext`, `TransformationResult.SetSource`,
-    `Pipeline.AddIf`, `Statistics.UpdateDiscoveryStats`,
-    `Manager.WithAutoSave`, `Service.GetScheduleStore` /
-    `GetDaemonInfoStore`, `Resolve.WithObserver`,
-    `Generator.WithObserver`, `GitState.SetCommitDate`, `Report.GetDocBuilderVersion`,
-    `MigrationHelper.ConvertLegacyFrontMatter`,
-    `EditorLinkResolver.NewResolverWithChain`, `CommitDetector.Clear`, and
-    the testutil fluent helpers `WithTitle` / `WithTheme` / `WithOutputDir` /
-    `WithEnv` / `AssertFailure`.
-
 ## [0.x] — Recent themes
 
 The last 90 days focused on four themes:
@@ -224,6 +150,24 @@ The last 90 days focused on four themes:
   `manual_required` array listing issues that couldn't be auto-fixed
   (typically `body-h1`, `tag-count`, `cross-mode-category`) so the LLM
   can surface them with their fix hints verbatim.
+- **Daemon (ragabast integration)**: opt-in outbound dispatcher that pushes
+  each generated document to ragabast's `/api/ingest/async` endpoint
+  immediately after it has been written to disk. Daemon-mode-only and
+  off by default; operators enable it via `daemon.outbound.ragabast` in
+  config. The bearer token is read from `RAGABAST_INGEST_TOKEN` at
+  daemon startup; the dispatcher is bounded, drops on overflow, and
+  honours ragabast's persistent job queue + `uid`/`fingerprint` dedup
+  for self-healing delivery.
+- **Tests**: direct unit tests for `nodeFromAny` (`internal/frontmatter/serialize.go`)
+  covering all scalar, sequence, and map branches.
+- **Tests**: edge-case coverage for `FromMap` (`internal/hugo/models/frontmatter.go`)
+  including wrong-type coercion, invalid date strings, and mixed-type taxonomy arrays.
+- **Tests**: focused unit tests for `inferRenameMappingFromGitHead`
+  (`internal/lint/broken_link_healer.go`) covering all 17 branches without requiring
+  a git repository.
+- **Tests**: direct unit tests for `repoAbsPath`
+  (`internal/lint/git_uncommitted_rename_detector.go`) including traversal
+  rejection.
 
 ### Changed
 - **Lint (issue iteration)**: the fixer's issue-collection loop now keeps
@@ -233,6 +177,62 @@ The last 90 days focused on four themes:
   recursive globs (`**`) for nested template directories
   (`.github/ISSUE_TEMPLATE/**/*.md`, `.gitlab/issue_templates/*.md`,
   `.gitea/ISSUE_TEMPLATE/**/*.md`).
+- **Refactor (hugo/docs)**: extracted the duplicated `normalizeTaxonomyValues` /
+  `normalizeSnippetTaxonomyValues` into a single shared `docs.NormalizeTaxonomyValues`.
+  Both `internal/doctemplate/app/taxonomy_client.go` and
+  `internal/docs/taxonomy_snippets.go` now call the shared helper.
+- **Refactor (forge)**: broke a call-graph cycle between
+  `internal/forge/enhanced_mock.go` and `internal/forge/enhanced_mock_factory.go`
+  by moving the `EnhancedMockBuilder` type and the `CreateRealistic*Mock`
+  constructors into `enhanced_mock.go` (where `EnhancedMockForgeClient` lives).
+- **Refactor (stages)**: broke a call-graph cycle between
+  `internal/hugo/stages/repo_fetcher.go` and `internal/hugo/stages/stage_clone.go`
+  by removing the deprecated `readRepoHead` wrapper. Callers now use
+  `gitpkg.ReadRepoHead` directly.
+
+### Removed
+- Six stale coverage artefacts at the repo root (`coverage.out`,
+  `coverage_cmd.out`, `coverage_final.out`, `coverage_new.out`,
+  `coverage_review.out`, `coverage.html`). They were never tracked by git;
+  `.gitignore` already excluded them. This file (`CHANGELOG.md`) is now the
+  source of truth for release notes.
+- Dead code surfaced by the `analyze kind=dead_code` graph pass (each item
+  verified to have zero in-tree callers, including tests):
+  - `internal/hugo/models/typed_transformers.go` (entire file) — four unused
+    `V2`/`V3` transformers (`FrontMatterParserV2`, `FrontMatterBuilderV3`,
+    `EditLinkInjectorV3`, `ContentProcessorV2`) and their tests.
+  - `internal/hugo/stages/stage_execution.go` (entire file) —
+    `StageExecution` type and outcome helpers (`ExecutionSuccess*` /
+    `ExecutionFailure*`).
+  - `internal/hugo/models/early_skip.go` (entire file) — `EarlySkipDecision`
+    type and `EvaluateEarlySkip`, `NoSkip`, `SkipAfter` (the runner already
+    inlines the early-skip decision at line 59 of
+    `internal/hugo/stages/runner.go`).
+  - Per-forge webhook handlers `HandleGitHubWebhook`, `HandleGitLabWebhook`,
+    `HandleForgejoWebhook` in `internal/server/handlers/webhook.go` — the
+    dispatcher `HandleForgeWebhook` (wired by config) and the generic
+    `HandleWebhook` (wired at `/webhook`) remain the single entry points.
+  - `foundation.Option.Match` / `UnwrapOrElse`,
+    `foundation.Result.ToTuple`, `ContentPage.GetOriginalFrontMatter` /
+    `SetOriginalFrontMatter` / `AddTransformationRecord` /
+    `GetTransformationHistory` / `HasBeenTransformed`,
+    `TransformationPipeline.SetContext`, `TransformationResult.SetSource`,
+    `Pipeline.AddIf`, `Statistics.UpdateDiscoveryStats`,
+    `Manager.WithAutoSave`, `Service.GetScheduleStore` /
+    `GetDaemonInfoStore`, `Resolve.WithObserver`,
+    `Generator.WithObserver`, `GitState.SetCommitDate`, `Report.GetDocBuilderVersion`,
+    `MigrationHelper.ConvertLegacyFrontMatter`,
+    `EditorLinkResolver.NewResolverWithChain`, `CommitDetector.Clear`, and
+    the testutil fluent helpers `WithTitle` / `WithTheme` / `WithOutputDir` /
+    `WithEnv` / `AssertFailure`.
+
+> **Note (retroactive)**: this section was amended after the v0.17.0 tag
+> was published. The ragabast dispatcher, taxonomy/forge/stages refactors,
+> dead-code removal, coverage-artefact cleanup, and additional test
+> coverage all shipped in v0.17.0 but were originally listed under
+> `[Unreleased]`. The release-notes commit (`965105c`) that closed out
+> v0.17.0 didn't roll those entries forward. This entry corrects the
+> record; the binaries are unchanged.
 
 [0.17.1]: https://github.com/inful/docbuilder/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/inful/docbuilder/compare/v0.16.1...v0.17.0
