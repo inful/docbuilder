@@ -33,18 +33,28 @@ func generateMainIndex(ctx *GenerationContext) ([]*Document, error) {
 		description = ctx.Config.Hugo.Description
 	}
 
+	// Use a deterministic epoch date so reproducible builds don't churn
+	// the fingerprint across runs. The fixers in the lint pipeline
+	// (applyFingerprintFixes) will refresh this once the doc is written
+	// by a user; the auto-generated index is owned by DocBuilder and
+	// uses a fixed value to avoid spurious drift reports.
+	frontMatter := map[string]any{
+		"title":                   title,
+		frontMatterKeyDescription: description,
+		"date":                    "2024-01-01T00:00:00Z",
+		"lastmod":                 "2024-01-01",
+		"type":                    "docs",
+		"categories":              []string{"documentation"},
+		"tags":                    []string{},
+	}
 	doc := &Document{
-		Path:      contentIndexPath,
-		IsIndex:   true,
-		Generated: true,
-		Content:   fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
-		FrontMatter: map[string]any{
-			"title":                   title,
-			frontMatterKeyDescription: description,
-			"type":                    "docs",
-		},
-		Repository: "",
-		Section:    "",
+		Path:        contentIndexPath,
+		IsIndex:     true,
+		Generated:   true,
+		Content:     fmt.Sprintf("# %s\n\n%s\n\n{{%% children description=\"true\" %%}}\n", title, description),
+		FrontMatter: frontMatter,
+		Repository:  "",
+		Section:     "",
 	}
 	if ctx.Config.IsDaemonPublicOnlyEnabled() {
 		doc.FrontMatter["public"] = true
