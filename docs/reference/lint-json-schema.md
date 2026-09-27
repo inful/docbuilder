@@ -3,11 +3,13 @@ aliases:
   - /_uid/29426dd7-62c7-4e24-8378-5487c13fbee7/
 categories:
   - reference
-fingerprint: f63a7ce0a8af8a76351814238295f5d978481cc9580aadc86a0548bc5156a454
+date: 2026-01-01T00:00:00Z
+fingerprint: 7edb4076ffec4a11e95a61616c2aecf2c8d76232819cdc74b6ee72cefc42a18d
 lastmod: "2026-09-27"
+tags: []
+title: JSON Output Schema
 uid: 29426dd7-62c7-4e24-8378-5487c13fbee7
 ---
-
 # JSON Output Schema
 
 DocBuilder's linter supports machine-readable JSON output for CI/CD integration, automated reporting, and tooling integration.

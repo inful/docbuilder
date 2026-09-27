@@ -4,7 +4,7 @@ aliases:
 categories:
   - how-to
 date: 2026-01-01T00:00:00Z
-fingerprint: 3abf6bbef8e48c6f84ef1410ee2570b667f893e2a60408c2c419fd0c895341d3
+fingerprint: 2d76b333a127bf3dc7b7bd4fada6f293b3e205b66a677edbb0b05276f5890e6a
 lastmod: "2026-09-27"
 tags:
   - releases
@@ -13,7 +13,6 @@ tags:
 title: Release Process
 uid: 591c7ad3-3af8-47f8-9d01-531da3233a5d
 ---
-
 # Release Process
 
 This document describes how to create a new release of DocBuilder.

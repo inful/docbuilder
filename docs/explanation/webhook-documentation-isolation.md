@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-17T00:00:00Z
-fingerprint: d2089d740932977799d8695fa4b93d62d33475cb1f82cb4a2eb5e776405155e5
-lastmod: "2026-01-26"
+fingerprint: 48c2cbdc8c68df826f22eb5b5e56b8ef94b0e7200c42fe0a1cae3ade62c4f931
+lastmod: "2026-09-27"
 tags:
   - architecture
   - webhooks
@@ -13,7 +13,6 @@ tags:
 title: Webhook and Documentation Isolation Strategy
 uid: 58cfc94a-28b1-40af-b149-0ccb52a0b58a
 ---
-
 # Webhook and Documentation Isolation Strategy
 
 This document explains how DocBuilder prevents webhook endpoints from colliding with documentation content.

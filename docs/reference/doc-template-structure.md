@@ -3,8 +3,9 @@ aliases:
   - /_uid/09e59ad9-520f-4fcf-bdf4-de00f35115f1/
 categories:
   - reference
-fingerprint: 6368f7a14bf0a7a831d6df2275694ff806d3514d8be2eb56c6f08e7d07a44aee
-lastmod: "2026-09-25"
+date: 2026-01-01T00:00:00Z
+fingerprint: da67e31755748cd088b3894e7c86bb03ecac935c599eb4858ec101166626a3b9
+lastmod: "2026-09-27"
 tags:
   - templates
   - authoring
@@ -12,7 +13,6 @@ tags:
 title: Documentation Template Structure
 uid: 09e59ad9-520f-4fcf-bdf4-de00f35115f1
 ---
-
 # Documentation Template Structure
 
 A **template** is a regular documentation page that, when invoked,

@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: f1f297d9390decda15571e957020e413644931cb9e41083363cc8ed3f1064104
-lastmod: "2026-01-22"
+fingerprint: cf82bc58a19e5b6ccd000ba0878442d18e439a5213276e029b6bcc03c240e1e2
+lastmod: "2026-09-27"
 tags:
   - hugo
   - rendering
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Enable Hugo Rendering'
 uid: 6549b7d7-c578-4b52-a202-d290d19be13c
 ---
-
 # How To: Enable Hugo Rendering
 
 By default DocBuilder scaffolds a Hugo site (content + config) without running the `hugo` binary. Enable automatic rendering to prebuild `public/`.

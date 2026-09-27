@@ -3,11 +3,13 @@ aliases:
   - /_uid/56d0f48e-5ebc-47c1-b781-63027faf0a52/
 categories:
   - architecture-decisions
-fingerprint: 6b17e2ce9df30b87a58ae594ccccfeeac1191b750c22e0fc308577bc0abd6fcc
+date: 2026-01-01T00:00:00Z
+fingerprint: f251f188a9a881b51bac5965f212cb9e9769f7d078bf205ff8dd6621484e1fbc
 lastmod: "2026-09-27"
+tags: []
+title: 'Plan: Implement ADR-013 (Use Goldmark for internal Markdown parsing)'
 uid: 56d0f48e-5ebc-47c1-b781-63027faf0a52
 ---
-
 # Plan: Implement ADR-013 (Use Goldmark for internal Markdown parsing)
 
 - Status: Draft / Tracking

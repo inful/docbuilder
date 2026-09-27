@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-05-30T00:00:00Z
-fingerprint: f699eafb5f00d7e50bccfeb11124818f5a8048aae92398384dec63df4f2ac193
-lastmod: "2026-06-04"
+fingerprint: 7be1ffe3206391c51ba19c67ab38778d91b4c36ba7320cb7c08111249a88c013
+lastmod: "2026-09-27"
 tags:
   - documentation
   - images
@@ -14,7 +14,6 @@ tags:
 title: 'How To: Write Image Links'
 uid: 57b21142-f4d9-4cb5-b0b8-f4bc55f520d8
 ---
-
 # How to Write Image Links
 
 Use this guide to write markdown image references that work consistently in both local preview and production builds.

@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 97bfd93dfcd16f0381440c8a527559380d552f005c63fc607438bdce3bd2157e
-lastmod: "2026-01-22"
+fingerprint: 451b435f1087dd3d235dacb2822a96a326c8452c97508c926fd932ac5270b287
+lastmod: "2026-09-27"
 tags:
   - transforms
   - content-processing
@@ -13,7 +13,6 @@ tags:
 title: Content Transforms Reference (DEPRECATED)
 uid: 3e530ceb-32d7-45fe-888b-6a9309ffb6c4
 ---
-
 # Content Transform Pipeline (DEPRECATED)
 
 > **⚠️ DEPRECATED:** This document describes the old registry-based transform system that was removed on December 16, 2025.

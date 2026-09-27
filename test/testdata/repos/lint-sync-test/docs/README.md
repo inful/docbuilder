@@ -1,9 +1,12 @@
 ---
+categories:
+  - documentation
+tags: []
 uid: 00000000-0000-4000-8000-000000001001
 aliases:
   - /_uid/00000000-0000-4000-8000-000000001001/
----
 
+---
 # Lint Sync Test
 
 This is a test repository for verifying that DocBuilder output passes linting.

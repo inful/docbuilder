@@ -3,11 +3,13 @@ aliases:
   - /_uid/2edb570d-9262-49e5-9ea4-f49275429420/
 categories:
   - architecture-decisions
-fingerprint: 0721a79d44980ebef601d21932f898ca215938d2b3f60b6042af81a9144d280c
+date: 2026-01-01T00:00:00Z
+fingerprint: 1a7026581fb6f86137917df544b0ce6292c37d2e43372c5754d6c4b7f3ed8681
 lastmod: "2026-09-27"
+tags: []
+title: 'Plan: `group_by` Conformance Lint (deferred)'
 uid: 2edb570d-9262-49e5-9ea4-f49275429420
 ---
-
 # Plan: `group_by` Conformance Lint (deferred)
 
 **Status:** Deferred — to be implemented *after* N-level `group_by` max-depth nesting lands. See `plan/group-by-max-nesting.md` (to be created) for the upstream work.

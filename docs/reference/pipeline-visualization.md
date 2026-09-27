@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 9052a6da1ba323ee1afafad8d44be21611ea0d8eb7a6cdb6ea867e55ff8eae73
-lastmod: "2026-01-22"
+fingerprint: 6f48d7fdd8a2e1ef04ddfd083140e619b5cfc51b23bd1d60a5d21397d4635e3e
+lastmod: "2026-09-27"
 tags:
   - pipeline
   - visualization
@@ -13,7 +13,6 @@ tags:
 title: Pipeline Visualization
 uid: 447486d8-8ee9-4b20-a69a-12497dbb8b92
 ---
-
 # Pipeline Visualization
 
 The `docbuilder visualize` command provides multiple ways to visualize the transform pipeline, making it easy to understand execution order, stage grouping, and dependency relationships.

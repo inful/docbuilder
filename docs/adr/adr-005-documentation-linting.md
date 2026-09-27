@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-29T00:00:00Z
-fingerprint: 9a35e9b71ccd72444ba4ae61431c68fa0c9c72ebc58ceb3a3ea590a461034276
-lastmod: "2026-01-22"
+fingerprint: 8f7fb72e4a43dd427a9ba7f7830c99ba67e6b28de8deef6751c18b93465033e3
+lastmod: "2026-09-27"
 tags:
   - linting
   - validation
@@ -15,7 +15,6 @@ title: 'ADR-005: Documentation Linting for Pre-Commit Validation'
 uid: ef6dd6b5-904d-4ec9-94f2-bc3fe2699cd1
 weight: 5
 ---
-
 # ADR-005: Documentation Linting for Pre-Commit Validation
 
 Date: 2025-12-29

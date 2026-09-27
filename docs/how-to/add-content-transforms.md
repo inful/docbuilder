@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: a75b0bee396f0cd3f84644106d57f15678ed2065d3b55699e2c6b8f2fcb20c93
-lastmod: "2026-01-22"
+fingerprint: 2c1f8befc96f1630853f5d9e49fb59b55a75a1a7b08a4cd469ab3edaaa2d1fd0
+lastmod: "2026-09-27"
 tags:
   - content-transforms
   - development
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Add Content Transforms'
 uid: 8f736168-8777-470e-a8a4-ddb9209a073b
 ---
-
 # Add Content Transforms
 
 This guide shows you how to add custom transformations to markdown files before Hugo renders them.

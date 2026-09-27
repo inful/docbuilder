@@ -3,11 +3,13 @@ aliases:
   - /_uid/52e0a4c1-9281-4086-b0e5-d6ff690eee53/
 categories:
   - architecture-decisions
-fingerprint: 617f1649b1b3f9913eadda26629c03c10770c751d645c14690dc9e93a7efd7ab
+date: 2026-01-01T00:00:00Z
+fingerprint: befcee09b3a132e09b20c55546cf0b03161c453d2ec0b18d70aefcb34fc79d2c
 lastmod: "2026-09-27"
+tags: []
+title: 'ADR-007: Merge Generate Command into Build Command'
 uid: 52e0a4c1-9281-4086-b0e5-d6ff690eee53
 ---
-
 # ADR-007: Merge Generate Command into Build Command
 
 **Status**: Accepted  

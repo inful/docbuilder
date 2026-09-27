@@ -3,7 +3,8 @@ aliases:
   - /_uid/c941e505-3989-41d2-85a2-e51318114c80/
 categories:
   - reference
-fingerprint: d00ce4ad7fb119c6b4b2feb9059879bd237dc9ca9185d7efb9c470582ee05a86
+date: 2026-01-01T00:00:00Z
+fingerprint: 60315f9b418ea872f5ba4e12f0aa78f88ab0bf762cadd34cb09adae0baef89a1
 lastmod: "2026-09-27"
 tags:
   - frontmatter
@@ -12,7 +13,6 @@ tags:
 title: Documentation Page Structure
 uid: c941e505-3989-41d2-85a2-e51318114c80
 ---
-
 # Documentation Page Structure
 
 This page describes what a valid docbuilder documentation page looks like:

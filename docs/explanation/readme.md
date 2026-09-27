@@ -4,14 +4,13 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 0f06d47a5e2b23bf119778f7f2e9a4a68e0274e086c99eab4f5a9cf7ce75e7bd
+fingerprint: 3b5da8f00fa46d72252299c193e9d8a76071717b0bcbc8fc679fd00e1ee1dcea
 lastmod: "2026-09-27"
 tags:
   - documentation
 title: Explanation Documentation
 uid: b8a5e4d4-4dd9-463d-b665-f75977bf1296
 ---
-
 # Architecture Documentation Index
 
 This directory contains comprehensive architecture documentation for DocBuilder. The documentation is organized to provide different views and levels of detail for various audiences.

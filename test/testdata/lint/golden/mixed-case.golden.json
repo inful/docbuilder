@@ -18,6 +18,46 @@
       "line": 1
     },
     {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: title",
+      "explanation": "Every doc must carry a `title` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `title: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: date",
+      "explanation": "Every doc must carry a `date` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `date: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: lastmod",
+      "explanation": "Every doc must carry a `lastmod` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `lastmod: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: categories",
+      "explanation": "Every doc must carry a `categories` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `categories: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/API_Guide.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: tags",
+      "explanation": "Every doc must carry a `tags` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `tags: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
       "file": "invalid/mixed-case/GettingStarted.md",
       "severity": "ERROR",
       "rule": "filename-conventions",
@@ -33,10 +73,50 @@
       "explanation": "The page's H1 is rendered from the `title` frontmatter field. A body H1 duplicates the rendered heading and confuses the reader (which title is the real one?). Start the body with H2 or deeper.",
       "fix": "Remove the `# Title` line from the body, or change it to `## Title`.",
       "line": 1
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: title",
+      "explanation": "Every doc must carry a `title` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `title: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: date",
+      "explanation": "Every doc must carry a `date` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `date: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: lastmod",
+      "explanation": "Every doc must carry a `lastmod` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `lastmod: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: categories",
+      "explanation": "Every doc must carry a `categories` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `categories: \u003cvalue\u003e` to the frontmatter."
+    },
+    {
+      "file": "invalid/mixed-case/GettingStarted.md",
+      "severity": "ERROR",
+      "rule": "frontmatter-required-fields",
+      "message": "Missing required frontmatter field: tags",
+      "explanation": "Every doc must carry a `tags` field in its YAML frontmatter. `title` drives the rendered H1 and nav; `date` populates Hugo's date taxonomy; `lastmod` is updated by lint_fix; `categories` drives the sidebar; `tags` drives the /tags/ index pages.",
+      "fix": "Add `tags: \u003cvalue\u003e` to the frontmatter."
     }
   ],
   "file_count": 2,
-  "error_count": 2,
+  "error_count": 12,
   "warn_count": 2,
   "info_count": 0,
   "has_errors": true

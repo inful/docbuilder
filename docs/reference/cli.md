@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 75f40e4ad3b816f2bc35bda3bdc39226ab736f4987fffc287bcd463d90d56a13
-lastmod: "2026-09-25"
+fingerprint: b47b4043856b759ac10b27a5986c32be73bbc6abcfde09f08f4848d8737169f8
+lastmod: "2026-09-27"
 tags:
   - cli
   - commands
@@ -13,7 +13,6 @@ tags:
 title: CLI Reference
 uid: dad2de36-18a1-42e4-b066-7bd353246c9b
 ---
-
 # CLI Reference
 
 DocBuilder provides a unified command-line interface for building documentation sites from Git repositories.

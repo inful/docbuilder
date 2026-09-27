@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-22T00:00:00Z
-fingerprint: 5cde158f7caf42b9552017165bfe1c33acbecd2380fbac81db779b19cc0ee20e
-lastmod: "2026-01-22"
+fingerprint: 69e346b0dbd0878544c4afaa5762fc29f05a1e8b545b14218e3621fccebe7bde
+lastmod: "2026-09-27"
 tags:
   - frontmatter
   - yaml
@@ -15,9 +15,9 @@ tags:
   - linting
   - fingerprint
   - uid
+title: 'ADR-016: Centralize frontmatter mutations (map-based ops)'
 uid: a7382480-b52e-4dcf-a0df-64129dbe4604
 ---
-
 # ADR-016: Centralize frontmatter mutations (map-based ops)
 
 **Status**: Implemented  

@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-26T00:00:00Z
-fingerprint: cd04b3ed916d932e76073a81537d2103d07a1d716b5b975367845ff07d80d834
-lastmod: "2026-01-26"
+fingerprint: 558b25d5bf66f6a8a01d590ce598174da4132ce05b1a023689b351d177cb5cb5
+lastmod: "2026-09-27"
 tags:
   - daemon
   - scheduling
@@ -13,9 +13,9 @@ tags:
   - gocron
   - refactor
   - implementation-plan
+title: 'ADR-020 Implementation Plan: Replace cron-like daemon scheduling with gocron'
 uid: 7b0d5b9e-0bcb-44b5-b1b6-00cf4f01a76f
 ---
-
 # ADR-020 Implementation Plan: Replace cron-like daemon scheduling with gocron
 
 **Status**: Draft / Tracking  

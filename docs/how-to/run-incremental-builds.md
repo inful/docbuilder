@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-15T00:00:00Z
-fingerprint: 62c0a94f8e4aeff85d4d420cbe0c4fd351f9e78e2296771746f1d691d1c87d2c
-lastmod: "2026-01-22"
+fingerprint: eb84a99c2ff64b14decbe75f1bbbe181ed94f27dc163a77cae9bd816b0f169fa
+lastmod: "2026-09-27"
 tags:
   - performance
   - incremental
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Run Incremental Builds'
 uid: 8a4a0ee2-d35b-45e0-8199-955e88ec3c84
 ---
-
 # How To: Run Incremental Builds
 
 Incremental builds avoid recloning repositories and only fetch updates, saving time and bandwidth.

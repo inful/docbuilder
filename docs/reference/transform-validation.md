@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: 4e332315ddcd886e73be7214fea9d0d909f8ee12160ea5a9587b113321f97788
-lastmod: "2026-01-22"
+fingerprint: 7c6b3f98fcf140a31e84c26f54f2cf915493dc8b48bce4f3ac355edd44d5719d
+lastmod: "2026-09-27"
 tags:
   - validation
   - transforms
@@ -14,7 +14,6 @@ tags:
 title: Transform Validation Reference (DEPRECATED)
 uid: 17f711ab-2410-4ae1-96f1-384ebacc19ac
 ---
-
 # Transform Pipeline Validation (DEPRECATED)
 
 > **⚠️ DEPRECATED:** This document describes validation for the old registry-based transform system that was removed on December 16, 2025.

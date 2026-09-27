@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: 5b2f8b4cf22d5e3e30ea086ea2a1512354477788da632ef3d040416264f9875b
-lastmod: "2026-01-22"
+fingerprint: d3aa4c30f5fb069d63f5776dcf76179d9f9c9a6ea9fca4e93e28af8690f90010
+lastmod: "2026-09-27"
 tags:
   - linting
   - migration
@@ -13,7 +13,6 @@ tags:
 title: 'How To: Migrate Existing Repository to Linting'
 uid: f589369a-b003-410b-87ff-86e976e787ce
 ---
-
 # Migrate Existing Repository to Linting
 
 This guide walks you through adopting documentation linting in an existing repository with legacy content.

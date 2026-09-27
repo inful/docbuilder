@@ -51,6 +51,7 @@ func NewLinter(cfg *Config) *Linter {
 			&CategoryNamingRule{},
 			&CrossModeCategoryRule{},
 			&DirectoryCategoryConsistencyRule{},
+			&FrontmatterRequiredFieldsRule{},
 			// Additional rules will be added here in future phases
 		},
 	}
