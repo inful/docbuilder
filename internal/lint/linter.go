@@ -49,6 +49,7 @@ func NewLinter(cfg *Config) *Linter {
 			&TagCountRule{},
 			&InternalLinkStyleRule{},
 			&CategoryNamingRule{},
+			&CrossModeCategoryRule{},
 			// Additional rules will be added here in future phases
 		},
 	}
