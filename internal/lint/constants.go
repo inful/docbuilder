@@ -6,5 +6,6 @@ const (
 	ruleMissingIndexPage        = "missing-index-page"
 	ruleSequencePrefixFilename  = "sequence-prefix-filename"
 	ruleTagCount                = "tag-count"
+	ruleInternalLinkStyle       = "internal-link-style"
 	gitCommandDiff              = "diff"
 )

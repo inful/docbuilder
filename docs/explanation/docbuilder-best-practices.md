@@ -3,7 +3,7 @@ aliases:
   - /_uid/88a81f71-5a61-405e-a1ef-908b9ca6cabe/
 categories:
   - explanation
-fingerprint: 1fa2d7ba2fb7b9dcb3abddfcba25ab390634112913c06cd5a1bcd1c54b5c4fe9
+fingerprint: 94be6a54130201c4c4d900999b907a5dd092fc9202ee5971eb1f8b39f82df67d
 lastmod: "2026-09-27"
 tags:
   - best-practices
@@ -555,6 +555,7 @@ This is what you can rely on without re-reading code:
 | `missing-index-page` | WARNING on directories with ≥3 `.md` children and no `_index.md`; skips flat collections (`adr/`, `examples/`) | `internal/lint/rule_missing_index_page.go` |
 | `sequence-prefix-filename` | ERROR if a file in a configured sequence directory (`adr/` by default) doesn't match `<prefix>-NNN-slug.md` | `internal/lint/rule_sequence_prefix_filename.go` |
 | `tag-count` | WARNING when `len(tags) > 10` (threshold configurable) | `internal/lint/rule_tag_count.go` |
+| `internal-link-style` | WARNING when internal link is missing `.md` extension or starts with `/` (site-rooted) | `internal/lint/rule_internal_link_style.go` |
 | `lint_fix` auto-adds | canonical `/_uid/<uid>/` alias; populates `fingerprint`; updates `lastmod` when fingerprint changes | `internal/lint/fixer_*.go` |
 | Broken-link detection | ERROR if a relative `.md` link target doesn't exist | `internal/lint/linter.go::LintPath` |
 
