@@ -308,6 +308,11 @@ func stripFingerprintFrontmatter(content string) string {
 	}
 
 	delete(fields, "fingerprint")
+	// lastmod and date are set by the fixer to the wall-clock at fix
+	// time; pinning them in golden fixtures would make the test time-
+	// dependent. Strip both so the comparison focuses on the
+	// deterministic content shape.
+	delete(fields, "date")
 	delete(fields, "lastmod")
 	delete(fields, "uid")
 	delete(fields, "aliases")
