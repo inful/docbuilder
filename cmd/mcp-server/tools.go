@@ -13,6 +13,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
+	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 	templating "git.home.luguber.info/inful/docbuilder/internal/templates"
@@ -364,7 +365,7 @@ func handleLintDocs(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallTool
 	}
 	quiet := req.GetBool("quiet", false)
 
-	cfg := &lint.Config{Quiet: quiet, Format: "json"}
+	cfg := &lint.Config{Quiet: quiet, Format: "json", Excludes: lintExcludes(state.cfg)}
 	linter := lint.NewLinter(cfg)
 	result, err := linter.LintPath(path)
 	if err != nil {
@@ -388,7 +389,7 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	// runs are local file operations that complete quickly, so using
 	// context.Background() internally is acceptable here.
 	//nolint:contextcheck // lint fixer is local-only and short-lived; context.Background() is appropriate
-	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true}), dryRun, false).WithAutoConfirm(true)
+	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true, Excludes: lintExcludes(state.cfg)}), dryRun, false).WithAutoConfirm(true)
 	//nolint:contextcheck // same rationale as above
 	fixResult, err := fixer.Fix(path)
 	if err != nil {
@@ -621,6 +622,16 @@ func runLintFixOn(path string) map[string]any {
 		"has_errors":    res.HasErrors(),
 		"summary":       res.Summary(),
 	}
+}
+
+// lintExcludes extracts the lint exclude patterns from a server config,
+// returning nil (not an empty slice) when the config has no lint block.
+// nil means "use the linter's built-in defaults".
+func lintExcludes(cfg *config.Config) []string {
+	if cfg == nil || cfg.Lint == nil {
+		return nil
+	}
+	return cfg.Lint.Excludes
 }
 
 // resolveInDocs turns a relative or absolute path into one guaranteed to be

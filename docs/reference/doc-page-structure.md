@@ -3,8 +3,8 @@ aliases:
   - /_uid/c941e505-3989-41d2-85a2-e51318114c80/
 categories:
   - reference
-fingerprint: c5585911e3abaeb1cf4bf596356ff112357fd57b401c1d56d148ae06b8f0fe1a
-lastmod: "2026-09-25"
+fingerprint: d00ce4ad7fb119c6b4b2feb9059879bd237dc9ca9185d7efb9c470582ee05a86
+lastmod: "2026-09-27"
 tags:
   - frontmatter
   - structure
@@ -38,6 +38,42 @@ Markdown body here.          ← body (everything after the closing `---`)
 The frontmatter is parsed as YAML; the body is Markdown (Goldmark by
 default). The lint rules in [`lint_rules.md`](lint-rules.md) enforce most
 of what's below — `docbuilder lint` is the canonical verifier.
+
+## Scope: what belongs in the docs directory
+
+The `docs/` directory is for operator- and developer-facing documentation
+that benefits from docbuilder's schema enforcement (stable uids,
+fingerprints, categories, tags, lint). It is **not** for project
+meta-files.
+
+The following files are git-forge ecosystem conventions and should
+stay at the repo root even when a `docs/` directory exists. They are
+not doc-pages:
+
+| File                | Why it stays at root                                                |
+|---------------------|---------------------------------------------------------------------|
+| `README.md`         | GitHub / GitLab / Forgejo render it on the repo home page           |
+| `CONTRIBUTING.md`   | PR template dropdown surfaces it on every forge                     |
+| `SECURITY.md`       | Security tab + security advisories on GitHub / GitLab               |
+| `CODE_OF_CONDUCT.md` | Community profile / Code of conduct tab                             |
+| `SUPPORT.md`        | Community profile / Support link                                    |
+| `CHANGELOG.md`      | Releases page links it on every forge                               |
+| `LICENSE`           | Auto-detected by every forge; UI depends on casing                  |
+
+These files **should not** carry docbuilder frontmatter and **should
+not** be moved into `docs/`. They are out of scope for docbuilder schema
+enforcement. The lint walks skip them automatically via the default
+`lint.excludes` patterns. A short stub of `README.md` at root that
+points at `docs/index.md` is fine — the stub itself is plain markdown,
+not a doc-page.
+
+If the user asks to "move everything to `docs/`", interpret this as
+moving the operator documentation. Do not move the git-forge-conventional
+files at root.
+
+Nested files with these names (for example `docs/explanation/readme.md`)
+are normal doc-pages and **should** be linted normally — git-forge
+recognition applies at the repo root only.
 
 ## Required Frontmatter
 
@@ -192,6 +228,25 @@ After authoring:
 - **Repeating the title as H1 in the body**: the `title` frontmatter
   field already drives the rendered H1; an H1 in the body creates a
   duplicate heading.
+- **Moving a git-forge-conventional file (`README.md`, `CONTRIBUTING.md`,
+  etc.) into `docs/`**: these files belong at the repo root so the
+  forge can auto-detect them. Use `lint.excludes` to keep them out of
+  the lint scope.
+
+## What the linter does NOT cover
+
+A passing `docbuilder lint` only proves schema compliance. The lint
+rules do not check:
+
+- Whether docs cover the right topics for the audience
+- Whether internal cross-links are accurate / non-circular
+- Whether references to source files (e.g. `internal/foo.go`) resolve
+  to files that exist in the codebase
+- Whether git-forge-conventional files (README, CONTRIBUTING, etc.)
+  should be in `docs/` or at root — see [Scope](#scope-what-belongs-in-the-docs-directory)
+
+A "0 errors" lint result means schema compliance, not content
+correctness.
 
 ## See Also
 

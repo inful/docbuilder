@@ -96,3 +96,54 @@ output:
   # base_directory: "/mnt/docs"
   directory: "./site"
   clean: true
+
+# Linter configuration. Optional; when absent, the linter applies the built-in
+# cross-forge union of git-forge-conventional excludes (README, CONTRIBUTING,
+# SECURITY, CHANGELOG, LICENSE, and variants across GitHub / GitLab / Forgejo).
+# See docs/reference/configuration.md#lint-section for the full default list.
+lint:
+  excludes:
+    # README — universal across GitHub, GitLab, Forgejo
+    - "README.md"
+    - "README"
+    - "README.rst"
+    - "README.txt"
+    - "README.adoc"
+    # Contributing guidelines
+    - "CONTRIBUTING.md"
+    - "CONTRIBUTING"
+    # Security policy — GitHub Security tab + GitLab auto-detected
+    - "SECURITY.md"
+    - "SECURITY"
+    # Code of conduct — GitHub community health
+    - "CODE_OF_CONDUCT.md"
+    - "CODE_OF_CONDUCT"
+    # Support resources — GitHub community health
+    - "SUPPORT.md"
+    # Changelog — linked from Releases on GitHub/GitLab
+    - "CHANGELOG.md"
+    - "CHANGELOG"
+    # License — auto-detected by every forge
+    - "LICENSE"
+    - "LICENSE.md"
+    - "LICENSE.txt"
+    - "LICENSE.rst"
+    - "COPYING"
+    - "COPYING.md"
+    # Authors / credits
+    - "AUTHORS"
+    - "AUTHORS.md"
+    - "CONTRIBUTORS"
+    - "CONTRIBUTORS.md"
+    # Legal notices
+    - "NOTICE"
+    - "NOTICE.md"
+    # GitHub template directories
+    - ".github/ISSUE_TEMPLATE/**/*.md"
+    - ".github/PULL_REQUEST_TEMPLATE.md"
+    # GitLab template directories
+    - ".gitlab/issue_templates/*.md"
+    - ".gitlab/merge_request_templates/*.md"
+    # Forgejo / Gitea template directories
+    - ".gitea/ISSUE_TEMPLATE/**/*.md"
+    - ".gitea/PULL_REQUEST_TEMPLATE.md"

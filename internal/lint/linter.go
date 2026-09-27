@@ -4,17 +4,26 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"slices"
+	"regexp"
 	"strings"
 )
 
 // Linter performs linting operations on documentation files.
 type Linter struct {
-	cfg   *Config
-	rules []Rule
+	cfg          *Config
+	rules        []Rule
+	excludeGlobs []globPattern // pre-compiled from cfg.Excludes
 }
 
 const formatText = "text"
+
+// globPattern is a compiled glob pattern that supports `**` as a recursive
+// wildcard in addition to the standard path.Match semantics.
+type globPattern struct {
+	raw  string
+	re   *regexp.Regexp
+	base string // directory portion (before any `**`)
+}
 
 // NewLinter creates a new linter with the given configuration.
 func NewLinter(cfg *Config) *Linter {
@@ -22,10 +31,16 @@ func NewLinter(cfg *Config) *Linter {
 		cfg = &Config{Format: formatText}
 	}
 
+	excludes := cfg.Excludes
+	if excludes == nil {
+		excludes = DefaultExcludes
+	}
+
 	return &Linter{
-		cfg: cfg,
+		cfg:          cfg,
+		excludeGlobs: compileGlobs(excludes),
 		rules: []Rule{
-			&FilenameRule{},
+			&FilenameRule{cfg: cfg},
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
 			// Additional rules will be added here in future phases
@@ -97,8 +112,8 @@ func (l *Linter) lintDirectory(dirPath string, result *Result) error {
 			return nil
 		}
 
-		// Skip standard ignored files (case-insensitive)
-		if isIgnoredFile(d.Name()) {
+		// Skip files matched by the exclude list (git-forge-conventional files)
+		if l.isExcluded(path, dirPath) {
 			return nil
 		}
 
@@ -145,8 +160,8 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	}
 
 	for _, file := range files {
-		// Skip standard ignored files
-		if isIgnoredFile(filepath.Base(file)) {
+		// Skip files matched by the exclude list (git-forge-conventional files)
+		if l.isExcluded(file, "") {
 			continue
 		}
 
@@ -169,19 +184,110 @@ func (l *Linter) LintFiles(files []string) (*Result, error) {
 	return result, nil
 }
 
-// isIgnoredFile returns true if the file should be ignored during linting.
-// These are standard repository files that don't follow documentation naming conventions.
-func isIgnoredFile(filename string) bool {
-	// Convert to uppercase for case-insensitive comparison
-	upper := strings.ToUpper(filename)
-	ignoredFiles := []string{
-		"README.MD",
-		"CONTRIBUTING.MD",
-		"CHANGELOG.MD",
-		"LICENSE.MD",
-		"CODE_OF_CONDUCT.MD",
-		"SECURITY.MD",
+// isExcluded reports whether the given file path matches any of the
+// configured exclude glob patterns. baseDir is used to compute a
+// repo-root-relative path; pass "" to fall back to the file's own path.
+func (l *Linter) isExcluded(filePath, baseDir string) bool {
+	if len(l.excludeGlobs) == 0 {
+		return false
 	}
+	rel := filePath
+	if baseDir != "" {
+		if r, err := filepath.Rel(baseDir, filePath); err == nil {
+			rel = r
+		}
+	}
+	rel = filepath.ToSlash(rel)
+	for _, g := range l.excludeGlobs {
+		if matchGlob(g, rel) {
+			return true
+		}
+	}
+	return false
+}
 
-	return slices.Contains(ignoredFiles, upper)
+// compileGlobs compiles a list of glob patterns into the internal form
+// used by isExcluded. Each pattern is translated to a regular expression
+// that supports `**` as a recursive wildcard and standard path.Match
+// semantics for the rest.
+func compileGlobs(patterns []string) []globPattern {
+	out := make([]globPattern, 0, len(patterns))
+	for _, p := range patterns {
+		out = append(out, compileGlob(p))
+	}
+	return out
+}
+
+func compileGlob(p string) globPattern {
+	// Split on the first `**` to find the literal base prefix.
+	base := p
+	if i := strings.Index(p, "**"); i >= 0 {
+		base = p[:i]
+	}
+	base = strings.TrimRight(base, "/")
+	re := globToRegexp(p)
+	return globPattern{raw: p, re: re, base: base}
+}
+
+// globToRegexp converts a path glob to a regular expression.
+// Supports `**` (recursive wildcard) and standard path.Match semantics.
+func globToRegexp(glob string) *regexp.Regexp {
+	var b strings.Builder
+	b.WriteString(`^`)
+	i := 0
+	for i < len(glob) {
+		c := glob[i]
+		switch c {
+		case '*':
+			if i+1 < len(glob) && glob[i+1] == '*' {
+				// `**` matches any number of path segments (including zero)
+				b.WriteString(`.*`)
+				i += 2
+				// Consume an optional following `/`
+				if i < len(glob) && glob[i] == '/' {
+					i++
+				}
+			} else {
+				// `*` matches any chars except `/`
+				b.WriteString(`[^/]*`)
+				i++
+			}
+		case '?':
+			b.WriteString(`[^/]`)
+			i++
+		case '.', '+', '(', ')', '|', '^', '$', '{', '}', '[', ']', '\\':
+			b.WriteByte('\\')
+			b.WriteByte(c)
+			i++
+		default:
+			b.WriteByte(c)
+			i++
+		}
+	}
+	b.WriteString(`$`)
+	return regexp.MustCompile(b.String())
+}
+
+// matchGlob returns true if the relative path matches the compiled glob.
+//
+// Semantics:
+//   - Globs containing `**` are recursive and match anywhere inside the
+//     base prefix (or anywhere if no prefix).
+//   - Globs without `**` are exact and match only when the relative path
+//     equals the glob string exactly. This avoids `README.md` accidentally
+//     matching `docs/README.md` — git forges only recognise these filenames
+//     at the repo root.
+func matchGlob(g globPattern, rel string) bool {
+	if g.raw == "" {
+		return false
+	}
+	if strings.Contains(g.raw, "**") {
+		// Recursive globs: the path must be inside the base prefix.
+		if g.base != "" && !strings.HasPrefix(rel, g.base+"/") && rel != g.base {
+			return false
+		}
+		return g.re.MatchString(rel)
+	}
+	// Exact globs: relative path must equal the glob exactly.
+	return rel == g.raw
 }

@@ -5,7 +5,7 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
-      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity\nissues across different platforms.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience\n\nEXCEPTION: if the file matches a git-forge-recognized conventional filename\n(see `lint.excludes` in config), do NOT recommend renaming. Git forges\nspecifically detect these and surface them in dedicated UI:\n\n  • README.md        — repo home page\n  • CONTRIBUTING.md  — PR template dropdown\n  • SECURITY.md      — Security tab + security advisories\n  • CODE_OF_CONDUCT.md — community profile\n  • SUPPORT.md       — community profile\n  • CHANGELOG.md     — Releases link\n  • LICENSE          — License UI (any case)\n  • AUTHORS / CONTRIBUTORS / NOTICE / COPYING — common legal/credit files\n\nIf a root file matches one of these, the uppercase form is the convention.",
       "fix": "Rename to lowercase: login-screen.png"
     },
     {
@@ -13,7 +13,7 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains spaces",
-      "explanation": "Spaces in filenames create problematic URLs with %20 encoding \nand break cross-references.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
+      "explanation": "Spaces in filenames create problematic URLs with %20 encoding\nand break cross-references.\n\nCurrent:  Login Screen.png\nSuggested: login-screen.png\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
       "fix": "Rename using hyphens: login-screen.png"
     },
     {
@@ -21,7 +21,7 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains uppercase letters",
-      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity \nissues across different platforms.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience",
+      "explanation": "Uppercase letters in filenames cause URL inconsistency and case-sensitivity\nissues across different platforms.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Hugo converts filenames to URL slugs\n  • Case sensitivity varies by OS (Linux vs macOS/Windows)\n  • Creates inconsistent user experience\n\nEXCEPTION: if the file matches a git-forge-recognized conventional filename\n(see `lint.excludes` in config), do NOT recommend renaming. Git forges\nspecifically detect these and surface them in dedicated UI:\n\n  • README.md        — repo home page\n  • CONTRIBUTING.md  — PR template dropdown\n  • SECURITY.md      — Security tab + security advisories\n  • CODE_OF_CONDUCT.md — community profile\n  • SUPPORT.md       — community profile\n  • CHANGELOG.md     — Releases link\n  • LICENSE          — License UI (any case)\n  • AUTHORS / CONTRIBUTORS / NOTICE / COPYING — common legal/credit files\n\nIf a root file matches one of these, the uppercase form is the convention.",
       "fix": "Rename to lowercase: user-manual.md"
     },
     {
@@ -29,7 +29,7 @@
       "severity": "ERROR",
       "rule": "filename-conventions",
       "message": "Filename contains spaces",
-      "explanation": "Spaces in filenames create problematic URLs with %20 encoding \nand break cross-references.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
+      "explanation": "Spaces in filenames create problematic URLs with %20 encoding\nand break cross-references.\n\nCurrent:  User Manual.md\nSuggested: user-manual.md\n\nWhy this matters:\n  • Spaces become %20 in URLs: /docs/my%20file/\n  • Makes links harder to type and share\n  • Hugo expects hyphen-separated filenames",
       "fix": "Rename using hyphens: user-manual.md"
     }
   ],

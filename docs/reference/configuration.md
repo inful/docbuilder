@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-15T00:00:00Z
-fingerprint: e96c32334a34677d35852ae94a838d312ce2bdc57caffd923fdf73ef575fee34
-lastmod: "2026-09-25"
+fingerprint: c21515f62ecb655aeffe639694dc1ec3e6579a848ad466870d1512a2f5bb1124
+lastmod: "2026-09-27"
 tags:
   - configuration
   - yaml
@@ -28,6 +28,7 @@ versioning: {}      # Multi-version documentation (optional)
 hugo: {}            # Hugo site metadata & theme
 monitoring: {}      # Health/metrics endpoints & logging
 output: {}          # Output directory behavior
+lint: {}            # Linter excludes (optional)
 ```
 
 ## Repositories
@@ -653,6 +654,93 @@ If the field list is empty when you expected a match, the build is reading an em
 - In daemon mode, `daemon.storage.output_dir` must match `output.directory`. If not provided, it is derived from `output.directory`.
 - A validation check enforces this equality (after path normalization). Mismatches cause configuration loading to fail.
 - Recommendation: set only `output.directory`; avoid setting `daemon.storage.output_dir` unless absolutely necessary.
+
+## Lint Section
+
+Configures the documentation linter's exclude list — files that should
+be skipped from lint and schema enforcement.
+
+The linter applies a built-in cross-forge union of git-forge-conventional
+filenames by default (README, CONTRIBUTING, SECURITY, CHANGELOG, LICENSE,
+and variants across GitHub / GitLab / Forgejo). The `lint` block lets
+you override that list or extend it.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `excludes` | `[]string` | (built-in union) | Glob patterns matching files to skip from lint and schema enforcement. An explicit empty list disables all excludes. |
+
+### Default excludes (when `lint` is absent)
+
+The built-in default list covers the cross-forge union of
+git-forge-conventional files. Exact globs (e.g. `README.md`) match only
+at the repository root — nested files with the same name are normal
+doc-pages and are linted normally. Recursive globs (with `**`) match
+anywhere in the tree.
+
+```yaml
+# Files matched at the repo root only:
+- README.md
+- README
+- README.rst
+- README.txt
+- README.adoc
+- CONTRIBUTING.md
+- CONTRIBUTING
+- SECURITY.md
+- SECURITY
+- CODE_OF_CONDUCT.md
+- CODE_OF_CONDUCT
+- SUPPORT.md
+- CHANGELOG.md
+- CHANGELOG
+- LICENSE
+- LICENSE.md
+- LICENSE.txt
+- LICENSE.rst
+- COPYING
+- COPYING.md
+- AUTHORS
+- AUTHORS.md
+- CONTRIBUTORS
+- CONTRIBUTORS.md
+- NOTICE
+- NOTICE.md
+
+# Recursive globs (match anywhere in the tree):
+- .github/ISSUE_TEMPLATE/**/*.md
+- .github/PULL_REQUEST_TEMPLATE.md
+- .gitlab/issue_templates/*.md
+- .gitlab/merge_request_templates/*.md
+- .gitea/ISSUE_TEMPLATE/**/*.md
+- .gitea/PULL_REQUEST_TEMPLATE.md
+```
+
+### Examples
+
+```yaml
+# Defaults still apply; add an additional pattern alongside:
+lint:
+  excludes:
+    - "README.md"
+    - "vendor-docs/**/*.md"
+```
+
+```yaml
+# Empty list — disable all excludes (every file is linted):
+lint:
+  excludes: []
+```
+
+```yaml
+# Custom list — replaces the defaults:
+lint:
+  excludes:
+    - "INTERNAL.md"
+    - ".team/**/*.md"
+```
+
+Note: omitting the `lint` block entirely keeps the defaults. To replace
+them, supply an explicit `excludes` list.
 
 ## Build Report Fields (Selected)
 
