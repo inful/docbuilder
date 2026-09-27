@@ -108,16 +108,37 @@ builds:
     env:
       - CGO_ENABLED=0
 
-# Archive configuration
+# Archive configuration: one archive entry per build, each filtered by
+# the build's `id` via `ids:`. Without `ids:`, GoReleaser groups all
+# builds into one archive per OS/arch, which gives you e.g. a single
+# `docbuilder_linux_amd64.tar.gz` containing all three binaries — fine
+# technically, but the name lies. Filtering per build produces a clean
+# 1-archive-per-binary matrix (3 × 5 = 15 archives).
 archives:
-  - id: default
-    # Include {{ .Binary }} so each build (docbuilder, doctemplate,
-    # docbuilder-mcp) gets its own archive per OS/arch. Without it the
-    # three builds collide on the same archive name and only the first
-    # one survives — that's why doctemplate and docbuilder-mcp were
-    # silently dropped from every release between v0.13.0 and v0.15.0.
+  - id: docbuilder-archive
+    ids:
+      - docbuilder
     name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
-    # Files to include in the archive
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - config.example.yaml
+
+  - id: doctemplate-archive
+    ids:
+      - doctemplate
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - config.example.yaml
+
+  - id: docbuilder-mcp-archive
+    ids:
+      - docbuilder-mcp
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
     files:
       - LICENSE
       - README.md
