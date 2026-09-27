@@ -101,7 +101,7 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 	if d == nil {
 		return
 	}
-	for i := 0; i < d.workers; i++ {
+	for range d.workers {
 		d.wg.Add(1)
 		go d.worker(ctx)
 	}
@@ -112,7 +112,7 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 		slog.Bool("auth_enabled", d.token != ""))
 }
 
-// Stop closes the queue and waits for workers to drain. Cancelling the
+// Stop closes the queue and waits for workers to drain. Canceling the
 // context passed to Start is the caller's responsibility — typically via the
 // daemon's runCancel. Safe to call multiple times; subsequent calls are
 // no-ops.
@@ -244,8 +244,9 @@ func (d *OutboundDispatcher) send(ctx context.Context, job ingestJob) {
 	}
 }
 
-// Format implements fmt.Stringer for logs/debug. Returns the URL the
-// dispatcher posts to so operators can confirm the target.
+// String returns a human-readable representation of the dispatcher showing
+// the configured URL, worker count, and queue capacity. Implements
+// fmt.Stringer for logs/debug.
 func (d *OutboundDispatcher) String() string {
 	if d == nil {
 		return "<nil>"

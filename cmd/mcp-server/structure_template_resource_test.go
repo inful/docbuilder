@@ -58,7 +58,7 @@ func TestDocTemplateStructure_StaysInSyncWithDoc(t *testing.T) {
 	if err != nil {
 		t.Skipf("could not locate docs/reference/doc-template-structure.md (running outside repo?): %v", err)
 	}
-	body, err := os.ReadFile(docPath)
+	body, err := os.ReadFile(docPath) // #nosec G304 -- docPath is found via findDocTemplateStructureFile which validates the path
 	if err != nil {
 		t.Fatalf("read %s: %v", docPath, err)
 	}
@@ -115,7 +115,7 @@ func findDocTemplateStructureFile() (string, error) {
 		return "", err
 	}
 	dir := wd
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		candidate := filepath.Join(dir, "docs", "reference", "doc-template-structure.md")
 		if _, err := os.Stat(candidate); err == nil {
 			return candidate, nil

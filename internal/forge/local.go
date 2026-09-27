@@ -78,4 +78,5 @@ func (c *LocalClient) ParseWebhookEvent(payload []byte, event string) (*WebhookE
 func (c *LocalClient) RegisterWebhook(ctx context.Context, repo *Repository, webhookURL string) error {
 	return nil
 }
+
 func (c *LocalClient) GetEditURL(repo *Repository, filePath string, branch string) string { return "" }

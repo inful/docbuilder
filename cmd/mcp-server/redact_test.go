@@ -13,7 +13,7 @@ func TestRedactConfig_NilSafe(t *testing.T) {
 	if got == nil {
 		t.Fatal("expected empty config for nil input, got nil")
 	}
-	// Marshalling the empty config must succeed and produce valid JSON.
+	// Marshaling the empty config must succeed and produce valid JSON.
 	if _, err := json.Marshal(got); err != nil {
 		t.Fatalf("marshal empty config: %v", err)
 	}

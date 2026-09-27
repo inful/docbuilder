@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -341,6 +342,7 @@ func handleCreateFromTemplate(ctx context.Context, req mcp.CallToolRequest) (*mc
 	}
 
 	// Match the CLI: run lint-fix on the new file.
+	//nolint:contextcheck // lint.Fixer uses context.Background() internally; fix is fast and local.
 	lintResult := runLintFixOn(writtenPath)
 
 	out := map[string]any{
@@ -382,7 +384,12 @@ func handleLintFix(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	}
 	dryRun := req.GetBool("dry_run", false)
 
+	// lint.Fixer and lint.NewFixer don't accept context.Context. The fix
+	// runs are local file operations that complete quickly, so using
+	// context.Background() internally is acceptable here.
+	//nolint:contextcheck // lint fixer is local-only and short-lived; context.Background() is appropriate
 	fixer := lint.NewFixer(lint.NewLinter(&lint.Config{Yes: true}), dryRun, false).WithAutoConfirm(true)
+	//nolint:contextcheck // same rationale as above
 	fixResult, err := fixer.Fix(path)
 	if err != nil {
 		return toolErr("fix", err)
@@ -416,10 +423,10 @@ func handleReadDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolR
 	}
 
 	out := map[string]any{
-		"path":          abs,
+		"path":            abs,
 		"had_frontmatter": had,
 		"raw_frontmatter": string(fm),
-		"body":          string(body),
+		"body":            string(body),
 	}
 	if had {
 		parsed, parseErr := frontmatter.ParseYAML(fm)
@@ -456,25 +463,29 @@ func handleCreateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 	if err != nil {
 		return toolErrMsg(err.Error())
 	}
-	if _, err := os.Stat(abs); err == nil && !overwrite {
+	if _, statErr := os.Stat(abs); statErr == nil && !overwrite {
 		return toolErrMsg("file exists; pass overwrite=true to replace it")
 	}
 
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return toolErr("mkdir", err)
+	if mkdirErr := os.MkdirAll(filepath.Dir(abs), 0o750); mkdirErr != nil {
+		return toolErr("mkdir", mkdirErr)
 	}
 
 	fm := mapFromArgs(req.GetArguments(), "frontmatter")
 	full := composeDoc(fm, content)
-	if err := os.WriteFile(abs, full, 0o644); err != nil { // #nosec G304
-		return toolErr("write file", err)
+	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304
+		return toolErr("write file", writeErr)
 	}
 
 	out := map[string]any{"path": abs, "wrote": true}
 	if lintAfter {
+		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
 		out["lint_result"] = runLintFixOn(abs)
 	}
-	b, _ := json.MarshalIndent(out, "", "  ")
+	b, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return toolErr("marshal", err)
+	}
 	return mcp.NewToolResultText(string(b)), nil
 }
 
@@ -523,24 +534,26 @@ func handleUpdateDoc(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToo
 				existingFM = parsed
 			}
 		}
-		for k, v := range patch {
-			existingFM[k] = v
-		}
+		maps.Copy(existingFM, patch)
 		newFM = marshalYAML(existingFM, writeStyle)
 	default:
 		return toolErrMsg("merge_strategy must be 'merge' or 'replace'")
 	}
 
 	full := frontmatter.Join(newFM, []byte(newBody), len(newFM) > 0, style)
-	if err := os.WriteFile(abs, full, 0o644); err != nil { // #nosec G304
-		return toolErr("write file", err)
+	if writeErr := os.WriteFile(abs, full, 0o600); writeErr != nil { // #nosec G304,G703 -- path resolved + contained inside docsDir via resolveInDocs
+		return toolErr("write file", writeErr)
 	}
 
 	out := map[string]any{"path": abs, "wrote": true, "merge_strategy": strategy}
 	if req.GetBool("lint_after", false) {
+		//nolint:contextcheck // lint fixer uses context.Background() internally; fix is local
 		out["lint_result"] = runLintFixOn(abs)
 	}
-	b, _ := json.MarshalIndent(out, "", "  ")
+	b, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return toolErr("marshal", err)
+	}
 	return mcp.NewToolResultText(string(b)), nil
 }
 
@@ -602,11 +615,11 @@ func runLintFixOn(path string) map[string]any {
 		return map[string]any{"error": err.Error()}
 	}
 	return map[string]any{
-		"renames":         len(res.FilesRenamed),
-		"links_updated":   len(res.LinksUpdated),
-		"fingerprints":    len(res.Fingerprints),
-		"has_errors":      res.HasErrors(),
-		"summary":         res.Summary(),
+		"renames":       len(res.FilesRenamed),
+		"links_updated": len(res.LinksUpdated),
+		"fingerprints":  len(res.Fingerprints),
+		"has_errors":    res.HasErrors(),
+		"summary":       res.Summary(),
 	}
 }
 
@@ -643,9 +656,9 @@ func lintResultToJSON(result *lint.Result) (*mcp.CallToolResult, error) {
 		Fix         string `json:"fix,omitempty"`
 	}
 	out := struct {
-		FilesTotal   int       `json:"files_total"`
-		ErrorCount   int       `json:"error_count"`
-		WarningCount int       `json:"warning_count"`
+		FilesTotal   int        `json:"files_total"`
+		ErrorCount   int        `json:"error_count"`
+		WarningCount int        `json:"warning_count"`
 		Issues       []issueOut `json:"issues"`
 	}{
 		FilesTotal: result.FilesTotal,
@@ -665,6 +678,9 @@ func lintResultToJSON(result *lint.Result) (*mcp.CallToolResult, error) {
 			out.ErrorCount++
 		case lint.SeverityWarning:
 			out.WarningCount++
+		case lint.SeverityInfo:
+			// Info findings are surfaced in the issues array but do not
+			// contribute to the error or warning counts.
 		}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")

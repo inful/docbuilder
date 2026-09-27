@@ -68,6 +68,9 @@ func redactAuthSlice(slice any) {
 	if v.Kind() != reflect.Slice {
 		return
 	}
+	// v.Len() is a method call so the bound isn't deterministic; keep the
+	// explicit form to make the side-effect semantics obvious to readers.
+	//nolint:intrange // v.Len() may re-evaluate each iteration; not deterministic
 	for i := 0; i < v.Len(); i++ {
 		elem := v.Index(i)
 		if elem.Kind() == reflect.Pointer {
@@ -108,6 +111,9 @@ func redactAuthSlice(slice any) {
 // about *which* auth is configured, just not *what* it is.
 func redactStructFields(v reflect.Value) {
 	t := v.Type()
+	// v.NumField() is a method call so the bound isn't deterministic; keep
+	// the explicit form to make the side-effect semantics obvious.
+	//nolint:intrange // v.NumField() may re-evaluate each iteration
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		if !f.CanSet() {
@@ -128,6 +134,16 @@ func redactStructFields(v reflect.Value) {
 			if !f.IsNil() && f.Elem().Kind() == reflect.Struct {
 				redactStructFields(f.Elem())
 			}
+		case reflect.Invalid, reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+			reflect.Float32, reflect.Float64,
+			reflect.Complex64, reflect.Complex128,
+			reflect.Array, reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Slice,
+			reflect.UnsafePointer:
+			// Numeric, boolean, slice, map, interface, and other non-string,
+			// non-struct, non-pointer kinds are left alone — secrets only
+			// live in string fields today.
 		}
 	}
 }

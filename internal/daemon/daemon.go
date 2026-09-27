@@ -176,32 +176,9 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// ragabast block is absent or Enabled is false, this is a no-op and the
 	// factory below installs no callback on the Generator.
 	if ragCfg := ragabastConfigOrNil(cfg); ragCfg != nil {
-		token := ""
-		if ragCfg.AuthTokenEnv != "" {
-			token = os.Getenv(ragCfg.AuthTokenEnv)
+		if err := daemon.initOutboundDispatcher(ragCfg); err != nil {
+			return nil, err
 		}
-		timeout := 10 * time.Second
-		if t := strings.TrimSpace(ragCfg.Timeout); t != "" {
-			parsed, err := time.ParseDuration(t)
-			if err != nil {
-				return nil, fmt.Errorf("invalid daemon.outbound.ragabast.timeout: %w", err)
-			}
-			timeout = parsed
-		}
-		dispatcher, err := NewOutboundDispatcher(DispatcherConfig{
-			IngestURL: ragCfg.IngestURL,
-			Token:     token,
-			Workers:   ragCfg.Workers,
-			QueueSize: ragCfg.QueueSize,
-			Timeout:   timeout,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct outbound dispatcher: %w", err)
-		}
-		daemon.outboundDispatcher = dispatcher
-		slog.Info("Outbound dispatcher initialized (ragabast)",
-			slog.String("ingest_url", ragCfg.IngestURL),
-			slog.Bool("auth_enabled", token != ""))
 	}
 
 	// Initialize scheduler (after build queue)
@@ -366,7 +343,7 @@ func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration
 // daemon.outbound.ragabast block is present AND explicitly enabled. Returns
 // nil otherwise (caller treats nil as "feature disabled — do nothing").
 //
-// Centralising this check here keeps the construction site free of repeated
+// Centralizing this check here keeps the construction site free of repeated
 // nil-pointer guards and makes the opt-in semantics testable.
 func ragabastConfigOrNil(cfg *config.Config) *config.RagabastConfig {
 	if cfg == nil || cfg.Daemon == nil || cfg.Daemon.Outbound == nil {
@@ -377,6 +354,39 @@ func ragabastConfigOrNil(cfg *config.Config) *config.RagabastConfig {
 		return nil
 	}
 	return r
+}
+
+// initOutboundDispatcher constructs and attaches the ragabast outbound
+// dispatcher to the daemon. Extracted from NewDaemon to keep the construction
+// site readable and to avoid a nestif warning.
+func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
+	token := ""
+	if ragCfg.AuthTokenEnv != "" {
+		token = os.Getenv(ragCfg.AuthTokenEnv)
+	}
+	timeout := 10 * time.Second
+	if t := strings.TrimSpace(ragCfg.Timeout); t != "" {
+		parsed, err := time.ParseDuration(t)
+		if err != nil {
+			return fmt.Errorf("invalid daemon.outbound.ragabast.timeout: %w", err)
+		}
+		timeout = parsed
+	}
+	dispatcher, err := NewOutboundDispatcher(DispatcherConfig{
+		IngestURL: ragCfg.IngestURL,
+		Token:     token,
+		Workers:   ragCfg.Workers,
+		QueueSize: ragCfg.QueueSize,
+		Timeout:   timeout,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to construct outbound dispatcher: %w", err)
+	}
+	d.outboundDispatcher = dispatcher
+	slog.Info("Outbound dispatcher initialized (ragabast)",
+		slog.String("ingest_url", ragCfg.IngestURL),
+		slog.Bool("auth_enabled", token != ""))
+	return nil
 }
 
 // defaultDaemonInstance is used by optional Prometheus integration to pull metrics
@@ -655,7 +665,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 	// Stop the outbound dispatcher last among workers — it has its own
 	// drain semantics (workers process remaining queue items, then exit).
-	// Cancelling runCtx above cancels in-flight POSTs; Stop then drains.
+	// Canceling runCtx above cancels in-flight POSTs; Stop then drains.
 	if outboundDispatcher != nil {
 		outboundDispatcher.Stop()
 	}

@@ -34,6 +34,7 @@ func (c *capturingRecorder) IncStageResult(stage string, r metrics.ResultLabel) 
 	}
 	m[r]++
 }
+
 func (c *capturingRecorder) IncBuildOutcome(o metrics.BuildOutcomeLabel)                 { c.outcomes[o]++ }
 func (c *capturingRecorder) ObserveCloneRepoDuration(string, time.Duration, bool)        {}
 func (c *capturingRecorder) IncCloneRepoResult(bool)                                     {}
