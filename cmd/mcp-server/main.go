@@ -5,58 +5,86 @@
 //
 // It is intentionally a standalone binary (not a subcommand of `docbuilder`)
 // because MCP hosts spawn one process per server and expect a tight stdio
-// JSON-RPC surface. Pulling in Kong + the full CLI for that would just add
-// startup latency.
+// JSON-RPC surface.
 //
-// Usage:
+// Subcommands:
 //
-//	docbuilder-mcp \
-//	    --config config.yaml \
-//	    --base-url https://docs.example.com \
-//	    --docs-dir ./docs
+//	docbuilder-mcp                     start the server (default if no subcommand given;
+//	                                  flags: --config, --base-url, --docs-dir, --verbose)
+//	docbuilder-mcp init [tools...]     set up MCP config for one or more clients
+//	                                  (opencode, vscode). Default: project-level config,
+//	                                  --global for user-level. Auto-detects installed
+//	                                  tools when no argument is given.
+//	docbuilder-mcp print [tools...]    print the MCP config JSON for the named tools
+//	                                  without writing anything to disk.
+//	docbuilder-mcp path [tool]        show where the MCP config file would be written
+//	                                  for the named tool (project-level by default,
+//	                                  pass --global for user-level).
+//
+// Why a subcommand for setup when MCP servers are normally invoked with just
+// flags: hosts spawn `docbuilder-mcp` (no subcommand) which Kong still
+// dispatches to the default `serve` command. Existing host configs of the
+// form `"command": "docbuilder-mcp", "args": ["--config", "..."]` keep
+// working unchanged.
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
-	"log/slog"
 	"os"
+
+	"github.com/alecthomas/kong"
 
 	"git.home.luguber.info/inful/docbuilder/internal/version"
 )
 
+// CLI is the top-level Kong CLI for docbuilder-mcp.
+//
+// `Serve` is marked as the default command with `default:"withargs"` so that
+// `docbuilder-mcp --config foo.yaml` (no subcommand, flags before any
+// subcommand name) still launches the server — matching the pre-subcommand
+// invocation pattern that MCP hosts rely on. `default:"withargs"` is the
+// Kong incantation that allows flags to come BEFORE the default subcommand
+// name; plain `default:"1"` only dispatches the default subcommand when no
+// args are given at all, which would break the MCP host spawn pattern.
+type CLI struct {
+	Version customVersionFlag `name:"version" help:"Print version and exit"`
+
+	Serve ServeCmd `cmd:"" name:"serve" default:"withargs" help:"Run the MCP server over stdio (default if no command given)"`
+	Init  InitCmd  `cmd:"" name:"init" help:"Set up MCP config for one or more clients (opencode, vscode)"`
+	Print PrintCmd `cmd:"" name:"print" help:"Print MCP config JSON for one or more tools without writing to disk"`
+	Path  PathCmd  `cmd:"" name:"path" help:"Show where the MCP config file would be written for a tool"`
+}
+
+// customVersionFlag prints the ldflag-injected Version string from
+// internal/version, which GoReleaser sets via -ldflags at build time.
+type customVersionFlag bool
+
+// BeforeApply runs before the rest of the CLI parses; if --version is in
+// the args, print and exit before subcommand dispatch.
+func (customVersionFlag) BeforeApply(_ *kong.Context) error {
+	_, _ = fmt.Fprintln(os.Stdout, version.Version)
+	os.Exit(0)
+	return nil
+}
+
 func main() {
-	var (
-		configPath = flag.String("config", "config.yaml", "Path to docbuilder config.yaml (optional)")
-		baseURL    = flag.String("base-url", "", "Override template discovery base URL")
-		docsDir    = flag.String("docs-dir", "", "Default docs directory (default: ./docs)")
-		verbose    = flag.Bool("verbose", false, "Enable debug logging")
-		showVer    = flag.Bool("version", false, "Print version and exit")
+	cli := CLI{}
+	parser, err := kong.New(
+		&cli,
+		kong.Name("docbuilder-mcp"),
+		kong.Description("MCP server for the docbuilder documentation pipeline."),
+		kong.UsageOnError(),
 	)
-	flag.Parse()
-
-	if *showVer {
-		_, _ = fmt.Fprintln(os.Stdout, version.Version)
-		return
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "docbuilder-mcp: %v\n", err)
+		os.Exit(1)
 	}
-
-	level := slog.LevelInfo
-	if *verbose {
-		level = slog.LevelDebug
+	kctx, err := parser.Parse(os.Args[1:])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "docbuilder-mcp: %v\n", err)
+		os.Exit(1)
 	}
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
-
-	cfg := serverConfig{
-		ConfigPath: *configPath,
-		BaseURL:    *baseURL,
-		DocsDir:    *docsDir,
-		Verbose:    *verbose,
-		Version:    version.Version,
-		Logger:     logger,
-	}
-
-	if err := run(context.Background(), cfg); err != nil {
+	if err := kctx.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "docbuilder-mcp: %v\n", err)
 		os.Exit(1)
 	}
