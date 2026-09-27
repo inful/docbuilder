@@ -11,30 +11,33 @@ builds:
   - id: docbuilder
     main: ./cmd/docbuilder
     binary: docbuilder
-    
-    # Build for Linux only
+
+    # Build for Linux and macOS (darwin). GoReleaser will skip darwin/arm
+    # (Go only supports darwin/amd64 and darwin/arm64), so the arm entries
+    # below are Linux-only.
     goos:
       - linux
-    
+      - darwin
+
     goarch:
       - amd64
       - arm64
       - arm
-    
+
     goarm:
       - "7"
-    
+
     # Build flags
     flags:
       - -trimpath
-    
+
     # Linker flags for version injection
     ldflags:
       - -s -w
       - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
-    
+
     # Environment variables for the build
     env:
       - CGO_ENABLED=0
@@ -42,30 +45,33 @@ builds:
   - id: doctemplate
     main: ./cmd/doctemplate
     binary: doctemplate
-    
-    # Build for Linux only
+
+    # Build for Linux and macOS (darwin). See note in `docbuilder` above
+    # about why arm entries remain in the matrix even though darwin/arm
+    # is unsupported by Go.
     goos:
       - linux
-    
+      - darwin
+
     goarch:
       - amd64
       - arm64
       - arm
-    
+
     goarm:
       - "7"
-    
+
     # Build flags
     flags:
       - -trimpath
-    
+
     # Linker flags for version injection
     ldflags:
       - -s -w
       - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
-    
+
     # Environment variables for the build
     env:
       - CGO_ENABLED=0
@@ -73,30 +79,31 @@ builds:
   - id: docbuilder-mcp
     main: ./cmd/mcp-server
     binary: docbuilder-mcp
-    
-    # Build for Linux only
+
+    # Build for Linux and macOS (darwin). See note in `docbuilder` above.
     goos:
       - linux
-    
+      - darwin
+
     goarch:
       - amd64
       - arm64
       - arm
-    
+
     goarm:
       - "7"
-    
+
     # Build flags
     flags:
       - -trimpath
-    
+
     # Linker flags for version injection
     ldflags:
       - -s -w
       - -X git.home.luguber.info/inful/docbuilder/internal/version.Version={{.Version}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.BuildTime={{.Date}}
       - -X git.home.luguber.info/inful/docbuilder/internal/version.GitCommit={{.FullCommit}}
-    
+
     # Environment variables for the build
     env:
       - CGO_ENABLED=0
