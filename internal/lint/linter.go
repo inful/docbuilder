@@ -46,6 +46,7 @@ func NewLinter(cfg *Config) *Linter {
 			&BodyH1Rule{},
 			&MissingIndexPageRule{},
 			&SequencePrefixFilenameRule{},
+			&TagCountRule{},
 			// Additional rules will be added here in future phases
 		},
 	}
