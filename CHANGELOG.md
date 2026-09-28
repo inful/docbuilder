@@ -9,6 +9,47 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-28
+
+### Changed
+- **Lint (internal-link-style rule, scoped down)**: dropped the
+  missing-`.md` half of `internal-link-style` and its auto-fix. The
+  rule used to flag any relative link without `.md` extension as
+  WARNING and offered "Append `.md`" as the fix, but that contradicted
+  the README's documented `./name/` directory-link pattern (Hugo
+  resolves `[text](./api/)` to `api/_index.md`) and the auto-fix
+  actively rewrote `[API](./api)` → `[API](./api.md)`, breaking valid
+  links to `api/_index.md`. Non-existence is now caught by the
+  `broken-links` rule, which already does the right `.md` fallback
+  (and also handles directory targets via `os.Stat`). The rule still
+  fires for site-rooted links (starting with `/`), which is the only
+  remaining cross-renderer portability concern. Removed the
+  `applyInternalLinkStyleFixes` function, `appendMarkdownExtension`,
+  `LinkStyleUpdate` type, `FixResult.LinkStyleUpdates` field, and the
+  wiring in `fixer.go`. The `internal-link-style` entry was removed
+  from the MCP `autoFixableRules` map and the closed-set test in
+  `lint_fix_manual_test.go`. The rule description in
+  `docbuilder-best-practices.md` was updated. Closes #76.
+
+### Removed
+- **Lint (missing-index-page rule)**: dropped the WARNING that flagged
+  directories with ≥3 `.md` children and no `_index.md`, plus its
+  auto-fixer that generated a placeholder landing page. The rule
+  produced more lint noise than value: the auto-generated placeholder
+  itself failed `frontmatter-required-fields` and surfaced as an ERROR
+  in the `Detect Lint Rule Drift` workflow, requiring a follow-up fix
+  in 0.17.1. The placeholder was also opinion-driven (curated landing
+  page vs. Hugo's auto-generated listing). `DocBuilder` continues to
+  generate Hugo `_index.md` files at the site, repository, and section
+  levels via the build pipeline; authors who want curated section
+  indexes can add them by hand. Removed the `DirectoryRule` interface
+  and `runDirectoryRules` helper from the linter, the
+  `MissingIndexPages` field from `FixResult`, the `itoa` helper was
+  moved into `rule_tag_count.go` (its remaining caller), and the rule
+  entries in `tools.go`, `lint_fix_manual_test.go`, and four docs
+  (`lint-rules.md`, `lint-rules-changelog.md`, `migrate-to-linting.md`,
+  `docbuilder-best-practices.md`) were updated. Closes #70.
+
 ## [0.17.1] - 2026-09-27
 
 ### Fixed
@@ -234,6 +275,7 @@ The last 90 days focused on four themes:
 > v0.17.0 didn't roll those entries forward. This entry corrects the
 > record; the binaries are unchanged.
 
+[0.18.0]: https://github.com/inful/docbuilder/compare/v0.17.2...v0.18.0
 [0.17.1]: https://github.com/inful/docbuilder/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/inful/docbuilder/compare/v0.16.1...v0.17.0
-[Unreleased]: https://github.com/inful/docbuilder/compare/v0.17.1...HEAD
+[Unreleased]: https://github.com/inful/docbuilder/compare/v0.18.0...HEAD
