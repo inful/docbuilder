@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: bc4bbcb3d53cf3cc8b4200deba98bf0a7258ce02dbd31c1144712ef04971e7a1
-lastmod: "2026-09-27"
+fingerprint: d295fc1d16cc8d8667446fb754e036257e961436bcd98f46c89d19726188fc9c
+lastmod: "2026-09-28"
 tags:
   - linting
   - changelog
@@ -132,7 +132,6 @@ This document tracks changes to linting rules across DocBuilder versions, helpin
 - [ ] Image reference validation
 
 **Structure Rules (Warnings) - Planned:**
-- [ ] Missing section index detection (`_index.md`)
 - [ ] Deep directory nesting detection (>4 levels)
 - [ ] Orphaned asset detection (unreferenced images)
 - [ ] Mixed naming style detection in same directory
