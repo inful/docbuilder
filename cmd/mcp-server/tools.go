@@ -430,9 +430,7 @@ var autoFixableRules = map[string]bool{
 	"frontmatter-required-fields":    true,
 	"directory-category-consistency": true,
 	"category-naming":                true,
-	"internal-link-style":            true,
 	"sequence-prefix-filename":       true,
-	"missing-index-page":             true,
 	"broken-links":                   true,
 }
 

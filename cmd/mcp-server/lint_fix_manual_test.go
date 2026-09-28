@@ -127,6 +127,12 @@ body
 // TestAutoFixableRules_ContainsExpected sanity-checks the closed set
 // of auto-fixable rule names. Adding/removing a rule here should be
 // intentional — this test ensures the set doesn't drift silently.
+//
+// Note: internal-link-style is intentionally absent. The rule still
+// fires (for site-rooted links) but the missing-`.md` half was removed
+// because it conflicted with Hugo's directory-link pattern and the
+// matching auto-fix actively broke valid directory links. Broken links
+// are caught by the broken-links rule instead.
 func TestAutoFixableRules_ContainsExpected(t *testing.T) {
 	expected := []string{
 		"filename-conventions",
@@ -135,14 +141,29 @@ func TestAutoFixableRules_ContainsExpected(t *testing.T) {
 		"frontmatter-required-fields",
 		"directory-category-consistency",
 		"category-naming",
-		"internal-link-style",
 		"sequence-prefix-filename",
-		"missing-index-page",
 		"broken-links",
 	}
 	for _, e := range expected {
 		if !autoFixableRules[e] {
 			t.Errorf("autoFixableRules missing %q", e)
+		}
+	}
+}
+
+// TestAutoFixableRules_DeprecatedRulesExcluded sanity-checks that
+// rules removed from the linter (e.g. missing-index-page, deprecated
+// in favor of the build pipeline's _index.md generation) are also
+// absent from the auto-fixable map. Without this guard, a future
+// revert that re-registered the rule but forgot to remove the map
+// entry would silently auto-fix nothing.
+func TestAutoFixableRules_DeprecatedRulesExcluded(t *testing.T) {
+	deprecated := []string{
+		"missing-index-page",
+	}
+	for _, d := range deprecated {
+		if autoFixableRules[d] {
+			t.Errorf("autoFixableRules should not contain deprecated rule %q", d)
 		}
 	}
 }

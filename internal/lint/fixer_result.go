@@ -14,7 +14,6 @@ type FixResult struct {
 	FrontmatterFields []FrontmatterFieldsUpdate
 	CategoryInjects   []CategoryInjectUpdate
 	CategoryRenames   []CategoryRenameUpdate
-	LinkStyleUpdates  []LinkStyleUpdate
 	BrokenLinks       []BrokenLink // Links to non-existent files
 	HealSkipped       []BrokenLinkHealSkip
 	ErrorsFixed       int
