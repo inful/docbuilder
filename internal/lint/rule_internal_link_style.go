@@ -114,7 +114,7 @@ func hasExplicitExtension(target string) bool {
 
 func stripQueryAndFragment(target string) string {
 	t := target
-	for i := 0; i < len(t); i++ {
+	for i := range len(t) {
 		if t[i] == '?' || t[i] == '#' {
 			return t[:i]
 		}

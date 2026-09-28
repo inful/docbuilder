@@ -1,4 +1,4 @@
 Files renamed: 3
-Errors fixed: 29
+Errors fixed: 28
 Fingerprints updated: 4
 Links updated: 0
