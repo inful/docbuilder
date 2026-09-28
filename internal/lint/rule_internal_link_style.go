@@ -2,6 +2,7 @@ package lint
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
@@ -55,6 +56,9 @@ func (r *InternalLinkStyleRule) Check(filePath string) ([]Issue, error) {
 				issues = append(issues, r.siteRootedIssue(filePath, target, lineNum))
 				continue
 			}
+			if hasExplicitExtension(target) && !hasMarkdownExtension(target) {
+				continue
+			}
 			if !hasMarkdownExtension(target) {
 				issues = append(issues, r.missingExtIssue(filePath, target, lineNum))
 			}
@@ -100,14 +104,22 @@ func isSiteRooted(target string) bool {
 
 func hasMarkdownExtension(target string) bool {
 	// Strip query string and fragment before checking extension
+	t := stripQueryAndFragment(target)
+	return len(t) >= 3 && (t[len(t)-3:] == ".md" || (len(t) >= 9 && t[len(t)-9:] == ".markdown"))
+}
+
+func hasExplicitExtension(target string) bool {
+	return filepath.Ext(stripQueryAndFragment(target)) != ""
+}
+
+func stripQueryAndFragment(target string) string {
 	t := target
 	for i := 0; i < len(t); i++ {
 		if t[i] == '?' || t[i] == '#' {
-			t = t[:i]
-			break
+			return t[:i]
 		}
 	}
-	return len(t) >= 3 && (t[len(t)-3:] == ".md" || (len(t) >= 9 && t[len(t)-9:] == ".markdown"))
+	return t
 }
 
 func (r *InternalLinkStyleRule) missingExtIssue(filePath, target string, line int) Issue {
