@@ -148,7 +148,6 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	frontmatterFieldTargets := make(map[string]struct{})
 	directoryCategoryTargets := make(map[string]struct{})
 	categoryNamingTargets := make(map[string]struct{})
-	internalLinkStyleTargets := make(map[string]struct{})
 	sequencePrefixTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
 	uidAliasIssueCounts := make(map[string]int)
@@ -156,7 +155,6 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	frontmatterFieldIssueCounts := make(map[string]int)
 	directoryCategoryIssueCounts := make(map[string]int)
 	categoryNamingIssueCounts := make(map[string]int)
-	internalLinkStyleIssueCounts := make(map[string]int)
 	sequencePrefixIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError && issue.Severity != SeverityWarning {
@@ -186,10 +184,6 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		if issue.Rule == ruleCategoryNaming {
 			categoryNamingTargets[issue.FilePath] = struct{}{}
 			categoryNamingIssueCounts[issue.FilePath]++
-		}
-		if issue.Rule == ruleInternalLinkStyle {
-			internalLinkStyleTargets[issue.FilePath] = struct{}{}
-			internalLinkStyleIssueCounts[issue.FilePath]++
 		}
 		if issue.Rule == ruleSequencePrefixFilename {
 			sequencePrefixTargets[issue.FilePath] = struct{}{}
@@ -222,9 +216,6 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Phase 3.5: heal broken links caused by Git renames/moves.
 	// (No-op when not in a git repository or when no broken links are found.)
 	f.healBrokenLinksFromGitRenames(rootPath, brokenLinksWorklist, fixResult, fingerprintTargets)
-
-	// Phase 3.6: append `.md` extension to bare internal links.
-	f.applyInternalLinkStyleFixes(internalLinkStyleTargets, internalLinkStyleIssueCounts, fixResult, fingerprintTargets)
 
 	// Phase 3.7: rename files in sequence-numbered directories.
 	// Renames also need link-rewrite passes, which are handled

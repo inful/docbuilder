@@ -2,19 +2,26 @@ package lint
 
 import (
 	"os"
-	"path/filepath"
 	"regexp"
 
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
-// InternalLinkStyleRule warns when internal markdown links are not in
-// the canonical `.md` form. Specifically:
-//   - `[text](relative/path)` without `.md` extension → WARNING
-//   - `[text](/site-rooted)` (absolute path starting with `/`) → WARNING
+// InternalLinkStyleRule warns when internal markdown links are
+// site-rooted (start with `/`). Cross-renderer portability is the
+// concern: a link like `[Other](/other-page)` works in Hugo but
+// produces dead links in any renderer that doesn't serve from the
+// site root.
 //
 // External URLs (`http://`, `https://`) and in-page anchors (`#foo`)
 // are not flagged.
+//
+// The rule used to also flag relative links without `.md` extension,
+// but that warning conflicted with Hugo's documented directory-link
+// pattern (`[text](./api/)` resolving to `api/_index.md`) and the
+// matching auto-fix actively broke valid directory links. The
+// broken-link detector covers non-existence with the correct `.md`
+// fallback, so the extension-style warning was redundant.
 type InternalLinkStyleRule struct{}
 
 // Name returns the rule identifier.
@@ -54,13 +61,6 @@ func (r *InternalLinkStyleRule) Check(filePath string) ([]Issue, error) {
 			}
 			if isSiteRooted(target) {
 				issues = append(issues, r.siteRootedIssue(filePath, target, lineNum))
-				continue
-			}
-			if hasExplicitExtension(target) && !hasMarkdownExtension(target) {
-				continue
-			}
-			if !hasMarkdownExtension(target) {
-				issues = append(issues, r.missingExtIssue(filePath, target, lineNum))
 			}
 		}
 		lineNum++
@@ -100,40 +100,6 @@ func isAnchor(target string) bool {
 
 func isSiteRooted(target string) bool {
 	return len(target) > 0 && target[0] == '/'
-}
-
-func hasMarkdownExtension(target string) bool {
-	// Strip query string and fragment before checking extension
-	t := stripQueryAndFragment(target)
-	return len(t) >= 3 && (t[len(t)-3:] == ".md" || (len(t) >= 9 && t[len(t)-9:] == ".markdown"))
-}
-
-func hasExplicitExtension(target string) bool {
-	return filepath.Ext(stripQueryAndFragment(target)) != ""
-}
-
-func stripQueryAndFragment(target string) string {
-	t := target
-	for i := range len(t) {
-		if t[i] == '?' || t[i] == '#' {
-			return t[:i]
-		}
-	}
-	return t
-}
-
-func (r *InternalLinkStyleRule) missingExtIssue(filePath, target string, line int) Issue {
-	return Issue{
-		FilePath: filePath,
-		Severity: SeverityWarning,
-		Rule:     r.Name(),
-		Message:  "Internal link missing .md extension",
-		Explanation: "Internal link target `" + target + "` doesn't end in `.md`. " +
-			"Docbuilder's broken-link detector only walks the `.md` form; standardizing " +
-			"on the canonical extension makes link checking uniform.",
-		Fix:  "Append `.md` to the link target: `(" + target + ".md)`.",
-		Line: line,
-	}
 }
 
 func (r *InternalLinkStyleRule) siteRootedIssue(filePath, target string, line int) Issue {

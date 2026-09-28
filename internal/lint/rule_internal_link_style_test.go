@@ -3,6 +3,7 @@ package lint
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -66,28 +67,6 @@ func TestInternalLinkStyleRule_NonMarkdownExtension(t *testing.T) {
 	}
 }
 
-// TestInternalLinkStyleRule_MissingExtension verifies a relative link
-// without `.md` extension produces a WARNING.
-func TestInternalLinkStyleRule_MissingExtension(t *testing.T) {
-	dir := t.TempDir()
-	writeDocWithLinks(t, dir, "b.md", "See [CLI](cli).")
-
-	r := &InternalLinkStyleRule{}
-	issues, err := r.Check(filepath.Join(dir, "b.md"))
-	if err != nil {
-		t.Fatalf("Check: %v", err)
-	}
-	if len(issues) != 1 {
-		t.Fatalf("expected 1 issue, got %d", len(issues))
-	}
-	if issues[0].Rule != ruleInternalLinkStyle {
-		t.Errorf("Rule = %q, want %q", issues[0].Rule, ruleInternalLinkStyle)
-	}
-	if issues[0].Severity != SeverityWarning {
-		t.Errorf("Severity = %v, want %v", issues[0].Severity, SeverityWarning)
-	}
-}
-
 // TestInternalLinkStyleRule_SiteRooted verifies a site-rooted link
 // (starting with `/`) produces a WARNING.
 func TestInternalLinkStyleRule_SiteRooted(t *testing.T) {
@@ -131,5 +110,91 @@ func TestInternalLinkStyleRule_Anchor(t *testing.T) {
 	}
 	if len(issues) != 0 {
 		t.Errorf("expected 0 issues (anchor), got %d", len(issues))
+	}
+}
+
+// TestInternalLinkStyleRule_NoWarningForDirectoryLink is the
+// characterization test for removing the missing-`.md` half of the
+// rule. Hugo resolves `[text](./api/)` to `api/_index.md`; the rule
+// used to flag this with "Internal link missing .md extension", which
+// contradicted the README's documented `./name/` pattern (README.md:402)
+// and produced false positives that operators had to silence.
+//
+// Desired end state: relative directory links (with or without trailing
+// slash) produce no issue from this rule. Pre-change, the rule fires
+// here because `./api/` has no `.md` extension.
+func TestInternalLinkStyleRule_NoWarningForDirectoryLink(t *testing.T) {
+	dir := t.TempDir()
+	// Directory link with trailing slash — Hugo resolves to dir/_index.md.
+	writeDocWithLinks(t, dir, "index.md", "See [API](./api/) for details.")
+	// Directory link without trailing slash — same target, slightly
+	// different syntax. Both should be ignored by the rule.
+	writeDocWithLinks(t, dir, "index2.md", "See [API](./api) for details.")
+
+	r := &InternalLinkStyleRule{}
+	for _, name := range []string{"index.md", "index2.md"} {
+		issues, err := r.Check(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatalf("Check(%s): %v", name, err)
+		}
+		for _, iss := range issues {
+			if iss.Rule == ruleInternalLinkStyle {
+				t.Errorf("%s: rule %q should not fire on directory link; got: %+v",
+					name, iss.Rule, iss)
+			}
+		}
+	}
+}
+
+// TestInternalLinkStyleRule_NoWarningForExtensionlessLink is the
+// characterization test for the second case the user flagged:
+// relative links without `.md` extension. The broken-link detector
+// already does the right existence check (it tries the path as-is,
+// then with `.md` appended, then with `.markdown`), so this rule's
+// missing-extension warning was redundant and produced false positives
+// on links that resolved correctly.
+//
+// Desired end state: relative extensionless links produce no issue
+// from this rule. Pre-change, the rule fires here because `./foo` has
+// no `.md` extension.
+func TestInternalLinkStyleRule_NoWarningForExtensionlessLink(t *testing.T) {
+	dir := t.TempDir()
+	writeDocWithLinks(t, dir, "index.md", "See [Foo](./foo) for details.")
+
+	r := &InternalLinkStyleRule{}
+	issues, err := r.Check(filepath.Join(dir, "index.md"))
+	if err != nil {
+		t.Fatalf("Check: %v", err)
+	}
+	for _, iss := range issues {
+		if iss.Rule == ruleInternalLinkStyle {
+			t.Errorf("rule %q should not fire on extensionless link; got: %+v", iss.Rule, iss)
+		}
+	}
+}
+
+// TestInternalLinkStyleRule_StillWarnsForSiteRooted guards against the
+// site-rooted half of the rule being accidentally deleted along with
+// the missing-`.md` half. The site-rooted warning is still useful
+// (cross-renderer portability) and is the only remaining concern of
+// the rule after the cleanup.
+func TestInternalLinkStyleRule_StillWarnsForSiteRooted(t *testing.T) {
+	dir := t.TempDir()
+	writeDocWithLinks(t, dir, "index.md", "See [Other](/other-page) for details.")
+
+	r := &InternalLinkStyleRule{}
+	issues, err := r.Check(filepath.Join(dir, "index.md"))
+	if err != nil {
+		t.Fatalf("Check: %v", err)
+	}
+	found := false
+	for _, iss := range issues {
+		if iss.Rule == ruleInternalLinkStyle && strings.Contains(iss.Message, "Site-rooted") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("rule %q should still fire site-rooted warning; got issues: %+v",
+			ruleInternalLinkStyle, issues)
 	}
 }
