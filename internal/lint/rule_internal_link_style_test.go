@@ -50,6 +50,22 @@ func TestInternalLinkStyleRule_ValidCanonical(t *testing.T) {
 	}
 }
 
+// TestInternalLinkStyleRule_NonMarkdownExtension verifies that links with an
+// explicit non-markdown extension (for example images) are not flagged.
+func TestInternalLinkStyleRule_NonMarkdownExtension(t *testing.T) {
+	dir := t.TempDir()
+	writeDocWithLinks(t, dir, "asset.md", "See [Screenshot](img/ubuntu_ssh01.png).")
+
+	r := &InternalLinkStyleRule{}
+	issues, err := r.Check(filepath.Join(dir, "asset.md"))
+	if err != nil {
+		t.Fatalf("Check: %v", err)
+	}
+	if len(issues) != 0 {
+		t.Errorf("expected 0 issues (explicit extension), got %d", len(issues))
+	}
+}
+
 // TestInternalLinkStyleRule_MissingExtension verifies a relative link
 // without `.md` extension produces a WARNING.
 func TestInternalLinkStyleRule_MissingExtension(t *testing.T) {
