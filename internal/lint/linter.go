@@ -44,7 +44,6 @@ func NewLinter(cfg *Config) *Linter {
 			&FrontmatterUIDRule{},
 			&FrontmatterFingerprintRule{},
 			&BodyH1Rule{},
-			&MissingIndexPageRule{},
 			&SequencePrefixFilenameRule{},
 			&TagCountRule{},
 			&InternalLinkStyleRule{},
@@ -70,9 +69,6 @@ func (l *Linter) LintPath(path string) (*Result, error) {
 
 	if info.IsDir() {
 		err = l.lintDirectory(path, result)
-		if dirErr := l.runDirectoryRules(path, result); dirErr != nil {
-			return nil, dirErr
-		}
 	} else {
 		err = l.lintFile(path, result)
 		result.FilesTotal = 1
@@ -278,30 +274,6 @@ func globToRegexp(glob string) *regexp.Regexp {
 	}
 	b.WriteString(`$`)
 	return regexp.MustCompile(b.String())
-}
-
-// runDirectoryRules runs every rule that implements DirectoryRule
-// against the lint root, appending any findings to result. Extracted
-// from LintPath to keep LintPath's branch complexity under the nestif
-// threshold.
-func (l *Linter) runDirectoryRules(path string, result *Result) error {
-	for _, rule := range l.rules {
-		dr, ok := rule.(DirectoryRule)
-		if !ok {
-			continue
-		}
-		issues, drErr := dr.CheckDirectory(path)
-		if drErr != nil {
-			return drErr
-		}
-		for _, issue := range issues {
-			if l.cfg.Quiet && issue.Severity != SeverityError {
-				continue
-			}
-			result.Issues = append(result.Issues, issue)
-		}
-	}
-	return nil
 }
 
 // matchGlob returns true if the relative path matches the compiled glob.

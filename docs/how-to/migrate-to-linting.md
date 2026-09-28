@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2025-12-29T00:00:00Z
-fingerprint: d3aa4c30f5fb069d63f5776dcf76179d9f9c9a6ea9fca4e93e28af8690f90010
-lastmod: "2026-09-27"
+fingerprint: 222cb087be903a6177e25124725d2d4825ca4850222f3bf748fa7e18fe111dad
+lastmod: "2026-09-28"
 tags:
   - linting
   - migration
@@ -78,7 +78,6 @@ Create fix plan based on severity:
 | P0 | Uppercase letters | 32 | Auto-fix |
 | P0 | Special characters | 7 | Auto-fix |
 | P1 | Double extensions | 12 | Manual review |
-| P2 | Missing section indexes | 8 | Manual creation |
 | P3 | Orphaned assets | 15 | Manual cleanup |
 
 ### Phase 2: Automated Cleanup (Day 1-2)
@@ -238,35 +237,6 @@ grep -r "tags.md" docs/ --include="*.md"
 
 git add -A
 git commit -m "docs: rename reserved filenames to avoid Hugo conflicts"
-```
-
-#### Issue: Missing Section Indexes
-
-**Example**: `docs/api/` directory has no `_index.md`
-
-**Resolution**:
-
-Create `docs/api/_index.md`:
-```yaml
----
-title: "API Documentation"
-weight: 2
-description: "Complete API reference and guides"
----
-
-# API Documentation
-
-This section contains comprehensive API documentation including:
-
-- Authentication and authorization
-- REST API endpoints
-- GraphQL schema
-- SDKs and client libraries
-```
-
-```bash
-git add docs/api/_index.md
-git commit -m "docs: add missing section index for API documentation"
 ```
 
 #### Issue: Broken Internal Links

@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2025-12-29T00:00:00Z
-fingerprint: e0d91742100de68dc02fe1ca09a5850043f07aceef2e3afbaeb0d7352ea41b37
-lastmod: "2026-09-27"
+fingerprint: 6c445b0c9fd81a96064e8e005ec33959e745fddc26baf2e08547b022b29e75d4
+lastmod: "2026-09-28"
 tags:
   - linting
   - validation
@@ -540,54 +540,6 @@ ERROR: Broken internal link
 
 Structure rules are **Warnings** that don't block builds but should be addressed.
 
-### Rule: Missing Section Index
-
-**Pattern**: Directory contains `.md` files but no `_index.md`
-
-**Rationale**:
-- Section won't appear in navigation sidebar
-- Directory appears empty in site structure
-- No landing page for the section
-
-**Examples**:
-
-```
-❌ Missing _index.md:
-docs/
-  api/
-    authentication.md
-    authorization.md
-    # No _index.md
-
-✅ Has _index.md:
-docs/
-  api/
-    _index.md          ← Section landing page
-    authentication.md
-    authorization.md
-```
-
-**Auto-fix**: Can generate basic `_index.md` with `--fix --generate-indexes`
-
-**Warning Message**:
-```
-WARNING: Missing section index
-  Directory: docs/api/
-  Issue: Contains 5 markdown files but no _index.md
-  Impact: Section will not appear in navigation sidebar
-  
-  Create _index.md to define this section:
-  
-  ---
-  title: "API Documentation"
-  weight: 2
-  ---
-  
-  This section contains API guides and references.
-```
-
----
-
 ### Rule: Deep Nesting
 
 **Pattern**: Directory structure exceeds 4 levels deep
@@ -915,7 +867,6 @@ Linting rules evolve with DocBuilder versions. See [Lint Rules Changelog](./lint
 | Reserved names | ✅ Yes | Add prefix |
 | Malformed frontmatter | ❌ No | Manual correction |
 | Broken links | ❌ No* | Manual fix (*Can detect only) |
-| Missing section index | ⚠️ Partial | Generate basic `_index.md` |
 | Mixed naming styles | ✅ Yes | Normalize to kebab-case |
 | Image filename issues | ✅ Yes | Same as markdown files |
 | Large binary files | ❌ No | Manual optimization |

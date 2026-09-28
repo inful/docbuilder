@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-01T00:00:00Z
-fingerprint: b33991592027f679358c4f37050943d5ee50e2ba82e737e1a5feb7dc14f5f61a
-lastmod: "2026-09-27"
+fingerprint: 7fe089220d8f35278305cc3bb503e8274f3d38e4b2f4ba99843cc5172a331c4f
+lastmod: "2026-09-28"
 tags:
   - best-practices
   - documentation
@@ -552,7 +552,6 @@ This is what you can rely on without re-reading code:
 | `frontmatter-uid` | ERROR if `uid` is missing or not a valid UUID | `internal/lint/rule_frontmatter_uid.go` |
 | `frontmatter-fingerprint` | ERROR if `fingerprint` is missing or doesn't match content hash | `internal/lint/rule_frontmatter_fingerprint.go` |
 | `body-h1` | WARNING if the markdown body opens with `# ` (duplicates the rendered `title`) | `internal/lint/rule_body_h1.go` |
-| `missing-index-page` | WARNING on directories with ≥3 `.md` children and no `_index.md`; skips flat collections (`adr/`, `examples/`) | `internal/lint/rule_missing_index_page.go` |
 | `sequence-prefix-filename` | ERROR if a file in a configured sequence directory (`adr/` by default) doesn't match `<prefix>-NNN-slug.md` | `internal/lint/rule_sequence_prefix_filename.go` |
 | `tag-count` | WARNING when `len(tags) > 10` (threshold configurable) | `internal/lint/rule_tag_count.go` |
 | `internal-link-style` | WARNING when internal link is missing `.md` extension or starts with `/` (site-rooted) | `internal/lint/rule_internal_link_style.go` |

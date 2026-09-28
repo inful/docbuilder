@@ -15,7 +15,6 @@ type FixResult struct {
 	CategoryInjects   []CategoryInjectUpdate
 	CategoryRenames   []CategoryRenameUpdate
 	LinkStyleUpdates  []LinkStyleUpdate
-	MissingIndexPages []MissingIndexPageUpdate
 	BrokenLinks       []BrokenLink // Links to non-existent files
 	HealSkipped       []BrokenLinkHealSkip
 	ErrorsFixed       int
