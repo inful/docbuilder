@@ -54,7 +54,13 @@ daemon:
     # `docbuilder build` invocations never construct the dispatcher.
     ragabast:
       enabled: false                # must be explicitly true to fire
-      ingest_url: "https://ragabast.example.com/api/ingest/file"
+      # ragabast_base_url is the ragabast host (scheme+host only). The
+      # dispatcher derives both endpoints from this single value:
+      #   upload:    POST {ragabast_base_url}/api/ingest/file
+      #   preflight: GET  {ragabast_base_url}/api/documents/<uid>/fingerprint
+      # Path components are stripped, so you cannot accidentally POST to
+      # "/" by forgetting one.
+      ragabast_base_url: "https://ragabast.example.com"
       # Name of the env var that holds the bearer token. Read at daemon
       # startup; never logged or written to disk. Empty / unset = anonymous.
       auth_token_env: "RAGABAST_INGEST_TOKEN"
@@ -62,12 +68,18 @@ daemon:
       queue_size: 256               # in-memory buffer; overflow drops (with counter)
       timeout: "10s"                # per-POST HTTP timeout
       # Base URL used to build the preflight GET <base>/api/documents/<uid>/fingerprint.
-      # When empty (the default), docbuilder derives scheme+host from ingest_url.
-      # Set to opt in to a different base (e.g. when ingest_url goes through a proxy).
+      # When empty (the default), docbuilder uses ragabast_base_url. Set this
+      # only if preflight should hit a different host than the upload (rare).
       # preflight_base_url: "https://ragabast.example.com"
       # Toggle the fingerprint preflight. When unset, preflight is on whenever a
       # base URL resolves. Set to false to always POST every doc.
       # preflight_enabled: true
+      # DEPRECATED: ingest_url was the full endpoint URL in v0.19.0 and earlier.
+      # docbuilder still accepts it for backward compatibility — the path is
+      # stripped and the host is used as the base — but it logs a deprecation
+      # warning at startup. Migrate by removing this line and relying on
+      # ragabast_base_url above.
+      # ingest_url: "https://ragabast.example.com/api/ingest/file"
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"

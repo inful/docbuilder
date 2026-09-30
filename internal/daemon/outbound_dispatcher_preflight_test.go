@@ -490,24 +490,33 @@ func TestOutboundDispatcher_Preflight_DerivesBaseURLFromIngestURL(t *testing.T) 
 	}
 }
 
-// TestOutboundDispatcher_Preflight_UnparseableIngestURLDisablesPreflight
-// verifies that when IngestURL parses but has no usable scheme/host, the
-// constructor leaves preflight off rather than crashing. We don't need to
-// run the dispatcher — just verify the field is empty.
-func TestOutboundDispatcher_Preflight_UnparseableIngestURLDisablesPreflight(t *testing.T) {
-	// "garbage" parses as a relative URL — no scheme, no host. This is the
-	// pathological case where NewOutboundDispatcher accepts the URL but
-	// deriveBaseURL can't extract a base.
-	d, err := NewOutboundDispatcher(DispatcherConfig{
-		IngestURL: "garbage", // no scheme/host
+// TestOutboundDispatcher_UnparseableIngestURL_ReturnsError verifies
+// that when the legacy IngestURL parses but has no usable scheme/host
+// (e.g. "garbage"), the constructor returns an error rather than
+// silently constructing a dispatcher with no preflight base. Operators
+// see the misconfiguration at startup; we don't degrade silently.
+func TestOutboundDispatcher_UnparseableIngestURL_ReturnsError(t *testing.T) {
+	_, err := NewOutboundDispatcher(DispatcherConfig{
+		IngestURL: "garbage", // no scheme/host — fails deriveBaseURL
 		Workers:   1,
 		QueueSize: 4,
 	})
-	if err != nil {
-		t.Fatalf("NewOutboundDispatcher: %v", err)
+	if err == nil {
+		t.Fatal("expected error for unparseable IngestURL, got nil")
 	}
-	if d.preflightBase != "" {
-		t.Errorf("preflightBase = %q, want empty (URL has no scheme/host)", d.preflightBase)
+}
+
+// TestOutboundDispatcher_UnparseableBaseURL_ReturnsError verifies the
+// same for the new preferred field.
+func TestOutboundDispatcher_UnparseableBaseURL_ReturnsError(t *testing.T) {
+	// Use a URL that fails url.Parse (contains a control character).
+	_, err := NewOutboundDispatcher(DispatcherConfig{
+		BaseURL: "http://[::1", // malformed IPv6 bracket — url.Parse rejects
+		Workers: 1,
+		QueueSize: 4,
+	})
+	if err == nil {
+		t.Fatal("expected error for unparseable BaseURL, got nil")
 	}
 }
 

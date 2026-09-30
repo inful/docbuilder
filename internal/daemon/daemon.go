@@ -373,6 +373,7 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 		timeout = parsed
 	}
 	dispatcher, err := NewOutboundDispatcher(DispatcherConfig{
+		BaseURL:          ragCfg.BaseURL,
 		IngestURL:        ragCfg.IngestURL,
 		Token:            token,
 		Workers:          ragCfg.Workers,
@@ -386,6 +387,7 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 	}
 	d.outboundDispatcher = dispatcher
 	slog.Info("Outbound dispatcher initialized (ragabast)",
+		slog.String("ragabast_base_url", ragCfg.BaseURL),
 		slog.String("ingest_url", ragCfg.IngestURL),
 		slog.Bool("auth_enabled", token != ""))
 	return nil

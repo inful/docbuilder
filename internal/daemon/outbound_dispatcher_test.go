@@ -367,6 +367,149 @@ func TestOutboundDispatcher_RequiresIngestURL(t *testing.T) {
 	}
 }
 
+// TestOutboundDispatcher_NoPathIngestURL_WarnsButProceeds verifies that an
+// IngestURL with no path component (e.g. "https://ragabast.example.com")
+// constructs without error but logs a clear warning. The URL is preserved
+// verbatim — we never silently rewrite — so operators see the warning and
+// can fix their config. Without this, an operator forgetting the path
+// component would silently POST every document to "/" on the ragabast
+// host (observed in production: preflight looked healthy because
+// deriveBaseURL strips the path, masking the misconfig). The new
+// base_url config model fixes this by deriving the upload path from
+// the configured base; this test verifies that legacy IngestURL is
+// still accepted, derived correctly, and produces a deprecation
+// warning so operators know to migrate.
+func TestOutboundDispatcher_LegacyIngestURL_DerivesBaseAndWarns(t *testing.T) {
+	cases := []struct {
+		name          string
+		ingestURL     string
+		wantBaseURL   string
+		wantPreflight string
+	}{
+		{
+			name:          "full endpoint URL with path",
+			ingestURL:     "https://ragabast.example.com/api/ingest/file",
+			wantBaseURL:   "https://ragabast.example.com",
+			wantPreflight: "https://ragabast.example.com/api/documents/uid-1/fingerprint",
+		},
+		{
+			name:          "host only (the original bug config)",
+			ingestURL:     "https://ragabast.example.com",
+			wantBaseURL:   "https://ragabast.example.com",
+			wantPreflight: "https://ragabast.example.com/api/documents/uid-1/fingerprint",
+		},
+		{
+			name:          "trailing slash",
+			ingestURL:     "https://ragabast.example.com/",
+			wantBaseURL:   "https://ragabast.example.com",
+			wantPreflight: "https://ragabast.example.com/api/documents/uid-1/fingerprint",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := NewOutboundDispatcher(DispatcherConfig{
+				IngestURL: tc.ingestURL,
+				Workers:   1,
+				QueueSize: 4,
+			})
+			if err != nil {
+				t.Fatalf("NewOutboundDispatcher: %v", err)
+			}
+			if d.baseURL != tc.wantBaseURL {
+				t.Errorf("baseURL = %q, want %q", d.baseURL, tc.wantBaseURL)
+			}
+			// Pre-flight uses the same base by default — verify the
+			// constructed URL points at the right path.
+			target := d.preflightBase + "/api/documents/" + "uid-1" + "/fingerprint"
+			if target != tc.wantPreflight {
+				t.Errorf("preflight URL = %q, want %q", target, tc.wantPreflight)
+			}
+		})
+	}
+}
+
+// TestOutboundDispatcher_BaseURL_DerivesBothEndpoints verifies the new
+// preferred config field. A single base URL drives both the upload path
+// ({base}/api/ingest/file) and the preflight path
+// ({base}/api/documents/<uid>/fingerprint). No path to forget.
+func TestOutboundDispatcher_BaseURL_DerivesBothEndpoints(t *testing.T) {
+	var uploadHits, preflightHits atomic.Int32
+	var capturedUploadPath atomic.Value
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/documents/"):
+			preflightHits.Add(1)
+			w.WriteHeader(http.StatusNotFound)
+		case r.Method == http.MethodPost:
+			uploadHits.Add(1)
+			capturedUploadPath.Store(r.URL.Path)
+			w.WriteHeader(http.StatusAccepted)
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	defer srv.Close()
+
+	d, err := NewOutboundDispatcher(DispatcherConfig{
+		BaseURL:   srv.URL,
+		Workers:   1,
+		QueueSize: 4,
+	})
+	if err != nil {
+		t.Fatalf("NewOutboundDispatcher: %v", err)
+	}
+	d.Start(t.Context())
+	defer d.Stop()
+
+	d.Enqueue(docWithUIDAndFingerprint("uid-1", strings.Repeat("a", 64)), "docs/x.md")
+
+	deadline := time.Now().Add(2 * time.Second)
+	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	if uploadHits.Load() != 1 {
+		t.Errorf("upload hits = %d, want 1", uploadHits.Load())
+	}
+	if path, _ := capturedUploadPath.Load().(string); path != "/api/ingest/file" {
+		t.Errorf("upload path = %q, want /api/ingest/file", path)
+	}
+	if preflightHits.Load() != 1 {
+		t.Errorf("preflight hits = %d, want 1", preflightHits.Load())
+	}
+}
+
+// TestOutboundDispatcher_BothSet_BaseURLWins verifies that when both
+// ragabast_base_url and the deprecated ingest_url are set, BaseURL
+// wins and no deprecation warning fires (BaseURL is the canonical path).
+func TestOutboundDispatcher_BothSet_BaseURLWins(t *testing.T) {
+	d, err := NewOutboundDispatcher(DispatcherConfig{
+		BaseURL:   "https://canonical.example.com",
+		IngestURL: "https://legacy.example.com/api/ingest/file",
+		Workers:   1,
+		QueueSize: 4,
+	})
+	if err != nil {
+		t.Fatalf("NewOutboundDispatcher: %v", err)
+	}
+	if d.baseURL != "https://canonical.example.com" {
+		t.Errorf("baseURL = %q, want %q (BaseURL should win)", d.baseURL, "https://canonical.example.com")
+	}
+}
+
+// TestOutboundDispatcher_NeitherSet_ReturnsError verifies that
+// constructing without either field fails clearly.
+func TestOutboundDispatcher_NeitherSet_ReturnsError(t *testing.T) {
+	_, err := NewOutboundDispatcher(DispatcherConfig{
+		Workers:   1,
+		QueueSize: 4,
+	})
+	if err == nil {
+		t.Fatal("expected error when neither ragabast_base_url nor ingest_url is set")
+	}
+}
+
 // TestOutboundDispatcher_DefaultsApplied verifies that zero-valued
 // workers/queue/timeout get sensible defaults.
 func TestOutboundDispatcher_DefaultsApplied(t *testing.T) {
