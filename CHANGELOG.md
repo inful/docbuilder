@@ -9,6 +9,36 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-09-30
+
+### Added
+- **Ragabast ingester (config)**: new `ragabast_base_url` field for the
+  ragabast host. The dispatcher derives both endpoints from this single
+  value: `{base}/api/ingest/file` for the upload and
+  `{base}/api/documents/<uid>/fingerprint` for preflight. Path
+  components on the field are stripped, so the "POST to / because the
+  operator forgot the path" foot-gun is eliminated by construction.
+  The endpoint paths are now constants in the dispatcher (matching
+  ragabast's stable API contract) rather than something the operator
+  has to spell out.
+
+### Deprecated
+- **Ragabast ingester (config)**: `ingest_url` (the v0.19.0 form) is
+  deprecated. When set without `ragabast_base_url`, the dispatcher
+  derives scheme+host from it (path is discarded), logs a deprecation
+  warning, and proceeds — so existing configs keep working. Migrate by
+  replacing `ingest_url: https://ragabast.example.com/api/ingest/file`
+  with `ragabast_base_url: https://ragabast.example.com`.
+
+### Fixed
+- **Ragabast ingester (config validation)**: an unparseable
+  `ingest_url` (or unparseable `ragabast_base_url`) now fails the
+  dispatcher construction with an explicit error rather than
+  silently disabling preflight. The previous "garbage URL" path was
+  the only test case for that, but the new behavior makes
+  misconfigurations visible at startup instead of after the dispatcher
+  has been silently running with no preflight base.
+
 ## [0.19.0] - 2026-09-30
 
 ### Fixed
