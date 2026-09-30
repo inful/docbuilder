@@ -9,6 +9,17 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-09-30
+
+### Changed
+- **Build (gitignore)**: excluded local goreleaser build artifacts.
+  Added `/-/` (the literal root-level scratch dir local goreleaser runs
+  write to when the output dir is overridden — this operator's setup)
+  and `*.tar.gz` (goreleaser archive pattern — verified no `.tar.gz`
+  files exist anywhere else in the repo, so the broad pattern is
+  safe). Without these, every local release build regenerated ~100 MB
+  of `.tar.gz` files in `git status` as untracked-but-real entries.
+
 ## [0.19.1] - 2026-09-30
 
 ### Added
