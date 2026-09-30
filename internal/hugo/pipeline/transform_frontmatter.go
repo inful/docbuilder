@@ -3,7 +3,6 @@ package pipeline
 import (
 	"bytes"
 	"strings"
-	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/docmodel"
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
@@ -114,17 +113,18 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		doc.FrontMatter["type"] = "docs"
 	}
 
-	// Add date if not present (required by Hugo for proper sorting/display)
-	// Use git commit date if available, otherwise fall back to current time
-	if _, hasDate := doc.FrontMatter["date"]; !hasDate {
-		var dateStr string
-		if !doc.CommitDate.IsZero() {
-			dateStr = doc.CommitDate.Format("2006-01-02T15:04:05-07:00")
-		} else {
-			dateStr = time.Now().Format("2006-01-02T15:04:05-07:00")
-		}
-		doc.FrontMatter["date"] = dateStr
+// Add date if not present (required by Hugo for proper sorting/display)
+// Use git commit date when available; otherwise fall back to a fixed
+// epoch so reproducible builds don't churn fingerprints and rendered
+// Hugo output never reflects today's date. See the corresponding
+// comment in generateMainIndex / generateSectionIndex.
+if _, hasDate := doc.FrontMatter["date"]; !hasDate {
+	if !doc.CommitDate.IsZero() {
+		doc.FrontMatter["date"] = doc.CommitDate.Format("2006-01-02T15:04:05-07:00")
+	} else {
+		doc.FrontMatter["date"] = "2024-01-01T00:00:00Z"
 	}
+}
 
 	return nil, nil
 }
