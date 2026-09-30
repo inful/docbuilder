@@ -24,7 +24,7 @@ func TestRagabastConfigOrNil_DisabledReturnsNil(t *testing.T) {
 			Outbound: &config.OutboundConfig{
 				Ragabast: &config.RagabastConfig{
 					Enabled:   false,
-					IngestURL: "https://ragabast/api/ingest/async",
+					IngestURL: "https://ragabast/api/ingest/file",
 				},
 			},
 		},
@@ -39,7 +39,7 @@ func TestRagabastConfigOrNil_DisabledReturnsNil(t *testing.T) {
 func TestRagabastConfigOrNil_EnabledReturnsConfig(t *testing.T) {
 	want := &config.RagabastConfig{
 		Enabled:   true,
-		IngestURL: "https://ragabast/api/ingest/async",
+		IngestURL: "https://ragabast/api/ingest/file",
 	}
 	cfg := &config.Config{
 		Daemon: &config.DaemonConfig{
@@ -80,7 +80,7 @@ func TestRagabastConfigOrNil_NilDaemonSafe(t *testing.T) {
 // outbound_dispatcher_test.go.
 func TestNewOutboundDispatcher_AppliesRagabastConfig(t *testing.T) {
 	d, err := NewOutboundDispatcher(DispatcherConfig{
-		IngestURL: "http://127.0.0.1:1/api/ingest/async",
+		IngestURL: "http://127.0.0.1:1/api/ingest/file",
 		Workers:   2,
 		QueueSize: 8,
 	})

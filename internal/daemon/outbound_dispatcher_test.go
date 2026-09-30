@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,17 +11,19 @@ import (
 	"time"
 )
 
-// TestOutboundDispatcher_PostsContentAndAuthHeader verifies the happy path:
-// Enqueue submits a job, the worker POSTs {content: ...} with the configured
-// bearer token, and the sends counter increments.
-func TestOutboundDispatcher_PostsContentAndAuthHeader(t *testing.T) {
+// TestOutboundDispatcher_PostsMultipartFileAndAuthHeader verifies the happy
+// path: Enqueue submits a job, the worker POSTs multipart/form-data with a
+// `file` field containing the raw markdown, the Authorization header is set
+// from the configured token, and the sends counter increments.
+func TestOutboundDispatcher_PostsMultipartFileAndAuthHeader(t *testing.T) {
 	var (
-		gotMethod   atomic.Value
-		gotPath     atomic.Value
-		gotAuth     atomic.Value
-		gotContent  atomic.Value
-		gotCT       atomic.Value
-		requestsHit atomic.Int32
+		gotMethod      atomic.Value
+		gotPath        atomic.Value
+		gotAuth        atomic.Value
+		gotCT          atomic.Value
+		gotFilename    atomic.Value
+		gotFileContent atomic.Value
+		requestsHit    atomic.Int32
 	)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestsHit.Add(1)
@@ -30,15 +31,31 @@ func TestOutboundDispatcher_PostsContentAndAuthHeader(t *testing.T) {
 		gotPath.Store(r.URL.Path)
 		gotAuth.Store(r.Header.Get("Authorization"))
 		gotCT.Store(r.Header.Get("Content-Type"))
-		body, _ := io.ReadAll(r.Body)
-		gotContent.Store(string(body))
+
+		// Parse multipart and capture the `file` field.
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Errorf("ParseMultipartForm: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			t.Errorf("FormFile: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		gotFilename.Store(header.Filename)
+		body, _ := io.ReadAll(file)
+		gotFileContent.Store(string(body))
+		_ = file.Close()
+
 		w.WriteHeader(http.StatusAccepted)
-		_, _ = w.Write([]byte(`{"job_id":"j-1","status":"pending","status_url":"/api/ingest/jobs/j-1"}`))
+		_, _ = w.Write([]byte(`{"message":"queued","document_id":"d-1","chunks":3}`))
 	}))
 	defer srv.Close()
 
 	d, err := NewOutboundDispatcher(DispatcherConfig{
-		IngestURL: srv.URL + "/api/ingest/async",
+		IngestURL: srv.URL + "/api/ingest/file",
 		Token:     "test-token-xyz",
 		Workers:   1,
 		QueueSize: 4,
@@ -64,26 +81,26 @@ func TestOutboundDispatcher_PostsContentAndAuthHeader(t *testing.T) {
 	if got, _ := gotMethod.Load().(string); got != http.MethodPost {
 		t.Errorf("method = %q, want POST", got)
 	}
-	if got, _ := gotPath.Load().(string); got != "/api/ingest/async" {
-		t.Errorf("path = %q, want /api/ingest/async", got)
+	if got, _ := gotPath.Load().(string); got != "/api/ingest/file" {
+		t.Errorf("path = %q, want /api/ingest/file", got)
 	}
 	if got, _ := gotAuth.Load().(string); got != "Bearer test-token-xyz" {
 		t.Errorf("auth = %q, want Bearer test-token-xyz", got)
 	}
-	if got, _ := gotCT.Load().(string); got != "application/json" {
-		t.Errorf("content-type = %q, want application/json", got)
+	ct, _ := gotCT.Load().(string)
+	if !strings.HasPrefix(ct, "multipart/form-data; boundary=") {
+		t.Errorf("content-type = %q, want multipart/form-data with boundary", ct)
 	}
 
-	// Verify body shape: {content: <raw markdown>}
-	bodyStr, _ := gotContent.Load().(string)
-	var parsed struct {
-		Content string `json:"content"`
+	// Verify the file field carries the raw markdown bytes we enqueued.
+	// Note: Go's mime/multipart.FileHeader.FileName() strips the directory
+	// for security reasons, so the receiver sees just "index.md" rather
+	// than "docs/index.md". The content itself is what we enqueued.
+	if got, _ := gotFilename.Load().(string); got != "index.md" {
+		t.Errorf("filename = %q, want index.md (basename only — Go strips paths)", got)
 	}
-	if err := json.Unmarshal([]byte(bodyStr), &parsed); err != nil {
-		t.Fatalf("body is not JSON: %v (body=%q)", err, bodyStr)
-	}
-	if !strings.HasPrefix(parsed.Content, "---\nuid: doc-1") {
-		t.Errorf("content payload = %q, want to start with frontmatter", parsed.Content)
+	if got, _ := gotFileContent.Load().(string); !strings.HasPrefix(got, "---\nuid: doc-1") {
+		t.Errorf("file content = %q, want to start with frontmatter", got)
 	}
 
 	if d.SendsTotal() != 1 {

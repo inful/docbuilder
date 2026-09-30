@@ -120,6 +120,17 @@ type RagabastConfig struct {
 	QueueSize int `yaml:"queue_size,omitempty"`
 	// Timeout is the per-POST HTTP timeout. Defaults to "10s".
 	Timeout string `yaml:"timeout,omitempty"`
+	// PreflightBaseURL is the ragabast base URL used to construct the
+	// preflight request GET <base>/api/documents/<uid>/fingerprint. When
+	// empty, the dispatcher derives the base from IngestURL's scheme+host.
+	// Set to a literal "-" to disable preflight regardless of other settings.
+	PreflightBaseURL string `yaml:"preflight_base_url,omitempty"`
+	// PreflightEnabled toggles whether the dispatcher consults ragabast's
+	// fingerprint endpoint before POSTing each document. When unset (nil),
+	// preflight is treated as enabled whenever a base URL can be resolved
+	// (explicit PreflightBaseURL or derivable from IngestURL). Set to
+	// false explicitly to opt out.
+	PreflightEnabled *bool `yaml:"preflight_enabled,omitempty"`
 }
 
 // BuildDebounceConfig controls debouncing/coalescing behavior for build requests.
