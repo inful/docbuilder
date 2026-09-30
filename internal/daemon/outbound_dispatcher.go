@@ -18,6 +18,16 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/frontmatter"
 )
 
+// ragabastUploadPath and ragabastPreflightPath are the stable endpoint
+// paths ragabast exposes. Both are appended to a single base URL so
+// operators only configure the host. Hard-coding them here is safe as
+// long as ragabast's API contract holds; if either path changes
+// upstream we'll need a config override.
+const (
+	ragabastUploadPath    = "/api/ingest/file"
+	ragabastPreflightPath = "/api/documents/%s/fingerprint"
+)
+
 // OutboundDispatcher forwards per-document content to an external ragabast
 // ingest endpoint. Documents are pushed asynchronously after docbuilder writes
 // them to disk; ragabast is expected to handle its own persistent job queue
@@ -28,21 +38,27 @@ import (
 // called. The dispatcher itself is nil-safe so callers can pass a nil
 // reference without guarding every call site.
 //
+// A single baseURL drives both endpoints: the upload path is derived as
+// {baseURL}/api/ingest/file and the preflight path is derived as
+// {baseURL}/api/documents/<uid>/fingerprint. Operators configure the host
+// once and cannot accidentally POST to "/" by forgetting a path component.
+//
 // When preflight is enabled (default when a base URL can be resolved), the
-// worker consults GET <base>/api/documents/<uid>/fingerprint before POSTing.
-// A matching stored fingerprint means the document is unchanged since the
-// last ingest and the upload is skipped (counter increments). Mismatch, 404,
-// transient HTTP errors, and parse failures fall through to the upload
-// (fail-open) — ragabast's own dedup catches duplicates on the server side.
-// Auth failures (401/403) do NOT upload; they count as a regular fail.
+// worker consults the preflight endpoint before POSTing. A matching stored
+// fingerprint means the document is unchanged since the last ingest and the
+// upload is skipped (counter increments). Mismatch, 404, transient HTTP
+// errors, and parse failures fall through to the upload (fail-open) —
+// ragabast's own dedup catches duplicates on the server side. Auth failures
+// (401/403) do NOT upload; they count as a regular fail.
 type OutboundDispatcher struct {
-	url    string
-	token  string
-	client *http.Client
+	baseURL string
+	token   string
+	client  *http.Client
 
-	// preflightBase is the scheme+host prefix used to build the preflight
-	// URL. Empty means preflight is disabled (the existing direct-upload
-	// path runs as before).
+	// preflightBase is the URL prefix used to build preflight requests.
+	// It equals baseURL by default and may be overridden via
+	// DispatcherConfig.PreflightBaseURL for environments where preflight
+	// routes through a different host. Empty means preflight is disabled.
 	preflightBase string
 
 	queue    chan ingestJob
@@ -71,8 +87,18 @@ type ingestJob struct {
 // config.Daemon.Outbound.RagabastConfig and resolves the bearer token from
 // the named environment variable at startup.
 type DispatcherConfig struct {
-	// IngestURL is the full ragabast async ingest endpoint, e.g.
-	// "https://ragabast.example.com/api/ingest/file".
+	// BaseURL is the preferred field: the ragabast host (scheme+host).
+	// Both the upload path ({BaseURL}/api/ingest/file) and the preflight
+	// path ({BaseURL}/api/documents/<uid>/fingerprint) are derived from
+	// this. Path components are stripped — operators only configure the
+	// host.
+	BaseURL string
+	// IngestURL is the deprecated full endpoint URL. When BaseURL is empty
+	// and IngestURL is set, the dispatcher derives scheme+host from
+	// IngestURL and uses that as the base; the path component is silently
+	// discarded. Logged as a deprecation warning at construction time.
+	// Migrate by replacing `ingest_url: …/api/ingest/file` with
+	// `ragabast_base_url: …`.
 	IngestURL string
 	// Token is the bearer token to send in the Authorization header.
 	// Empty is allowed (ragabast with auth_token: "" accepts anonymous).
@@ -83,22 +109,46 @@ type DispatcherConfig struct {
 	QueueSize int
 	// Timeout is the per-POST HTTP timeout.
 	Timeout time.Duration
-	// PreflightBaseURL is the ragabast base URL (scheme+host) used to build
-	// the preflight endpoint. When empty, the constructor derives it from
-	// IngestURL. Pass an explicit "-" via ResolveDispatcherConfig to
-	// disable preflight regardless of derivation.
+	// PreflightBaseURL overrides the preflight base when set, allowing
+	// preflight to hit a different host than the upload. When empty, the
+	// preflight base is the resolved base URL (BaseURL or derived from
+	// IngestURL).
 	PreflightBaseURL string
 	// PreflightEnabled toggles preflight. Nil defaults to true whenever a
 	// base URL is resolvable. Explicit false disables preflight.
 	PreflightEnabled *bool
 }
 
-// NewOutboundDispatcher constructs a dispatcher. It validates the URL is
-// present and applies defaults for zero-valued Workers/QueueSize/Timeout.
+// NewOutboundDispatcher constructs a dispatcher. It resolves the ragabast
+// base URL from the (preferred) BaseURL field or, falling back, derives
+// it from the deprecated IngestURL. Both the upload and preflight
+// endpoints are then derived from this single base URL — see
+// ragabastUploadPath / ragabastPreflightPath. Defaults are applied for
+// zero-valued Workers/QueueSize/Timeout.
 func NewOutboundDispatcher(cfg DispatcherConfig) (*OutboundDispatcher, error) {
-	if cfg.IngestURL == "" {
-		return nil, errors.New("outbound dispatcher: ingest_url is required")
+	// Resolve the base URL. BaseURL wins; if only IngestURL is set, derive
+	// scheme+host from it (path is discarded) and log a deprecation
+	// warning so operators migrate.
+	baseURL := cfg.BaseURL
+	if baseURL == "" && cfg.IngestURL != "" {
+		derived, err := deriveBaseURL(cfg.IngestURL)
+		if err != nil {
+			return nil, fmt.Errorf("outbound dispatcher: invalid ingest_url: %w", err)
+		}
+		baseURL = derived
+		slog.Warn("outbound dispatcher: ingest_url is deprecated; prefer ragabast_base_url",
+			slog.String("hint", "set ragabast_base_url to the host (e.g. https://ragabast.example.com); path is no longer needed since the dispatcher derives /api/ingest/file and /api/documents/<uid>/fingerprint automatically"))
 	}
+	if baseURL == "" {
+		return nil, errors.New("outbound dispatcher: ragabast_base_url (or deprecated ingest_url) is required")
+	}
+	// Validate the resolved base URL is parseable. We already accept the
+	// result of deriveBaseURL which guarantees scheme+host, but if the
+	// operator set BaseURL directly it could be anything.
+	if _, err := url.Parse(baseURL); err != nil {
+		return nil, fmt.Errorf("outbound dispatcher: invalid ragabast_base_url %q: %w", baseURL, err)
+	}
+
 	workers := cfg.Workers
 	if workers <= 0 {
 		workers = 4
@@ -112,33 +162,25 @@ func NewOutboundDispatcher(cfg DispatcherConfig) (*OutboundDispatcher, error) {
 		timeout = 10 * time.Second
 	}
 
-	// Resolve preflight base URL.
+	// Preflight base URL resolution.
 	//
 	// Priority:
-	//   1. Explicit PreflightBaseURL in config.
-	//   2. Derive from IngestURL (scheme+host).
+	//   1. Explicit PreflightBaseURL in config (escape hatch: preflight
+	//      hits a different host than the upload).
+	//   2. Otherwise, share the resolved base URL.
 	//   3. PreflightEnabled==false disables preflight outright.
-	//   4. If neither resolves a base, preflight is off (with a warning).
 	preflightBase := ""
 	preflightWanted := cfg.PreflightEnabled == nil || *cfg.PreflightEnabled
 	if preflightWanted {
-		switch {
-		case cfg.PreflightBaseURL != "":
+		if cfg.PreflightBaseURL != "" {
 			preflightBase = cfg.PreflightBaseURL
-		default:
-			derived, err := deriveBaseURL(cfg.IngestURL)
-			if err != nil {
-				slog.Warn("outbound dispatcher: cannot derive preflight base from ingest_url; preflight disabled",
-					slog.String("ingest_url", cfg.IngestURL),
-					slog.String("error", err.Error()))
-			} else {
-				preflightBase = derived
-			}
+		} else {
+			preflightBase = baseURL
 		}
 	}
 
 	return &OutboundDispatcher{
-		url:           cfg.IngestURL,
+		baseURL:       baseURL,
 		token:         cfg.Token,
 		client:        &http.Client{Timeout: timeout},
 		queue:         make(chan ingestJob, queueCap),
@@ -175,7 +217,7 @@ func (d *OutboundDispatcher) Start(ctx context.Context) {
 		go d.worker(ctx)
 	}
 	slog.Info("outbound dispatcher started",
-		slog.String("url", d.url),
+		slog.String("base_url", d.baseURL),
 		slog.Int("workers", d.workers),
 		slog.Int("queue_capacity", d.queueCap),
 		slog.Bool("auth_enabled", d.token != ""),
@@ -341,7 +383,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob) {
 		return
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.url, &body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, d.baseURL+ragabastUploadPath, &body)
 	if err != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: build request failed",
@@ -397,7 +439,7 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob) {
 //	empty UID or fingerprint     → true (caller already short-circuited;
 //	                                 we don't get here in normal flow)
 func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string) bool {
-	target := d.preflightBase + "/api/documents/" + url.PathEscape(uid) + "/fingerprint"
+	target := d.preflightBase + fmt.Sprintf(ragabastPreflightPath, url.PathEscape(uid))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		// Path construction failed — extremely unlikely since the base
@@ -504,6 +546,6 @@ func (d *OutboundDispatcher) String() string {
 	if d == nil {
 		return "<nil>"
 	}
-	return fmt.Sprintf("OutboundDispatcher(url=%s, workers=%d, queue_capacity=%d, preflight=%v)",
-		d.url, d.workers, d.queueCap, d.preflightBase != "")
+	return fmt.Sprintf("OutboundDispatcher(base_url=%s, workers=%d, queue_capacity=%d, preflight=%v)",
+		d.baseURL, d.workers, d.queueCap, d.preflightBase != "")
 }

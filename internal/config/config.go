@@ -101,8 +101,18 @@ type RagabastConfig struct {
 	// Enabled toggles the dispatcher. Defaults to false; must be set
 	// explicitly to true to construct the dispatcher.
 	Enabled bool `yaml:"enabled"`
-	// IngestURL is the full async-ingest endpoint, e.g.
-	// "https://ragabast.example.com/api/ingest/async". Required when Enabled.
+	// BaseURL is the preferred field: the ragabast host (scheme+host).
+	// The dispatcher derives the upload path ({base}/api/ingest/file)
+	// and the preflight path ({base}/api/documents/<uid>/fingerprint)
+	// from this single value, so operators cannot accidentally POST
+	// to "/" by forgetting a path component. Path components on this
+	// field are stripped. Example: "https://ragabast.example.com".
+	BaseURL string `yaml:"ragabast_base_url,omitempty"`
+	// IngestURL is deprecated. When BaseURL is empty and IngestURL is
+	// set, the dispatcher derives scheme+host from IngestURL (path is
+	// discarded) and logs a deprecation warning at startup. Migrate by
+	// replacing `ingest_url: https://ragabast.example.com/api/ingest/file`
+	// with `ragabast_base_url: https://ragabast.example.com`.
 	IngestURL string `yaml:"ingest_url"`
 	// AuthTokenEnv is the name of the environment variable that holds the
 	// bearer token sent in the Authorization header. The token is read from
