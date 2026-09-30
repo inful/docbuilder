@@ -9,6 +9,63 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-09-30
+
+### Fixed
+- **Hugo (auto-generated section `_index.md`)**: stopped emitting today's
+  date. The `generateSectionIndex` pipeline stage and the
+  `buildBaseFrontMatter` transform were both falling back to `time.Now()`
+  when an auto-generated section `_index.md` had no `date` in its
+  FrontMatter. For local builds (no git history, so
+  `doc.CommitDate.IsZero()`), that meant the build time leaked into
+  the rendered site — sitemap `<lastmod>`, RSS `<pubDate>`, OG meta
+  tags (`datePublished`, `dateModified`, `article:published_time`,
+  `article:modified_time`), and the visible `dateModified` all
+  showed today. Replaced both `time.Now()` fallbacks with the
+  deterministic epoch `2024-01-01T00:00:00Z` (date) /
+  `2024-01-01` (lastmod) — matching what `generateMainIndex` and the
+  legacy `internal/hugo/indexes.go` were already doing. Authored
+  docs are untouched (their `date` / `lastmod` are preserved
+  verbatim). For docs that do have a `lastmod`, Hugo's `.Lastmod`
+  template variable continues to drive `dateModified`, sitemap
+  `lastmod`, and `article:modified_time` automatically — authors
+  who want latest-change-date semantics in the rendered output can
+  switch their template from `.Date` to `.Lastmod` without any
+  docbuilder changes.
+
+### Added
+- **Ragabast ingester (preflight fingerprint check)**: when
+  `daemon.outbound.ragabast` is configured, the dispatcher consults
+  `GET <base>/api/documents/<uid>/fingerprint` before POSTing each
+  document and skips the upload when the stored fingerprint matches
+  the document's frontmatter. Saves the upload on rebuilds where
+  content hasn't changed. Failure policy is fail-open: 5xx, network
+  errors, and parse failures fall through to the upload
+  (`preflight_errors_total++`); 401/403 are counted as `fails_total`
+  without uploading; 404 (new doc) falls through. The fingerprint
+  and uid are parsed from the document's YAML frontmatter via
+  `internal/frontmatter` (never recomputed). Preflight is on by
+  default when a base URL can be derived from `ingest_url`; set
+  `preflight_enabled: false` to opt out, or `preflight_base_url:
+  <host>` to use a different host for preflight than for uploads.
+
+### Changed
+- **Ragabast ingester (multipart upload migration)**: switched the
+  upload path from `POST /api/ingest/async` (JSON `{"content":"..."}`)
+  to `POST /api/ingest/file` (multipart/form-data with a `file`
+  field). The old endpoint returns 405 to POSTs and is no longer
+  supported upstream; ragabast's example script uses the new one.
+  The upload path now uses `mime/multipart.Writer` with
+  `CreateFormFile("file", path)`. `Content-Type` is set from
+  `FormDataContentType()` so the boundary is correct; `application/json`
+  is no longer set. Go's multipart parser strips directory components
+  from the filename, so the receiver sees just the basename
+  (`index.md` rather than `docs/index.md`) — same as `curl -F`
+  behaves. Auth via `Authorization: Bearer <token>` is unchanged.
+  **Operators must update `daemon.outbound.ragabast.ingest_url` from
+  `…/api/ingest/async` to `…/api/ingest/file`** — `config.example.yaml`
+  has been updated.
+
 ## [0.18.0] - 2026-09-28
 
 ### Changed
