@@ -54,13 +54,20 @@ daemon:
     # `docbuilder build` invocations never construct the dispatcher.
     ragabast:
       enabled: false                # must be explicitly true to fire
-      ingest_url: "https://ragabast.example.com/api/ingest/async"
+      ingest_url: "https://ragabast.example.com/api/ingest/file"
       # Name of the env var that holds the bearer token. Read at daemon
       # startup; never logged or written to disk. Empty / unset = anonymous.
       auth_token_env: "RAGABAST_INGEST_TOKEN"
       workers: 4                    # concurrent POST goroutines
       queue_size: 256               # in-memory buffer; overflow drops (with counter)
       timeout: "10s"                # per-POST HTTP timeout
+      # Base URL used to build the preflight GET <base>/api/documents/<uid>/fingerprint.
+      # When empty (the default), docbuilder derives scheme+host from ingest_url.
+      # Set to opt in to a different base (e.g. when ingest_url goes through a proxy).
+      # preflight_base_url: "https://ragabast.example.com"
+      # Toggle the fingerprint preflight. When unset, preflight is on whenever a
+      # base URL resolves. Set to false to always POST every doc.
+      # preflight_enabled: true
 hugo:
   title: "My Documentation Site"
   description: "Aggregated documentation from multiple repositories"

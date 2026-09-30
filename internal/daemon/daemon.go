@@ -373,11 +373,13 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 		timeout = parsed
 	}
 	dispatcher, err := NewOutboundDispatcher(DispatcherConfig{
-		IngestURL: ragCfg.IngestURL,
-		Token:     token,
-		Workers:   ragCfg.Workers,
-		QueueSize: ragCfg.QueueSize,
-		Timeout:   timeout,
+		IngestURL:        ragCfg.IngestURL,
+		Token:            token,
+		Workers:          ragCfg.Workers,
+		QueueSize:        ragCfg.QueueSize,
+		Timeout:          timeout,
+		PreflightBaseURL: ragCfg.PreflightBaseURL,
+		PreflightEnabled: ragCfg.PreflightEnabled,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to construct outbound dispatcher: %w", err)
