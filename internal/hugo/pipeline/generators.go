@@ -193,6 +193,11 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 		// collision resolution internally.
 		sectionPath := docs.HugoContentPath(repoMeta.Forge, repoMeta.Namespace, repo, sectionName, indexFileSuffix, markdownExtension, ctx.IsSingleRepo)
 
+		// Use a deterministic epoch date so reproducible builds don't churn
+		// the fingerprint across runs. Auto-generated section indexes are
+		// owned by DocBuilder and use a fixed value (mirroring generateMainIndex
+		// above) instead of time.Now() — otherwise today's date bleeds into
+		// rendered Hugo output on every build.
 		doc := &Document{
 			Path:       sectionPath,
 			IsIndex:    true,
@@ -205,6 +210,8 @@ func generateSectionIndex(ctx *GenerationContext) ([]*Document, error) {
 				"title":       title,
 				"description": description,
 				"type":        "docs",
+				"date":        "2024-01-01T00:00:00Z",
+				"lastmod":     "2024-01-01",
 			},
 		}
 		if ctx.Config.IsDaemonPublicOnlyEnabled() {
