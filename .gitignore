@@ -99,6 +99,14 @@ tramp
 .cask/
 dist/
 
+# Local goreleaser build artifacts
+# `dist/` (above) catches goreleaser's default output directory, but
+# local builds can also land archives in `/-/` when the operator
+# overrides the output dir (this directory holds the .tar.gz files
+# regenerated on every release build).
+/-/
+*.tar.gz
+
 # Flycheck
 flycheck_*.el
 
