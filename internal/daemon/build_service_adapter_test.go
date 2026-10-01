@@ -32,6 +32,17 @@ func (m *mockBuildService) Run(ctx context.Context, req build.BuildRequest) (*bu
 	}, nil
 }
 
+func (m *mockBuildService) RunDirect(ctx context.Context, req build.DirectBuildRequest) (*build.BuildResult, error) {
+	return &build.BuildResult{
+		Status:         build.BuildStatusSuccess,
+		Repositories:   1,
+		FilesProcessed: len(req.DocFiles),
+		Duration:       time.Second,
+		StartTime:      time.Now().Add(-time.Second),
+		EndTime:        time.Now(),
+	}, nil
+}
+
 func TestBuildServiceAdapter_Build(t *testing.T) {
 	t.Run("nil job", func(t *testing.T) {
 		adapter := NewBuildServiceAdapter(&mockBuildService{})

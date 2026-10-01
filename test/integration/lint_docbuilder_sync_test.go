@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
-	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/lint"
 )
 
@@ -31,10 +29,7 @@ func TestLintDocBuilderSync(t *testing.T) {
 	cfg.Output.Directory = outputDir
 
 	// Run DocBuilder build pipeline
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	result, err := svc.Run(t.Context(), build.BuildRequest{
 		Config:    cfg,
@@ -107,10 +102,7 @@ func TestLintDocBuilderSync_FileNaming(t *testing.T) {
 	cfg.Output.Directory = outputDir
 
 	// Run build
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	result, err := svc.Run(t.Context(), build.BuildRequest{
 		Config:    cfg,

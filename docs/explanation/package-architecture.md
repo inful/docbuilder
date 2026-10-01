@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: 511d0971d00ee20d4f9931fb85759faf855ff660f24f20ec225b6e47094699f4
-lastmod: "2026-09-27"
+fingerprint: 37ec62c78888abfcad9133b78a889c1f3d760e47089347c117230459d29008d5
+lastmod: "2026-10-01"
 tags:
   - architecture
   - packages
@@ -768,11 +768,22 @@ Layouts → CopyContent → Indexes → RunHugo (optional)
 ```go
 type BuildService interface {
     Run(ctx context.Context, req BuildRequest) (*BuildReport, error)
+    RunDirect(ctx context.Context, req DirectBuildRequest) (*BuildReport, error)
 }
 
 type BuildRequest struct {
+    Config      *config.Config
+    OutputDir   string
+    Incremental bool
+    SkipState   validation.SkipStateAccess  // nil disables skip evaluation
+    Options     BuildOptions
+}
+
+type DirectBuildRequest struct {
     Config    *config.Config
     OutputDir string
+    DocFiles  []docs.DocFile
+    Options   BuildOptions
 }
 
 type BuildReport struct {

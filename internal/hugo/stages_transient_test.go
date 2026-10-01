@@ -4,10 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 	gitpkg "git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
 
 func TestStageErrorTransient(t *testing.T) {
@@ -17,10 +15,10 @@ func TestStageErrorTransient(t *testing.T) {
 		kind  models.StageErrorKind
 		want  bool
 	}{
-		{models.StageCloneRepos, build.ErrClone, models.StageErrorWarning, true},
-		{models.StageRunHugo, build.ErrHugo, models.StageErrorWarning, true},
-		{models.StageDiscoverDocs, build.ErrDiscovery, models.StageErrorWarning, true},
-		{models.StageDiscoverDocs, build.ErrDiscovery, models.StageErrorFatal, false},
+		{models.StageCloneRepos, models.ErrClone, models.StageErrorWarning, true},
+		{models.StageRunHugo, models.ErrHugo, models.StageErrorWarning, true},
+		{models.StageDiscoverDocs, models.ErrDiscovery, models.StageErrorWarning, true},
+		{models.StageDiscoverDocs, models.ErrDiscovery, models.StageErrorFatal, false},
 		{models.StageGenerateConfig, errors.New("cfg"), models.StageErrorFatal, false},
 		{models.StageCopyContent, errors.New("io"), models.StageErrorFatal, false},
 		// Typed transient git errors

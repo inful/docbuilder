@@ -20,7 +20,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 // ContentStructure represents the structure of generated content for golden testing.
@@ -524,10 +523,7 @@ func runGoldenTest(t *testing.T, testRepoPath, configPath, goldenDirPath string,
 func runBuildPipeline(t *testing.T, cfg *config.Config, outputDir string) (*build.BuildResult, error) {
 	t.Helper()
 
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(c *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(c, outDir)
-		})
+	svc := build.NewBuildService()
 
 	req := build.BuildRequest{
 		Config:    cfg,

@@ -115,10 +115,7 @@ func TestGolden_MyFeature(t *testing.T) {
     outputDir := t.TempDir()
     cfg.Output.Directory = outputDir
 
-    svc := build.NewBuildService().
-        WithHugoGeneratorFactory(func(cfgAny any, outDir string) build.HugoGenerator {
-            return hugo.NewGenerator(cfgAny.(*config.Config), outDir)
-        })
+    svc := build.NewBuildService()
 
     req := build.BuildRequest{
         Config:    cfg,

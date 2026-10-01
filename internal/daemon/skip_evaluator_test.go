@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	cfg "git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
@@ -98,7 +99,7 @@ func TestSkipEvaluator_SkipHappyPath(t *testing.T) {
 	st.repoDocHash[repo.URL] = "abc123"
 	writePrevReport(t, out, 2, 2, "abc123", st)
 	st.lastGlobalDocFiles = "abc123"
-	rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo})
+	rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo})
 	if !ok {
 		t.Fatalf("expected skip")
 	}
@@ -137,7 +138,7 @@ func TestSkipEvaluator_ConfigHashChange(t *testing.T) {
 	st.repoLastCommit[repo.URL] = "c1"
 	st.repoDocHash[repo.URL] = "h1"
 	st.lastGlobalDocFiles = "h1"
-	if rep, ok := NewSkipEvaluator(out, st, gen2).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen2).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild due to config hash change")
 	}
 }
@@ -161,7 +162,7 @@ func TestSkipEvaluator_PublicDirMissing(t *testing.T) {
 	st.repoDocHash[repo.URL] = "h1"
 	writePrevReport(t, out, 1, 1, "h1", st)
 	st.lastGlobalDocFiles = "h1"
-	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (no public dir)")
 	}
 }
@@ -199,7 +200,7 @@ func TestSkipEvaluator_PerRepoHashMismatch(t *testing.T) {
 	st.repoDocHash[repo.URL] = "other" // mismatch with report
 	writePrevReport(t, out, 1, 1, "match", st)
 	st.lastGlobalDocFiles = "match"
-	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (per-repo hash mismatch)")
 	}
 }
@@ -210,7 +211,7 @@ func TestSkipEvaluator_GlobalHashMismatch(t *testing.T) {
 	st.repoDocHash[repo.URL] = "H" // matches report but global differs
 	writePrevReport(t, out, 1, 1, "H", st)
 	st.lastGlobalDocFiles = "DIFF"
-	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (global hash mismatch)")
 	}
 }
@@ -240,7 +241,7 @@ func TestSkipEvaluator_MissingCommit(t *testing.T) {
 	writePrevReport(t, out, 1, 1, "H", st)
 	st.repoDocHash[repo.URL] = "H"
 	st.lastGlobalDocFiles = "H"
-	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild (missing commit)")
 	}
 }
@@ -271,7 +272,7 @@ func TestSkipEvaluator_SetsTimestampsOnSkip(t *testing.T) {
 	st.repoDocHash[repo.URL] = "X"
 	writePrevReport(t, out, 5, 5, "X", st)
 	st.lastGlobalDocFiles = "X"
-	rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo})
+	rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo})
 	if !ok || rep == nil {
 		t.Fatalf("expected skip")
 	}
@@ -320,7 +321,7 @@ func TestSkipEvaluator_VersionMismatch(t *testing.T) {
 	st.lastGlobalDocFiles = "h1"
 
 	// Evaluate should force rebuild due to version mismatch
-	if rep, ok := NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
+	if rep, ok := validation.NewSkipEvaluator(out, st, gen).Evaluate(t.Context(), []cfg.Repository{repo}); ok || rep != nil {
 		t.Fatalf("expected rebuild due to version mismatch (docbuilder)")
 	}
 }

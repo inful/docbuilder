@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2025-12-15T00:00:00Z
-fingerprint: c1b34e8dff1180d08833d2cd93f27b298272e9411fe2fa60d81efc6a01d282c3
-lastmod: "2026-09-27"
+fingerprint: cee03856d982cbe5f5d679308372df5ca75deaebb964bb88919b77e80795460a
+lastmod: "2026-10-01"
 tags:
   - optimization
   - performance
@@ -50,23 +50,18 @@ A **full rebuild** will occur when **any** of these conditions are detected:
 ┌────────────────────────────────────────────────────────┐
 │                    BuildService                        │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │            SkipEvaluatorFactory                  │  │
-│  │  Creates evaluator with:                         │  │
-│  │  - Output directory                              │  │
-│  │  - State manager (commit/config tracking)        │  │
-│  │  - Hugo generator (config hash computation)      │  │
+│  │     evaluateSkip()                               │  │
+│  │  Builds validation.SkipEvaluator when             │  │
+│  │  BuildRequest.SkipState is non-nil, then calls   │  │
+│  │  Evaluate(). SkipState nil disables skip         │  │
+│  │  evaluation entirely.                            │  │
 │  └──────────────────────────────────────────────────┘  │
 │                           │                            │
 │                           ▼                            │
 │  ┌──────────────────────────────────────────────────┐  │
-│  │         SkipEvaluator (daemon wrapper)           │  │
-│  │  Delegates to validation-based evaluator         │  │
-│  └──────────────────────────────────────────────────┘  │
-│                           │                            │
-│                           ▼                            │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │    validation.SkipEvaluator (core logic)         │  │
-│  │  Executes validation rule chain                  │  │
+│  │       validation.SkipEvaluator (core logic)      │  │
+│  │  Executes validation rule chain. Concrete type;   │  │
+│  │  no interface required (single implementation).   │  │
 │  └──────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────┘
 ```
@@ -186,39 +181,25 @@ The caller cannot distinguish a skipped build from a successful build - this is 
 
 ## Integration with Daemon
 
-### Factory Pattern
+### Wiring
 
-The daemon uses a factory to create the skip evaluator with late binding:
-
-```go
-WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
-    if daemon.stateManager == nil {
-        return nil  // Not initialized yet
-    }
-    gen := hugo.NewGenerator(daemon.config, outputDir)
-    inner := NewSkipEvaluator(outputDir, daemon.stateManager, gen)
-    return &skipEvaluatorAdapter{inner: inner}
-})
-```
-
-This allows:
-1. **Lazy creation**: Evaluator created only when needed during build
-2. **Late binding**: State manager initialized after build service creation
-3. **Type adaptation**: Bridge typed daemon.SkipEvaluator to generic build.SkipEvaluator
-
-### Type Adapter
-
-The `skipEvaluatorAdapter` bridges the type gap:
+The daemon passes its state manager directly via `BuildRequest.SkipState`:
 
 ```go
-// daemon.SkipEvaluator (typed)
-Evaluate(repos []config.Repository) (*hugo.BuildReport, bool)
-
-// build.SkipEvaluator (generic)
-Evaluate(repos []any) (report any, canSkip bool)
+req := build.BuildRequest{
+    Config:     cfg,
+    OutputDir:  outDir,
+    SkipState:  daemon.stateManager,  // enables skip evaluation
+    Options:    build.BuildOptions{SkipIfUnchanged: cfg.Build.SkipIfUnchanged},
+}
 ```
 
-The adapter performs runtime type checking and conversion.
+`BuildService.Run` constructs the validator directly when `SkipState` is
+non-nil and `Options.SkipIfUnchanged` is true. The CLI omits `SkipState`,
+which disables skip evaluation regardless of the option flag.
+
+There is no factory, no wrapper, and no adapter layer between the daemon and
+`BuildService` — the state manager is the only seam.
 
 ## Testing
 

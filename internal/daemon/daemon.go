@@ -20,7 +20,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/server/handlers"
@@ -147,23 +146,6 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		WithWorkspaceFactory(func() *workspace.Manager {
 			// Use persistent workspace for incremental builds (repo_cache_dir/working)
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
-		}).
-		WithHugoGeneratorFactory(func(cfg *config.Config, outputDir string) build.HugoGenerator {
-			gen := hugo.NewGenerator(cfg, outputDir)
-			if daemon.outboundDispatcher != nil {
-				gen = gen.WithDocumentReady(daemon.outboundDispatcher.Enqueue)
-			}
-			return gen
-		}).
-		WithSkipEvaluatorFactory(func(outputDir string) build.SkipEvaluator {
-			// Create skip evaluator with state manager access
-			// Will be populated after state manager is initialized
-			if daemon.stateManager == nil {
-				slog.Warn("Skip evaluator factory called before state manager initialized - skipping evaluation")
-				return nil
-			}
-			gen := hugo.NewGenerator(daemon.config, outputDir)
-			return NewSkipEvaluator(outputDir, daemon.stateManager, gen)
 		})
 	buildAdapter := NewBuildServiceAdapter(buildService)
 
