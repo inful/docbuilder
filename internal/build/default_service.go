@@ -90,7 +90,9 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 		}
 	}
 
-	// Stage 1: Create workspace
+	// Stage 1: Create workspace. The factory is responsible for choosing
+	// persistent vs ephemeral; BuildRequest.KeepWorkspace only signals
+	// "preserve staging dir on failure" to the generator.
 	stageStart := time.Now()
 	ctx = observability.WithStage(ctx, "workspace")
 	observability.InfoContext(ctx, "Creating build workspace")
@@ -123,6 +125,9 @@ func (s *DefaultBuildService) Run(ctx context.Context, req BuildRequest) (*Build
 	generator := newHugoGenerator(req.Config, req.OutputDir)
 	if req.OnDocumentReady != nil {
 		generator = generator.WithDocumentReady(req.OnDocumentReady)
+	}
+	if req.KeepWorkspace {
+		generator = generator.WithKeepStaging(true)
 	}
 	report, err := generator.GenerateFullSite(ctx, req.Config.Repositories, wsManager.GetPath())
 
@@ -178,6 +183,9 @@ func (s *DefaultBuildService) RunDirect(ctx context.Context, req DirectBuildRequ
 	}
 
 	generator := newHugoGenerator(req.Config, req.OutputDir)
+	if req.KeepStaging {
+		generator = generator.WithKeepStaging(true)
+	}
 	report, err := generator.GenerateSiteWithReportContext(ctx, req.DocFiles)
 	result.Report = report
 	result.EndTime = time.Now()
