@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: df07db2c5845b0c0005acc5f16b7136767a25462ceb13b1e44147ff172344835
-lastmod: "2026-09-27"
+fingerprint: 694f2c5626be8fe2287b17be82154c04b563aac5df78d2c23b8c929ca468c070
+lastmod: "2026-10-01"
 tags:
   - diagrams
   - layers
@@ -42,7 +42,7 @@ This document shows the layered architecture of DocBuilder, illustrating how dif
 │  │ BuildService   │  │ DaemonService   │  │ DiscoveryService │  │
 │  │                │  │                 │  │                  │  │
 │  │ - Run()        │  │ - Start()       │  │ - Discover()     │  │
-│  │ - Validate()   │  │ - Stop()        │  │ - Report()       │  │
+│  │ - RunDirect()  │  │ - Stop()        │  │ - Report()       │  │
 │  └────────┬───────┘  └────────┬────────┘  └────────┬─────────┘  │
 │           │                   │                    │            │
 └───────────┼───────────────────┼────────────────────┼────────────┘
