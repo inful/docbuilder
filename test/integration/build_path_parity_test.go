@@ -12,18 +12,21 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
-// TestBuildPath_BuildServiceMatchesDirectGenerator proves that the content tree
-// produced by build.BuildService.Run is byte-identical to the one produced by
-// calling hugo.Generator.GenerateFullSite directly (the path the CLI takes today).
+// TestBuildPath_BuildServiceMatchesDirectGenerator is a regression canary.
+// It proves that the content tree produced by build.BuildService.Run is
+// byte-identical to the one produced by calling hugo.Generator.GenerateFullSite
+// directly. Both paths construct the same generator today, but if a future
+// refactor ever introduces divergence (extra transforms, the Write path
+// skipping the report generator, etc.), this test catches it.
 //
-// Today this passes trivially because BuildService internally delegates to the
-// same generator. Its value is in Phase 2 of the build-service-unification
-// refactor: once the CLI calls BuildService instead of constructing its own
-// generator, this test will catch any drift.
+// The diff focuses on .md files within the content tree. It does not compare
+// generated metadata (build-report.json) or Hugo-rendered artifacts (public/),
+// only the source content the content pipeline produced.
 //
-// The diff intentionally ignores generated metadata files (build-report.json,
-// Hugo-rendered public/) so we are testing the content pipeline, not the
-// report/render layer.
+// Originally added as a refactor scaffolding test for the build-service-
+// unification work. Kept as a permanent regression canary because the
+// BuildService / direct-generator equivalence is the central invariant of
+// that refactor.
 func TestBuildPath_BuildServiceMatchesDirectGenerator(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping build-path parity test in -short mode")

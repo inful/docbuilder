@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 1db5e004cb25a1151b8f68cafd41ca7a8e2fe9a9e2bd870c6c380d13a3c8c8d5
-lastmod: "2026-09-27"
+fingerprint: 95ad95fba4b7151b66daced801ec38804e2a2da2785ed37e68547fd2765e9f84
+lastmod: "2026-10-01"
 tags:
   - data-flow
   - sequences
@@ -76,7 +76,7 @@ sequenceDiagram
     participant Hugo
     participant EventStore
 
-    CLI->>BuildService: Build(config)
+    CLI->>BuildService: Run(BuildRequest)
     BuildService->>Pipeline: Run(stages)
     Pipeline->>EventStore: Emit BuildStarted
     Pipeline->>Git: CloneRepos()

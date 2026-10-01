@@ -9,6 +9,34 @@ commits; pin to a SHA for reproducibility per the README.
 
 ## [Unreleased]
 
+### Changed
+- **Build pipeline unification**: All build entry points (CLI full,
+  CLI local `-d`, daemon, preview) now route through a single
+  `build.BuildService` interface. Previously, the CLI constructed
+  `hugo.NewGenerator` directly and the daemon went through an
+  indirection adapter; both paths now use the canonical service.
+- **CLI gains skip-evaluation**: `docbuilder build` now honors
+  `build.skip_if_unchanged` the same way the daemon does (via
+  `BuildService.Run`). Previously the daemon alone benefited
+  from the cached-report skip path; the CLI rebuilt every time.
+  Operators who explicitly want a full rebuild every run should
+  set `build.skip_if_unchanged: false` in their config.
+- **Build pipeline internals**: dropped the `HugoGeneratorFactory` and
+  `SkipEvaluatorFactory` injection hooks on `DefaultBuildService`,
+  the `daemon.SkipEvaluator` wrapper, the `daemon.BuildServiceAdapter`,
+  and the daemon's `build_queue_aliases` / `discovery_aliases` /
+  `delta_compat` re-export shims. `BuildService` now imports
+  `internal/hugo` directly (no cycle exists) and constructs the
+  generator itself. `BuildRequest` gains `SkipState` and
+  `KeepWorkspace` fields, and `DirectBuildRequest` gains
+  `KeepStaging`, to carry the options those shims used to inject.
+
+### Added
+- **BuildService.RunDirect**: a new entry point on `BuildService`
+  for callers that have already-discovered doc files (preview
+  mode, `docbuilder build -d`, any future embedder). It skips the
+  clone and discovery stages.
+
 ## [0.19.2] - 2026-09-30
 
 ### Changed
