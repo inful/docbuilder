@@ -15,11 +15,13 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
 	"git.home.luguber.info/inful/docbuilder/internal/git"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
 	"git.home.luguber.info/inful/docbuilder/internal/server/handlers"
@@ -58,7 +60,7 @@ type Daemon struct {
 	metrics      *MetricsCollector
 	httpServer   *httpserver.Server
 	scheduler    *Scheduler
-	buildQueue   *BuildQueue
+	buildQueue   *queue.BuildQueue
 	stateManager state.DaemonStateManager
 	liveReload   *LiveReloadHub
 
@@ -98,6 +100,13 @@ type Daemon struct {
 	// to external consumers. Constructed only when daemon.outbound.ragabast
 	// is configured with enabled: true.
 	outboundDispatcher *OutboundDispatcher
+
+	// buildSvc is the canonical BuildService. The daemon itself satisfies
+	// queue.Builder via (*Daemon).Build, which delegates here. The mutex
+	// serializes concurrent build jobs (workers can be > 1) so they don't
+	// clobber shared staging/output paths.
+	buildSvc build.BuildService
+	buildMu  sync.Mutex
 }
 
 // NewDaemon creates a new daemon instance
@@ -141,16 +150,17 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// Initialize discovery service
 	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 
-	// Create canonical BuildService (Phase D - Single Execution Pipeline)
-	buildService := build.NewBuildService().
+	// Create canonical BuildService and store it on the daemon. The daemon
+	// itself implements queue.Builder (see (*Daemon).Build below), so no
+	// adapter type is needed.
+	daemon.buildSvc = build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
 			// Use persistent workspace for incremental builds (repo_cache_dir/working)
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		})
-	buildAdapter := NewBuildServiceAdapter(buildService)
 
-	// Initialize build queue with the canonical builder
-	daemon.buildQueue = NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, buildAdapter)
+	// Initialize build queue with the daemon itself as the builder.
+	daemon.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, daemon)
 	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
 	daemon.buildQueue.ConfigureRetry(cfg.Build)
 
@@ -708,5 +718,85 @@ func (d *Daemon) GetStartTime() time.Time {
 	return d.startTime
 }
 
-// Compile-time check that Daemon implements BuildEventEmitter.
-var _ BuildEventEmitter = (*Daemon)(nil)
+// Compile-time check that Daemon implements queue.BuildEventEmitter.
+var _ queue.BuildEventEmitter = (*Daemon)(nil)
+
+// Compile-time check that Daemon implements queue.Builder.
+var _ queue.Builder = (*Daemon)(nil)
+
+// Build is the queue.Builder entry point. It serializes against other
+// build jobs (so concurrent workers don't clobber shared staging), then
+// translates the job to a BuildRequest and runs it through the canonical
+// BuildService.
+func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildReport, error) {
+	if job == nil {
+		return nil, errors.New("build job is nil")
+	}
+	d.buildMu.Lock()
+	defer d.buildMu.Unlock()
+
+	req, err := jobToBuildRequest(job)
+	if err != nil {
+		return nil, err
+	}
+	result, err := d.buildSvc.Run(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return result.Report, nil
+}
+
+// jobToBuildRequest converts a daemon BuildJob into the canonical
+// BuildRequest. It applies the per-job repository override (for
+// orchestration flows) and the BaseDirectory+Directory resolution
+// (so daemon-mode jobs honor cfg.Output.BaseDirectory).
+func jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, error) {
+	var cfg *config.Config
+	if job.TypedMeta != nil && job.TypedMeta.V2Config != nil {
+		cfg = job.TypedMeta.V2Config
+	}
+	if cfg == nil {
+		return build.BuildRequest{}, errors.New("build job has no configuration")
+	}
+
+	// If the job carries an explicit repository set, prefer it over
+	// cfg.Repositories. This enables orchestration flows (ADR-021) to
+	// enqueue canonical full-site builds in forge mode where
+	// cfg.Repositories may be empty.
+	if job.TypedMeta != nil && len(job.TypedMeta.Repositories) > 0 {
+		cfgCopy := *cfg
+		cfgCopy.Repositories = job.TypedMeta.Repositories
+		if len(job.TypedMeta.RepoSnapshot) > 0 {
+			for i := range cfgCopy.Repositories {
+				repo := &cfgCopy.Repositories[i]
+				if sha, ok := job.TypedMeta.RepoSnapshot[repo.URL]; ok && sha != "" {
+					repo.PinnedCommit = sha
+				}
+			}
+		}
+		cfg = &cfgCopy
+	}
+
+	return build.BuildRequest{
+		Config:      cfg,
+		OutputDir:   resolveOutputDir(cfg),
+		Incremental: true, // Daemon mode uses incremental updates to leverage remote HEAD cache
+		Options: build.BuildOptions{
+			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,
+		},
+	}, nil
+}
+
+// resolveOutputDir applies the BaseDirectory+Directory rule used by
+// daemon-mode builds: relative directories are joined onto
+// BaseDirectory; BaseDirectory is ignored when Directory is absolute.
+func resolveOutputDir(cfg *config.Config) string {
+	outDir := cfg.Output.Directory
+	if outDir == "" {
+		outDir = "./site"
+	}
+	if cfg.Output.BaseDirectory != "" && !filepath.IsAbs(outDir) {
+		outDir = filepath.Join(cfg.Output.BaseDirectory, outDir)
+	}
+	return outDir
+}

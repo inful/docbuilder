@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
 )
@@ -137,5 +138,5 @@ func convertBuildReportToEventData(report *models.BuildReport) eventstore.BuildR
 	return reportData
 }
 
-// Compile-time check that EventEmitter implements BuildEventEmitter.
-var _ BuildEventEmitter = (*EventEmitter)(nil)
+// Compile-time check that EventEmitter implements queue.BuildEventEmitter.
+var _ queue.BuildEventEmitter = (*EventEmitter)(nil)

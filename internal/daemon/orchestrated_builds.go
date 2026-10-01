@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/logfields"
@@ -57,7 +58,7 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		jobID = fmt.Sprintf("orchestrated-build-%d", time.Now().UnixNano())
 	}
 
-	meta := &BuildJobMetadata{
+	meta := &queue.BuildJobMetadata{
 		V2Config:      d.config,
 		Repositories:  reposForBuild,
 		RepoSnapshot:  evt.Snapshot,
@@ -74,20 +75,20 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		}
 	}
 
-	jobType := BuildTypeManual
+	jobType := queue.BuildTypeManual
 	switch evt.LastReason {
 	case "webhook":
-		jobType = BuildTypeWebhook
+		jobType = queue.BuildTypeWebhook
 	case "discovery":
-		jobType = BuildTypeDiscovery
+		jobType = queue.BuildTypeDiscovery
 	case "scheduled build":
-		jobType = BuildTypeScheduled
+		jobType = queue.BuildTypeScheduled
 	}
 
-	job := &BuildJob{
+	job := &queue.BuildJob{
 		ID:        jobID,
 		Type:      jobType,
-		Priority:  PriorityHigh,
+		Priority:  queue.PriorityHigh,
 		CreatedAt: time.Now(),
 		TypedMeta: meta,
 	}
