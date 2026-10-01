@@ -113,18 +113,18 @@ func buildBaseFrontMatter(doc *Document) ([]*Document, error) {
 		doc.FrontMatter["type"] = "docs"
 	}
 
-// Add date if not present (required by Hugo for proper sorting/display)
-// Use git commit date when available; otherwise fall back to a fixed
-// epoch so reproducible builds don't churn fingerprints and rendered
-// Hugo output never reflects today's date. See the corresponding
-// comment in generateMainIndex / generateSectionIndex.
-if _, hasDate := doc.FrontMatter["date"]; !hasDate {
-	if !doc.CommitDate.IsZero() {
-		doc.FrontMatter["date"] = doc.CommitDate.Format("2006-01-02T15:04:05-07:00")
-	} else {
-		doc.FrontMatter["date"] = "2024-01-01T00:00:00Z"
+	// Add date if not present (required by Hugo for proper sorting/display)
+	// Use git commit date when available; otherwise fall back to a fixed
+	// epoch so reproducible builds don't churn fingerprints and rendered
+	// Hugo output never reflects today's date. See the corresponding
+	// comment in generateMainIndex / generateSectionIndex.
+	if _, hasDate := doc.FrontMatter["date"]; !hasDate {
+		if !doc.CommitDate.IsZero() {
+			doc.FrontMatter["date"] = doc.CommitDate.Format("2006-01-02T15:04:05-07:00")
+		} else {
+			doc.FrontMatter["date"] = "2024-01-01T00:00:00Z"
+		}
 	}
-}
 
 	return nil, nil
 }

@@ -32,7 +32,9 @@ func TestOutboundDispatcher_PostsMultipartFileAndAuthHeader(t *testing.T) {
 		gotAuth.Store(r.Header.Get("Authorization"))
 		gotCT.Store(r.Header.Get("Content-Type"))
 
-		// Parse multipart and capture the `file` field.
+		// Parse multipart and capture the `file` field. 1<<20 sets an explicit
+		// 1 MiB memory limit (G120 flags any call regardless of bound).
+		//nolint:gosec // 1<<20 sets an explicit 1 MiB memory bound
 		if err := r.ParseMultipartForm(1 << 20); err != nil {
 			t.Errorf("ParseMultipartForm: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -462,7 +464,7 @@ func TestOutboundDispatcher_BaseURL_DerivesBothEndpoints(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", strings.Repeat("a", 64)), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint(strings.Repeat("a", 64)), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {

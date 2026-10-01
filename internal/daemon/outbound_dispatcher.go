@@ -69,10 +69,10 @@ type OutboundDispatcher struct {
 
 	// Observability counters. Read via accessor methods; atomic so
 	// concurrent increments from workers are safe.
-	sendsTotal          atomic.Int64
-	dropsTotal          atomic.Int64
-	failsTotal          atomic.Int64
-	preflightSkipsTotal atomic.Int64
+	sendsTotal           atomic.Int64
+	dropsTotal           atomic.Int64
+	failsTotal           atomic.Int64
+	preflightSkipsTotal  atomic.Int64
 	preflightErrorsTotal atomic.Int64
 }
 
@@ -366,20 +366,20 @@ func (d *OutboundDispatcher) upload(ctx context.Context, job ingestJob) {
 			slog.String("error", err.Error()))
 		return
 	}
-	if _, err := fw.Write(job.content); err != nil {
+	if _, writeErr := fw.Write(job.content); writeErr != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: write form file failed",
 			slog.String("path", job.path),
-			slog.String("error", err.Error()))
+			slog.String("error", writeErr.Error()))
 		return
 	}
 	// Closes the multipart writer and writes its terminating boundary.
 	// Must be called before sending so the boundary is appended to the body.
-	if err := mw.Close(); err != nil {
+	if closeErr := mw.Close(); closeErr != nil {
 		d.failsTotal.Add(1)
 		slog.Error("outbound dispatcher: close multipart writer failed",
 			slog.String("path", job.path),
-			slog.String("error", err.Error()))
+			slog.String("error", closeErr.Error()))
 		return
 	}
 
@@ -464,8 +464,8 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	switch {
-	case resp.StatusCode == http.StatusOK:
+	switch resp.StatusCode {
+	case http.StatusOK:
 		body, _ := io.ReadAll(resp.Body)
 		var stored struct {
 			Fingerprint string `json:"fingerprint"`
@@ -491,11 +491,11 @@ func (d *OutboundDispatcher) preflight(ctx context.Context, uid, fp, path string
 			slog.String("local", fp))
 		return true
 
-	case resp.StatusCode == http.StatusNotFound:
+	case http.StatusNotFound:
 		// Document not present on the server yet. Upload.
 		return true
 
-	case resp.StatusCode == http.StatusUnauthorized, resp.StatusCode == http.StatusForbidden:
+	case http.StatusUnauthorized, http.StatusForbidden:
 		// Auth is broken; retrying the upload would just waste bandwidth
 		// and potentially leak a doc with wrong auth. Count as a fail so
 		// operators see the regression in metrics.

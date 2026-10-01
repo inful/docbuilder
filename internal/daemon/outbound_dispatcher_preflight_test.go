@@ -12,9 +12,11 @@ import (
 )
 
 // docWithUIDAndFingerprint builds a minimal markdown document with YAML
-// frontmatter containing the given uid and fingerprint values.
-func docWithUIDAndFingerprint(uid, fp string) []byte {
-	return []byte(fmt.Sprintf("---\nuid: %s\nfingerprint: %s\n---\n# Body\n\ntext\n", uid, fp))
+// frontmatter containing the given fingerprint. The uid is hard-coded to
+// "uid-1" because that's the only value exercised by callers; if a future
+// test needs a different uid, add it back as a parameter.
+func docWithUIDAndFingerprint(fp string) []byte {
+	return []byte(fmt.Sprintf("---\nuid: uid-1\nfingerprint: %s\n---\n# Body\n\ntext\n", fp))
 }
 
 // TestOutboundDispatcher_Preflight_SkipsOnFingerprintMatch verifies the happy
@@ -56,7 +58,7 @@ func TestOutboundDispatcher_Preflight_SkipsOnFingerprintMatch(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", fp), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint(fp), "docs/x.md")
 
 	// Wait for the preflight call to land.
 	deadline := time.Now().Add(2 * time.Second)
@@ -109,7 +111,7 @@ func TestOutboundDispatcher_Preflight_UploadsOnFingerprintMismatch(t *testing.T)
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", localFP), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint(localFP), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -155,7 +157,7 @@ func TestOutboundDispatcher_Preflight_UploadsOn404(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", "any-fp"), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -201,7 +203,7 @@ func TestOutboundDispatcher_Preflight_AuthFailureDoesNotUpload(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", "any-fp"), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
 	// Give the worker time to complete (or not).
 	time.Sleep(200 * time.Millisecond)
@@ -241,7 +243,7 @@ func TestOutboundDispatcher_Preflight_FailsOpenOnServerError(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", "any-fp"), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -293,7 +295,7 @@ func TestOutboundDispatcher_Preflight_FailsOpenOnNetworkError(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", "any-fp"), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
 	deadline := time.Now().Add(3 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -308,10 +310,13 @@ func TestOutboundDispatcher_Preflight_FailsOpenOnNetworkError(t *testing.T) {
 	}
 }
 
-// TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent verifies
-// that documents without a fingerprint in their frontmatter bypass the
-// preflight and go straight to upload.
-func TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent(t *testing.T) {
+// assertPreflightSkipped runs the dispatcher against a doc whose frontmatter
+// is missing either uid or fingerprint (i.e. preflight must short-circuit),
+// and asserts that preflight is never called while upload is invoked once.
+// sharedBy describes why preflight should be skipped, used in failure messages.
+func assertPreflightSkipped(t *testing.T, doc []byte, sharedBy string) {
+	t.Helper()
+
 	var preflightHits, uploadHits atomic.Int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -337,8 +342,7 @@ func TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent(t *testing
 	d.Start(t.Context())
 	defer d.Stop()
 
-	// Doc has UID but no fingerprint.
-	d.Enqueue([]byte("---\nuid: uid-1\n---\n# Body\n"), "docs/x.md")
+	d.Enqueue(doc, "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -346,55 +350,32 @@ func TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent(t *testing
 	}
 
 	if preflightHits.Load() != 0 {
-		t.Errorf("preflight hits = %d, want 0 (no fingerprint in content)", preflightHits.Load())
+		t.Errorf("preflight hits = %d, want 0 (%s)", preflightHits.Load(), sharedBy)
 	}
 	if uploadHits.Load() != 1 {
 		t.Errorf("upload hits = %d, want 1", uploadHits.Load())
 	}
 }
 
+// TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent verifies
+// that documents without a fingerprint in their frontmatter bypass the
+// preflight and go straight to upload.
+func TestOutboundDispatcher_Preflight_SkipsWhenNoFingerprintInContent(t *testing.T) {
+	// Doc has UID but no fingerprint.
+	assertPreflightSkipped(t,
+		[]byte("---\nuid: uid-1\n---\n# Body\n"),
+		"no fingerprint in content",
+	)
+}
+
 // TestOutboundDispatcher_Preflight_SkipsWhenNoUIDInContent verifies that
 // documents without a UID also bypass preflight.
 func TestOutboundDispatcher_Preflight_SkipsWhenNoUIDInContent(t *testing.T) {
-	var preflightHits, uploadHits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodGet:
-			preflightHits.Add(1)
-			w.WriteHeader(http.StatusOK)
-		case r.Method == http.MethodPost && r.URL.Path == "/api/ingest/file":
-			uploadHits.Add(1)
-			w.WriteHeader(http.StatusAccepted)
-		default:
-			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
-	defer srv.Close()
-
-	d, _ := NewOutboundDispatcher(DispatcherConfig{
-		IngestURL:        srv.URL + "/api/ingest/file",
-		PreflightBaseURL: srv.URL,
-		Workers:          1,
-		QueueSize:        4,
-	})
-	d.Start(t.Context())
-	defer d.Stop()
-
 	// Doc has fingerprint but no UID.
-	d.Enqueue([]byte("---\nfingerprint: aaaa\n---\n# Body\n"), "docs/x.md")
-
-	deadline := time.Now().Add(2 * time.Second)
-	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-	}
-
-	if preflightHits.Load() != 0 {
-		t.Errorf("preflight hits = %d, want 0 (no UID in content)", preflightHits.Load())
-	}
-	if uploadHits.Load() != 1 {
-		t.Errorf("upload hits = %d, want 1", uploadHits.Load())
-	}
+	assertPreflightSkipped(t,
+		[]byte("---\nfingerprint: aaaa\n---\n# Body\n"),
+		"no UID in content",
+	)
 }
 
 // TestOutboundDispatcher_Preflight_DisabledByFlag verifies that setting
@@ -428,7 +409,7 @@ func TestOutboundDispatcher_Preflight_DisabledByFlag(t *testing.T) {
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", "any-fp"), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint("any-fp"), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for uploadHits.Load() == 0 && time.Now().Before(deadline) {
@@ -475,7 +456,7 @@ func TestOutboundDispatcher_Preflight_DerivesBaseURLFromIngestURL(t *testing.T) 
 	d.Start(t.Context())
 	defer d.Stop()
 
-	d.Enqueue(docWithUIDAndFingerprint("uid-1", strings.Repeat("a", 64)), "docs/x.md")
+	d.Enqueue(docWithUIDAndFingerprint(strings.Repeat("a", 64)), "docs/x.md")
 
 	deadline := time.Now().Add(2 * time.Second)
 	for preflightHits.Load() == 0 && time.Now().Before(deadline) {
@@ -511,8 +492,8 @@ func TestOutboundDispatcher_UnparseableIngestURL_ReturnsError(t *testing.T) {
 func TestOutboundDispatcher_UnparseableBaseURL_ReturnsError(t *testing.T) {
 	// Use a URL that fails url.Parse (contains a control character).
 	_, err := NewOutboundDispatcher(DispatcherConfig{
-		BaseURL: "http://[::1", // malformed IPv6 bracket — url.Parse rejects
-		Workers: 1,
+		BaseURL:   "http://[::1", // malformed IPv6 bracket — url.Parse rejects
+		Workers:   1,
 		QueueSize: 4,
 	})
 	if err == nil {
@@ -524,10 +505,10 @@ func TestOutboundDispatcher_UnparseableBaseURL_ReturnsError(t *testing.T) {
 // two fields the preflight contract needs.
 func TestParseUIDAndFingerprint(t *testing.T) {
 	cases := []struct {
-		name        string
-		content     string
-		wantUID     string
-		wantFP      string
+		name    string
+		content string
+		wantUID string
+		wantFP  string
 	}{
 		{
 			name:    "simple",
