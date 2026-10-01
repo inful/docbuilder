@@ -21,7 +21,15 @@ Thank you for your interest in contributing to DocBuilder! This guide will help 
    make test
    ```
 
-4. **Run with example config**:
+4. **Install lefthook git hooks** (recommended):
+   ```bash
+   make hooks
+   ```
+   This installs `pre-commit`, `commit-msg`, and `pre-push` hooks that run
+   `go test ./...`, `golangci-lint run`, `gofmt -s`, and a Conventional
+   Commits check on every commit. See [Lefthook Hooks](#lefthook-hooks) below.
+
+5. **Run with example config**:
    ```bash
    ./bin/docbuilder init -c example.yaml
    ./bin/docbuilder build -c example.yaml -v
@@ -363,13 +371,133 @@ slog.Error("Serious errors")
 
 ### Commit Message Format
 
-Follow conventional commits:
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) and
+enforces the format via a [lefthook](https://lefthook.dev/) `commit-msg` hook (see
+[Lefthook Hooks](#lefthook-hooks)). A valid message looks like:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Allowed `<type>` values:
+
 - `feat:` - New features
 - `fix:` - Bug fixes
 - `docs:` - Documentation changes
-- `refactor:` - Code refactoring
+- `refactor:` - Code refactoring that doesn't add features or fix bugs
 - `test:` - Test additions/changes
-- `chore:` - Maintenance tasks
+- `chore:` - Maintenance tasks, dependency updates
+- `perf:` - Performance improvements
+- `ci:` - CI/CD pipeline changes
+- `build:` - Build system changes
+- `revert:` - Revert a previous commit
+- `style:` - Code style / formatting (whitespace, comments) — no logic change
+
+`<scope>` is optional but encouraged. Use the package or area affected
+(`build`, `cli`, `daemon`, `preview`, `docs`, `lint`, ...).
+
+A `!` after the type/scope marks a breaking change:
+
+```
+feat(cli)!: rename `docbuilder build --keep-workspace` to `--keep-staging`
+```
+
+Subject rules:
+
+- Lower-case first letter, no trailing period
+- 1-100 characters
+- Imperative mood ("add" rather than "added" or "adds")
+
+Body rules (recommended):
+
+- Wrap at 72 characters
+- Explain *why*, not *what* (the diff shows what)
+- Reference issues with `Refs:` or `Closes:` footers
+
+Examples:
+
+```
+feat(build): add RunDirect entry point for already-discovered doc files
+
+The preview path and `docbuilder build -d` already had the doc list in hand;
+this lets them route through the canonical BuildService instead of
+constructing hugo.Generator directly.
+
+Closes: #142
+```
+
+```
+fix(daemon): restore SkipState and OnDocumentReady wiring lost in Phase 4
+
+jobToBuildRequest was a free function that lost access to the daemon's
+stateManager and outboundDispatcher when the BuildServiceAdapter closure
+was deleted. Converting it to a *Daemon method and setting both fields on
+BuildRequest restores the daemon's skip-evaluation and ragabast ingest
+paths.
+
+TDD: TestJobToBuildRequest_Sets{SkipState,OnDocumentReady} were written
+and observed to fail without this fix.
+```
+
+## Lefthook Hooks
+
+This project uses [lefthook](https://lefthook.dev/) to enforce quality gates
+locally before code is committed or pushed. The configuration lives in
+[`lefthook.yml`](../lefthook.yml) at the repo root, with helper scripts in
+[`lefthook/`](../lefthook/).
+
+### Install
+
+```bash
+make hooks
+```
+
+This runs `lefthook install`, which writes the following git hooks:
+
+| Hook          | What it runs                                                        |
+|---------------|---------------------------------------------------------------------|
+| `pre-commit`  | `gofmt -s`, `go vet ./...`, `golangci-lint run ./...`, `go test ./...` (parallel) |
+| `commit-msg`  | Validates the commit message follows Conventional Commits           |
+| `pre-push`    | `go test -race ./...`                                                |
+
+The hooks run **in parallel** within each stage. Any failure aborts the
+commit/push. Merge and rebase commits skip the test-related hooks
+automatically (skip-list is configured in `lefthook.yml`).
+
+### Bypass for one commit
+
+In rare cases (debugging, WIP, hotfixing a CI-only issue) you can bypass
+hooks with:
+
+```bash
+git commit --no-verify -m "feat: emergency fix"
+```
+
+`--no-verify` skips both `pre-commit` and `commit-msg`. Use it sparingly;
+CI still enforces the full test + lint suite.
+
+### Uninstall
+
+```bash
+make hooks-uninstall
+```
+
+### Why these checks?
+
+- **gofmt -s**: catches formatting drift in seconds. Cheap insurance.
+- **go vet**: catches obvious mistakes (printf format strings, lock
+  copies) that reviewers shouldn't have to point out.
+- **golangci-lint**: project's configured lint suite; matches CI exactly.
+- **go test**: full test suite catches regressions before they leave your
+  branch. Fast (~10-15s on this project).
+- **commit-msg / Conventional Commits**: lets release tooling parse
+  `feat:` / `fix:` automatically and keeps `git log --oneline` greppable.
+- **pre-push -race**: race-detector tests are too slow for every commit
+  but cheap insurance before code reaches the team. CI also runs them.
 
 ## Release Process
 

@@ -1,0 +1,65 @@
+# lefthook configuration for DocBuilder
+# Docs: https://lefthook.dev/configuration/
+#
+# Install with: `lefthook install` or `make hooks`
+# Skip a hook for one commit with: `git commit --no-verify`
+
+min_version: 2.1.0
+
+# Pre-commit: catches formatting drift, lint regressions, and broken tests
+# before they land on a branch. Runs in parallel; all must pass.
+pre-commit:
+  parallel: true
+  commands:
+    # gofmt -s check on staged Go files. Catches simple formatting drift
+    # that golangci-lint allows but reviewers shouldn't have to fix.
+    fmt:
+      glob: "*.go"
+      run: bash lefthook/check-fmt.sh {staged_files}
+      fail_text: |
+        Files need `gofmt -s` formatting.
+        Run: gofmt -s -w <file>
+
+    # go vet. Usually covered by golangci-lint, but a direct pass is cheap
+    # and catches cases where a linter version mismatches locally vs CI.
+    vet:
+      glob: "*.go"
+      run: go vet ./...
+      fail_text: "go vet reported problems. See output above."
+
+    # golangci-lint on the whole module. The project's lint suite runs in
+    # <10s; running it on staged files only would miss issues that depend
+    # on changed call-site context elsewhere in the module.
+    lint:
+      glob: "*.go"
+      run: golangci-lint run ./...
+      fail_text: "golangci-lint reported problems. See output above."
+
+    # Full test suite. Fast (~10-15s on this project) and guards against
+    # the silent "tests pass on my machine" breakage.
+    test:
+      run: go test ./...
+      skip:
+        - merge    # Don't re-run tests on merge commits
+        - rebase
+      fail_text: "Tests failed. See output above."
+
+# commit-msg: validates that commit messages follow Conventional Commits.
+# Spec: https://www.conventionalcommits.org/
+commit-msg:
+  commands:
+    conventional-commit:
+      # Lefthook passes the path to the commit-message temp file as {1}.
+      run: bash lefthook/check-conventional-commit.sh {1}
+
+# pre-push: full test suite with -race detector. Slower than pre-commit's
+# suite but cheap insurance before code reaches the team / origin.
+pre-push:
+  parallel: true
+  commands:
+    test-race:
+      run: go test -race ./...
+      skip:
+        - merge
+        - rebase
+      fail_text: "Race-detector tests failed. See output above."
