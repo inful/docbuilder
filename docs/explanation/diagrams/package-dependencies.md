@@ -4,8 +4,8 @@ aliases:
 categories:
   - explanation
 date: 2026-01-04T00:00:00Z
-fingerprint: 52abe510f329695502e6ae9b0ec0477c4b15c4f35669f02e29bef5118c6789bf
-lastmod: "2026-09-27"
+fingerprint: f3ea6260bf7e7abca41319809ba70bcb4a5a320d7b3140fb20114a55e61e28ba
+lastmod: "2026-10-01"
 tags:
   - packages
   - dependencies
@@ -374,16 +374,20 @@ Command Layer (CLI)
 
 **Prevention Strategies**:
 
-1. **Dependency Inversion**: Use interfaces
+1. **No cycle, direct import**: When package A genuinely doesn't depend on
+   package B (only on B's concrete types), A imports B directly. No
+   interface or factory is needed.
    ```go
-   // Wrong: hugo imports build
-   package hugo
-   import "internal/build"
-   
-   // Right: build imports hugo via interface
+   // internal/build imports internal/hugo directly:
    package build
-   type HugoGenerator interface { ... }
+   import "git.home.luguber.info/inful/docbuilder/internal/hugo"
+   
+   g := hugo.NewGenerator(cfg, outDir)
    ```
+   This works as long as `internal/hugo` does not import `internal/build`.
+   In this codebase that holds, and the previous factory-based indirection
+   in `internal/build` (a `HugoGenerator` interface + `HugoGeneratorFactory`)
+   was removed because no cycle existed in the first place.
 
 2. **Shared Package**: Extract common types to lower layer
    ```go

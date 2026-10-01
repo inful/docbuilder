@@ -11,7 +11,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 )
 
 var (
@@ -258,10 +257,7 @@ func TestGolden_EmptyDocs(t *testing.T) {
 	cfg.Output.Directory = outputDir
 
 	// Create build service
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	// Execute build pipeline
 	req := build.BuildRequest{
@@ -390,10 +386,7 @@ func TestGolden_Error_InvalidRepository(t *testing.T) {
 	cfg.Output.Directory = outputDir
 
 	// Create build service
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	// Execute build pipeline
 	req := build.BuildRequest{
@@ -441,10 +434,7 @@ func TestGolden_Error_InvalidConfig(t *testing.T) {
 	outputDir := t.TempDir()
 
 	// Create build service
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	// Execute build pipeline with empty repositories
 	req := build.BuildRequest{
@@ -505,10 +495,7 @@ func TestGolden_Warning_NoGitCommit(t *testing.T) {
 	cfg.Output.Directory = outputDir
 
 	// Create build service
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(cfgAny *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(cfgAny, outDir)
-		})
+	svc := build.NewBuildService()
 
 	// Execute build pipeline
 	req := build.BuildRequest{

@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
-
-	"git.home.luguber.info/inful/docbuilder/internal/build"
 )
 
 // fake generator methods avoided by tailoring stages
@@ -19,7 +17,7 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
 	// Simulate one success + one failure then inject a warning models consistent with stageCloneRepos behavior.
 	report.ClonedRepositories = 1
 	report.FailedRepositories = 1
-	se := models.NewWarnStageError(models.StageCloneRepos, errors.New("wrapper: "+build.ErrClone.Error()))
+	se := models.NewWarnStageError(models.StageCloneRepos, errors.New("wrapper: "+models.ErrClone.Error()))
 	report.Errors = nil
 	report.Warnings = append(report.Warnings, se)
 	report.StageErrorKinds[models.StageCloneRepos] = se.Kind
@@ -46,7 +44,7 @@ func TestIssueTaxonomyPartialClone(t *testing.T) {
 func TestIssueTaxonomyHugoWarning(t *testing.T) {
 	report := models.NewBuildReport(t.Context(), 0, 0)
 	// Simulate a hugo run warning
-	se := models.NewWarnStageError(models.StageRunHugo, errors.New("wrap: "+build.ErrHugo.Error()))
+	se := models.NewWarnStageError(models.StageRunHugo, errors.New("wrap: "+models.ErrHugo.Error()))
 	report.StageErrorKinds[models.StageRunHugo] = se.Kind
 	report.Warnings = append(report.Warnings, se)
 	report.RecordStageResult(models.StageRunHugo, models.StageResultWarning, nil)

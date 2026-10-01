@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
-	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
@@ -49,10 +48,7 @@ func TestBuildPath_BuildServiceMatchesDirectGenerator(t *testing.T) {
 	cfgDirect.Output.Directory = t.TempDir()
 
 	// Path A — BuildService (the post-refactor CLI path).
-	svc := build.NewBuildService().
-		WithHugoGeneratorFactory(func(c *config.Config, outDir string) build.HugoGenerator {
-			return hugo.NewGenerator(c, outDir)
-		})
+	svc := build.NewBuildService()
 	result, err := svc.Run(t.Context(), build.BuildRequest{
 		Config:    &cfgSvc,
 		OutputDir: cfgSvc.Output.Directory,
