@@ -1,4 +1,4 @@
-.PHONY: build test clean install run init fmt lint discover dev dev-setup
+.PHONY: build test test-race clean install run init fmt lint discover dev dev-setup hooks hooks-uninstall
 
 # Build the application
 build:
@@ -12,6 +12,10 @@ deps:
 # Run tests
 test:
 	go test -v ./...
+
+# Run tests with the race detector. Used by lefthook's pre-push hook.
+test-race:
+	go test -race ./...
 
 # Run tests with coverage
 test-coverage:
@@ -54,3 +58,12 @@ dev-setup:
 
 # Quick development cycle
 dev: fmt build test
+
+# Install lefthook git hooks (pre-commit, commit-msg, pre-push).
+# Hooks are defined in lefthook.yml and run automatically once installed.
+hooks:
+	lefthook install
+
+# Remove lefthook git hooks.
+hooks-uninstall:
+	lefthook uninstall
