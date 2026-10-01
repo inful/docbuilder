@@ -35,6 +35,14 @@ type BuildRequest struct {
 	// Incremental enables incremental updates (git pull vs fresh clone).
 	Incremental bool
 
+	// KeepWorkspace, when true, preserves the staging directory after
+	// the build (useful for debugging build failures). It does NOT
+	// change workspace-persistence behavior — the workspace factory
+	// is the source of truth for that. The CLI's --keep-workspace flag
+	// translates to: install a persistent workspace factory AND set
+	// KeepWorkspace=true on the request.
+	KeepWorkspace bool
+
 	// SkipState optionally enables skip-evaluation by providing access to
 	// the persisted build state. nil disables skip-evaluation regardless
 	// of Options.SkipIfUnchanged. The daemon passes its state manager
@@ -65,6 +73,10 @@ type DirectBuildRequest struct {
 
 	// DocFiles are the already-discovered documentation files to process.
 	DocFiles []docs.DocFile
+
+	// KeepStaging, when true, preserves the staging directory after the
+	// build (useful for debugging build failures).
+	KeepStaging bool
 
 	// Options provides optional build behavior modifiers.
 	Options BuildOptions

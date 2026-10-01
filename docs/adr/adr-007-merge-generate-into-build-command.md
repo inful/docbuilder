@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2026-01-01T00:00:00Z
-fingerprint: befcee09b3a132e09b20c55546cf0b03161c453d2ec0b18d70aefcb34fc79d2c
-lastmod: "2026-09-27"
+fingerprint: 6cfea088c7cdfca3d1ffb8aa1813616e9ff15a8fdb3def85735c9be269bbbf99
+lastmod: "2026-10-01"
 tags: []
 title: 'ADR-007: Merge Generate Command into Build Command'
 uid: 52e0a4c1-9281-4086-b0e5-d6ff690eee53
@@ -42,11 +42,16 @@ Analysis reveals that these commands have **significant functional overlap**:
 **Key insight**: When `build` runs without a config file, it already implements the same workflow as `generate`:
 ```go
 // build.go - runLocalBuild()
-// This is functionally identical to generate command
+// After the build-service-unification refactor (Phase 2) this routes
+// through BuildService.RunDirect. The local-path abstraction is:
 discovery := docs.NewDiscovery(repos, &cfg.Build)
 docFiles, err := discovery.DiscoverDocs(repoPaths)
-generator := hugo.NewGenerator(cfg, outputDir)
-err := generator.GenerateSite(docFiles)
+svc := build.NewBuildService()
+_, err = svc.RunDirect(ctx, build.DirectBuildRequest{
+    Config:    cfg,
+    OutputDir: outputDir,
+    DocFiles:  docFiles,
+})
 ```
 
 The existence of two commands creates:

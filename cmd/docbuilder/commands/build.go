@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
+	"git.home.luguber.info/inful/docbuilder/internal/hugo/models"
+	"git.home.luguber.info/inful/docbuilder/internal/workspace"
 )
 
 // BuildCmd implements the 'build' command.
@@ -85,21 +87,16 @@ func (b *BuildCmd) Run(_ *Global, root *CLI) error {
 	return RunBuild(cfg, outputDir, b.Incremental, root.Verbose, b.KeepWorkspace)
 }
 
-// RunBuild executes the build pipeline using the unified generator pipeline.
+// RunBuild executes the full build pipeline via the canonical BuildService.
+// After the build-service-unification refactor this is a thin wrapper that
+// constructs a BuildRequest and hands off to BuildService.Run.
 //
 //nolint:forbidigo // fmt is used for user-facing messages
 func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, keepWorkspace bool) error {
-	// Provide friendly user-facing messages on stdout for CLI integration tests.
 	fmt.Println("Starting DocBuilder build")
 
-	// Set logging level (parseLogLevel handles both verbose flag and DOCBUILDER_LOG_LEVEL)
 	level := parseLogLevel(verbose)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
-
-	// Map incremental flag to config
-	if incrementalMode {
-		cfg.Build.CloneStrategy = config.CloneStrategyUpdate
-	}
 
 	slog.Info("Starting documentation build",
 		"output", outputDir,
@@ -107,35 +104,24 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 		"incremental", incrementalMode,
 		"keep_workspace", keepWorkspace)
 
-	// Create workspace manager
-	wsManager, err := CreateWorkspace(cfg)
-	if err != nil {
-		return err
-	}
-	if !keepWorkspace {
-		defer CleanupWorkspace(wsManager)
-	} else {
-		slog.Info("Workspace will be preserved for debugging", "path", wsManager.GetPath())
-		fmt.Printf("Workspace preserved at: %s\n", wsManager.GetPath())
-	}
-
-	// Initialize Generator
-	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
-
-	// Run the unified pipeline
-	ctx := context.Background()
-	report, err := generator.GenerateFullSite(ctx, cfg.Repositories, wsManager.GetPath())
+	svc := newCLIService(cfg, keepWorkspace)
+	result, err := svc.Run(context.Background(), build.BuildRequest{
+		Config:        cfg,
+		OutputDir:     outputDir,
+		Incremental:   incrementalMode,
+		KeepWorkspace: keepWorkspace,
+		Options:       build.BuildOptions{SkipIfUnchanged: cfg.Build.SkipIfUnchanged},
+	})
 	if err != nil {
 		slog.Error("Build pipeline failed", "error", err)
-		// Show workspace location on error for debugging
 		if keepWorkspace {
-			fmt.Printf("\nError occurred. Workspace preserved at: %s\n", wsManager.GetPath())
-			fmt.Printf("Hugo staging directory: %s_stage\n", outputDir)
+			fmt.Printf("\nError occurred. Workspace preserved for debugging.\n")
 		}
 		return err
 	}
 
-	if report.FailedRepositories > 0 {
+	report := result.Report
+	if report != nil && report.FailedRepositories > 0 {
 		slog.Warn("Some repositories were skipped due to errors",
 			"skipped", report.FailedRepositories,
 			"total", len(cfg.Repositories))
@@ -143,11 +129,43 @@ func RunBuild(cfg *config.Config, outputDir string, incrementalMode, verbose, ke
 
 	slog.Info("Build completed successfully",
 		"output", outputDir,
-		"pages", report.RenderedPages,
-		"skipped_repos", report.FailedRepositories)
+		"pages", reportRenderedPages(report),
+		"skipped_repos", reportFailedRepos(report))
 
 	fmt.Println("Build completed successfully")
 	return nil
+}
+
+// newCLIService builds a BuildService configured for the CLI's workspace
+// behavior. When keepWorkspace is true the workspace manager is persistent
+// (its Cleanup is a no-op) so the cloned repos survive process exit.
+func newCLIService(cfg *config.Config, keepWorkspace bool) *build.DefaultBuildService {
+	wsDir := cfg.Build.WorkspaceDir
+	return build.NewBuildService().
+		WithWorkspaceFactory(func() *workspace.Manager {
+			if keepWorkspace {
+				return workspace.NewPersistentManager(wsDir, "working")
+			}
+			return workspace.NewManager(wsDir)
+		})
+}
+
+// reportRenderedPages returns the rendered-pages count from a possibly-nil
+// report. The BuildReport pointer is the concrete models type; we only
+// read two fields so we accept a typed parameter.
+func reportRenderedPages(report *models.BuildReport) int {
+	if report == nil {
+		return 0
+	}
+	return report.RenderedPages
+}
+
+// reportFailedRepos returns the failed-repo count from a possibly-nil report.
+func reportFailedRepos(report *models.BuildReport) int {
+	if report == nil {
+		return 0
+	}
+	return report.FailedRepositories
 }
 
 // prepareLocalRepoConfig configures repository settings for local builds.
@@ -180,12 +198,13 @@ func (b *BuildCmd) prepareLocalRepoConfig(cfg *config.Config, docsPath string) (
 }
 
 // runLocalBuild builds from a local docs directory without git cloning.
+// Routes through BuildService.RunDirect so the CLI uses one canonical
+// pipeline.
 //
 //nolint:forbidigo // fmt is used for user-facing messages
 func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, keepWorkspace bool) error {
 	fmt.Println("Starting DocBuilder local build")
 
-	// Set logging level
 	level := parseLogLevel(verbose)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
@@ -213,7 +232,6 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	discovery := docs.NewDiscovery(repos, &cfg.Build)
 	repoPaths := map[string]string{"local": repoPath}
 
-	// Discover docs
 	slog.Info("Discovering documentation files")
 	docFiles, discErr := discovery.DiscoverDocs(repoPaths)
 	if discErr != nil {
@@ -226,25 +244,25 @@ func (b *BuildCmd) runLocalBuild(cfg *config.Config, outputDir string, verbose, 
 	}
 
 	slog.Info("Documentation discovered", "files", len(docFiles))
-
-	// Generate Hugo site
 	slog.Info("Generating Hugo site", "output", outputDir)
 
-	// Use newer site generation with report support
-	generator := hugo.NewGenerator(cfg, outputDir).WithKeepStaging(keepWorkspace)
-
-	report, err := generator.GenerateSiteWithReportContext(context.Background(), docFiles)
+	svc := build.NewBuildService()
+	result, err := svc.RunDirect(context.Background(), build.DirectBuildRequest{
+		Config:      cfg,
+		OutputDir:   outputDir,
+		DocFiles:    docFiles,
+		KeepStaging: keepWorkspace,
+	})
 	if err != nil {
-		// Show staging location on error for debugging
 		if keepWorkspace {
-			fmt.Printf("\nError occurred. Hugo staging directory: %s_stage\n", outputDir)
+			fmt.Printf("\nError occurred. Hugo staging directory may be preserved for debugging.\n")
 		}
 		return fmt.Errorf("site generation failed: %w", err)
 	}
 
 	slog.Info("Hugo site generated successfully",
 		"output", outputDir,
-		"pages", report.RenderedPages)
+		"pages", reportRenderedPages(result.Report))
 
 	if keepWorkspace {
 		fmt.Printf("Build output directory: %s\n", outputDir)
