@@ -62,7 +62,6 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		V2Config:      d.config,
 		Repositories:  reposForBuild,
 		RepoSnapshot:  evt.Snapshot,
-		StateManager:  d.stateManager,
 		LiveReloadHub: d.liveReload,
 	}
 	if evt.LastRepoURL != "" && evt.LastReason != "" {

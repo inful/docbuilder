@@ -735,7 +735,7 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 	d.buildMu.Lock()
 	defer d.buildMu.Unlock()
 
-	req, err := jobToBuildRequest(job)
+	req, err := d.jobToBuildRequest(job)
 	if err != nil {
 		return nil, err
 	}
@@ -748,9 +748,23 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 
 // jobToBuildRequest converts a daemon BuildJob into the canonical
 // BuildRequest. It applies the per-job repository override (for
-// orchestration flows) and the BaseDirectory+Directory resolution
-// (so daemon-mode jobs honor cfg.Output.BaseDirectory).
-func jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, error) {
+// orchestration flows), the BaseDirectory+Directory resolution (so
+// daemon-mode jobs honor cfg.Output.BaseDirectory), and the daemon's
+// per-build wiring:
+//
+//   - SkipState is set to the daemon's state manager so the canonical
+//     BuildService can run skip-evaluation when build.skip_if_unchanged
+//     is configured (previously wired via the HugoGeneratorFactory closure).
+//   - OnDocumentReady is set to the outbound dispatcher's Enqueue when
+//     ragabast ingest is enabled, so built documents are pushed to the
+//     external indexer as they are written.
+//
+// Both wiring points were lost when the BuildServiceAdapter and its
+// HugoGeneratorFactory closure were deleted in Phase 4 of the
+// build-service-unification refactor. The wiring is restored here as
+// explicit fields on BuildRequest. nil/empty values keep the CLI and
+// the no-ragabast default case free of overhead.
+func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, error) {
 	var cfg *config.Config
 	if job.TypedMeta != nil && job.TypedMeta.V2Config != nil {
 		cfg = job.TypedMeta.V2Config
@@ -777,10 +791,21 @@ func jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, error) {
 		cfg = &cfgCopy
 	}
 
+	// *state.ServiceAdapter implements validation.SkipStateAccess (all
+	// seven getters/setters that BuildService.Run's evaluateSkip path
+	// calls). See internal/state/service_adapter.go.
+	skipState := d.stateManager
+	var onDocReady func([]byte, string)
+	if d.outboundDispatcher != nil {
+		onDocReady = d.outboundDispatcher.Enqueue
+	}
+
 	return build.BuildRequest{
-		Config:      cfg,
-		OutputDir:   resolveOutputDir(cfg),
-		Incremental: true, // Daemon mode uses incremental updates to leverage remote HEAD cache
+		Config:          cfg,
+		OutputDir:       resolveOutputDir(cfg),
+		Incremental:     true, // Daemon mode uses incremental updates to leverage remote HEAD cache
+		SkipState:       skipState,
+		OnDocumentReady: onDocReady,
 		Options: build.BuildOptions{
 			SkipIfUnchanged: cfg.Build.SkipIfUnchanged,
 		},

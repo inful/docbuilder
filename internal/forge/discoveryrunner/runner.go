@@ -256,7 +256,6 @@ func (r *Runner) triggerBuildForDiscoveredRepos(ctx context.Context, result *for
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config:      r.config,
 			Repositories:  converted,
-			StateManager:  r.stateManager,
 			LiveReloadHub: r.liveReload,
 		},
 	}
