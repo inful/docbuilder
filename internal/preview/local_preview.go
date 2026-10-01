@@ -15,10 +15,10 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
+	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon"
 	"git.home.luguber.info/inful/docbuilder/internal/docs"
-	"git.home.luguber.info/inful/docbuilder/internal/hugo"
 	"git.home.luguber.info/inful/docbuilder/internal/server/httpserver"
 )
 
@@ -411,8 +411,13 @@ func buildFromLocal(ctx context.Context, cfg *config.Config, docsPath string) er
 	if len(docFiles) == 0 {
 		slog.Warn("no docs found in local directory", "dir", docsPath)
 	}
-	generator := hugo.NewGenerator(cfg, cfg.Output.Directory)
-	if _, err := generator.GenerateSiteWithReportContext(ctx, docFiles); err != nil {
+	// Route through the canonical BuildService.RunDirect so the preview
+	// path goes through the same generator construction as CLI and daemon.
+	if _, err := build.NewBuildService().RunDirect(ctx, build.DirectBuildRequest{
+		Config:    cfg,
+		OutputDir: cfg.Output.Directory,
+		DocFiles:  docFiles,
+	}); err != nil {
 		return err
 	}
 	return nil
