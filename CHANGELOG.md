@@ -10,6 +10,24 @@ commits; pin to a SHA for reproducibility per the README.
 ## [Unreleased]
 
 ### Changed
+- **Daemon internal architecture**: `internal/daemon.Daemon` is now a
+  thin façade over six per-concern sub-structs (`lifecycleStack`,
+  `stateStack`, `buildStack`, `discoveryStack`, `serveStack`,
+  `optionalStack`) instead of a 34-field flat struct. The
+  `NewDaemonWithConfigFile` constructor is now a 35-line recipe
+  over nine per-concern `init*` methods (previously 191 lines,
+  cyclomatic complexity 22, 14 returns). No public API change;
+  the single external caller
+  (`cmd/docbuilder/commands/daemon.go`) is unchanged. See
+  [ADR-023](docs/adr/adr-023-daemon-decomposition.md).
+- **Daemon test seam**: introduced `daemonForTest(t, opts)` helper
+  in `internal/daemon/daemon_test_helpers.go` to replace the
+  hand-rolled `&Daemon{lifecycle: ..., serve: ..., ...}`
+  literals that the build-service-unification F5 review flagged.
+  The helper centralises the seams a test wires up and defaults
+  unused sub-structs to non-nil empties, so the Daemon's
+  sub-struct shape is the single source of truth for the test
+  surface.
 - **Build pipeline unification**: All build entry points (CLI full,
   CLI local `-d`, daemon, preview) now route through a single
   `build.BuildService` interface. Previously, the CLI constructed
