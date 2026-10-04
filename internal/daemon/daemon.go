@@ -103,22 +103,17 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	d := &Daemon{
 		config:         cfg,
 		configFilePath: configFilePath,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			metrics:          NewMetricsCollector(),
-			orchestrationBus: events.NewBus(),
-		},
-		discover: &discoveryStack{
-			discoveryCache: NewDiscoveryCache(),
-		},
-		state:    &stateStack{},
-		build:    &buildStack{},
-		optional: &optionalStack{},
+		lifecycle:      lifecycleStack{},
+		state:          &stateStack{},
+		build:          &buildStack{},
+		discover:       &discoveryStack{},
+		serve:          &serveStack{},
+		optional:       &optionalStack{},
 	}
-	d.lifecycle.status.Store(StatusStopped)
 
+	d.initLifecycle()
+	d.initServeStack()
+	d.initDiscoveryStack()
 	if err := d.initForges(cfg); err != nil {
 		return nil, err
 	}
@@ -154,6 +149,32 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	d.initRepoUpdater(cfg)
 
 	return d, nil
+}
+
+// initLifecycle prepares the lifecycle sub-struct: the run-coordination
+// channels and the initial status. Every other init method can rely
+// on lifecycle.status being usable.
+func (d *Daemon) initLifecycle() {
+	d.lifecycle.stopChan = make(chan struct{})
+	d.lifecycle.status.Store(StatusStopped)
+}
+
+// initServeStack prepares the serve sub-struct: the metrics collector
+// and the in-process orchestration event bus. The HTTP server and the
+// cron-like scheduler are constructed by later init steps that depend
+// on these.
+func (d *Daemon) initServeStack() {
+	d.serve.metrics = NewMetricsCollector()
+	d.serve.orchestrationBus = events.NewBus()
+}
+
+// initDiscoveryStack prepares the discovery sub-struct's always-on
+// components: the in-memory cache that backs the status page and
+// HTTP responses. The forge manager and discovery service are
+// constructed by initForges once the configured forges are
+// available.
+func (d *Daemon) initDiscoveryStack() {
+	d.discover.discoveryCache = NewDiscoveryCache()
 }
 
 // initForges builds the forge manager from cfg.Forges and the discovery
