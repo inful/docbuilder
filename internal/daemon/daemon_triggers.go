@@ -25,7 +25,7 @@ func (d *Daemon) TriggerBuild() string {
 	}
 
 	jobID := ""
-	if d.build != nil && d.build.buildDebouncer != nil {
+	if d.build.buildDebouncer != nil {
 		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
@@ -67,7 +67,7 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 		return ""
 	}
 	jobID := ""
-	if d.build != nil && d.build.buildDebouncer != nil {
+	if d.build.buildDebouncer != nil {
 		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
@@ -117,7 +117,7 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	}
 
 	jobID := ""
-	if d.build != nil && d.build.buildDebouncer != nil {
+	if d.build.buildDebouncer != nil {
 		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}

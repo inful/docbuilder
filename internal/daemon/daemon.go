@@ -15,7 +15,6 @@ import (
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
-	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
@@ -869,13 +868,12 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 
 	// *state.ServiceAdapter implements validation.SkipStateAccess (all
 	// seven getters/setters that BuildService.Run's evaluateSkip path
-	// calls). See internal/state/service_adapter.go.
-	var skipState validation.SkipStateAccess
-	if d.state != nil {
-		skipState = d.state.stateManager
-	}
+	// calls). See internal/state/service_adapter.go. The state and
+	// optional sub-structs are always populated by the constructor
+	// and the daemonForTest helper, so no nil-check is needed here.
+	skipState := d.state.stateManager
 	var onDocReady func([]byte, string)
-	if d.optional != nil && d.optional.outboundDispatcher != nil {
+	if d.optional.outboundDispatcher != nil {
 		onDocReady = d.optional.outboundDispatcher.Enqueue
 	}
 

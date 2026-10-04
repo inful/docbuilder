@@ -46,7 +46,7 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 	}
 
 	// Best-effort: prune any cached remote-head entries for the removed repository.
-	if d.build != nil && d.build.repoUpdater != nil && d.build.repoUpdater.cache != nil {
+	if d.build.repoUpdater != nil && d.build.repoUpdater.cache != nil {
 		d.build.repoUpdater.cache.DeleteByURL(evt.RepoURL)
 		if err := d.build.repoUpdater.cache.Save(); err != nil {
 			slog.Warn("Failed to persist remote HEAD cache after repo removal",

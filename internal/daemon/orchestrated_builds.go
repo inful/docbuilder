@@ -59,12 +59,10 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 	}
 
 	meta := &queue.BuildJobMetadata{
-		V2Config:     d.config,
-		Repositories: reposForBuild,
-		RepoSnapshot: evt.Snapshot,
-	}
-	if d.optional != nil {
-		meta.LiveReloadHub = d.optional.liveReload
+		V2Config:      d.config,
+		Repositories:  reposForBuild,
+		RepoSnapshot:  evt.Snapshot,
+		LiveReloadHub: d.optional.liveReload,
 	}
 	if evt.LastRepoURL != "" && evt.LastReason != "" {
 		reason := evt.LastReason
