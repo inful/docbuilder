@@ -60,6 +60,10 @@ per-concern sub-structs:
 | `serveStack`        | HTTP server, scheduler, orchestration bus, metrics                                  |
 | `optionalStack`     | livereload, link verifier, outbound dispatcher (any may be nil)                     |
 
+(For the record: the table has six rows. Earlier revisions of
+this ADR miscounted as "five per-concern sub-structs plus one
+optional." That is incorrect; all six are per-concern.)
+
 The `Daemon` struct itself holds only the configuration reference,
 the two shared atomic counters, and pointers to the sub-structs.
 
