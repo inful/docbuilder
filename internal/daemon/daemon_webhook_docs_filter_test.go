@@ -40,20 +40,13 @@ func TestDaemon_TriggerWebhookBuild_IgnoresIrrelevantPushChanges(t *testing.T) {
 	bus := events.NewBus()
 	defer bus.Close()
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		ForgeManager:     forgeManager,
+		Discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache:   NewDiscoveryCache(),
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	repoUpdateCh, unsubRepoUpdate := events.Subscribe[events.RepoUpdateRequested](bus, 10)

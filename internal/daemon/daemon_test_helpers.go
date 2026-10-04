@@ -44,6 +44,10 @@ type daemonForTestOpts struct {
 	// loops set this.
 	OrchestrationBus *events.Bus
 
+	// Cron-like scheduler. Tests that exercise schedulePeriodicJobs
+	// or runScheduledSyncTick pass a real scheduler.
+	Scheduler *Scheduler
+
 	// Discovery seams. Tests that exercise the discovery runner
 	// pass a manager and a cache.
 	ForgeManager   *forge.Manager
@@ -114,6 +118,9 @@ func daemonForTest(t testingT, opts daemonForTestOpts) *Daemon {
 
 	if opts.OrchestrationBus != nil {
 		d.serve.orchestrationBus = opts.OrchestrationBus
+	}
+	if opts.Scheduler != nil {
+		d.serve.scheduler = opts.Scheduler
 	}
 
 	if opts.ForgeManager != nil {

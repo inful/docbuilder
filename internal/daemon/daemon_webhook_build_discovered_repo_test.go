@@ -69,23 +69,14 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	forgeManager := forge.NewForgeManager()
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-		build: &buildStack{
-			buildQueue: queue.NewBuildQueue(10, 1, noOpBuilder{}),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		BuildQueue:       queue.NewBuildQueue(10, 1, noOpBuilder{}),
+		ForgeManager:     forgeManager,
+		Discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache:   NewDiscoveryCache(),
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	d.build.buildQueue.Start(ctx)
