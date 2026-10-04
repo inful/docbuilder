@@ -12,31 +12,31 @@ import (
 // GetBuildProjection returns the build history projection for querying build history.
 // Returns nil if event sourcing is not initialized.
 func (d *Daemon) GetBuildProjection() *eventstore.BuildHistoryProjection {
-	return d.buildProjection
+	return d.state.buildProjection
 }
 
 // EmitBuildStarted implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildStarted(ctx context.Context, buildID string, meta eventstore.BuildStartedMeta) error {
-	if d.eventEmitter == nil {
+	if d.state.eventEmitter == nil {
 		return nil
 	}
-	return d.eventEmitter.EmitBuildStarted(ctx, buildID, meta)
+	return d.state.eventEmitter.EmitBuildStarted(ctx, buildID, meta)
 }
 
 // EmitBuildCompleted implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildCompleted(ctx context.Context, buildID string, duration time.Duration, artifacts map[string]string) error {
-	if d.eventEmitter == nil {
+	if d.state.eventEmitter == nil {
 		return nil
 	}
-	return d.eventEmitter.EmitBuildCompleted(ctx, buildID, duration, artifacts)
+	return d.state.eventEmitter.EmitBuildCompleted(ctx, buildID, duration, artifacts)
 }
 
 // EmitBuildFailed implements BuildEventEmitter for the daemon.
 func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg string) error {
-	if d.eventEmitter == nil {
+	if d.state.eventEmitter == nil {
 		return nil
 	}
-	return d.eventEmitter.EmitBuildFailed(ctx, buildID, stage, errorMsg)
+	return d.state.eventEmitter.EmitBuildFailed(ctx, buildID, stage, errorMsg)
 }
 
 // onBuildReportEmitted is called after a build report is emitted to the event store.
@@ -44,8 +44,8 @@ func (d *Daemon) EmitBuildFailed(ctx context.Context, buildID, stage, errorMsg s
 func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, report *models.BuildReport) error {
 	// Decide whether to run link verification before updating state so the decision
 	// can be based on what actually happened in this build.
-	shouldVerify := report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil && shouldRunLinkVerification(report)
-	if report != nil && report.Outcome == models.OutcomeSuccess && d.linkVerifier != nil && !shouldVerify {
+	shouldVerify := report != nil && report.Outcome == models.OutcomeSuccess && d.optional.linkVerifier != nil && shouldRunLinkVerification(report)
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.optional.linkVerifier != nil && !shouldVerify {
 		slog.Debug("Skipping post-build link verification",
 			"build_id", buildID,
 			"skip_reason", report.SkipReason)
@@ -53,7 +53,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 
 	// Update state manager after successful builds.
 	// This is critical for skip evaluation to work correctly on subsequent builds.
-	if report != nil && report.Outcome == models.OutcomeSuccess && d.stateManager != nil && d.config != nil {
+	if report != nil && report.Outcome == models.OutcomeSuccess && d.state.stateManager != nil && d.config != nil {
 		d.updateStateAfterBuild(report)
 	}
 
@@ -67,7 +67,7 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 			}
 			return "N/A"
 		}(),
-		"verifier_nil", d.linkVerifier == nil)
+		"verifier_nil", d.optional.linkVerifier == nil)
 	if shouldVerify {
 		go d.verifyLinksAfterBuild(ctx, buildID)
 	}
@@ -79,8 +79,8 @@ func (d *Daemon) onBuildReportEmitted(ctx context.Context, buildID string, repor
 // This is now handled by EventEmitter calling onBuildReportEmitted.
 func (d *Daemon) EmitBuildReport(ctx context.Context, buildID string, report *models.BuildReport) error {
 	// Delegate to event emitter which will call back to onBuildReportEmitted.
-	if d.eventEmitter == nil {
+	if d.state.eventEmitter == nil {
 		return nil
 	}
-	return d.eventEmitter.EmitBuildReport(ctx, buildID, report)
+	return d.state.eventEmitter.EmitBuildReport(ctx, buildID, report)
 }

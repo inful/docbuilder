@@ -17,7 +17,7 @@ func (d *Daemon) stopAwareContext(parent context.Context) (context.Context, cont
 	if parent == nil {
 		parent = context.Background()
 	}
-	if d == nil || d.stopChan == nil {
+	if d == nil || d.lifecycle.stopChan == nil {
 		ctx, cancel := context.WithCancel(parent)
 		return ctx, cancel
 	}
@@ -25,7 +25,7 @@ func (d *Daemon) stopAwareContext(parent context.Context) (context.Context, cont
 	ctx, cancel := context.WithCancel(parent)
 	go func() {
 		select {
-		case <-d.stopChan:
+		case <-d.lifecycle.stopChan:
 			cancel()
 		case <-ctx.Done():
 			// parent canceled; nothing else to do

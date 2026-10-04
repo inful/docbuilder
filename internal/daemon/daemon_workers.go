@@ -10,7 +10,7 @@ func (d *Daemon) goWorker(name string, fn func()) {
 		return
 	}
 
-	if ok := d.workers.Go(fn); !ok {
+	if ok := d.lifecycle.workers.Go(fn); !ok {
 		if name == "" {
 			name = "(unnamed)"
 		}
@@ -23,17 +23,17 @@ func (d *Daemon) startWorkers(ctx context.Context) {
 		return
 	}
 
-	if d.orchestrationBus != nil {
+	if d.serve.orchestrationBus != nil {
 		d.goWorker("build_now_consumer", func() { d.runBuildNowConsumer(ctx) })
 		d.goWorker("webhook_received_consumer", func() { d.runWebhookReceivedConsumer(ctx) })
 		d.goWorker("repo_removed_consumer", func() { d.runRepoRemovedConsumer(ctx) })
 	}
 
-	if d.buildDebouncer != nil {
-		d.goWorker("build_debouncer", func() { _ = d.buildDebouncer.Run(ctx) })
+	if d.build.buildDebouncer != nil {
+		d.goWorker("build_debouncer", func() { _ = d.build.buildDebouncer.Run(ctx) })
 	}
 
-	if d.repoUpdater != nil {
-		d.goWorker("repo_updater", func() { d.repoUpdater.Run(ctx) })
+	if d.build.repoUpdater != nil {
+		d.goWorker("repo_updater", func() { d.build.repoUpdater.Run(ctx) })
 	}
 }

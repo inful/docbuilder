@@ -45,17 +45,25 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "go-test-project",
 		FullName:      "org/go-test-project",
 		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
@@ -80,19 +88,19 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_EnqueuesWebhookJobWithBranchOve
 		PollInterval: 5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runBuildNowConsumer(ctx)
 	go d.runWebhookReceivedConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
@@ -157,16 +165,22 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_IgnoresNonDefaultBranch(t *test
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "go-test-project",
 		FullName:      "org/go-test-project",
 		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
@@ -220,12 +234,18 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 	}
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
 	var running atomic.Bool
 	running.Store(true)
@@ -237,19 +257,19 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 		PollInterval:      5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runBuildNowConsumer(ctx)
 	go d.runWebhookReceivedConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
@@ -263,7 +283,7 @@ func TestDaemon_TriggerWebhookBuild_Orchestrated_ReusesPlannedJobIDWhenBuildRunn
 	// Seed a pending (coalesced) build so PlannedJobID is available.
 	require.NoError(t, bus.Publish(context.Background(), events.BuildRequested{JobID: "job-seeded", Reason: "seed"}))
 	require.Eventually(t, func() bool {
-		planned, ok := d.buildDebouncer.PlannedJobID()
+		planned, ok := d.build.buildDebouncer.PlannedJobID()
 		return ok && planned == "job-seeded"
 	}, 1*time.Second, 5*time.Millisecond)
 

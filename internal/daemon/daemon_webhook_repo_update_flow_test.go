@@ -55,12 +55,18 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 			}
 
 			d := &Daemon{
-				config:           cfg,
-				stopChan:         make(chan struct{}),
-				orchestrationBus: bus,
-				buildQueue:       bq,
+				config: cfg,
+				lifecycle: lifecycleStack{
+					stopChan: make(chan struct{}),
+				},
+				serve: &serveStack{
+					orchestrationBus: bus,
+				},
+				build: &buildStack{
+					buildQueue: bq,
+				},
 			}
-			d.status.Store(StatusRunning)
+			d.lifecycle.status.Store(StatusRunning)
 
 			debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
 				QuietWindow: 50 * time.Millisecond,
@@ -71,22 +77,22 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 				PollInterval: 5 * time.Millisecond,
 			})
 			require.NoError(t, err)
-			d.buildDebouncer = debouncer
+			d.build.buildDebouncer = debouncer
 
 			cache, err := git.NewRemoteHeadCache("")
 			require.NoError(t, err)
-			d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+			d.build.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
 
 			repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
 			defer unsubRepoUpdated()
 
 			go d.runWebhookReceivedConsumer(ctx)
 			go d.runBuildNowConsumer(ctx)
-			go d.repoUpdater.Run(ctx)
+			go d.build.repoUpdater.Run(ctx)
 			go func() { _ = debouncer.Run(ctx) }()
 
 			select {
-			case <-d.repoUpdater.Ready():
+			case <-d.build.repoUpdater.Ready():
 			case <-time.After(1 * time.Second):
 				t.Fatal("timed out waiting for repo updater ready")
 			}
@@ -143,12 +149,18 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 	}
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
 		QuietWindow:       50 * time.Millisecond,
@@ -157,11 +169,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 		PollInterval:      5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: false, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: false, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
 
 	repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
 	defer unsubRepoUpdated()
@@ -171,11 +183,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 
 	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
@@ -242,17 +254,25 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "repo",
 		FullName:      "org/repo",
 		CloneURL:      "https://forgejo.example.com/org/repo.git",
@@ -268,11 +288,11 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 		PollInterval:      5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: false, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: false, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
 
 	repoUpdatedCh, unsubRepoUpdated := events.Subscribe[events.RepoUpdated](bus, 10)
 	defer unsubRepoUpdated()
@@ -282,11 +302,11 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 
 	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(250 * time.Millisecond):
 		t.Fatal("timed out waiting for repo updater ready")
 	}

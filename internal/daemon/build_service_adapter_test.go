@@ -53,11 +53,15 @@ func (m *mockBuildService) RunDirect(ctx context.Context, req build.DirectBuildR
 }
 
 // newDaemonForTest builds a minimal *Daemon suitable for exercising Build().
-// Only buildSvc and buildMu are touched by Build(), so the other fields stay
-// zero. Tests must not call anything that reads them.
+// Only the buildSvc is real; the other sub-structs are initialized to
+// non-nil empties so the Build method's sub-struct field accesses do
+// not nil-deref. Tests must not call anything that reads the contents
+// of the empty sub-structs.
 func newDaemonForTest(svc build.BuildService) *Daemon {
 	return &Daemon{
-		buildSvc: svc,
+		state:    &stateStack{},
+		build:    &buildStack{buildSvc: svc},
+		optional: &optionalStack{},
 	}
 }
 
@@ -303,7 +307,7 @@ func TestJobToBuildRequest_PassesSkipIfUnchangedFromConfig(t *testing.T) {
 // whenever a user had build.skip_if_unchanged: true in their config.
 func TestJobToBuildRequest_SetsSkipStateFromStateManager(t *testing.T) {
 	st := newFakeDaemonStateManager()
-	d := &Daemon{stateManager: st}
+	d := &Daemon{state: &stateStack{stateManager: st}}
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{
@@ -334,7 +338,7 @@ func TestJobToBuildRequest_SetsOnDocumentReadyWhenDispatcherEnabled(t *testing.T
 	})
 	require.NoError(t, err)
 
-	d := &Daemon{outboundDispatcher: dispatcher}
+	d := &Daemon{optional: &optionalStack{outboundDispatcher: dispatcher}}
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{},

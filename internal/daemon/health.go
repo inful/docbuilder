@@ -82,18 +82,18 @@ func (d *Daemon) PerformHealthChecks() *HealthResponse {
 	}
 
 	// Record health check metrics
-	d.metrics.IncrementCounter("health_checks_total")
-	d.metrics.RecordHistogram("health_check_duration_seconds", time.Since(startTime).Seconds())
+	d.serve.metrics.IncrementCounter("health_checks_total")
+	d.serve.metrics.RecordHistogram("health_check_duration_seconds", time.Since(startTime).Seconds())
 	if overallStatus == HealthStatusHealthy {
-		d.metrics.IncrementCounter("health_checks_healthy")
+		d.serve.metrics.IncrementCounter("health_checks_healthy")
 	} else {
-		d.metrics.IncrementCounter("health_checks_unhealthy")
+		d.serve.metrics.IncrementCounter("health_checks_unhealthy")
 	}
 
 	return &HealthResponse{
 		Status:    overallStatus,
 		Timestamp: time.Now(),
-		Uptime:    time.Since(d.startTime).String(),
+		Uptime:    time.Since(d.lifecycle.startTime).String(),
 		Version:   version.Version,
 		Checks:    checks,
 	}
@@ -144,7 +144,7 @@ func (d *Daemon) checkHTTPHealth() HealthCheck {
 		Duration:    time.Since(start),
 	}
 
-	if d.httpServer == nil {
+	if d.serve.httpServer == nil {
 		check.Status = HealthStatusUnhealthy
 		check.Message = "HTTP server not initialized"
 		return check
@@ -172,13 +172,13 @@ func (d *Daemon) checkBuildQueueHealth() HealthCheck {
 		Duration:    time.Since(start),
 	}
 
-	if d.buildQueue == nil {
+	if d.build.buildQueue == nil {
 		check.Status = HealthStatusUnhealthy
 		check.Message = "Build queue not initialized"
 		return check
 	}
 
-	queueLength := d.buildQueue.Length()
+	queueLength := d.build.buildQueue.Length()
 
 	switch {
 	case queueLength > 100:
@@ -205,14 +205,14 @@ func (d *Daemon) checkForgeHealth() HealthCheck {
 		Duration:    time.Since(start),
 	}
 
-	if d.forgeManager == nil {
+	if d.discover.forgeManager == nil {
 		check.Status = HealthStatusUnhealthy
 		check.Message = "Forge manager not initialized"
 		return check
 	}
 
 	// Check if forge discovery has run successfully
-	result, err := d.discoveryCache.Get()
+	result, err := d.discover.discoveryCache.Get()
 	switch {
 	case err != nil:
 		check.Status = HealthStatusDegraded
@@ -241,19 +241,19 @@ func (d *Daemon) checkStorageHealth() HealthCheck {
 		Duration:    time.Since(start),
 	}
 
-	if d.stateManager == nil {
+	if d.state.stateManager == nil {
 		check.Status = HealthStatusDegraded
 		check.Message = "State manager not initialized"
 		return check
 	}
 
 	// Check if state is loaded
-	if !d.stateManager.IsLoaded() {
+	if !d.state.stateManager.IsLoaded() {
 		check.Status = HealthStatusDegraded
 		check.Message = "State not loaded"
 	} else {
 		check.Status = HealthStatusHealthy
-		lastSaved := d.stateManager.LastSaved()
+		lastSaved := d.state.stateManager.LastSaved()
 		if lastSaved != nil {
 			check.Message = fmt.Sprintf("State operational, last saved: %s", lastSaved.Format(time.RFC3339))
 		} else {

@@ -24,13 +24,13 @@ import (
 func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 	// Update config hash
 	if report.ConfigHash != "" {
-		d.stateManager.SetLastConfigHash(report.ConfigHash)
+		d.state.stateManager.SetLastConfigHash(report.ConfigHash)
 		slog.Debug("Updated config hash in state", "hash", report.ConfigHash)
 	}
 
 	// Update global doc files hash
 	if report.DocFilesHash != "" {
-		d.stateManager.SetLastGlobalDocFilesHash(report.DocFilesHash)
+		d.state.stateManager.SetLastGlobalDocFilesHash(report.DocFilesHash)
 		slog.Debug("Updated global doc files hash in state", "hash", report.DocFilesHash)
 	}
 
@@ -68,17 +68,17 @@ func (d *Daemon) updateStateAfterBuild(report *models.BuildReport) {
 		commit := ref.Hash().String()
 
 		// Initialize repository state if needed
-		d.stateManager.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
+		d.state.stateManager.EnsureRepositoryState(repo.URL, repo.Name, repo.Branch)
 
 		// Update commit in state
-		d.stateManager.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, commit)
+		d.state.stateManager.SetRepoLastCommit(repo.URL, repo.Name, repo.Branch, commit)
 		slog.Debug("Updated repository commit in state",
 			"repository", repo.Name,
 			"commit", commit[:8])
 	}
 
 	// Save state to disk
-	if err := d.stateManager.Save(); err != nil {
+	if err := d.state.stateManager.Save(); err != nil {
 		slog.Warn("Failed to save state after build", "error", err)
 	}
 }
@@ -102,7 +102,7 @@ func (d *Daemon) verifyLinksAfterBuild(ctx context.Context, buildID string) {
 	}
 
 	// Verify links
-	if err := d.linkVerifier.VerifyPages(verifyCtx, pages); err != nil {
+	if err := d.optional.linkVerifier.VerifyPages(verifyCtx, pages); err != nil {
 		slog.Warn("Link verification encountered errors",
 			"build_id", buildID,
 			"error", err)

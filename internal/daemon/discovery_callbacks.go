@@ -13,11 +13,11 @@ func (d *Daemon) onDiscoveryBuildRequest(ctx context.Context, jobID, reason stri
 	if d == nil || ctx == nil {
 		return
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		return
 	}
-	if d.buildDebouncer != nil {
-		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+	if d.build.buildDebouncer != nil {
+		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
 	}
@@ -39,7 +39,7 @@ func (d *Daemon) onDiscoveryRepoRemoved(ctx context.Context, repoURL, repoName s
 	if d == nil || ctx == nil {
 		return
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		return
 	}
 

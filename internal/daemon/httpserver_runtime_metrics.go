@@ -12,10 +12,10 @@ func (d *Daemon) HTTPRequestsTotal() int {
 
 // RepositoriesTotal returns the number of discovered repositories from the last cached discovery result.
 func (d *Daemon) RepositoriesTotal() int {
-	if d == nil || d.discoveryCache == nil {
+	if d == nil || d.discover.discoveryCache == nil {
 		return 0
 	}
-	result, err := d.discoveryCache.Get()
+	result, err := d.discover.discoveryCache.Get()
 	if err != nil || result == nil {
 		return 0
 	}
@@ -24,10 +24,10 @@ func (d *Daemon) RepositoriesTotal() int {
 
 // LastDiscoveryDurationSec returns the duration (seconds) of the last discovery run.
 func (d *Daemon) LastDiscoveryDurationSec() int {
-	if d == nil || d.discoveryCache == nil {
+	if d == nil || d.discover.discoveryCache == nil {
 		return 0
 	}
-	result, err := d.discoveryCache.Get()
+	result, err := d.discover.discoveryCache.Get()
 	if err != nil || result == nil {
 		return 0
 	}
@@ -38,10 +38,10 @@ func (d *Daemon) LastDiscoveryDurationSec() int {
 //
 // This is computed by summing stage duration samples when available.
 func (d *Daemon) LastBuildDurationSec() int {
-	if d == nil || d.buildProjection == nil {
+	if d == nil || d.state.buildProjection == nil {
 		return 0
 	}
-	last := d.buildProjection.GetLastCompletedBuild()
+	last := d.state.buildProjection.GetLastCompletedBuild()
 	if last == nil || last.ReportData == nil {
 		return 0
 	}

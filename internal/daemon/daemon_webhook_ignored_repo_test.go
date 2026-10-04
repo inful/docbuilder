@@ -100,17 +100,25 @@ func TestDaemon_TriggerWebhookBuild_FetchesPreviouslyFilteredRepoWhenDocsAppear(
 	forgeManager.AddForge(cfg.Forges[0], forgeClient)
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{
 		Repositories: []*forge.Repository{{
 			ID:            "1",
 			Name:          "existing-project",
@@ -141,19 +149,19 @@ func TestDaemon_TriggerWebhookBuild_FetchesPreviouslyFilteredRepoWhenDocsAppear(
 		PollInterval: 5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, alwaysChangedRemoteHeadChecker{}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runBuildNowConsumer(ctx)
 	go d.runWebhookReceivedConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(1 * time.Second):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
@@ -236,16 +244,22 @@ func TestDaemon_TriggerWebhookBuild_DoesNotReviveDocIgnoredRepo(t *testing.T) {
 	forgeManager.AddForge(cfg.Forges[0], forgeClient)
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{
 		Repositories: []*forge.Repository{{
 			ID:            "1",
 			Name:          "existing-project",

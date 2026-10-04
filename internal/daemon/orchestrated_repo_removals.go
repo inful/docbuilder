@@ -12,11 +12,11 @@ import (
 )
 
 func (d *Daemon) runRepoRemovedConsumer(ctx context.Context) {
-	if ctx == nil || d == nil || d.orchestrationBus == nil {
+	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
-	repoRemovedCh, unsubscribe := events.Subscribe[events.RepoRemoved](d.orchestrationBus, 16)
+	repoRemovedCh, unsubscribe := events.Subscribe[events.RepoRemoved](d.serve.orchestrationBus, 16)
 	defer unsubscribe()
 
 	for {
@@ -40,15 +40,15 @@ func (d *Daemon) handleRepoRemoved(evt events.RepoRemoved) {
 		return
 	}
 
-	if remover, ok := any(d.stateManager).(interface{ RemoveRepositoryState(string) }); ok {
+	if remover, ok := any(d.state.stateManager).(interface{ RemoveRepositoryState(string) }); ok {
 		remover.RemoveRepositoryState(evt.RepoURL)
 		slog.Info("Repository removed from state", slog.String("repo_url", evt.RepoURL), logfields.Name(evt.RepoName))
 	}
 
 	// Best-effort: prune any cached remote-head entries for the removed repository.
-	if d.repoUpdater != nil && d.repoUpdater.cache != nil {
-		d.repoUpdater.cache.DeleteByURL(evt.RepoURL)
-		if err := d.repoUpdater.cache.Save(); err != nil {
+	if d.build != nil && d.build.repoUpdater != nil && d.build.repoUpdater.cache != nil {
+		d.build.repoUpdater.cache.DeleteByURL(evt.RepoURL)
+		if err := d.build.repoUpdater.cache.Save(); err != nil {
 			slog.Warn("Failed to persist remote HEAD cache after repo removal",
 				slog.String("repo_url", evt.RepoURL),
 				logfields.Error(err))

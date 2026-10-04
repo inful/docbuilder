@@ -28,9 +28,9 @@ func (d *Daemon) publishOrchestrationEvent(ctx context.Context, evt any) error {
 	if ctx == nil {
 		return ferrors.ValidationError("context cannot be nil").Build()
 	}
-	if d == nil || d.orchestrationBus == nil {
+	if d == nil || d.serve.orchestrationBus == nil {
 		return ferrors.DaemonError("orchestration bus not initialized").Build()
 	}
 
-	return publishOrchestrationEventOnBus(ctx, d.orchestrationBus, evt)
+	return publishOrchestrationEventOnBus(ctx, d.serve.orchestrationBus, evt)
 }

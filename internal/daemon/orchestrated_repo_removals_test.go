@@ -42,9 +42,9 @@ func TestDaemon_handleRepoRemoved_PrunesStateAndCache(t *testing.T) {
 	require.NotNil(t, sm.GetRepository(repoURL))
 
 	d := &Daemon{
-		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		stateManager: sm,
-		repoUpdater:  &RepoUpdater{cache: cache},
+		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		state:  &stateStack{stateManager: sm},
+		build:  &buildStack{repoUpdater: &RepoUpdater{cache: cache}},
 	}
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: repoURL, RepoName: repoName})
@@ -69,9 +69,9 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteOutsideRepoCacheDir(t *testing.T)
 	require.True(t, svcResult.IsOk())
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 	d := &Daemon{
-		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		stateManager: sm,
-		repoUpdater:  &RepoUpdater{cache: &git.RemoteHeadCache{}},
+		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		state:  &stateStack{stateManager: sm},
+		build:  &buildStack{repoUpdater: &RepoUpdater{cache: &git.RemoteHeadCache{}}},
 	}
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: "https://example.com/evil.git", RepoName: "../outside.txt"})
@@ -95,8 +95,8 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteRepoCacheBaseDir(t *testing.T) {
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
 	d := &Daemon{
-		config:       &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		stateManager: sm,
+		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		state:  &stateStack{stateManager: sm},
 	}
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: "https://example.com/r.git", RepoName: "."})

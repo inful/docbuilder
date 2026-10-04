@@ -8,31 +8,31 @@ import (
 
 // GetConfigFilePath returns the daemon config file path.
 func (d *Daemon) GetConfigFilePath() string {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
+	d.lifecycle.mu.RLock()
+	defer d.lifecycle.mu.RUnlock()
 	return d.configFilePath
 }
 
 // GetLastBuildTime returns the last successful build time (if any).
 func (d *Daemon) GetLastBuildTime() *time.Time {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.lastBuild
+	d.lifecycle.mu.RLock()
+	defer d.lifecycle.mu.RUnlock()
+	return d.lifecycle.lastBuild
 }
 
 // GetLastDiscovery returns the last successful discovery time (if any).
 func (d *Daemon) GetLastDiscovery() *time.Time {
-	if d.discoveryRunner == nil {
+	if d.discover.discoveryRunner == nil {
 		return nil
 	}
-	return d.discoveryRunner.GetLastDiscovery()
+	return d.discover.discoveryRunner.GetLastDiscovery()
 }
 
 // GetDiscoveryResult returns the cached discovery result and error.
 func (d *Daemon) GetDiscoveryResult() (*forge.DiscoveryResult, error) {
-	if d.discoveryCache == nil {
+	if d.discover.discoveryCache == nil {
 		//nolint:nilnil // nil result + nil error means no discovery has run yet.
 		return nil, nil
 	}
-	return d.discoveryCache.Get()
+	return d.discover.discoveryCache.Get()
 }

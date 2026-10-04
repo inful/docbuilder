@@ -84,9 +84,9 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			NewJobID:       func() string { return "job-1" },
 		})
 
-		d := &Daemon{config: cfg, discoveryRunner: runner}
-		d.stopChan = make(chan struct{})
-		d.status.Store(StatusStopped)
+		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d.lifecycle.stopChan = make(chan struct{})
+		d.lifecycle.status.Store(StatusStopped)
 
 		d.runScheduledSyncTick(context.Background(), "0 */4 * * *")
 		require.Len(t, fakeQ.Jobs(), 0)
@@ -116,9 +116,9 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			NewJobID:       func() string { return "job-1" },
 		})
 
-		d := &Daemon{config: cfg, discoveryRunner: runner}
-		d.stopChan = make(chan struct{})
-		d.status.Store(StatusRunning)
+		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d.lifecycle.stopChan = make(chan struct{})
+		d.lifecycle.status.Store(StatusRunning)
 
 		d.runScheduledSyncTick(context.Background(), "0 */4 * * *")
 
@@ -136,7 +136,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		ctx := context.Background()
 
 		cfg := &config.Config{Daemon: &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}}}
-		d := &Daemon{config: cfg, scheduler: s, stopChan: make(chan struct{})}
+		d := &Daemon{config: cfg, serve: &serveStack{scheduler: s}, lifecycle: lifecycleStack{stopChan: make(chan struct{})}}
 		err = d.schedulePeriodicJobs(ctx)
 		require.NoError(t, err)
 
@@ -162,9 +162,9 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			Config:         cfg,
 		})
 
-		d := &Daemon{config: cfg, discoveryRunner: runner}
-		d.stopChan = make(chan struct{})
-		d.status.Store(StatusRunning)
+		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d.lifecycle.stopChan = make(chan struct{})
+		d.lifecycle.status.Store(StatusRunning)
 
 		done := make(chan struct{})
 		go func() {
@@ -172,7 +172,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			close(done)
 		}()
 
-		close(d.stopChan)
+		close(d.lifecycle.stopChan)
 		select {
 		case <-done:
 			// ok

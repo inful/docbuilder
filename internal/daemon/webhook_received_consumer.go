@@ -14,11 +14,11 @@ import (
 )
 
 func (d *Daemon) runWebhookReceivedConsumer(ctx context.Context) {
-	if ctx == nil || d == nil || d.orchestrationBus == nil {
+	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
-	ch, unsubscribe := events.Subscribe[events.WebhookReceived](d.orchestrationBus, 32)
+	ch, unsubscribe := events.Subscribe[events.WebhookReceived](d.serve.orchestrationBus, 32)
 	defer unsubscribe()
 
 	for {
@@ -35,7 +35,7 @@ func (d *Daemon) runWebhookReceivedConsumer(ctx context.Context) {
 }
 
 func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookReceived) {
-	if ctx == nil || d == nil || d.GetStatus() != StatusRunning || d.orchestrationBus == nil {
+	if ctx == nil || d == nil || d.GetStatus() != StatusRunning || d.serve.orchestrationBus == nil {
 		return
 	}
 
@@ -44,8 +44,8 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 	repos := d.currentReposForOrchestratedBuild()
 
 	forgeHost := ""
-	if evt.ForgeName != "" && d.forgeManager != nil {
-		if cfg := d.forgeManager.GetForgeConfigs()[evt.ForgeName]; cfg != nil {
+	if evt.ForgeName != "" && d.discover.forgeManager != nil {
+		if cfg := d.discover.forgeManager.GetForgeConfigs()[evt.ForgeName]; cfg != nil {
 			forgeHost = extractHost(cfg.BaseURL)
 		}
 	}
@@ -113,7 +113,7 @@ func (d *Daemon) handleWebhookReceived(ctx context.Context, evt events.WebhookRe
 }
 
 func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.WebhookReceived) (string, string, []string) {
-	if ctx == nil || d == nil || d.forgeManager == nil || d.discovery == nil {
+	if ctx == nil || d == nil || d.discover.forgeManager == nil || d.discover.discovery == nil {
 		return "", "", nil
 	}
 	if strings.TrimSpace(evt.ForgeName) == "" || strings.TrimSpace(evt.RepoFullName) == "" {
@@ -127,7 +127,7 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 		return "", "", nil
 	}
 
-	client := d.forgeManager.GetForge(evt.ForgeName)
+	client := d.discover.forgeManager.GetForge(evt.ForgeName)
 	if client == nil {
 		return "", "", nil
 	}
@@ -165,7 +165,7 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 		return "", "", nil
 	}
 
-	include, reason := d.discovery.ShouldIncludeRepository(repo)
+	include, reason := d.discover.discovery.ShouldIncludeRepository(repo)
 	if !include {
 		slog.Info("Webhook repo remains excluded after direct probe",
 			logfields.JobID(evt.JobID),
@@ -177,7 +177,7 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 
 	d.upsertWebhookDiscoveredRepo(repo)
 
-	converted := d.discovery.ConvertToConfigRepositories([]*forge.Repository{repo}, d.forgeManager)
+	converted := d.discover.discovery.ConvertToConfigRepositories([]*forge.Repository{repo}, d.discover.forgeManager)
 	if len(converted) == 0 {
 		return "", normalizeGitBranchRef(repo.DefaultBranch), []string{"docs"}
 	}
@@ -198,11 +198,11 @@ func (d *Daemon) resolveWebhookRepoFromForge(ctx context.Context, evt events.Web
 }
 
 func (d *Daemon) upsertWebhookDiscoveredRepo(repo *forge.Repository) {
-	if d == nil || d.discoveryCache == nil || repo == nil {
+	if d == nil || d.discover.discoveryCache == nil || repo == nil {
 		return
 	}
 
-	d.discoveryCache.Merge(func(current *forge.DiscoveryResult) *forge.DiscoveryResult {
+	d.discover.discoveryCache.Merge(func(current *forge.DiscoveryResult) *forge.DiscoveryResult {
 		next := &forge.DiscoveryResult{
 			Timestamp: time.Now(),
 		}
@@ -279,8 +279,8 @@ func (d *Daemon) handleWebhookWithNoRepos(ctx context.Context, evt events.Webhoo
 
 	// In forge mode, repository lists come from discovery. If discovery hasn't completed
 	// yet, retry once it has populated the cache.
-	if d.discoveryRunner != nil {
-		go d.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
+	if d.discover.discoveryRunner != nil {
+		go d.discover.discoveryRunner.SafeRun(ctx, func() bool { return d.GetStatus() == StatusRunning })
 	}
 
 	slog.Warn("Webhook received but no repositories available; will retry after discovery",
@@ -338,7 +338,7 @@ func (d *Daemon) matchWebhookRepo(evt events.WebhookReceived, evtBranch string, 
 }
 
 func (d *Daemon) retryWebhookAfterDiscovery(ctx context.Context, evt events.WebhookReceived) {
-	if d == nil || d.orchestrationBus == nil {
+	if d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 	// Wait for discovery to populate the repo list, then re-publish the webhook event.

@@ -72,46 +72,46 @@ func TestNewDaemonWithConfigFile_FullWiring(t *testing.T) {
 		// Tear down side-effect-bearing components so the test does not
 		// leak goroutines, temp DB handles, or schedulers.
 		_ = d.Stop(t.Context())
-		if d.eventStore != nil {
-			_ = d.eventStore.Close()
+		if d.state.eventStore != nil {
+			_ = d.state.eventStore.Close()
 		}
 	})
 
 	// Core wiring: every mandatory component must be present.
 	require.NotNil(t, d.config)
-	require.NotNil(t, d.metrics, "metrics collector must be initialized")
-	require.NotNil(t, d.discoveryCache, "discovery cache must be initialized")
-	require.NotNil(t, d.orchestrationBus, "orchestration bus must be initialized")
-	require.NotNil(t, d.scheduler, "scheduler must be initialized")
+	require.NotNil(t, d.serve.metrics, "metrics collector must be initialized")
+	require.NotNil(t, d.discover.discoveryCache, "discovery cache must be initialized")
+	require.NotNil(t, d.serve.orchestrationBus, "orchestration bus must be initialized")
+	require.NotNil(t, d.serve.scheduler, "scheduler must be initialized")
 
 	// Discovery stack.
-	require.NotNil(t, d.forgeManager, "forge manager must be initialized")
-	require.NotNil(t, d.discovery, "discovery service must be initialized")
-	require.NotNil(t, d.discoveryRunner, "discovery runner must be initialized")
-	require.Len(t, d.forgeManager.GetForgeConfigs(), 1,
+	require.NotNil(t, d.discover.forgeManager, "forge manager must be initialized")
+	require.NotNil(t, d.discover.discovery, "discovery service must be initialized")
+	require.NotNil(t, d.discover.discoveryRunner, "discovery runner must be initialized")
+	require.Len(t, d.discover.forgeManager.GetForgeConfigs(), 1,
 		"all configured forges must be registered")
 
 	// Build stack.
-	require.NotNil(t, d.buildSvc, "build service must be initialized")
-	require.NotNil(t, d.buildQueue, "build queue must be initialized")
-	require.NotNil(t, d.buildDebouncer, "build debouncer must be initialized")
-	require.NotNil(t, d.repoUpdater, "repo updater must be initialized")
+	require.NotNil(t, d.build.buildSvc, "build service must be initialized")
+	require.NotNil(t, d.build.buildQueue, "build queue must be initialized")
+	require.NotNil(t, d.build.buildDebouncer, "build debouncer must be initialized")
+	require.NotNil(t, d.build.repoUpdater, "repo updater must be initialized")
 
 	// State stack.
-	require.NotNil(t, d.stateManager, "state manager must be initialized")
-	require.NotNil(t, d.eventStore, "event store must be initialized")
-	require.NotNil(t, d.buildProjection, "build projection must be initialized")
-	require.NotNil(t, d.eventEmitter, "event emitter must be initialized")
+	require.NotNil(t, d.state.stateManager, "state manager must be initialized")
+	require.NotNil(t, d.state.eventStore, "event store must be initialized")
+	require.NotNil(t, d.state.buildProjection, "build projection must be initialized")
+	require.NotNil(t, d.state.eventEmitter, "event emitter must be initialized")
 
 	// Serving stack.
-	require.NotNil(t, d.httpServer, "http server must be initialized")
+	require.NotNil(t, d.serve.httpServer, "http server must be initialized")
 
 	// Optional features enabled by config: must be non-nil.
-	require.NotNil(t, d.liveReload, "livereload must be initialized when cfg.Build.LiveReload is true")
-	require.NotNil(t, d.outboundDispatcher, "outbound dispatcher must be initialized when ragabast is enabled and Enabled=true")
+	require.NotNil(t, d.optional.liveReload, "livereload must be initialized when cfg.Build.LiveReload is true")
+	require.NotNil(t, d.optional.outboundDispatcher, "outbound dispatcher must be initialized when ragabast is enabled and Enabled=true")
 
 	// Optional feature disabled by config: must be nil.
-	require.Nil(t, d.linkVerifier, "link verifier must be nil when link verification is not enabled")
+	require.Nil(t, d.optional.linkVerifier, "link verifier must be nil when link verification is not enabled")
 
 	// Cross-component invariant: build queue calls back into the daemon
 	// (queue.Builder = *Daemon). The compile-time assertion
@@ -119,7 +119,7 @@ func TestNewDaemonWithConfigFile_FullWiring(t *testing.T) {
 	// is the structural guard; this test confirms the queue is the one
 	// built around that builder by checking it was constructed with the
 	// right size and worker count.
-	require.NotNil(t, d.buildQueue, "build queue must be initialized")
+	require.NotNil(t, d.build.buildQueue, "build queue must be initialized")
 }
 
 // TestNewDaemonWithConfigFile_RagabastDisabledKeepsDispatcherNil locks
@@ -169,12 +169,12 @@ func TestNewDaemonWithConfigFile_RagabastDisabledKeepsDispatcherNil(t *testing.T
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				_ = d.Stop(t.Context())
-				if d.eventStore != nil {
-					_ = d.eventStore.Close()
+				if d.state.eventStore != nil {
+					_ = d.state.eventStore.Close()
 				}
 			})
 
-			require.Nil(t, d.outboundDispatcher,
+			require.Nil(t, d.optional.outboundDispatcher,
 				"outbound dispatcher must remain nil when ragabast is not opted in")
 		})
 	}
