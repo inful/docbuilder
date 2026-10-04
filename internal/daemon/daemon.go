@@ -116,16 +116,21 @@ func NewDaemon(cfg *config.Config) (*Daemon, error) {
 }
 
 // NewDaemonWithConfigFile creates a new daemon instance with config file watching.
+//
+// The constructor is intentionally a thin recipe over per-concern init
+// methods. Each init method owns one subsystem and either returns an
+// error or is safe to ignore. Reading the recipe top-to-bottom is the
+// fastest way to see what a fully-initialized daemon contains; reading
+// any single init method is the fastest way to understand one concern.
 func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon, error) {
 	if cfg == nil {
 		return nil, errors.New("configuration is required")
 	}
-
 	if cfg.Daemon == nil {
 		return nil, errors.New("daemon configuration is required")
 	}
 
-	daemon := &Daemon{
+	d := &Daemon{
 		config:           cfg,
 		configFilePath:   configFilePath,
 		stopChan:         make(chan struct{}),
@@ -133,89 +138,140 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 		discoveryCache:   NewDiscoveryCache(),
 		orchestrationBus: events.NewBus(),
 	}
+	d.status.Store(StatusStopped)
 
-	daemon.status.Store(StatusStopped)
+	if err := d.initForges(cfg); err != nil {
+		return nil, err
+	}
+	d.initBuildStack(cfg)
+	if ragCfg := ragabastConfigOrNil(cfg); ragCfg != nil {
+		if err := d.initOutboundDispatcher(ragCfg); err != nil {
+			return nil, err
+		}
+	}
+	if err := d.initScheduler(); err != nil {
+		return nil, err
+	}
+	if err := d.initStateStack(cfg); err != nil {
+		return nil, err
+	}
+	if cfg.Build.LiveReload {
+		d.initLiveReload()
+	}
+	d.initHTTPServer(cfg)
+	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
+		d.initLinkVerifier(cfg)
+	}
+	// Cross-wiring: the build queue emits events through the event
+	// emitter, but the emitter is constructed by initStateStack which
+	// runs after initBuildStack. The recipe is the right place to
+	// express that ordering dependency.
+	d.buildQueue.SetEventEmitter(d.eventEmitter)
 
-	// Initialize forge manager
+	d.initDiscoveryRunner(cfg)
+	if err := d.initBuildDebouncer(cfg); err != nil {
+		return nil, err
+	}
+	d.initRepoUpdater(cfg)
+
+	return d, nil
+}
+
+// initForges builds the forge manager from cfg.Forges and the discovery
+// service that fronts it. Returns an error if any configured forge
+// fails to construct.
+func (d *Daemon) initForges(cfg *config.Config) error {
 	forgeManager := forge.NewForgeManager()
 	for _, forgeConfig := range cfg.Forges {
 		client, err := forge.NewForgeClient(forgeConfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
+			return fmt.Errorf("failed to create forge client %s: %w", forgeConfig.Name, err)
 		}
 		forgeManager.AddForge(forgeConfig, client)
 	}
-	daemon.forgeManager = forgeManager
+	d.forgeManager = forgeManager
+	d.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
+	return nil
+}
 
-	// Initialize discovery service
-	daemon.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
-
-	// Create canonical BuildService and store it on the daemon. The daemon
-	// itself implements queue.Builder (see (*Daemon).Build below), so no
-	// adapter type is needed.
-	daemon.buildSvc = build.NewBuildService().
+// initBuildStack builds the canonical BuildService and the build queue
+// that dispatches jobs to the daemon itself (which satisfies
+// queue.Builder). The queue's retry policy is configured from
+// cfg.Build.
+func (d *Daemon) initBuildStack(cfg *config.Config) {
+	// The daemon itself implements queue.Builder (see (*Daemon).Build),
+	// so no adapter type is needed.
+	d.buildSvc = build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
-			// Use persistent workspace for incremental builds (repo_cache_dir/working)
+			// Use persistent workspace for incremental builds (repo_cache_dir/working).
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		})
 
-	// Initialize build queue with the daemon itself as the builder.
-	daemon.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, daemon)
-	// Configure retry policy from build config (recorder injection handled elsewhere if added later)
-	daemon.buildQueue.ConfigureRetry(cfg.Build)
+	d.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, d)
+	// Configure retry policy from build config. Recorder injection is
+	// handled elsewhere if added later.
+	d.buildQueue.ConfigureRetry(cfg.Build)
+}
 
-	// Initialize outbound dispatcher (daemon-mode-only, opt-in). When the
-	// ragabast block is absent or Enabled is false, this is a no-op and the
-	// factory below installs no callback on the Generator.
-	if ragCfg := ragabastConfigOrNil(cfg); ragCfg != nil {
-		if err := daemon.initOutboundDispatcher(ragCfg); err != nil {
-			return nil, err
-		}
-	}
-
-	// Initialize scheduler (after build queue)
+// initScheduler constructs the cron-like scheduler that drives the
+// daemon's periodic work (sync tick, status update, prom sync).
+func (d *Daemon) initScheduler() error {
 	scheduler, err := NewScheduler()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create scheduler: %w", err)
+		return fmt.Errorf("failed to create scheduler: %w", err)
 	}
-	daemon.scheduler = scheduler
+	d.scheduler = scheduler
+	return nil
+}
 
-	// Initialize state manager using the typed state.Service wrapped in ServiceAdapter.
-	// This bridges the new typed state system with the daemon's interface requirements.
+// initStateStack builds the state manager, event store, build history
+// projection, and event emitter. All four are tightly coupled: the
+// state manager is the typed source of truth, the event store is the
+// append-only log, the projection is the read-side view, and the
+// emitter translates daemon events into the store.
+func (d *Daemon) initStateStack(cfg *config.Config) error {
 	stateDir := cfg.Daemon.Storage.RepoCacheDir
 	if stateDir == "" {
 		stateDir = "./daemon-data" // Default data directory
 	}
+
 	stateServiceResult := state.NewService(stateDir)
 	if stateServiceResult.IsErr() {
-		return nil, fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
+		return fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
 	}
-	daemon.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
+	d.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
 
-	// Initialize event store and build history projection (Phase B - Event Sourcing)
 	eventStorePath := filepath.Join(stateDir, "events.db")
 	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create event store: %w", err)
+		return fmt.Errorf("failed to create event store: %w", err)
 	}
-	daemon.eventStore = eventStore
-	daemon.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
-	daemon.eventEmitter = NewEventEmitter(eventStore, daemon.buildProjection)
-	daemon.eventEmitter.daemon = daemon // Wire back reference for hooks
+	d.eventStore = eventStore
+	d.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
+	d.eventEmitter = NewEventEmitter(eventStore, d.buildProjection)
+	d.eventEmitter.daemon = d // Wire back reference for hooks
 
-	// Rebuild projection from existing events
-	if rebuildErr := daemon.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
+	// Rebuild projection from existing events. Non-fatal: a corrupt log
+	// leaves the projection empty rather than failing daemon startup.
+	if rebuildErr := d.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
 		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
-		// Non-fatal: projection will start empty
 	}
+	return nil
+}
 
-	// Initialize livereload hub (opt-in)
-	if cfg.Build.LiveReload {
-		daemon.liveReload = NewLiveReloadHub(daemon.metrics)
-		slog.Info("LiveReload hub initialized")
-	}
+// initLiveReload constructs the SSE-based live reload hub. Only invoked
+// when cfg.Build.LiveReload is true. Safe to call on a nil metrics
+// collector — the hub falls back to a no-op recorder.
+func (d *Daemon) initLiveReload() {
+	d.liveReload = NewLiveReloadHub(d.metrics)
+	slog.Info("LiveReload hub initialized")
+}
 
-	// Initialize HTTP server wiring (extracted package)
+// initHTTPServer builds the HTTP server with its full wiring (forge
+// clients, webhooks, live reload hub, health, metrics, status page).
+// The server is started by (*Daemon).Start; this method only
+// constructs it.
+func (d *Daemon) initHTTPServer(cfg *config.Config) {
 	webhookConfigs := make(map[string]*config.WebhookConfig)
 	for _, forgeCfg := range cfg.Forges {
 		if forgeCfg == nil {
@@ -225,87 +281,107 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 			webhookConfigs[forgeCfg.Name] = forgeCfg.Webhook
 		}
 	}
+
 	forgeClients := make(map[string]forge.Client)
-	if daemon.forgeManager != nil {
-		maps.Copy(forgeClients, daemon.forgeManager.GetAllForges())
+	if d.forgeManager != nil {
+		maps.Copy(forgeClients, d.forgeManager.GetAllForges())
 	}
+
 	var detailedMetrics http.HandlerFunc
-	if daemon.metrics != nil {
-		detailedMetrics = daemon.metrics.MetricsHandler
+	if d.metrics != nil {
+		detailedMetrics = d.metrics.MetricsHandler
 	}
-	statusHandlers := handlers.NewStatusPageHandlers(daemon)
-	daemon.httpServer = httpserver.New(cfg, daemon, httpserver.Options{
+
+	statusHandlers := handlers.NewStatusPageHandlers(d)
+	d.httpServer = httpserver.New(cfg, d, httpserver.Options{
 		ForgeClients:          forgeClients,
 		WebhookConfigs:        webhookConfigs,
-		LiveReloadHub:         daemon.liveReload,
-		EnhancedHealthHandle:  daemon.EnhancedHealthHandler,
+		LiveReloadHub:         d.liveReload,
+		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(),
 		StatusHandle:          statusHandlers.HandleStatusPage,
 	})
+}
 
-	// Initialize link verification service if enabled
-	if cfg.Daemon.LinkVerification != nil && cfg.Daemon.LinkVerification.Enabled {
-		linkVerifier, linkVerifierErr := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
-		if linkVerifierErr != nil {
-			slog.Warn("Failed to initialize link verification service",
-				logfields.Error(linkVerifierErr),
-				slog.Bool("enabled", false))
-		} else {
-			daemon.linkVerifier = linkVerifier
-			slog.Info("Link verification service initialized",
-				"nats_url", cfg.Daemon.LinkVerification.NATSURL,
-				"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
-		}
+// initLinkVerifier attempts to construct the link verification service.
+// It is opt-in via cfg.Daemon.LinkVerification.Enabled and tolerates
+// construction failure (e.g. NATS unreachable) by leaving linkVerifier
+// nil and logging a warning. The optional path is the only one that
+// touches external services during construction.
+func (d *Daemon) initLinkVerifier(cfg *config.Config) {
+	linkVerifier, linkVerifierErr := linkverify.NewVerificationService(cfg.Daemon.LinkVerification)
+	if linkVerifierErr != nil {
+		slog.Warn("Failed to initialize link verification service",
+			logfields.Error(linkVerifierErr),
+			slog.Bool("enabled", false))
+		return
 	}
+	d.linkVerifier = linkVerifier
+	slog.Info("Link verification service initialized",
+		"nats_url", cfg.Daemon.LinkVerification.NATSURL,
+		"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
+}
 
-	// Wire up event emitter for build queue (Phase B)
-	daemon.buildQueue.SetEventEmitter(daemon.eventEmitter)
-
-	// Initialize discovery runner (Phase H - extracted component)
-	daemon.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
-		Discovery:      daemon.discovery,
-		ForgeManager:   daemon.forgeManager,
-		DiscoveryCache: daemon.discoveryCache,
-		Metrics:        daemon.metrics,
-		StateManager:   daemon.stateManager,
-		BuildRequester: daemon.onDiscoveryBuildRequest,
-		RepoRemoved:    daemon.onDiscoveryRepoRemoved,
-		LiveReload:     daemon.liveReload,
+// initDiscoveryRunner builds the runner that owns the daemon's
+// discovery flow (ADR-021). It depends on the discovery service, the
+// forge manager, the cache, the metrics collector, the state manager,
+// the live reload hub, and the daemon's discovery callbacks.
+func (d *Daemon) initDiscoveryRunner(cfg *config.Config) {
+	d.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
+		Discovery:      d.discovery,
+		ForgeManager:   d.forgeManager,
+		DiscoveryCache: d.discoveryCache,
+		Metrics:        d.metrics,
+		StateManager:   d.stateManager,
+		BuildRequester: d.onDiscoveryBuildRequest,
+		RepoRemoved:    d.onDiscoveryRepoRemoved,
+		LiveReload:     d.liveReload,
 		Config:         cfg,
 	})
+}
 
-	// Initialize build debouncer (ADR-021 Phase 2).
-	// Note: this is passive until components start publishing BuildRequested events.
+// initBuildDebouncer constructs the build debouncer (ADR-021 Phase 2).
+// Returns an error if the configured quiet window or max delay is not
+// a valid Go duration string. The debouncer is passive until
+// components start publishing BuildRequested events.
+func (d *Daemon) initBuildDebouncer(cfg *config.Config) error {
 	quietWindow, maxDelay, err := getBuildDebounceDurations(cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	debouncer, err := NewBuildDebouncer(daemon.orchestrationBus, BuildDebouncerConfig{
+	debouncer, err := NewBuildDebouncer(d.orchestrationBus, BuildDebouncerConfig{
 		QuietWindow: quietWindow,
 		MaxDelay:    maxDelay,
-		Metrics:     daemon.metrics,
+		Metrics:     d.metrics,
 		CheckBuildRunning: func() bool {
-			if daemon.buildQueue == nil {
+			if d.buildQueue == nil {
 				return false
 			}
-			return len(daemon.buildQueue.GetActiveJobs()) > 0
+			return len(d.buildQueue.GetActiveJobs()) > 0
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create build debouncer: %w", err)
+		return fmt.Errorf("failed to create build debouncer: %w", err)
 	}
-	daemon.buildDebouncer = debouncer
+	d.buildDebouncer = debouncer
+	return nil
+}
 
+// initRepoUpdater constructs the git-backed repo updater that polls
+// remote HEADs and publishes RepoUpdated events on the orchestration
+// bus. If the persistent remote-head cache cannot be created
+// (e.g. permission error on the storage dir) the cache is degraded to
+// in-memory and a warning is logged — repo-updates keep working, just
+// without persistence across restarts.
+func (d *Daemon) initRepoUpdater(cfg *config.Config) {
 	remoteCache, cacheErr := git.NewRemoteHeadCache(cfg.Daemon.Storage.RepoCacheDir)
 	if cacheErr != nil {
 		slog.Warn("Failed to initialize remote HEAD cache; disabling persistence", logfields.Error(cacheErr))
 		remoteCache, _ = git.NewRemoteHeadCache("")
 	}
 	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
-	daemon.repoUpdater = NewRepoUpdater(daemon.orchestrationBus, gitClient, remoteCache, daemon.currentReposForOrchestratedBuild)
-
-	return daemon, nil
+	d.repoUpdater = NewRepoUpdater(d.orchestrationBus, gitClient, remoteCache, d.currentReposForOrchestratedBuild)
 }
 
 func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration, error) {
