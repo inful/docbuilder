@@ -24,23 +24,16 @@ func TestOrchestration_DebouncedBuildEnqueuesJob(t *testing.T) {
 	bq.Start(ctx)
 	defer bq.Stop(context.Background())
 
-	d := &Daemon{
-		config: &config.Config{Repositories: []config.Repository{{
+	d := daemonForTest(t, daemonForTestOpts{
+		Config: &config.Config{Repositories: []config.Repository{{
 			Name:   "repo-1",
 			URL:    "https://example.invalid/repo-1.git",
 			Branch: "main",
 			Paths:  []string{"docs"},
 		}}},
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		build: &buildStack{
-			buildQueue: bq,
-		},
-	}
+		OrchestrationBus: bus,
+		BuildQueue:       bq,
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
@@ -77,14 +70,12 @@ func TestDaemon_currentReposForOrchestratedBuild_UsesCachedDiscoveryEvenWithErro
 	cfg := &config.Config{}
 
 	forgeManager := forge.NewForgeManager()
-	d := &Daemon{
-		config: cfg,
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:         cfg,
+		ForgeManager:   forgeManager,
+		Discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache: NewDiscoveryCache(),
+	})
 
 	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "repo-1",
@@ -106,14 +97,12 @@ func TestDaemon_currentReposForOrchestratedBuild_ReturnsNilWhenDiscoveryMissing(
 	cfg := &config.Config{}
 
 	forgeManager := forge.NewForgeManager()
-	d := &Daemon{
-		config: cfg,
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:         cfg,
+		ForgeManager:   forgeManager,
+		Discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache: NewDiscoveryCache(),
+	})
 
 	d.discover.discoveryCache.SetError(errors.New("gitlab unavailable"))
 

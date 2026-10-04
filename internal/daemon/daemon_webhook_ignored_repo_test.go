@@ -99,23 +99,14 @@ func TestDaemon_TriggerWebhookBuild_FetchesPreviouslyFilteredRepoWhenDocsAppear(
 	forgeManager := forge.NewForgeManager()
 	forgeManager.AddForge(cfg.Forges[0], forgeClient)
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		build: &buildStack{
-			buildQueue: bq,
-		},
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		BuildQueue:       bq,
+		ForgeManager:     forgeManager,
+		Discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache:   NewDiscoveryCache(),
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	d.discover.discoveryCache.Update(&forge.DiscoveryResult{
@@ -243,20 +234,13 @@ func TestDaemon_TriggerWebhookBuild_DoesNotReviveDocIgnoredRepo(t *testing.T) {
 	forgeManager := forge.NewForgeManager()
 	forgeManager.AddForge(cfg.Forges[0], forgeClient)
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		ForgeManager:     forgeManager,
+		Discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache:   NewDiscoveryCache(),
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	d.discover.discoveryCache.Update(&forge.DiscoveryResult{

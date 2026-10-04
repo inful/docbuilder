@@ -84,7 +84,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			NewJobID:       func() string { return "job-1" },
 		})
 
-		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d := daemonForTest(t, daemonForTestOpts{Config: cfg, DiscoveryRunner: runner})
 		d.lifecycle.stopChan = make(chan struct{})
 		d.lifecycle.status.Store(StatusStopped)
 
@@ -116,7 +116,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			NewJobID:       func() string { return "job-1" },
 		})
 
-		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d := daemonForTest(t, daemonForTestOpts{Config: cfg, DiscoveryRunner: runner})
 		d.lifecycle.stopChan = make(chan struct{})
 		d.lifecycle.status.Store(StatusRunning)
 
@@ -136,7 +136,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 		ctx := context.Background()
 
 		cfg := &config.Config{Daemon: &config.DaemonConfig{Sync: config.SyncConfig{Schedule: "0 */4 * * *"}}}
-		d := &Daemon{config: cfg, serve: &serveStack{scheduler: s}, lifecycle: lifecycleStack{stopChan: make(chan struct{})}}
+		d := daemonForTest(t, daemonForTestOpts{Config: cfg, Scheduler: s})
 		err = d.schedulePeriodicJobs(ctx)
 		require.NoError(t, err)
 
@@ -162,7 +162,7 @@ func TestDaemon_runScheduledSyncTick(t *testing.T) {
 			Config:         cfg,
 		})
 
-		d := &Daemon{config: cfg, discover: &discoveryStack{discoveryRunner: runner}}
+		d := daemonForTest(t, daemonForTestOpts{Config: cfg, DiscoveryRunner: runner})
 		d.lifecycle.stopChan = make(chan struct{})
 		d.lifecycle.status.Store(StatusRunning)
 
