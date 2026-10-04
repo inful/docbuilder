@@ -45,13 +45,12 @@ const (
 
 // Daemon represents the main daemon service.
 //
-// The struct is a thin façade over five per-concern sub-structs plus
-// one optional-features sub-struct. The sub-structs own the daemon's
-// dependencies; the Daemon itself holds only the configuration, the
-// lifecycle state, and the two shared atomic counters. The goal is
-// that adding a new dependency touches one sub-struct, not the
-// top-level struct, so that the public surface stays small and the
-// concern groups stay cohesive.
+// The struct is a thin façade over six per-concern sub-structs.
+// The sub-structs own the daemon's dependencies; the Daemon itself
+// holds only the configuration, the lifecycle state, and the two
+// shared atomic counters. The goal is that adding a new dependency
+// touches one sub-struct, not the top-level struct, so that the
+// public surface stays small and the concern groups stay cohesive.
 //
 // The sub-structs are:
 //   - lifecycle:  status, run coordination, scheduled-job bookkeeping
@@ -78,8 +77,8 @@ type Daemon struct {
 	optional  *optionalStack
 }
 
-// NewDaemon creates a new daemon instance
-// NewDaemon creates a new daemon instance.
+// NewDaemon creates a new daemon instance. It is a thin wrapper
+// around NewDaemonWithConfigFile with no config file to watch.
 func NewDaemon(cfg *config.Config) (*Daemon, error) {
 	return NewDaemonWithConfigFile(cfg, "")
 }

@@ -15,7 +15,7 @@ commits; pin to a SHA for reproducibility per the README.
   `stateStack`, `buildStack`, `discoveryStack`, `serveStack`,
   `optionalStack`) instead of a 34-field flat struct. The
   `NewDaemonWithConfigFile` constructor is now a 35-line recipe
-  over nine per-concern `init*` methods (previously 191 lines,
+  over twelve per-concern `init*` methods (previously 191 lines,
   cyclomatic complexity 22, 14 returns). No public API change;
   the single external caller
   (`cmd/docbuilder/commands/daemon.go`) is unchanged. See
