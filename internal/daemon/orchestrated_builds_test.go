@@ -31,11 +31,17 @@ func TestOrchestration_DebouncedBuildEnqueuesJob(t *testing.T) {
 			Branch: "main",
 			Paths:  []string{"docs"},
 		}}},
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		buildQueue:       bq,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		build: &buildStack{
+			buildQueue: bq,
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
 		QuietWindow: 10 * time.Millisecond,
@@ -72,20 +78,22 @@ func TestDaemon_currentReposForOrchestratedBuild_UsesCachedDiscoveryEvenWithErro
 
 	forgeManager := forge.NewForgeManager()
 	d := &Daemon{
-		config:         cfg,
-		forgeManager:   forgeManager,
-		discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache: NewDiscoveryCache(),
+		config: cfg,
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "repo-1",
 		FullName:      "org/repo-1",
 		CloneURL:      "https://example.invalid/org/repo-1.git",
 		DefaultBranch: "main",
 		Metadata:      map[string]string{},
 	}}})
-	d.discoveryCache.SetError(errors.New("gitlab unavailable"))
+	d.discover.discoveryCache.SetError(errors.New("gitlab unavailable"))
 
 	repos := d.currentReposForOrchestratedBuild()
 	require.Len(t, repos, 1)
@@ -99,13 +107,15 @@ func TestDaemon_currentReposForOrchestratedBuild_ReturnsNilWhenDiscoveryMissing(
 
 	forgeManager := forge.NewForgeManager()
 	d := &Daemon{
-		config:         cfg,
-		forgeManager:   forgeManager,
-		discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache: NewDiscoveryCache(),
+		config: cfg,
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
 
-	d.discoveryCache.SetError(errors.New("gitlab unavailable"))
+	d.discover.discoveryCache.SetError(errors.New("gitlab unavailable"))
 
 	repos := d.currentReposForOrchestratedBuild()
 	require.Nil(t, repos)

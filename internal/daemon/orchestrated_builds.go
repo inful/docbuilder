@@ -13,11 +13,11 @@ import (
 )
 
 func (d *Daemon) runBuildNowConsumer(ctx context.Context) {
-	if ctx == nil || d == nil || d.orchestrationBus == nil {
+	if ctx == nil || d == nil || d.serve.orchestrationBus == nil {
 		return
 	}
 
-	buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.orchestrationBus, 16)
+	buildNowCh, unsubscribe := events.Subscribe[events.BuildNow](d.serve.orchestrationBus, 16)
 	defer unsubscribe()
 
 	for {
@@ -34,7 +34,7 @@ func (d *Daemon) runBuildNowConsumer(ctx context.Context) {
 }
 
 func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
-	if d == nil || d.GetStatus() != StatusRunning || d.buildQueue == nil {
+	if d == nil || d.GetStatus() != StatusRunning || d.build.buildQueue == nil {
 		return
 	}
 
@@ -59,10 +59,12 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 	}
 
 	meta := &queue.BuildJobMetadata{
-		V2Config:      d.config,
-		Repositories:  reposForBuild,
-		RepoSnapshot:  evt.Snapshot,
-		LiveReloadHub: d.liveReload,
+		V2Config:     d.config,
+		Repositories: reposForBuild,
+		RepoSnapshot: evt.Snapshot,
+	}
+	if d.optional != nil {
+		meta.LiveReloadHub = d.optional.liveReload
 	}
 	if evt.LastRepoURL != "" && evt.LastReason != "" {
 		reason := evt.LastReason
@@ -92,7 +94,7 @@ func (d *Daemon) enqueueOrchestratedBuild(evt events.BuildNow) {
 		TypedMeta: meta,
 	}
 
-	if err := d.buildQueue.Enqueue(job); err != nil {
+	if err := d.build.buildQueue.Enqueue(job); err != nil {
 		slog.Error("Failed to enqueue orchestrated build",
 			logfields.JobID(jobID),
 			logfields.Error(err))
@@ -117,8 +119,8 @@ func (d *Daemon) currentReposForOrchestratedBuild() []config.Repository {
 
 	// Forge mode: prefer the last discovery result.
 	discovered, _ := d.GetDiscoveryResult()
-	if discovered != nil && d.discovery != nil {
-		return d.discovery.ConvertToConfigRepositories(discovered.Repositories, d.forgeManager)
+	if discovered != nil && d.discover.discovery != nil {
+		return d.discover.discovery.ConvertToConfigRepositories(discovered.Repositories, d.discover.forgeManager)
 	}
 
 	return nil

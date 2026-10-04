@@ -10,12 +10,18 @@ import (
 // This keeps local preview wiring out of the main daemon lifecycle.
 func NewPreviewDaemon(cfg *config.Config) *Daemon {
 	d := &Daemon{
-		config:     cfg,
-		startTime:  time.Now(),
-		metrics:    NewMetricsCollector(),
-		liveReload: NewLiveReloadHub(nil),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			startTime: time.Now(),
+		},
+		serve: &serveStack{
+			metrics: NewMetricsCollector(),
+		},
+		optional: &optionalStack{
+			liveReload: NewLiveReloadHub(nil),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 	return d
 }
 
@@ -24,5 +30,5 @@ func (d *Daemon) LiveReloadHub() *LiveReloadHub {
 	if d == nil {
 		return nil
 	}
-	return d.liveReload
+	return d.optional.liveReload
 }

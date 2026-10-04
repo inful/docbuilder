@@ -10,12 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
 	"git.home.luguber.info/inful/docbuilder/internal/build"
 	"git.home.luguber.info/inful/docbuilder/internal/build/queue"
+	"git.home.luguber.info/inful/docbuilder/internal/build/validation"
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/eventstore"
@@ -45,68 +45,38 @@ const (
 )
 
 // Daemon represents the main daemon service.
+//
+// The struct is a thin façade over five per-concern sub-structs plus
+// one optional-features sub-struct. The sub-structs own the daemon's
+// dependencies; the Daemon itself holds only the configuration, the
+// lifecycle state, and the two shared atomic counters. The goal is
+// that adding a new dependency touches one sub-struct, not the
+// top-level struct, so that the public surface stays small and the
+// concern groups stay cohesive.
+//
+// The sub-structs are:
+//   - lifecycle:  status, run coordination, scheduled-job bookkeeping
+//   - state:      persistence (state manager, event store, projection, emitter)
+//   - build:      build pipeline (BuildService, queue, debouncer, repo updater)
+//   - discover:   discovery pipeline (forge manager, service, cache, runner)
+//   - serve:      runtime services (HTTP server, scheduler, event bus, metrics)
+//   - optional:   opt-in features (livereload, link verifier, outbound dispatcher)
+//
+// The shared counters `activeJobs` and `queueLength` stay on the
+// façade because they are read from multiple sub-systems and would
+// have to be back-referenced from the sub-structs otherwise.
 type Daemon struct {
 	config         *config.Config
 	configFilePath string
-	status         atomic.Value // DaemonStatus
-	startTime      time.Time
-	stopChan       chan struct{}
-	runCancel      context.CancelFunc
-	mu             sync.RWMutex
+	activeJobs     int32
+	queueLength    atomic.Int32
 
-	// Core components
-	forgeManager *forge.Manager
-	discovery    *forge.DiscoveryService
-	metrics      *MetricsCollector
-	httpServer   *httpserver.Server
-	scheduler    *Scheduler
-	buildQueue   *queue.BuildQueue
-	stateManager state.DaemonStateManager
-	liveReload   *LiveReloadHub
-
-	// Orchestration event bus (ADR-021; in-process control flow)
-	orchestrationBus *events.Bus
-	buildDebouncer   *BuildDebouncer
-	repoUpdater      *RepoUpdater
-
-	// Event sourcing components (Phase B)
-	eventStore      eventstore.Store
-	buildProjection *eventstore.BuildHistoryProjection
-	eventEmitter    *EventEmitter
-
-	// Runtime state
-	activeJobs  int32
-	queueLength atomic.Int32
-	lastBuild   *time.Time
-
-	// Background worker tracking (started in Start, awaited in Stop).
-	workers WorkerGroup
-
-	// Scheduled job IDs (for observability and tests)
-	syncJobID   string
-	statusJobID string
-	promJobID   string
-
-	// Discovery cache for fast status queries
-	discoveryCache *DiscoveryCache
-
-	// Discovery runner for forge discovery operations
-	discoveryRunner *DiscoveryRunner
-
-	// Link verification service
-	linkVerifier *linkverify.VerificationService
-
-	// Outbound dispatcher (opt-in). When nil, no document content is pushed
-	// to external consumers. Constructed only when daemon.outbound.ragabast
-	// is configured with enabled: true.
-	outboundDispatcher *OutboundDispatcher
-
-	// buildSvc is the canonical BuildService. The daemon itself satisfies
-	// queue.Builder via (*Daemon).Build, which delegates here. The mutex
-	// serializes concurrent build jobs (workers can be > 1) so they don't
-	// clobber shared staging/output paths.
-	buildSvc build.BuildService
-	buildMu  sync.Mutex
+	lifecycle lifecycleStack
+	state     *stateStack
+	build     *buildStack
+	discover  *discoveryStack
+	serve     *serveStack
+	optional  *optionalStack
 }
 
 // NewDaemon creates a new daemon instance
@@ -131,14 +101,23 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	}
 
 	d := &Daemon{
-		config:           cfg,
-		configFilePath:   configFilePath,
-		stopChan:         make(chan struct{}),
-		metrics:          NewMetricsCollector(),
-		discoveryCache:   NewDiscoveryCache(),
-		orchestrationBus: events.NewBus(),
+		config:         cfg,
+		configFilePath: configFilePath,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			metrics:          NewMetricsCollector(),
+			orchestrationBus: events.NewBus(),
+		},
+		discover: &discoveryStack{
+			discoveryCache: NewDiscoveryCache(),
+		},
+		state:    &stateStack{},
+		build:    &buildStack{},
+		optional: &optionalStack{},
 	}
-	d.status.Store(StatusStopped)
+	d.lifecycle.status.Store(StatusStopped)
 
 	if err := d.initForges(cfg); err != nil {
 		return nil, err
@@ -166,7 +145,7 @@ func NewDaemonWithConfigFile(cfg *config.Config, configFilePath string) (*Daemon
 	// emitter, but the emitter is constructed by initStateStack which
 	// runs after initBuildStack. The recipe is the right place to
 	// express that ordering dependency.
-	d.buildQueue.SetEventEmitter(d.eventEmitter)
+	d.build.buildQueue.SetEventEmitter(d.state.eventEmitter)
 
 	d.initDiscoveryRunner(cfg)
 	if err := d.initBuildDebouncer(cfg); err != nil {
@@ -189,8 +168,8 @@ func (d *Daemon) initForges(cfg *config.Config) error {
 		}
 		forgeManager.AddForge(forgeConfig, client)
 	}
-	d.forgeManager = forgeManager
-	d.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
+	d.discover.forgeManager = forgeManager
+	d.discover.discovery = forge.NewDiscoveryService(forgeManager, cfg.Filtering)
 	return nil
 }
 
@@ -201,16 +180,16 @@ func (d *Daemon) initForges(cfg *config.Config) error {
 func (d *Daemon) initBuildStack(cfg *config.Config) {
 	// The daemon itself implements queue.Builder (see (*Daemon).Build),
 	// so no adapter type is needed.
-	d.buildSvc = build.NewBuildService().
+	d.build.buildSvc = build.NewBuildService().
 		WithWorkspaceFactory(func() *workspace.Manager {
 			// Use persistent workspace for incremental builds (repo_cache_dir/working).
 			return workspace.NewPersistentManager(cfg.Daemon.Storage.RepoCacheDir, "working")
 		})
 
-	d.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, d)
+	d.build.buildQueue = queue.NewBuildQueue(cfg.Daemon.Sync.QueueSize, cfg.Daemon.Sync.ConcurrentBuilds, d)
 	// Configure retry policy from build config. Recorder injection is
 	// handled elsewhere if added later.
-	d.buildQueue.ConfigureRetry(cfg.Build)
+	d.build.buildQueue.ConfigureRetry(cfg.Build)
 }
 
 // initScheduler constructs the cron-like scheduler that drives the
@@ -220,7 +199,7 @@ func (d *Daemon) initScheduler() error {
 	if err != nil {
 		return fmt.Errorf("failed to create scheduler: %w", err)
 	}
-	d.scheduler = scheduler
+	d.serve.scheduler = scheduler
 	return nil
 }
 
@@ -239,21 +218,21 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 	if stateServiceResult.IsErr() {
 		return fmt.Errorf("failed to create state service: %w", stateServiceResult.UnwrapErr())
 	}
-	d.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
+	d.state.stateManager = state.NewServiceAdapter(stateServiceResult.Unwrap())
 
 	eventStorePath := filepath.Join(stateDir, "events.db")
 	eventStore, err := eventstore.NewSQLiteStore(eventStorePath)
 	if err != nil {
 		return fmt.Errorf("failed to create event store: %w", err)
 	}
-	d.eventStore = eventStore
-	d.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
-	d.eventEmitter = NewEventEmitter(eventStore, d.buildProjection)
-	d.eventEmitter.daemon = d // Wire back reference for hooks
+	d.state.eventStore = eventStore
+	d.state.buildProjection = eventstore.NewBuildHistoryProjection(eventStore, 100)
+	d.state.eventEmitter = NewEventEmitter(eventStore, d.state.buildProjection)
+	d.state.eventEmitter.daemon = d // Wire back reference for hooks
 
 	// Rebuild projection from existing events. Non-fatal: a corrupt log
 	// leaves the projection empty rather than failing daemon startup.
-	if rebuildErr := d.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
+	if rebuildErr := d.state.buildProjection.Rebuild(context.Background()); rebuildErr != nil {
 		slog.Warn("Failed to rebuild build history projection", logfields.Error(rebuildErr))
 	}
 	return nil
@@ -263,7 +242,7 @@ func (d *Daemon) initStateStack(cfg *config.Config) error {
 // when cfg.Build.LiveReload is true. Safe to call on a nil metrics
 // collector — the hub falls back to a no-op recorder.
 func (d *Daemon) initLiveReload() {
-	d.liveReload = NewLiveReloadHub(d.metrics)
+	d.optional.liveReload = NewLiveReloadHub(d.serve.metrics)
 	slog.Info("LiveReload hub initialized")
 }
 
@@ -283,20 +262,20 @@ func (d *Daemon) initHTTPServer(cfg *config.Config) {
 	}
 
 	forgeClients := make(map[string]forge.Client)
-	if d.forgeManager != nil {
-		maps.Copy(forgeClients, d.forgeManager.GetAllForges())
+	if d.discover.forgeManager != nil {
+		maps.Copy(forgeClients, d.discover.forgeManager.GetAllForges())
 	}
 
 	var detailedMetrics http.HandlerFunc
-	if d.metrics != nil {
-		detailedMetrics = d.metrics.MetricsHandler
+	if d.serve.metrics != nil {
+		detailedMetrics = d.serve.metrics.MetricsHandler
 	}
 
 	statusHandlers := handlers.NewStatusPageHandlers(d)
-	d.httpServer = httpserver.New(cfg, d, httpserver.Options{
+	d.serve.httpServer = httpserver.New(cfg, d, httpserver.Options{
 		ForgeClients:          forgeClients,
 		WebhookConfigs:        webhookConfigs,
-		LiveReloadHub:         d.liveReload,
+		LiveReloadHub:         d.optional.liveReload,
 		EnhancedHealthHandle:  d.EnhancedHealthHandler,
 		DetailedMetricsHandle: detailedMetrics,
 		PrometheusHandler:     prometheusOptionalHandler(),
@@ -317,7 +296,7 @@ func (d *Daemon) initLinkVerifier(cfg *config.Config) {
 			slog.Bool("enabled", false))
 		return
 	}
-	d.linkVerifier = linkVerifier
+	d.optional.linkVerifier = linkVerifier
 	slog.Info("Link verification service initialized",
 		"nats_url", cfg.Daemon.LinkVerification.NATSURL,
 		"kv_bucket", cfg.Daemon.LinkVerification.KVBucket)
@@ -328,15 +307,15 @@ func (d *Daemon) initLinkVerifier(cfg *config.Config) {
 // forge manager, the cache, the metrics collector, the state manager,
 // the live reload hub, and the daemon's discovery callbacks.
 func (d *Daemon) initDiscoveryRunner(cfg *config.Config) {
-	d.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
-		Discovery:      d.discovery,
-		ForgeManager:   d.forgeManager,
-		DiscoveryCache: d.discoveryCache,
-		Metrics:        d.metrics,
-		StateManager:   d.stateManager,
+	d.discover.discoveryRunner = NewDiscoveryRunner(DiscoveryRunnerConfig{
+		Discovery:      d.discover.discovery,
+		ForgeManager:   d.discover.forgeManager,
+		DiscoveryCache: d.discover.discoveryCache,
+		Metrics:        d.serve.metrics,
+		StateManager:   d.state.stateManager,
 		BuildRequester: d.onDiscoveryBuildRequest,
 		RepoRemoved:    d.onDiscoveryRepoRemoved,
-		LiveReload:     d.liveReload,
+		LiveReload:     d.optional.liveReload,
 		Config:         cfg,
 	})
 }
@@ -350,21 +329,21 @@ func (d *Daemon) initBuildDebouncer(cfg *config.Config) error {
 	if err != nil {
 		return err
 	}
-	debouncer, err := NewBuildDebouncer(d.orchestrationBus, BuildDebouncerConfig{
+	debouncer, err := NewBuildDebouncer(d.serve.orchestrationBus, BuildDebouncerConfig{
 		QuietWindow: quietWindow,
 		MaxDelay:    maxDelay,
-		Metrics:     d.metrics,
+		Metrics:     d.serve.metrics,
 		CheckBuildRunning: func() bool {
-			if d.buildQueue == nil {
+			if d.build.buildQueue == nil {
 				return false
 			}
-			return len(d.buildQueue.GetActiveJobs()) > 0
+			return len(d.build.buildQueue.GetActiveJobs()) > 0
 		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create build debouncer: %w", err)
 	}
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 	return nil
 }
 
@@ -381,7 +360,7 @@ func (d *Daemon) initRepoUpdater(cfg *config.Config) {
 		remoteCache, _ = git.NewRemoteHeadCache("")
 	}
 	gitClient := git.NewClient(cfg.Daemon.Storage.RepoCacheDir).WithRemoteHeadCache(remoteCache)
-	d.repoUpdater = NewRepoUpdater(d.orchestrationBus, gitClient, remoteCache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(d.serve.orchestrationBus, gitClient, remoteCache, d.currentReposForOrchestratedBuild)
 }
 
 func getBuildDebounceDurations(cfg *config.Config) (time.Duration, time.Duration, error) {
@@ -453,7 +432,7 @@ func (d *Daemon) initOutboundDispatcher(ragCfg *config.RagabastConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to construct outbound dispatcher: %w", err)
 	}
-	d.outboundDispatcher = dispatcher
+	d.optional.outboundDispatcher = dispatcher
 	slog.Info("Outbound dispatcher initialized (ragabast)",
 		slog.String("ragabast_base_url", ragCfg.BaseURL),
 		slog.String("ingest_url", ragCfg.IngestURL),
@@ -467,69 +446,69 @@ var defaultDaemonInstance *Daemon
 
 // Start starts the daemon and all its components.
 func (d *Daemon) Start(ctx context.Context) error {
-	d.mu.Lock()
+	d.lifecycle.mu.Lock()
 	if d.GetStatus() != StatusStopped {
-		d.mu.Unlock()
+		d.lifecycle.mu.Unlock()
 		return fmt.Errorf("daemon is not in stopped state: %s", d.GetStatus())
 	}
 
-	d.status.Store(StatusStarting)
-	d.startTime = time.Now()
+	d.lifecycle.status.Store(StatusStarting)
+	d.lifecycle.startTime = time.Now()
 
 	// Initialize metrics
-	d.metrics.IncrementCounter("daemon_starts")
-	d.metrics.SetGauge("daemon_status", int64(1)) // 1 = starting
+	d.serve.metrics.IncrementCounter("daemon_starts")
+	d.serve.metrics.SetGauge("daemon_status", int64(1)) // 1 = starting
 
 	// Set global reference for metrics bridge (prometheus build only uses it).
 	defaultDaemonInstance = d
 	slog.Info("Starting DocBuilder daemon", slog.String("version", "2.0"))
 
 	// Load persistent state
-	if err := d.stateManager.Load(); err != nil {
+	if err := d.state.stateManager.Load(); err != nil {
 		slog.Warn("Failed to load state", "error", err)
 	}
 
 	// Create a derived run context that is canceled on daemon shutdown.
 	runCtx, runCancel := context.WithCancel(ctx)
-	d.runCancel = runCancel
-	d.workers.Reset()
+	d.lifecycle.runCancel = runCancel
+	d.lifecycle.workers.Reset()
 
 	// Start HTTP servers
-	if err := d.httpServer.Start(runCtx); err != nil {
-		d.status.Store(StatusError)
-		d.runCancel = nil
+	if err := d.serve.httpServer.Start(runCtx); err != nil {
+		d.lifecycle.status.Store(StatusError)
+		d.lifecycle.runCancel = nil
 		runCancel()
-		d.mu.Unlock()
+		d.lifecycle.mu.Unlock()
 		return fmt.Errorf("failed to start HTTP server: %w", err)
 	}
 
 	// Start build queue processing
-	d.buildQueue.Start(runCtx)
+	d.build.buildQueue.Start(runCtx)
 
 	// Start outbound dispatcher (opt-in). When nil, this is a no-op.
-	if d.outboundDispatcher != nil {
-		d.outboundDispatcher.Start(runCtx)
+	if d.optional.outboundDispatcher != nil {
+		d.optional.outboundDispatcher.Start(runCtx)
 	}
 
 	d.startWorkers(runCtx)
 
 	// Schedule periodic daemon work (cron/duration jobs) before starting the scheduler.
 	if err := d.schedulePeriodicJobs(runCtx); err != nil {
-		d.status.Store(StatusError)
-		if d.runCancel != nil {
-			d.runCancel()
-			d.runCancel = nil
+		d.lifecycle.status.Store(StatusError)
+		if d.lifecycle.runCancel != nil {
+			d.lifecycle.runCancel()
+			d.lifecycle.runCancel = nil
 		}
-		d.mu.Unlock()
+		d.lifecycle.mu.Unlock()
 		return fmt.Errorf("failed to schedule daemon jobs: %w", err)
 	}
 
 	// Start scheduler
-	d.scheduler.Start(ctx)
+	d.serve.scheduler.Start(ctx)
 
-	d.status.Store(StatusRunning)
-	d.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
-	d.metrics.IncrementCounter("daemon_successful_starts")
+	d.lifecycle.status.Store(StatusRunning)
+	d.serve.metrics.SetGauge("daemon_status", int64(2)) // 2 = running
+	d.serve.metrics.IncrementCounter("daemon_successful_starts")
 
 	slog.Info("DocBuilder daemon started successfully",
 		slog.Int("forges", len(d.config.Forges)),
@@ -571,20 +550,20 @@ func (d *Daemon) Start(ctx context.Context) error {
 		slog.String("clone_strategy", string(strategy)))
 
 	// Release lock before entering long-running loop to avoid blocking read operations (e.g., /status)
-	d.mu.Unlock()
+	d.lifecycle.mu.Unlock()
 
 	// Run main daemon loop (blocks until stopped)
 	d.mainLoop(runCtx)
 
 	// When mainLoop exits, we're stopping
-	d.status.Store(StatusStopping)
+	d.lifecycle.status.Store(StatusStopping)
 	slog.Info("Main loop exited, daemon stopping")
 
 	return nil
 }
 
 func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
-	if d.scheduler == nil {
+	if d.serve.scheduler == nil {
 		return errors.New("scheduler not initialized")
 	}
 	if d.config == nil || d.config.Daemon == nil {
@@ -597,15 +576,15 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 		return errors.New("daemon sync schedule is empty")
 	}
 
-	syncJobID, err := d.scheduler.ScheduleCron("daemon-sync", expr, func() {
+	syncJobID, err := d.serve.scheduler.ScheduleCron("daemon-sync", expr, func() {
 		d.runScheduledSyncTick(ctx, expr)
 	})
 	if err != nil {
 		return err
 	}
-	d.syncJobID = syncJobID
+	d.lifecycle.syncJobID = syncJobID
 
-	statusJobID, err := d.scheduler.ScheduleEvery("daemon-status", 30*time.Second, func() {
+	statusJobID, err := d.serve.scheduler.ScheduleEvery("daemon-status", 30*time.Second, func() {
 		if d.GetStatus() != StatusRunning {
 			return
 		}
@@ -614,11 +593,11 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	d.statusJobID = statusJobID
+	d.lifecycle.statusJobID = statusJobID
 
 	// Prometheus counter bridge sync (used by /metrics handler). This replaces the
 	// previous global goroutine+sleep loop so the daemon owns the periodic work.
-	promJobID, err := d.scheduler.ScheduleEvery("daemon-prom-sync", 5*time.Second, func() {
+	promJobID, err := d.serve.scheduler.ScheduleEvery("daemon-prom-sync", 5*time.Second, func() {
 		if d.GetStatus() != StatusRunning {
 			return
 		}
@@ -627,7 +606,7 @@ func (d *Daemon) schedulePeriodicJobs(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	d.promJobID = promJobID
+	d.lifecycle.promJobID = promJobID
 
 	return nil
 }
@@ -642,18 +621,18 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 
 	// For forge-based discovery, run discovery.
 	if len(d.config.Forges) > 0 {
-		if d.discoveryRunner == nil {
+		if d.discover.discoveryRunner == nil {
 			slog.Warn("Skipping scheduled discovery: discovery runner not initialized")
 		} else {
 			workCtx, cancel := d.stopAwareContext(ctx)
 			defer cancel()
-			d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
+			d.discover.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 		}
 	}
 
 	// For explicit repositories, trigger a build to check for updates.
 	if len(d.config.Repositories) > 0 {
-		if d.orchestrationBus == nil {
+		if d.serve.orchestrationBus == nil {
 			slog.Warn("Skipping scheduled build: orchestration bus not initialized")
 		} else {
 			d.triggerScheduledBuildForExplicitRepos(ctx)
@@ -663,30 +642,30 @@ func (d *Daemon) runScheduledSyncTick(ctx context.Context, expression string) {
 
 // Stop gracefully shuts down the daemon.
 func (d *Daemon) Stop(ctx context.Context) error {
-	d.mu.Lock()
+	d.lifecycle.mu.Lock()
 	currentStatus := d.GetStatus()
 	if currentStatus == StatusStopped || currentStatus == StatusStopping {
-		d.mu.Unlock()
+		d.lifecycle.mu.Unlock()
 		return nil
 	}
 
-	d.status.Store(StatusStopping)
+	d.lifecycle.status.Store(StatusStopping)
 	slog.Info("Stopping DocBuilder daemon")
 
 	// Snapshot pointers so we can stop without holding the daemon mutex.
-	runCancel := d.runCancel
-	d.runCancel = nil
-	stopChan := d.stopChan
-	bus := d.orchestrationBus
-	scheduler := d.scheduler
-	buildQueue := d.buildQueue
-	httpServer := d.httpServer
-	liveReload := d.liveReload
-	linkVerifier := d.linkVerifier
-	stateManager := d.stateManager
-	eventStore := d.eventStore
-	outboundDispatcher := d.outboundDispatcher
-	d.mu.Unlock()
+	runCancel := d.lifecycle.runCancel
+	d.lifecycle.runCancel = nil
+	stopChan := d.lifecycle.stopChan
+	bus := d.serve.orchestrationBus
+	scheduler := d.serve.scheduler
+	buildQueue := d.build.buildQueue
+	httpServer := d.serve.httpServer
+	liveReload := d.optional.liveReload
+	linkVerifier := d.optional.linkVerifier
+	stateManager := d.state.stateManager
+	eventStore := d.state.eventStore
+	outboundDispatcher := d.optional.outboundDispatcher
+	d.lifecycle.mu.Unlock()
 
 	// Cancel the run context to stop all background workers.
 	if runCancel != nil {
@@ -756,15 +735,15 @@ func (d *Daemon) Stop(ctx context.Context) error {
 		}
 	}
 
-	if err := d.workers.StopAndWait(ctx); err != nil {
+	if err := d.lifecycle.workers.StopAndWait(ctx); err != nil {
 		slog.Warn("Timed out waiting for daemon workers to stop", logfields.Error(err))
 	}
 
-	d.mu.Lock()
-	d.status.Store(StatusStopped)
-	d.mu.Unlock()
+	d.lifecycle.mu.Lock()
+	d.lifecycle.status.Store(StatusStopped)
+	d.lifecycle.mu.Unlock()
 
-	uptime := time.Since(d.startTime)
+	uptime := time.Since(d.lifecycle.startTime)
 	slog.Info("DocBuilder daemon stopped", slog.Duration("uptime", uptime))
 
 	return nil
@@ -772,7 +751,7 @@ func (d *Daemon) Stop(ctx context.Context) error {
 
 // GetStatus returns the current daemon status.
 func (d *Daemon) GetStatus() Status {
-	status, ok := d.status.Load().(Status)
+	status, ok := d.lifecycle.status.Load().(Status)
 	if !ok {
 		return StatusError
 	}
@@ -791,7 +770,7 @@ func (d *Daemon) GetQueueLength() int {
 
 // GetStartTime returns the daemon start time.
 func (d *Daemon) GetStartTime() time.Time {
-	return d.startTime
+	return d.lifecycle.startTime
 }
 
 // Compile-time check that Daemon implements queue.BuildEventEmitter.
@@ -808,14 +787,14 @@ func (d *Daemon) Build(ctx context.Context, job *queue.BuildJob) (*models.BuildR
 	if job == nil {
 		return nil, errors.New("build job is nil")
 	}
-	d.buildMu.Lock()
-	defer d.buildMu.Unlock()
+	d.build.buildMu.Lock()
+	defer d.build.buildMu.Unlock()
 
 	req, err := d.jobToBuildRequest(job)
 	if err != nil {
 		return nil, err
 	}
-	result, err := d.buildSvc.Run(ctx, req)
+	result, err := d.build.buildSvc.Run(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -870,10 +849,13 @@ func (d *Daemon) jobToBuildRequest(job *queue.BuildJob) (build.BuildRequest, err
 	// *state.ServiceAdapter implements validation.SkipStateAccess (all
 	// seven getters/setters that BuildService.Run's evaluateSkip path
 	// calls). See internal/state/service_adapter.go.
-	skipState := d.stateManager
+	var skipState validation.SkipStateAccess
+	if d.state != nil {
+		skipState = d.state.stateManager
+	}
 	var onDocReady func([]byte, string)
-	if d.outboundDispatcher != nil {
-		onDocReady = d.outboundDispatcher.Enqueue
+	if d.optional != nil && d.optional.outboundDispatcher != nil {
+		onDocReady = d.optional.outboundDispatcher.Enqueue
 	}
 
 	return build.BuildRequest{

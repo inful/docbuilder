@@ -51,10 +51,10 @@ func registerBaseCollectors() {
 
 // updateDaemonPromMetrics copies selected counters from in-memory collector to Prometheus counters.
 func updateDaemonPromMetrics(d *Daemon) {
-	if d == nil || d.metrics == nil {
+	if d == nil || d.serve.metrics == nil {
 		return
 	}
-	snap := d.metrics.GetSnapshot()
+	snap := d.serve.metrics.GetSnapshot()
 	if v, ok := snap.Counters["build_completed_total"]; ok {
 		prev := atomicLoadInt64(&lastCompleted)
 		if v > prev {
@@ -70,8 +70,8 @@ func updateDaemonPromMetrics(d *Daemon) {
 		}
 	}
 	// Update snapshot gauges from last build report via event-sourced projection (Phase B)
-	if d.buildProjection != nil {
-		if last := d.buildProjection.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
+	if d.state.buildProjection != nil {
+		if last := d.state.buildProjection.GetLastCompletedBuild(); last != nil && last.ReportData != nil {
 			lastRenderedPages.Store(int64(last.ReportData.RenderedPages))
 			lastRepositories.Store(int64(last.RepoCount))
 		}

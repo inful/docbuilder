@@ -28,14 +28,14 @@ func (d *Daemon) mainLoop(ctx context.Context) {
 		case <-ctx.Done():
 			slog.Info("Main loop stopped by context cancellation")
 			return
-		case <-d.stopChan:
+		case <-d.lifecycle.stopChan:
 			slog.Info("Main loop stopped by stop signal")
 			return
 		case <-initialDiscoveryTimer.C:
 			workCtx, cancel := d.stopAwareContext(ctx)
 			d.goWorker("initial_discovery", func() {
 				defer cancel()
-				d.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
+				d.discover.discoveryRunner.SafeRun(workCtx, func() bool { return d.GetStatus() == StatusRunning })
 			})
 		}
 	}
@@ -45,14 +45,14 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		slog.Warn("Skipping initial build: orchestration bus not initialized")
 		return
 	}
 
 	jobID := ""
-	if d.buildDebouncer != nil {
-		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+	if d.build.buildDebouncer != nil {
+		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
 	}
@@ -73,13 +73,13 @@ func (d *Daemon) requestInitialBuild(ctx context.Context) {
 
 // updateStatus updates runtime status and metrics.
 func (d *Daemon) updateStatus() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
+	d.lifecycle.mu.Lock()
+	defer d.lifecycle.mu.Unlock()
 
 	// Update queue length from build queue
-	if d.buildQueue != nil {
+	if d.build.buildQueue != nil {
 		// Clamp to int32 range to avoid overflow warnings from linters and ensure atomic store safety
-		n := d.buildQueue.Length()
+		n := d.build.buildQueue.Length()
 		if n > math.MaxInt32 {
 			n = math.MaxInt32
 		} else if n < math.MinInt32 {
@@ -90,8 +90,8 @@ func (d *Daemon) updateStatus() {
 	}
 
 	// Periodic state save
-	if d.stateManager != nil {
-		if err := d.stateManager.Save(); err != nil {
+	if d.state.stateManager != nil {
+		if err := d.state.stateManager.Save(); err != nil {
 			slog.Warn("Failed to save state", "error", err)
 		}
 	}
@@ -99,7 +99,7 @@ func (d *Daemon) updateStatus() {
 
 // GetConfig returns the current daemon configuration.
 func (d *Daemon) GetConfig() *config.Config {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
+	d.lifecycle.mu.RLock()
+	defer d.lifecycle.mu.RUnlock()
 	return d.config
 }

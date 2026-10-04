@@ -12,7 +12,7 @@ import (
 
 // TriggerDiscovery manually triggers repository discovery.
 func (d *Daemon) TriggerDiscovery() string {
-	return d.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning }, &d.activeJobs)
+	return d.discover.discoveryRunner.TriggerManual(func() bool { return d.GetStatus() == StatusRunning }, &d.activeJobs)
 }
 
 // TriggerBuild manually triggers a site build.
@@ -20,13 +20,13 @@ func (d *Daemon) TriggerBuild() string {
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		return ""
 	}
 
 	jobID := ""
-	if d.buildDebouncer != nil {
-		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+	if d.build != nil && d.build.buildDebouncer != nil {
+		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
 	}
@@ -63,12 +63,12 @@ func (d *Daemon) TriggerWebhookBuild(forgeName, repoFullName, branch string, cha
 	if d.GetStatus() != StatusRunning {
 		return ""
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		return ""
 	}
 	jobID := ""
-	if d.buildDebouncer != nil {
-		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+	if d.build != nil && d.build.buildDebouncer != nil {
+		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
 	}
@@ -112,13 +112,13 @@ func (d *Daemon) triggerScheduledBuildForExplicitRepos(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
-	if d.orchestrationBus == nil {
+	if d.serve.orchestrationBus == nil {
 		return
 	}
 
 	jobID := ""
-	if d.buildDebouncer != nil {
-		if planned, ok := d.buildDebouncer.PlannedJobID(); ok {
+	if d.build != nil && d.build.buildDebouncer != nil {
+		if planned, ok := d.build.buildDebouncer.PlannedJobID(); ok {
 			jobID = planned
 		}
 	}

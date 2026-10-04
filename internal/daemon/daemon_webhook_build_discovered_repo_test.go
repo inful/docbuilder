@@ -70,20 +70,28 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
-		buildQueue:       queue.NewBuildQueue(10, 1, noOpBuilder{}),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
+		build: &buildStack{
+			buildQueue: queue.NewBuildQueue(10, 1, noOpBuilder{}),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
-	d.buildQueue.Start(ctx)
-	defer d.buildQueue.Stop(context.Background())
+	d.build.buildQueue.Start(ctx)
+	defer d.build.buildQueue.Stop(context.Background())
 
-	d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 		Name:          "go-test-project",
 		FullName:      "org/go-test-project",
 		CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
@@ -108,19 +116,19 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 		PollInterval: 5 * time.Millisecond,
 	})
 	require.NoError(t, err)
-	d.buildDebouncer = debouncer
+	d.build.buildDebouncer = debouncer
 
 	cache, err := git.NewRemoteHeadCache("")
 	require.NoError(t, err)
-	d.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
+	d.build.repoUpdater = NewRepoUpdater(bus, fixedRemoteHeadChecker{changed: true, sha: "deadbeef"}, cache, d.currentReposForOrchestratedBuild)
 
 	go d.runWebhookReceivedConsumer(ctx)
 	go d.runBuildNowConsumer(ctx)
-	go d.repoUpdater.Run(ctx)
+	go d.build.repoUpdater.Run(ctx)
 	go func() { _ = debouncer.Run(ctx) }()
 
 	select {
-	case <-d.repoUpdater.Ready():
+	case <-d.build.repoUpdater.Ready():
 	case <-time.After(250 * time.Millisecond):
 		t.Fatal("timed out waiting for repo updater ready")
 	}
@@ -140,14 +148,14 @@ func TestDaemon_TriggerWebhookBuild_MatchesDiscoveredRepo(t *testing.T) {
 	require.NotEmpty(t, jobID)
 
 	require.Eventually(t, func() bool {
-		job, ok := d.buildQueue.JobSnapshot(jobID)
+		job, ok := d.build.buildQueue.JobSnapshot(jobID)
 		if !ok {
 			return false
 		}
 		return job.Status == queue.BuildStatusCompleted
 	}, 5*time.Second, 10*time.Millisecond)
 
-	job, ok := d.buildQueue.JobSnapshot(jobID)
+	job, ok := d.build.buildQueue.JobSnapshot(jobID)
 	require.True(t, ok)
 	require.NotNil(t, job)
 	require.Equal(t, queue.BuildTypeWebhook, job.Type)

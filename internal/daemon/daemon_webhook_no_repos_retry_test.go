@@ -32,14 +32,20 @@ func TestDaemon_Webhook_WhenNoReposYet_RetriesAfterDiscovery(t *testing.T) {
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
 	d := &Daemon{
-		config:           cfg,
-		stopChan:         make(chan struct{}),
-		orchestrationBus: bus,
-		forgeManager:     forgeManager,
-		discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-		discoveryCache:   NewDiscoveryCache(),
+		config: cfg,
+		lifecycle: lifecycleStack{
+			stopChan: make(chan struct{}),
+		},
+		serve: &serveStack{
+			orchestrationBus: bus,
+		},
+		discover: &discoveryStack{
+			forgeManager:   forgeManager,
+			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+			discoveryCache: NewDiscoveryCache(),
+		},
 	}
-	d.status.Store(StatusRunning)
+	d.lifecycle.status.Store(StatusRunning)
 
 	reqCh, unsub := events.Subscribe[events.RepoUpdateRequested](bus, 10)
 	defer unsub()
@@ -55,7 +61,7 @@ func TestDaemon_Webhook_WhenNoReposYet_RetriesAfterDiscovery(t *testing.T) {
 
 	// Simulate discovery completing after the webhook arrives.
 	time.AfterFunc(50*time.Millisecond, func() {
-		d.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
+		d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{
 			Name:          "go-test-project",
 			FullName:      "org/go-test-project",
 			CloneURL:      "https://forgejo.example.com/org/go-test-project.git",
