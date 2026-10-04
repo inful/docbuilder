@@ -41,11 +41,11 @@ func TestDaemon_handleRepoRemoved_PrunesStateAndCache(t *testing.T) {
 	sm.EnsureRepositoryState(repoURL, repoName, "main")
 	require.NotNil(t, sm.GetRepository(repoURL))
 
-	d := &Daemon{
-		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		state:  &stateStack{stateManager: sm},
-		build:  &buildStack{repoUpdater: &RepoUpdater{cache: cache}},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		BuildMockStateMgr: sm,
+		RepoUpdater:      &RepoUpdater{cache: cache},
+	})
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: repoURL, RepoName: repoName})
 
@@ -68,11 +68,11 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteOutsideRepoCacheDir(t *testing.T)
 	svcResult := state.NewService(tmp)
 	require.True(t, svcResult.IsOk())
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
-	d := &Daemon{
-		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		state:  &stateStack{stateManager: sm},
-		build:  &buildStack{repoUpdater: &RepoUpdater{cache: &git.RemoteHeadCache{}}},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		BuildMockStateMgr: sm,
+		RepoUpdater:      &RepoUpdater{cache: &git.RemoteHeadCache{}},
+	})
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: "https://example.com/evil.git", RepoName: "../outside.txt"})
 
@@ -94,10 +94,10 @@ func TestDaemon_handleRepoRemoved_DoesNotDeleteRepoCacheBaseDir(t *testing.T) {
 	require.True(t, svcResult.IsOk())
 	sm := state.NewServiceAdapter(svcResult.Unwrap())
 
-	d := &Daemon{
-		config: &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
-		state:  &stateStack{stateManager: sm},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           &config.Config{Daemon: &config.DaemonConfig{Storage: config.StorageConfig{RepoCacheDir: repoCacheDir}}},
+		BuildMockStateMgr: sm,
+	})
 
 	d.handleRepoRemoved(events.RepoRemoved{RepoURL: "https://example.com/r.git", RepoName: "."})
 
