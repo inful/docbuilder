@@ -54,18 +54,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteChanged_EnqueuesBuild(t *testing.T) 
 				}},
 			}
 
-			d := &Daemon{
-				config: cfg,
-				lifecycle: lifecycleStack{
-					stopChan: make(chan struct{}),
-				},
-				serve: &serveStack{
-					orchestrationBus: bus,
-				},
-				build: &buildStack{
-					buildQueue: bq,
-				},
-			}
+			d := daemonForTest(t, daemonForTestOpts{
+				Config:           cfg,
+				OrchestrationBus: bus,
+				BuildQueue:       bq,
+			})
 			d.lifecycle.status.Store(StatusRunning)
 
 			debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
@@ -148,18 +141,11 @@ func TestDaemon_WebhookRepoUpdateFlow_RemoteUnchanged_DoesNotEnqueueBuild(t *tes
 		}},
 	}
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		build: &buildStack{
-			buildQueue: bq,
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		BuildQueue:       bq,
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	debouncer, err := NewBuildDebouncer(bus, BuildDebouncerConfig{
@@ -253,23 +239,14 @@ func TestDaemon_WebhookRepoUpdateFlow_DiscoveryMode_RemoteUnchanged_DoesNotEnque
 	forgeManager := forge.NewForgeManager()
 	forgeManager.AddForge(cfg.Forges[0], fakeForgeClient{})
 
-	d := &Daemon{
-		config: cfg,
-		lifecycle: lifecycleStack{
-			stopChan: make(chan struct{}),
-		},
-		serve: &serveStack{
-			orchestrationBus: bus,
-		},
-		build: &buildStack{
-			buildQueue: bq,
-		},
-		discover: &discoveryStack{
-			forgeManager:   forgeManager,
-			discovery:      forge.NewDiscoveryService(forgeManager, cfg.Filtering),
-			discoveryCache: NewDiscoveryCache(),
-		},
-	}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:           cfg,
+		OrchestrationBus: bus,
+		BuildQueue:       bq,
+		ForgeManager:     forgeManager,
+		Discovery:        forge.NewDiscoveryService(forgeManager, cfg.Filtering),
+		DiscoveryCache:   NewDiscoveryCache(),
+	})
 	d.lifecycle.status.Store(StatusRunning)
 
 	d.discover.discoveryCache.Update(&forge.DiscoveryResult{Repositories: []*forge.Repository{{

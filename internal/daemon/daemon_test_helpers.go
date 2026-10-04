@@ -11,16 +11,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
 
-// testForge is a small interface satisfied by both *forge.Manager and
-// the hand-built ForgeManager used by tests. It exists so
-// daemonForTest can accept either without forcing every test to
-// import the full *forge.Manager surface.
-type testForge interface {
-	AddForge(*config.ForgeConfig, forge.Client)
-	GetForge(name string) forge.Client
-	GetForgeConfigs() map[string]*config.ForgeConfig
-}
-
 // daemonForTestOpts collects the seams a test wants to wire up. Any
 // field left at its zero value is replaced with a non-nil empty
 // sub-struct so production code that defensively accesses the seam
@@ -50,9 +40,10 @@ type daemonForTestOpts struct {
 
 	// Discovery seams. Tests that exercise the discovery runner
 	// pass a manager and a cache.
-	ForgeManager   *forge.Manager
-	Discovery      *forge.DiscoveryService
-	DiscoveryCache *DiscoveryCache
+	ForgeManager    *forge.Manager
+	Discovery       *forge.DiscoveryService
+	DiscoveryCache  *DiscoveryCache
+	DiscoveryRunner *DiscoveryRunner
 
 	// Optional seams. Pass nil explicitly to assert the daemon does
 	// not construct them.
@@ -131,6 +122,9 @@ func daemonForTest(t testingT, opts daemonForTestOpts) *Daemon {
 	}
 	if opts.DiscoveryCache != nil {
 		d.discover.discoveryCache = opts.DiscoveryCache
+	}
+	if opts.DiscoveryRunner != nil {
+		d.discover.discoveryRunner = opts.DiscoveryRunner
 	}
 
 	if opts.LiveReload != nil {
