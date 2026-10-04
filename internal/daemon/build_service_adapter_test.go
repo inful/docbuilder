@@ -52,17 +52,19 @@ func (m *mockBuildService) RunDirect(ctx context.Context, req build.DirectBuildR
 	}, nil
 }
 
-// newDaemonForTest builds a minimal *Daemon suitable for exercising Build().
-// Only the buildSvc is real; the other sub-structs are initialized to
-// non-nil empties so the Build method's sub-struct field accesses do
-// not nil-deref. Tests must not call anything that reads the contents
-// of the empty sub-structs.
-func newDaemonForTest(svc build.BuildService) *Daemon {
-	return &Daemon{
-		state:    &stateStack{},
-		build:    &buildStack{buildSvc: svc},
-		optional: &optionalStack{},
-	}
+// newDaemonForTest is a thin wrapper around daemonForTest for tests
+// that only need the Build() entry point wired up. The BuildService
+// is the only seam these tests exercise; every other sub-struct is
+// initialized to its zero value (and most are nil so the test
+// asserts on the absence of a seam).
+//
+// This helper exists for the legacy tests in this file. New tests
+// should call daemonForTest directly with the seams they need.
+func newDaemonForTest(t testingT, svc build.BuildService) *Daemon {
+	return daemonForTest(t, daemonForTestOpts{
+		Config:       &config.Config{Daemon: &config.DaemonConfig{}},
+		BuildService: svc,
+	})
 }
 
 // fakeDaemonStateManager satisfies state.DaemonStateManager (the aggregate
@@ -105,7 +107,7 @@ func (*fakeDaemonStateManager) RecordDiscovery(string, int)     {}
 var _ state.DaemonStateManager = (*fakeDaemonStateManager)(nil)
 
 func TestDaemon_Build_NilJob(t *testing.T) {
-	d := newDaemonForTest(&mockBuildService{})
+	d := newDaemonForTest(t, &mockBuildService{})
 
 	report, err := d.Build(t.Context(), nil)
 	require.Error(t, err)
@@ -113,7 +115,7 @@ func TestDaemon_Build_NilJob(t *testing.T) {
 }
 
 func TestDaemon_Build_MissingConfig(t *testing.T) {
-	d := newDaemonForTest(&mockBuildService{})
+	d := newDaemonForTest(t, &mockBuildService{})
 
 	job := &queue.BuildJob{
 		ID:        "test",
@@ -142,7 +144,7 @@ func TestDaemon_Build_Success(t *testing.T) {
 			}, nil
 		},
 	}
-	d := newDaemonForTest(svc)
+	d := newDaemonForTest(t, svc)
 
 	job := &queue.BuildJob{
 		ID: "test-job",
@@ -170,7 +172,7 @@ func TestDaemon_Build_CancellationPropagates(t *testing.T) {
 			}, context.Canceled
 		},
 	}
-	d := newDaemonForTest(svc)
+	d := newDaemonForTest(t, svc)
 
 	job := &queue.BuildJob{
 		ID:        "test-job",
@@ -196,7 +198,7 @@ func TestDaemon_Build_Skipped(t *testing.T) {
 			}, nil
 		},
 	}
-	d := newDaemonForTest(svc)
+	d := newDaemonForTest(t, svc)
 
 	job := &queue.BuildJob{
 		ID:        "test-job",
@@ -230,7 +232,7 @@ func TestDaemon_Build_WebhookOverridesRepositories(t *testing.T) {
 			}, nil
 		},
 	}
-	d := newDaemonForTest(svc)
+	d := newDaemonForTest(t, svc)
 
 	job := &queue.BuildJob{
 		ID:   "test-job",
