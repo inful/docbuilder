@@ -6,7 +6,6 @@ import (
 	"git.home.luguber.info/inful/docbuilder/internal/config"
 	"git.home.luguber.info/inful/docbuilder/internal/daemon/events"
 	"git.home.luguber.info/inful/docbuilder/internal/forge"
-	"git.home.luguber.info/inful/docbuilder/internal/git"
 	"git.home.luguber.info/inful/docbuilder/internal/linkverify"
 	"git.home.luguber.info/inful/docbuilder/internal/state"
 )
@@ -24,11 +23,11 @@ type daemonForTestOpts struct {
 
 	// Build pipeline seams. Leave unset for tests that only exercise
 	// discovery or lifecycle code paths.
-	BuildService      build.BuildService
-	BuildQueue        *queue.BuildQueue
-	BuildDebouncer    *BuildDebouncer
-	RepoUpdater       *RepoUpdater
-	BuildMockStateMgr state.DaemonStateManager
+	BuildService   build.BuildService
+	BuildQueue     *queue.BuildQueue
+	BuildDebouncer *BuildDebouncer
+	RepoUpdater    *RepoUpdater
+	StateManager   state.DaemonStateManager
 
 	// Orchestration bus. Most tests that exercise the consumer
 	// loops set this.
@@ -50,9 +49,6 @@ type daemonForTestOpts struct {
 	LiveReload         *LiveReloadHub
 	LinkVerifier       *linkverify.VerificationService
 	OutboundDispatcher *OutboundDispatcher
-
-	// Misc.
-	RemoteCache *git.RemoteHeadCache
 }
 
 // daemonForTest builds a minimal *Daemon suitable for exercising a
@@ -86,12 +82,16 @@ func daemonForTest(t testingT, opts daemonForTestOpts) *Daemon {
 		lifecycle: lifecycleStack{
 			stopChan: make(chan struct{}, 1),
 		},
-		state:    &stateStack{stateManager: opts.BuildMockStateMgr},
+		state:    &stateStack{stateManager: opts.StateManager},
 		build:    &buildStack{},
 		discover: &discoveryStack{},
 		serve:    &serveStack{},
 		optional: &optionalStack{},
 	}
+	// Production sets StatusStopped and the caller moves to
+	// StatusRunning when the daemon is fully wired. Tests that
+	// exercise gated code paths want StatusRunning by default;
+	// tests that need a different state adjust after this call.
 	d.lifecycle.status.Store(StatusRunning)
 
 	if opts.BuildService != nil {
@@ -135,15 +135,6 @@ func daemonForTest(t testingT, opts daemonForTestOpts) *Daemon {
 	}
 	if opts.OutboundDispatcher != nil {
 		d.optional.outboundDispatcher = opts.OutboundDispatcher
-	}
-
-	if opts.RemoteCache != nil {
-		// Tests that need a remote-head cache wire it into the
-		// build stack directly; the production wiring is more
-		// elaborate but is not the responsibility of a test seam.
-		if d.build.repoUpdater == nil {
-			d.build.repoUpdater = &RepoUpdater{}
-		}
 	}
 
 	return d
