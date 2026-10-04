@@ -254,7 +254,7 @@ func TestDaemon_Build_WebhookOverridesRepositories(t *testing.T) {
 }
 
 func TestJobToBuildRequest_MissingConfig(t *testing.T) {
-	d := &Daemon{}
+	d := newDaemonForTest(t, nil)
 	job := &queue.BuildJob{ID: "x"} // no TypedMeta → no V2Config
 	_, err := d.jobToBuildRequest(job)
 	require.Error(t, err)
@@ -262,7 +262,7 @@ func TestJobToBuildRequest_MissingConfig(t *testing.T) {
 
 func TestJobToBuildRequest_RepoOverride(t *testing.T) {
 	const repoName = "ad-hoc"
-	d := &Daemon{}
+	d := newDaemonForTest(t, nil)
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{},
@@ -287,7 +287,7 @@ func TestJobToBuildRequest_RepoOverride(t *testing.T) {
 }
 
 func TestJobToBuildRequest_PassesSkipIfUnchangedFromConfig(t *testing.T) {
-	d := &Daemon{}
+	d := newDaemonForTest(t, nil)
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{
@@ -309,7 +309,10 @@ func TestJobToBuildRequest_PassesSkipIfUnchangedFromConfig(t *testing.T) {
 // whenever a user had build.skip_if_unchanged: true in their config.
 func TestJobToBuildRequest_SetsSkipStateFromStateManager(t *testing.T) {
 	st := newFakeDaemonStateManager()
-	d := &Daemon{state: &stateStack{stateManager: st}}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:       &config.Config{Daemon: &config.DaemonConfig{}},
+		StateManager: st,
+	})
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{
@@ -340,7 +343,10 @@ func TestJobToBuildRequest_SetsOnDocumentReadyWhenDispatcherEnabled(t *testing.T
 	})
 	require.NoError(t, err)
 
-	d := &Daemon{optional: &optionalStack{outboundDispatcher: dispatcher}}
+	d := daemonForTest(t, daemonForTestOpts{
+		Config:             &config.Config{Daemon: &config.DaemonConfig{}},
+		OutboundDispatcher: dispatcher,
+	})
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{},
@@ -364,7 +370,7 @@ func TestJobToBuildRequest_SetsOnDocumentReadyWhenDispatcherEnabled(t *testing.T
 // inverse case: when the dispatcher is nil, OnDocumentReady must be nil
 // so BuildService.Run does not pay for an unused WithDocumentReady call.
 func TestJobToBuildRequest_NoOnDocumentReadyWhenDispatcherDisabled(t *testing.T) {
-	d := &Daemon{} // no outboundDispatcher
+	d := newDaemonForTest(t, nil) // no outboundDispatcher
 	job := &queue.BuildJob{
 		TypedMeta: &queue.BuildJobMetadata{
 			V2Config: &config.Config{},
