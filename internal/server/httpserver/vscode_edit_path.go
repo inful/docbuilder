@@ -75,7 +75,12 @@ func (s *Server) validateAndResolveEditPath(urlPath string) (string, error) {
 
 // validateMarkdownFile checks that the file exists, is regular, and is markdown.
 func (s *Server) validateMarkdownFile(path string) error {
-	// Use Lstat to detect symlinks (Stat would follow them)
+	// Use Lstat to detect symlinks (Stat would follow them). `path` is the
+	// value returned by validateAndResolveEditPath, which has already
+	// confirmed the path is within the configured docs directory via
+	// filepath.Clean + HasPrefix check. gosec G703 doesn't trace that
+	// validation, hence the suppression.
+	//nolint:gosec // G703: path is validated to live under docs dir by validateAndResolveEditPath.
 	fileInfo, err := os.Lstat(path)
 	if err != nil {
 		if os.IsNotExist(err) {

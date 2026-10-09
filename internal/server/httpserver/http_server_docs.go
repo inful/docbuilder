@@ -280,9 +280,13 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 			urlPath = "/"
 		}
 
-		// Check if this path exists as index.html
+		// Check if this path exists as index.html. testPath is built from
+		// filepath.Clean(urlPath) above, so ".." components have already
+		// been collapsed — the read-only os.Stat can't escape the
+		// configured docs root. gosec G703 sees taint from r.URL.Path
+		// and flags the join+stat, hence the suppression.
 		testPath := filepath.Join(root, urlPath, "index.html")
-		if _, err := os.Stat(testPath); err == nil {
+		if _, err := os.Stat(testPath); err == nil { //nolint:gosec // G703: urlPath is filepath.Clean-ed; os.Stat is read-only.
 			// Ensure path ends with / for directory-style URLs
 			if !strings.HasSuffix(urlPath, "/") {
 				urlPath += "/"
@@ -290,10 +294,10 @@ func (s *Server) findNearestValidParent(root, urlPath string) string {
 			return urlPath
 		}
 
-		// Also check direct file
+		// Also check direct file. Same justification as above.
 		if urlPath != "/" {
 			testPath = filepath.Join(root, urlPath)
-			if stat, err := os.Stat(testPath); err == nil && !stat.IsDir() {
+			if stat, err := os.Stat(testPath); err == nil && !stat.IsDir() { //nolint:gosec // G703: urlPath is filepath.Clean-ed; os.Stat is read-only.
 				return urlPath
 			}
 		}
