@@ -1,20 +1,39 @@
 package lint
 
 import (
+	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TestIsGitRepository tests git repository detection.
+// TestIsGitRepository tests git repository detection. Each subtest builds
+// its own setup in t.TempDir() so the result does not depend on the
+// runner's CWD or on the presence of a .git directory at any specific
+// path on the host.
 func TestIsGitRepository(t *testing.T) {
+	gitInit := func(t *testing.T, dir string) {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		// #nosec G204 -- dir is t.TempDir()-scoped
+		init := exec.CommandContext(ctx, "git", "init", "--initial-branch=main", dir)
+		init.Stdout = os.Stderr
+		init.Stderr = os.Stderr
+		require.NoError(t, init.Run(), "git init in temp dir should succeed")
+	}
+
 	t.Run("detects git repository", func(t *testing.T) {
-		// Current directory should be a git repo
-		isGit := isGitRepository(".")
-		assert.True(t, isGit, "current directory should be a git repository")
+		repoDir := t.TempDir()
+		gitInit(t, repoDir)
+
+		isGit := isGitRepository(repoDir)
+		assert.True(t, isGit, "directory with a freshly-initialized git repo should be detected")
 	})
 
 	t.Run("detects non-git directory", func(t *testing.T) {

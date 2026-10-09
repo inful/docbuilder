@@ -34,9 +34,11 @@ func TestIntegration_InitializeAndToolsList(t *testing.T) {
 	binDir := t.TempDir()
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
 
-	// Build the binary from this package.
+	// Build the binary from this package. -buildvcs=false keeps the build
+	// portable across non-checked-out, shallow, or bare-worktree layouts
+	// where `go build` would otherwise try to stamp VCS info and fail.
 	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
-	build := exec.Command("go", "build", "-o", binPath, ".")
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
 		t.Fatalf("failed to build binary: %v", err)
@@ -156,7 +158,7 @@ func TestIntegration_GetConfigTool(t *testing.T) {
 	binDir := t.TempDir()
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
 	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
-	build := exec.Command("go", "build", "-o", binPath, ".")
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
 		t.Fatalf("build: %v", err)

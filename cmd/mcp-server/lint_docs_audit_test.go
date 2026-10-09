@@ -32,11 +32,13 @@ func TestAudit_LintDocs(t *testing.T) {
 		t.Skip("audit test skipped in short mode")
 	}
 
-	// Build the binary into a temp dir.
+	// Build the binary into a temp dir. -buildvcs=false keeps the build
+	// portable across non-checked-out, shallow, or bare-worktree layouts
+	// where `go build` would otherwise try to stamp VCS info and fail.
 	binDir := t.TempDir()
 	binPath := filepath.Join(binDir, "docbuilder-mcp")
 	//nolint:gosec,noctx // G204: command is built from constants; build timeout handled at test-runner level
-	build := exec.Command("go", "build", "-o", binPath, ".")
+	build := exec.Command("go", "build", "-buildvcs=false", "-o", binPath, ".")
 	build.Stderr = os.Stderr
 	if err := build.Run(); err != nil {
 		t.Fatalf("build: %v", err)
