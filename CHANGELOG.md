@@ -54,6 +54,20 @@ commits; pin to a SHA for reproducibility per the README.
   for callers that have already-discovered doc files (preview
   mode, `docbuilder build -d`, any future embedder). It skips the
   clone and discovery stages.
+- **Git corruption self-heal**: `Client.UpdateRepo` now detects
+  corrupt on-disk git state (truncated pack, bad `.idx` checksum,
+  `plumbing.ErrObjectNotFound` from an unreadable pack index, etc.)
+  and transparently wipes the workspace and re-clones from the
+  remote. Previously a single interrupted fetch or a flaky
+  filesystem could leave the workspace in a state where every
+  subsequent `docbuilder build` surfaced
+  `[git:error] failed to checkout existing branch: invalid checksum`
+  to the user. The recovery is logged at WARN with the original
+  error and the path, then the build proceeds normally. Sourced
+  from go-git's pack/idx/index decoder error strings, so future
+  go-git versions that add new corruption signatures will need
+  `gitCorruptionPatterns` in `internal/git/recovery.go` extended
+  to match.
 
 ## [0.19.2] - 2026-09-30
 
