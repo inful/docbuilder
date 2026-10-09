@@ -16,6 +16,7 @@ const (
 	TypeGitHub  Type = config.ForgeGitHub
 	TypeGitLab  Type = config.ForgeGitLab
 	TypeForgejo Type = config.ForgeForgejo
+	TypeLocal   Type = config.ForgeLocal
 )
 
 // Repository represents a repository discovered from a forge.

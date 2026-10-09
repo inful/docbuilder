@@ -257,6 +257,9 @@ func TestCLIPerformanceTesting(t *testing.T) {
 						repo = forge.CreateMockGitLabRepo("group", "repo-"+string(rune(i)), true, false, false, false)
 					case forge.TypeForgejo:
 						repo = forge.CreateMockForgejoRepo("org", "repo-"+string(rune(i)), true, false, false, false)
+					case forge.TypeLocal:
+						// Local forges are file-system-backed; nothing to add
+						// to the per-iteration repo set.
 					}
 					if repo != nil {
 						enhancedClient.AddRepository(repo)

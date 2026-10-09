@@ -149,6 +149,9 @@ func CreateMockRepositorySet(forgeType Type, orgName string, count int) []*Repos
 			repos[i] = CreateMockGitLabRepo(orgName, repoName, hasDocs, isPrivate, false, false)
 		case TypeForgejo:
 			repos[i] = CreateMockForgejoRepo(orgName, repoName, hasDocs, isPrivate, false, false)
+		case TypeLocal:
+			// Local forges are file-system-backed; tests don't add remote
+			// repos for them. Leave the slot as a zero-value Repository.
 		default:
 			// Generic repository
 			repos[i] = &Repository{

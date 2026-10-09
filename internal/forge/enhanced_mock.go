@@ -288,6 +288,11 @@ func (m *EnhancedMockForgeClient) ValidateWebhook(_ []byte, signature, secret st
 		}
 		correctSecret := secret == expectedSecret
 		return validSignature && correctSecret
+	case TypeLocal:
+		// Local forges don't deliver webhooks; treat any request as
+		// unverifiable so callers don't silently accept unauthenticated
+		// payloads in tests.
+		return false
 	default:
 		return false
 	}
@@ -375,6 +380,11 @@ func (m *EnhancedMockForgeClient) GetEditURL(repo *Repository, filePath string, 
 		return fmt.Sprintf("https://gitlab.com/%s/-/edit/%s/%s", repo.FullName, branch, filePath)
 	case TypeForgejo:
 		return fmt.Sprintf("https://git.example.com/%s/_edit/%s/%s", repo.FullName, branch, filePath)
+	case TypeLocal:
+		// Local forges have no web UI for editing; return an empty string
+		// so callers can detect the absence of an edit link rather than
+		// rendering a bogus URL.
+		return ""
 	default:
 		return fmt.Sprintf("https://forge.example.com/%s/edit/%s/%s", repo.FullName, branch, filePath)
 	}
@@ -396,6 +406,12 @@ func (m *EnhancedMockForgeClient) GenerateForgeConfig() *Config {
 	case TypeForgejo:
 		apiURL = "https://git.example.com/api/v1"
 		baseURL = "https://git.example.com"
+	case TypeLocal:
+		// Local forges have no remote API or web base URL; leave both
+		// empty so config validation surfaces a clear "unsupported"
+		// error rather than a half-built https://... placeholder.
+		apiURL = ""
+		baseURL = ""
 	default:
 		apiURL = fmt.Sprintf("https://api.%s.example.com", m.name)
 		baseURL = fmt.Sprintf("https://%s.example.com", m.name)
@@ -452,6 +468,10 @@ func (m *EnhancedMockForgeClient) simulateFailures() error {
 			return errors.New("network timeout: connection to https://gitlab.com/api/v4 timed out")
 		case TypeForgejo:
 			return errors.New("network timeout: connection to https://forgejo.org/api/v1 timed out")
+		case TypeLocal:
+			// Local forges have no remote endpoint; the timeout
+			// simulation doesn't have a real URL to name.
+			return errors.New("network timeout: connection to local forge timed out")
 		default:
 			return fmt.Errorf("network timeout after %v", m.networkTimeout)
 		}
