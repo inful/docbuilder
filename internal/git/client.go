@@ -211,5 +211,30 @@ func (c *Client) updateOnce(repo appcfg.Repository) (string, error) {
 		slog.Debug("Repository missing, cloning", logfields.Name(repo.Name))
 		return c.cloneOnce(repo)
 	}
-	return c.updateExistingRepo(repoPath, repo)
+	path, err := c.updateExistingRepo(repoPath, repo)
+	if err != nil && isCorruptionError(err) {
+		// Self-heal: corrupt on-disk git state (e.g. truncated pack, bad
+		// index checksum) cannot be repaired by re-fetching — go-git's
+		// pack/idx decoders reject any partial or mismatched object and
+		// the local pack won't be replaced just because a new fetch ran.
+		// Wipe the workspace and let the next attempt (or the retry
+		// wrapper) re-clone from scratch.
+		slog.Warn("git repository corruption detected; re-cloning",
+			logfields.Name(repo.Name),
+			logfields.Path(repoPath),
+			slog.String("error", err.Error()))
+		if rmErr := os.RemoveAll(repoPath); rmErr != nil {
+			slog.Error("failed to remove corrupt repository",
+				logfields.Name(repo.Name),
+				logfields.Path(repoPath),
+				slog.String("error", rmErr.Error()))
+		}
+		// Drop any cached "remote HEAD unchanged" entry so a follow-up call
+		// doesn't short-circuit a fetch that's now actually needed.
+		if c.remoteHeadCache != nil {
+			c.remoteHeadCache.DeleteByURL(repo.URL)
+		}
+		return c.cloneOnce(repo)
+	}
+	return path, err
 }

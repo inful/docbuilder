@@ -137,6 +137,14 @@ func isPermanentGitError(err error) bool {
 	if err == nil {
 		return false
 	}
+	// Corruption is never permanent: the self-heal path (wipe + re-clone) is
+	// the correct response, and the retry must fire so updateOnce gets a
+	// chance to run it. This must be checked before the substring match
+	// below because corruption errors include "object not found" in their
+	// message, which would otherwise be classified as permanent.
+	if isCorruptionError(err) {
+		return false
+	}
 	// Prefer structured strategy if available
 	if ce, ok := errors.AsClassified(err); ok {
 		return ce.RetryStrategy() == errors.RetryNever

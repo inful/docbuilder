@@ -33,6 +33,19 @@ func ClassifyGitError(err error, op string, url string) error {
 	switch {
 	case strings.Contains(l, "authentication failed") || strings.Contains(l, "not authorized") || strings.Contains(l, "could not read username") || strings.Contains(l, "invalid credentials"):
 		builder.WithCategory(errors.CategoryAuth)
+	case isCorruptionMessage(l):
+		// On-disk git state is unreadable (truncated pack, bad idx checksum,
+		// corrupt signature, "object not found" from a corrupt .idx). Re-
+		// fetching will not repair a pack that fails its own integrity
+		// check, so the recovery path takes over and wipes the local copy
+		// for a re-clone. Retryable is inherited from GitError().
+		// NOTE: this case is intentionally listed before the generic
+		// "not found" catch-all below, because corruption messages include
+		// "object not found" and must take precedence over a plain NotFound
+		// classification. Specific strings like "repository not found"
+		// don't match the corruption patterns, so they still route to
+		// CategoryNotFound below.
+		builder.WithContext("corruption", true)
 	case strings.Contains(l, "repository not found") || strings.Contains(l, "not found") || strings.Contains(l, "does not exist"):
 		builder.WithCategory(errors.CategoryNotFound)
 	case strings.Contains(l, "remote hung up") || strings.Contains(l, "connection reset") || strings.Contains(l, "timeout") || strings.Contains(l, "i/o timeout") || strings.Contains(l, "no route to host"):
