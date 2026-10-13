@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -932,6 +933,98 @@ hugo:
 
 	output := stdout.String()
 	require.Contains(t, output, "adr")
+}
+
+func TestTemplateNew_UIDBuiltin_Integration(t *testing.T) {
+	// The user-facing scenario this enables: a template body that embeds
+	// `{{ .UID }}` (e.g. a copyable `/_uid/{{ .UID }}/` link) must end up
+	// using the same uid that the lint fixer writes into the frontmatter,
+	// and the lint fixer must add the corresponding `/_uid/<uid>/` alias.
+	const uidTemplateHTML = `<!DOCTYPE html>
+<html>
+<head>
+	<meta property="docbuilder:template.type" content="uid-demo">
+	<meta property="docbuilder:template.name" content="UID Demo">
+	<meta property="docbuilder:template.output_path" content="demos/{{ .Slug }}.md">
+	<meta property="docbuilder:template.description" content="Template that embeds {{ .UID }}">
+	<meta property="docbuilder:template.schema" content='{"fields":[{"key":"Title","type":"string","required":true},{"key":"Slug","type":"string","required":true}]}'>
+</head>
+<body>
+	<h1>UID Demo Template</h1>
+	<pre><code class="language-markdown">---
+title: "{{ .Title }}"
+slug: "{{ .Slug }}"
+uid: "{{ .UID }}"
+---
+
+# {{ .Title }}
+
+Canonical link: /_uid/{{ .UID }}/
+</code></pre>
+</body>
+</html>`
+
+	const discoveryHTMLUIDOnly = `<!DOCTYPE html>
+<html>
+<head><title>Templates</title></head>
+<body>
+	<h1>Templates</h1>
+	<ul>
+		<li><a href="/templates/uid-demo.template/index.html">uid-demo.template</a></li>
+	</ul>
+</body>
+</html>`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case templatesCategoryPath, templatesCategoryPathNoSlash:
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(discoveryHTMLUIDOnly))
+		case "/templates/uid-demo.template/index.html":
+			w.Header().Set("Content-Type", "text/html")
+			_, _ = w.Write([]byte(uidTemplateHTML))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	configPath := createTestConfig(t, tmpDir)
+	docsDir := filepath.Join(tmpDir, "docs")
+	require.NoError(t, os.MkdirAll(docsDir, 0o750))
+
+	t.Chdir(tmpDir)
+
+	cmd := &TemplateNewCmd{
+		BaseURL: server.URL,
+		Set:     []string{"Title=UID Demo", "Slug=uid-demo"},
+		Yes:     true,
+	}
+	cli := &CLI{Config: configPath}
+	require.NoError(t, cmd.Run(&Global{}, cli))
+
+	expectedPath := filepath.Join(docsDir, "demos", "uid-demo.md")
+	require.FileExists(t, expectedPath)
+
+	// #nosec G304 -- expectedPath is created under t.TempDir() during this test.
+	data, err := os.ReadFile(expectedPath)
+	require.NoError(t, err)
+	content := string(data)
+
+	// Extract the UID that the template rendered into the body and
+	// confirm the frontmatter uses the same value.
+	uidPattern := regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+	uids := uidPattern.FindAllString(content, -1)
+	require.GreaterOrEqual(t, len(uids), 2,
+		"expected at least two UID references in body (frontmatter uid + canonical link); got %q", content)
+	require.Equal(t, uids[0], uids[1],
+		"frontmatter uid and body link should reference the same UID; got %q", content)
+
+	// The lint fixer must have added the /_uid/<uid>/ alias derived from
+	// the template-generated UID.
+	require.Contains(t, content, "uid: "+uids[0])
+	require.Contains(t, content, "/_uid/"+uids[0]+"/")
 }
 
 func TestTemplateServer_HTMLStructure(t *testing.T) {

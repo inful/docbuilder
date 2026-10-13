@@ -12,6 +12,7 @@ import (
 // The template has access to:
 //   - All input values via dot notation (e.g., {{ .Title }}, {{ .Slug }})
 //   - The nextInSequence helper function for sequential numbering
+//   - Builtin template variables: {{ .Date }}, {{ .DateTime }}, {{ .UID }}
 //
 // Template syntax follows Go's text/template package. Missing keys result in errors
 // (missingkey=error option).
@@ -41,7 +42,7 @@ func RenderTemplateBody(bodyTemplate string, data map[string]any, nextSequence f
 		},
 	}
 
-	data = withBuiltinTemplateData(data)
+	data = WithBuiltinTemplateData(data)
 
 	tpl, err := template.New("body").Funcs(funcs).Option("missingkey=error").Parse(bodyTemplate)
 	if err != nil {

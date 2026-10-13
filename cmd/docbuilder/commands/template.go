@@ -117,6 +117,12 @@ func (t *TemplateNewCmd) Run(_ *Global, root *CLI) error {
 		return err
 	}
 
+	// Inject builtins (Date, DateTime, UID) once so the rendered output
+	// path and body share the same UID. Without this, the body's
+	// `{{ .UID }}` references would resolve to a different UUID than
+	// the frontmatter's uid.
+	inputs = templating.WithBuiltinTemplateData(inputs)
+
 	docsDir, err := resolveDocsDir()
 	if err != nil {
 		return err

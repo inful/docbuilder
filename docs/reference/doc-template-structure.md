@@ -4,8 +4,8 @@ aliases:
 categories:
   - reference
 date: 2026-01-01T00:00:00Z
-fingerprint: da67e31755748cd088b3894e7c86bb03ecac935c599eb4858ec101166626a3b9
-lastmod: "2026-09-27"
+fingerprint: 0a07ce3e52cbef23096d0a25a0db006c6f1bcce3da05e6282b0cf343bd9b3eb6
+lastmod: "2026-10-13"
 tags:
   - templates
   - authoring
@@ -130,6 +130,9 @@ relative to `docs/`. Available variables and helpers:
 | `{{ index .categories 0 }}` | First element of the `categories` list (commonly used to inject the user-picked category into the generated doc's frontmatter). |
 | `{{ printf "%03d" N }}` | Zero-padded number, e.g. `001`. |
 | `{{ nextInSequence "name" }}` | Next integer for the named sequence (see below). |
+| `{{ .Date }}` | Current date in UTC (`YYYY-MM-DD`), auto-injected. |
+| `{{ .DateTime }}` | Current datetime in UTC (RFC 3339), auto-injected. |
+| `{{ .UID }}` | UUID v4 assigned to the new document, auto-injected. See *Embedding the document UID* below. |
 
 A typical ADR template's output path:
 
@@ -140,6 +143,64 @@ adr/adr-{{ printf "%03d" (nextInSequence "adr") }}-{{ .Slug }}.md
 Generates paths like `adr/adr-001-first-decision.md`. Paths must be
 relative to `docs/` — `WriteGeneratedFile` rejects absolute paths and
 `..` traversal.
+
+## Embedding the document UID
+
+Every generated document gets a stable `uid` in its frontmatter (a
+UUID v4). If the template body wants to reference that uid — for
+example, to embed a copyable canonical link of the form
+`/_uid/<uid>/` — use the `{{ .UID }}` builtin. The same value is
+also exposed in `output_path` if you want the uid in the filename
+(for example `output_path: "demos/{{ .UID }}.md"`).
+
+For the value to match the uid that the lint fixer writes into the
+generated document's frontmatter, the body MUST include
+`uid: "{{ .UID }}"` in its frontmatter. Otherwise the fixer will
+generate its own uid and the body's references will drift:
+
+```markdown
+---
+title: "{{ .Title }}"
+slug: "{{ .Slug }}"
+uid: "{{ .UID }}"
+---
+
+# {{ .Title }}
+
+Canonical link: `/_uid/{{ .UID }}/`
+```
+
+The MCP server and CLI both call the builtin injector once per
+document, so the value used in the path, the frontmatter, and the
+body is always the same.
+
+### Lint enforcement: `template-uid-binding`
+
+The `template-uid-binding` linter rule catches the case where a
+template body uses `{{ .UID }}` but the embedded frontmatter does
+not bind it. The rule applies only to template files (those with
+`params.docbuilder.template.*` in their outer frontmatter) and only
+fires when the body of the fenced code block references
+`{{ .UID }}` at least once.
+
+The rule produces an **Error** (since the result is a generated
+document where the body's canonical link points at a different
+identifier than the frontmatter's `uid`). The fixer handles three
+cases:
+
+| Embedded frontmatter | Fixer action |
+|---|---|
+| No `uid` field at all | Adds `uid: "{{ .UID }}"` to the embedded frontmatter |
+| `uid: "{{ .UID }}"` (already bound) | No change |
+| `uid: <literal-uuid>` (mismatch) | Replaces the literal with `uid: "{{ .UID }}"` |
+
+The literal-uid rewrite is safe because the rule only fires when the
+body already uses `{{ .UID }}` — at that point the author has
+clearly committed to the template-time UUID, so overwriting a stray
+literal just brings the frontmatter in line with the body's intent.
+
+`docbuilder lint --fix` (or the MCP server's `lint_fix` tool) applies
+all three cases automatically.
 
 ## Sequences
 

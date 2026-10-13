@@ -10,5 +10,6 @@ const (
 	ruleCrossModeCategory            = "cross-mode-category"
 	ruleDirectoryCategoryConsistency = "directory-category-consistency"
 	ruleFrontmatterRequiredFields    = "frontmatter-required-fields"
+	ruleTemplateUIDBinding           = "template-uid-binding"
 	gitCommandDiff                   = "diff"
 )

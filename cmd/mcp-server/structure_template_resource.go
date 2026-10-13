@@ -73,8 +73,39 @@ Under params.docbuilder.template.*:
 | {{ index .categories 0 }} | First categories entry |
 | {{ printf "%03d" N }} | Zero-padded number |
 | {{ nextInSequence "name" }} | Next integer for a sequence |
+| {{ .Date }} | Current date in UTC (YYYY-MM-DD), auto-injected |
+| {{ .DateTime }} | Current datetime in UTC (RFC 3339), auto-injected |
+| {{ .UID }} | UUID v4 for the new document, auto-injected |
 
 Paths must be relative to docs/; absolute paths and .. are rejected.
+The {{ .UID }} value is the same in the output path and the body when
+the template is invoked; to bind the body's references to the
+frontmatter's uid field, include uid: "{{ .UID }}" in the body's
+frontmatter (otherwise the lint fixer will generate a new uid).
+
+## Lint Rule: template-uid-binding
+
+A dedicated linter rule (template-uid-binding) enforces the binding
+contract above: it runs only on template files (those with
+params.docbuilder.template.* in their outer frontmatter) and only
+fires when the body's fenced code block references {{ .UID }} at
+least once. The fixer's behavior:
+
+| Embedded frontmatter | Auto-fix |
+|---|---|
+| Missing uid | Adds uid: "{{ .UID }}" to the embedded frontmatter |
+| uid: "{{ .UID }}" (already bound) | No change |
+| uid: <literal-uuid> (mismatch) | Replaces the literal with uid: "{{ .UID }}" |
+
+The literal-uid rewrite is safe because the rule only fires when the
+body already uses {{ .UID }}; at that point the author has clearly
+committed to the template-time UUID and a stray literal in the
+embedded frontmatter is just an oversight.
+
+When in doubt, prefer running 'docbuilder lint' (or the MCP
+'lint_docs' tool) on the templates directory and then
+'docbuilder lint --fix' (or 'lint_fix') to apply the auto-fixes
+before publishing the templates site.
 
 ## Sequence Configuration (sequence.*)
 

@@ -267,6 +267,11 @@ func handleResolveTemplateInputs(ctx context.Context, req mcp.CallToolRequest) (
 		return toolErr("resolve inputs", err)
 	}
 
+	// Inject builtins (Date, DateTime, UID) once so the rendered preview
+	// shows the same UID in path and body — matching what the real
+	// create-from-template flow will produce.
+	resolved = templating.WithBuiltinTemplateData(resolved)
+
 	// Render the would-be path and body, without writing.
 	nextSeq, err := buildSequenceResolver(page, state.docsDir)
 	if err != nil {
@@ -325,6 +330,11 @@ func handleCreateFromTemplate(ctx context.Context, req mcp.CallToolRequest) (*mc
 	if err != nil {
 		return toolErr("resolve inputs", err)
 	}
+
+	// Inject builtins (Date, DateTime, UID) once so the output path and
+	// the body share the same UID — otherwise the body's `{{ .UID }}`
+	// references would drift from the frontmatter's uid.
+	resolved = templating.WithBuiltinTemplateData(resolved)
 
 	nextSeq, err := buildSequenceResolver(page, state.docsDir)
 	if err != nil {
@@ -431,6 +441,7 @@ var autoFixableRules = map[string]bool{
 	"directory-category-consistency": true,
 	"category-naming":                true,
 	"sequence-prefix-filename":       true,
+	"template-uid-binding":           true,
 	"broken-links":                   true,
 }
 

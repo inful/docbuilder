@@ -34,6 +34,11 @@ func TestDocTemplateStructure_ContainsRequiredFields(t *testing.T) {
 		"schema", "defaults", "sequence",
 		"string", "string_enum", "string_list", "bool",
 		"nextInSequence",
+		// Builtin template variables (auto-injected)
+		".Date", ".DateTime", ".UID",
+		// Lint rule
+		"## Lint Rule: template-uid-binding",
+		"template-uid-binding",
 	}
 	for _, want := range required {
 		if !strings.Contains(docTemplateStructureSchema, want) {

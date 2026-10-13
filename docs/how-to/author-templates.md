@@ -4,8 +4,8 @@ aliases:
 categories:
   - how-to
 date: 2026-02-02T00:00:00Z
-fingerprint: 3c844e57412eb36de7e648341365d0f8411ad1f0fd77f2b44e6eaccb953802d8
-lastmod: "2026-09-27"
+fingerprint: 1004186fb8ac38c9d901578830d83550d3fcb07c522aa294d76763f0fa487227
+lastmod: "2026-10-13"
 tags:
   - templates
   - authoring
@@ -128,6 +128,9 @@ params:
 - `{{ .Slug }}` - User-provided slug
 - `{{ .FieldName }}` - Any field from schema
 - `{{ nextInSequence "name" }}` - Next number in sequence
+- `{{ .Date }}` - Current date in UTC (YYYY-MM-DD), auto-injected
+- `{{ .DateTime }}` - Current datetime in UTC (RFC 3339), auto-injected
+- `{{ .UID }}` - UUID v4 assigned to the new document, auto-injected. See [Embedding the document UID](#embedding-the-document-uid) below.
 
 ## Optional Frontmatter Fields
 
@@ -293,6 +296,48 @@ Variables come from:
 ```go
 {{ printf "%03d" (nextInSequence "adr") }} // Padded number: 001, 002, etc.
 ```
+
+### Embedding the document UID
+
+Every document gets a stable `uid` in its frontmatter (a UUID v4).
+If your template body wants to reference that uid — for example, to
+embed a copyable canonical link of the form `/_uid/<uid>/` — use the
+`{{ .UID }}` builtin:
+
+```markdown
+---
+title: "{{ .Title }}"
+slug: "{{ .Slug }}"
+uid: "{{ .UID }}"
+---
+
+# {{ .Title }}
+
+Canonical link: `/_uid/{{ .UID }}/`
+```
+
+The `uid: "{{ .UID }}"` line in the frontmatter is what binds the
+template-rendered uid to the frontmatter. The lint fixer that runs
+after file creation sees the existing `uid` and keeps it (instead of
+generating a new one), then adds the `/_uid/<uid>/` alias automatically.
+If the body references `{{ .UID }}` but the frontmatter does not, the
+two will drift and the canonical link will not resolve.
+
+The `template-uid-binding` linter rule catches this drift at
+authoring time: it scans every template's body for `{{ .UID }}`
+references and reports an Error if the embedded frontmatter is not
+bound. `docbuilder lint --fix` (or the MCP server's `lint_fix` tool)
+auto-adds the missing `uid: "{{ .UID }}"` line, and also rewrites a
+literal UUID in the embedded frontmatter back to `uid: "{{ .UID }}"`
+— the rule only fires when the body already uses `{{ .UID }}`, so
+the literal is clearly stray.
+
+The same uid is also available in `output_path` if you want it in the
+filename, e.g. `output_path: "demos/{{ .UID }}.md"`. The MCP server and
+CLI both call the builtin injector once per document, so the value
+used in the path, the frontmatter, and the body is always the same.
+
+
 
 ## Complete Example: Guide Template
 

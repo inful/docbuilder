@@ -16,6 +16,7 @@ func TestFixer_EndToEnd(t *testing.T) {
 	// Set up directory layout that triggers all the fixers.
 	mustMkdirAll(t, filepath.Join(tmpDir, "docs", "how-to"))
 	mustMkdirAll(t, filepath.Join(tmpDir, "docs", "adr"))
+	mustMkdirAll(t, filepath.Join(tmpDir, "docs", "templates"))
 
 	// Doc missing title/date/lastmod/tags → frontmatter-required-fields fixer
 	mustWrite(t, filepath.Join(tmpDir, "docs", "how-to", "how-to-1.md"), `---
@@ -68,6 +69,38 @@ aliases:
 
 body
 `)
+
+	// Template body references {{ .UID }} but the embedded
+	// frontmatter doesn't bind it → template-uid-binding fixer.
+	mustWrite(t, filepath.Join(tmpDir, "docs", "templates", "uid-demo.template.md"), `---
+title: UID Demo Template
+uid: 44444444-aaaa-aaaa-aaaa-444444444444
+date: 2026-01-01T00:00:00Z
+lastmod: "2026-01-01"
+fingerprint: 0000000000000000000000000000000000000000000000000000000000000000
+categories:
+  - templates
+tags: []
+aliases:
+  - /_uid/x/
+params:
+  docbuilder:
+    template:
+      type: uid-demo
+      name: UID Demo
+      output_path: "demos/{{ .Slug }}.md"
+---
+
+# UID Demo Template
+
+`+"```markdown\n"+`---
+title: "{{ .Title }}"
+---
+
+# {{ .Title }}
+
+Canonical: /_uid/{{ .UID }}/
+`+"```\n")
 
 	linter := NewLinter(&Config{Format: formatText})
 	fixer := NewFixer(linter, false, false).WithAutoConfirm(true)
@@ -149,6 +182,21 @@ body
 	}
 	for _, iss := range issues {
 		t.Errorf("%s: category-naming still flags %q", renamedADR, iss.Message)
+	}
+
+	// Verify the template-uid-binding fixer rewrote the template's
+	// embedded frontmatter to include `uid: "{{ .UID }}"`.
+	tplPath := filepath.Join(tmpDir, "docs", "templates", "uid-demo.template.md")
+	// #nosec G304 -- test-managed path
+	tplBytes, err := os.ReadFile(tplPath)
+	if err != nil {
+		t.Fatalf("read template: %v", err)
+	}
+	tplStr := string(tplBytes)
+	hasBinding := strings.Contains(tplStr, "uid: '{{ .UID }}'") ||
+		strings.Contains(tplStr, "uid: \"{{ .UID }}\"")
+	if !hasBinding {
+		t.Errorf("template-uid-binding fixer should have added uid binding to the embedded frontmatter; got:\n%s", tplStr)
 	}
 }
 

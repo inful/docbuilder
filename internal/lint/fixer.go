@@ -149,6 +149,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	directoryCategoryTargets := make(map[string]struct{})
 	categoryNamingTargets := make(map[string]struct{})
 	sequencePrefixTargets := make(map[string]struct{})
+	templateUIDBindingTargets := make(map[string]struct{})
 	uidIssueCounts := make(map[string]int)
 	uidAliasIssueCounts := make(map[string]int)
 	fingerprintIssueCounts := make(map[string]int)
@@ -156,6 +157,7 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	directoryCategoryIssueCounts := make(map[string]int)
 	categoryNamingIssueCounts := make(map[string]int)
 	sequencePrefixIssueCounts := make(map[string]int)
+	templateUIDBindingIssueCounts := make(map[string]int)
 	for _, issue := range result.Issues {
 		if issue.Severity != SeverityError && issue.Severity != SeverityWarning {
 			continue
@@ -188,6 +190,10 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 		if issue.Rule == ruleSequencePrefixFilename {
 			sequencePrefixTargets[issue.FilePath] = struct{}{}
 			sequencePrefixIssueCounts[issue.FilePath]++
+		}
+		if issue.Rule == ruleTemplateUIDBinding {
+			templateUIDBindingTargets[issue.FilePath] = struct{}{}
+			templateUIDBindingIssueCounts[issue.FilePath]++
 		}
 	}
 	// Phase 0: fill missing required frontmatter fields (title/date/lastmod/tags).
@@ -223,6 +229,11 @@ func (f *Fixer) fix(path string) (*FixResult, error) {
 	// Since sequence-prefix issues weren't covered there, we run a
 	// dedicated phase here.
 	f.applySequencePrefixFilenameFixes(sequencePrefixTargets, sequencePrefixIssueCounts, fixResult, rootPath, fingerprintTargets)
+
+	// Phase 3.8: bind {{ .UID }} references in template bodies to the
+	// embedded frontmatter's `uid` field. Auto-fixes the missing case;
+	// literal-uid mismatches are left for manual review.
+	f.applyTemplateUIDBindingFixes(templateUIDBindingTargets, templateUIDBindingIssueCounts, fixResult, fingerprintTargets)
 
 	// Phase 4: regenerate fingerprints LAST, for all affected files.
 	// (This must remain the final fixer phase.)
