@@ -4,8 +4,8 @@ aliases:
 categories:
   - architecture-decisions
 date: 2025-12-29T00:00:00Z
-fingerprint: 8f7fb72e4a43dd427a9ba7f7830c99ba67e6b28de8deef6751c18b93465033e3
-lastmod: "2026-09-27"
+fingerprint: a33cb3b2e5933797ea4e551684a37d24653a665d92a384ca482fc04df3a3ca5e
+lastmod: "2026-10-14"
 tags:
   - linting
   - validation

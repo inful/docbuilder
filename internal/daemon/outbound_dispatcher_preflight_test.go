@@ -16,7 +16,7 @@ import (
 // "uid-1" because that's the only value exercised by callers; if a future
 // test needs a different uid, add it back as a parameter.
 func docWithUIDAndFingerprint(fp string) []byte {
-	return []byte(fmt.Sprintf("---\nuid: uid-1\nfingerprint: %s\n---\n# Body\n\ntext\n", fp))
+	return fmt.Appendf(nil, "---\nuid: uid-1\nfingerprint: %s\n---\n# Body\n\ntext\n", fp)
 }
 
 // TestOutboundDispatcher_Preflight_SkipsOnFingerprintMatch verifies the happy
