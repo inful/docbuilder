@@ -12,7 +12,7 @@ on:
 
 jobs:
   validate:
-    uses: inful/lefthooks/.github/workflows/consumer-validate.yml@v0.4.0
+    uses: inful/lefthooks/.github/workflows/consumer-validate.yml@v0.4.1
     # When the consumer bumps to a newer inful/lefthooks tag, update
     # both this ref AND the ref in lefthook.yml. The Makefile's
     # 'make install-into' re-run will refresh the lefthook.yml; this
