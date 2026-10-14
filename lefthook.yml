@@ -11,6 +11,6 @@ min_version: 2.1.0
 
 remotes:
   - git_url: git@github.com:inful/lefthooks.git
-    ref: v0.1.1
+    ref: v0.2.0
     configs:
       - lefthook.yml
