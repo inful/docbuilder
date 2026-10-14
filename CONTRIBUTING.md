@@ -447,8 +447,10 @@ and observed to fail without this fix.
 
 This project uses [lefthook](https://lefthook.dev/) to enforce quality gates
 locally before code is committed or pushed. The configuration lives in
-[`lefthook.yml`](../lefthook.yml) at the repo root, with helper scripts in
-[`lefthook/`](../lefthook/).
+[`lefthook.yml`](../lefthook.yml) at the repo root; it imports the shared
+configuration from [github.com/inful/lefthooks](https://github.com/inful/lefthooks)
+via lefthook's `remotes:` mechanism, so per-repo helper scripts are no
+longer needed.
 
 ### Install
 
