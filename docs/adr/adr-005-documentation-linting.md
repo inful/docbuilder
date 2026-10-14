@@ -1410,3 +1410,25 @@ After 3 months of deployment:
 **Decision Owner**: [To be assigned]  
 **Stakeholders**: Development team, documentation maintainers, DevOps  
 **Review Date**: 3 months after implementation
+
+---
+
+## Status (updated 2026-10-14)
+
+The implementation described in this ADR has since been partially
+superseded:
+
+- **`scripts/install-hooks.sh` is gone.** It used to overwrite
+  lefthook's `.git/hooks/pre-commit` symlink when run, which disabled
+  the centralized Go / lint / test suite. Replaced by the
+  `docbuilder-lint` hook in the central shared config at
+  [github.com/inful/lefthooks](https://github.com/inful/lefthooks).
+
+- **The example `lefthook.yml` snippets** in `docs/how-to/setup-linting.md`
+  and `docs/how-to/migrate-to-linting.md` still show the per-repo
+  pattern (`lint-docs` command). Those are still valid as a copy-paste
+  starter for projects outside the inful/* monorepo, but inful/* repos
+  now use the centralized config.
+
+- The decision itself (lint documentation as a pre-commit check, using
+  the docbuilder binary) stands. Only the delivery mechanism changed.
