@@ -1,0 +1,19 @@
+# .github/workflows/lefthook-validate.yml — invokes the reusable
+# consumer-validate workflow from github.com/inful/lefthooks.
+#
+# Bump the @ref below in lockstep with the `ref:` pin in this repo's
+# lefthook.yml. They should always match.
+
+name: lefthook validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    uses: inful/lefthooks/.github/workflows/consumer-validate.yml@v0.3.1
+    # When the consumer bumps to a newer inful/lefthooks tag, update
+    # both this ref AND the ref in lefthook.yml. The Makefile's
+    # 'make install-into' re-run will refresh the lefthook.yml; this
+    # file needs to be edited by hand.
